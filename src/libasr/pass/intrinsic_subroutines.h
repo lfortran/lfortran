@@ -1702,7 +1702,7 @@ namespace MoveAlloc {
         Vec<ASR::expr_t*> deallocate_to_args; deallocate_to_args.reserve(al, 1);
         deallocate_to_args.push_back(al, args[1]);
         ASR::stmt_t* deallocate_to = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-            al, loc, deallocate_to_args.p, deallocate_to_args.n));
+            al, loc, deallocate_to_args.p, deallocate_to_args.n, nullptr, nullptr));
         std::vector<ASR::stmt_t*> deallocate_to_body;
         deallocate_to_body.push_back(deallocate_to);
         body.push_back(al, b.If(is_to_allocated, deallocate_to_body, {}));
@@ -1760,7 +1760,7 @@ namespace MoveAlloc {
             Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
             explicit_deallocate_args.push_back(al, args[0]);
             ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-                al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
+                al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n, nullptr, nullptr));
             if_body.push_back(explicit_deallocate);
         }
 
@@ -1812,6 +1812,11 @@ namespace Mvbits {
         fill_func_arg_sub("len", arg_types[2], In);
         fill_func_arg_sub("to", arg_types[3], InOut);
         fill_func_arg_sub("topos", arg_types[4], In);
+        // TO may be the same variable as FROM (F2018 16.9.135), which
+        // other dummy arguments may not be when one of them is modified
+        // (F2018 15.5.2.13) unless they have the TARGET attribute.
+        ASRUtils::EXPR2VAR(args[0])->m_target_attr = true;
+        ASRUtils::EXPR2VAR(args[3])->m_target_attr = true;
         {
             SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
             Vec<ASR::expr_t*> args_1;

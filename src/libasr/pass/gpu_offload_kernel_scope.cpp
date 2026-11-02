@@ -6,6 +6,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
+#include <libasr/pass/entry_initialized_locals.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_designator.h>
@@ -370,6 +371,9 @@ ASR::stmt_t* GpuOffloadVisitor::copy_loop_stmt(ASR::stmt_t *stmt,
         ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(copy);
         retarget_block_calls_in(blk);
         remap_block_to_own_scope(blk);
+        // Substitution follows nested calls, which must name the copies
+        // before it can rewrite their declarations and expression types.
+        inline_entry_initialized_locals(al, copy, &orig->base);
         std::string name = current_scope->get_unique_name(
             std::string(orig->m_name) + "_gpu");
         blk->m_name = s2c(al, name);
@@ -394,6 +398,7 @@ ASR::stmt_t* GpuOffloadVisitor::copy_loop_stmt(ASR::stmt_t *stmt,
         ASR::AssociateBlock_t *ab =
             ASR::down_cast<ASR::AssociateBlock_t>(copy);
         remap_associate_to_own_scope(ab);
+        inline_entry_initialized_locals(al, copy, &orig->base);
         std::string name = current_scope->get_unique_name(
             std::string(orig->m_name) + "_gpu");
         ab->m_name = s2c(al, name);
@@ -414,7 +419,7 @@ ASR::stmt_t* GpuOffloadVisitor::copy_loop_stmt(ASR::stmt_t *stmt,
             if (c == nullptr) return nullptr;
             body.push_back(al, c);
         }
-        return ASRUtils::STMT(ASR::make_DoLoop_t(al, dl->base.base.loc,
+        return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, dl->base.base.loc,
             dl->m_name, dl->m_head, body.p, body.n, dl->m_orelse,
             dl->n_orelse));
     }

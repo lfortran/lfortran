@@ -2,12 +2,12 @@
     "basename": "asr-common_block_member_placed_twice-ff03764",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/common_block_member_placed_twice.asr",
-    "infile_hash": "66147101092a6e6b387928c854b1a8b04155e29fc6c06830bb77dd14",
+    "infile_hash": "9240e3f4cc9f57012bb07d18eda0c66059f208051021c4a16089f536",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-common_block_member_placed_twice-ff03764.stderr",
-    "stderr_hash": "848596591fe5e0d65e6869f45e27c8817ea47c00f4649ee0b64c0cf4",
+    "stderr_hash": "41fb6927d7b70d264af1a2159c5ccdbe7900289e9334595adeacc43b",
     "returncode": 2
 }

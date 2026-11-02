@@ -362,7 +362,7 @@ ASR::expr_t* GpuOffloadVisitor::inline_single_all(
         Vec<ASR::stmt_t*> loop_body;
         loop_body.reserve(al, 1);
         loop_body.push_back(al, loop_nest);
-        loop_nest = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+        loop_nest = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
             head, loop_body.p, loop_body.n, nullptr, 0));
     }
     preamble.push_back(al, loop_nest);
@@ -745,7 +745,7 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             head.m_start = start;
             head.m_end = end;
             head.m_increment = nullptr;
-            return ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 head, body.p, body.n, nullptr, 0));
         };
 
@@ -2284,14 +2284,14 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
             head.m_end = loop_ends[d];
             head.m_increment = loop_steps[d];
             if (d == n_loops - 1) {
-                loop_nest = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+                loop_nest = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,
                     nullptr, head, innermost_body.p, innermost_body.n,
                     nullptr, 0));
             } else {
                 Vec<ASR::stmt_t*> outer_body;
                 outer_body.reserve(al, 1);
                 outer_body.push_back(al, loop_nest);
-                loop_nest = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+                loop_nest = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,
                     nullptr, head, outer_body.p, outer_body.n,
                     nullptr, 0));
             }
@@ -2442,7 +2442,7 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
         set_loop_head_bounds(al, loc, inner_head, dims, 1, arr_arg);
         inner_head.m_increment = nullptr;
         ASR::stmt_t *inner_loop = ASRUtils::STMT(
-            ASR::make_DoLoop_t(al, loc, nullptr, inner_head,
+            ASRUtils::make_DoLoop_t_util(al, loc, nullptr, inner_head,
                 inner_body.p, inner_body.n, nullptr, 0));
 
         Vec<ASR::stmt_t*> outer_body;
@@ -2455,7 +2455,7 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
         set_loop_head_bounds(al, loc, outer_head, dims, 0, arr_arg);
         outer_head.m_increment = nullptr;
         ASR::stmt_t *outer_loop = ASRUtils::STMT(
-            ASR::make_DoLoop_t(al, loc, nullptr, outer_head,
+            ASRUtils::make_DoLoop_t_util(al, loc, nullptr, outer_head,
                 outer_body.p, outer_body.n, nullptr, 0));
 
         new_body.push_back(al, outer_loop);

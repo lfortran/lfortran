@@ -2,12 +2,12 @@
     "basename": "asr-array_constructor_element_type-32a68b6",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/array_constructor_element_type.asr",
-    "infile_hash": "055d06917fa25f43a80bf6a250cb7e9ebe35021527b431d15e65f99c",
+    "infile_hash": "afb21f3065ed9b5ebcaf2c64441bf0ca038270c63397230c91f1811e",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-array_constructor_element_type-32a68b6.stderr",
-    "stderr_hash": "6946dea73669c77d645fd48a9abb52e80791c27603e432b57f6f424f",
+    "stderr_hash": "792a4da21a670754a358005110e6d980018815e84b6862242303f0e7",
     "returncode": 2
 }

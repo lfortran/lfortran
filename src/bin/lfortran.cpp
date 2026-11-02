@@ -12,6 +12,7 @@
 #endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
 #include "cuda_link_helpers.h"
+#include "emscripten_link_options.h"
 
 #include <libasr/stacktrace.h>
 #include <lfortran/parser/parser.h>
@@ -31,7 +32,6 @@
 #include <lfortran/pipeline.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/pass/pass_manager.h>
-#include <libasr/pass/replace_do_loops.h>
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/wrap_global_stmts.h>
 #include <libasr/pass/replace_implied_do_loops.h>
@@ -43,7 +43,6 @@
 #include <libasr/pass/replace_flip_sign.h>
 #include <libasr/pass/replace_div_to_mul.h>
 #include <libasr/pass/replace_fma.h>
-#include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/replace_sign_from_value.h>
@@ -62,6 +61,7 @@
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/Error.h>
+#include <llvm/Support/Unicode.h>
 #endif
 #include <lfortran/utils.h>
 #include <lfortran/parser/parser.tab.hh>
@@ -74,6 +74,7 @@
 #include <bin/lfortran_accessor.h>
 #include <bin/lfortran_command_line_parser.h>
 #include <bin/lsp_cli.h>
+#include <lfortran/jupyter.h>
 
 
 #ifdef WITH_LSP
@@ -423,7 +424,11 @@ bool determine_completeness(std::string command)
     return complete;
 }
 
-int prompt(bool verbose, CompilerOptions &cu)
+// The prompt is a Jupyter client. Its cells run in the kernel of `connect`, a
+// connection file, or else in a kernel it starts with its own `arguments`,
+// which other clients can join.
+int prompt(bool verbose, const std::string &connect,
+    const std::vector<std::string> &arguments)
 {
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
     std::string version = LFORTRAN_VERSION;
@@ -434,18 +439,62 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::cout << "    - Editing (Keys: Left, Right, Home, End, Backspace, Delete)" << std::endl;
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
-    cu.interactive = true;
-    LCompilers::FortranEvaluator e(cu);
+    // Before the line editor changes the terminal, which Ctrl-C restores
+    LCompilers::LFortran::jupyter::handle_interrupt();
+    std::unique_ptr<LCompilers::LFortran::jupyter::Client> kernel;
+    std::string connection_file = connect;
+    try {
+        if (connect.empty()) {
+            // This prompt ends the kernel on the way out, including while
+            // another client is connected.
+            kernel = LCompilers::LFortran::jupyter::Client::start(
+                LCompilers::binary_executable_path, arguments, connection_file);
+        } else {
+            kernel = std::make_unique<LCompilers::LFortran::jupyter::Client>(connect);
+        }
+    } catch (const std::runtime_error &error) {
+        std::cerr << "error: " << error.what() << std::endl;
+        return 1;
+    }
+    std::cout << "  * Others can join with `lfortran --connect " << connection_file
+        << "`" << std::endl;
 
     std::vector<std::string> history;
+    std::deque<char> pending_input;
+    const LCompilers::LFortran::jupyter::Client::InputSource read_character = [&]() {
+        if (pending_input.empty()) return getchar();
+        const int c = static_cast<unsigned char>(pending_input.front());
+        pending_input.pop_front();
+        return c;
+    };
     std::function<bool(std::string)> iscomplete = determine_completeness;
+    const std::function<int(const std::string &)> character_width =
+        [](const std::string &character) {
+            return llvm::sys::unicode::columnWidthUTF8(character);
+        };
+    const PromptEvents events = [&](const PromptOutput &display) {
+        using Result = LCompilers::LFortran::jupyter::Client::PollResult;
+        switch (kernel->poll_others(display)) {
+            case Result::none: return PromptEvent::none;
+            case Result::updates: return PromptEvent::updates;
+            case Result::disconnected: return PromptEvent::disconnected;
+        }
+        return PromptEvent::disconnected;
+    };
     while (true) {
         std::string input;
-        {
+        try {
             // The terminal is in raw mode only while a line is edited, so
             // that the cell can read the terminal as usual (#15284).
-            Terminal term(true, false);
-            input = prompt0(term, ">>> ", history, iscomplete);
+            Terminal term(true, false, &pending_input);
+            input = prompt0(term, ">>> ", history, iscomplete, character_width, events);
+        } catch (const PromptDisconnected &) {
+            std::cerr << "error: the kernel has stopped" << std::endl;
+            const int status = kernel->kernel_status(5000);
+            return status >= 0 ? status : 1;
+        } catch (const std::runtime_error &error) {
+            std::cerr << "error: " << error.what() << std::endl;
+            return 1;
         }
         // A READ ended by Ctrl-D in an earlier cell must not end later READs
         clearerr(stdin);
@@ -460,36 +509,14 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << input << std::endl;
         }
 
-        auto cell = e.execute(input, verbose);
-        if (!cell.ok) {
-            std::cerr << cell.error_text();
-            continue;
-        }
-        std::cerr << cell.diagnostics;
-        if (cell.inspection) {
-            std::cout << cell.output;
-            if (!cell.output.empty() && cell.output.back() != '\n') {
-                std::cout << std::endl;
-            }
-            continue;
-        }
-
-        auto &r = cell.value;
-        if (verbose) {
-            section("AST:");
-            std::cout << r.ast  << std::endl;
-            section("ASR:");
-            std::cout << r.asr << std::endl;
-            section("LLVM IR:");
-            std::cout << r.llvm_ir << std::endl;
-        }
-
-        if (verbose) {
-            std::cout << "Return type: " << r.type_name() << std::endl;
-            section("Result:");
-        }
-        if (r.has_value() || verbose) {
-            std::cout << r.text() << std::endl;
+        if (!kernel->execute(input, verbose, read_character)) {
+            // A cell that ends the kernel, with STOP or ERROR STOP, ends the
+            // prompt that started it with the kernel's exit status, as when
+            // the prompt ran its cells itself.
+            const int status = kernel->kernel_status(5000);
+            if (status >= 0) return status;
+            std::cerr << "error: the kernel has stopped" << std::endl;
+            return 1;
         }
     }
     return 0;
@@ -1965,6 +1992,7 @@ int link_executable(const std::vector<std::string> &infiles,
     bool verbose, const std::vector<std::string> &lib_dirs,
     const std::vector<std::string> &libraries,
     const std::vector<std::string> &linker_flags,
+    const std::vector<std::string> &emscripten_settings,
     CompilerOptions &compiler_options)
 {
     /*
@@ -2084,7 +2112,7 @@ int link_executable(const std::vector<std::string> &infiles,
                     return 11;
                 }
                 CC = std::string(emsdk_path) + "/upstream/emscripten/emcc";
-                options = " --target=wasm32-unknown-emscripten -sSTACK_SIZE=50mb -sINITIAL_MEMORY=256mb";
+                options = lcli::emscripten_link_options(emscripten_settings);
                 if (!compiler_options.emcc_embed.empty()) {
                     options += " --embed-file " + compiler_options.emcc_embed;
                 }
@@ -2116,6 +2144,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 // TODO: Fix the path usage for Windows
                 CC += "/";
             }
+            std::string linker_dir = CC;
 
             if (!linker.empty()) {
                 CC += linker;
@@ -2170,7 +2199,11 @@ int link_executable(const std::vector<std::string> &infiles,
                     + "/../libasr/runtime/lfortran_gpu_metal.m";
                 std::string metal_runtime_obj = LFORTRAN_TEMP_DIR
                     + "/lfortran_gpu_metal_" + LCOMPILERS_UNIQUE_ID + ".o";
-                std::string metal_compile_cmd = "clang -c -O2 -fobjc-arc"
+                // Use the clang of the linker path: the first clang on PATH
+                // (e.g. LLVM's clang in a Conda environment) may not know the
+                // macOS SDK and its Metal framework.
+                std::string metal_compile_cmd = linker_dir
+                    + "clang -c -O2 -fobjc-arc"
                     " -o " + metal_runtime_obj
                     + " " + metal_runtime_src;
                 int metal_err = system(metal_compile_cmd.c_str());
@@ -2842,10 +2875,18 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (kernel) {
-#ifdef HAVE_LFORTRAN_XEUS
-        return LCompilers::LFortran::run_kernel(opts.arg_kernel_f);
+#if defined(HAVE_LFORTRAN_XEUS) || defined(HAVE_LFORTRAN_LLVM)
+        if (kernel.count("--parent") > 0 && (opts.arg_kernel_parent <= 0
+                || !LCompilers::LFortran::jupyter::stop_with_parent(
+                    opts.arg_kernel_parent, opts.arg_kernel_f))) {
+            std::cerr << "error: process " << opts.arg_kernel_parent
+                << " is not the parent of this kernel" << std::endl;
+            return 1;
+        }
+        return LCompilers::LFortran::run_kernel(opts.arg_kernel_f, compiler_options,
+            opts.arg_kernel_managed);
 #else
-        std::cerr << "The kernel subcommand requires LFortran to be compiled with XEUS support. Recompile with `WITH_XEUS=yes`." << std::endl;
+        std::cerr << "The kernel subcommand requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
 #endif
     }
@@ -2904,7 +2945,8 @@ int main_app(int argc, char *argv[]) {
 
     if (opts.arg_files.size() == 0) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return prompt(opts.arg_v, compiler_options);
+        return prompt(opts.arg_v, opts.connect,
+            std::vector<std::string>(argv + 1, argv + argc));
 #else
         std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
@@ -3206,7 +3248,8 @@ int main_app(int argc, char *argv[]) {
         }
         int status_code = err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
                 backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
-                opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);
+                opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags,
+                opts.emscripten_settings, compiler_options);
         auto end_time = std::chrono::high_resolution_clock::now();
         
         for (const std::string &filename : temp_object_files) {

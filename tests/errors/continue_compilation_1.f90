@@ -3691,7 +3691,7 @@ subroutine implied_do_mixed_derived_types_error(n)
     print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
     print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
-    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! not conforming, but accepted: the nested loop has a variable of its own
     print '(*(i0,1x))', (x(1), y(1), i=1,m)  ! {Error} more than 256 iterations, bounds that are not all literals ... is not supported yet
     write(10) (x(i), y(i), i=1,3)  ! {Error} unformatted output of an implied-do loop ... is not supported yet
     print '(*(i0,1x))', (x(i), y(i), i=1,3)
@@ -3748,3 +3748,288 @@ contains
         end do
     end subroutine
 end module cc1_dc_index_name
+
+module cc1_matmul_overflow
+contains
+    subroutine cc1_matmul_overflow_sub()
+        integer, parameter :: a(1,1) = reshape([100000], [1,1])
+        integer, parameter :: x(1) = [100000]
+        integer(1), parameter :: b(1,2) = reshape([100_1, 100_1], [1,2])
+        integer(1), parameter :: v(2) = [1_1, 1_1]
+        integer(8), parameter :: c(1,2) = reshape([9223372036854775807_8, 1_8], [1,2])
+        integer(8), parameter :: u(2) = [1_8, 1_8]
+        integer, parameter :: p(1) = matmul(a, x)  ! {Error} integer overflow in `matmul`
+        integer :: y(1)
+        integer(1) :: w(1)
+        integer(8) :: z(1)
+        y = matmul(a, x)  ! {Error} integer overflow in `matmul`
+        w = matmul(b, v)  ! {Error} integer overflow in `matmul`
+        z = matmul(c, u)  ! {Error} integer overflow in `matmul`
+    end subroutine
+end module cc1_matmul_overflow
+
+module cc1_section_scalar_subscript_shape
+contains
+    subroutine cc1_section_scalar_subscript_shape_sub()
+        real :: a(2,5), b(4,2,5)
+        b = 1.0
+        a = b(2,:,1:3)  ! {Error} Different shape for array assignment on dimension 2(5 and 3)
+    end subroutine
+end module cc1_section_scalar_subscript_shape
+
+module cc1_deallocate_stat
+contains
+    subroutine cc1_deallocate_stat_sub()
+        integer, allocatable :: a(:)
+        real :: r
+        integer :: s(2)
+        allocate(a(2))
+        deallocate(a, stat=r)  ! {Error} `stat` argument of `deallocate` must be a scalar of type integer
+        deallocate(a, stat=s)  ! {Error} `stat` argument of `deallocate` must be a scalar of type integer
+        deallocate(a, errmsg=r)  ! {Error} `errmsg` argument of `deallocate` must be a scalar of type character
+    end subroutine
+end module cc1_deallocate_stat
+
+module cc1_assumed_rank_intrinsic_argument
+contains
+    subroutine cc1_assumed_rank_sum(x)
+        integer, intent(in) :: x(..)
+        print *, sum(x)  ! {Error} assumed-rank arguments are not supported for intrinsic `sum`
+    end subroutine
+
+    subroutine cc1_assumed_rank_maxval(x)
+        integer, intent(in) :: x(..)
+        print *, maxval(x)  ! {Error} assumed-rank arguments are not supported for intrinsic `maxval`
+    end subroutine
+end module cc1_assumed_rank_intrinsic_argument
+
+module cc1_size_assumed_size
+contains
+    subroutine cc1_size_assumed_size_sub(n, c, d)
+        integer, intent(in) :: n
+        real, intent(in) :: c(n,*), d(*)
+        print *, size(c)  ! {Error} size of an assumed-size array requires the DIM argument
+        print *, size(c, 2)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+        print *, size(d, dim=1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+    end subroutine
+end module cc1_size_assumed_size
+
+module cc1_size_assumed_size_bindc
+contains
+    subroutine cc1_size_assumed_size_bindc_sub(n, c, d) bind(c)
+        use iso_c_binding, only: c_int, c_float
+        integer(c_int), value :: n
+        real(c_float), intent(in) :: c(n,*), d(*)
+        print *, size(c)  ! {Error} size of an assumed-size array requires the DIM argument
+        print *, size(c, 2)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+        print *, size(d, 1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+    end subroutine
+end module cc1_size_assumed_size_bindc
+
+module cc1_cyclic_iface_a
+contains
+    subroutine cc1_cyclic_iface_call(a)
+        real :: a(2)
+        call cc1_cyclic_iface_ext(a)  ! {Error} referencing the external procedure 'cc1_cyclic_iface_ext' in the module 'cc1_cyclic_iface_a' without an explicit interface is not supported yet when its interface names an entity of the module 'cc1_cyclic_iface_b', which uses 'cc1_cyclic_iface_a'
+    end subroutine
+end module cc1_cyclic_iface_a
+
+module cc1_cyclic_iface_b
+    use cc1_cyclic_iface_a
+    integer :: m = 2
+end module cc1_cyclic_iface_b
+
+subroutine cc1_cyclic_iface_ext(a)
+    use cc1_cyclic_iface_b, only: m
+    real :: a(m)
+    a = 0
+end subroutine
+
+module cc1_file_fn_iface_m
+contains
+    subroutine cc1_file_fn_iface_call(a)
+        real :: a(6)
+        call cc1_file_fn_iface_ext(a, 3)  ! {Error} referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface calls the procedure 'cc1_file_fn_iface_len', which has an implicit interface
+    end subroutine
+end module cc1_file_fn_iface_m
+
+integer function cc1_file_fn_iface_len(n)
+    integer, intent(in) :: n
+    cc1_file_fn_iface_len = 2*n
+end function
+
+subroutine cc1_file_fn_iface_ext(a, n)
+    integer, intent(in) :: n
+    real :: a(cc1_file_fn_iface_len(n))
+    a = 0
+end subroutine
+
+subroutine selected_real_kind_empty()
+    print *, selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
+end subroutine
+
+subroutine selected_real_kind_empty_parameter()
+    integer, parameter :: k = selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
+end subroutine
+
+module cc1_volatile_no_entities
+contains
+    subroutine cc1_volatile_no_entities_sub(x)
+        integer :: x
+        volatile  ! {Error} the volatile statement requires a list of entities
+        x = 1
+    end subroutine
+end module cc1_volatile_no_entities
+
+module cc1_asynchronous_no_entities
+contains
+    subroutine cc1_asynchronous_no_entities_sub(x)
+        integer :: x
+        asynchronous  ! {Error} the asynchronous statement requires a list of entities
+        x = 1
+    end subroutine
+end module cc1_asynchronous_no_entities
+
+module cc1_character_spec_function
+contains
+    pure function half(s) result(t)
+        character(*), intent(in) :: s
+        character(len(s)/2) :: t
+        t = s
+    end function
+    pure integer function length_value()
+        length_value = 5
+    end function
+end module
+
+module cc1_nonconstant_character_length
+    use cc1_character_spec_function
+    character(*), parameter :: text = 'abcdeedcba'
+    character(len(half(text))) :: inquiry  ! {Error} character length must be a constant expression in this context
+    character(1 + len(half(text))) :: composite  ! {Error} character length must be a constant expression in this context
+    character :: old*(len(half(text)))  ! {Error} character length must be a constant expression in this context
+    character(1) :: overridden*(len(half(text)))  ! {Error} character length must be a constant expression in this context
+    character(length_value()) :: direct  ! {Error} character length must be a constant expression in this context
+end module
+
+block data cc1_nonconstant_character_block_data
+    use cc1_character_spec_function
+    character(len(half('abcdeedcba'))) :: t  ! {Error} character length must be a constant expression in this context
+    common /cc1_character_common/ t  ! {Error} Variable 't' is not declared
+end block data
+
+module cc1_generic_character_length
+    interface generic_length
+        pure integer function cc1_length_value()
+        end function
+    end interface
+    character(generic_length()) :: t  ! {Error} character length must be a constant expression in this context
+end module
+
+module cc1_inquire_delim
+contains
+    subroutine cc1_inquire_delim_sub(input)
+        character(*), intent(in) :: input
+        character(20) :: delim
+        character(20) :: delim_array(2)
+        character(kind=4, len=20) :: wide_delim
+        character(*), parameter :: fixed = 'NONE'
+        integer :: number
+        inquire(6, delim=trim(delim))  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim='NONE')  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim=fixed)  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim=fixed(1:2))  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim=input)  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim=input(1:2))  ! {Error} delim in inquire must be a definable variable
+        inquire(6, delim=number)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+        inquire(6, delim=delim_array)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+        inquire(6, delim=wide_delim)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+        inquire(6, delim=(delim))  ! {Error} delim in inquire must be a definable variable
+    end subroutine
+end module cc1_inquire_delim
+
+module cc1_pure_associated_data
+    type :: item
+        integer :: value
+    end type
+    integer :: scalar, cc1_pa_values(3)
+    type(item) :: object
+end module
+
+module cc1_pure_associated_assignment
+contains
+    pure integer function host_result() result(res)
+        call inner()
+    contains
+        pure subroutine inner()
+            res = 10  ! {Error} cannot assign to host-associated variable 'res' in a pure procedure
+        end subroutine
+    end function
+
+    subroutine host_objects()
+        use cc1_pure_associated_data, only: item
+        integer :: scalar, cc1_pa_values(3)
+        type(item) :: object
+        character(3) :: text
+    contains
+        pure subroutine inner()
+            scalar = 1  ! {Error} cannot assign to host-associated variable 'scalar' in a pure procedure
+            object%value = 2  ! {Error} cannot assign to host-associated variable 'object' in a pure procedure
+            cc1_pa_values(1) = 3  ! {Error} cannot assign to host-associated variable 'cc1_pa_values' in a pure procedure
+            cc1_pa_values(2:3) = 4  ! {Error} cannot assign to host-associated variable 'cc1_pa_values' in a pure procedure
+            text(1:2) = 'ab'  ! {Error} cannot assign to host-associated variable 'text' in a pure procedure
+            block
+                scalar = 5  ! {Error} cannot assign to host-associated variable 'scalar' in a pure procedure
+            end block
+        end subroutine
+    end subroutine
+
+    pure subroutine use_objects()
+        use cc1_pure_associated_data, only: renamed => scalar, object, cc1_pa_values
+        renamed = 1  ! {Error} cannot assign to use-associated variable 'scalar' in a pure procedure
+        object%value = 2  ! {Error} cannot assign to use-associated variable 'object' in a pure procedure
+        cc1_pa_values(1:2) = 3  ! {Error} cannot assign to use-associated variable 'cc1_pa_values' in a pure procedure
+    end subroutine
+end module
+
+module cc1_logical_reduce
+contains
+    subroutine cc1_logical_reduce_sub()
+        integer :: i, k
+        real :: r
+        logical :: l
+        k = 7
+        r = 1.0
+        l = .true.
+        do concurrent (i = 1:4) reduce(.and.: k)  ! {Error} reduction variable 'k' for operator .and. must be of type logical, found integer(4)
+            k = iand(k, 7)
+        end do
+        do concurrent (i = 1:4) reduce(.or.: r)  ! {Error} reduction variable 'r' for operator .or. must be of type logical, found real(4)
+            r = r + 1.0
+        end do
+        do concurrent (i = 1:4) reduce(.eqv.: l, k)  ! {Error} reduction variable 'k' for operator .eqv. must be of type logical, found integer(4)
+            l = l .eqv. .true.
+        end do
+        do concurrent (i = 1:4) reduce(.neqv.: k)  ! {Error} reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
+            k = k + 1
+        end do
+    end subroutine
+end module
+
+module cc1_branch_into_construct
+contains
+    subroutine cc1_branch_into_construct_sub()
+        integer :: i, k
+        k = 0
+        go to 20  ! {Error} branch to label 20 enters a DO loop from outside it
+        do i = 1, 3
+20          k = k + 1
+        end do
+        go to 30  ! {Error} branch to label 30 enters a BLOCK construct from outside it
+        block
+            integer :: m
+30          m = k
+            k = m + 1
+        end block
+    end subroutine
+end module

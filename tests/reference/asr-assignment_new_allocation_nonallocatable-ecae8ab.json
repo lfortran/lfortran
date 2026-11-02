@@ -2,12 +2,12 @@
     "basename": "asr-assignment_new_allocation_nonallocatable-ecae8ab",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/assignment_new_allocation_nonallocatable.asr",
-    "infile_hash": "9af778343aa943e35a35ae5eea66bc7860b82b534650e8b9b25ae2cb",
+    "infile_hash": "99efbc83627eb8ac6c0ac3a6f4dea8b9ad9e78dfd92fdd5045f07503",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-assignment_new_allocation_nonallocatable-ecae8ab.stderr",
-    "stderr_hash": "3ed1f7b916f0ac2b871e752c1f325309f347961f9ce7d12491ecd637",
+    "stderr_hash": "ab736fbd426d9d951b4858773f5487e3cb6cd6bf348c9f23a8ad7744",
     "returncode": 2
 }

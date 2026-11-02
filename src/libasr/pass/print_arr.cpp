@@ -110,7 +110,7 @@ public:
                 doloop_body.push_back(al, doloop);
                 doloop_body.push_back(al, empty_print_endl);
             }
-            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size(), nullptr, 0));
+            doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head, doloop_body.p, doloop_body.size(), nullptr, 0));
         }
         return doloop;
     }
@@ -367,7 +367,7 @@ public:
                 doloop_body.push_back(al, doloop);
                 doloop_body.push_back(al, empty_file_write_endl);
             }
-            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, doloop_body.p, doloop_body.size(), nullptr, 0));
+            doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head, doloop_body.p, doloop_body.size(), nullptr, 0));
         }
         return doloop;
     }

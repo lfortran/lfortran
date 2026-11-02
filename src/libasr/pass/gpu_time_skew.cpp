@@ -1321,15 +1321,10 @@ public:
         block_body.push_back(set(t0, bld.Add(v(t0), v(kn))));
         skewed.push_back(bld.While(bld.Lt(v(t0), v(n)), block_body));
         // The indices after the loops, as the DO loops leave them (every
-        // loop ran, since n > 1): one past the last iteration's value with
-        // use_loop_variable_after_loop, the last iteration's value
-        // otherwise (see PassUtils::replace_doloop).
+        // loop ran, since n > 1): one step past the last iteration's value.
         for (size_t d = 0; d < m; d++) {
-            ASR::expr_t *after = bld.Add(v(first[d]), v(trips[d]));
-            if (!pass_options.use_loop_variable_after_loop) {
-                after = bld.Sub(after, c(1));
-            }
-            skewed.push_back(set(vars[d], after));
+            skewed.push_back(set(vars[d], bld.Add(v(first[d]),
+                v(trips[d]))));
         }
         pre.push_back(bld.If(v(on), skewed, {stmt}));
         skews++;

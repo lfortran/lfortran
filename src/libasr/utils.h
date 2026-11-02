@@ -40,7 +40,6 @@ struct PassOptions {
     std::string runtime_library_dir;
     bool always_run = false; // for unused_functions pass
     bool inline_external_symbol_calls = true; // for inline_function_calls pass
-    int64_t unroll_factor = 32; // for loop_unroll pass
     bool fast = false; // is fast flag enabled.
     bool no_fast_math = false; // disable fast-math optimizations (NaN, Inf, etc.)
     bool verbose = false; // For developer debugging
@@ -49,8 +48,8 @@ struct PassOptions {
     bool pass_cumulative = false; // Apply passes cumulatively
     bool verify_all_passes = false; // Verify ASR after every pass
     bool disable_main = false;
-    bool use_loop_variable_after_loop = false;
     bool realloc_lhs_arrays = false;
+    bool stack_arrays = false;
     // Each module is compiled into an object file of its own, so a module
     // read back from a `.mod` file is defined elsewhere and this translation
     // unit only refers to it.
@@ -103,6 +102,8 @@ struct PassOptions {
     int64_t gpu_split_min_iterations = 131072;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
+    // Whether the target can lower descriptor-to-data views in retained entries.
+    bool supports_descriptor_entry_wrappers = true;
     bool bounds_checking = true;
     bool strict_bounds_checking = false;
     // Short-circuit evaluation of logical .and./.or. (the standard permits
@@ -114,6 +115,9 @@ struct PassOptions {
     // Set by the pass manager so that a pass can report a diagnostic. It is
     // null when the passes are run outside the pass manager.
     diag::Diagnostics *diagnostics = nullptr;
+    // The number of activations of a host that can hold a procedure value of
+    // one of its internal procedures at the same time (nested_vars)
+    int64_t internal_procedure_thunks = 8;
 };
 
 struct CompilerOptions {
@@ -184,7 +188,6 @@ struct CompilerOptions {
     bool infer_mode = false;
     bool print_leading_space = false;
     bool rtlib = false;
-    bool use_loop_variable_after_loop = false;
     std::string target = "";
     std::string march = "";
     std::string mcpu = "";
@@ -199,7 +202,6 @@ struct CompilerOptions {
     // Diagnose requirements of Fortran 2023 that earlier standards relax
     bool std_f23_conformance = false;
     bool ignore_pragma = false;
-    bool stack_arrays = false;
     bool internal_alloc_check = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors (implied by -fdefault-integer-8)
     bool wasm_html = false;

@@ -13,6 +13,67 @@
 
 using namespace LCompilers;
 
+TEST_CASE("Entry inquiries require metadata but not element values") {
+    const std::string source = R"(
+subroutine inquiries(a, n)
+    integer, intent(in) :: a(:), n
+    integer :: local(n), selector
+    integer, pointer :: p(:)
+    integer, allocatable :: allocated(:)
+    character(:), allocatable :: text
+    character(n) :: local_text
+    integer :: pointer_size, pointer_lower, pointer_upper, pointer_shape(1)
+    integer :: allocated_size, deferred_len, section_size
+    integer :: dummy_size, local_size, local_len, local_shape(1)
+    pointer_size = size(p)
+    pointer_lower = lbound(p, 1)
+    pointer_upper = ubound(p, 1)
+    pointer_shape = shape(p)
+    allocated_size = size(allocated)
+    deferred_len = len(text)
+    section_size = size(local(:selector))
+    dummy_size = size(a)
+    local_size = size(local)
+    local_len = len(local_text)
+    local_shape = shape(local)
+end subroutine
+)";
+    CompilerOptions options;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "entry_inquiries.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    auto* function = ASR::down_cast<ASR::Function_t>(
+        parsed.result->m_symtab->get_symbol("inquiries"));
+    std::map<std::string, std::string> expected = {
+        {"pointer_size", "p"}, {"pointer_lower", "p"},
+        {"pointer_upper", "p"}, {"pointer_shape", "p"},
+        {"allocated_size", "allocated"}, {"deferred_len", "text"},
+        {"section_size", "selector"}, {"dummy_size", ""},
+        {"local_size", ""}, {"local_len", ""}, {"local_shape", ""}
+    };
+    size_t checked = 0;
+    for (size_t i = 0; i < function->n_body; i++) {
+        if (!ASR::is_a<ASR::Assignment_t>(*function->m_body[i])) continue;
+        auto* assignment = ASR::down_cast<ASR::Assignment_t>(function->m_body[i]);
+        std::string name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(assignment->m_target)->m_v);
+        INFO(name);
+        REQUIRE(expected.count(name) == 1);
+        const auto* unavailable = ASRUtils::undefined_local_on_entry(
+            assignment->m_value, function->m_symtab);
+        CHECK((unavailable ? std::string(unavailable->m_name) : "") == expected.at(name));
+        checked++;
+    }
+    CHECK(checked == expected.size());
+}
+
 TEST_CASE("Every decline of the GPU offloading pipeline is an error") {
     Allocator allocator(1024 * 1024);
     Location loc{0, 0};

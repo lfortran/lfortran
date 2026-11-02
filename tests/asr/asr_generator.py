@@ -195,7 +195,7 @@ def variable(table, name, declaration, intent="Local", presence="Required",
         f":abi :Source :access :Public "
         f":presence :{presence} :value_attr false :target_attr false "
         f":contiguous_attr false :bindc_name nil :is_volatile false "
-        f":is_protected false :pass_attr :NotMethod :self_argument nil "
+        f":is_asynchronous false :is_protected false :pass_attr :NotMethod :self_argument nil "
         f":codims [] :common_block nil)"
     )
 

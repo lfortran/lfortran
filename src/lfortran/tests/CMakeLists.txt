@@ -15,6 +15,13 @@ macro(ADDTESTC name)
 endmacro(ADDTESTC)
 
 if (NOT XEUS_LFORTRAN_WASM_BUILD)
+    if (NOT EMSCRIPTEN)
+        add_executable(test_jupyter_stubs test_jupyter_stubs.cpp ../jupyter.cpp)
+        target_compile_definitions(test_jupyter_stubs PRIVATE __EMSCRIPTEN__)
+        target_include_directories(test_jupyter_stubs PRIVATE
+            ${CMAKE_SOURCE_DIR}/src ${CMAKE_BINARY_DIR}/src)
+        add_test(NAME test_jupyter_stubs COMMAND test_jupyter_stubs)
+    endif()
     ADDTESTC(test_cwrapper lfortran_c)
     ADDTESTC(test_hashtable)
     if (NOT EMSCRIPTEN)
@@ -54,8 +61,11 @@ set(SRC
     test_asr_text.cpp
     test_asr_text_parser.cpp
     test_gpu.cpp
+    test_c_cpp.cpp
     ../../bin/cuda_link_helpers.cpp
     ../../tests/test_cuda_link_helpers.cpp
+    ../../bin/lfortran_command_line_parser.cpp
+    ../../tests/test_emscripten_options.cpp
 )
 
 if (WITH_JSON)
@@ -70,6 +80,9 @@ if (WITH_LLVM)
 endif()
 
 if (WITH_LSP)
+    add_executable(test_lsp_union_copy test_lsp_union_copy.cpp)
+    target_link_libraries(test_lsp_union_copy llanguage_server)
+    add_test(NAME test_lsp_union_copy COMMAND test_lsp_union_copy)
     set(SRC_AST ${SRC_AST}
         test_ast.cpp
     )
@@ -191,6 +204,14 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     if (LFORTRAN_TEST_PYTHON)
         if (NOT WIN32 AND NOT EMSCRIPTEN)
             add_test(
+                NAME test_scoped_attribute_roundtrip
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_scoped_attribute_roundtrip.py
+                    --lfortran $<TARGET_FILE:lfortran>
+                    --workdir ${PROJECT_BINARY_DIR}/scoped-attribute-roundtrip
+            )
+            set_tests_properties(test_scoped_attribute_roundtrip PROPERTIES TIMEOUT 180)
+            add_test(
                 NAME test_gpu_launch_geometry_cpu
                 COMMAND ${LFORTRAN_TEST_PYTHON}
                     ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_launch_geometry.py
@@ -301,17 +322,68 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --llvm ${CMAKE_SOURCE_DIR}/src/libasr/codegen/asr_to_llvm.cpp
                 --manifest ${CMAKE_SOURCE_DIR}/tests/asr/llvm_constructor_coverage.toml
         )
-        # The prompt is driven through a pipe on the other platforms only;
-        # this test has not been run on Windows.
-        if (NOT WIN32)
+        # The prompt is driven through a pipe, and on a pseudo-terminal
+        # where there is one (not on Windows).
+        add_test(
+            NAME test_repl
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
+                --lfortran $<TARGET_FILE:lfortran>
+        )
+        add_executable(prompt_events_fixture prompt_events_fixture.cpp)
+        target_include_directories(prompt_events_fixture PRIVATE
+            ${CMAKE_SOURCE_DIR}/src/bin/tpl)
+        target_link_libraries(prompt_events_fixture lfortran_lib)
+        # The prompt starts the kernel that is built: the built-in one here.
+        # These cases assume that kernel: a READ whose client leaves fails,
+        # and a failed cell is aborted with an idle status.
+        if (NOT WITH_XEUS)
             add_test(
-                NAME test_repl
+                NAME test_session
                 COMMAND ${LFORTRAN_TEST_PYTHON}
-                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
+                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
+                    --lfortran $<TARGET_FILE:lfortran> --builtin
+            )
+            set_tests_properties(test_session PROPERTIES TIMEOUT 180
+                SKIP_RETURN_CODE 77)
+            add_test(
+                NAME test_session_regressions
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
+                    --lfortran $<TARGET_FILE:lfortran> --builtin
+                    --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>
+            )
+            set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 420
+                SKIP_RETURN_CODE 77)
+        else()
+            # The Xeus kernel, on Xeus's own channels, which the prompt starts
+            # here. The cases that assume the built-in kernel stay out.
+            add_test(
+                NAME test_session
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session.py
                     --lfortran $<TARGET_FILE:lfortran>
             )
+            set_tests_properties(test_session PROPERTIES TIMEOUT 180
+                SKIP_RETURN_CODE 77)
+            add_test(
+                NAME test_session_regressions
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_session_regressions.py
+                    --lfortran $<TARGET_FILE:lfortran>
+                    --case xeus_connection_files --case implicit_typing
+                    --case prompt_departure --case prompt_killed_in_cell
+                    --case kernel_parent --case stop_ends_session --case verbose
+                    --case test_idle_updates --case test_edited_updates
+                    --case test_fragmented_updates --case test_idle_disconnect
+                    --case test_unicode_updates --case test_output_error_cleanup
+                    --prompt-events-fixture $<TARGET_FILE:prompt_events_fixture>
+            )
+            set_tests_properties(test_session_regressions PROPERTIES TIMEOUT 180
+                SKIP_RETURN_CODE 77)
         endif()
-        if (WITH_XEUS)
+        # The Xeus kernel, or else the built-in one
+        if (NOT EMSCRIPTEN)
             add_test(
                 NAME test_kernel_evaluation
                 COMMAND ${LFORTRAN_TEST_PYTHON}

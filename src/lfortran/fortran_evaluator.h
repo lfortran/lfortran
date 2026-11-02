@@ -2,6 +2,7 @@
 #define LFORTRAN_FORTRAN_EVALUATOR_H
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <set>
 
@@ -79,6 +80,19 @@ public:
         // `record` set (without a newline), -1 at end of file, or > 0 if no
         // input is available. Unset, the cell reads the process's stdin.
         std::function<int(std::string &record)> input;
+        // Receives what the cell writes to stdout (stream 1) and stderr
+        // (stream 2). Set, both are captured while the cell runs and passed
+        // here incrementally on native builds, before each display,
+        // clear_output and input, and when the cell ends. All callbacks run
+        // on the execute() caller. WASM currently drains only at these
+        // barriers. Unset, the cell writes to the process's stdout and stderr.
+        std::function<void(int stream, const std::string &text)> output;
+        // Make bounded, nonblocking transport progress on the caller after
+        // each capture pump, even when no new output was captured.
+        std::function<void()> progress_output;
+        // Flush the frontend's transport before STOP terminates the process.
+        // Called on the execute() caller, after the last output.
+        std::function<void()> flush_on_exit;
     };
 
     struct CellResult {
@@ -202,6 +216,9 @@ private:
     std::unique_ptr<WasmLFortranExecutor> wasm_exec;
 #endif
     SymbolTable *symbol_table;
+    // Keyed by the committed cell scope so inspection's scope restoration
+    // also restores the implicit typing policy.
+    std::map<SymbolTable*, std::map<std::string, ASR::ttype_t*>> cell_implicit_types;
     std::string run_fn;
     // One entry per cell evaluated so far, each covering a range of its own,
     // so that a location taken from an earlier cell still points at that

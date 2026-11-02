@@ -1,0 +1,106 @@
+#include <stdint.h>
+
+__device__ inline int triangle_gpu_53(int n) {
+    int s;
+    int k;
+    s = 0;
+    for (k = 1; k <= n; k++) {
+        s = (s + k);
+    }
+    return s;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    int* __restrict__ lim,
+    int* __restrict__ r,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i__dc;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    {
+        int j;
+        int k;
+        int m;
+        int s;
+        int t;
+        t = 0;
+        for (j = i__dc; j >= 1; j -= 3) {
+            t = (t + j);
+        }
+        r[((int)(1) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        t = 0;
+        for (j = 1; j <= i__dc; j += 4) {
+            t = (t + j);
+        }
+        r[((int)(2) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        t = 0;
+        m = i__dc;
+        const int __lfortran_end_0 = m;
+        for (j = 1; j <= __lfortran_end_0; j++) {
+            m = (m - 1);
+            t = (t + 1);
+        }
+        r[((int)(3) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        r[((int)(4) - (1)) + (9 * ((int)(i__dc) - (1)))] = triangle_gpu_53(i__dc);
+        t = 0;
+        int __lfortran_leave_0 = 0;
+        for (j = 1; j <= 5; j++) {
+            for (k = 1; k <= 5; k++) {
+                if ((k > j)) {
+                    __lfortran_leave_0 = 2;
+                    break;
+                }
+                if ((j == (((i__dc) % (4)) + 2))) {
+                    __lfortran_leave_0 = 1;
+                    break;
+                }
+                t = (t + k);
+            }
+            if (__lfortran_leave_0 == 1) break;
+            if (__lfortran_leave_0 == 2) {
+                __lfortran_leave_0 = 0;
+                continue;
+            }
+        }
+        r[((int)(5) - (1)) + (9 * ((int)(i__dc) - (1)))] = (((t * 100) + (j * 10)) + k);
+        for (j = (i__dc + 1); j <= i__dc; j++) {
+            t = (-(1));
+        }
+        for (k = 1; k >= 5; k--) {
+            t = (-(1));
+        }
+        r[((int)(6) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((j * 100) + k);
+        s = ((((i__dc) % (2)) == 0) ? 2 : (-(2)));
+        t = 0;
+        const int __lfortran_end_1 = ((s > 0) ? 10 : 1);
+        for (j = ((s > 0) ? 1 : 10); s > 0 ? j <= __lfortran_end_1 : j >= __lfortran_end_1; j += s) {
+            t = (t + j);
+        }
+        r[((int)(7) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        s = (1 + ((i__dc) % (3)));
+        t = 0;
+        const int __lfortran_step_2 = s;
+        for (j = 1; __lfortran_step_2 > 0 ? j <= 10 : j >= 10; j += __lfortran_step_2) {
+            s = (s + 1);
+            t = (t + j);
+        }
+        r[((int)(8) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        t = 0;
+        const int __lfortran_end_3 = lim[((int)(i__dc) - (1))];
+        for (j = 1; j <= __lfortran_end_3; j++) {
+            t = (t + j);
+        }
+        r[((int)(9) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+    }
+}
+

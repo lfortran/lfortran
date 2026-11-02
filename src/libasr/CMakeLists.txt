@@ -58,7 +58,6 @@ set(SRC
     pass/parallel_canonicalize.cpp
     pass/parallel_dispatch.cpp
     pass/param_to_const.cpp
-    pass/do_loops.cpp
     pass/for_all.cpp
     pass/while_else.cpp
     pass/global_stmts.cpp
@@ -81,14 +80,13 @@ set(SRC
     pass/intrinsic_function.cpp
     pass/intrinsic_subroutine.cpp
     pass/fma.cpp
-    pass/loop_vectorise.cpp
     pass/sign_from_value.cpp
     pass/inline_function_calls.cpp
     pass/scoped_inlining.cpp
-    pass/loop_unroll.cpp
     pass/dead_code_removal.cpp
     pass/instantiate_template.cpp
     pass/update_array_dim_intrinsic_calls.cpp
+    pass/entry_initialized_locals.cpp
     pass/pass_array_by_data.cpp
     pass/pass_list_expr.cpp
     pass/pass_compare.cpp
@@ -126,6 +124,7 @@ set(SRC
     pass/gpu_data_layout.cpp
     pass/device_launch_expand.cpp
     pass/gpu_launch_sync.cpp
+    pass/gpu_sequential_unroll.cpp
     pass/gpu_affine.cpp
     pass/gpu_loop_utils.cpp
     pass/gpu_loop_fusion.cpp

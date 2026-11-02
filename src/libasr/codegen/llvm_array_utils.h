@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Value.h>
@@ -129,7 +130,8 @@ namespace LCompilers {
                     ASR::expr_t* expr,
                     ASR::ttype_t* m_type_,
                     llvm::Type* el_type,
-                    bool get_pointer=false) = 0;
+                    bool get_pointer=false,
+                    ASR::symbol_t* type_declaration=nullptr) = 0;
 
                 /*
                 * Fills the elements of the input array descriptor
@@ -142,7 +144,7 @@ namespace LCompilers {
                     llvm::Module* module, bool reserve_data_memory=true) = 0;
 
                 virtual
-                void fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
+                void fill_array_details(ASR::expr_t* src_expr, ASR::symbol_t* dest_type_declaration,
                     llvm::Value* source, llvm::Value* destination,
                     ASR::ttype_t* source_array_type, ASR::ttype_t* dest_array_type, llvm::Module* module, bool ignore_data) = 0;
 
@@ -208,6 +210,13 @@ namespace LCompilers {
                 */
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false) = 0;
+
+                /*
+                * Whether `type` is an array descriptor type created by
+                * this class (not the dimension descriptor type).
+                */
+                virtual
+                bool is_array_descriptor_type(llvm::Type* type) = 0;
 
                 /*
                 * Returns the llvm::Type* used for array indices (i32 or i64).
@@ -436,6 +445,7 @@ namespace LCompilers {
 
                 std::map<std::string, std::pair<llvm::StructType*, llvm::Type*>> tkr2array;
                 std::map<std::pair<llvm::Type*, int>, llvm::StructType*> rank_array_cache;
+                std::unordered_set<llvm::Type*> array_descriptor_types;
 
                 CompilerOptions& co;
 
@@ -489,7 +499,8 @@ namespace LCompilers {
                     ASR::expr_t* expr,
                     ASR::ttype_t* m_type_,
                     llvm::Type* el_type,
-                    bool get_pointer=false);
+                    bool get_pointer=false,
+                    ASR::symbol_t* type_declaration=nullptr);
 
                 virtual
                 void fill_array_details(
@@ -498,7 +509,7 @@ namespace LCompilers {
                     llvm::Module* module, bool reserve_data_memory=true);
 
                 virtual
-                void fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
+                void fill_array_details(ASR::expr_t* src_expr, ASR::symbol_t* dest_type_declaration,
                     llvm::Value* source, llvm::Value* destination,
                     ASR::ttype_t* source_array_type, ASR::ttype_t* dest_array_type, llvm::Module* module, bool ignore_data);
 
@@ -553,6 +564,9 @@ namespace LCompilers {
 
                 virtual
                 llvm::Type* get_dimension_descriptor_type(bool get_pointer=false);
+
+                virtual
+                bool is_array_descriptor_type(llvm::Type* type);
 
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Type* type, llvm::Value* arr);

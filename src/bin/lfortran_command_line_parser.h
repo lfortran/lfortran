@@ -59,6 +59,9 @@ namespace LCompilers::CommandLineInterface {
         std::string skip_pass;
         std::string arg_backend = "llvm";
         std::string arg_kernel_f;
+        bool arg_kernel_managed = false;
+        long long arg_kernel_parent = 0;
+        std::string connect;
         std::string linker{""};
         std::string linker_path{""};
         bool print_targets = false;
@@ -91,6 +94,7 @@ namespace LCompilers::CommandLineInterface {
         std::string arg_pywrap_file;
         std::string arg_pywrap_array_order="f";
         std::vector<std::string> linker_flags;
+        std::vector<std::string> emscripten_settings;
         std::vector<std::string> f_flags;
         std::vector<std::string> O_flags;
 

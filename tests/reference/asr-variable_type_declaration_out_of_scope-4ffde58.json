@@ -2,7 +2,7 @@
     "basename": "asr-variable_type_declaration_out_of_scope-4ffde58",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/variable_type_declaration_out_of_scope.asr",
-    "infile_hash": "58d2926198d3cd68775bab763083cf0e5d30c735abf5ceafee4d89cb",
+    "infile_hash": "884fbde4abe6e6bfb98618d55f252cd1962efb96fcb7eb1bee4f8322",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

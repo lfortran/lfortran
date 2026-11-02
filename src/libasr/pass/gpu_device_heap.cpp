@@ -2102,7 +2102,8 @@ private:
             out.push_back(b.Assignment(replacer.field(h, h.lower[d], loc),
                 replacer.as_int4(start, loc)));
             out.push_back(b.Assignment(replacer.field(h, h.extent[d], loc),
-                b.Max(replacer.as_int4(length, loc), b.i32(0))));
+                ASRUtils::Max::create_extent(al,
+                    replacer.as_int4(length, loc))));
         }
         ASR::expr_t *n = replacer.count(h, loc);
         heap.allocate(fn, h.arena, n, replacer.field(h, h.base, loc), loc,
@@ -2129,7 +2130,8 @@ private:
             ASR::expr_t *length = duplicate_expr(al, dims[d].m_length);
             expression(length);
             same = b.And(same, b.Eq(replacer.field(h, h.extent[d], loc),
-                b.Max(replacer.as_int4(length, loc), b.i32(0))));
+                ASRUtils::Max::create_extent(al,
+                    replacer.as_int4(length, loc))));
         }
         return same;
     }

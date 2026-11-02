@@ -1,0 +1,5 @@
+runtime error: Runtime error: Array 'a' index out of bounds. Tried to access index 12 of dimension 1, but valid range is 1 to 10.
+  --> tests/errors/array_bounds_check_23.f90:10:13
+   |
+10 |     s = sum(a(5:hi) * b)
+   |             ^^^^^^^

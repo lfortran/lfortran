@@ -32,6 +32,7 @@ enum class GpuExtentKind {
     Neg,        // -children[0]
     Compare,    // children[0] `cmpop` children[1]
     Select,     // children[0] ? children[1] : children[2]
+    Max,        // the larger of children[0] and children[1]
     Product,    // children[0] * children[1] * ...
     ArgScalar,  // the value of the kernel parameter `arg_index`
     ArgMember,  // the component `member_path` of parameter `arg_index`
@@ -226,6 +227,7 @@ inline void gpu_read_extent_names(const GpuExtent &e,
         case GpuExtentKind::Neg:
         case GpuExtentKind::Compare:
         case GpuExtentKind::Select:
+        case GpuExtentKind::Max:
         case GpuExtentKind::Product: {
             for (const GpuExtent &c : e.children) {
                 gpu_read_extent_names(c, names, found);
@@ -422,6 +424,37 @@ inline std::string gpu_referenced_declarations(
     return result;
 }
 
+// The device C type of the integer kind `offset_kind` a dialect computes
+// element offsets in.
+inline std::string gpu_offset_type(int offset_kind) {
+    LCOMPILERS_ASSERT(offset_kind == 4 || offset_kind == 8);
+    return offset_kind == 8 ? "long" : "int";
+}
+
+// The offset `sub - lb` of a subscript of integer kind `subscript_kind`
+// within its dimension, as device source in the integer of kind
+// `offset_kind`, the dialect's kind for element offsets. A subscript wider
+// than that is narrowed only once its lower bound is subtracted: the
+// difference fits where the subscript itself need not, as in an integer(8)
+// subscript of an array whose lower bound is 3000000000.
+//
+// The source before and after the subscript is the pair this returns, for
+// a caller that emits the subscript itself in between.
+inline std::pair<std::string, std::string> gpu_offset_term_parts(
+        const std::string &lb, int subscript_kind, int offset_kind) {
+    std::string type = gpu_offset_type(offset_kind);
+    if (subscript_kind > offset_kind) {
+        return {"((" + type + ")((", ") - (" + lb + ")))"};
+    }
+    return {"((" + type + ")(", ") - (" + lb + "))"};
+}
+
+inline std::string gpu_offset_term(const std::string &sub,
+        const std::string &lb, int subscript_kind, int offset_kind) {
+    auto parts = gpu_offset_term_parts(lb, subscript_kind, offset_kind);
+    return parts.first + sub + parts.second;
+}
+
 // An allocatable array component of a kernel argument that is an array of a
 // derived type reaches the device as three buffers: the elements' data laid
 // out end to end, the per-element offsets into it, and the per-element sizes.
@@ -449,15 +482,21 @@ inline std::string gpu_referenced_declarations(
 // component's extents travel in. The last dimension is never counted past,
 // so it needs no extent; an empty `extent(d)` says the caller has none for
 // that dimension either, and an empty subscript that it has none for it.
+//
+// Each subscript's offset is gpu_offset_term(), given the subscript's
+// integer kind in `subscript_kinds`, in the integer of kind `offset_kind`,
+// the dialect's kind for element offsets.
 inline std::string gpu_linearized_index_str(
         const std::vector<std::string> &subscripts,
+        const std::vector<int> &subscript_kinds,
         const std::function<std::string(size_t)> &lower,
-        const std::function<std::string(size_t)> &extent) {
+        const std::function<std::string(size_t)> &extent,
+        int offset_kind) {
     std::string out, stride;
     for (size_t d = 0; d < subscripts.size(); d++) {
         if (subscripts[d].empty()) continue;
-        std::string term = "((int)(" + subscripts[d] + ") - ("
-            + lower(d) + "))";
+        std::string term = gpu_offset_term(subscripts[d], lower(d),
+            subscript_kinds[d], offset_kind);
         if (!stride.empty()) term = "(" + stride + " * " + term + ")";
         out += out.empty() ? term : (" + " + term);
         if (d + 1 < subscripts.size()) {
@@ -635,6 +674,12 @@ inline ASR::Allocate_t* find_allocate_for_var(
             auto *r = find_allocate_for_var(dl->m_body, dl->n_body,
                 var_name);
             if (r) return r;
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmts[i])) {
+            ASR::DoConcurrentLoop_t *dc =
+                ASR::down_cast<ASR::DoConcurrentLoop_t>(stmts[i]);
+            auto *r = find_allocate_for_var(dc->m_body, dc->n_body,
+                var_name);
+            if (r) return r;
         } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
             ASR::If_t *if_s =
                 ASR::down_cast<ASR::If_t>(stmts[i]);
@@ -703,6 +748,18 @@ inline bool try_eval_int_constant(ASR::expr_t *e, int64_t &val) {
                 return false;
             default: return false;
         }
+    }
+    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+        auto *f = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+        if (!ASRUtils::is_intrinsic_max(*f) || f->n_args == 0) {
+            return false;
+        }
+        for (size_t i = 0; i < f->n_args; i++) {
+            int64_t arg;
+            if (!try_eval_int_constant(f->m_args[i], arg)) return false;
+            val = i == 0 ? arg : std::max(val, arg);
+        }
+        return true;
     }
     return false;
 }
@@ -1721,6 +1778,23 @@ inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
         out.children.push_back(std::move(els));
         return out;
     }
+    // max(a, b), such as the extent max(0, n) of an explicit-shape array.
+    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*v)) {
+        ASR::IntrinsicElementalFunction_t *f =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(v);
+        if (ASRUtils::is_intrinsic_max(*f) && f->n_args == 2
+                && ASRUtils::is_integer(*f->m_type)) {
+            GpuExtent l = gpu_derive_extent(f->m_args[0], scope, depth);
+            GpuExtent r = gpu_derive_extent(f->m_args[1], scope, depth);
+            if (!l.ok() || !r.ok()) return none;
+            GpuExtent out;
+            out.kind = GpuExtentKind::Max;
+            out.expr = v;
+            out.children.push_back(std::move(l));
+            out.children.push_back(std::move(r));
+            return out;
+        }
+    }
     {
         size_t idx = 0;
         std::vector<std::string> path;
@@ -2087,6 +2161,10 @@ inline ASR::expr_t* gpu_find_assigned_value(ASR::stmt_t **body,
         } else if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
             found = in(dl->m_body, dl->n_body);
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmt)) {
+            ASR::DoConcurrentLoop_t *dc =
+                ASR::down_cast<ASR::DoConcurrentLoop_t>(stmt);
+            found = in(dc->m_body, dc->n_body);
         } else if (ASR::is_a<ASR::WhileLoop_t>(*stmt)) {
             ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmt);
             found = in(wl->m_body, wl->n_body);

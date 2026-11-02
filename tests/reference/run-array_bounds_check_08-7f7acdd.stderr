@@ -1,11 +1,8 @@
-runtime error: Array shape mismatch in subroutine 'ff'. Tried to match size 5 of dimension 1 of argument number 1, but expected size is 100000
+runtime error: Array shape mismatch in assignment to 'arr'. Tried to match size 5 of dimension 1 of LHS with size 100000 of dimension 1 of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
  --> tests/errors/array_bounds_check_08.f90:4:3
   |
 4 |   arr = ff()
-  |   ^^^
+  |   ^^^ LHS size is 5
   |
-8 |     function ff() result(res)
-  |              ~~ Here
-  |
-9 |         integer :: res(100000)
-  |                        ~~~~~~ Parameter is size 100000, argument is size 5
+4 |   arr = ff()
+  |   ^^^ RHS size is 100000

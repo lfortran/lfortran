@@ -27,6 +27,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -50,6 +51,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -77,6 +79,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -100,6 +103,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -127,6 +131,125 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_extent_a_1:
+                                (Variable
+                                    5
+                                    __libasr_extent_a_1
+                                    [__dim_a_0]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Max
+                                        [(IntegerConstant 0 (Integer 4) Decimal)
+                                        (Var 5 __dim_a_0)]
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_extent_b_1:
+                                (Variable
+                                    5
+                                    __libasr_extent_b_1
+                                    [__dim_b_0]
+                                    Local
+                                    (IntrinsicElementalFunction
+                                        Max
+                                        [(IntegerConstant 0 (Integer 4) Decimal)
+                                        (Var 5 __dim_b_0)]
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_lbound_a_1:
+                                (Variable
+                                    5
+                                    __libasr_lbound_a_1
+                                    [__lb_a_0]
+                                    Local
+                                    (Var 5 __lb_a_0)
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_lbound_b_1:
+                                (Variable
+                                    5
+                                    __libasr_lbound_b_1
+                                    [__lb_b_0]
+                                    Local
+                                    (Var 5 __lb_b_0)
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -152,6 +275,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -161,16 +285,16 @@
                                 (Variable
                                     5
                                     a
-                                    [__lb_a_0
-                                    __dim_a_0]
+                                    [__libasr_lbound_a_1
+                                    __libasr_extent_a_1]
                                     InOut
                                     ()
                                     ()
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((Var 5 __lb_a_0)
-                                        (Var 5 __dim_a_0))]
+                                        [((Var 5 __libasr_lbound_a_1)
+                                        (Var 5 __libasr_extent_a_1))]
                                         DescriptorArray
                                         Global
                                     )
@@ -182,6 +306,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -193,16 +318,16 @@
                                 (Variable
                                     5
                                     b
-                                    [__lb_b_0
-                                    __dim_b_0]
+                                    [__libasr_lbound_b_1
+                                    __libasr_extent_b_1]
                                     InOut
                                     ()
                                     ()
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((Var 5 __lb_b_0)
-                                        (Var 5 __dim_b_0))]
+                                        [((Var 5 __libasr_lbound_b_1)
+                                        (Var 5 __libasr_extent_b_1))]
                                         DescriptorArray
                                         Global
                                     )
@@ -214,6 +339,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -241,6 +367,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -264,6 +391,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -536,6 +664,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -559,6 +688,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -586,6 +716,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -609,6 +740,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -644,30 +776,6 @@
                                     ()
                                     .false.
                                     .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
-                            __libasr__created__var__0__idl_save_:
-                                (Variable
-                                    2
-                                    __libasr__created__var__0__idl_save_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
                                     .false.
                                     NotMethod
                                     ()
@@ -701,30 +809,6 @@
                                     .false.
                                     ()
                                     .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
-                            __libasr__created__var__1__idl_save_:
-                                (Variable
-                                    2
-                                    __libasr__created__var__1__idl_save_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
                                     .false.
                                     .false.
                                     NotMethod
@@ -760,6 +844,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -793,6 +878,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -816,6 +902,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -843,6 +930,59 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            lfortran_implied_do_i:
+                                (Variable
+                                    2
+                                    lfortran_implied_do_i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            lfortran_implied_do_i1:
+                                (Variable
+                                    2
+                                    lfortran_implied_do_i1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -866,6 +1006,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -1085,6 +1226,8 @@
                     )
                     (ExplicitDeallocate
                         [(Var 2 __libasr__created__var__0__array_constructor_)]
+                        ()
+                        ()
                     )
                     (Allocate
                         [((Var 2 __libasr__created__var__0__array_constructor_)
@@ -1119,21 +1262,12 @@
                         .false.
                         .false.
                     )
-                    (Assignment
-                        (Var 2 __libasr__created__var__0__idl_save_)
-                        (Var 2 i)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
                     (DoLoop
                         ()
-                        ((Var 2 i)
+                        ((Var 2 lfortran_implied_do_i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(Assignment
                             (ArrayItem
                                 (Var 2 __libasr__created__var__0__array_constructor_)
@@ -1159,7 +1293,7 @@
                                 Mul
                                 (IntrinsicElementalFunction
                                     Real
-                                    [(Var 2 i)]
+                                    [(Var 2 lfortran_implied_do_i)]
                                     0
                                     (Real 4)
                                     ()
@@ -1190,15 +1324,6 @@
                         )]
                         []
                     )
-                    (Assignment
-                        (Var 2 i)
-                        (Var 2 __libasr__created__var__0__idl_save_)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
                     (If
                         ()
                         (IntrinsicArrayFunction
@@ -1227,6 +1352,8 @@
                     )
                     (ExplicitDeallocate
                         [(Var 2 __libasr__created__var__1__array_constructor_)]
+                        ()
+                        ()
                     )
                     (Allocate
                         [((Var 2 __libasr__created__var__1__array_constructor_)
@@ -1261,21 +1388,12 @@
                         .false.
                         .false.
                     )
-                    (Assignment
-                        (Var 2 __libasr__created__var__1__idl_save_)
-                        (Var 2 i)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
                     (DoLoop
                         ()
-                        ((Var 2 i)
+                        ((Var 2 lfortran_implied_do_i1)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(Assignment
                             (ArrayItem
                                 (Var 2 __libasr__created__var__1__array_constructor_)
@@ -1313,7 +1431,7 @@
                                     Mul
                                     (IntrinsicElementalFunction
                                         Real
-                                        [(Var 2 i)]
+                                        [(Var 2 lfortran_implied_do_i1)]
                                         0
                                         (Real 4)
                                         ()
@@ -1346,15 +1464,6 @@
                             .false.
                         )]
                         []
-                    )
-                    (Assignment
-                        (Var 2 i)
-                        (Var 2 __libasr__created__var__1__idl_save_)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
                     )
                     (If
                         ()

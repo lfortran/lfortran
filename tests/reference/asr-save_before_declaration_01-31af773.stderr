@@ -1,0 +1,17 @@
+semantic error: Save `x` has no IMPLICIT Type, use `--implicit-typing`
+ --> tests/errors/save_before_declaration_01.f90:6:10
+  |
+6 |     save x
+  |          ^ 
+
+semantic error: Save `y` has no IMPLICIT Type, use `--implicit-typing`
+  --> tests/errors/save_before_declaration_01.f90:12:14
+   |
+12 |         save y
+   |              ^ 
+
+semantic error: Save `z` has no IMPLICIT Type, use `--implicit-typing`
+  --> tests/errors/save_before_declaration_01.f90:22:22
+   |
+22 |                 save z
+   |                      ^ 

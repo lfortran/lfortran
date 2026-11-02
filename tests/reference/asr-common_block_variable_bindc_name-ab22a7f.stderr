@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.variable.common_block_storage]: Variable 'n' is in a common block, so it cannot be a dummy argument, a result, a named constant, a coarray, allocatable, threadprivate or bound to a name of its own
-   --> tests/asr/verify/common_block_variable_bindc_name.asr:150:18
+   --> tests/asr/verify/common_block_variable_bindc_name.asr:152:18
     |
-150 |             "n" (Variable
+152 |             "n" (Variable
     |                  ^^^^^^^^ failed here

@@ -2,12 +2,12 @@
     "basename": "asr-storage_size_noncharacter_argument-766db23",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/storage_size_noncharacter_argument.asr",
-    "infile_hash": "4bb4e916d8685dd67ac17b463d4b092b48da03c9670655f9eee91043",
+    "infile_hash": "d033553cd25a58f6dbefe615d135d7a46d600d430759dfb2cf78d59a",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-storage_size_noncharacter_argument-766db23.stderr",
-    "stderr_hash": "3185407a1aed77f984fb85f451ec862a4e3e95c9b08e50bd1171a0cb",
+    "stderr_hash": "1b4a145ec24aa6b21442d7a008200f427bb59e02d3168bcdabc0c650",
     "returncode": 2
 }

@@ -583,13 +583,14 @@ public:
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions, LCompilers::LocationManager &lm)
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
             external_procedures_mapping,
             explicit_intrinsic_procedures_mapping,
             instantiate_types, instantiate_symbols, entry_functions,
-            entry_function_arguments_mapping, data_structure, lm
+            entry_function_arguments_mapping, data_structure, getter_functions, lm
         ) {}
 
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
@@ -605,6 +606,14 @@ public:
         // for asr_owner.
         ASR::asr_t *tmp0 = ASR::make_TranslationUnit_t(al, x.base.base.loc,
             current_scope, nullptr, 0, nullptr);
+        if (compiler_options.interactive) {
+            auto &types = implicit_mapping[get_hash(tmp0)];
+            types = implicit_dictionary;
+            if (types.empty()) {
+                Location loc = x.base.base.loc;
+                populate_implicit_dictionary(loc, types);
+            }
+        }
 
         // The declarations of the global scope of interactive evaluation. As
         // in a scoping unit, its EQUIVALENCE statements are visited after
@@ -627,6 +636,9 @@ public:
                 }
             }
             try {
+                if (compiler_options.interactive) {
+                    implicit_dictionary = implicit_mapping[get_hash(tmp0)];
+                }
                 visit_ast(*x.m_items[i]);
                 if (t == AST::astType::program_unit) {
                     // An external procedure has no host to build its generic
@@ -663,6 +675,7 @@ public:
         // followed by a module or a main program.
         add_overloaded_procedures();
         check_pending_instantiation_restrictions();
+        report_saved_without_declaration();
         global_scope = nullptr;
         tmp = tmp0;
         if (pre_declared_array_dims.size() > 0) {
@@ -683,6 +696,23 @@ public:
                 throw SemanticAbort();
             }
         }
+    }
+
+    void visit_ImplicitNone(const AST::ImplicitNone_t &x) {
+        for (size_t i = 0; i < x.n_specs; i++) {
+            if (AST::is_a<AST::ImplicitNoneExternal_t>(*x.m_specs[i])) {
+                diag.semantic_error_label(
+                    "implicit none(external) is not supported in interactive cells",
+                    {x.base.base.loc}, "unsupported implicit none specifier");
+                throw SemanticAbort();
+            }
+        }
+        auto &types = implicit_mapping[get_hash(current_scope->asr_owner)];
+        for (char ch = 'a'; ch <= 'z'; ch++) {
+            types[std::string(1, ch)] = nullptr;
+        }
+        implicit_dictionary = types;
+        tmp = nullptr;
     }
 
     void visit_Private(const AST::Private_t&) {
@@ -7671,13 +7701,18 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure, LCompilers::LocationManager &lm)
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions, LCompilers::LocationManager &lm,
+        const std::map<std::string, ASR::ttype_t*> *interactive_implicit_types)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
                          implicit_mapping, external_procedures_mapping,
                          explicit_intrinsic_procedures_mapping,
                          instantiate_types, instantiate_symbols, entry_functions,
-                         entry_function_arguments_mapping, data_structure, lm);
+                         entry_function_arguments_mapping, data_structure, getter_functions, lm);
+    if (interactive_implicit_types) {
+        v.implicit_dictionary = *interactive_implicit_types;
+    }
     try {
         v.visit_TranslationUnit(ast);
     } catch (const SemanticAbort &) {
@@ -7698,12 +7733,13 @@ BlockInterfaceVisitor::BlockInterfaceVisitor(Allocator &al, SymbolTable *block_s
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions,
         LCompilers::LocationManager &lm)
     : v(std::make_unique<SymbolTableVisitor>(al, block_scope, diagnostics,
         compiler_options, implicit_mapping, external_procedures_mapping,
         explicit_intrinsic_procedures_mapping, instantiate_types,
         instantiate_symbols, entry_functions, entry_function_arguments_mapping,
-        data_structure, lm))
+        data_structure, getter_functions, lm))
 {
     v->global_scope = block_scope;
     while (v->global_scope->parent != nullptr) {
@@ -7722,6 +7758,7 @@ void BlockInterfaceVisitor::finalize(Allocator &al, SetChar &module_dependencies
         std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> &construct_variable_pointers)
 {
     v->finalize_interfaces();
+    v->report_saved_without_declaration();
     for (size_t i = 0; i < v->current_module_dependencies.size(); i++) {
         module_dependencies.push_back(al, v->current_module_dependencies[i]);
     }

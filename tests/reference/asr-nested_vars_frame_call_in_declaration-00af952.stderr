@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.nested_vars.frame_call_in_declaration]: the declaration of 'm' calls the internal procedure 'g', which takes the frame of its host, before the frame is bound
+   --> tests/asr/verify/nested_vars_frame_call_in_declaration.asr:233:24
+    |
+233 |                   "m" (Variable
+    |                        ^^^^^^^^ failed here

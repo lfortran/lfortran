@@ -1,6 +1,7 @@
 program string_37
     character(5) :: string
     character(:), pointer :: string2 
+    string = "abcde"
     print*, max(maybe(string), 'works')
     if (max(maybe(string), 'works') /= 'works') error stop 
     string2 => cast_to_string()
@@ -12,6 +13,7 @@ program string_37
     function maybe(string) result(maybe_string)
         character(5) :: string
         character(len=len(string)) :: maybe_string
+        maybe_string = string
     end function maybe
     function cast_to_string() result(str)
         character(len=:), pointer :: str

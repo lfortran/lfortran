@@ -27,6 +27,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -50,6 +51,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -77,6 +79,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -100,6 +103,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -127,6 +131,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -150,6 +155,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -182,6 +188,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                     NotMethod
                                                     ()
                                                     []
@@ -205,6 +212,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                     NotMethod
@@ -280,6 +288,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -311,6 +320,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -340,6 +350,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                     .false.
                                     NotMethod
@@ -420,7 +431,7 @@
                             UBound
                             ()
                         )
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(Assignment
                             (ArrayItem
                                 (Var 2 x)
@@ -526,7 +537,7 @@
                             UBound
                             ()
                         )
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(Assignment
                             (ArrayItem
                                 (Var 2 x)
@@ -603,7 +614,7 @@
                             UBound
                             ()
                         )
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(SubroutineCall
                             2 scale
                             ()

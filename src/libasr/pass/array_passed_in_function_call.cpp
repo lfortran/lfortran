@@ -115,13 +115,14 @@ public:
     const LCompilers::PassOptions& pass_options;
 
     // Variables that were associated (by pass_array_by_data) with an
-    // ArraySection whose source array is UnboundedPointerArray (assumed-size)
-    // or FixedSizeArray (sequence association via --legacy-array-sections).
-    // Copy-in/copy-out must be skipped for these because:
-    // - UnboundedPointerArray: section bounds reference undefined UBound
-    // - FixedSizeArray: sequence association requires the callee to index the
-    //   original contiguous memory with its own leading dimension
-    std::set<ASR::symbol_t*> vars_from_assumed_size_sections;
+    // ArraySection that is passed without copy-in/copy-out:
+    // - a section of an UnboundedPointerArray (assumed-size) array whose
+    //   bounds reference its undefined UBound: the size of the copy cannot
+    //   be determined;
+    // - a simply contiguous section of a FixedSizeArray, such as b(2:4) or
+    //   a(:, j): it is known to be contiguous at compile time, so no
+    //   run-time contiguity check is needed.
+    std::set<ASR::symbol_t*> vars_from_uncopied_sections;
 
     CallVisitor(Allocator &al_, const LCompilers::PassOptions& pass_options_) : al(al_), pass_options(pass_options_) {}
 
@@ -151,10 +152,10 @@ public:
                 return false;
             }
             ASR::expr_t* inner = cast->m_arg;
-            // An allocatable array is always contiguous, so its data is
-            // passed as it is, without a copy-in temporary.
+            // Contiguous arrays can pass their data without a copy-in temporary.
             ASR::ttype_t* inner_type = ASRUtils::expr_type(inner);
-            if ( ASRUtils::is_allocatable(inner_type) &&
+            if ( (ASRUtils::is_allocatable(inner_type) ||
+                    ASRUtils::is_contiguous_array_designator(inner)) &&
                  !ASRUtils::is_class_type(ASRUtils::extract_type(inner_type)) ) {
                 return false;
             }
@@ -172,10 +173,11 @@ public:
                 }
             }
             // Also skip when the inner Var was created by an earlier pass
-            // (pass_array_by_data) from an ArraySection of an assumed-size array.
+            // (pass_array_by_data) from an ArraySection of an assumed-size
+            // array or from a contiguous section of a fixed-size array.
             if ( ASR::is_a<ASR::Var_t>(*inner) ) {
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(inner)->m_v;
-                if ( vars_from_assumed_size_sections.count(sym) ) {
+                if ( vars_from_uncopied_sections.count(sym) ) {
                     return false;
                 }
             }
@@ -814,8 +816,11 @@ public:
                     for( size_t i = 0; i < n_dims; i++ ) {
                         ASR::dimension_t allocate_dim;
                         allocate_dim.loc = loc;
-                        allocate_dim.m_start = index_one;
-                        allocate_dim.m_length = b.ArrayUBound(value, i+1);
+                        // The copy loop uses the same indices in both arrays.
+                        // Keep the source bounds, not a 1:ubound allocation.
+                        allocate_dim.m_start = b.ArrayLBound(value, i+1, get_index_kind());
+                        allocate_dim.m_length = b.ArraySize(value,
+                            get_index_constant(loc, i + 1), index_type);
                         allocate_dims.push_back(al, allocate_dim);
                     }
                 } else {
@@ -926,7 +931,7 @@ public:
                     current_body->push_back(al,
                         b.If(not_is_contiguous, {
                             ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
-                                array_var_temporary->base.loc, dealloc_args.p, dealloc_args.size())),
+                                array_var_temporary->base.loc, dealloc_args.p, dealloc_args.size(), nullptr, nullptr)),
                             ASRUtils::STMT(ASR::make_Allocate_t(al,
                                 array_var_temporary->base.loc, alloc_args.p, alloc_args.size(),
                                 nullptr, nullptr, nullptr)),
@@ -950,7 +955,7 @@ public:
                     body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
                         ASRUtils::STMT(ASR::make_Nullify_t(al, loc, dealloc_args.p, dealloc_args.size()))
                     }, {
-                        ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, dealloc_args.p, dealloc_args.size()))
+                        ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, dealloc_args.p, dealloc_args.size(), nullptr, nullptr))
                     }));
                 } else {
                     x_m_args_vec.push_back(al, x_m_args[i]);
@@ -1068,34 +1073,36 @@ public:
     }
 
     void visit_Function(const ASR::Function_t& x) {
-        vars_from_assumed_size_sections.clear();
+        vars_from_uncopied_sections.clear();
         ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_Function(x);
     }
 
     // Track Associate statements created by pass_array_by_data where the
-    // source is an ArraySection of an assumed-size (UnboundedPointerArray)
-    // array or a FixedSizeArray (sequence association via --legacy-array-sections).
-    // For UnboundedPointerArray: allocation size cannot be determined (undefined UBound).
-    // For FixedSizeArray: sequence association requires the callee to index the
-    // original contiguous memory with its own leading dimension; copy-in would
-    // create a packed temporary with wrong memory layout.
+    // source is an ArraySection that is passed without copy-in/copy-out
+    // (see vars_from_uncopied_sections). Every other section, such as
+    // a(1, :) of a fixed-size array, may be non-contiguous, so it gets
+    // copy-in/copy-out. An array element passed for sequence association
+    // (with --legacy-array-sections) is not a section here: semantics
+    // passes it as the address of the element.
     void visit_Associate(const ASR::Associate_t& x) {
         if ( ASR::is_a<ASR::ArraySection_t>(*x.m_value) &&
              ASR::is_a<ASR::Var_t>(*x.m_target) ) {
             ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_value);
             ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
             if ( ASRUtils::is_array(source_type) ) {
+                // is_simply_contiguous reads ASR rewritten by earlier passes
+                // here, where a true result still holds (see its comment).
+                // The base of a FixedSizeArray section is the array itself:
+                // the pointers that passes put in place of a section, such
+                // as the section pointers of array_struct_temporary, are
+                // DescriptorArray.
                 ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(source_type);
-                bool track = false;
-                if ( phys == ASR::array_physical_typeType::UnboundedPointerArray &&
-                     has_undefined_assumed_size_bound(section) ) {
-                    track = true;
-                } else if ( phys == ASR::array_physical_typeType::FixedSizeArray ) {
-                    track = true;
-                }
-                if ( track ) {
+                if ( (phys == ASR::array_physical_typeType::UnboundedPointerArray &&
+                        has_undefined_assumed_size_bound(section)) ||
+                     (phys == ASR::array_physical_typeType::FixedSizeArray &&
+                        ASRUtils::is_simply_contiguous(x.m_value)) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
-                    vars_from_assumed_size_sections.insert(sym);
+                    vars_from_uncopied_sections.insert(sym);
                 }
             }
         }

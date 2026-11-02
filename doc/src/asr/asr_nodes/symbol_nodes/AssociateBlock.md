@@ -61,6 +61,7 @@ body, which binds the name to the target expression rather than copying it.
         :contiguous_attr false
         :bindc_name nil
         :is_volatile false
+        :is_asynchronous false
         :is_protected false
         :pass_attr :NotMethod
         :self_argument nil

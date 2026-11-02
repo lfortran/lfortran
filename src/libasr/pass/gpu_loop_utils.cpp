@@ -231,7 +231,7 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
         head.m_start = starts[k];
         head.m_end = ends[k];
         head.m_increment = nullptr;
-        ASR::stmt_t *loop = ASRUtils::STMT(ASR::make_DoLoop_t(al,
+        ASR::stmt_t *loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al,
             l->base.base.loc, nullptr, head, cur_body, cur_n, nullptr, 0));
         Vec<ASR::stmt_t*> one;
         one.reserve(al, 1);
@@ -326,7 +326,7 @@ ASR::stmt_t *gpu_device_copy_nest(Allocator &al, const Location &loc,
             ASRUtils::duplicate_type(al, it), ASR::arrayboundType::UBound,
             nullptr));
         head.m_increment = nullptr;
-        ASR::stmt_t *loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+        ASR::stmt_t *loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,
             nullptr, head, body.p, body.n, nullptr, 0));
         Vec<ASR::stmt_t*> one;
         one.reserve(al, 1);
@@ -1979,7 +1979,8 @@ bool gpu_may_be_aliased(ASR::symbol_t *s,
     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
     if (v->m_storage == ASR::storage_typeType::Parameter) return false;
     return v->m_target_attr || ASRUtils::is_pointer(v->m_type)
-        || v->m_common_block || v->m_is_volatile || address_taken.count(s);
+        || v->m_common_block || v->m_is_volatile || v->m_is_asynchronous
+        || address_taken.count(s);
 }
 
 } // namespace LCompilers

@@ -2,7 +2,7 @@
     "basename": "asr-common_block_role_initialized_no_initializer-e665178",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/common_block_role_initialized_no_initializer.asr",
-    "infile_hash": "14e2fda6817f11b306401e835063582838eb702624d378f70519c781",
+    "infile_hash": "f7f3f702f2e88ce6cb5a0249d9afcf792a2ac938cfa46126acdb5392",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

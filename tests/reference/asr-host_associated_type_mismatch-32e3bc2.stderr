@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.host_associated.type]: the host associated variable 'n' has type Pointer[i32], but the reference member it is bound to references i32
+   --> tests/asr/verify/host_associated_type_mismatch.asr:119:26
+    |
+119 |                     "n" (Variable
+    |                          ^^^^^^^^ failed here

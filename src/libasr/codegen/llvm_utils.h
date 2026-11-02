@@ -218,6 +218,14 @@ class ASRToLLVMVisitor;
         // the alignment of `type`.
         llvm::MaybeAlign known_underalignment(llvm::Type *type,
             llvm::Value *address, const llvm::DataLayout &data_layout);
+        // Gives a local array stored on the stack (an alloca of at least 16
+        // bytes) the 16-byte alignment that malloc gives arrays allocated on
+        // the heap. The ABI alignment of an array type is only that of its
+        // element, and vector loads and stores of a less aligned array can
+        // straddle cache lines. Never lowers the alignment; does nothing if
+        // `ptr` is not an alloca.
+        void align_stack_array(llvm::Value *ptr,
+            const llvm::DataLayout &data_layout);
         // A store that claims only the alignment its address is known to
         // have (known_underalignment).
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
@@ -419,7 +427,7 @@ class ASRToLLVMVisitor;
             llvm::Value* lfortran_free_nocheck(llvm::Value* ptr);
             llvm::Value* lfortran_free_alloc(llvm::Value* allocator, llvm::Value* ptr);
 
-            // Get or create the cached global allocator pointer
+            // Emit a local getter under native --fast; otherwise cache in entry.
             llvm::Value* get_allocator(llvm::Module* mod);
 
             llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr, llvm::Value* round_mode=nullptr, bool leading_blank=false,
@@ -627,8 +635,11 @@ class ASRToLLVMVisitor;
                 - If not deferred length, Use length set by user while declaration.
                 - If deferred length, set the desired amount as the current length.
                 - If not deferred length, Keep the length set by the user while declaration.
+                - If `check_allocated` (an allocatable, not a pointer), stop with a runtime
+                  error when the string is already allocated.
             */
-            void allocate_allocatable_string(ASR::String_t* str_type,llvm::Value* str, llvm::Value* amount_to_allocate);
+            void allocate_allocatable_string(ASR::String_t* str_type,llvm::Value* str, llvm::Value* amount_to_allocate,
+                bool check_allocated);
 
             /*
                 Corresponds to the process of allocating an array of strings.
@@ -746,7 +757,12 @@ class ASRToLLVMVisitor;
 
             llvm::Value* is_ineq_by_value(llvm::Value* left, llvm::Value* right,
                                           llvm::Module* module, ASR::ttype_t* asr_type,
-                                          int8_t overload_id, ASR::ttype_t* int32_type=nullptr);
+                                          int8_t overload_id);
+
+            // The signed comparison of two integers of the same type, with
+            // the overload ids of `is_ineq_by_value`.
+            llvm::Value* is_integer_ineq(llvm::Value* left, llvm::Value* right,
+                                         int8_t overload_id);
             /**
              * @brief Gets array element if array of classes
              * @param class_symbol   Symbol of the class. Used to create another class type (llvm) that holds the element + VTable.
@@ -842,11 +858,23 @@ class ASRToLLVMVisitor;
             // Returns LLVM Type Based On String's PhysicalType
             llvm::Type* get_StringType(ASR::ttype_t* type);
 
-            llvm::Type* get_el_type(ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Module* module);
+            // The struct or union an element of type `m_type_` has is the one
+            // of `expr`, or `type_declaration` when there is no expression.
+            llvm::Type* get_el_type(ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Module* module,
+                ASR::symbol_t* type_declaration=nullptr);
 
-            llvm::Type* get_dict_type(ASR::expr_t* dict_expr, ASR::ttype_t* asr_type, llvm::Module* module);
+            llvm::Type* get_dict_type(ASR::expr_t* dict_expr, ASR::ttype_t* asr_type, llvm::Module* module,
+                ASR::symbol_t* type_declaration=nullptr);
 
-            llvm::Type* get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module);
+            llvm::Type* get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module,
+                ASR::symbol_t* type_declaration=nullptr);
+
+            // The type of a list of `el_type` elements, laid out as
+            // `el_llvm_type` of kind `a_kind`; the second form lays the
+            // element out itself.
+            llvm::Type* get_list_type(llvm::Type* el_llvm_type, ASR::ttype_t* el_type,
+                int32_t a_kind, llvm::Module* module);
+            llvm::Type* get_list_type(ASR::ttype_t* el_type, llvm::Module* module);
 
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
@@ -1133,6 +1161,18 @@ class ASRToLLVMVisitor;
 
         void finalize_variable(ASR::Variable_t* const v){
             if(not_finalizable_variable(v)) return;
+            if (llvm_utils_->compiler_options.po.stack_arrays &&
+                    ASR::is_a<ASR::Array_t>(*v->m_type)) {
+                ASR::ttype_t* element = ASRUtils::extract_type(v->m_type);
+                // declare_vars allocates ordinary numeric arrays on the
+                // stack in this mode. They have no element resources to
+                // finalize; their scope reclaims storage, not the allocator.
+                // Allocatable and pointer arrays do not enter this branch.
+                if (ASRUtils::is_integer(*element) || ASRUtils::is_real(*element) ||
+                        ASRUtils::is_complex(*element) || ASRUtils::is_logical(*element)) {
+                    return;
+                }
+            }
             if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
@@ -2532,8 +2572,9 @@ class ASRToLLVMVisitor;
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             // The storage of a common block outlives every scope that
-            // declares the block.
-            if (v->m_common_block != nullptr) {
+            // declares the block, and a HostAssociated variable denotes a
+            // variable of the host, which the host owns.
+            if (!ASRUtils::has_own_storage(*v)) {
                 return true;
             }
             if (LLVM::is_struct_value_dummy_copied(*v)) {
@@ -2755,6 +2796,8 @@ class ASRToLLVMVisitor;
                 return true;
                 case ASR::FunctionType:
                 case ASR::CPtr:
+                // A reference refers to a variable that something else owns.
+                case ASR::Reference:
                     return false;
                 default:
                     throw LCompilersException("Handle this case");
@@ -3063,6 +3106,29 @@ class ASRToLLVMVisitor;
             });
         }
 
+        /**
+         * Free a SAVE allocatable array of a procedure at program exit.
+         *
+         * Like `finalize_saved_struct_variable`: the array outlives every
+         * call to its procedure, so only the program can free what it holds.
+         *
+         * @param v the save variable
+         * @param ptr llvm global holding the pointer to its descriptor
+         */
+        void finalize_saved_allocatable_array(ASR::Variable_t* const v, llvm::Value* const ptr){
+            LCOMPILERS_ASSERT(ASRUtils::is_allocatable(v->m_type) && ASRUtils::is_array(v->m_type))
+            ASR::Struct_t* const struct_sym = get_struct_sym(v);
+            if(!is_finalizable_type(v->m_type, struct_sym, false)) { return; }
+            insert_BB_for_readability((std::string("Finalize_Saved_Variable_") + v->m_name).c_str());
+            llvm::Value* const array_desc = llvm_utils_->CreateLoad2(
+                get_llvm_type(v->m_type, struct_sym), ptr);
+            // The program is terminating, so the variable is not finalized
+            // (F2018 7.5.6.4): only its memory is freed.
+            with_final_subroutines(false, [&]() {
+                check_userDefinedFinalizer_then_finalize(array_desc, v->m_type, struct_sym, false);
+            });
+        }
+
         // Wrapper to the `get_UPoly_finalize_fn(ASR::ttype_t*, ASR::Struct_t*, bool)` below
         llvm::Function* get_UPoly_finalize_fn(ASR::Struct_t* const struct_sym, const bool call_final_subroutines){
             ASR::StructType_t* const struct_t = ASR::down_cast<ASR::StructType_t>(struct_sym->m_struct_signature);
@@ -3235,7 +3301,7 @@ class ASRToLLVMVisitor;
             llvm::Value* check_list_inequality(llvm::Value* l1, llvm::Value* l2,
                 ASR::ttype_t *item_type, llvm::LLVMContext& context,
                 llvm::IRBuilder<>* builder, llvm::Module* module,
-                int8_t overload_id, ASR::ttype_t* int32_type=nullptr);
+                int8_t overload_id);
 
             void list_repeat_copy(ASR::List_t* list_type, llvm::Value* repeat_list, llvm::Value* init_list,
                                   llvm::Value* num_times, llvm::Value* init_list_len,

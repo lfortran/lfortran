@@ -631,7 +631,7 @@ private:
             head.m_end = b.ArraySize(target, b.i32(d + 1),
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
             head.m_increment = nullptr;
-            ASR::stmt_t *loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+            ASR::stmt_t *loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,
                 s2c(al, ""), head, nest.p, nest.n, nullptr, 0));
             Vec<ASR::stmt_t*> outer;
             outer.reserve(al, 1);

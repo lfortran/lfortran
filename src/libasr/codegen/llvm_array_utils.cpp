@@ -197,7 +197,7 @@ namespace LCompilers {
 
         llvm::Type* SimpleCMODescriptor::get_array_type
         (ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Type* el_type,
-        bool get_pointer) {
+        bool get_pointer, ASR::symbol_t* type_declaration) {
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_);
             if (n_dims == 0) {
                 // Assumed-rank callee parameter: use CFI_MAX_RANK (15) as
@@ -207,7 +207,8 @@ namespace LCompilers {
                 // and asr_to_llvm.cpp polymorphic descriptor handling).
                 n_dims = 15;
             }
-            std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr);
+            std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr,
+                type_declaration);
             if (ASRUtils::is_character(*m_type_)) {
                 ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(m_type_));
                 if (str_type->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
@@ -244,6 +245,7 @@ namespace LCompilers {
             llvm::StructType* new_array_type = llvm::StructType::create(
                 context, array_type_vec, "array." + std::to_string(n_dims));
             tkr2array[array_key] = std::make_pair(new_array_type, el_type);
+            array_descriptor_types.insert(new_array_type);
             if( get_pointer ) {
                 return tkr2array[array_key].first->getPointerTo();
             }
@@ -279,7 +281,12 @@ namespace LCompilers {
             llvm::StructType* new_type = llvm::StructType::create(
                 context, array_type_vec, "array." + std::to_string(n_dims));
             rank_array_cache[key] = new_type;
+            array_descriptor_types.insert(new_type);
             return new_type;
+        }
+
+        bool SimpleCMODescriptor::is_array_descriptor_type(llvm::Type* type) {
+            return array_descriptor_types.find(type) != array_descriptor_types.end();
         }
 
         llvm::Value* SimpleCMODescriptor::allocate_descriptor_on_heap(
@@ -396,7 +403,7 @@ namespace LCompilers {
             llvm::Value* first_ptr = get_pointer_to_data(arr_ty, arr);
             llvm::Value* arr_first = nullptr;
 
-            if( !co.stack_arrays ) {
+            if( !co.po.stack_arrays ) {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                 builder->CreateStore(builder->CreateMul(
@@ -413,7 +420,7 @@ namespace LCompilers {
             builder->CreateStore(arr_first, first_ptr);
         }
 
-        void SimpleCMODescriptor::fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
+        void SimpleCMODescriptor::fill_array_details(ASR::expr_t* src_expr, ASR::symbol_t* dest_type_declaration,
             llvm::Value* source, llvm::Value* destination,
             ASR::ttype_t* source_type, ASR::ttype_t* destination_type, llvm::Module* module, bool ignore_data) {
             if( !ignore_data ) {
@@ -422,7 +429,7 @@ namespace LCompilers {
             }
 
             llvm::Type *source_array_type = llvm_utils->get_type_from_ttype_t_util(src_expr, source_type, module);
-            llvm::Type *dest_array_type = llvm_utils->get_type_from_ttype_t_util(dest_expr, destination_type, module);
+            llvm::Type *dest_array_type = llvm_utils->get_type_from_ttype_t_util(destination_type, dest_type_declaration, module);
 
             llvm::Value* source_offset_val = this->get_offset(source_array_type, source);
             builder->CreateStore(source_offset_val, this->get_offset(dest_array_type, destination, false));

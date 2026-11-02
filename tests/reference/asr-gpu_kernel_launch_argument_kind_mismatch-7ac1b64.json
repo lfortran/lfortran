@@ -2,12 +2,12 @@
     "basename": "asr-gpu_kernel_launch_argument_kind_mismatch-7ac1b64",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/gpu_kernel_launch_argument_kind_mismatch.asr",
-    "infile_hash": "f62115db277f948e168126020893ace2aea3107e648c425824c997ac",
+    "infile_hash": "2b5c5cb5523117fda43537c8431fe775cb2f12321eef3cb1faec4243",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-gpu_kernel_launch_argument_kind_mismatch-7ac1b64.stderr",
-    "stderr_hash": "4d49103c838865d456fbd51af44591f49f16141dbc286eb381aa388f",
+    "stderr_hash": "6c3c64793951b3829476e2a678539688d95cca9c2d57dfed50b2053a",
     "returncode": 2
 }

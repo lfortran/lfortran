@@ -3,6 +3,7 @@
 
 #include <complex>
 #include <iostream>
+#include <map>
 #include <memory>
 
 #include <libasr/alloc.h>
@@ -149,10 +150,9 @@ public:
 private:
     std::unique_ptr<llvm::LLVMContext> context;
     std::string TempDir;
-    // Each executor instance gets a unique ID so that __lfortran_evaluate_N
-    // function names are globally unique across all loaded side modules.
-    // This allows dlsym(RTLD_DEFAULT) to always find the right symbol without
-    // needing to track per-module dlopen handles.
+    // Definitions belong to this executor; imports of them from later modules
+    // use the same names. Runtime imports remain in the process namespace.
+    std::map<std::string, std::string> symbols;
     int m_id;
 };
 

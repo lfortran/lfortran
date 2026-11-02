@@ -2,12 +2,12 @@
     "basename": "asr-debug_check_array_bounds_extent_type-512204a",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/debug_check_array_bounds_extent_type.asr",
-    "infile_hash": "bfb92ec27ef83fe161737df7c39ef9cded455d2fc717e767f03b0b55",
+    "infile_hash": "e703083a3b20116f5ffa30950e78c25f11be66083ef8a5b2f8e84e45",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-debug_check_array_bounds_extent_type-512204a.stderr",
-    "stderr_hash": "338c2e8360fe82757b9dc6bee88fb7a993cd8d61a0210779c07bc4d5",
+    "stderr_hash": "98a34a5aa276c11c0eec1d2afb1aefe18f574cd6d1772a44ed62283f",
     "returncode": 2
 }

@@ -13,6 +13,7 @@ Assign
 Assignment
 Associate
 AssociateBlockCall
+BindReference
 BlockCall
 ChangeTeam
 CPtrToPointer

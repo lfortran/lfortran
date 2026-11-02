@@ -132,6 +132,80 @@ declares, but `:=` makes the intent explicit.
 LFortran supports an interactive mode; just run the `lfortran` command
 to start it.
 
+### Sharing a session
+
+The prompt is a Jupyter client. It runs its cells in a Jupyter kernel that it
+starts, and it tells where the kernel's connection file is, so that other
+clients can join the session, with its variables, procedures and modules:
+another prompt, `jupyter console --existing FILE` or any Jupyter client.
+
+```console
+$ lfortran
+...
+  * Others can join with `lfortran --connect /tmp/lfortran-0123abcd.json`
+>>>
+$ lfortran --connect /tmp/lfortran-0123abcd.json
+```
+
+A kernel can also be started on its own; it writes the connection file if it
+does not exist and runs until a client shuts it down, or until Ctrl-C or
+SIGTERM:
+
+```console
+$ lfortran kernel -f session.json
+$ lfortran --connect session.json
+```
+
+The kernel runs one cell at a time, in the order the cells arrive. Clients
+subscribe to every cell's output, as in Jupyter: at a terminal, the prompt shows
+another client's cell, marked `[other client]`, and its published output even
+while idle or editing, preserving the current input and cursor. Redirected
+input retains blocking reads; it does not refresh while waiting for input.
+Output fragments share a transcript line until a newline; a carriage return
+moves within that line without erasing its untouched suffix.
+Wrapping uses LLVM's Unicode terminal-cell widths, including wide CJK glyphs
+and zero-width combining marks, rather than counting UTF-8 bytes or scalars.
+Terminal-specific emoji/grapheme and ambiguous-width settings may differ from
+these widths. The editor supports SGR styling, not arbitrary terminal control
+sequences. Unsupported controls, invalid UTF-8, and unfinished sequences when
+leaving a cell produce an explicit error. Retained incomplete sequences,
+styling metadata per refresh, and a final-cell combining cluster are each
+limited to 64 KiB; rejection restores terminal mode and cursor visibility.
+A cell's output is shown when the cell finishes or reads input. A cell that fails
+aborts the cells waiting behind it, unless it was sent with `stop_on_error`
+false.
+Delivery is not guaranteed if a client cannot consume output fast enough.
+
+A READ asks the client that ran the cell. If that client disconnects, the
+READ fails with an I/O error: a READ with `iostat=` gets it and the cell goes
+on, but any other READ stops the kernel with a runtime error, as it stops a
+program. STOP, ERROR STOP and a crash stop the kernel too. A kernel that stops
+ends the session of every client; the prompt that started it then exits with
+the kernel's exit status, as it did when it ran its cells itself.
+
+The prompt that starts a kernel ends that kernel when the prompt exits, and
+removes the connection file. Exiting ends the kernel while another client is
+still connected, and during a cell that does not return. Ctrl-C ends the
+prompt and the kernel. The kernel also stops, removing the connection file,
+when that prompt cannot end it, such as when its terminal closes or it is
+killed with `kill -9`. A prompt that only joins, with
+`lfortran --connect FILE`, leaves the kernel running; that session lasts
+until the kernel itself stops. The way to stop a cell that does not return
+is to end the prompt that started the kernel. Jupyter's Interrupt has no
+effect until the cell ends. Whoever can read the connection file can run
+code as its owner. The file is readable by its owner only.
+
+The client is LFortran's own. The kernel is LFortran's own implementation of
+the Jupyter messaging protocol (ZeroMQ over TCP with HMAC-SHA256 signatures),
+which needs no third-party library. In a build with `WITH_XEUS=yes`,
+`lfortran` and `lfortran kernel` both run the Xeus kernel, and the prompt
+still ends that kernel when it exits. The Xeus kernel uses Xeus's own server
+for every channel. A READ whose client has disconnected waits there, and the
+clients behind that cell wait with it. A cell that fails aborts the requests
+already waiting with an error reply and no idle status, so a client that
+waits for the aborted cell to become idle waits with it. See
+`src/lfortran/jupyter.cpp` and `src/lfortran/fortran_kernel.cpp`.
+
 ## Invoking LFortran
 
 The LFortran compiler supports numerous command-line flags to select
@@ -163,6 +237,7 @@ compilation options, output options, link options and so on.
 
 * `--fast`, Optimize for best performance on the host CPU (disable strict standard compliance). This implies native CPU selection unless `--march`, `--mcpu`, `--mtune`, or `--target` is specified. Without `--fast`, the LLVM backend runs no optimizations, like `-O0` in Clang and Flang (WebAssembly targets keep LLVM's default code generation level, which keeps the number of locals per function within engine limits); `-O<level>` is currently accepted and ignored.
 * `--implicit-argument-casting`, Allow implicit argument casting
+* `--internal-procedure-thunks <K>`, The number of instances of a procedure that can be active at the same time while holding procedure values of its internal procedures (default 8); see [Procedure values of internal procedures](#procedure-values-of-internal-procedures)
 * `--implicit-interface`, Allow implicit interface
 * `--implicit-typing`, Allow implicit typing
 * `--openmp`, Enable OpenMP
@@ -170,6 +245,7 @@ compilation options, output options, link options and so on.
 * `--realloc-lhs-arrays`, Reallocate left hand side automatically for arrays
 * `--disable-realloc-lhs-arrays`, Disables reallocating left hand side automatically for arrays
 * `--target <value>`, Generate code for the given target
+* `-sSETTING[=VALUE]` or `-s SETTING[=VALUE]`, Forward a setting to the Emscripten driver when linking with an LLVM-based backend and `--target=wasm32-unknown-emscripten`. Repeat for multiple settings, for example `-sMODULARIZE -sEXPORT_ES6`. User settings follow the default stack and memory settings, so they can override them. Quote list or string values as single shell arguments, for example `"-sEXPORTED_RUNTIME_METHODS=['ccall','cwrap']"`. These settings are not host linker flags; `-W` forwarding is unchanged.
 * `--march <value>`, Select the instruction-set architecture. Use `native` for the host ISA.
 * `--mcpu <value>`, Select both the CPU instruction set and scheduling model. Use `native` for the host CPU.
 * `--mtune <value>`, Select the CPU scheduling model without changing the instruction set. Use `native` for the host CPU.
@@ -318,6 +394,23 @@ before printing.  This is obsolete and LFortran omits this unless
 
 LFortran does not currently expose arbitrary Clang options such as `-flto`.
 Use `--fast` and the target-selection options above for native optimization.
+
+### Procedure values of internal procedures
+
+An internal procedure that refers to variables of its host can be passed as
+an actual argument, made the target of a procedure pointer, or passed to
+`c_funloc`. GNU Fortran builds such a value on the stack at run time (a
+trampoline), so its executables need an executable stack. LFortran instead
+compiles a fixed number K of small procedures (thunks) for each such internal
+procedure. A procedure value stays a plain code address, so it can be passed
+to C and to code compiled by other compilers, and the stack stays
+non-executable.
+
+Each instance of the host that makes such a value holds one of its K thunks
+until it returns. If more than K recursive instances of one host hold a
+thunk at the same time, the program stops with an error that names the
+option. Recompile with a larger `--internal-procedure-thunks=<K>` in that
+case; Knuth's "man or boy" test with k = 10, for example, needs 384.
 
 GNU extension declarations `real*8 xvalue` are accepted but deprecated. This
 was never standard-conforming Fortran; it is an old IBM extension that predates Fortran-77.

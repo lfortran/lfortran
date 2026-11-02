@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.frame.member_unbound]: the frame 'f' is used before its member 'n' is bound
+   --> tests/asr/verify/frame_member_not_bound.asr:354:18
+    |
+354 |                 (SubroutineCall
+    |                  ^^^^^^^^^^^^^^ failed here

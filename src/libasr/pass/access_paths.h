@@ -78,13 +78,9 @@ inline bool aliasable(ASR::symbol_t *s) {
     return ASR::is_a<ASR::Module_t>(*owner);
 }
 
-// A root another procedure may access: one a pointer may point into, or a
-// variable that is not a local or dummy argument of `routine` -- a module
-// variable, or a variable of the procedure `routine` is contained in, which
-// the procedures contained there access by host association.
-inline bool reachable_elsewhere(ASR::symbol_t *s, SymbolTable *routine) {
-    if (aliasable(s)) return true;
-    SymbolTable *scope = ASR::down_cast<ASR::Variable_t>(s)->m_parent_symtab;
+// The scope of the procedure (or program) that `scope` is part of, past the
+// `block` and `associate` constructs it may be the scope of.
+inline SymbolTable *enclosing_routine(SymbolTable *scope) {
     while (scope != nullptr && scope->asr_owner != nullptr
             && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
             && (ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(
@@ -93,7 +89,17 @@ inline bool reachable_elsewhere(ASR::symbol_t *s, SymbolTable *routine) {
                     *ASR::down_cast<ASR::symbol_t>(scope->asr_owner)))) {
         scope = scope->parent;
     }
-    return scope != routine;
+    return scope;
+}
+
+// A root another procedure may access: one a pointer may point into, or a
+// variable that is not a local or dummy argument of `routine` -- a module
+// variable, or a variable of the procedure `routine` is contained in, which
+// the procedures contained there access by host association.
+inline bool reachable_elsewhere(ASR::symbol_t *s, SymbolTable *routine) {
+    if (aliasable(s)) return true;
+    return enclosing_routine(
+        ASR::down_cast<ASR::Variable_t>(s)->m_parent_symtab) != routine;
 }
 
 inline bool same_storage_root(ASR::symbol_t *a, ASR::symbol_t *b) {

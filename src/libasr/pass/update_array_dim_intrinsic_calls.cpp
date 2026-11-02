@@ -49,10 +49,14 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
     private:
 
     Allocator& al;
+    bool fast;
 
     public:
 
-    ReplaceArrayDimIntrinsicCalls(Allocator& al_) : al(al_)
+    // Device code keeps the declared extents (see entry_initialized_locals).
+    bool zero_extent_bounds = true;
+
+    ReplaceArrayDimIntrinsicCalls(Allocator& al_, bool fast_) : al(al_), fast(fast_)
     {}
 
     // The size of an array section follows from its subscripts, so it is
@@ -92,8 +96,24 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         return size;
     }
 
+    // A bound or length is copied out of the type of the array for each use,
+    // so that a later pass rewriting the expression in the body (e.g.
+    // inlining a call in max(0, f(n))) leaves the type unchanged.
+    ASR::expr_t* copy_of(ASR::expr_t* expr) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        return duplicator.duplicate_expr(expr);
+    }
+
     void replace_ArraySize(ASR::ArraySize_t* x) {
         ASR::expr_t* size_v = ASRUtils::get_expr_size_expr(x->m_v);
+        if( fast && !x->m_value && !x->m_dim && size_v &&
+                ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(size_v)) == 1 &&
+                ASRUtils::extract_physical_type(ASRUtils::expr_type(size_v)) !=
+                    ASR::array_physical_typeType::AssumedRankArray ) {
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
+            x->m_dim = b.i32(1);
+        }
         if( x->m_value == nullptr && size_v != nullptr &&
                 ASR::is_a<ASR::ArraySection_t>(*size_v) ) {
             *current_expr = section_size(size_v, x->m_dim, x->m_type,
@@ -126,8 +146,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
             ASRUtils::extract_value(x->m_dim, dim);
             // The extent is declared with a kind of its own, as for `a(n)`
             // with an integer(8) `n`, and SIZE returns its own kind
-            ASRUtils::ExprStmtDuplicator duplicator(al);
-            ASR::expr_t* length = duplicator.duplicate_expr(dims[dim - 1].m_length);
+            ASR::expr_t* length = copy_of(dims[dim - 1].m_length);
             if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length)) !=
                     ASRUtils::extract_kind_from_ttype_t(x->m_type) ) {
                 length = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al,
@@ -142,7 +161,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
                                     al, x->base.base.loc, 1, x->m_type));
         for( int i = 0; i < n; i++ ) {
             ASR::expr_t* dim_length = ASRUtils::EXPR(ASR::make_Cast_t(
-                al, x->base.base.loc, dims[i].m_length, ASR::cast_kindType::IntegerToInteger, x->m_type, nullptr, nullptr));
+                al, x->base.base.loc, copy_of(dims[i].m_length), ASR::cast_kindType::IntegerToInteger, x->m_type, nullptr, nullptr));
 
             array_size = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x->base.base.loc,
                             array_size, ASR::binopType::Mul, dim_length, x->m_type,
@@ -168,26 +187,48 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         }
         int64_t dim = -1;
         ASRUtils::extract_value(x->m_dim, dim);
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        ASR::expr_t* length = copy_of(dims[dim - 1].m_length);
+        ASR::expr_t* start = copy_of(dims[dim - 1].m_start);
+        length = b.t2t(length, ASRUtils::expr_type(length), x->m_type);
+        start = b.t2t(start, ASRUtils::expr_type(start), x->m_type);
+        ASR::expr_t* bound = nullptr;
         if( x->m_bound == ASR::arrayboundType::LBound ) {
-            ASRUtils::ASRBuilder b(al, x->base.base.loc);
-            *current_expr = dims[dim - 1].m_start;
-            *current_expr = b.t2t(*current_expr, ASRUtils::expr_type(*current_expr), x->m_type);
+            bound = start;
         } else {
-            ASRUtils::ASRBuilder b(al, x->base.base.loc);
-            ASR::expr_t* length = dims[dim - 1].m_length;
-            ASR::expr_t* start = dims[dim - 1].m_start;
-            length = b.t2t(length, ASRUtils::expr_type(length), x->m_type);
-            start = b.t2t(start, ASRUtils::expr_type(start), x->m_type);
-
             ASR::expr_t* ub = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
                                 x->base.base.loc, length,
                                 ASR::binopType::Add, start,
                                 x->m_type, nullptr));
             ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
                                         x->base.base.loc, 1, x->m_type));
-            *current_expr = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x->base.base.loc,
+            bound = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x->base.base.loc,
                                 ub, ASR::binopType::Sub, const_1, x->m_type, nullptr));
         }
+        // A dimension of zero extent has the bounds 1 and 0 (Fortran 2018,
+        // 16.9.109 and 16.9.196). The extent of a dimension that starts at 1
+        // is never negative, so only other starts need the test.
+        int64_t length_value = 0, start_value = 0;
+        bool constant_length = ASRUtils::extract_value(
+            ASRUtils::expr_value(dims[dim - 1].m_length), length_value);
+        bool unit_start = ASRUtils::extract_value(
+            ASRUtils::expr_value(dims[dim - 1].m_start), start_value)
+            && start_value == 1;
+        if( zero_extent_bounds && !unit_start
+                && !(constant_length && length_value > 0) ) {
+            ASR::expr_t* empty_bound = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x->base.base.loc,
+                x->m_bound == ASR::arrayboundType::LBound ? 1 : 0, x->m_type));
+            if( constant_length ) {
+                bound = empty_bound;
+            } else {
+                bound = ASRUtils::EXPR(ASR::make_IfExp_t(al, x->base.base.loc,
+                    b.Gt(copy_of(length), ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, x->base.base.loc, 0, x->m_type))),
+                    bound, empty_bound, x->m_type, nullptr));
+            }
+        }
+        *current_expr = bound;
     }
 
 };
@@ -205,18 +246,25 @@ class ArrayDimIntrinsicCallsVisitor : public ASR::CallReplacerOnExpressionsVisit
 
     public:
 
-        ArrayDimIntrinsicCallsVisitor(Allocator& al_) : replacer(al_) {}
+        ArrayDimIntrinsicCallsVisitor(Allocator& al_, bool fast_) : replacer(al_, fast_) {}
 
         void call_replacer() {
             replacer.current_expr = current_expr;
             replacer.replace_expr(*current_expr);
         }
 
+        void visit_Function(const ASR::Function_t& x) {
+            bool zero_extent_bounds = replacer.zero_extent_bounds;
+            replacer.zero_extent_bounds = !ASRUtils::is_device_only_function(x);
+            ASR::CallReplacerOnExpressionsVisitor<ArrayDimIntrinsicCallsVisitor>::visit_Function(x);
+            replacer.zero_extent_bounds = zero_extent_bounds;
+        }
+
 };
 
 void pass_update_array_dim_intrinsic_calls(Allocator &al, ASR::TranslationUnit_t &unit,
-                                           const LCompilers::PassOptions& /*pass_options*/) {
-    ArrayDimIntrinsicCallsVisitor v(al);
+                                           const LCompilers::PassOptions& pass_options) {
+    ArrayDimIntrinsicCallsVisitor v(al, pass_options.fast);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

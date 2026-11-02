@@ -73,7 +73,6 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--openmp`: Enable OpenMP
 - `--separate-compilation`: Generate object code into .o files
 - `--rtlib`: Include the full runtime library in the LLVM output
-- `--use-loop-variable-after-loop`: Allow using loop variable after the loop
 - `--fast`: Optimize for best performance on the host CPU (disable strict standard compliance)
 - `--link-with-gcc`: Calls GCC for linking instead of clang
 - `--target TEXT`: Generate code for the given target
@@ -101,7 +100,12 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--mangle-underscore`: Mangles with underscore
 - `--legacy-array-sections`: Enables passing array items as sections if required, and lets the elements of a dummy array whose last dimension is `1`, as in `a(lda, 1)`, be referenced past that dimension, as for an assumed-size `a(lda, *)`
 - `--ignore-pragma`: Ignores all the pragmas
-- `--stack-arrays`: Allocate memory for arrays on stack
+- `--stack-arrays`: Allocate automatic arrays on the stack, including eligible
+  private numeric function-result temporaries and numeric elementwise-expression
+  temporaries passed to `CALL` statements. Temporary bounds are evaluated at
+  the original statement, and their storage is reclaimed at statement exit.
+  User-declared allocatables and allocatable or pointer function results retain
+  their allocation semantics.
 
 # SUBCOMMANDS
 

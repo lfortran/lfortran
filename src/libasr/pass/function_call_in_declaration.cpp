@@ -7,10 +7,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
-#include <libasr/pass/gpu_decline.h>
 #include <libasr/pickle.h>
-
-#include <set>
 
 namespace LCompilers {
 
@@ -465,25 +462,30 @@ public:
 
 };
 
-/* ========================= AUTOMATIC ARRAY BOUNDS ===========================*/
+/* ========================= ENTRY ARRAY BOUNDS ===============================*/
 
 /*
-    The bounds of an explicit-shape local (automatic) array are specification
+    The bounds of an explicit-shape dummy, result or automatic array are specification
     expressions. They are evaluated on entry to the procedure or BLOCK, and a
     later redefinition of a variable they reference does not change them
     (F2018 8.5.8.2, 10.1.11). The type of the array, and every array type
     that semantics copied from it into the body, would otherwise evaluate the
     bound expression again at each use.
 
-    Each bound whose value can change while the procedure or BLOCK executes
-    (see bound_may_change) is therefore captured in a new integer local that
+    Each nonconstant bound is therefore captured in a new integer local that
     is initialized with the bound on entry, and the array type, as well as
     the types in the body that describe the shape of the array, refer to that
     local instead:
 
-        real :: tmp(n)              integer :: __lcompilers_tmp_extent_1 = n
-        n = 7                  ->   real :: tmp(__lcompilers_tmp_extent_1)
+        real :: tmp(n)              integer :: __libasr_extent_tmp_1 = max(0, n)
+        n = 7                  ->   real :: tmp(__libasr_extent_tmp_1)
         print *, size(tmp + 1)      ...
+
+    Extents are clamped to max(0, length) (F2018 8.5.8.2). Interface bodies
+    keep that expression inline, since they have no entry at which to evaluate
+    it. FunctionType keeps the declared bounds; callers and module files must
+    not depend on these locals. GPU passes substitute their initializers in
+    device copies, but host scopes always keep their entry-fixed bounds.
 */
 
 // Whether two expressions are the same tree. Unlike ASRUtils::expr_equal it
@@ -530,176 +532,12 @@ static bool is_constant_bound(ASR::expr_t* bound) {
         ASRUtils::is_value_constant(ASRUtils::expr_value(bound));
 }
 
-// Whether the value of the variable `sym` stays the same while the procedure
-// or BLOCK that declares an automatic array executes: a named constant, a
-// nonpointer intent(in) dummy argument (of the procedure or of a host), or a
-// local that captures a bound.
-static bool is_invariant_variable(ASR::symbol_t* sym) {
-    sym = ASRUtils::symbol_get_past_external(sym);
+static bool is_entry_bound(SymbolTable* scope, ASR::expr_t* bound) {
+    if (bound == nullptr || !ASR::is_a<ASR::Var_t>(*bound)) return false;
+    ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(bound)->m_v;
     if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
     ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
-    if (v->m_storage == ASR::storage_typeType::Parameter) return true;
-    if (ASRUtils::is_entry_initialized_local(*v)) return true;
-    return v->m_intent == ASR::intentType::In && !ASRUtils::is_pointer(v->m_type);
-}
-
-static bool bound_may_change(ASR::expr_t* e);
-
-// Whether the shape and the length type parameters of the variable `sym`
-// stay the same: those of a nonallocatable, nonpointer variable, and those
-// of an intent(in) dummy argument, cannot change.
-static bool has_invariant_shape(ASR::symbol_t* sym) {
-    sym = ASRUtils::symbol_get_past_external(sym);
-    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
-    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
-    if (v->m_intent == ASR::intentType::In) return true;
-    if (ASRUtils::is_allocatable(v->m_type) || ASRUtils::is_pointer(v->m_type)) {
-        return false;
-    }
-    if (ASRUtils::is_character(*v->m_type)) {
-        // The length of a nonallocatable, nonpointer character variable
-        // is fixed when the variable is declared or associated.
-        return true;
-    }
-    return ASRUtils::is_array(v->m_type);
-}
-
-// The same for the designator `e`: a variable as above, or a nonpointer
-// component or an element of an intent(in) dummy argument (whose
-// allocatable components cannot be allocated or deallocated either).
-static bool has_invariant_shape(ASR::expr_t* e) {
-    e = ASRUtils::get_past_array_physical_cast(e);
-    if (ASR::is_a<ASR::Var_t>(*e)) {
-        return has_invariant_shape(ASR::down_cast<ASR::Var_t>(e)->m_v);
-    }
-    if (ASR::is_a<ASR::StructInstanceMember_t>(*e) ||
-            ASR::is_a<ASR::ArrayItem_t>(*e)) {
-        return !ASRUtils::is_pointer(ASRUtils::expr_type(e)) &&
-            !bound_may_change(e);
-    }
-    return false;
-}
-
-/*
-    Whether the value of a bound expression can change while the procedure
-    or BLOCK that declares the automatic array executes. Only such a bound
-    is captured: a bound that references only constants, named constants,
-    intent(in) dummy arguments and inquiries about the shape of dummy
-    arguments evaluates to the same value at each use, and is left as it is.
-    Anything else (a variable of the procedure, of a host or of a module, a
-    dummy argument that can be defined, a function reference) is captured.
-*/
-static bool bound_may_change(ASR::expr_t* e) {
-    if (e == nullptr || ASRUtils::is_value_constant(e) ||
-            ASRUtils::is_value_constant(ASRUtils::expr_value(e))) {
-        return false;
-    }
-    switch (e->type) {
-        case ASR::exprType::Var:
-            return !is_invariant_variable(ASR::down_cast<ASR::Var_t>(e)->m_v);
-        case ASR::exprType::ArraySize: {
-            ASR::ArraySize_t* x = ASR::down_cast<ASR::ArraySize_t>(e);
-            return !has_invariant_shape(x->m_v) || bound_may_change(x->m_dim);
-        }
-        case ASR::exprType::ArrayBound: {
-            ASR::ArrayBound_t* x = ASR::down_cast<ASR::ArrayBound_t>(e);
-            return !has_invariant_shape(x->m_v) || bound_may_change(x->m_dim);
-        }
-        case ASR::exprType::StringLen: {
-            return !has_invariant_shape(ASR::down_cast<ASR::StringLen_t>(e)->m_arg);
-        }
-        case ASR::exprType::ArrayItem: {
-            ASR::ArrayItem_t* x = ASR::down_cast<ASR::ArrayItem_t>(e);
-            if (bound_may_change(x->m_v)) return true;
-            for (size_t i = 0; i < x->n_args; i++) {
-                if (bound_may_change(x->m_args[i].m_left) ||
-                        bound_may_change(x->m_args[i].m_right) ||
-                        bound_may_change(x->m_args[i].m_step)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        case ASR::exprType::StructInstanceMember: {
-            ASR::StructInstanceMember_t* x = ASR::down_cast<ASR::StructInstanceMember_t>(e);
-            return ASRUtils::is_pointer(x->m_type) || bound_may_change(x->m_v);
-        }
-        case ASR::exprType::IntegerBinOp: {
-            ASR::IntegerBinOp_t* x = ASR::down_cast<ASR::IntegerBinOp_t>(e);
-            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
-        }
-        case ASR::exprType::IntegerUnaryMinus:
-            return bound_may_change(ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg);
-        case ASR::exprType::IntegerCompare: {
-            ASR::IntegerCompare_t* x = ASR::down_cast<ASR::IntegerCompare_t>(e);
-            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
-        }
-        case ASR::exprType::RealBinOp: {
-            ASR::RealBinOp_t* x = ASR::down_cast<ASR::RealBinOp_t>(e);
-            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
-        }
-        case ASR::exprType::RealUnaryMinus:
-            return bound_may_change(ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg);
-        case ASR::exprType::RealCompare: {
-            ASR::RealCompare_t* x = ASR::down_cast<ASR::RealCompare_t>(e);
-            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
-        }
-        case ASR::exprType::LogicalBinOp: {
-            ASR::LogicalBinOp_t* x = ASR::down_cast<ASR::LogicalBinOp_t>(e);
-            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
-        }
-        case ASR::exprType::LogicalCompare: {
-            ASR::LogicalCompare_t* x = ASR::down_cast<ASR::LogicalCompare_t>(e);
-            return bound_may_change(x->m_left) || bound_may_change(x->m_right);
-        }
-        case ASR::exprType::LogicalNot:
-            return bound_may_change(ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg);
-        case ASR::exprType::ArrayPhysicalCast:
-            return bound_may_change(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
-        case ASR::exprType::ArrayBroadcast: {
-            ASR::ArrayBroadcast_t* x = ASR::down_cast<ASR::ArrayBroadcast_t>(e);
-            return bound_may_change(x->m_array) || bound_may_change(x->m_shape);
-        }
-        case ASR::exprType::Cast:
-            return bound_may_change(ASR::down_cast<ASR::Cast_t>(e)->m_arg);
-        case ASR::exprType::IntrinsicElementalFunction: {
-            ASR::IntrinsicElementalFunction_t* x =
-                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
-            for (size_t i = 0; i < x->n_args; i++) {
-                if (bound_may_change(x->m_args[i])) return true;
-            }
-            return false;
-        }
-        case ASR::exprType::IntrinsicArrayFunction: {
-            ASR::IntrinsicArrayFunction_t* x =
-                ASR::down_cast<ASR::IntrinsicArrayFunction_t>(e);
-            for (size_t i = 0; i < x->n_args; i++) {
-                if (bound_may_change(x->m_args[i])) return true;
-            }
-            return false;
-        }
-        default:
-            return true;
-    }
-}
-
-static bool is_automatic_array(const ASR::Variable_t &v) {
-    if (v.m_intent != ASR::intentType::Local ||
-            v.m_storage != ASR::storage_typeType::Default ||
-            !ASR::is_a<ASR::Array_t>(*v.m_type)) {
-        return false;
-    }
-    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(v.m_type);
-    if (array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
-        return false;
-    }
-    for (size_t i = 0; i < array_t->n_dims; i++) {
-        if (!is_constant_bound(array_t->m_dims[i].m_start) ||
-                !is_constant_bound(array_t->m_dims[i].m_length)) {
-            return true;
-        }
-    }
-    return false;
+    return v->m_parent_symtab == scope && ASRUtils::is_entry_initialized_local(*v);
 }
 
 /*
@@ -967,111 +805,6 @@ public:
     }
 };
 
-/*
-    Under --gpu=..., the offload passes turn the BLOCKs of an offloaded loop
-    (DO CONCURRENT, or an OpenMP region), and the procedures such a loop
-    references directly or through other procedures, into kernel code, and
-    size the per-thread storage of their automatic arrays from the declared
-    bound expressions. They do not handle a bound captured in a local
-    initialized on entry, so the scopes they may take are not captured: those
-    BLOCKs, the device procedures, the procedures reachable from them or from
-    an offloaded loop, and the BLOCKs of those procedures. Every other scope
-    (a PURE or ELEMENTAL procedure that only host code references included)
-    is captured as without --gpu.
-*/
-class OffloadableScopeCollector : public ASR::BaseWalkVisitor<OffloadableScopeCollector> {
-private:
-    std::set<SymbolTable*> &scopes;
-    // Whether the statements being visited may be device code.
-    bool offloadable = false;
-    std::vector<ASR::Function_t*> reached;
-    std::set<ASR::Function_t*> reached_set;
-
-    void reach(ASR::symbol_t* sym) {
-        if (sym == nullptr) return;
-        sym = ASRUtils::symbol_get_past_external(sym);
-        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
-            sym = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
-        }
-        if (!ASR::is_a<ASR::Function_t>(*sym)) return;
-        ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(sym);
-        if (reached_set.insert(f).second) {
-            reached.push_back(f);
-        }
-    }
-
-    template <typename T>
-    void visit_offloadable(const T &x) {
-        bool offloadable_copy = offloadable;
-        offloadable = true;
-        for (size_t i = 0; i < x.n_body; i++) {
-            visit_stmt(*x.m_body[i]);
-        }
-        offloadable = offloadable_copy;
-    }
-
-public:
-    OffloadableScopeCollector(std::set<SymbolTable*> &scopes_) : scopes(scopes_) {}
-
-    void collect(ASR::TranslationUnit_t &unit) {
-        visit_TranslationUnit(unit);
-        offloadable = true;
-        for (size_t i = 0; i < reached.size(); i++) {
-            ASR::Function_t* f = reached[i];
-            scopes.insert(f->m_symtab);
-            for (size_t j = 0; j < f->n_body; j++) {
-                visit_stmt(*f->m_body[j]);
-            }
-        }
-    }
-
-    void visit_Function(const ASR::Function_t &x) {
-        if (ASRUtils::get_FunctionType(x)->m_exec_space != ASR::exec_spaceType::Host) {
-            reach(const_cast<ASR::symbol_t*>(&x.base));
-        }
-        bool offloadable_copy = offloadable;
-        offloadable = false;
-        ASR::BaseWalkVisitor<OffloadableScopeCollector>::visit_Function(x);
-        offloadable = offloadable_copy;
-    }
-
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        visit_offloadable(x);
-    }
-
-    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
-        visit_offloadable(x);
-    }
-
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        if (offloadable) reach(x.m_name);
-        ASR::BaseWalkVisitor<OffloadableScopeCollector>::visit_FunctionCall(x);
-    }
-
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        if (offloadable) reach(x.m_name);
-        ASR::BaseWalkVisitor<OffloadableScopeCollector>::visit_SubroutineCall(x);
-    }
-
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        if (!offloadable) return;
-        ASR::Block_t* block = ASR::down_cast<ASR::Block_t>(x.m_m);
-        scopes.insert(block->m_symtab);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        if (!offloadable) return;
-        ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
-        for (size_t i = 0; i < block->n_body; i++) {
-            visit_stmt(*block->m_body[i]);
-        }
-    }
-};
-
 /* ================================== VISITOR ==================================*/
 
 class FunctionTypeVisitor : public ASR::CallReplacerOnExpressionsVisitor<FunctionTypeVisitor>
@@ -1135,9 +868,6 @@ public:
     Vec<ASR::stmt_t*> pass_result;
     ASR::TranslationUnit_t &tt;
     std::map<ASR::symbol_t*, CapturedArrayBounds> captured;
-    // The scopes whose automatic arrays are not captured (see
-    // OffloadableScopeCollector).
-    std::set<SymbolTable*> uncaptured_scopes;
 
 
 
@@ -1197,8 +927,9 @@ public:
 
     ASR::expr_t* create_bound_local(SymbolTable* scope, const ASR::Variable_t &array,
             const char* what, size_t dim, ASR::expr_t* bound) {
-        std::string name = scope->get_unique_name("__lcompilers_" +
-            std::string(array.m_name) + "_" + what + "_" + std::to_string(dim + 1), false);
+        if (is_entry_bound(scope, bound)) return bound;
+        std::string name = scope->get_unique_name("__libasr_" +
+            std::string(what) + "_" + array.m_name + "_" + std::to_string(dim + 1), false);
         ASR::ttype_t* type = ASRUtils::duplicate_type(al,
             ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(bound)));
         SetChar dependencies; dependencies.reserve(al, 1);
@@ -1206,23 +937,39 @@ public:
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, bound->base.loc, scope, s2c(al, name), dependencies.p, dependencies.size(),
             ASR::intentType::Local, bound, nullptr, ASR::storage_typeType::Default, type,
-            nullptr, array.m_abi, ASR::accessType::Public, ASR::presenceType::Required, false));
+            nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
         scope->add_symbol(name, sym);
         return ASRUtils::EXPR(ASR::make_Var_t(al, bound->base.loc, sym));
     }
 
-    // Captures the non-constant bounds of the automatic arrays declared in
+    // Captures the non-constant bounds of explicit-shape arrays declared in
     // `scope` in locals initialized on entry (see CapturedArrayTypeRewriter).
-    bool capture_automatic_array_bounds(SymbolTable* scope) {
+    bool capture_array_bounds(SymbolTable* scope, bool interface = false) {
         bool any_captured = false;
-        if (uncaptured_scopes.count(scope) > 0) return false;
         ASRUtils::ExprStmtDuplicator duplicator(al);
         for (auto &name : ASRUtils::determine_variable_declaration_order(scope)) {
             ASR::symbol_t* sym = scope->get_symbol(name);
             if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
             ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
-            if (!is_automatic_array(*v)) continue;
+            if (!ASR::is_a<ASR::Array_t>(*v->m_type)) continue;
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(v->m_type);
+            if (array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) continue;
+            bool runtime_shape = false;
+            bool entry_shape = true;
+            for (size_t i = 0; i < array_t->n_dims; i++) {
+                const ASR::dimension_t& dim = array_t->m_dims[i];
+                // Inlining can flatten a nested declaration into a scope
+                // whose body first defines its bounds (e.g. ASSOCIATE).
+                // Replaying this pass must not hoist those reads to entry.
+                if (!interface && (ASRUtils::undefined_local_on_entry(dim.m_start, scope) ||
+                        ASRUtils::undefined_local_on_entry(dim.m_length, scope))) {
+                    entry_shape = false;
+                    break;
+                }
+                runtime_shape = runtime_shape || (dim.m_length != nullptr &&
+                    (!is_constant_bound(dim.m_start) || !is_constant_bound(dim.m_length)));
+            }
+            if (!runtime_shape || !entry_shape) continue;
             Vec<ASR::dimension_t> captured_dims; captured_dims.reserve(al, array_t->n_dims);
             Vec<ASR::dimension_t> new_dims; new_dims.reserve(al, array_t->n_dims);
             bool any_dim_captured = false;
@@ -1231,12 +978,17 @@ public:
                 ASR::dimension_t captured_dim; captured_dim.loc = dim.loc;
                 captured_dim.m_start = nullptr; captured_dim.m_length = nullptr;
                 ASR::dimension_t new_dim = dim;
-                if (bound_may_change(dim.m_start)) {
+                if (!interface && !is_constant_bound(dim.m_start)) {
                     captured_dim.m_start = create_bound_local(scope, *v, "lbound", i,
                         duplicator.duplicate_expr(dim.m_start));
                     new_dim.m_start = captured_dim.m_start;
                 }
-                if (bound_may_change(dim.m_length)) {
+                if (!interface && is_entry_bound(scope, dim.m_length)) {
+                    // A cumulative or repeated pass must reuse its entry
+                    // type, including the result, rather than recapture it.
+                    captured_dim.m_length = dim.m_length;
+                    new_dim.m_length = dim.m_length;
+                } else if (!is_constant_bound(dim.m_length)) {
                     ASR::expr_t* length = duplicator.duplicate_expr(dim.m_length);
                     if (captured_dim.m_start) {
                         // The extent is `ubound - lbound + 1`: evaluate the
@@ -1245,7 +997,18 @@ public:
                         replace_start.replacements.push_back({dim.m_start, captured_dim.m_start});
                         replace_start.replace_in(length);
                     }
-                    captured_dim.m_length = create_bound_local(scope, *v, "extent", i, length);
+                    if (!interface) {
+                        PassUtils::FunctionCallFinder finder;
+                        finder.visit_expr(*length);
+                        if (finder.found) {
+                            // Keep MAX intrinsic: a function reference inside
+                            // it would otherwise be outlined by a later pass.
+                            length = create_bound_local(scope, *v, "length", i, length);
+                        }
+                    }
+                    ASR::expr_t* extent = ASRUtils::Max::create_extent(al, length);
+                    captured_dim.m_length = interface || ASRUtils::is_value_constant(extent)
+                        ? extent : create_bound_local(scope, *v, "extent", i, extent);
                     new_dim.m_length = captured_dim.m_length;
                 }
                 captured_dims.push_back(al, captured_dim);
@@ -1291,8 +1054,8 @@ public:
     void visit_Function(const ASR::Function_t &x) { // NO Body Visiting
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
-        if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Implementation &&
-                capture_automatic_array_bounds(x.m_symtab)) {
+        if (capture_array_bounds(x.m_symtab,
+                ASRUtils::get_FunctionType(x)->m_deftype != ASR::deftypeType::Implementation)) {
             CapturedArrayTypeRewriter rewriter(al, captured);
             do {
                 rewriter.added_associate_names = false;
@@ -1317,7 +1080,7 @@ public:
     }
     
     void visit_Block(const ASR::Block_t &x) {
-        if (capture_automatic_array_bounds(x.m_symtab)) {
+        if (capture_array_bounds(x.m_symtab)) {
             CapturedArrayTypeRewriter rewriter(al, captured);
             do {
                 rewriter.added_associate_names = false;
@@ -1327,7 +1090,16 @@ public:
         visit_construct(x);
     }
     void visit_Module(const ASR::Module_t &x)                   { visit_construct(x); }
-    void visit_Program(const ASR::Program_t &x)                 { visit_construct(x); }
+    void visit_Program(const ASR::Program_t &x) {
+        if (capture_array_bounds(x.m_symtab)) {
+            CapturedArrayTypeRewriter rewriter(al, captured);
+            do {
+                rewriter.added_associate_names = false;
+                rewriter.visit_Program(x);
+            } while (rewriter.added_associate_names);
+        }
+        visit_construct(x);
+    }
     void visit_AssociateBlock(const ASR::AssociateBlock_t &x)   { visit_construct(x); }
 
 /* <---------------------------------------->*/
@@ -1349,6 +1121,12 @@ public:
             return;
         }
         if( ASR::is_a<ASR::Array_t>(*x.m_return_var_type) ) {
+            // Its entry type has already been separated from the declared
+            // signature. Process its initializer rather than restoring the
+            // signature's bounds over the captured ones.
+            if (captured.count(ASR::down_cast<ASR::Var_t>(func->m_return_var)->m_v)) {
+                return;
+            }
             ASR::ttype_t* return_type_copy = ASRUtils::duplicate_type(al, x.m_return_var_type);
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(return_type_copy);
             Vec<ASR::expr_t*> new_args; new_args.reserve(al, func->n_args);
@@ -1548,12 +1326,8 @@ public:
 };
 
 void pass_replace_function_call_in_declaration(Allocator &al, ASR::TranslationUnit_t &unit,
-                        const LCompilers::PassOptions& pass_options) {
+                        const LCompilers::PassOptions& /*pass_options*/) {
     FunctionTypeVisitor v(al, unit);
-    if (gpu_device_capabilities(pass_options).device_selected()) {
-        OffloadableScopeCollector collector(v.uncaptured_scopes);
-        collector.collect(unit);
-    }
     PassUtils::make_new_tu_functions_private(unit, [&]() {
         v.visit_TranslationUnit(unit);
     });

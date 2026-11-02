@@ -6,5 +6,6 @@
         "-f",
         "{connection_file}"
     ],
-    "language": "fortran"
+    "language": "fortran",
+    "interrupt_mode": "message"
 }

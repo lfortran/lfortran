@@ -1,0 +1,13 @@
+{
+    "basename": "asr-structure_constructor_f23_01-8790fea",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/structure_constructor_f23_01.f90",
+    "infile_hash": "5c5b07880cb5e1e0e59d4e9483824ca6d301e58b615782a114a37c37",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-structure_constructor_f23_01-8790fea.stderr",
+    "stderr_hash": "7e8f1450a936b6fa4c08a7b316bb4e90f99ecff5c17f5c87df367035",
+    "returncode": 1
+}

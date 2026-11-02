@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-# CMake runs this with the Prefix `shell`; keep to syntax Bash also supports.
+# CMake runs this with the Prefix `shell` (Pixi and CI), or with Bash when
+# `shell` is not installed; keep to syntax that both support.
 
 set -e
 set -x

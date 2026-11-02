@@ -1,0 +1,84 @@
+#include <stdint.h>
+
+__device__ inline void fill_device_t_gpu_19(float* a, int n) {
+    int k;
+    int k__dc;
+    for (k__dc = 1; k__dc <= n; k__dc++) {
+        a[((int)(k__dc) - (1))] = ((float)k__dc);
+    }
+    for (k = n; k >= 1; k -= 2) {
+        a[((int)(k) - (1))] = (-(a[((int)(k) - (1))]));
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* __restrict__ x,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int i__dc;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    {
+        int p__dc;
+        int q__dc;
+        float w[4];
+        fill_device_t_gpu_19(w, 4);
+        for (p__dc = 1; p__dc <= 4; p__dc++) {
+            for (q__dc = 1; q__dc <= 3; q__dc++) {
+                x[((int)(p__dc) - (1)) + (4 * ((int)(q__dc) - (1))) + ((4 * 3) * ((int)(i__dc) - (1)))] = ((w[((int)(p__dc) - (1))] * ((float)q__dc)) + ((float)i__dc));
+            }
+        }
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int i__dc;
+    int __tiled;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    float* __restrict__ w,
+    float* __restrict__ x,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+{
+    int i__dc = __scalar_args.i__dc;
+    int __tiled = __scalar_args.__tiled;
+    int __flat_idx;
+    int __tiles;
+    int p__dc;
+    int q__dc;
+    if ((__tiled == 0)) {
+        if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (4 * 3))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+        p__dc = ((__flat_idx - ((__flat_idx / ((4 - 1) + 1)) * ((4 - 1) + 1))) + 1);
+        __flat_idx = (__flat_idx / ((4 - 1) + 1));
+        q__dc = (__flat_idx + 1);
+    } else {
+        __flat_idx = blockIdx.x;
+        __tiles = ((((4 - 1) + 1) + 31) >> 5);
+        p__dc = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << 5) + (threadIdx.x & 31));
+        __flat_idx = (__flat_idx / __tiles);
+        q__dc = ((__flat_idx << 3) + (threadIdx.x >> 5));
+        if ((p__dc >= ((4 - 1) + 1))) {
+            return;
+        }
+        if ((q__dc >= ((3 - 1) + 1))) {
+            return;
+        }
+        p__dc = (p__dc + 1);
+        q__dc = (q__dc + 1);
+    }
+    x[((int)(p__dc) - (1)) + (4 * ((int)(q__dc) - (1))) + ((4 * 3) * ((int)(i__dc) - (1)))] = ((w[((int)(p__dc) - (1))] * ((float)q__dc)) + ((float)i__dc));
+}
+

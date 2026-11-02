@@ -389,6 +389,11 @@ Points to get right:
 * Keep the cell split of the original notebook. Merging cells that the notebook
   kept separate (or splitting a cell the notebook kept together) can make the
   bug disappear — that split *is* the reproducer.
+* Preserve evaluator lifetimes too. To test independent sessions reusing a
+  symbol name, construct multiple `FortranEvaluator` objects in one `TEST_CASE`,
+  including overlapping and destroyed sessions. WASM side modules share a
+  process-wide dynamic-linker namespace: each executor qualifies its definitions
+  and subsequent imports of them, but leaves runtime imports unchanged.
 * Check the value, not only `r.ok`. `EvalResult::type` is one of
   `integer4/integer8/real4/real8/complex4/complex8/boolean/statement/none`; a
   bare expression cell returns the typed value, a statement cell returns
@@ -440,6 +445,25 @@ If a test only makes sense in one of the two worlds, guard it:
 #ifdef __EMSCRIPTEN__      // WASM-only (e.g. preloaded .mod resolution)
 #ifndef __EMSCRIPTEN__     // native-only (e.g. large stack allocations)
 ```
+
+### Native cell output
+
+The native built-in and Xeus kernels stream captured stdout and stderr while
+a cell executes, including partial lines. Compilation and execution run on one
+worker; the calling thread reads bounded chunks from cell-lifetime temporary
+files and owns all frontend callbacks and sockets. Output is drained before
+display, clear-output, input and completion. Each stream preserves byte order;
+two separate capture files do not establish an exact stdout/stderr interleaving.
+The built-in kernel also makes bounded, nonblocking IOPub transport progress
+on each capture-pump turn, even without new output, so queued output resumes
+when a paused subscriber starts reading again.
+UTF-8 characters split between chunks are reassembled at the Jupyter boundary.
+Foreign code or child processes must still flush their own buffered output.
+
+`FortranEvaluator::execute()` remains synchronous and accepts only one active
+cell per process. Other execute requests still wait; this is not interruption
+support or a new slow-consumer policy. The threadless browser/WASM build keeps
+its synchronous output barriers, not native live streaming.
 
 ### A note on rich display (`display_data`)
 

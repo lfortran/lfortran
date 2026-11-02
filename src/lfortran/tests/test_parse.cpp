@@ -1432,3 +1432,55 @@ TEST_CASE("Errors") {
     CHECK(diagnostics.diagnostics[0].labels[0].spans[0].loc.last == 2);
     diagnostics.diagnostics.clear();
 }
+
+// A bare ALLOCATE or DEALLOCATE at interactive top level is that statement.
+// The same name in an expression is still a call.
+TEST_CASE("Interactive allocate statement") {
+    Allocator al(1024*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions co;
+    co.interactive = true;
+
+    auto parse_ok = [&](const std::string &input) {
+        diagnostics.diagnostics.clear();
+        Result<LCompilers::LFortran::AST::TranslationUnit_t*> res =
+            parse(al, input, diagnostics, co);
+        REQUIRE(res.ok);
+        return res.result;
+    };
+
+    LCompilers::LFortran::AST::TranslationUnit_t* tu = parse_ok("allocate(a(1))\n");
+    REQUIRE(tu->n_items == 1);
+    REQUIRE(tu->m_items[0]->type == LCompilers::LFortran::AST::astType::decl_stmt);
+    CHECK(LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Allocate_t>(
+        *LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_stmt_t>(
+            tu->m_items[0])));
+
+    tu = parse_ok("deallocate(a)\n");
+    REQUIRE(tu->n_items == 1);
+    REQUIRE(tu->m_items[0]->type == LCompilers::LFortran::AST::astType::decl_stmt);
+    CHECK(LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Deallocate_t>(
+        *LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_stmt_t>(
+            tu->m_items[0])));
+
+    tu = parse_ok("y = allocate(2)\n");
+    REQUIRE(tu->n_items == 1);
+    REQUIRE(tu->m_items[0]->type == LCompilers::LFortran::AST::astType::decl_stmt);
+    auto *asg = LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::Assignment_t>(
+        LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::decl_stmt_t>(
+            tu->m_items[0]));
+    REQUIRE(LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::FuncCallOrArray_t>(
+        *asg->m_value));
+    CHECK(std::string(LCompilers::LFortran::AST::down_cast<
+        LCompilers::LFortran::AST::FuncCallOrArray_t>(asg->m_value)->m_func) == "allocate");
+
+    tu = parse_ok("program p\nallocate(a(1))\ndeallocate(a)\nend program\n");
+    REQUIRE(tu->n_items == 1);
+    auto *prog = LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::Program_t>(
+        LCompilers::LFortran::AST::down_cast<LCompilers::LFortran::AST::mod_t>(tu->m_items[0]));
+    REQUIRE(prog->n_items == 2);
+    CHECK(LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Allocate_t>(
+        *prog->m_items[0]));
+    CHECK(LCompilers::LFortran::AST::is_a<LCompilers::LFortran::AST::Deallocate_t>(
+        *prog->m_items[1]));
+}

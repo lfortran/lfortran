@@ -1,0 +1,107 @@
+style suggestion: do not rely on the DO variable 'j' after the loop
+  --> tests/../integration_tests/gpu_do_loop_01.f90:38:31
+   |
+38 |             r(1, i) = t*100 + j
+   |                               ^ after the loop, 'j' is one step past the last iteration
+   |
+35 |             do j = i, 1, -3
+   |                ~ the loop sets 'j' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
+
+style suggestion: do not rely on the DO variable 'j' after the loop
+  --> tests/../integration_tests/gpu_do_loop_01.f90:44:31
+   |
+44 |             r(2, i) = t*100 + j
+   |                               ^ after the loop, 'j' is one step past the last iteration
+   |
+41 |             do j = 1, i, 4
+   |                ~ the loop sets 'j' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
+
+style suggestion: do not rely on the DO variable 'j' after the loop
+  --> tests/../integration_tests/gpu_do_loop_01.f90:52:31
+   |
+52 |             r(3, i) = t*100 + j
+   |                               ^ after the loop, 'j' is one step past the last iteration
+   |
+48 |             do j = 1, m
+   |                ~ the loop sets 'j' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
+
+style suggestion: do not rely on the DO variable 'j' after the loop
+  --> tests/../integration_tests/gpu_do_loop_01.f90:64:31
+   |
+64 |             r(5, i) = t*100 + j*10 + k
+   |                               ^ 'j' has the value it had at the exit, or one step past the last iteration if the loop ends normally
+   |
+57 |             outer: do j = 1, 5
+   |                       ~ the loop sets 'j' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
+
+style suggestion: do not rely on the DO variable 'j' after the loop
+  --> tests/../integration_tests/gpu_do_loop_01.f90:72:23
+   |
+72 |             r(6, i) = j*100 + k
+   |                       ^ after the loop, 'j' is one step past the last iteration
+   |
+66 |             do j = i + 1, i
+   |                ~ the loop sets 'j' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
+
+style suggestion: do not rely on the DO variable 'k' after the loop
+  --> tests/../integration_tests/gpu_do_loop_01.f90:72:31
+   |
+72 |             r(6, i) = j*100 + k
+   |                               ^ after the loop, 'k' is 1
+   |
+69 |             do k = 1, 5, -1
+   |                ~ the loop sets 'k' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
+
+style suggestion: do not rely on the DO variable 'j' after the loop
+  --> tests/../integration_tests/gpu_do_loop_01.f90:79:31
+   |
+79 |             r(7, i) = t*100 + j
+   |                               ^ after the loop, 'j' is one step past the last iteration
+   |
+76 |             do j = merge(1, 10, s > 0), merge(10, 1, s > 0), s
+   |                ~ the loop sets 'j' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
+
+style suggestion: do not rely on the DO variable 'j' after the loop
+  --> tests/../integration_tests/gpu_do_loop_01.f90:87:31
+   |
+87 |             r(8, i) = t*100 + j
+   |                               ^ after the loop, 'j' is one step past the last iteration
+   |
+83 |             do j = 1, 10, s
+   |                ~ the loop sets 'j' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead
+
+style suggestion: do not rely on the DO variable 'j' after the loop
+  --> tests/../integration_tests/gpu_do_loop_01.f90:93:31
+   |
+93 |             r(9, i) = t*100 + j
+   |                               ^ after the loop, 'j' is one step past the last iteration
+   |
+90 |             do j = 1, lim(i)
+   |                ~ the loop sets 'j' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead

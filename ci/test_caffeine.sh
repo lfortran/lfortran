@@ -59,9 +59,9 @@ if [[ "$reference" == true ]] ; then
  echo "##[group] Install OpenMPI"
 )
 
-# Probe the MPI wrapper itself, not its configured build-time compiler.
-# OpenCoarrays' CMake build selects the available GFortran separately.
-ensure_tool openmpi=5.0.6=hb85ec53_102 mpifort --showme:version
+# Keep the reference compiler/MPI pair separate from LFortran's toolchain.
+# Missing or broken Pixi dependencies must fail, never use runner compilers.
+pixi run -e coarray-reference mpifort --showme:version
 export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe
 export OMPI_MCA_rmaps_base_oversubscribe=1
 
@@ -71,23 +71,13 @@ export OMPI_MCA_rmaps_base_oversubscribe=1
 )
 
 git clone https://github.com/sourceryinstitute/OpenCoarrays.git
-cd OpenCoarrays
+pixi run -e coarray-reference opencoarrays-configure
+pixi run -e coarray-reference opencoarrays-build
+pixi run -e coarray-reference opencoarrays-install
 
-cmake -B build \
-  -DCMAKE_INSTALL_PREFIX="$PWD/inst"
+pixi run -e coarray-reference caf --version
 
-cmake --build build -j2
-cmake --install build
-
-export PATH="$PWD/inst/bin:$PATH"
-
-cd ..
-
-which caf
-caf --version
-
-which cafrun
-cafrun --version
+pixi run -e coarray-reference cafrun --version
 
 fi # reference
 
@@ -228,8 +218,8 @@ fi
 if [ "$skip_opencoarrays" = true ]; then
     echo "Skipping OpenCoarrays cross-check for $testfile"
 else
-    caf $extrafiles $testfile -o "${base}_gf.out"
-    cafrun -np "$num_images" ./"${base}_gf.out" 2>&1 \
+    pixi run -e coarray-reference caf $extrafiles $testfile -o "${base}_gf.out"
+    pixi run -e coarray-reference cafrun -np "$num_images" ./"${base}_gf.out" 2>&1 \
       | sed '/Error: OSC UCX component priority/{N;/\n[[:space:]]*$/d}' # filter persistent non-fatal errors
     test ${PIPESTATUS[0]} = 0
     rm -f "${base}_gf.out"

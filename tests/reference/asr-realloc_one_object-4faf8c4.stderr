@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.realloc.one_object]: ReAlloc must reallocate exactly one object
-  --> tests/asr/verify/realloc_one_object.asr:90:12
+  --> tests/asr/verify/realloc_one_object.asr:92:12
    |
-90 |           (ReAlloc
+92 |           (ReAlloc
    |            ^^^^^^^ failed here

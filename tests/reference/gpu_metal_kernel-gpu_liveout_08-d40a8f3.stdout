@@ -44,9 +44,7 @@ kernel void __lfortran_gpu_kernel_0(
     m = __gpu_buf_m[((int)(1) - (1))];
     s = __gpu_buf_s[((int)(1) - (1))];
     if ((i__dc == 3)) {
-        j = (1 - 1);
-        while (((j + 1) <= 10)) {
-            j = (j + 1);
+        for (j = 1; j <= 10; j++) {
             e = (e + j);
             __gpu_buf_e[((int)(1) - (1))] = e;
             if ((e > 20)) {
@@ -159,9 +157,7 @@ kernel void __lfortran_gpu_kernel_0(
     }
     a[((int)(i__dc) - (1))] = (a[((int)(i__dc) - (1))] + 1);
     if ((i__dc == 9)) {
-        j = (1 - 1);
-        while (((j + 1) <= 2)) {
-            j = (j + 1);
+        for (j = 1; j <= 2; j++) {
             s = (90 + j);
             __gpu_buf_s[((int)(1) - (1))] = s;
             if ((s < 0)) {

@@ -125,8 +125,7 @@ expand or reject the array items themselves. The pass runs after `print_arr`
 and `print_struct_type`, which expand array items for the code generators
 that use them, after `array_struct_temporary`, which makes an array section
 item a pointer to the section, and after every pass that changes the
-physical type of an array, and before `do_loops`, which lowers the copy
-loops. When the passes are verified, it checks the invariant it establishes
+physical type of an array. When the passes are verified, it checks the invariant it establishes
 (ASRVerifyOptions::string_format_array_args).
 */
 
@@ -330,7 +329,7 @@ public:
             release.push_back(copy_elements(temporary, e, temporary));
         }
         release.push_back(ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-            al, loc, vars.p, vars.size())));
+            al, loc, vars.p, vars.size(), nullptr, nullptr)));
         if (ASR::is_a<ASR::Var_t>(*e) || ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
             // The release is chosen by the same test as the acquisition,
             // even if the statement re-associates `e`.

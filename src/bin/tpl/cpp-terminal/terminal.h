@@ -16,6 +16,7 @@
 #include <cpp-terminal/terminal_base.h>
 
 #include <chrono>
+#include <deque>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -170,10 +171,21 @@ enum Key {
 
 class Terminal: public BaseTerminal {
     bool restore_screen_;
+    std::deque<char> owned_input;
+    std::deque<char> &pending_input;
+
+    bool read_input(char *c) const
+    {
+        if (pending_input.empty()) return read_raw(c);
+        *c = pending_input.front();
+        pending_input.pop_front();
+        return true;
+    }
 public:
-    Terminal(bool enable_keyboard=false, bool disable_ctrl_c=true)
+    Terminal(bool enable_keyboard=false, bool disable_ctrl_c=true,
+        std::deque<char> *input=nullptr)
         : BaseTerminal(enable_keyboard, disable_ctrl_c),
-          restore_screen_{false} {}
+          restore_screen_{false}, pending_input(input ? *input : owned_input) {}
 
     virtual ~Terminal() {
         restore_screen();
@@ -216,15 +228,15 @@ public:
     int read_key0() const
     {
         char c;
-        if (!read_raw(&c))
+        if (!read_input(&c))
             return 0;
 
         if (c == '\x1b') {
             char seq[4];
 
-            if (!read_raw(&seq[0]))
+            if (!read_input(&seq[0]))
                 return Key::ESC;
-            if (!read_raw(&seq[1])) {
+            if (!read_input(&seq[1])) {
                 if (seq[0] >= 'a' && seq[0] <= 'z') {
                     // gnome-term, Windows Console
                     return ALT_KEY(seq[0]);
@@ -238,7 +250,7 @@ public:
 
             if (seq[0] == '[') {
                 if (seq[1] >= '0' && seq[1] <= '9') {
-                    if (!read_raw(&seq[2])) {
+                    if (!read_input(&seq[2])) {
                         return -2;
                     }
                     if (seq[2] == '~') {
@@ -262,10 +274,10 @@ public:
                         }
                     } else if (seq[2] == ';') {
                         if (seq[1] == '1') {
-                            if (!read_raw(&seq[2])) {
+                            if (!read_input(&seq[2])) {
                                 return -10;
                             }
-                            if (!read_raw(&seq[3])) {
+                            if (!read_input(&seq[3])) {
                                 return -11;
                             }
                             if (seq[2] == '5') {
@@ -280,7 +292,7 @@ public:
                         }
                     } else {
                         if (seq[2] >= '0' && seq[2] <= '9') {
-                            if (!read_raw(&seq[3])) {
+                            if (!read_input(&seq[3])) {
                                 return -3;
                             }
                             if (seq[3] == '~') {
@@ -360,7 +372,7 @@ public:
                 return Key::BACKSPACE;
             }
             if (c == '\xc3') {
-                if (!read_raw(&c)) {
+                if (!read_input(&c)) {
                     return -8;
                 } else {
                     if (c >= '\xa1' && c <= '\xba') {
@@ -370,7 +382,7 @@ public:
                     return -9;
                 }
             } else if (c == '\xc2') {
-                if (!read_raw(&c)) {
+                if (!read_input(&c)) {
                     return -10;
                 } else {
                     if (c == '\x8d') {
@@ -387,32 +399,32 @@ public:
     // TODO: switch rows, cols
     void get_cursor_position(int& rows, int& cols) const
     {
-        char buf[32];
-        unsigned int i = 0;
+        std::string response;
         write(cursor_position_report());
-        while (i < sizeof(buf) - 1) {
-            while (!read_raw(&buf[i])) {
-            };
-            if (buf[i] == 'R')
-                break;
-            i++;
-        }
-        buf[i] = '\0';
-        if (i < 5) {
-            throw std::runtime_error("get_cursor_position(): too short response");
-        }
-        // Find the result in the response, drop the rest:
-        i = 0;
-        while (i < sizeof(buf) - 1 - 5) {
-            if (buf[i] == '\x1b' && buf[i+1] == '[') {
-                if (sscanf(&buf[i+2], "%d;%d", &rows, &cols) == 2) {
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+        while (response.size() + pending_input.size() < 65536
+                && std::chrono::steady_clock::now() < deadline) {
+            char c;
+            // Read the terminal, not the keys already saved by an earlier
+            // query. Keys before the DSR response still belong to the editor.
+            if (!read_raw(&c)) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                continue;
+            }
+            response += c;
+            if (c == 'R') {
+                const size_t start = response.rfind("\x1b[");
+                if (start == std::string::npos) continue;
+                int length = 0;
+                if (sscanf(response.c_str() + start, "\x1b[%d;%dR%n",
+                        &rows, &cols, &length) == 2 && length > 0
+                        && start + length == response.size()
+                        && rows > 0 && cols > 0) {
+                    pending_input.insert(pending_input.end(),
+                        response.begin(), response.begin() + start);
                     return;
-                } else {
-                    throw std::runtime_error("get_cursor_position(): result could not be parsed");
                 }
             }
-            if (buf[i] == '\0') break;
-            i++;
         }
         throw std::runtime_error("get_cursor_position(): result not found in the response");
     }

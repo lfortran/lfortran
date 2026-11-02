@@ -2253,14 +2253,31 @@ namespace Shape {
             return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, m_shapes.p, 0,
                 type, ASR::arraystorageType::ColMajor));
         } else {
+            // The extent of a variable is fixed when the variable is
+            // declared, so a length that is not constant is not evaluated
+            // again here, where a variable of its bound may have been
+            // redefined: `shape(a)` is [size(a, 1), ..., size(a, n)]. The
+            // shape of any other expression is taken from its value when
+            // the program runs.
+            ASR::expr_t* var = arg_value ? nullptr
+                : ASRUtils::get_past_array_physical_cast(args[0]);
             for (size_t i = 0; i < n_dims; i++) {
-                if (m_dims[i].m_length) {
-                    ASR::expr_t *e = nullptr;
+                if (m_dims[i].m_length != nullptr
+                        && !ASRUtils::is_value_constant(
+                            ASRUtils::expr_value(m_dims[i].m_length))) {
+                    if (var == nullptr || !ASR::is_a<ASR::Var_t>(*var)) {
+                        return nullptr;
+                    }
+                    ASRUtils::ASRBuilder b(al, loc);
+                    m_shapes.push_back(al, ASRUtils::EXPR(
+                        ASRUtils::make_ArraySize_t_util(al, loc, var,
+                            b.i32(i + 1), extract_type(type), nullptr,
+                            false)));
+                } else if (m_dims[i].m_length) {
+                    ASR::expr_t *e = Max::create_extent(al, m_dims[i].m_length);
                     if (extract_kind_from_ttype_t(type) != 4) {
                         ASRUtils::ASRBuilder b(al, loc);
-                        e = b.i2i_t(m_dims[i].m_length, extract_type(type));
-                    } else {
-                        e = m_dims[i].m_length;
+                        e = b.i2i_t(e, extract_type(type));
                     }
                     m_shapes.push_back(al, e);
                 }
@@ -5324,9 +5341,235 @@ namespace MatMul {
             "cannot be nullptr", x.base.base.loc, diagnostics);
     }
 
-    static inline ASR::expr_t *eval_MatMul(Allocator &,
-        const Location &, ASR::ttype_t *, Vec<ASR::expr_t*>&, diag::Diagnostics&) {
-        // TODO
+    template <typename T>
+    struct is_std_complex : std::false_type {};
+
+    template <typename T>
+    struct is_std_complex<std::complex<T>> : std::true_type {};
+
+    // Only fold when the result type is the one Fortran gives the product.
+    // `create_MatMul` takes the kind from one argument, so an argument of
+    // the same type category but another kind (real(4) with real(8)) is left
+    // to run time instead of being folded in the wrong kind.
+    static inline bool matmul_arg_foldable(ASR::ttype_t *arg_type,
+            ASR::ttype_t *elem_type) {
+        ASR::ttype_t *t = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(arg_type));
+        bool same_kind = ASRUtils::extract_kind_from_ttype_t(t) ==
+            ASRUtils::extract_kind_from_ttype_t(elem_type);
+        if (is_integer(*t)) {
+            return !is_integer(*elem_type) || same_kind;
+        } else if (is_real(*t)) {
+            return (is_real(*elem_type) || is_complex(*elem_type)) && same_kind;
+        } else if (is_complex(*t)) {
+            return is_complex(*elem_type) && same_kind;
+        } else if (is_logical(*t)) {
+            return is_logical(*elem_type) && same_kind;
+        }
+        return false;
+    }
+
+    static inline ASR::ArrayConstant_t *matmul_constant_arg(ASR::expr_t *arg) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+            arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+        }
+        arg = ASRUtils::expr_value(arg);
+        if (arg && ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+            arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+        }
+        if (!arg || !ASR::is_a<ASR::ArrayConstant_t>(*arg)) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::ArrayConstant_t>(arg);
+    }
+
+    template <typename T>
+    static inline bool matmul_element(Allocator &al, ASR::ArrayConstant_t *a,
+            int64_t i, T &v) {
+        ASR::expr_t *e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
+        if (e && ASR::is_a<ASR::ComplexConstructor_t>(*e)) {
+            e = ASR::down_cast<ASR::ComplexConstructor_t>(e)->m_value;
+        }
+        if (!e) return false;
+        if constexpr (std::is_same_v<T, bool>) {
+            if (!ASR::is_a<ASR::LogicalConstant_t>(*e)) return false;
+            v = ASR::down_cast<ASR::LogicalConstant_t>(e)->m_value;
+            return true;
+        } else {
+            if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+                v = static_cast<T>(ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n);
+                return true;
+            }
+            if constexpr (!std::is_integral_v<T>) {
+                if (ASR::is_a<ASR::RealConstant_t>(*e)) {
+                    v = static_cast<T>(ASR::down_cast<ASR::RealConstant_t>(e)->m_r);
+                    return true;
+                }
+            }
+            if constexpr (is_std_complex<T>::value) {
+                if (ASR::is_a<ASR::ComplexConstant_t>(*e)) {
+                    ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(e);
+                    v = T(static_cast<typename T::value_type>(c->m_re),
+                        static_cast<typename T::value_type>(c->m_im));
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    // Sets `s` to `s + x * y` and returns true, or returns false if the
+    // product or the sum overflows int64_t.
+    static inline bool matmul_checked_fma(int64_t &s, int64_t x, int64_t y) {
+        constexpr int64_t max = std::numeric_limits<int64_t>::max();
+        constexpr int64_t min = std::numeric_limits<int64_t>::min();
+        if (x != 0 && y != 0) {
+            bool overflow = x > 0
+                ? (y > 0 ? x > max / y : y < min / x)
+                : (y > 0 ? x < min / y : y < max / x);
+            if (overflow) return false;
+        }
+        int64_t p = x * y;
+        if ((p > 0 && s > max - p) || (p < 0 && s < min - p)) return false;
+        s += p;
+        return true;
+    }
+
+    // Folds `matrix_a` (n x k) times `matrix_b` (k x m), both column major,
+    // computing in the precision of the result element type T. A rank 1
+    // argument is a 1 x k or a k x 1 matrix. An integer result that
+    // overflows T is an error.
+    template <typename T>
+    static inline ASR::expr_t *eval_MatMul_values(Allocator &al,
+            const Location &loc, ASR::ttype_t *return_type,
+            ASR::ArrayConstant_t *a, ASR::ArrayConstant_t *b,
+            int64_t n, int64_t k, int64_t m, diag::Diagnostics &diag) {
+        std::vector<T> va(n * k), vb(k * m);
+        T v{};
+        for (int64_t i = 0; i < n * k; i++) {
+            if (!matmul_element(al, a, i, v)) return nullptr;
+            va[i] = v;
+        }
+        for (int64_t i = 0; i < k * m; i++) {
+            if (!matmul_element(al, b, i, v)) return nullptr;
+            vb[i] = v;
+        }
+        ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(return_type));
+        std::vector<ASR::expr_t*> values(n * m);
+        for (int64_t j = 0; j < m; j++) {
+            for (int64_t i = 0; i < n; i++) {
+                T s{};
+                if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>) {
+                    // Accumulate exactly and reject a result outside T.
+                    int64_t exact = 0;
+                    bool fits = true;
+                    for (int64_t p = 0; p < k && fits; p++) {
+                        fits = matmul_checked_fma(exact,
+                            va[i + p * n], vb[p + j * k]);
+                    }
+                    if (!fits || !integer_fits<T>(exact)) {
+                        append_error(diag, "integer overflow in `matmul`: "
+                            "the result does not fit in integer(" +
+                            std::to_string(sizeof(T)) + ")", loc);
+                        return nullptr;
+                    }
+                    s = static_cast<T>(exact);
+                } else {
+                    for (int64_t p = 0; p < k; p++) {
+                        T x = va[i + p * n], y = vb[p + j * k];
+                        if constexpr (std::is_same_v<T, bool>) {
+                            s = s || (x && y);
+                        } else {
+                            s += x * y;
+                        }
+                    }
+                }
+                ASR::expr_t *value = nullptr;
+                if constexpr (std::is_same_v<T, bool>) {
+                    value = EXPR(ASR::make_LogicalConstant_t(al, loc, s, elem_type));
+                } else if constexpr (std::is_integral_v<T>) {
+                    value = EXPR(ASR::make_IntegerConstant_t(al, loc, s, elem_type));
+                } else if constexpr (is_std_complex<T>::value) {
+                    value = EXPR(ASR::make_ComplexConstant_t(al, loc,
+                        s.real(), s.imag(), elem_type));
+                } else {
+                    value = ASRUtils::make_RealConstant_util(al, loc, s, elem_type);
+                }
+                values[i + j * n] = value;
+            }
+        }
+        ASRBuilder builder(al, loc);
+        return builder.ArrayConstant(values, elem_type, false, return_type);
+    }
+
+    static inline ASR::expr_t *eval_MatMul(Allocator &al,
+        const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args,
+        diag::Diagnostics& diag) {
+        ASR::ttype_t *elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(return_type));
+        ASR::ArrayConstant_t *consts[2];
+        int64_t shape[2][2];
+        for (int i = 0; i < 2; i++) {
+            ASR::ttype_t *arg_type = expr_type(args[i]);
+            if (!matmul_arg_foldable(arg_type, elem_type)) return nullptr;
+            consts[i] = matmul_constant_arg(args[i]);
+            if (!consts[i]) return nullptr;
+            ASR::dimension_t *dims = nullptr;
+            int rank = checked_integer_cast<int>(
+                extract_dimensions_from_ttype(arg_type, dims));
+            int64_t lengths[2] = {1, 1};
+            for (int d = 0; d < rank; d++) {
+                if (!dims[d].m_length || !ASRUtils::extract_value(
+                        ASRUtils::expr_value(dims[d].m_length), lengths[d])) {
+                    return nullptr;
+                }
+            }
+            if (rank == 1) {
+                // A vector `matrix_a` is a row, a vector `matrix_b` a column.
+                shape[i][0] = i == 0 ? 1 : lengths[0];
+                shape[i][1] = i == 0 ? lengths[0] : 1;
+            } else {
+                shape[i][0] = lengths[0];
+                shape[i][1] = lengths[1];
+            }
+            if (ASRUtils::get_fixed_size_of_array(consts[i]->m_type) !=
+                    shape[i][0] * shape[i][1]) {
+                return nullptr;
+            }
+        }
+        int64_t n = shape[0][0], k = shape[0][1], m = shape[1][1];
+        if (shape[1][0] != k) return nullptr;
+        int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+        if (is_logical(*elem_type)) {
+            return eval_MatMul_values<bool>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_integer(*elem_type) && kind == 1) {
+            return eval_MatMul_values<int8_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_integer(*elem_type) && kind == 2) {
+            return eval_MatMul_values<int16_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_integer(*elem_type) && kind == 4) {
+            return eval_MatMul_values<int32_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_integer(*elem_type) && kind == 8) {
+            return eval_MatMul_values<int64_t>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_real(*elem_type) && kind == 4) {
+            return eval_MatMul_values<float>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_real(*elem_type) && kind == 8) {
+            return eval_MatMul_values<double>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_complex(*elem_type) && kind == 4) {
+            return eval_MatMul_values<std::complex<float>>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        } else if (is_complex(*elem_type) && kind == 8) {
+            return eval_MatMul_values<std::complex<double>>(al, loc, return_type,
+                consts[0], consts[1], n, k, m, diag);
+        }
+        // Other kinds are not folded at compile time.
         return nullptr;
     }
 
@@ -5533,6 +5776,19 @@ namespace MatMul {
         body.push_back(al, STMT(ASR::make_Assert_t(al, loc, dim_mismatch_check,
             EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, assert_msg),
             character(assert_msg.size()))))));
+        // Every loop below runs over the bounds of the dimensions it indexes
+        // and the assertion checks that the contracted dimensions agree, so
+        // the elements of the operands need no bounds checks.
+        ASR::down_cast<ASR::ArrayItem_t>(a_ref)->m_in_bounds = true;
+        ASR::down_cast<ASR::ArrayItem_t>(b_ref)->m_in_bounds = true;
+        ASR::stmt_t *load_b_elem = nullptr;
+        if ( overload_id != 1 ) {
+            // `matrix_b(k, j)` does not depend on the innermost index `i`
+            ASR::expr_t *b_elem = declare("b_elem",
+                ASRUtils::duplicate_type(al, expr_type(b_ref)), Local);
+            load_b_elem = b.Assignment(b_elem, b_ref);
+            b_ref = b_elem;
+        }
         ASR::expr_t *mul_value;
         if (is_logical(*expr_type(a_ref))) {
             mul_value = b.And(a_ref, b_ref);
@@ -5555,28 +5811,64 @@ namespace MatMul {
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
-        // Each element is accumulated in a scalar local and stored once,
-        // rather than loading and storing the result for every term.
-        ASR::expr_t *acc = declare("acc",
-            ASRUtils::duplicate_type(al, expr_type(res_ref)), Local);
-        ASR::stmt_t *init_stmt = nullptr;
-        ASR::stmt_t *update_stmt = nullptr;
-        if (is_logical(*expr_type(res_ref))) {
-            init_stmt = b.Assignment(acc, b.bool_t(false, expr_type(res_ref)));
-            update_stmt = b.Assignment(acc, b.Or(acc, mul_value));
+        if ( overload_id == 1 ) {
+            // Each element is a dot product over a column of `matrix_b`,
+            // accumulated in a scalar local and stored once.
+            ASR::expr_t *acc = declare("acc",
+                ASRUtils::duplicate_type(al, expr_type(res_ref)), Local);
+            ASR::stmt_t *init_stmt = nullptr;
+            ASR::stmt_t *update_stmt = nullptr;
+            if (is_logical(*expr_type(res_ref))) {
+                init_stmt = b.Assignment(acc, b.bool_t(false, expr_type(res_ref)));
+                update_stmt = b.Assignment(acc, b.Or(acc, mul_value));
+            } else {
+                init_stmt = b.Assign_Constant(acc, 0);
+                update_stmt = b.Assignment(acc, b.Add(acc, mul_value));
+            }
+            body.push_back(al, b.DoLoop(i, a_lbound, a_ubound, {
+                b.DoLoop(j, b_lbound, b_ubound, {
+                    init_stmt,
+                    b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
+                        update_stmt
+                    }),
+                    b.Assignment(res_ref, acc),
+                })
+            }));
         } else {
-            init_stmt = b.Assign_Constant(acc, 0);
-            update_stmt = b.Assignment(acc, b.Add(acc, mul_value));
-        }
-        body.push_back(al, b.DoLoop(i, a_lbound, a_ubound, {
-            b.DoLoop(j, b_lbound, b_ubound, {
-                init_stmt,
-                b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
-                    update_stmt
+            // Column j of the result is accumulated in place, one column of
+            // `matrix_a` at a time (for a vector `matrix_b` the j loop has one
+            // iteration):
+            //     r(:, j) = 0
+            //     do k: t = b(k, j); r(:, j) = r(:, j) + a(:, k) * t
+            // The innermost loop walks the columns of `matrix_a` and of the
+            // result contiguously, and every element is still summed over k
+            // in increasing order. The result must not overlap an operand;
+            // the caller assigns through a temporary when it might.
+            auto res_item = [&]() {
+                return overload_id == 2 ? b.ArrayItem_01(result, {i})
+                    : b.ArrayItem_01(result, {i, j});
+            };
+            ASR::stmt_t *init_stmt = nullptr;
+            ASR::stmt_t *update_stmt = nullptr;
+            if (is_logical(*expr_type(res_ref))) {
+                init_stmt = b.Assignment(res_ref, b.bool_t(false, expr_type(res_ref)));
+                update_stmt = b.Assignment(res_item(), b.Or(res_item(), mul_value));
+            } else {
+                init_stmt = b.Assign_Constant(res_ref, 0);
+                update_stmt = b.Assignment(res_item(), b.Add(res_item(), mul_value));
+            }
+            body.push_back(al, b.DoLoop(j, b_lbound, b_ubound, {
+                b.DoLoop(i, a_lbound, a_ubound, {
+                    init_stmt
                 }),
-                b.Assignment(res_ref, acc),
-            })
-        }));
+                b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
+                    load_b_elem,
+                    b.DoLoop(i, b.GetLBound(args[0], 1), b.GetUBound(args[0], 1), {
+                        update_stmt
+                    })
+                })
+            }));
+        }
         body.push_back(al, b.Return());
         ASR::symbol_t *fn_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
                 body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -5972,7 +6264,13 @@ namespace Parity {
             return b.Call(fn_sym, m_args, return_type, nullptr);
         } else {
             fill_func_arg("dim", duplicate_type_with_empty_dims(al, arg_types[1]));
-            ASR::expr_t *result = declare("result", return_type, Out);
+            // The extents of a result of a shape known only at run time are
+            // expressions of the caller, so the argument has empty ones
+            ASR::ttype_t* result_type = return_type;
+            if (!ASRUtils::is_fixed_size_array(return_type)) {
+                result_type = duplicate_type_with_empty_dims(al, return_type);
+            }
+            ASR::expr_t *result = declare("result", result_type, Out);
             args.push_back(al, result);
             /*
                 for array of rank 3, the following code is generated:
@@ -7494,6 +7792,384 @@ namespace Transpose {
     }
 
 } // namespace Transpose
+
+/*
+A reduction with a scalar result over an elementwise array expression, such
+as `sum(a(i:j) * b(i:j))`, `count(x > 0.5)` or `dot_product(a * 2, b)`, is
+lowered by array_op into one loop nest that accumulates the elements of the
+expression, so that the expression is never evaluated into an array
+temporary (array_struct_temporary does not create one for it). The loop has
+the initial value, operation and element order of the generated function of
+the reduction (see instantiate_ArrIntrinsic, AnyAll::instantiate_AnyAll,
+Count::instantiate_Count and DotProduct::instantiate_DotProduct), so the
+result is the same.
+*/
+namespace ElementwiseReduction {
+
+    static inline bool has_elementwise_element_type(ASR::expr_t* x) {
+        ASR::ttype_t* type = ASRUtils::extract_type(ASRUtils::expr_type(x));
+        return ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type) ||
+            ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type);
+    }
+
+    // Whether the array `x` is a variable, or a section of one, that the
+    // loop indexes in place.
+    static inline bool is_designator(ASR::expr_t* x) {
+        x = ASRUtils::get_past_array_physical_cast(x);
+        if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(x))) {
+            return false;
+        }
+        switch (x->type) {
+            case ASR::exprType::Var: {
+                return true;
+            }
+            case ASR::exprType::ArraySection: {
+                ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x);
+                return !ASRUtils::is_array_indexed_with_array_indices(section) &&
+                    (ASR::is_a<ASR::Var_t>(*section->m_v) ||
+                     (ASR::is_a<ASR::StructInstanceMember_t>(*section->m_v) &&
+                      !ASRUtils::is_array(ASRUtils::expr_type(
+                          ASR::down_cast<ASR::StructInstanceMember_t>(section->m_v)->m_v))));
+            }
+            case ASR::exprType::StructInstanceMember: {
+                return !ASRUtils::is_array(ASRUtils::expr_type(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v));
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
+    static inline bool is_elementwise_operation(ASR::expr_t* x);
+
+    // Whether `x` is a scalar, which is the same for every element, or an
+    // array that the loop reads element by element.
+    static inline bool is_elementwise_operand(ASR::expr_t* x) {
+        if (x == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(x))) {
+            return true;
+        }
+        return has_elementwise_element_type(x) &&
+            (is_designator(x) || is_elementwise_operation(x));
+    }
+
+    // Whether `x` is an array computed element by element from its operands
+    // by intrinsic operations, and elemental intrinsic functions if
+    // `elemental_functions`, only, with `operand` true for each operand.
+    template <typename Operand>
+    static inline bool is_elementwise_operation_of(ASR::expr_t* x,
+            const Operand& operand, bool elemental_functions) {
+        x = ASRUtils::get_past_array_physical_cast(x);
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x)) ||
+                ASRUtils::is_simd_array(x) || !has_elementwise_element_type(x)) {
+            return false;
+        }
+        switch (x->type) {
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t* op = ASR::down_cast<ASR::IntegerBinOp_t>(x);
+                return operand(op->m_left) && operand(op->m_right);
+            }
+            case ASR::exprType::RealBinOp: {
+                ASR::RealBinOp_t* op = ASR::down_cast<ASR::RealBinOp_t>(x);
+                return operand(op->m_left) && operand(op->m_right);
+            }
+            case ASR::exprType::ComplexBinOp: {
+                ASR::ComplexBinOp_t* op = ASR::down_cast<ASR::ComplexBinOp_t>(x);
+                return operand(op->m_left) && operand(op->m_right);
+            }
+            case ASR::exprType::LogicalBinOp: {
+                ASR::LogicalBinOp_t* op = ASR::down_cast<ASR::LogicalBinOp_t>(x);
+                return operand(op->m_left) && operand(op->m_right);
+            }
+            case ASR::exprType::IntegerCompare: {
+                ASR::IntegerCompare_t* op = ASR::down_cast<ASR::IntegerCompare_t>(x);
+                return operand(op->m_left) && operand(op->m_right);
+            }
+            case ASR::exprType::RealCompare: {
+                ASR::RealCompare_t* op = ASR::down_cast<ASR::RealCompare_t>(x);
+                return operand(op->m_left) && operand(op->m_right);
+            }
+            case ASR::exprType::ComplexCompare: {
+                ASR::ComplexCompare_t* op = ASR::down_cast<ASR::ComplexCompare_t>(x);
+                return operand(op->m_left) && operand(op->m_right);
+            }
+            case ASR::exprType::LogicalCompare: {
+                ASR::LogicalCompare_t* op = ASR::down_cast<ASR::LogicalCompare_t>(x);
+                return operand(op->m_left) && operand(op->m_right);
+            }
+            case ASR::exprType::IntegerUnaryMinus: {
+                return operand(ASR::down_cast<ASR::IntegerUnaryMinus_t>(x)->m_arg);
+            }
+            case ASR::exprType::RealUnaryMinus: {
+                return operand(ASR::down_cast<ASR::RealUnaryMinus_t>(x)->m_arg);
+            }
+            case ASR::exprType::ComplexUnaryMinus: {
+                return operand(ASR::down_cast<ASR::ComplexUnaryMinus_t>(x)->m_arg);
+            }
+            case ASR::exprType::LogicalNot: {
+                return operand(ASR::down_cast<ASR::LogicalNot_t>(x)->m_arg);
+            }
+            case ASR::exprType::Cast: {
+                return operand(ASR::down_cast<ASR::Cast_t>(x)->m_arg);
+            }
+            case ASR::exprType::IntrinsicElementalFunction: {
+                if (!elemental_functions) {
+                    return false;
+                }
+                ASR::IntrinsicElementalFunction_t* f =
+                    ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x);
+                for (size_t i = 0; i < f->n_args; i++) {
+                    if (!operand(f->m_args[i])) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
+    // Whether `x` is an array computed element by element from its operands
+    // by intrinsic operations and elemental intrinsic functions only. A
+    // reference to a function, which may have side effects or return an
+    // array, is not.
+    static inline bool is_elementwise_operation(ASR::expr_t* x) {
+        return is_elementwise_operation_of(x, is_elementwise_operand, true);
+    }
+
+    // The array and mask operands of the reduction `x`, if it is one with a
+    // scalar result that the loop can compute. For COUNT, the elements of
+    // its mask are counted and there is no array operand. For DOT_PRODUCT,
+    // `array` is its first vector and `vector_b` its second one.
+    static inline bool get_operands(ASR::IntrinsicArrayFunction_t* x,
+            ASR::expr_t*& array, ASR::expr_t*& vector_b, ASR::expr_t*& mask) {
+        array = nullptr;
+        vector_b = nullptr;
+        mask = nullptr;
+        if (ASRUtils::is_array(x->m_type) ||
+                ASRUtils::is_value_constant(x->m_value)) {
+            return false;
+        }
+        switch (static_cast<IntrinsicArrayFunctions>(x->m_arr_intrinsic_id)) {
+            case IntrinsicArrayFunctions::Sum:
+            case IntrinsicArrayFunctions::Product:
+            case IntrinsicArrayFunctions::MaxVal:
+            case IntrinsicArrayFunctions::MinVal: {
+                // Without `dim`, with an optional `mask`
+                if (x->m_overload_id == 0 && x->n_args >= 1) {
+                    array = x->m_args[0];
+                } else if (x->m_overload_id == 2 && x->n_args >= 2) {
+                    array = x->m_args[0];
+                    mask = x->m_args[1];
+                } else {
+                    return false;
+                }
+                break;
+            }
+            case IntrinsicArrayFunctions::Any:
+            case IntrinsicArrayFunctions::All: {
+                if (x->m_overload_id != 0 || x->n_args < 1) {
+                    return false;
+                }
+                array = x->m_args[0];
+                break;
+            }
+            case IntrinsicArrayFunctions::Count: {
+                if (x->m_overload_id != 0 || x->n_args < 1) {
+                    return false;
+                }
+                mask = x->m_args[0];
+                break;
+            }
+            case IntrinsicArrayFunctions::DotProduct: {
+                if (x->n_args != 2) {
+                    return false;
+                }
+                array = x->m_args[0];
+                vector_b = x->m_args[1];
+                break;
+            }
+            default: {
+                return false;
+            }
+        }
+        // The loop reads the elements whatever the physical type of the array
+        if (array) {
+            array = ASRUtils::get_past_array_physical_cast(array);
+        }
+        if (vector_b) {
+            vector_b = ASRUtils::get_past_array_physical_cast(vector_b);
+            // The generated function converts the elements of the second
+            // vector to the kind of the first one. The loop needs no such
+            // conversion: it accumulates only vectors whose elements have
+            // the type of the result, as the arguments of a DOT_PRODUCT
+            // that are converted to a common type do.
+            if (!ASRUtils::is_array(ASRUtils::expr_type(vector_b)) ||
+                    !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(array)),
+                        ASRUtils::extract_type(ASRUtils::expr_type(vector_b)), array, vector_b) ||
+                    !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(array)),
+                        x->m_type, array, nullptr)) {
+                return false;
+            }
+        }
+        if (mask) {
+            mask = ASRUtils::get_past_array_physical_cast(mask);
+        }
+        // A scalar mask is evaluated once, by the generated function
+        return (array == nullptr || ASRUtils::is_array(ASRUtils::expr_type(array))) &&
+            (mask == nullptr || (ASRUtils::is_array(ASRUtils::expr_type(mask)) &&
+                ASRUtils::is_logical(*ASRUtils::expr_type(mask))));
+    }
+
+    // Whether `x` is lowered into a loop that accumulates the elements of its
+    // operands: a reduction with a scalar result, an operand of which is an
+    // elementwise operation that would otherwise be evaluated into an array
+    // temporary.
+    static inline bool is_lowered_to_loop(ASR::IntrinsicArrayFunction_t* x) {
+        ASR::expr_t *array = nullptr, *vector_b = nullptr, *mask = nullptr;
+        if (!get_operands(x, array, vector_b, mask)) {
+            return false;
+        }
+        bool has_operation = (array && is_elementwise_operation(array)) ||
+            (vector_b && is_elementwise_operation(vector_b)) ||
+            (mask && is_elementwise_operation(mask));
+        return has_operation && is_elementwise_operand(array) &&
+            is_elementwise_operand(vector_b) && is_elementwise_operand(mask);
+    }
+
+    static inline bool is_lowered_to_loop(ASR::expr_t* x) {
+        return ASR::is_a<ASR::IntrinsicArrayFunction_t>(*x) &&
+            is_lowered_to_loop(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x));
+    }
+
+    // Whether assigning `value` to `target` is lowered into a loop that
+    // accumulates the elements of the reduction `value` and then assigns
+    // the accumulator to `target`: an intrinsic assignment to a scalar of
+    // the type of the result. A defined assignment, given by `overloaded`,
+    // is carried out by its subroutine instead. Its target never has the
+    // type of the result, since a defined assignment cannot replace an
+    // intrinsic one, so the types tell it apart when `overloaded` is not
+    // at hand.
+    static inline bool is_assigned_by_loop(ASR::expr_t* target, ASR::expr_t* value,
+            ASR::stmt_t* overloaded) {
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        return overloaded == nullptr && !ASRUtils::is_array(target_type) &&
+            is_lowered_to_loop(value) &&
+            ASRUtils::types_equal(ASRUtils::type_get_past_allocatable_pointer(target_type),
+                ASRUtils::expr_type(value), target, value);
+    }
+
+    // The value of the accumulator before the first element. It has the
+    // type of the elements of `array`, which is not allocatable or a
+    // pointer even when `array` is.
+    static inline ASR::expr_t* get_initial_value(Allocator& al, const Location& loc,
+            ASR::IntrinsicArrayFunction_t* x, ASR::expr_t* array) {
+        ASR::ttype_t* element_type = array ? ASRUtils::duplicate_type(
+            al, ASRUtils::extract_type(ASRUtils::expr_type(array))) : nullptr;
+        switch (static_cast<IntrinsicArrayFunctions>(x->m_arr_intrinsic_id)) {
+            case IntrinsicArrayFunctions::Sum: {
+                return get_constant_zero_with_given_type(al, element_type);
+            }
+            case IntrinsicArrayFunctions::Product: {
+                return get_constant_one_with_given_type(al, element_type);
+            }
+            case IntrinsicArrayFunctions::MaxVal: {
+                return get_minimum_value_with_given_type(al, element_type);
+            }
+            case IntrinsicArrayFunctions::MinVal: {
+                return get_maximum_value_with_given_type(al, element_type);
+            }
+            case IntrinsicArrayFunctions::Any:
+            case IntrinsicArrayFunctions::All: {
+                int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array));
+                return make_ConstantWithKind(make_LogicalConstant_t, make_Logical_t,
+                    x->m_arr_intrinsic_id == static_cast<int64_t>(IntrinsicArrayFunctions::All),
+                    kind, loc);
+            }
+            case IntrinsicArrayFunctions::Count: {
+                ASRBuilder b(al, loc);
+                return b.i_t(0, x->m_type);
+            }
+            case IntrinsicArrayFunctions::DotProduct: {
+                // 0, (0, 0) or .false.
+                return get_constant_zero_with_given_type(al, x->m_type);
+            }
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
+    // Whether the update of the accumulator (see accumulate) uses the
+    // element more than once, so that the element is evaluated into a
+    // variable first.
+    static inline bool accumulate_uses_element_twice(ASR::IntrinsicArrayFunction_t* x) {
+        switch (static_cast<IntrinsicArrayFunctions>(x->m_arr_intrinsic_id)) {
+            case IntrinsicArrayFunctions::MaxVal:
+            case IntrinsicArrayFunctions::MinVal: {
+                return true;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
+    // The accumulator `acc` updated with the element `element`, and for
+    // DOT_PRODUCT with the element `element_b` of its second vector.
+    static inline ASR::expr_t* accumulate(Allocator& al, const Location& loc,
+            ASR::IntrinsicArrayFunction_t* x, ASR::expr_t* acc, ASR::expr_t* element,
+            ASR::expr_t* element_b) {
+        ASRBuilder b(al, loc);
+        switch (static_cast<IntrinsicArrayFunctions>(x->m_arr_intrinsic_id)) {
+            case IntrinsicArrayFunctions::Sum: {
+                return b.Add(acc, element);
+            }
+            case IntrinsicArrayFunctions::Product: {
+                return b.Mul(acc, element);
+            }
+            case IntrinsicArrayFunctions::MaxVal: {
+                return b.Max(acc, element);
+            }
+            case IntrinsicArrayFunctions::MinVal: {
+                return b.Min(acc, element);
+            }
+            case IntrinsicArrayFunctions::Any: {
+                return b.Or(acc, element);
+            }
+            case IntrinsicArrayFunctions::All: {
+                return b.And(acc, element);
+            }
+            case IntrinsicArrayFunctions::Count: {
+                return b.Add(acc, b.i_t(1, x->m_type));
+            }
+            case IntrinsicArrayFunctions::DotProduct: {
+                if (ASRUtils::is_logical(*x->m_type)) {
+                    return b.Or(acc, b.And(element, element_b));
+                }
+                if (ASRUtils::is_complex(*x->m_type)) {
+                    Vec<ASR::expr_t*> conjg_args;
+                    conjg_args.reserve(al, 1);
+                    conjg_args.push_back(al, element);
+                    ASR::expr_t* conjg = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+                        al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::Conjg),
+                        conjg_args.p, conjg_args.size(), 0, x->m_type, nullptr));
+                    return b.Add(acc, ASRUtils::EXPR(ASR::make_ComplexBinOp_t(al, loc,
+                        conjg, ASR::binopType::Mul, element_b, x->m_type, nullptr)));
+                }
+                return b.Add(acc, b.Mul(element, element_b));
+            }
+            default: {
+                LCOMPILERS_ASSERT(false);
+                return nullptr;
+            }
+        }
+    }
+
+} // namespace ElementwiseReduction
 
 namespace IntrinsicArrayFunctionRegistry {
 

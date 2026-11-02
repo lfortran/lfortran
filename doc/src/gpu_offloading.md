@@ -318,6 +318,17 @@ generates the device source. It never falls back to the CPU:
   a value held in a component of another value -- every value of that type
   device code creates is on the device heap instead (a *heap type*, see
   [Allocating on the device](#allocating-on-the-device)).
+  Component buffers do not necessarily share the address space of the
+  derived-type value: a fixed-size result temporary can have thread-local
+  buffers, while a host buffer or a lifted workspace is in global memory.
+  After storage placement, `gpu_memory_space` reads the canonical
+  component-to-storage `Associate` bindings. A device specialization that
+  needs non-global component buffers takes them, their extents and their
+  lower bounds as explicit ASR arguments, with ordinary array memory-space
+  types. Its dummy components are bound to those arguments with `Associate`,
+  so forwarding them to another routine preserves each buffer's space.
+  Code generation emits those arguments rather than adding a second,
+  implicitly global component interface.
 * An argument a procedure defines (`intent(out)` or `intent(inout)`), a
   scalar or a derived-type value, is passed by reference, to a value in the
   memory of the calling thread, as the procedure's locals are. An actual
