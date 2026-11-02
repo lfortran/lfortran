@@ -128,6 +128,28 @@ restores it before it returns, so a newer instance active during the
 statement has restored it before the statement goes on. If the interface of
 P depends on host variables, a thunk reaches them, like an internal
 procedure, through aliases bound from the frame in its slot.
+
+An instance gives back or restores its slot when it ends, after its locals
+are finalized: a final procedure can invoke a value the instance made. The
+backends finalize the locals of a procedure after its last statement, so a
+host with a local that a final procedure can be invoked for has its body,
+those locals and its BLOCK and ASSOCIATE constructs moved into a BLOCK
+construct `__lcompilers_instance`, whose locals are finalized at its end.
+Every return of the host exits the construct instead, and the statements
+that give back and restore the slot follow it:
+
+    subroutine h(n)                             ! after the pass
+        ...
+        block __lcompilers_instance
+            type(t) :: x                        ! has a final procedure
+            bind_reference(__lcompilers_frame%n, n)
+            ...
+            if (n < 0) exit __lcompilers_instance   ! was: return
+            ...
+        end block __lcompilers_instance
+        if (__lcompilers_held_frame_slot /= 0) call __lcompilers_release_frame_slot(__lcompilers_frame)
+    contains
+        ...
 */
 
 namespace HostFrames {
@@ -1107,6 +1129,53 @@ public:
     }
 };
 
+// Makes every return in a BLOCK construct, including the returns in the
+// BLOCK and ASSOCIATE constructs of its scope, an exit of the construct
+// named `name`.
+class ReturnExits: public PassUtils::PassVisitor<ReturnExits> {
+public:
+    char *name;
+
+    ReturnExits(Allocator &al_, char *name_): PassVisitor(al_, nullptr),
+            name(name_) {
+        pass_result.reserve(al, 1);
+    }
+
+    void visit_Return(const ASR::Return_t &x) {
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_Exit_t(al,
+            x.base.base.loc, name)));
+    }
+
+    void visit_Function(const ASR::Function_t &/*x*/) {}
+
+    // The statements of a construct are visited with its scope
+    void visit_BlockCall(const ASR::BlockCall_t &/*x*/) {}
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &/*x*/) {}
+
+    void visit_Block(const ASR::Block_t &x) {
+        ASR::Block_t &xx = const_cast<ASR::Block_t&>(x);
+        SymbolTable *parent = current_scope;
+        current_scope = x.m_symtab;
+        for (auto &item: x.m_symtab->get_scope()) {
+            visit_symbol(*item.second);
+        }
+        transform_stmts(xx.m_body, xx.n_body);
+        current_scope = parent;
+    }
+
+    void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {
+        ASR::AssociateBlock_t &xx = const_cast<ASR::AssociateBlock_t&>(x);
+        SymbolTable *parent = current_scope;
+        current_scope = x.m_symtab;
+        for (auto &item: x.m_symtab->get_scope()) {
+            visit_symbol(*item.second);
+        }
+        transform_stmts(xx.m_body, xx.n_body);
+        current_scope = parent;
+    }
+};
+
 class HostFrameBuilder {
 public:
     Allocator &al;
@@ -1846,19 +1915,25 @@ public:
                     calls.visit_symbol(*item.second);
                 }
             }
+            // The statements that end an instance of the host
+            std::vector<std::function<ASR::stmt_t*()>> epilogue;
             if (!pools.empty()) {
                 use_pools(host_sym, body, n_body, frame, pools, acquire, release,
-                    pool_slots.held, procs, children);
+                    pool_slots.held, procs, children, epilogue);
             }
             if (!thunks.empty()) {
                 mark_procedure_value_sites(host_sym, body, n_body, frame, slot,
-                    thunks, procs, children, prologue);
+                    thunks, procs, children, prologue, epilogue);
             }
             for (size_t i = 0; i < n_body; i++) {
                 prologue.push_back(al, body[i]);
             }
             body = prologue.p;
             n_body = prologue.size();
+            if (!epilogue.empty()) {
+                end_instances(*ASR::down_cast<ASR::Function_t>(host_sym),
+                    epilogue);
+            }
         }
 
         for (ASR::Function_t *proc: procs) {
@@ -2128,7 +2203,8 @@ public:
             const std::map<ASR::symbol_t*, std::vector<ASR::symbol_t*>> &pools,
             ASR::symbol_t *acquire, ASR::symbol_t *release, ASR::symbol_t *held,
             const std::vector<ASR::Function_t*> &procs,
-            std::map<ASR::Function_t*, Child> &children) {
+            std::map<ASR::Function_t*, Child> &children,
+            std::vector<std::function<ASR::stmt_t*()>> &epilogue) {
         SymbolTable *host = procedure_scope(host_sym);
         const Location &loc = host_sym->base.loc;
         ASRUtils::ASRBuilder b(al, loc);
@@ -2196,34 +2272,22 @@ public:
             proc_sites.visit_Function(*proc);
         }
 
-        // The host gives back its slot, if it holds one, before it returns
-        auto release_call = [&]() {
+        // The host gives back its slot, if it holds one, when an instance
+        // ends
+        ASR::symbol_t *frame_object = frame.object;
+        epilogue.push_back([this, loc, frame_object, held, release]() {
+            ASRUtils::ASRBuilder b(al, loc);
             Vec<ASR::call_arg_t> args;
             args.reserve(al, 1);
             ASR::call_arg_t a;
             a.loc = loc;
-            a.m_value = b.Var(frame.object);
+            a.m_value = b.Var(frame_object);
             args.push_back(al, a);
             return b.If(b.NotEq(b.Var(held), b.i32(0)),
                 {ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
                     release, nullptr, args.p, args.size(), nullptr, nullptr,
                     false))}, {});
-        };
-        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(host_sym);
-        ReturnRestorer restorer(al, [&]() {
-            return std::vector<ASR::stmt_t*>{release_call()};
         });
-        restorer.restore_before_returns(*f);
-        if (f->n_body == 0 || !ASR::is_a<ASR::Return_t>(*f->m_body[f->n_body - 1])) {
-            Vec<ASR::stmt_t*> released;
-            released.reserve(al, f->n_body + 1);
-            for (size_t i = 0; i < f->n_body; i++) {
-                released.push_back(al, f->m_body[i]);
-            }
-            released.push_back(al, release_call());
-            f->m_body = released.p;
-            f->n_body = released.size();
-        }
     }
 
     // Points the frame slot at the frame of the instance before every
@@ -2235,7 +2299,8 @@ public:
             const std::set<ASR::symbol_t*> &thunks,
             const std::vector<ASR::Function_t*> &procs,
             std::map<ASR::Function_t*, Child> &children,
-            Vec<ASR::stmt_t*> &prologue) {
+            Vec<ASR::stmt_t*> &prologue,
+            std::vector<std::function<ASR::stmt_t*()>> &epilogue) {
         SymbolTable *host = procedure_scope(host_sym);
         const Location &loc = host_sym->base.loc;
         ProcedureValueSites host_sites(al, thunks, slot, frame.object);
@@ -2258,27 +2323,161 @@ public:
             "__lcompilers_previous_frame", loc, ASR::intentType::Local, nullptr,
             nullptr, ASR::storage_typeType::Default, ASRUtils::TYPE(
                 ASR::make_Pointer_t(al, loc, frame_type(loc, frame))), frame.type);
-        auto associate = [&](ASR::symbol_t *target, ASR::symbol_t *value) {
+        auto associate = [this, loc](ASR::symbol_t *target, ASR::symbol_t *value) {
             return ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, loc,
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, target)),
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, value))));
         };
         prologue.push_back(al, associate(previous, slot));
-        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(host_sym);
-        ReturnRestorer restorer(al, [&]() {
-            return std::vector<ASR::stmt_t*>{associate(slot, previous)};
+        epilogue.push_back([associate, slot, previous]() {
+            return associate(slot, previous);
         });
-        restorer.restore_before_returns(*f);
-        if (f->n_body == 0 || !ASR::is_a<ASR::Return_t>(*f->m_body[f->n_body - 1])) {
-            Vec<ASR::stmt_t*> restored;
-            restored.reserve(al, f->n_body + 1);
-            for (size_t i = 0; i < f->n_body; i++) {
-                restored.push_back(al, f->m_body[i]);
+    }
+
+    // Puts the statements made by `epilogue` at the end of every instance
+    // of host `f`: after the last statement of its body and before every
+    // return. If a local of the host has a final procedure that can run
+    // when the instance ends, it would run after them, when the instance
+    // no longer holds its frame slot, and so could not invoke a procedure
+    // value of the host that it reaches (#16454). The body and those locals
+    // are then a BLOCK construct of the host, whose locals are finalized
+    // at its end: every return of the host exits the construct instead, and
+    // the statements of `epilogue` follow it.
+    void end_instances(ASR::Function_t &f,
+            const std::vector<std::function<ASR::stmt_t*()>> &epilogue) {
+        auto make_epilogue = [&]() {
+            std::vector<ASR::stmt_t*> stmts;
+            for (const std::function<ASR::stmt_t*()> &make: epilogue) {
+                stmts.push_back(make());
             }
-            restored.push_back(al, associate(slot, previous));
-            f->m_body = restored.p;
-            f->n_body = restored.size();
+            return stmts;
+        };
+        if (!wrap_body(f)) {
+            ReturnRestorer restorer(al, make_epilogue);
+            restorer.restore_before_returns(f);
+            if (f.n_body > 0 && ASR::is_a<ASR::Return_t>(*f.m_body[f.n_body - 1])) {
+                return;
+            }
         }
+        Vec<ASR::stmt_t*> ended;
+        ended.reserve(al, f.n_body + epilogue.size());
+        for (size_t i = 0; i < f.n_body; i++) {
+            ended.push_back(al, f.m_body[i]);
+        }
+        for (ASR::stmt_t *stmt: make_epilogue()) {
+            ended.push_back(al, stmt);
+        }
+        f.m_body = ended.p;
+        f.n_body = ended.size();
+    }
+
+    // Moves the body of host `f` into a BLOCK construct (see
+    // end_instances), with the locals of the host that a final procedure
+    // can be invoked for when the instance ends and the BLOCK and
+    // ASSOCIATE constructs of the host, which the statements of the body
+    // execute and which can refer to those locals. Every return of the host
+    // exits the construct instead. Returns false, and changes nothing, if
+    // the host has no such local.
+    bool wrap_body(ASR::Function_t &f) {
+        SymbolTable *host = f.m_symtab;
+        std::vector<std::string> moved;
+        bool finalizable = false;
+        for (auto &item: host->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (ASR::is_a<ASR::Block_t>(*sym) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                moved.push_back(item.first);
+            } else if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (v->m_intent == ASR::intentType::Local &&
+                        v->m_storage == ASR::storage_typeType::Default &&
+                        may_invoke_final(v->m_type, v->m_type_declaration)) {
+                    moved.push_back(item.first);
+                    finalizable = true;
+                }
+            }
+        }
+        if (!finalizable) {
+            return false;
+        }
+        SymbolTable *scope = al.make_new<SymbolTable>(host);
+        for (const std::string &name: moved) {
+            ASR::symbol_t *sym = host->get_symbol(name);
+            host->erase_symbol(name);
+            scope->add_symbol(name, sym);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::down_cast<ASR::Variable_t>(sym)->m_parent_symtab = scope;
+            } else {
+                ASRUtils::symbol_symtab(sym)->parent = scope;
+            }
+        }
+        std::string name = host->get_unique_name("__lcompilers_instance", false);
+        const Location &loc = f.base.base.loc;
+        ASR::asr_t *block = ASR::make_Block_t(al, loc, scope, s2c(al, name),
+            f.m_body, f.n_body);
+        scope->asr_owner = block;
+        ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
+        host->add_symbol(name, block_sym);
+        ReturnExits exits(al, s2c(al, name));
+        exits.visit_Block(*ASR::down_cast<ASR::Block_t>(block_sym));
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1,
+            block_sym)));
+        f.m_body = body.p;
+        f.n_body = body.size();
+        return true;
+    }
+
+    // Whether a final procedure can be invoked when a local of type `type`,
+    // declared by `declaration`, is finalized: for the local itself, a
+    // component of it or an element of it. Its dynamic type can be any
+    // extension of a polymorphic type.
+    static bool may_invoke_final(ASR::ttype_t *type, ASR::symbol_t *declaration) {
+        std::set<ASR::Struct_t*> visited;
+        return may_invoke_final(type, declaration, visited);
+    }
+
+    static bool may_invoke_final(ASR::ttype_t *type, ASR::symbol_t *declaration,
+            std::set<ASR::Struct_t*> &visited) {
+        if (ASRUtils::is_pointer(type)) {
+            return false;
+        }
+        type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(type));
+        if (!ASR::is_a<ASR::StructType_t>(*type)) {
+            return false;
+        }
+        if (ASRUtils::is_class_type(type) ||
+                ASR::down_cast<ASR::StructType_t>(type)->m_is_unlimited_polymorphic) {
+            return true;
+        }
+        if (declaration == nullptr) {
+            return false;
+        }
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(declaration);
+        while (s != nullptr && ASR::is_a<ASR::Struct_t>(*s)) {
+            ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+            if (!visited.insert(st).second) {
+                return false;
+            }
+            if (st->n_member_functions > 0) {
+                return true;
+            }
+            for (size_t i = 0; i < st->n_members; i++) {
+                ASR::symbol_t *m = st->m_symtab->get_symbol(st->m_members[i]);
+                if (m != nullptr && ASR::is_a<ASR::Variable_t>(*m)) {
+                    ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(m);
+                    if (may_invoke_final(mv->m_type, mv->m_type_declaration,
+                            visited)) {
+                        return true;
+                    }
+                }
+            }
+            s = st->m_parent == nullptr ? nullptr
+                : ASRUtils::symbol_get_past_external(st->m_parent);
+        }
+        return false;
     }
 };
 
