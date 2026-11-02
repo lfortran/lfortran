@@ -39,6 +39,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     // The scope the replaced expression stands in, so a helper that names
     // something only visible there can be built there.
     SymbolTable* caller_scope = nullptr;
+    bool in_device = false;
 
     ReplaceIntrinsicFunctions(Allocator& al_, SymbolTable* global_scope_,
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_, bool& in_debugcheck_, bool &in_ttype_,
@@ -65,6 +66,15 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
         if (x->m_value) {
             *current_expr = x->m_value;
+            return;
+        }
+        // Keep the intrinsic identity in device code: host runtime
+        // instantiation would leave a call with no device implementation.
+        if (in_device && ASRUtils::is_real(*x->m_type) &&
+                x->m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::Log)) {
+            ASR::BaseExprReplacer<ReplaceIntrinsicFunctions>
+                ::replace_IntrinsicElementalFunction(x);
             return;
         }
         // If inside DebugCheckArrayBounds and not inside a type
@@ -200,6 +210,14 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
 
         void visit_Template(const ASR::Template_t& /*x*/) {
             // Intrinsic implementations require concrete specialization types.
+        }
+
+        void visit_Function(const ASR::Function_t& x) {
+            bool saved = replacer.in_device;
+            replacer.in_device = ASRUtils::is_device_only_function(x);
+            ASR::CallReplacerOnExpressionsVisitor<
+                ReplaceIntrinsicFunctionsVisitor>::visit_Function(x);
+            replacer.in_device = saved;
         }
 
         // Don't replace inside DebugCheckArrayBounds, the arguments for elemental functions might be arrays
