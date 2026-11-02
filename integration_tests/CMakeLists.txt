@@ -6932,6 +6932,9 @@ RUN(NAME gpu_metal_562 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_563 LABELS gfortran metal cuda) # plain LLVM cannot find a do concurrent by name
 RUN(NAME gpu_metal_565 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_566 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_601 LABELS gfortran cuda EXTRA_ARGS --descriptor-index-64) # no llvm: on the host, sections of an array with a lower bound beyond huge(0) are wrong (#15067)
+RUN(NAME gpu_metal_602 LABELS llvm cuda EXTRA_ARGS --descriptor-index-64) # no gfortran: the GFortran in CI rejects reduce
 RUN(NAME gpu_metal_599 LABELS gfortran llvm cuda)
 # Procedures copied into a kernel and the entities they name of their
 # hosts and modules.

@@ -26,9 +26,10 @@ static void push_argument(const Location &loc, Vec<ASR::call_arg_t> &args,
 void gpu_struct_member_extent_arguments(Allocator &al, const Location &loc,
         SymbolTable *kernel_scope, const std::string &name, ASR::Struct_t *st,
         const std::function<ASR::expr_t*(ASR::symbol_t*)> &host_member,
-        Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args) {
+        int offset_kind, Vec<ASR::expr_t*> &kernel_args,
+        Vec<ASR::call_arg_t> &call_args) {
     ASR::ttype_t *int_type_sz = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+        ASR::make_Integer_t(al, loc, offset_kind));
     auto parameter = [&](const std::string &parameter_name) {
         ASR::symbol_t *sym = gpu_new_variable(al, loc, kernel_scope,
             parameter_name, ASRUtils::duplicate_type(al, int_type_sz),

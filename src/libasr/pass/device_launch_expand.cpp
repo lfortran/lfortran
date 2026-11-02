@@ -326,8 +326,9 @@ class DeviceLaunchExpandVisitor :
             }
             ASR::ttype_t *element = gpu_size_of_type_argument(al, arg,
                 ASRUtils::type_get_past_array(type));
-            ASR::expr_t *size = b.Mul(
-                b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
+            // Counted in integer(8): an array may hold more than huge(0)
+            // elements.
+            ASR::expr_t *size = b.Mul(b.ArraySize(arg, nullptr, int64),
                 ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, element,
                     int64, nullptr)));
             // An allocatable the loop only uses when it is allocated -- a
@@ -418,8 +419,16 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *total = declare_local(loc, "gpu_member_total",
                     int32);
                 ASR::expr_t *k = declare_local(loc, "gpu_struct_index", int32);
+                // The extents and lower bounds are in the kind the kernel
+                // reads them in (gpu_create_kernel_layout), the kind it
+                // computes element offsets in.
+                int size_kind = component.sizes
+                    ? ASRUtils::extract_kind_from_ttype_t(
+                        component.sizes->m_type) : 4;
+                ASR::ttype_t *size_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, size_kind));
                 ASR::expr_t *sizes = declare_local(loc, "gpu_member_sizes",
-                    b.allocatable(b.Array({-1}, int32)));
+                    b.allocatable(b.Array({-1}, size_type)));
                 ASR::expr_t *offsets = declare_local(loc, "gpu_member_offsets",
                     b.allocatable(b.Array({-1}, int32)));
                 ASR::expr_t *data = declare_local(loc, "gpu_member_data",
@@ -457,16 +466,17 @@ class DeviceLaunchExpandVisitor :
                         member_extent(loc, sizes, k, rank, d),
                         b.ArraySize(struct_member(loc, arg, k, member),
                             rank > 1 ? b.i32((int)d + 1) : nullptr,
-                            int32)));
+                            size_type)));
                     extents.push_back(b.Assignment(
                         member_lower_bound(loc, sizes, k, rank, d),
                         b.GetLBound(struct_member(loc, arg, k, member),
-                            (int)d + 1)));
+                            (int)d + 1, size_kind)));
                     no_extents.push_back(b.Assignment(
-                        member_extent(loc, sizes, k, rank, d), b.i32(0)));
+                        member_extent(loc, sizes, k, rank, d),
+                        b.i_t(0, size_type)));
                     no_extents.push_back(b.Assignment(
                         member_lower_bound(loc, sizes, k, rank, d),
-                        b.i32(1)));
+                        b.i_t(1, size_type)));
                 }
                 if (may_be_unallocated) {
                     measure.push_back(b.If(is_allocated(loc,
@@ -476,8 +486,12 @@ class DeviceLaunchExpandVisitor :
                     measure.insert(measure.end(), extents.begin(),
                         extents.end());
                 }
-                measure.push_back(b.Assignment(total, b.Add(total,
-                    member_element_count(loc, sizes, k, rank))));
+                // The offsets into the packed data are still counted in
+                // 32 bits (#15929).
+                ASR::expr_t *count = member_element_count(loc, sizes, k,
+                    rank);
+                if (size_kind != 4) count = b.i2i_t(count, int32);
+                measure.push_back(b.Assignment(total, b.Add(total, count)));
                 out.push_back(al, b.DoLoop(k, b.i32(1), n, measure));
                 member_sizes_bufs[key] = sizes;
                 // A member that is allocated but holds no elements in any
@@ -506,8 +520,9 @@ class DeviceLaunchExpandVisitor :
                 }
 
                 ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64), b.i64(4));
-                ASR::expr_t *sizes_bytes =
-                    b.Mul(index_bytes, b.i64(2 * (int64_t)rank));
+                ASR::expr_t *sizes_bytes = b.Mul(size_kind == 4 ? index_bytes
+                    : b.Mul(b.i2i_t(n, int64), b.i64(size_kind)),
+                    b.i64(2 * (int64_t)rank));
                 buffers.push_back({data, address_of(loc, data), data_bytes});
                 buffers.push_back({offsets, address_of(loc, offsets),
                     index_bytes});
@@ -641,9 +656,13 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *index, size_t rank,
                 ASR::expr_t *element_bytes) {
             ASRUtils::ASRBuilder b(al, loc);
-            return b.Mul(b.i2i_t(
-                member_element_count(loc, sizes, index, rank), int64),
-                element_bytes);
+            ASR::expr_t *count = member_element_count(loc, sizes, index,
+                rank);
+            if (ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(count)) != 8) {
+                count = b.i2i_t(count, int64);
+            }
+            return b.Mul(count, element_bytes);
         }
 
         // Copy every element between a strided array and its contiguous

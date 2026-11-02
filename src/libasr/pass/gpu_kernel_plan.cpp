@@ -1151,7 +1151,7 @@ ASR::expr_t* gpu_workspace_host_extent(Allocator &al,
 
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         ASR::call_arg_t *args, size_t n_args, GpuDecline &decline,
-        bool values_replaced) {
+        bool values_replaced, int offset_kind) {
     if (kernel.m_gpu) return true;
     std::string unresolved_workspace;
     if (!gpu_kernel_workspace_extents_resolvable(kernel, unresolved_workspace)) {
@@ -1324,10 +1324,16 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         arg.m_type = ASRUtils::extract_type(ASRUtils::symbol_type(
             member ? member : arg.m_variable));
         if (kind == ASR::gpu_argument_kindType::GpuMemberOffsets ||
-                kind == ASR::gpu_argument_kindType::GpuMemberSizes ||
                 kind == ASR::gpu_argument_kindType::GpuArrayExtent ||
                 kind == ASR::gpu_argument_kindType::GpuPackedOffset) {
             arg.m_type = int32;
+        } else if (kind == ASR::gpu_argument_kindType::GpuMemberSizes) {
+            // The extents and lower bounds of a decomposed component, which
+            // its subscripts are counted from in the kind the kernel
+            // computes element offsets in. Its offsets in the packed data
+            // are still 32-bit (#15929).
+            arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                offset_kind));
         }
         return arg;
     };

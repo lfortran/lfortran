@@ -21,10 +21,12 @@ void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
     const PassOptions &options);
 
 // `values_replaced` says that a later pass puts compile-time values in
-// place of the designators that have them (--fast).
+// place of the designators that have them (--fast). `offset_kind` is the
+// kind the kernel computes element offsets in
+// (GpuDeviceCapabilities::offset_kind).
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     ASR::call_arg_t *args, size_t n_args, GpuDecline &decline,
-    bool values_replaced);
+    bool values_replaced, int offset_kind);
 
 // The extent `dim` of a workspace of `kernel` has, written as the host
 // evaluates it before the launch, or nullptr when the host cannot work it

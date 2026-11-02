@@ -3,6 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_data_layout.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_struct_component_args.h>
@@ -206,8 +207,9 @@ public:
 
 class StructComponentArgs {
 public:
-    StructComponentArgs(Allocator &al_, ASR::TranslationUnit_t &unit_)
-        : al(al_), unit(unit_) {}
+    StructComponentArgs(Allocator &al_, ASR::TranslationUnit_t &unit_,
+            int offset_kind_)
+        : al(al_), unit(unit_), offset_kind(offset_kind_) {}
 
     // Splits off one level of components. Returns whether it split any.
     bool run() {
@@ -267,6 +269,10 @@ public:
 private:
     Allocator &al;
     ASR::TranslationUnit_t &unit;
+    // The kind kernels compute element offsets in
+    // (GpuDeviceCapabilities::offset_kind), which the extents and lower
+    // bounds of the components handed over are passed in.
+    int offset_kind;
     std::vector<ASR::Function_t*> device;
     std::map<std::pair<ASR::symbol_t*, std::string>, ASR::symbol_t*>
         companions;
@@ -490,7 +496,8 @@ private:
                         parameters, actuals);
                 } else {
                     gpu_struct_member_extent_arguments(al, loc, kernel_scope,
-                        name, st, host_member, parameters, actuals);
+                        name, st, host_member, offset_kind, parameters,
+                        actuals);
                 }
             }
         }
@@ -535,8 +542,9 @@ private:
 } // namespace
 
 void pass_gpu_struct_component_args(Allocator &al,
-        ASR::TranslationUnit_t &unit, const PassOptions &/*pass_options*/) {
-    StructComponentArgs split(al, unit);
+        ASR::TranslationUnit_t &unit, const PassOptions &pass_options) {
+    StructComponentArgs split(al, unit,
+        gpu_device_capabilities(pass_options).offset_kind);
     bool changed = false;
     while (split.run()) changed = true;
     if (!changed) return;

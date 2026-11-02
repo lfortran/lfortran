@@ -95,6 +95,12 @@ struct GpuDeviceCapabilities {
     // of global workspace buffers; it never changes their locality.
     int64_t thread_stack_bytes = 0;
 
+    // The integer kind a kernel computes the offset of an element in an
+    // array in. Like the host's array descriptors, the offsets are 64-bit
+    // only with --descriptor-index-64, and only on a device with a 64-bit
+    // integer.
+    int offset_kind = 4;
+
     // Whether the device has a scalar type of the same in-memory width as
     // `t`. Every dialect shares a floor -- the widths in
     // gpu_scalar_width_supported() -- and the kinds above narrow it further.
