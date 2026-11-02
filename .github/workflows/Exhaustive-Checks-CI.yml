@@ -417,60 +417,25 @@ jobs:
     timeout-minutes: 50
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -e {0}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Install build0 prerequisites
-        uses: mamba-org/setup-micromamba@v3.2.1
+      # The tasks install the wasm-host environment (emscripten-wasm32) too.
+      - uses: prefix-dev/setup-pixi@v0.11.3
         with:
-          micromamba-version: '2.10.0-0'
-          environment-file: ci/environment_linux.yml
-          init-shell: bash
-          environment-name: lf
+          pixi-version: v0.83.0
+          environments: wasm-build lite
+          cache: false
 
-      - name: Generate parser/ASR headers (build0.sh)
-        run: ./build0.sh
-
-      - name: Install WASM build environment
-        run: micromamba create -f environment-wasm-build.yml -y
-
-      - name: Create WASM host environment
-        run: |
-          set -ex
-          micromamba create -f environment-wasm-host.yml -y \
-            --platform=emscripten-wasm32 \
-            -c https://prefix.dev/emscripten-forge-4x \
-            -c https://prefix.dev/conda-forge
-          echo "PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host" >> $GITHUB_ENV
-
-      - name: Build native runtime .mod files
-        run: ./wasm-build0.sh
-
-      - name: Build WASM kernel
-        run: micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
-
-      - name: Run WASM evaluator tests
-        run: |
-          set -ex
-          cd build-wasm/src/lfortran/tests
-          micromamba run -n xeus-lfortran-wasm-build \
-            node test_lfortran.js
+      # wasm-mods, wasm-kernel and wasm-test of pixi.toml (doc/src/jupyterlite.md).
+      - name: Build the WASM kernel and run the WASM evaluator tests
+        run: pixi run -e wasm-build wasm-test
 
       - name: Build JupyterLite site
-        run: |
-          set -ex
-          micromamba create -n xeus-lite-host jupyter_server jupyterlite-xeus -c conda-forge -y
-          micromamba run -n xeus-lite-host jupyter lite build \
-              --XeusAddon.prefix=${{ env.PREFIX }} \
-              --contents share/lfortran/nb/Demo1.ipynb \
-              --contents share/lfortran/nb/Demo2.ipynb \
-              --contents share/lfortran/nb/Variables.ipynb \
-              --contents share/lfortran/nb/Mandelbrot.ipynb \
-              --contents share/lfortran/nb/Rich_Display.ipynb \
-              --output-dir dist
+        run: pixi run -e lite lab-build
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v5
