@@ -138,6 +138,22 @@ clangdev = "==22.1.0"
 libunwind = "==1.7.2"
 clangdev = "==23.1.0"
 
+# The LLVM WASM backends (llvm_wasm, llvm_wasm_emcc), as Quick's "Test LLVM 19
+# WASM" jobs. Run `pixi run -e llvm19-wasm wasm-tools` once to download their
+# toolchains (ci/wasm_tools.sh), then build with -DWITH_TARGET_WASM=yes.
+[feature.llvm-wasm]
+platforms = ["linux-64"]
+[feature.llvm-wasm.activation.env]
+LFORTRAN_WASM_TOOLS = "$PIXI_PROJECT_ROOT/.wasm-tools"
+WASI_SDK_PATH = "$PIXI_PROJECT_ROOT/.wasm-tools/wasi-sdk"
+EMSDK_PATH = "$PIXI_PROJECT_ROOT/.wasm-tools/emsdk"
+# Select wasmtime 19's old command line, which LFortran and the tests use.
+WASMTIME_NEW_CLI = "0"
+[feature.llvm-wasm.activation]
+scripts = ["ci/wasm_tools_activate.sh"]
+[feature.llvm-wasm.tasks]
+wasm-tools = {cmd = "bash ci/wasm_tools.sh"}
+
 # The MLIR backend, with the MLIR release of Quick's MLIR job. Build it with
 # `pixi run -e mlir build -DWITH_MLIR=yes` (see doc/src/installation.md).
 [feature.mlir]
@@ -401,6 +417,7 @@ llvm21 = {features = ["llvm21", "build", "test"]}
 llvm22 = {features = ["llvm22", "build", "test"]}
 llvm23 = {features = ["llvm23", "build", "test"]}
 mlir = {features = ["mlir", "build", "test"]}
+llvm19-wasm = {features = ["llvm19", "build", "test", "node", "llvm-wasm"]}
 test = {features = ["llvm11", "build", "test", "node"]}
 wasm-build = {features = ["wasm-build"], no-default-feature = true}
 wasm-host = {features = ["wasm-host"], no-default-feature = true}
