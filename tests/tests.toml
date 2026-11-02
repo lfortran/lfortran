@@ -1761,6 +1761,10 @@ filename = "errors/allocate_03.f90"
 run = true
 
 [[test]]
+filename = "errors/allocate_04.f90"
+run = true
+
+[[test]]
 filename = "errors/allocated_04.f90"
 run = true
 
