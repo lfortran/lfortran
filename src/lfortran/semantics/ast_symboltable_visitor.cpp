@@ -761,12 +761,13 @@ public:
     void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         size_t n_implicit = AST::count_kind(x.m_items, x.n_items,
             AST::DeclStmtKind::Implicit);
-        if (implicit_stack.size() > 0 && n_implicit == 0) {
-            // We are inside a module and visiting a function / subroutine with no implicit statement
-            if (!is_interface) {
-                implicit_dictionary = implicit_stack.back();
-                return;
-            }
+        if (implicit_stack.size() > 0 && !is_interface) {
+            // A procedure contained in a module or program starts from its
+            // host's mapping; its own IMPLICIT statements, if any, override
+            // only the letters they name (F2018 8.7 p4). Interface bodies
+            // start from the default rules.
+            implicit_dictionary = implicit_stack.back();
+            if (n_implicit == 0) return;
         }
         //iterate over all implicit statements
         for (size_t i=0; i<x.n_items; i++) {
