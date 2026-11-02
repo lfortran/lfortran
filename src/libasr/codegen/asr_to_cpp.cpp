@@ -268,11 +268,15 @@ public:
         }
         if (ASRUtils::is_frame_type(v.m_type_declaration) ||
                 ASRUtils::is_frame_slot_type(v.m_type_declaration)) {
-            // The frame slots of a thunk pool (see nested_vars)
-            throw CodeGenError("calling an internal procedure that accesses "
-                "its host through a procedure pointer, a dummy procedure or "
-                "defined input/output is not supported by the cpp backend yet",
-                v.base.base.loc);
+            // A frame slot (see nested_vars): the slots of a thunk pool, or
+            // the current-frame slot, which the thunks of procedure values
+            // in a main program, of defined input/output and of interfaces
+            // that depend on host variables read
+            throw CodeGenError("host association through a procedure value "
+                "(an internal procedure used as an actual argument, as a "
+                "procedure pointer target or for defined input/output) or in "
+                "an interface that refers to host variables is not supported "
+                "by the cpp backend yet", v.base.base.loc);
         }
         bool use_static;
         bool use_templates_for_arrays;

@@ -2218,14 +2218,17 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     // variable of `scope`, stands for, or nullptr. A procedure that reads a
     // variable of a BLOCK construct from outside of it reads it through such
     // a pointer, which the BLOCK associates with the variable on entry, at
-    // the location of the variable's declaration.
-    static const ASR::Variable_t* construct_variable_of(const SymbolTable &scope,
+    // the location of the variable's declaration. The BLOCK can be nested in
+    // other BLOCK and ASSOCIATE constructs.
+    static const ASR::Variable_t* construct_variable_of(SymbolTable *scope,
             const ASR::Variable_t &pointer) {
-        for (auto &item: scope.get_scope()) {
-            if (!ASR::is_a<ASR::Block_t>(*item.second)) {
-                continue;
+        const ASR::Variable_t *result = nullptr;
+        ASRUtils::for_each_symbol_in_scope_and_constructs(scope,
+                [&](ASR::symbol_t *sym) {
+            if (result != nullptr || !ASR::is_a<ASR::Block_t>(*sym)) {
+                return;
             }
-            const ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(item.second);
+            const ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(sym);
             for (size_t i = 0; i < block->n_body; i++) {
                 if (!ASR::is_a<ASR::Associate_t>(*block->m_body[i])) {
                     continue;
@@ -2240,15 +2243,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         && loc.last == pointer.base.base.loc.last) {
                     const ASR::symbol_t *v = ASR::down_cast<ASR::Var_t>(a->m_value)->m_v;
                     if (ASR::is_a<ASR::Variable_t>(*v)) {
-                        return ASR::down_cast<ASR::Variable_t>(v);
+                        result = ASR::down_cast<ASR::Variable_t>(v);
+                        return;
                     }
                 }
             }
-            if (const ASR::Variable_t *v = construct_variable_of(*block->m_symtab, pointer)) {
-                return v;
-            }
-        }
-        return nullptr;
+        });
+        return result;
     }
 
     // The error for a member of a frame (see nested_vars), named after the
@@ -2274,7 +2275,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             ? host->get_symbol(member.m_name) : nullptr;
         if (host_sym != nullptr && ASR::is_a<ASR::Variable_t>(*host_sym)
                 && ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(host_sym)->m_type)) {
-            if (const ASR::Variable_t *v = construct_variable_of(*host,
+            if (const ASR::Variable_t *v = construct_variable_of(host,
                     *ASR::down_cast<ASR::Variable_t>(host_sym))) {
                 name = v->m_name;
                 t = v->m_type;
