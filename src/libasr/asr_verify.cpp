@@ -5685,10 +5685,14 @@ public:
                 "Struct::m_parent of '" + std::string(x.m_name) +
                 "' cannot point outside of its symbol table");
             if (check_external && parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent)) {
-                require_id(!ASR::down_cast<ASR::Struct_t>(parent)->m_generic || x.m_generic,
+                // A type that is not generic extends an instance, whose type
+                // arguments are concrete, never a definition (TD-45).
+                ASR::struct_generic_t *parent_generic =
+                    ASR::down_cast<ASR::Struct_t>(parent)->m_generic;
+                require_id(!parent_generic || x.m_generic ||
+                        ASR::is_a<ASR::GenericTypeInstance_t>(*parent_generic),
                     "asr.verify.generic_type.not_extended",
-                    "A generic type's definition or instance can be extended only by a "
-                    "generic type");
+                    "A generic type's definition can be extended only by a generic type");
             }
         }
         verify_generic_type(x);

@@ -1802,6 +1802,22 @@ public:
     }
 };
 
+// The instances of generic types that a unit has completed, shared by both
+// semantic visitors. The symbol table visitor completes the instance that a
+// type which is not generic extends, before the bodies of the package exist;
+// the body visitor then instantiates the bodies of its procedure copies.
+struct GenericInstanceCompletions {
+    struct Bodies {
+        ASR::Template_t *package;
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+        std::map<std::string, ASR::symbol_t*> symbols;
+        std::map<ASR::symbol_t*, ASR::symbol_t*> copies;
+        std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> functions, methods;
+    };
+    std::set<ASR::Struct_t*> completed;
+    std::map<ASR::Struct_t*, Bodies> pending_bodies;
+};
+
 template <class Derived>
 class CommonVisitor : public AST::BaseVisitor<Derived> {
 public:
@@ -2420,6 +2436,7 @@ public:
     std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols;
     std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure;
+    GenericInstanceCompletions &generic_instance_completions;
     LCompilers::LocationManager &lm;
 
     // A specific procedure named in a generic interface block, with the scope
@@ -2528,6 +2545,7 @@ public:
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        GenericInstanceCompletions &generic_instance_completions,
             LCompilers::LocationManager &lm
     ): diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
@@ -2535,7 +2553,8 @@ public:
           explicit_intrinsic_procedures_mapping{explicit_intrinsic_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
-          instantiate_symbols{instantiate_symbols}, data_structure{data_structure}, lm{lm}
+          instantiate_symbols{instantiate_symbols}, data_structure{data_structure},
+          generic_instance_completions{generic_instance_completions}, lm{lm}
     {
         current_module_dependencies.reserve(al, 4);
         enum_init_val = 0;
@@ -11468,9 +11487,18 @@ public:
                     check_generic_type_reference(parent_sym, parent_sym_name,
                         attr_extend->base.base.loc);
                 }
-                parent = &ASRUtils::generic_type_definition(*parent_package)->base;
-                parent_sym = generic_type_parent_definition(*parent_package, dt_name,
-                    attr_extend->base.base.loc);
+                if (generic_type_package_being_defined(dt_name)) {
+                    parent = &ASRUtils::generic_type_definition(*parent_package)->base;
+                    parent_sym = generic_type_parent_definition(*parent_package);
+                } else {
+                    // A type that is not generic extends the instance that
+                    // its concrete type arguments name (TD-45).
+                    parent_sym = resolve_generic_type_application(attr_extend->m_name,
+                        attr_extend->m_args, attr_extend->n_args,
+                        attr_extend->base.base.loc);
+                    parent = ASRUtils::symbol_get_past_external(parent_sym);
+                    complete_generic_parent_instance(parent_sym, attr_extend->base.base.loc);
+                }
             } else if (attr_extend->n_args > 0) {
                 trait_error("'" + parent_sym_name + "' is not a generic derived type",
                     attr_extend->base.base.loc);
@@ -31475,7 +31503,6 @@ public:
     // runtime evidence.
     // ------------------------------------------------------------------
 
-    std::set<ASR::Struct_t*> completed_generic_instances;
     // While a constructor call of a generic type is lowered: the initializer
     // generic it calls and the type it constructs when none matches.
     std::pair<ASR::symbol_t*, ASR::symbol_t*> generic_type_construction = {nullptr, nullptr};
@@ -31757,7 +31784,8 @@ public:
                     }
                     if (dependent) {
                         discarded_scopes.insert(instance->m_symtab);
-                        completed_generic_instances.erase(instance);
+                        generic_instance_completions.completed.erase(instance);
+                        generic_instance_completions.pending_bodies.erase(instance);
                     }
                 }
                 if (dependent) {
@@ -31897,7 +31925,7 @@ public:
         if (!symbol || !ASR::is_a<ASR::Struct_t>(*symbol)) return nullptr;
         auto *instance = ASR::down_cast<ASR::Struct_t>(symbol);
         if (!ASRUtils::generic_type_instance(*instance) ||
-                completed_generic_instances.count(instance) ||
+                generic_instance_completions.completed.count(instance) ||
                 instance->m_symtab->parent != generic_instance_unit_scope(current_scope)) {
             return nullptr;
         }
@@ -32562,7 +32590,8 @@ public:
     }
 
     // Completes every instance of the unit `scope` that the symbol table
-    // visitor created; the package bodies exist now.
+    // visitor created, also instantiating the bodies of those it completed;
+    // the package bodies exist now.
     void complete_generic_instances(SymbolTable *scope) {
         std::vector<ASR::Struct_t*> instances;
         for (const auto &entry : scope->get_scope()) {
@@ -32570,7 +32599,10 @@ public:
             auto *structure = ASR::down_cast<ASR::Struct_t>(entry.second);
             if (ASRUtils::generic_type_instance(*structure)) instances.push_back(structure);
         }
-        for (auto *instance : instances) complete_generic_instance(*instance);
+        for (auto *instance : instances) {
+            complete_generic_instance(*instance);
+            instantiate_generic_instance_bodies(*instance);
+        }
     }
 
     // The source symbol a procedure of a package binding names: a method's
@@ -32773,7 +32805,7 @@ public:
     }
 
     void complete_generic_instance(ASR::Struct_t &instance) {
-        if (completed_generic_instances.count(&instance)) return;
+        if (generic_instance_completions.completed.count(&instance)) return;
         auto *metadata = ASRUtils::generic_type_instance(instance);
         LCOMPILERS_ASSERT(metadata);
         ASR::Struct_t *definition = ASRUtils::generic_instance_definition(*metadata);
@@ -32823,7 +32855,7 @@ public:
             argument.m_evidence = records.p;
             argument.n_evidence = records.size();
         }
-        completed_generic_instances.insert(&instance);
+        generic_instance_completions.completed.insert(&instance);
         // The parent instance's bindings and member slots come first.
         if (ASR::Struct_t *parent = pending_generic_instance(instance.m_parent)) {
             complete_generic_instance(*parent);
@@ -32924,7 +32956,6 @@ public:
                 }
             }
             if (diag.diagnostics.size() > n_diagnostics) throw SemanticAbort();
-            std::vector<std::map<std::string, ASR::symbol_t*>> methods_subs;
             for (auto &method : methods) {
                 auto *source = ASR::down_cast<ASR::Template_t>(method.second);
                 std::map<std::string, ASR::symbol_t*> method_subs = symbol_subs;
@@ -32936,11 +32967,6 @@ public:
                 ASRUtils::trait_method_function(copy)->m_access = ASR::accessType::Private;
                 method.first = copy;
                 copies[method.second] = copy;
-                auto *copied = ASR::down_cast<ASR::Template_t>(copy);
-                copy_generic_method_forwarding(*source, *copied);
-                bind_generic_instance_requirements(*package, *source, *copied, type_subs,
-                    *metadata, method_subs);
-                methods_subs.push_back(method_subs);
             }
             // Bindings, which the copied bodies call through objects of the
             // instance.
@@ -32958,26 +32984,6 @@ public:
                         ASRUtils::symbol_name(procedure), procedure, binding->m_abi,
                         binding->m_is_deferred, binding->m_is_nopass, dispatch));
                 instance.m_symtab->add_symbol(entry.first, copy);
-            }
-            for (size_t i = 0; i < methods.size(); i++) {
-                std::set<ASR::symbol_t*> instantiated_bodies;
-                instantiate_body(al, type_subs, methods_subs[i], methods[i].first,
-                    methods[i].second, instantiated_bodies);
-            }
-            for (auto &function : functions) {
-                std::set<ASR::symbol_t*> instantiated_bodies;
-                std::map<std::string, ASR::symbol_t*> function_subs = symbol_subs;
-                for (const auto &copy : copies) {
-                    if (ASR::is_a<ASR::Template_t>(*copy.second)) {
-                        auto *method = ASRUtils::trait_method_function(copy.first);
-                        if (method) {
-                            function_subs[method->m_name] =
-                                &ASRUtils::trait_method_function(copy.second)->base;
-                        }
-                    }
-                }
-                instantiate_body(al, type_subs, function_subs, function.first,
-                    function.second, instantiated_bodies);
             }
             record_generic_instance_procedures(*package, *metadata, copies);
             create_member_slots(instance);
@@ -33043,7 +33049,54 @@ public:
                             const_cast<ASR::symbol_t*>(&provided->base)));
                 }
             }
-            check_generic_instance_transfers(instance, copies);
+            generic_instance_completions.pending_bodies[&instance] = {package, type_subs,
+                symbol_subs, copies, functions, methods};
+        } catch (const SemanticAbort &) {
+            current_scope = saved_scope;
+            throw;
+        }
+        current_scope = saved_scope;
+        if (is_body_visitor) instantiate_generic_instance_bodies(instance);
+    }
+
+    // Instantiates the bodies of the procedure copies of the completed
+    // instance `instance`, which need the bodies of its package.
+    void instantiate_generic_instance_bodies(ASR::Struct_t &instance) {
+        auto found = generic_instance_completions.pending_bodies.find(&instance);
+        if (found == generic_instance_completions.pending_bodies.end()) return;
+        GenericInstanceCompletions::Bodies bodies = std::move(found->second);
+        generic_instance_completions.pending_bodies.erase(found);
+        auto *metadata = ASRUtils::generic_type_instance(instance);
+        auto *saved_scope = current_scope;
+        current_scope = instance.m_symtab->parent;
+        try {
+            for (auto &method : bodies.methods) {
+                auto *source = ASR::down_cast<ASR::Template_t>(method.second);
+                auto *copied = ASR::down_cast<ASR::Template_t>(method.first);
+                std::map<std::string, ASR::symbol_t*> method_subs = bodies.symbols;
+                copy_generic_method_forwarding(*source, *copied);
+                bind_generic_instance_requirements(*bodies.package, *source, *copied,
+                    bodies.types, *metadata, method_subs);
+                std::set<ASR::symbol_t*> instantiated_bodies;
+                instantiate_body(al, bodies.types, method_subs, method.first,
+                    method.second, instantiated_bodies);
+            }
+            for (auto &function : bodies.functions) {
+                std::set<ASR::symbol_t*> instantiated_bodies;
+                std::map<std::string, ASR::symbol_t*> function_subs = bodies.symbols;
+                for (const auto &copy : bodies.copies) {
+                    if (ASR::is_a<ASR::Template_t>(*copy.second)) {
+                        auto *method = ASRUtils::trait_method_function(copy.first);
+                        if (method) {
+                            function_subs[method->m_name] =
+                                &ASRUtils::trait_method_function(copy.second)->base;
+                        }
+                    }
+                }
+                instantiate_body(al, bodies.types, function_subs, function.first,
+                    function.second, instantiated_bodies);
+            }
+            check_generic_instance_transfers(instance, bodies.copies);
         } catch (const SemanticAbort &) {
             current_scope = saved_scope;
             throw;
@@ -37265,21 +37318,46 @@ public:
         bool intrinsic;
     };
 
-    // The parent of the definition of the generic type `name` that extends
-    // the generic type `parent`: the parent's definition, referenced from
-    // the package being defined. The package records the parent's type
-    // arguments (generic_parent_arguments).
-    ASR::symbol_t *generic_type_parent_definition(ASR::Template_t &parent,
-            const std::string &name, const Location &loc) {
+    // The instance `parent` that a type that is not generic extends has its
+    // obligations, bindings and conformances before the type's own, so that
+    // the type inherits and overrides them: the instance is completed now,
+    // which needs the evidence of its type arguments now, and the body
+    // visitor instantiates the bodies of its procedure copies (TD-45). Only
+    // a module exists while its declarations are visited, so the instance
+    // must be a module's.
+    void complete_generic_parent_instance(ASR::symbol_t *parent, const Location &loc) {
+        ASR::Struct_t *instance = pending_generic_instance(parent);
+        if (!instance) return;
+        auto *unit = instance->m_symtab->parent->asr_owner;
+        if (!unit || !ASR::is_a<ASR::symbol_t>(*unit) ||
+                !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(unit))) {
+            trait_error("extending an instance of a generic type outside a module is "
+                "not implemented yet", loc);
+        }
+        for (const auto &record : deferred_generic_evidence) {
+            if (record.instance == instance) {
+                trait_error("extending an instance of a generic type whose type "
+                    "arguments are declared in the same program unit is not "
+                    "implemented yet", loc);
+            }
+        }
+        complete_generic_instance(*instance);
+    }
+
+    // Whether the current scope is the package of the generic type `name`.
+    bool generic_type_package_being_defined(const std::string &name) {
         auto *owner = current_scope->asr_owner;
         auto *package = owner && ASR::is_a<ASR::symbol_t>(*owner) &&
                 ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(owner))
             ? ASR::down_cast<ASR::Template_t>(ASR::down_cast<ASR::symbol_t>(owner)) : nullptr;
-        if (!package || name != package->m_name) {
-            trait_error("extending an instance of the generic type '" +
-                std::string(ASRUtils::generic_type_definition(parent)->m_name) +
-                "' by a type that is not generic is not implemented yet", loc);
-        }
+        return package && name == package->m_name;
+    }
+
+    // The parent of the definition of the generic type that extends the
+    // generic type `parent`: the parent's definition, referenced from the
+    // package being defined. The package records the parent's type
+    // arguments (generic_parent_arguments).
+    ASR::symbol_t *generic_type_parent_definition(ASR::Template_t &parent) {
         return ASRUtils::import_nested_symbol(al,
             &ASRUtils::generic_type_definition(parent)->base, current_scope);
     }

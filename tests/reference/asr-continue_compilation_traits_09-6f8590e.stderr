@@ -1,0 +1,15 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+ --> tests/errors/continue_compilation_traits_09.f90:5:5 - 9:18
+  |
+5 |        abstract interface :: ISum
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+9 |        end interface
+  | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: extending an instance of a generic type outside a module is not implemented yet
+  --> tests/errors/continue_compilation_traits_09.f90:33:11
+   |
+33 |     type, extends(SimpleSum{Leaf}) :: Local
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^ 

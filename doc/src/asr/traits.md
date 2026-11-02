@@ -1252,8 +1252,9 @@ parameters do not reuse the type's parameter names; a procedure that uses the
 type's parameters is bound to that type only and is reached only through its
 bindings and constructors, not by name; parameters are constrained by
 universal traits; type arguments are concrete, not parameters of an
-enclosing generic; and instances cannot be extended, and a generic type
-extends only a generic type (see "Extending generic types").
+enclosing generic; and a generic type extends only a generic type, and a
+type that is not generic extends an instance only in a module (see
+"Extending generic types").
 A generic type binds only procedures that use its parameters, and has no
 FINAL procedures and no GENERIC or DEFERRED bindings. A method calls a
 generic method through a parameter only with its own parameters as type
@@ -1330,18 +1331,49 @@ gives `basic` the value `BasicSum()` and infers `V` to be `BasicSum`. The
 parent component is given by its keyword:
 `PairwiseSum(simplesum=SimpleSum(BasicSum()))` also infers `BasicSum`.
 
+A type that is not generic extends an instance, which its concrete type
+arguments name, as Swift writes `class PairwiseSum: SimpleSum<BasicSum>`:
+
+```fortran
+type, extends(SimpleSum{BasicSum}) :: PairwiseSum
+contains
+    procedure :: sum
+end type PairwiseSum
+...
+function sum{INumeric :: T}(self, x) result(s)
+    class(PairwiseSum), intent(in) :: self
+    ...
+```
+
+The arguments must satisfy the parent's constraints. `PairwiseSum` is an
+ordinary extended type whose parent is the unit's instance
+`SimpleSum{BasicSum}`: it inherits the instance's components (`self%basic`
+has type `BasicSum`), bindings and conformances, so it implements `ISum` and
+can be a type argument for `ISum`, and it overrides the instance's bindings,
+also the generic `sum`, which `class(SimpleSum{BasicSum})` objects then
+dispatch to. Its structure constructor takes the inherited components first,
+`PairwiseSum(BasicSum())`; the instance's initializers are not inherited.
+The symbol table visitor completes such an instance when it declares the
+extending type, which needs the evidence of its type arguments at that
+point; the body visitor instantiates the bodies of its procedure copies.
+
 A type argument that applies a generic type to a parameter
-(`extends(SimpleSum{Wrap{V}})`), a type that is not generic extending an
-instance (`extends(SimpleSum{BasicSum}) :: Fixed`), extending a generic type
-from a type outside a module and a parent whose parameter's constraints bind
-associated types are diagnosed as not implemented.
+(`extends(SimpleSum{Wrap{V}})`), extending a generic type from a type outside
+a module, extending an instance from a type outside a module or with a type
+argument declared in the same program unit, and a parent whose parameter's
+constraints bind associated types are diagnosed as not implemented.
 `traits_generic_type_extends_01` covers renamed parameters, both constructor
 forms, overrides through the parent's instance and a runtime view of the
 extension; `traits_generic_type_extends_02` a separately compiled parent;
 `traits_generic_type_extends_03` reordered and additional parameters,
 concrete arguments, a third level and inherited bindings with parameter
-types; `traits_interop_static` the maintainer's corrected `static.f90`
-variant; `continue_compilation_traits_03` the diagnostics.
+types; `traits_generic_type_extends_04` types that are not generic extending
+an instance, overriding and inheriting its bindings, dispatched to through
+the instance and used as type arguments; `traits_generic_type_extends_05`
+the same with a separately compiled parent; `traits_interop_static` and
+`traits_interop_concrete` the colleague's corrected `static.f90` variants;
+`continue_compilation_traits_03` and `continue_compilation_traits_09` the
+diagnostics.
 
 ## Inheritance and composed constraints
 

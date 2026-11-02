@@ -505,13 +505,23 @@ module traits_generic_extends_errors
     end type
     type, extends(SimpleSum{Plain}) :: Unsatisfied{ISum :: V}
     end type
-    ! Not implemented: a generic type applied to a parameter and a type that
-    ! is not generic extending an instance.
+    ! Not implemented: a generic type applied to a parameter.
     type, extends(SimpleSum{Wrap{V}}) :: Nested{ISum :: V}
     end type
+    type, extends(Plain{V}) :: NotGeneric{ISum :: V}
+    end type
+    ! A type that is not generic extends an instance, whose arguments must
+    ! satisfy the constraints; not implemented: an argument declared in the
+    ! same program unit.
     type, extends(SimpleSum{Leaf}) :: Instance
     end type
-    type, extends(Plain{V}) :: NotGeneric{ISum :: V}
+    type, extends(SimpleSum{Plain}) :: InstanceUnsatisfied
+    end type
+    type, implements(ISum) :: Local
+    contains
+        procedure :: total => local_total
+    end type
+    type, extends(SimpleSum{Local}) :: InstanceLocal
     end type
     ! The type's own name requires its type arguments.
     type, extends(SimpleSum{V}) :: BareSelf{ISum :: V}
@@ -522,5 +532,9 @@ contains
     integer function bare(self)
         class(BareSelf), intent(in) :: self
         bare = 0
+    end function
+    integer function local_total(self)
+        class(Local), intent(in) :: self
+        local_total = 2
     end function
 end module

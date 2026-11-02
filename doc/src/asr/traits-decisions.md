@@ -196,6 +196,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-29 | After discussing explicit contracts versus body-inferred requirements, and separately the observer's recursive generic pairing: "Ok, do the explicit constraints first. If possible, avoid the acyclic version. Document this decision." | TD-43 |
 | 2026-10-31 | Supplied interoperability variants of the paper's `mixed.f90` and `static.f90`, in which a sealed extension overrides an inherited generic `sum` and, in the static one, extends the generic `SimpleSum`, and asked to implement what they need so that both compile. | TD-44, TD-45 |
 | 2026-10-31 | Relayed a colleague's correction: the `static.f90` variant was wrong, and Swift, to be consulted when in doubt, always requires a generic parent's type arguments. Asked to rescind implicit inheritance, to require `extends(SimpleSum{V})` on `PairwiseSum{ISum :: V}` with `V` from the extending type's parameter list, to diagnose a missing parameter list consistently with the rest of the proposal, and to keep accepting a redundant `implements` of an inherited conformance, as Java does. Supplied the colleague's Swift version and corrected Fortran version (`mixed.f90` needed no change). | TD-45 |
+| 2026-11-02 | Relayed the colleague's last interoperability case, `static_interop_concrete.f90` and its Swift version, in which a type that is not generic extends the instance `SimpleSum{BasicSum}` and overrides its generic `sum`, and asked to get it working. | TD-45 |
 
 ## Entries
 
@@ -1983,8 +1984,8 @@ specification action, that is, what the paper should say.
     defines the generic type.
   - Generic types cannot have FINAL, GENERIC or DEFERRED bindings yet. A
     generic type can extend a generic type, giving it type arguments, and its
-    instances extend the parent's instances for those arguments (TD-45);
-    instances cannot be extended. Overriding a binding to a generic procedure
+    instances extend the parent's instances for those arguments; a type that
+    is not generic can extend an instance (TD-45). Overriding a binding to a generic procedure
     is described in TD-44.
 - **Implementation status.** Implemented as described.
 - **Specification action.** Define instance identity, including the role of the
@@ -2106,7 +2107,8 @@ specification action, that is, what the paper should say.
 
 - **Status:** Approved semantic decision (prototype spelling); temporary
   limits diagnosed. Revised on 2026-10-31: the first choice, implicit
-  inheritance, is rescinded.
+  inheritance, is rescinded. Extended on 2026-11-02: a type that is not
+  generic extends an instance.
 - **What the paper says.** Generic derived types (`sect:generic_derived_types`)
   and type extension combined with `implements` (`sect:extended_types`) are
   described separately; the paper does not extend a generic type.
@@ -2136,7 +2138,11 @@ specification action, that is, what the paper should say.
   accepted here, as in Java, consistently with the paper's examples of
   combining `extends` and `implements`. Concrete type arguments were approved
   as well; a generic type applied to a parameter and a type that is not
-  generic extending an instance stay not implemented.
+  generic extending an instance stayed not implemented. On 2026-11-02 the
+  colleague supplied a third variant, `static_interop_concrete.f90` with its
+  Swift version, in which `type, extends(SimpleSum{BasicSum}) :: PairwiseSum`
+  (Swift `class PairwiseSum: SimpleSum<BasicSum>`) overrides the generic
+  `sum`, and the maintainer asked to make it work.
 - **Consequences.** `extends(SimpleSum{V})` gives `SimpleSum` the type
   arguments of the extending type: its parameters, in any order and under any
   names, or concrete types; the extending type may have parameters that it
@@ -2155,13 +2161,25 @@ specification action, that is, what the paper should say.
   components first, and the parent component is given only by its keyword:
   `PairwiseSum(BasicSum())` and `PairwiseSum(simplesum=SimpleSum(BasicSum()))`
   both infer `V` to be `BasicSum`. Initializers are not inherited.
+  A type that is not generic extends the instance that its concrete type
+  arguments name, `extends(SimpleSum{BasicSum}) :: PairwiseSum`; the arguments
+  must satisfy the parent's constraints. It is an ordinary extended type of
+  that instance: it inherits the instance's components, bindings and
+  conformances and overrides its bindings, and `PairwiseSum(BasicSum())`
+  gives the inherited component `basic`.
 - **Implementation status.** Implemented for types declared in modules, also
   across modules and under separate compilation; the colleague's corrected
-  variant runs as `traits_interop_static`. A type argument that applies a
-  generic type to a parameter, a type that is not generic extending an
-  instance, extending a generic type outside a module and a parent whose
-  parameter's constraints bind associated types are diagnosed as not
-  implemented.
+  variants run as `traits_interop_static` and `traits_interop_concrete`. The
+  symbol table visitor completes an instance that a type which is not generic
+  extends, so that the type inherits its bindings and conformances, and the
+  body visitor instantiates the bodies of the instance's procedure copies
+  once the package bodies exist. A type argument that applies a generic type
+  to a parameter, extending a generic type outside a module, extending an
+  instance outside a module (a main program's symbol does not exist while its
+  declarations are visited) or with a type argument declared in the same
+  program unit (whose conformances are completed after its declarations), and
+  a parent whose parameter's constraints bind associated types are diagnosed
+  as not implemented.
 - **Specification action.** Specify extension of generic types: the parent's
   type arguments in terms of the extending type's parameters, the
   constraints they must satisfy, repeated conformances, constructors and the

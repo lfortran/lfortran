@@ -53,7 +53,10 @@ package, a component, a binding's dummy argument or result of a parameter type
 that it inherits has the type those arguments give the parameter, composed
 along a chain of generic parents. Its instance for given arguments extends the
 parent's instance for the parent's arguments, in which the instance's own
-arguments replace the parameters.
+arguments replace the parameters. A derived type that is not generic, `type,
+extends(SimpleSum{BasicSum}) :: PairwiseSum`, has its unit's instance as its
+parent; the instance is completed when that type is declared, and the bodies
+of its procedure copies are instantiated by the body visitor.
 
 Substitution includes the types of component initializer expressions, not
 just component declarations. Each instance owns a specialized copy, preserving
@@ -70,10 +73,11 @@ bindings and conformances use, that no two instances of one scope are equal,
 and that a definition extends only the definition of a generic type, giving it
 one argument per parameter that is a parameter of the definition or a concrete
 type, an instance only that type's instance for those arguments with its own
-arguments substituted, and that only a generic type extends one. An instance
-its module or program has not completed yet, between the symbol table and body
-visitors, has no obligations, bindings or copies; the verifier cannot tell it
-apart from one whose completion was lost. Component initializer expressions of
+arguments substituted, and that only a generic type extends a definition. An
+instance its module or program has not completed yet, between the symbol table
+and body visitors, has no obligations, bindings or copies, and one that it has
+completed has copies without bodies; the verifier cannot tell either apart from
+one whose completion was lost. Component initializer expressions of
 an instance must contain no deferred types, including inside typed null
 pointer constants.
 
