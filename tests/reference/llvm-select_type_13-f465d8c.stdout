@@ -665,14 +665,14 @@ declare i8* @_lfortran_get_default_allocator()
 ; Function Attrs: argmemonly nounwind willreturn writeonly
 declare void @llvm.memset.p0i8.i32(i8* nocapture writeonly, i8, i32, i1 immarg) #0
 
-define linkonce_odr void @_copy_select_type_13_module_shape(i8* %0, i8* %1, i1 %2) {
+define internal void @_copy_select_type_13_module_shape(i8* %0, i8* %1, i1 %2) {
 entry:
   %3 = bitcast i8* %0 to %select_type_13_module.shape.3*
   %4 = bitcast i8* %1 to %select_type_13_module.shape.3*
   ret void
 }
 
-define linkonce_odr void @_allocate_struct_select_type_13_module_shape(i8** %0) {
+define internal void @_allocate_struct_select_type_13_module_shape(i8** %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)
@@ -703,7 +703,7 @@ entry:
   ret void
 }
 
-define linkonce_odr void @_copy_select_type_13_module_circle(i8* %0, i8* %1, i1 %2) {
+define internal void @_copy_select_type_13_module_circle(i8* %0, i8* %1, i1 %2) {
 entry:
   %3 = bitcast i8* %0 to %select_type_13_module.circle.5*
   %4 = bitcast i8* %1 to %select_type_13_module.circle.5*
@@ -725,7 +725,7 @@ ifcont:                                           ; preds = %else, %then
   ret void
 }
 
-define linkonce_odr void @_allocate_struct_select_type_13_module_circle(i8** %0) {
+define internal void @_allocate_struct_select_type_13_module_circle(i8** %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)
@@ -758,7 +758,7 @@ entry:
   ret void
 }
 
-define linkonce_odr void @_copy_select_type_13_module_rectangle(i8* %0, i8* %1, i1 %2) {
+define internal void @_copy_select_type_13_module_rectangle(i8* %0, i8* %1, i1 %2) {
 entry:
   %3 = bitcast i8* %0 to %select_type_13_module.rectangle.6*
   %4 = bitcast i8* %1 to %select_type_13_module.rectangle.6*
@@ -793,7 +793,7 @@ ifcont3:                                          ; preds = %else2, %then1
   ret void
 }
 
-define linkonce_odr void @_allocate_struct_select_type_13_module_rectangle(i8** %0) {
+define internal void @_allocate_struct_select_type_13_module_rectangle(i8** %0) {
 entry:
   %1 = call i8* @_lfortran_get_default_allocator()
   %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)

@@ -3164,6 +3164,7 @@ RUN(NAME derived_types_247 LABELS llvm) # not gfortran: GFortran 15.3 copies rec
 RUN(NAME derived_types_248 LABELS gfortran llvm EXTRAFILES derived_types_248_module1.f90 derived_types_248_module2.f90 EXTRA_ARGS --separate-compilation) # same-named types in two modules (#14189)
 RUN(NAME derived_types_249 LABELS gfortran llvm) # recursive type passed to a class(t) dummy (#16523)
 RUN(NAME derived_types_250 LABELS gfortran llvm EXTRAFILES derived_types_250_module1.f90 derived_types_250_module2.f90 EXTRA_ARGS --separate-compilation) # same-named procedure-local and BLOCK types in two modules (#14189)
+RUN(NAME derived_types_251 LABELS gfortran llvm EXTRAFILES derived_types_251_module1.f90 derived_types_251_module2.f90 EXTRA_ARGS --separate-compilation) # module a with type b_node next to module a_b with type node (#14189)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)

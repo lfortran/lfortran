@@ -10450,26 +10450,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             std::pair(ASRUtils::symbol_get_past_external(struct_sym), type_info_var));
     }
 
-    // Linkage of the per-type `_copy_<owner>_<type>` and
-    // `_allocate_struct_<owner>_<type>` functions. Every translation unit that
-    // uses a type defines these functions itself, so they never have to be
-    // shared. `linkonce_odr` merges the identical copies, but is only correct
-    // if the name is unique in the whole program. That holds when the owner is
-    // a global identifier: a module, a program or an external procedure.
-    // Types declared in a module procedure, an internal procedure, a BLOCK or
-    // a submodule are qualified by a name that can repeat in another
-    // translation unit, so their functions are private to it.
-    static llvm::GlobalValue::LinkageTypes struct_helper_linkage(ASR::symbol_t* struct_sym)
-    {
-        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
-        if (owner && ASRUtils::symbol_parent_symtab(owner)->parent == nullptr
-                && !(ASR::is_a<ASR::Module_t>(*owner)
-                    && ASR::down_cast<ASR::Module_t>(owner)->m_parent_module)) {
-            return llvm::GlobalValue::LinkOnceODRLinkage;
-        }
-        return llvm::GlobalValue::InternalLinkage;
-    }
-
+    // The per-type `_copy_<owner>_<type>` and `_allocate_struct_<owner>_<type>`
+    // functions have internal linkage. Every translation unit that uses a type
+    // defines them itself and nothing refers to them by name, so they never
+    // have to be shared. Their names are not unique program-wide: the owner
+    // may be local to a translation unit (a procedure, a BLOCK or a
+    // submodule), and joining owner and type with `_` is ambiguous (module
+    // `a` with type `b_t` and module `a_b` with type `t`), so merging them
+    // across translation units could call another type's function.
     llvm::Function* LLVMStruct::define_allocate_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
     {
         llvm::FunctionType *funcType = llvm::FunctionType::get(
@@ -10487,7 +10475,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         func_name += ASRUtils::symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
-            struct_helper_linkage(struct_sym),
+            llvm::Function::InternalLinkage,
             func_name,
             module
         );
@@ -10564,7 +10552,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         func_name += ASRUtils::symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
-            struct_helper_linkage(struct_sym),
+            llvm::Function::InternalLinkage,
             func_name,
             module
         );
@@ -11073,8 +11061,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             // Call this translation unit's copy function directly rather than
             // through the type's vtable, whose symbol is not owner-qualified
             // and can resolve to a same-named type of another module (#14543).
-            // The copy function is unique: owner-qualified for a global owner,
-            // internal otherwise (see `struct_helper_linkage`).
+            // The copy function has internal linkage, so this always calls
+            // the copy function of this type.
             llvm::Function* copy_fn = get_struct_copy_function(&struct_sym->base, module);
 
             // Deep copy each struct element
