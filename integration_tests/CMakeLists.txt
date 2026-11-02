@@ -3715,6 +3715,10 @@ RUN(NAME procedure_argument_specialization_03 LABELS gfortran llvm)
 RUN(NAME procedure_argument_specialization_04 LABELS gfortran llvm)
 RUN(NAME procedure_argument_specialization_05 LABELS gfortran llvm)
 RUN(NAME procedure_argument_specialization_06 LABELS gfortran llvm)
+# The copies that --fast makes must refer to the callee's entities in BLOCK
+# and ASSOCIATE bodies.
+RUN(NAME procedure_argument_specialization_07 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME procedure_argument_specialization_08 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module

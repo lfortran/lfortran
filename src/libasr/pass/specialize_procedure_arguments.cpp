@@ -600,25 +600,31 @@ public:
 };
 
 // Makes every symbol that a copy in a host refers to visible from it, the
-// way asr_verify requires: an entity of a module that is not visible is
-// referred to through an ExternalSymbol of the copy's scope. `ok` is false if
-// some entity cannot be made visible.
+// way asr_verify requires: an entity of another module whose name does not
+// resolve to it from the copy (it is not visible, or an entity of the host
+// with the same name hides it) is referred to through an ExternalSymbol of
+// the copy's scope. `ok` is false if some entity cannot be made visible.
 class ScopeImporter: public ASR::BaseWalkVisitor<ScopeImporter> {
 public:
     Allocator &al;
     SymbolTable *copy_scope;
     SymbolTable *current_scope;
+    // the module or program of the host
+    ASR::symbol_t *host_unit;
     bool ok = true;
     // entity -> its ExternalSymbol in copy_scope
     std::map<ASR::symbol_t*, ASR::symbol_t*> imports;
     // the modules of the imported entities
     std::set<std::string> modules;
 
-    ScopeImporter(Allocator &al_, SymbolTable *copy_scope_):
-        al(al_), copy_scope(copy_scope_), current_scope(copy_scope_) {}
+    ScopeImporter(Allocator &al_, SymbolTable *copy_scope_,
+            ASR::symbol_t *host_unit_):
+        al(al_), copy_scope(copy_scope_), current_scope(copy_scope_),
+        host_unit(host_unit_) {}
 
     ASR::symbol_t *import(ASR::symbol_t *sym) {
-        if (sym == nullptr || visible_from(current_scope, sym)) {
+        if (sym == nullptr || current_scope->resolve_symbol(
+                ASRUtils::symbol_name(sym)) == sym) {
             return sym;
         }
         ASR::symbol_t *target = ASRUtils::symbol_get_past_external(sym);
@@ -631,8 +637,14 @@ public:
             return it->second;
         }
         ASR::symbol_t *owner = scope_owner(ASRUtils::symbol_parent_symtab(target));
-        if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner)) {
-            ok = false;
+        if (owner == nullptr || !ASR::is_a<ASR::Module_t>(*owner) ||
+                owner == host_unit) {
+            // An entity of the host's own program unit (such as the
+            // internal procedure that replaces a dummy) that a local of
+            // the copy hides is still referred to by the copy's nodes.
+            if (!visible_from(current_scope, sym)) {
+                ok = false;
+            }
             return sym;
         }
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(owner);
@@ -817,12 +829,17 @@ public:
                 !ASR::is_a<ASR::Module_t>(*g_unit))) {
             return nullptr;
         }
+        // The copy is made in the scope of `g` and then moved into `host`:
+        // the duplicator resolves the names of BLOCK and ASSOCIATE bodies
+        // from the scope of the copy, and in `host` they could resolve to
+        // different entities of the same names.
         ASRUtils::SymbolDuplicator duplicator(al);
-        ASR::symbol_t *copy_sym = duplicator.duplicate_Function(g, host);
+        ASR::symbol_t *copy_sym = duplicator.duplicate_Function(g, g_scope);
         if (copy_sym == nullptr) {
             return nullptr;
         }
         ASR::Function_t *copy = ASR::down_cast<ASR::Function_t>(copy_sym);
+        copy->m_symtab->parent = host;
         std::string name = g->m_name;
         std::map<ASR::symbol_t*, ASR::symbol_t*> replacements;
         std::set<size_t> removed;
@@ -856,7 +873,7 @@ public:
                 ASRUtils::get_FunctionType(g), copy->m_symtab));
         name = host->get_unique_name(name, false);
         copy->m_name = s2c(al, name);
-        ScopeImporter importer(al, copy->m_symtab);
+        ScopeImporter importer(al, copy->m_symtab, top_level_unit(host));
         importer.visit_Function(*copy);
         if (!importer.ok) {
             return nullptr;
