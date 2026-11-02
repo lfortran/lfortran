@@ -6264,7 +6264,13 @@ namespace Parity {
             return b.Call(fn_sym, m_args, return_type, nullptr);
         } else {
             fill_func_arg("dim", duplicate_type_with_empty_dims(al, arg_types[1]));
-            ASR::expr_t *result = declare("result", return_type, Out);
+            // The extents of a result of a shape known only at run time are
+            // expressions of the caller, so the argument has empty ones
+            ASR::ttype_t* result_type = return_type;
+            if (!ASRUtils::is_fixed_size_array(return_type)) {
+                result_type = duplicate_type_with_empty_dims(al, return_type);
+            }
+            ASR::expr_t *result = declare("result", result_type, Out);
             args.push_back(al, result);
             /*
                 for array of rank 3, the following code is generated:
