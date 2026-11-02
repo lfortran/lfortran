@@ -6,7 +6,7 @@ program ilp64_file_ops_01
     character(len=10) :: line
 
     u = 10
-    open(u, file="/tmp/test_ilp64_file_ops.txt", status="replace")
+    open(u, file="ilp64_file_ops_01.txt", status="replace")
     write(u, '(A)') "line1"
     write(u, '(A)') "line2"
 
