@@ -1,14 +1,60 @@
 ! A pointer, intent(in) array dummy given a nonpointer target array: an
 ! optional actual that is absent stays absent, components of derived types
-! are associated, and the dummy aliases the actual.
+! are associated, and the dummy aliases the actual. The other actuals of a
+! call forwarding an optional are evaluated once, also for type-bound and
+! procedure pointer calls.
 module pointer_intent_in_03_mod
     implicit none
     type :: holder
         real :: arr(2, 3)
         integer :: v(0:4)
     end type
+    type :: counter
+    contains
+        procedure, nopass :: count_present
+    end type
+    interface
+        subroutine count_present_iface(p, q, n)
+            integer, pointer, optional, intent(in) :: p(:), q(:)
+            integer, intent(out) :: n
+        end subroutine
+    end interface
     integer, pointer :: saved(:) => null()
+    integer :: evaluations = 0
 contains
+    integer function next_size()
+        evaluations = evaluations + 1
+        next_size = evaluations
+    end function
+
+    subroutine sizes(p, k, q, total)
+        integer, pointer, optional, intent(in) :: p(:)
+        integer, intent(in) :: k
+        integer, pointer, optional, intent(in) :: q(:)
+        integer, intent(out) :: total
+        total = k
+        if (present(p)) total = total + 10*size(p)
+        if (present(q)) total = total + 100*size(q)
+    end subroutine
+
+    subroutine forward_twice(x, total)
+        integer, optional, target, intent(inout) :: x(:)
+        integer, intent(out) :: total
+        call sizes(x, next_size(), x, total)
+    end subroutine
+
+    subroutine forward_bound(x, y, n)
+        integer, optional, target, intent(inout) :: x(:), y(:)
+        integer, intent(out) :: n
+        type(counter) :: c
+        procedure(count_present_iface), pointer :: f
+        integer :: m
+        call c%count_present(q=y, n=n, p=x)
+        f => count_present
+        call f(x, y, m)
+        if (m /= n) error stop "procedure pointer"
+    end subroutine
+
     subroutine count_present(p, q, n)
         integer, pointer, optional, intent(in) :: p(:), q(:)
         integer, intent(out) :: n
@@ -81,6 +127,15 @@ program pointer_intent_in_03
     if (n /= 20) error stop "x absent, y present"
     call forward(a, b, n)
     if (n /= 23) error stop "both present"
+    call forward_bound(y=b, n=n)
+    if (n /= 20) error stop "type-bound, x absent"
+    call forward_bound(a, b, n)
+    if (n /= 23) error stop "type-bound, both present"
+
+    call forward_twice(total=n)
+    if (n /= 1 .or. evaluations /= 1) error stop "twice, absent"
+    call forward_twice(b, n)
+    if (n /= 222 .or. evaluations /= 2) error stop "twice, present"
 
     r = 2.0
     call forward_2d(present_=present_)
