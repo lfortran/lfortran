@@ -2749,10 +2749,9 @@ public:
 
     // The frame object of a host (see nested_vars) is a local object of a
     // frame type. Its host binds each of its reference members at the start
-    // of its body, or of a BLOCK construct that its body starts with,
-    // before the frame is used: passed to a procedure, read through a member
-    // or pointed at by a frame slot. A member that is not bound refers to no
-    // variable.
+    // of its body, or of a BLOCK construct that its body enters, before the
+    // frame is used: passed to a procedure, read through a member or pointed
+    // at by a frame slot. A member that is not bound refers to no variable.
     void verify_frames_bound(SymbolTable *scope, ASR::stmt_t **body,
             size_t n_body) {
         for (auto &item: scope->get_scope()) {

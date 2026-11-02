@@ -1129,6 +1129,16 @@ public:
     }
 };
 
+// The symbols that the variables of a type or an expression refer to
+class SymbolUses: public ASR::BaseWalkVisitor<SymbolUses> {
+public:
+    std::set<ASR::symbol_t*> symbols;
+
+    void visit_Var(const ASR::Var_t &x) {
+        symbols.insert(x.m_v);
+    }
+};
+
 // Makes every return in a BLOCK construct, including the returns in the
 // BLOCK and ASSOCIATE constructs of its scope, an exit of the construct
 // named `name`.
@@ -2373,9 +2383,10 @@ public:
 
     // Moves the body of host `f` into a BLOCK construct (see
     // end_instances), with the locals of the host that a final procedure
-    // can be invoked for when the instance ends and the BLOCK and
-    // ASSOCIATE constructs of the host, which the statements of the body
-    // execute and which can refer to those locals. Every return of the host
+    // can be invoked for when the instance ends, the locals whose
+    // declarations refer to them, and the BLOCK and ASSOCIATE constructs of
+    // the host, which the statements of the body execute and which can
+    // refer to those locals. Every return of the host
     // exits the construct instead. Returns false, and changes nothing, if
     // the host has no such local.
     bool wrap_body(ASR::Function_t &f) {
@@ -2399,6 +2410,40 @@ public:
         }
         if (!finalizable) {
             return false;
+        }
+        // A local whose declaration refers to a moved local, such as an
+        // array whose bounds inquire about it, moves too
+        std::set<ASR::symbol_t*> moved_set;
+        for (const std::string &name: moved) {
+            moved_set.insert(host->get_symbol(name));
+        }
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (auto &item: host->get_scope()) {
+                if (moved_set.count(item.second) ||
+                        !ASR::is_a<ASR::Variable_t>(*item.second)) {
+                    continue;
+                }
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                SymbolUses uses;
+                uses.visit_ttype(*v->m_type);
+                if (v->m_symbolic_value != nullptr) {
+                    uses.visit_expr(*v->m_symbolic_value);
+                }
+                if (v->m_value != nullptr) {
+                    uses.visit_expr(*v->m_value);
+                }
+                for (ASR::symbol_t *used: uses.symbols) {
+                    if (moved_set.count(used)) {
+                        LCOMPILERS_ASSERT(v->m_intent == ASR::intentType::Local);
+                        moved_set.insert(item.second);
+                        moved.push_back(item.first);
+                        changed = true;
+                        break;
+                    }
+                }
+            }
         }
         SymbolTable *scope = al.make_new<SymbolTable>(host);
         for (const std::string &name: moved) {
