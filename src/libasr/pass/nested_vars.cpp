@@ -1129,13 +1129,31 @@ public:
     }
 };
 
-// The symbols that the variables of a type or an expression refer to
+// The symbols that the declarations, expressions and calls of a part of
+// the ASR refer to
 class SymbolUses: public ASR::BaseWalkVisitor<SymbolUses> {
 public:
     std::set<ASR::symbol_t*> symbols;
 
     void visit_Var(const ASR::Var_t &x) {
         symbols.insert(x.m_v);
+    }
+
+    void visit_Variable(const ASR::Variable_t &x) {
+        if (x.m_type_declaration != nullptr) {
+            symbols.insert(x.m_type_declaration);
+        }
+        ASR::BaseWalkVisitor<SymbolUses>::visit_Variable(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        symbols.insert(x.m_name);
+        ASR::BaseWalkVisitor<SymbolUses>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        symbols.insert(x.m_name);
+        ASR::BaseWalkVisitor<SymbolUses>::visit_SubroutineCall(x);
     }
 };
 
@@ -2383,12 +2401,12 @@ public:
 
     // Moves the body of host `f` into a BLOCK construct (see
     // end_instances), with the locals of the host that a final procedure
-    // can be invoked for when the instance ends, the locals whose
-    // declarations refer to them, and the BLOCK and ASSOCIATE constructs of
-    // the host, which the statements of the body execute and which can
-    // refer to those locals. Every return of the host
+    // can be invoked for when the instance ends and the BLOCK and
+    // ASSOCIATE constructs of the host, which the statements of the body
+    // execute and which can refer to those locals. Every return of the host
     // exits the construct instead. Returns false, and changes nothing, if
-    // the host has no such local.
+    // the host has no such local or if another symbol of the host refers to
+    // one of them.
     bool wrap_body(ASR::Function_t &f) {
         SymbolTable *host = f.m_symtab;
         std::vector<std::string> moved;
@@ -2412,37 +2430,18 @@ public:
             return false;
         }
         // A local whose declaration refers to a moved local, such as an
-        // array whose bounds inquire about it, moves too
+        // array whose bounds inquire about it, an interface body that
+        // imports it or a dummy argument would have to move too: the host
+        // is then not wrapped (a local that a final procedure reaches could
+        // be freed before the final procedure runs)
         std::set<ASR::symbol_t*> moved_set;
         for (const std::string &name: moved) {
             moved_set.insert(host->get_symbol(name));
         }
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            for (auto &item: host->get_scope()) {
-                if (moved_set.count(item.second) ||
-                        !ASR::is_a<ASR::Variable_t>(*item.second)) {
-                    continue;
-                }
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
-                SymbolUses uses;
-                uses.visit_ttype(*v->m_type);
-                if (v->m_symbolic_value != nullptr) {
-                    uses.visit_expr(*v->m_symbolic_value);
-                }
-                if (v->m_value != nullptr) {
-                    uses.visit_expr(*v->m_value);
-                }
-                for (ASR::symbol_t *used: uses.symbols) {
-                    if (moved_set.count(used)) {
-                        LCOMPILERS_ASSERT(v->m_intent == ASR::intentType::Local);
-                        moved_set.insert(item.second);
-                        moved.push_back(item.first);
-                        changed = true;
-                        break;
-                    }
-                }
+        for (auto &item: host->get_scope()) {
+            if (moved_set.count(item.second) == 0 &&
+                    refers_to(item.second, moved_set)) {
+                return false;
             }
         }
         SymbolTable *scope = al.make_new<SymbolTable>(host);
@@ -2472,6 +2471,27 @@ public:
         f.m_body = body.p;
         f.n_body = body.size();
         return true;
+    }
+
+    // Whether the declaration of `sym`, or a procedure `sym` and the
+    // procedures nested in it, refer to one of `symbols`
+    static bool refers_to(ASR::symbol_t *sym,
+            const std::set<ASR::symbol_t*> &symbols) {
+        SymbolUses uses;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            uses.visit_Variable(*ASR::down_cast<ASR::Variable_t>(sym));
+        } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+            uses.visit_Function(*ASR::down_cast<ASR::Function_t>(sym));
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*sym)) {
+            ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(sym);
+            uses.symbols.insert(g->m_procs, g->m_procs + g->n_procs);
+        }
+        for (ASR::symbol_t *used: uses.symbols) {
+            if (symbols.count(used)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Whether a final procedure can be invoked when a local of type `type`,

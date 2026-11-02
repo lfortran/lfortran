@@ -1,9 +1,8 @@
-! A host whose internal procedure is an actual argument has a finalizable
-! local and a local whose bounds inquire about it: it is declared in the
-! same scope as the finalizable local, which is finalized when the host
-! ends. An inquiry about a local of the same procedure in a specification
-! expression is an extension (F2018 10.1.11), which GFortran evaluates
-! differently, so this test is not run with GFortran.
+! Hosts whose internal procedure is an actual argument have a finalizable
+! local that the declaration of another entity inquires about: a local, an
+! interface body that imports it, and a dummy argument. Each host compiles
+! and its finalizable local is finalized once. GFortran evaluates such
+! inquiries about a local wrongly, so this test is not run with GFortran.
 module finalization_55_mod
 implicit none
 integer :: finalized = 0
@@ -25,7 +24,11 @@ subroutine apply(f, r)
     integer, intent(out) :: r
     r = f()
 end subroutine
-recursive subroutine host(n, r)
+subroutine add2(a)
+    integer, intent(inout) :: a(:)
+    a = a + 2
+end subroutine
+recursive subroutine host_local(n, r)
     integer, intent(in) :: n
     integer, intent(out) :: r
     type(t) :: x(n)
@@ -37,14 +40,53 @@ contains
         get = sum(w)
     end function
 end subroutine
+subroutine host_import(n, r)
+    integer, intent(in) :: n
+    integer, intent(out) :: r
+    type(t) :: x(n:2*n-1)
+    interface
+        subroutine inner(a)
+            import :: x
+            integer, intent(inout) :: a(lbound(x, 1):ubound(x, 1))
+        end subroutine
+    end interface
+    integer :: b(n)
+    b = 1
+    call add2(b)
+    call apply(get, r)
+contains
+    integer function get()
+        get = sum(b)
+    end function
+end subroutine
+subroutine host_dummy(n, y, r)
+    integer, intent(in) :: n
+    type(t) :: x(n:2*n-1)
+    integer, intent(inout) :: y(lbound(x, 1):ubound(x, 1))
+    integer, intent(out) :: r
+    call apply(get, r)
+contains
+    integer function get()
+        get = sum(y)
+    end function
+end subroutine
 end module
 
 program finalization_55
 use finalization_55_mod
 implicit none
-integer :: r
-call host(3, r)
+integer :: r, y(3)
+call host_local(3, r)
 print *, r, finalized
 if (r /= 4) error stop
 if (finalized /= 1) error stop
+call host_import(3, r)
+print *, r, finalized
+if (r /= 9) error stop
+if (finalized /= 2) error stop
+y = 2
+call host_dummy(3, y, r)
+print *, r, finalized
+if (r /= 6) error stop
+if (finalized /= 3) error stop
 end program
