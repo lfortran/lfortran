@@ -2115,6 +2115,14 @@ messages. An open generic message whose binder such a trait constrains erases
 the binder to its view as for any other trait, and the operation wrappers
 forward the views.
 
+An ordinary procedure's view dummy is associated the same way, whether it is
+called directly or through a type-bound subroutine or function: a trait owner
+is borrowed, a concrete variable packed and a view forwarded. The reported
+`res = obj%my_method(tobj)`, a type-bound function taking a `class(ITrait)`
+owner and returning a `class(IResultTrait), allocatable` object, is run by
+`traits_runtime_binding_function_01`, also with a concrete actual, a
+forwarded view and an integer result.
+
 `traits_runtime_view_argument_01` runs the reported `MyType`, whose private
 `coefficients` binding borrows the allocated `estimates` component for
 `update`, and borrows concrete variables, array elements, owners, pointer

@@ -16855,6 +16855,9 @@ public:
         size_t n_call_args = args.size();
         ASRUtils::insert_self_arg(al, v, call_args, n_call_args, v_expr);
         args.from_pointer_n(call_args, n_call_args);
+        // Trait owners and concrete values are borrowed or packed for view
+        // dummies, as in a subroutine call through a binding.
+        adapt_runtime_trait_arguments(args, *func);
         ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
         if (first_array_arg) {
             ASR::dimension_t* array_dims;
