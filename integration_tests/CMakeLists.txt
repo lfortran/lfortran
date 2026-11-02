@@ -4424,6 +4424,7 @@ RUN(NAME template_procedure_dummy_05 LABELS llvm)
 RUN(NAME template_struct_extends_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_class_procedure_nopass_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_class_procedure_deferred_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_do_concurrent_01 LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
