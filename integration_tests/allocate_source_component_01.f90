@@ -192,6 +192,10 @@ end select
 
 call check_class_dummy(a)
 print *, q%n, r%n, cq%n, b%more%n, p%list%box(copy)%e%more%n
+deallocate(c%more, c%kp, c%sp, c%rp, h%p, h%lp)
+deallocate(p%list%box(1)%e%more, p%list%box(2)%e%more)
+deallocate(p%list%box(1)%e, p%list%box(2)%e)
+deallocate(p)
 
 contains
 
