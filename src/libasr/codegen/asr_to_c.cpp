@@ -247,6 +247,42 @@ public:
         }
     }
 
+    // The C type of a Var of a variable of type `t`: the descriptor pointer
+    // of an array, the pointer to a derived type object, and otherwise the
+    // type of its value.
+    std::string designator_type(ASR::ttype_t* t, ASR::symbol_t* type_declaration,
+            const Location& loc) {
+        ASR::ttype_t* elem = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(t));
+        std::string elem_type, encoded_type_name;
+        if (ASR::is_a<ASR::StructType_t>(*elem)) {
+            std::string der_type_name = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(type_declaration));
+            elem_type = "struct " + der_type_name;
+            encoded_type_name = "x" + der_type_name;
+        } else if (ASRUtils::is_array(t) || !ASRUtils::is_pointer(t)) {
+            if (ASR::is_a<ASR::FunctionType_t>(*elem) || ASR::is_a<ASR::UnionType_t>(*elem)) {
+                throw CodeGenError("a host-associated variable of type '"
+                    + ASRUtils::type_to_str_python_symbol(t, type_declaration)
+                    + "' is not supported by the c backend yet", loc);
+            }
+            elem_type = CUtils::get_c_type_from_ttype_t(elem);
+            encoded_type_name = ASRUtils::get_type_code(elem);
+        } else {
+            // A pointer to a scalar of intrinsic type is its address.
+            return CUtils::get_c_type_from_ttype_t(
+                ASRUtils::type_get_past_allocatable(t));
+        }
+        if (ASRUtils::is_array(t)) {
+            return c_ds_api->get_array_type(elem_type, encoded_type_name,
+                array_types_decls);
+        }
+        if (ASR::is_a<ASR::StructType_t>(*elem)) {
+            return elem_type + "*";
+        }
+        return elem_type;
+    }
+
     std::string convert_variable_decl(const ASR::Variable_t &v,
         DeclarationOptions* decl_options=nullptr)
     {
@@ -254,9 +290,12 @@ public:
             throw CodeGenError("threadprivate variables are not supported by the c backend",
                 v.base.base.loc);
         }
-        if (ASRUtils::is_host_associated(v) || ASRUtils::is_reference(v.m_type)) {
-            throw CodeGenError("host association is not supported by the c backend yet",
-                v.base.base.loc);
+        LCOMPILERS_ASSERT(!ASRUtils::is_host_associated(v));
+        if (ASRUtils::is_reference(v.m_type)) {
+            // A member of Reference type holds the address of the variable
+            // that it designates (see visit_StructInstanceMember).
+            return designator_type(ASR::down_cast<ASR::Reference_t>(v.m_type)->m_type,
+                v.m_type_declaration, v.base.base.loc) + " *" + std::string(v.m_name);
         }
         bool pre_initialise_derived_type;
         bool use_ptr_for_derived_type;
@@ -883,9 +922,20 @@ R"(
         intrinsic_module = false;
     }
 
+    // Declares at file scope the frame types (see nested_vars) that `scope`
+    // declares.
+    void declare_frame_types(SymbolTable &scope) {
+        for (auto &item : scope.get_scope()) {
+            if (ASRUtils::is_frame_type(item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+    }
+
     void visit_Program(const ASR::Program_t &x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
+        declare_frame_types(*x.m_symtab);
         // Topologically sort all program functions
         // and then define them in the right order
         std::vector<std::string> func_order = ASRUtils::determine_function_definition_order(x.m_symtab);
@@ -1825,6 +1875,11 @@ R"(    // Initialise Numpy
             }
         } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
             for( size_t idim = 0; idim < x.n_args; idim++ ) {
+                if (m_dims[idim].m_start == nullptr) {
+                    throw CodeGenError("an array element of an array without "
+                        "declared lower bounds is not supported by the c backend yet",
+                        x.base.base.loc);
+                }
                 this->visit_expr(*m_dims[idim].m_start);
                 diminfo.push_back(src);
             }
