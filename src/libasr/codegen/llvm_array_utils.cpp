@@ -1289,7 +1289,8 @@ namespace LCompilers {
                                                   ASR::ttype_t* asr_data_type,
                                                   llvm::Type* result_desc_type,
                                                   llvm::Value* order,
-                                                  ASR::expr_t* order_expr) {
+                                                  ASR::expr_t* order_expr,
+                                                  llvm::Value* result) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             llvm::Type* result_type;
             if (result_desc_type) {
@@ -1303,14 +1304,26 @@ namespace LCompilers {
                 }
                 result_type = get_array_type_for_rank(llvm_data_type, result_rank);
             }
-            llvm::Value* reshaped = create_descriptor_alloca(result_type, "reshaped");
+            llvm::Value* reshaped = result ? result :
+                create_descriptor_alloca(result_type, "reshaped");
 
             // Deep copy data from array to reshaped.
             llvm::Value* num_elements = this->get_array_size(arr_type, array, nullptr, 4);
+            if (result) {
+                llvm::Value* result_elements = this->get_array_size(result_type, result, nullptr, 4);
+                num_elements = builder->CreateSelect(
+                    builder->CreateICmpSLT(num_elements, result_elements),
+                    num_elements, result_elements);
+            }
 
             llvm::Value* first_ptr = this->get_pointer_to_data(result_type, reshaped);
-            llvm::Value* arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
-            builder->CreateStore(arr_first, first_ptr);
+            llvm::Value* arr_first;
+            if (result) {
+                arr_first = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), first_ptr);
+            } else {
+                arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
+                builder->CreateStore(arr_first, first_ptr);
+            }
 
             llvm::Value* ptr2firstptr = this->get_pointer_to_data(arr_type, array);
 

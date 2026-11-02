@@ -5532,6 +5532,22 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayReshape(x);
+        ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
+        if( x->m_value == nullptr && x->m_result == nullptr && x->m_pad == nullptr &&
+            ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_array)) ==
+                ASR::array_physical_typeType::DescriptorArray &&
+            (ASRUtils::is_integer(*element_type) || ASRUtils::is_real(*element_type) ||
+             ASRUtils::is_complex(*element_type) || ASRUtils::is_logical(*element_type)) ) {
+            // The result owns storage independent of the source, including
+            // when an assignment will reallocate or overwrite that source.
+            ASR::ttype_t* temporary_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
+                al, x->base.base.loc, ASRUtils::create_array_type_with_empty_dims(
+                    al, ASRUtils::extract_n_dims_from_ttype(x->m_type), x->m_type)));
+            x->m_result = create_temporary_variable_for_array(
+                al, x->base.base.loc, current_scope, "_array_reshape_",
+                temporary_type, &x->base);
+            insert_allocate_stmt_for_array(al, x->m_result, &x->base, current_body);
+        }
         replace_current_expr(x, "_array_reshape_");
     }
 
