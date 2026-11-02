@@ -2611,6 +2611,23 @@ public:
         llvm::appendToCompilerUsed(*module, {source});
     }
 
+    // Returns the address of the data that an allocatable or pointer
+    // `source=` expression refers to. A variable yields it with one pointer
+    // load, but a non-character component is lowered to the address of its
+    // slot, which holds the data address, so that slot is loaded as well.
+    // A character component stores its string descriptor inline, so its
+    // address is already what the copy expects.
+    llvm::Value* visit_allocatable_or_pointer_source(ASR::expr_t* source) {
+        visit_expr_load_wrapper(source, 1);
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*source)
+                && LLVM::is_llvm_pointer(*ASRUtils::expr_type(source))) {
+            llvm::Type* source_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                source, ASRUtils::expr_type(source), module.get());
+            tmp = llvm_utils->CreateLoad2(source_llvm_type, tmp);
+        }
+        return tmp;
+    }
+
     template <typename T>
     void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc, ASR::expr_t* m_source = nullptr) {
         llvm::Value* stat_target = nullptr;
@@ -2822,13 +2839,11 @@ public:
                         continue;
                     }
 
-                    if (m_source && !m_source_is_class && (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source)))) {
-                        int64_t saved_ptr_loads = ptr_loads;
-                        ptr_loads = 1;
-                        this->visit_expr(*m_source);
-                        llvm::Value* source_ptr = tmp;
-                        ptr_loads = saved_ptr_loads;
-                        tmp = nullptr;
+                    bool source_is_allocatable_or_pointer = m_source
+                        && (ASRUtils::is_allocatable(m_source)
+                            || ASRUtils::is_pointer(ASRUtils::expr_type(m_source)));
+                    if (m_source && !m_source_is_class && source_is_allocatable_or_pointer) {
+                        llvm::Value* source_ptr = visit_allocatable_or_pointer_source(m_source);
 
                         llvm::Value* is_source_not_allocated = builder->CreateICmpEQ(
                             builder->CreatePtrToInt(source_ptr, llvm::Type::getInt64Ty(context)),
@@ -2860,14 +2875,11 @@ public:
                             x_arr,
                             curr_arg_m_a_type);
                         if (m_source && !m_source_is_class && !curr_arg.m_type) {
-                            int64_t ptr_loads_copy = ptr_loads;
-                            if (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source))) {
-                                ptr_loads = 1;
+                            if (source_is_allocatable_or_pointer) {
+                                tmp = visit_allocatable_or_pointer_source(m_source);
                             } else {
-                                ptr_loads = 0;
+                                this->visit_expr_load_wrapper(m_source, 0);
                             }
-                            this->visit_expr(*m_source);
-                            ptr_loads = ptr_loads_copy;
 
                             llvm_utils->deepcopy(m_source, tmp, x_arr, ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get(),
                                 false, llvm::ConstantInt::getFalse(context));
@@ -3030,9 +3042,12 @@ public:
                         }
                         if (m_source && !m_source_is_class && !curr_arg.m_type) {
                             llvm::Value* src = nullptr; {
-                                const auto load = (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source))) && !ASRUtils::is_string_only(ASRUtils::expr_type(m_source)) ? 1 : 0;
-                                this->visit_expr_load_wrapper(m_source, load);
-                                src = tmp;
+                                if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_source))) {
+                                    src = visit_allocatable_or_pointer_source(m_source);
+                                } else {
+                                    this->visit_expr_load_wrapper(m_source, 0);
+                                    src = tmp;
+                                }
                                 tmp = nullptr;
                             }
                             llvm::Value* dest = x_arr;
