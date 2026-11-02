@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.nested_vars.host_variable]: the variable 'n' of 'outer' is referenced directly by 'inner' after the nested_vars pass, instead of through its frame
+   --> tests/asr/verify/nested_vars_host_variable.asr:269:34
+    |
+269 |                           :left (Var
+    |                                  ^^^ failed here
