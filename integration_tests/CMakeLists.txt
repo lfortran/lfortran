@@ -1608,6 +1608,7 @@ RUN(NAME procedure_pointer_46 LABELS gfortran llvm EXTRA_ARGS --implicit-interfa
 RUN(NAME procedure_pointer_47 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # components referenced in implied do loops (#16414)
 RUN(NAME procedure_pointer_48 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type of the declaring scope (#16414)
 RUN(NAME procedure_pointer_49 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # typed pointer passed to an external dummy (#16414)
+RUN(NAME procedure_pointer_50 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type in an internal procedure of a program (#16414)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
@@ -2692,6 +2693,7 @@ RUN(NAME implicit_typing_15 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --
 RUN(NAME implicit_typing_16 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_17 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
 RUN(NAME implicit_typing_18 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME implicit_typing_21 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # IMPLICIT of a main program with internal procedures
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

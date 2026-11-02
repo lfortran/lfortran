@@ -1,0 +1,11 @@
+semantic error: Variable 'y' is not declared
+ --> tests/errors/implicit_none_host_01.f90:6:5
+  |
+6 |     y = 1  ! {Error} `y` is not declared
+  |     ^ 'y' is undeclared
+
+semantic error: Variable 'q' is not declared
+  --> tests/errors/implicit_none_host_01.f90:10:9
+   |
+10 |         q = 1  ! {Error} `q` is not declared
+   |         ^ 'q' is undeclared

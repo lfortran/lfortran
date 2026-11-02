@@ -1416,6 +1416,12 @@ public:
         // The assignment(=) blocks of the internal procedures are not the program's.
         std::vector<std::pair<std::string, Location>> program_assgn_proc_names_locations
             = assgn_proc_names_locations;
+        // An internal procedure without an IMPLICIT statement has the
+        // implicit typing rules of the program (F2018 8.7 p4), as a module
+        // procedure has those of its module.
+        if (compiler_options.implicit_typing) {
+            implicit_stack.push_back(implicit_dictionary);
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -1432,6 +1438,9 @@ public:
             }
             implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
+        }
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
         }
         assgn_proc_names_locations = program_assgn_proc_names_locations;
         for (size_t i : procedure_decl_indices) {
