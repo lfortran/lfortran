@@ -1880,11 +1880,6 @@ public:
         ASR::symbol_t*>> fpcast_call_targets;
     // The procedure each of those temporaries holds.
     std::map<const ASR::symbol_t*, ASR::symbol_t*> implicit_call_procedures;
-    // The variables that give the calls through procedure pointer components
-    // with implicit interfaces their call-site interfaces, per scope, keyed
-    // by the component and the call-site interface.
-    std::map<SymbolTable*, std::map<std::pair<ASR::symbol_t*, ASR::symbol_t*>,
-        ASR::symbol_t*>> component_call_interfaces;
     // Copies of dummy interfaces that procedures with implicit interfaces are
     // cast to, per scope, keyed by the copied interface.
     std::map<SymbolTable*, std::map<ASR::symbol_t*, ASR::symbol_t*>> cast_interface_copies;
@@ -18651,8 +18646,13 @@ public:
     ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v,
                 const std::string &source_name, bool is_dt_present=false) {
-        ASR::ttype_t* proc_type = ASRUtils::import_procedure_type(al,
-            ASRUtils::symbol_type(v), current_scope);
+        // `v` is a procedure variable, or the call-site interface of a call
+        // through a procedure with an implicit interface.
+        ASR::symbol_t* v_past_external = ASRUtils::symbol_get_past_external(v);
+        ASR::ttype_t* proc_type = ASR::is_a<ASR::Function_t>(*v_past_external)
+            ? ASR::down_cast<ASR::Function_t>(v_past_external)->m_function_signature
+            : ASRUtils::import_procedure_type(al, ASRUtils::symbol_type(v),
+                current_scope);
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::type_get_past_pointer(proc_type));
         ASR::ttype_t *return_type = func->m_return_var_type;
         auto declared_result = implicit_call_result_types.find(v);
@@ -18740,8 +18740,12 @@ public:
         }
     }
 
+    // `call_site_interface`: `v` is the interface of a call through a
+    // procedure with an implicit interface, typed like a call through a
+    // procedure variable of that interface.
     ASR::asr_t* create_FunctionCallWithASTNode(const AST::FuncCallOrArray_t& x,
-                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, bool is_dt_present=false) {
+                ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, bool is_dt_present=false,
+                bool call_site_interface=false) {
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, args.size());
@@ -18831,9 +18835,9 @@ public:
             new_args.push_back(al, arg);
         }
 
-        if (ASR::is_a<ASR::Function_t>(*f2)) {
+        if (ASR::is_a<ASR::Function_t>(*f2) && !call_site_interface) {
             return create_Function(x.base.base.loc, new_args, v);
-        } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
+        } else if (ASR::is_a<ASR::Variable_t>(*f2) || call_site_interface) {
             return create_FunctionFromFunctionTypeVariable(x.base.base.loc, new_args, v,
                 std::string(x.m_func), is_dt_present);
         } else {
@@ -22636,35 +22640,20 @@ public:
         return iface;
     }
 
-    // The variable that names a call through the procedure pointer component
-    // `component` with an implicit interface, giving the call the call-site
-    // interface `to_iface`. The call is made through the component's
-    // designator, its `dt` (e.g. `a(i)%f`), which is evaluated where the
-    // call is, e.g. in every iteration of an implied do loop: the variable
-    // only carries the interface and is never associated.
-    ASR::symbol_t* component_call_interface(const Location& loc,
-            ASR::symbol_t* component, ASR::symbol_t* to_iface) {
+    // The procedure a call through the procedure pointer component with an
+    // implicit interface designated by `designator` (e.g. `a(i)%f`) is made
+    // through: the component cast to the call-site interface `to_iface`.
+    // The call names `to_iface` and has this cast as its `dt`, so the
+    // designator is evaluated where the call is, e.g. in every iteration of
+    // an implied do loop.
+    ASR::expr_t* component_call_procedure(ASR::expr_t* designator,
+            ASR::symbol_t* to_iface) {
         ASR::symbol_t* to_sym = ASRUtils::symbol_get_past_external(to_iface);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*to_sym));
-        ASR::Function_t* to_fn = ASR::down_cast<ASR::Function_t>(to_sym);
-        ASR::symbol_t*& var = component_call_interfaces[current_scope][
-            {component, to_sym}];
-        if (var == nullptr) {
-            ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
-                ASRUtils::duplicate_type(al, to_fn->m_function_signature)));
-            std::string name = current_scope->get_unique_name(generated_symbol_name(
-                ASRUtils::symbol_name(component), "call_iface"), false);
-            var = ASR::down_cast<ASR::symbol_t>(
-                ASRUtils::make_Variable_t_util(
-                    al, loc, current_scope, s2c(al, name), nullptr, 0,
-                    ASR::intentType::Local, nullptr, nullptr,
-                    ASR::storage_typeType::Default, ptr_type, to_sym,
-                    ASR::abiType::Source, ASR::accessType::Public,
-                    ASR::presenceType::Required, false));
-            current_scope->add_symbol(name, var);
-            implicit_call_procedures[var] = component;
-        }
-        return var;
+        return ASRUtils::EXPR(ASR::make_FunctionPointerCast_t(al,
+            designator->base.loc, designator, to_iface,
+            ASRUtils::duplicate_type(al, ASR::down_cast<ASR::Function_t>(
+                to_sym)->m_function_signature), nullptr));
     }
 
     // The implicit typing rules of the scoping unit that declares `sym`
@@ -23197,15 +23186,15 @@ public:
     // The call target of a reference to `name` through an implicit
     // interface: `source` (an opaque procedure or procedure variable) cast to
     // the interface built from this reference's actuals. For a procedure
-    // pointer component (`through_component`), the variable that gives the
-    // call that interface, see component_call_interface.
+    // pointer component (`through_component`), that interface itself, see
+    // component_call_procedure.
     ASR::symbol_t* implicit_call_target(const Location &loc, const std::string &name,
             ASR::symbol_t* source, Vec<ASR::call_arg_t> &args, ASR::ttype_t* return_type,
             bool through_component = false) {
         ASR::symbol_t* iface = implicit_call_interface(loc, name, source, args,
             return_type);
         if (through_component) {
-            return component_call_interface(loc, source, iface);
+            return iface;
         }
         return make_fpcast_call_target(loc, source, iface);
     }
@@ -25081,14 +25070,16 @@ public:
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
                 ASRUtils::check_simple_intent_mismatch<SemanticAbort>(diag, f, args);
             }
-            if (x.n_member >= 1 && !component_implicit_call) {
+            if (component_implicit_call) {
+                // `v` is the call-site interface, which the component is
+                // cast to and called through.
+                tmp = create_FunctionCallWithASTNode(x, v, args, false, true);
+                ASR::down_cast2<ASR::FunctionCall_t>(tmp)->m_dt =
+                    component_call_procedure(component_designator, v);
+            } else if (x.n_member >= 1) {
                 tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt, true);
             } else {
                 tmp = create_FunctionCallWithASTNode(x, v, args);
-                if (component_implicit_call) {
-                    ASR::down_cast2<ASR::FunctionCall_t>(tmp)->m_dt =
-                        component_designator;
-                }
             }
         } else {
             switch (f2->type) {

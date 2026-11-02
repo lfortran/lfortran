@@ -28773,6 +28773,18 @@ public:
         }
 
         std::vector<llvm::Value*> args;
+        if (x.m_dt && ASR::is_a<ASR::FunctionPointerCast_t>(*x.m_dt)) {
+            // A call through a procedure value: `m_dt` is the procedure cast
+            // to the interface `m_name`.
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(x.m_name));
+            this->visit_expr_wrapper(x.m_dt, true);
+            llvm::Value* callee = tmp;
+            args = convert_call_args(x, false);
+            tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
+                callee, args);
+            return;
+        }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(x.m_name))) ) {
@@ -28795,9 +28807,6 @@ public:
 
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
             llvm::Type* func_ptr_type = fntype->getPointerTo();
-            // The procedure pointer at `m_dt` is called with the interface
-            // of `m_name`, see visit_FunctionCall.
-            tmp = builder->CreateBitCast(tmp, func_ptr_type->getPointerTo());
             llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
 
             // Self argument has been inserted into args by the semantic
@@ -29424,6 +29433,19 @@ public:
         }
 
         std::vector<llvm::Value*> args;
+        if (x.m_dt && ASR::is_a<ASR::FunctionPointerCast_t>(*x.m_dt)) {
+            // A call through a procedure value: `m_dt` is the procedure cast
+            // to the interface `m_name`.
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(x.m_name));
+            this->visit_expr_wrapper(x.m_dt, true);
+            llvm::Value* callee = tmp;
+            args = convert_call_args(x, false);
+            tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
+                callee, args);
+            wrap_string_function_result(x.m_type);
+            return;
+        }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(x.m_name))) ) {
@@ -29435,13 +29457,8 @@ public:
             ptr_loads = ptr_loads_copy;
             navigate_class_descriptor_to_proc_ptr(x.m_dt, x.m_name);
 
-            // The procedure pointer at `m_dt` is called with the interface
-            // of `m_name`, which for a component with an implicit interface
-            // is the interface of this call, not the component's own type.
-            llvm::Type* func_ptr_type = llvm_utils->get_function_type(
-                *func, module.get())->getPointerTo();
-            tmp = builder->CreateBitCast(tmp, func_ptr_type->getPointerTo());
-            llvm::Value* callee = llvm_utils->CreateLoad2(func_ptr_type, tmp);
+            llvm::Value* callee = llvm_utils->CreateLoad2(
+                llvm_utils->get_function_type(*func, module.get())->getPointerTo(), tmp);
 
             // Self argument has been inserted into args by the semantic
             // layer (with a value distinct from m_dt — see

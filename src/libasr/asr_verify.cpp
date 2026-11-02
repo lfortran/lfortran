@@ -3304,37 +3304,25 @@ public:
         }
     }
 
-    // True if the call `x` is made through a procedure pointer component
-    // with an implicit interface: `m_dt` designates the component (e.g.
-    // `a(i)%f`) and `m_name` is a procedure variable of the call's scope
-    // that only gives the call its interface. The component is called
-    // without a passed object.
+    // True if the call `x` is made through a procedure value: `m_dt` is that
+    // procedure (e.g. the procedure pointer component `a(i)%f`) cast to the
+    // interface `m_name`, not a passed object.
     template <typename T>
-    static bool is_call_through_opaque_component(const T& x) {
-        if (x.m_dt == nullptr || !ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
+    bool is_call_through_procedure_value(const T& x) {
+        if (x.m_dt == nullptr || !ASR::is_a<ASR::FunctionPointerCast_t>(*x.m_dt)) {
             return false;
         }
-        ASR::symbol_t* name = ASRUtils::symbol_get_past_external(x.m_name);
-        ASR::symbol_t* component = ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::StructInstanceMember_t>(x.m_dt)->m_m);
-        // Not resolved yet while a module file is loaded.
-        if (name == nullptr || component == nullptr) {
-            return false;
-        }
-        return ASR::is_a<ASR::Variable_t>(*name) &&
-            ASR::down_cast<ASR::Variable_t>(name)->m_pass_attr ==
-                ASR::pass_attrType::NotMethod &&
-            ASR::is_a<ASR::Variable_t>(*component) &&
-            ASRUtils::is_opaque_procedure_type(
-                ASR::down_cast<ASR::Variable_t>(component)->m_type);
+        require(ASR::down_cast<ASR::FunctionPointerCast_t>(x.m_dt)->m_to == x.m_name,
+            "A call whose dt is a FunctionPointerCast must name the interface "
+            "the cast is to");
+        return true;
     }
 
     template <typename T>
     void verify_args(const T& x) {
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
         ASR::Function_t* func = nullptr;
-        bool through_opaque_component = is_call_through_opaque_component(x);
-        bool is_method = (x.m_dt != nullptr) && !through_opaque_component;
+        bool is_method = (x.m_dt != nullptr) && !is_call_through_procedure_value(x);
         bool nopass = false;
         if (func_sym && ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
             ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);

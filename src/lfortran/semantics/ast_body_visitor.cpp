@@ -9417,12 +9417,12 @@ public:
 
     // The target of the call `call obj%component(args)` through the procedure
     // pointer component `component` of `obj` with an implicit interface: the
-    // variable that gives the call the interface built from its actuals (see
-    // component_call_interface). `obj` is replaced by the component's
-    // designator, through which the call is made.
+    // interface built from the call's actuals. `obj` is replaced by null and
+    // `procedure` is set to the component's designator cast to that
+    // interface, the call's `dt`, through which the call is made.
     ASR::symbol_t* implicit_component_call_target(const Location &loc,
             const std::string &name, ASR::symbol_t* component, ASR::expr_t*& obj,
-            Vec<ASR::call_arg_t> &args) {
+            Vec<ASR::call_arg_t> &args, ASR::expr_t*& procedure) {
         ASR::expr_t* designator = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
             loc, obj, component, ASRUtils::import_procedure_type(al,
                 ASRUtils::symbol_type(component), current_scope), nullptr));
@@ -9430,8 +9430,11 @@ public:
             // With --continue-compilation, drop the reported call.
             throw SemanticAbort();
         }
-        obj = designator;
-        return implicit_call_target(loc, name, component, args, nullptr, true);
+        obj = nullptr;
+        ASR::symbol_t* iface = implicit_call_target(loc, name, component, args,
+            nullptr, true);
+        procedure = component_call_procedure(designator, iface);
+        return iface;
     }
 
     void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
@@ -9481,6 +9484,9 @@ public:
         SymbolTable* scope = current_scope;
         ASR::symbol_t *original_sym;
         ASR::expr_t *v_expr = nullptr;
+        // The `dt` of a call through a procedure pointer component with an
+        // implicit interface, see implicit_component_call_target.
+        ASR::expr_t *component_procedure = nullptr;
         bool is_external = check_is_external(sub_name);
         bool sub_contain_entry_function = entry_functions.find(sub_name) != entry_functions.end();
         if (!is_external && sub_contain_entry_function) {
@@ -9932,7 +9938,8 @@ public:
                         // module with an implicit interface is called through
                         // an interface built from this call's actuals.
                         final_sym = implicit_component_call_target(
-                            x.base.base.loc, sub_name, original_sym, v_expr, args);
+                            x.base.base.loc, sub_name, original_sym, v_expr, args,
+                            component_procedure);
                         original_sym = nullptr;
                         nopass = true;
                         break;
@@ -10007,7 +10014,7 @@ public:
                     // an interface built from this call's actuals.
                     if (v_expr != nullptr) {
                         final_sym = implicit_component_call_target(x.base.base.loc,
-                            sub_name, original_sym, v_expr, args);
+                            sub_name, original_sym, v_expr, args, component_procedure);
                         original_sym = nullptr;
                         nopass = true;
                         break;
@@ -10145,6 +10152,9 @@ public:
         ASRUtils::insert_self_arg(al, final_sym, call_args, n_call_args, v_expr);
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
                 final_sym, original_sym, call_args, n_call_args, v_expr, &cast_stmt, compiler_options.implicit_argument_casting, current_scope, current_function_dependencies);
+        if (component_procedure != nullptr) {
+            ASR::down_cast2<ASR::SubroutineCall_t>(tmp)->m_dt = component_procedure;
+        }
 
         if (final_sym) {
             ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(final_sym);

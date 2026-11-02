@@ -75,8 +75,19 @@ public:
     const std::map<const symbol_t*, symbol_t*>* implicit_interface_procedures = nullptr;
 
     // Marks the call to `name` at `l` if the called procedure is not known to
-    // be free of side effects.
-    bool check_call(const Location &l, symbol_t* name) {
+    // be free of side effects. A call through a procedure value `dt` (a
+    // procedure pointer component cast to the interface `name`) calls a
+    // procedure with an implicit interface.
+    bool check_call(const Location &l, symbol_t* name, expr_t* dt) {
+        if (dt != nullptr && is_a<FunctionPointerCast_t>(*dt)) {
+            expr_t* procedure = down_cast<FunctionPointerCast_t>(dt)->m_arg;
+            mark_found(l, "Call to impure procedure '" + std::string(
+                is_a<StructInstanceMember_t>(*procedure)
+                    ? ASRUtils::symbol_name(down_cast<StructInstanceMember_t>(
+                        procedure)->m_m)
+                    : ASRUtils::symbol_name(name)) + "'");
+            return true;
+        }
         symbol_t* sym = ASRUtils::symbol_get_past_external(name);
         std::string proc_name;
         if (is_a<Function_t>(*sym)) {
@@ -100,7 +111,7 @@ public:
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
         if (found) return;
-        if (x.m_name && check_call(x.base.base.loc, x.m_name)) {
+        if (x.m_name && check_call(x.base.base.loc, x.m_name, x.m_dt)) {
             return;
         }
         BaseWalkVisitor::visit_SubroutineCall(x);
@@ -126,7 +137,7 @@ public:
 
     void visit_FunctionCall(const FunctionCall_t &x) {
         if (found) return;
-        if (x.m_name && check_call(x.base.base.loc, x.m_name)) {
+        if (x.m_name && check_call(x.base.base.loc, x.m_name, x.m_dt)) {
             return;
         }
         BaseWalkVisitor::visit_FunctionCall(x);
