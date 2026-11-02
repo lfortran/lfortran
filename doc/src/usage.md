@@ -237,7 +237,7 @@ compilation options, output options, link options and so on.
 
 * `--fast`, Optimize for best performance on the host CPU (disable strict standard compliance). This implies native CPU selection unless `--march`, `--mcpu`, `--mtune`, or `--target` is specified. Without `--fast`, the LLVM backend runs no optimizations, like `-O0` in Clang and Flang (WebAssembly targets keep LLVM's default code generation level, which keeps the number of locals per function within engine limits); `-O<level>` is currently accepted and ignored.
 * `--implicit-argument-casting`, Allow implicit argument casting
-* `--internal-procedure-thunks <K>`, The number of instances of a procedure that can be active at the same time while holding procedure values of its internal procedures (default 64); see [Procedure values of internal procedures](#procedure-values-of-internal-procedures)
+* `--internal-procedure-thunks <K>`, The number of instances of a procedure that can be active at the same time while holding procedure values of its internal procedures (default 8); see [Procedure values of internal procedures](#procedure-values-of-internal-procedures)
 * `--implicit-interface`, Allow implicit interface
 * `--implicit-typing`, Allow implicit typing
 * `--openmp`, Enable OpenMP
