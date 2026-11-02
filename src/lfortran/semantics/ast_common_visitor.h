@@ -12703,8 +12703,8 @@ public:
             auto *contract = runtime_trait_combination(
                 combination->m_traits, combination->n_traits, loc);
             type_declaration = nullptr;
-            return runtime_trait_type(contract, loc, is_pointer, is_allocatable,
-                dims.size() || is_assumed_rank);
+            return runtime_trait_declared_type(contract, loc, is_pointer, is_allocatable,
+                dims, is_argument, is_assumed_rank);
         }
         if (AST::is_a<AST::AttrTypeList_t>(*decl_attribute)) {
             // ONLY supposed to be used for LFortran specific types
@@ -13403,8 +13403,8 @@ public:
                     }
                 }
                 type_declaration = nullptr;
-                return runtime_trait_type(contract, loc, is_pointer, is_allocatable,
-                    dims.size() || is_assumed_rank);
+                return runtime_trait_declared_type(contract, loc, is_pointer, is_allocatable,
+                    dims, is_argument, is_assumed_rank);
             }
             // A deferred type argument of a template or a requirement is stored
             // as an ASR::Variable_t whose type is an ASR::TypeParameter_t, so it
@@ -25768,12 +25768,35 @@ public:
             "is not implemented yet", loc);
     }
 
+    // A runtime trait array is a borrowed view of an array whose elements
+    // share one dynamic type and one witness (TD-46): an assumed-shape dummy
+    // that is neither allocatable nor a pointer.
+    ASR::ttype_t *runtime_trait_declared_type(ASR::TraitRuntimeContract_t *contract,
+            const Location &loc, bool pointer, bool allocatable,
+            Vec<ASR::dimension_t> &dims, bool is_argument, bool assumed_rank) {
+        bool assumed_shape = dims.size() && !assumed_rank;
+        for (size_t i = 0; i < dims.size(); i++) {
+            if (dims[i].m_length) assumed_shape = false;
+        }
+        if (!assumed_shape || !is_argument || pointer || allocatable || is_derived_type) {
+            return runtime_trait_type(contract, loc, pointer, allocatable,
+                dims.size() || assumed_rank);
+        }
+        auto *view = runtime_trait_type(contract, loc, false, false, false);
+        return ASRUtils::make_Array_t_util(al, loc, view, dims.p, dims.size(),
+            ASR::abiType::Source, true);
+    }
+
     ASR::ttype_t *runtime_trait_type(ASR::TraitRuntimeContract_t *contract,
             const Location &loc, bool pointer, bool allocatable, bool array) {
         if (is_derived_type && (!allocatable || pointer)) {
             trait_call_error("runtime trait components currently require scalar allocatable storage", loc);
         }
-        if (array) trait_call_error("runtime trait arrays are not implemented yet", loc);
+        if (array) {
+            trait_call_error("runtime trait arrays other than assumed-shape dummy "
+                "arguments without the allocatable or pointer attribute are not "
+                "implemented yet", loc);
+        }
         if (!contract) {
             trait_call_error("runtime dispatch for this trait method signature "
                 "is not implemented yet", loc);
@@ -27924,6 +27947,10 @@ public:
             }
             return;
         }
+        if (ASRUtils::is_trait_array(target)) {
+            make_runtime_trait_array_view(actual, target);
+            return;
+        }
         if (ASRUtils::is_trait_pointer(target)) {
             check_runtime_trait_pointer_context(actual);
             auto intent = ASRUtils::EXPR2VAR(dummy)->m_intent;
@@ -28067,6 +28094,73 @@ public:
                 adapt_runtime_trait_argument(arg.m_value, function.m_args[j]);
             }
         }
+    }
+
+    // A runtime trait array dummy borrows a nonpolymorphic derived-type array
+    // in place, with the witness of its element type for the dummy's
+    // contract (TD-46), or receives a forwarded trait array of the same
+    // contract.
+    void make_runtime_trait_array_view(ASR::expr_t *&actual, ASR::ttype_t *target) {
+        const Location &loc = actual->base.loc;
+        auto *source = ASRUtils::expr_type(actual);
+        if (ASRUtils::is_trait_array(source)) {
+            if (!ASRUtils::trait_contracts_equal(&ASRUtils::trait_runtime_contract(source)->base,
+                    &ASRUtils::trait_runtime_contract(target)->base)) {
+                trait_call_error("passing a runtime trait array to a dummy of another "
+                    "trait contract is not implemented yet", loc);
+            }
+            return;
+        }
+        auto *element = ASRUtils::extract_type(source);
+        if (!ASRUtils::is_array(source) || ASRUtils::extract_n_dims_from_ttype(source) !=
+                ASRUtils::extract_n_dims_from_ttype(target)) {
+            trait_call_error("a runtime trait array dummy requires an array actual "
+                "of the same rank", loc);
+        }
+        if (ASR::is_a<ASR::TraitObjectType_t>(*element)) {
+            trait_call_error("this runtime trait array actual is not implemented yet", loc);
+        }
+        if (!ASR::is_a<ASR::StructType_t>(*element) || ASRUtils::is_class_type(element)) {
+            trait_call_error("a runtime trait array dummy currently requires a "
+                "nonpolymorphic derived-type array actual", loc);
+        }
+        auto *designator = actual;
+        if (ASR::is_a<ASR::ArraySection_t>(*designator)) {
+            auto *section = ASR::down_cast<ASR::ArraySection_t>(designator);
+            for (size_t i = 0; i < section->n_args; i++) {
+                auto &index = section->m_args[i];
+                if (index.m_right && !index.m_left && !index.m_step &&
+                        ASRUtils::is_array(ASRUtils::expr_type(index.m_right))) {
+                    trait_call_error("a section with a vector subscript cannot be "
+                        "borrowed as a runtime trait array", loc);
+                }
+            }
+            designator = section->m_v;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*designator) &&
+                !ASR::is_a<ASR::StructInstanceMember_t>(*designator)) {
+            trait_call_error("borrowing a runtime trait array from this expression "
+                "is not implemented yet", loc);
+        }
+        auto *contract = ASRUtils::trait_runtime_contract(target);
+        auto *view = ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc,
+            make_operator_proc_visible(&contract->base, "trait", current_scope)));
+        auto *witness = select_runtime_trait_witness(view,
+            ASRUtils::get_struct_sym_from_struct_expr(actual), loc);
+        Vec<ASR::dimension_t> dims;
+        size_t rank = ASRUtils::extract_n_dims_from_ttype(source);
+        dims.reserve(al, rank);
+        for (size_t i = 0; i < rank; i++) {
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = nullptr;
+            dim.m_length = nullptr;
+            dims.push_back(al, dim);
+        }
+        auto *type = ASRUtils::make_Array_t_util(al, loc, view, dims.p, dims.size(),
+            ASR::abiType::Source, true);
+        actual = ASRUtils::EXPR(ASR::make_TraitPack_t(al, loc,
+            ASRUtils::cast_to_descriptor(al, actual), witness, type));
     }
 
     // `value_payload` borrows a constructor or concrete function result for

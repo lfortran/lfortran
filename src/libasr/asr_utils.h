@@ -11489,6 +11489,15 @@ inline bool is_trait_owner(const ASR::ttype_t *type) {
             *ASR::down_cast<ASR::Allocatable_t>(type)->m_type);
 }
 
+// A borrowed view of an array whose elements share one dynamic type and one
+// witness (TD-46): an assumed-shape descriptor of TraitObjectType elements.
+inline bool is_trait_array(const ASR::ttype_t *type) {
+    return type && ASR::is_a<ASR::Array_t>(*type) &&
+        ASR::is_a<ASR::TraitObjectType_t>(*ASR::down_cast<ASR::Array_t>(type)->m_type) &&
+        ASR::down_cast<ASR::Array_t>(type)->m_physical_type ==
+            ASR::array_physical_typeType::DescriptorArray;
+}
+
 inline bool is_trait_pointer(const ASR::ttype_t *type) {
     return type && ASR::is_a<ASR::Pointer_t>(*type) &&
         ASR::is_a<ASR::TraitObjectType_t>(

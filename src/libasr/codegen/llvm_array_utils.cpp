@@ -245,6 +245,13 @@ namespace LCompilers {
                                 llvm::Type::getInt8Ty(context),                 // 6: extra
                                 llvm::Type::getInt64Ty(context),                // 7: offset
                                 llvm::ArrayType::get(dim_des, n_dims)  };       // 8: dim[n_dims]
+            // A runtime trait array (TD-46) describes its borrowed elements in
+            // bytes and carries the view of their shared dynamic type and
+            // witness, without a payload, after the dimensions.
+            if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(m_type_))) {
+                array_type_vec.push_back(llvm_utils->getTraitType(
+                    ASRUtils::extract_type(m_type_)));
+            }
             llvm::StructType* new_array_type = llvm::StructType::create(
                 context, array_type_vec, "array." + std::to_string(n_dims));
             tkr2array[array_key] = std::make_pair(new_array_type, el_type);

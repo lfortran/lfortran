@@ -1368,6 +1368,47 @@ specification action, that is, what the paper should say.
 - **Specification action.** None identified: ordinary Fortran dummy-procedure
   semantics apply.
 
+#### TD-46: Runtime trait arrays
+
+- **Status:** Implementation choice; option chosen by the maintainer
+  (2026-11-02).
+- **What the paper says.** Trait objects are `class(ITrait)` entities with
+  dynamic binding (`sect:trait_objects`). The paper does not show an array of
+  them.
+- **Why it is not tight.** A colleague's module declares a message
+  `user(self, arr)` with `class(ISomeTrait), intent(inout) :: arr(:)`, which
+  the prototype rejected ("runtime trait arrays are not implemented yet"). In
+  Fortran, a `class(T)` array has one dynamic type for all its elements; in
+  Swift, `[any ISomeTrait]` holds a separately boxed value per element.
+- **Options presented.** (a) Homogeneous: Fortran CLASS semantics, one
+  dynamic type and one witness for the whole array, which borrows a concrete
+  array in place, for dummies only; (b) heterogeneous: an array of boxed
+  values with a witness per element, which needs owning storage. The
+  maintainer chose (a).
+- **Choice.** An assumed-shape `class(ITrait) :: arr(:)` dummy, without the
+  allocatable or pointer attribute, is a borrowed view of an array whose
+  elements share one dynamic type. A nonpolymorphic derived-type array
+  actual of the same rank (a variable, a component, a section without a
+  vector subscript, of any physical layout) is borrowed in place with its
+  element type's witness, and a trait array is forwarded unchanged. An
+  element `arr(i)` is a view of that element: it dispatches, also through a
+  defining receiver, and can be passed to a scalar view dummy; `size`,
+  `lbound`, `ubound` and `shape` inquire the array. A message that is not
+  generic may take a trait array of INTENT(IN) or INTENT(INOUT), which the
+  slot and the witness adapter pass on unchanged.
+- **Consequences.** The results are those of the equivalent program with a
+  `class(T)` array dummy of an abstract type `T`. Nothing is copied: a
+  defining callee updates the actual's elements, also of a strided or
+  reversed section.
+- **Implementation status.** Implemented, also through runtime views and
+  under separate compilation. Trait-array locals, components, owners and
+  pointers, explicit-shape and assumed-size trait arrays, polymorphic or
+  vector-subscripted actuals, forwarding to a dummy of another contract,
+  trait arrays of generic messages and heterogeneous arrays are not
+  implemented.
+- **Specification action.** Say whether trait arrays are homogeneous, as
+  Fortran CLASS arrays are, and which actuals they accept.
+
 ### D. Generic procedures, methods and type sets
 
 #### TD-15: Runtime generic methods over closed type sets

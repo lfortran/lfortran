@@ -3853,6 +3853,40 @@ public:
         auto *scalar = ASRUtils::extract_type(type);
         auto *declaration = ASRUtils::symbol_get_past_external(
             witness->m_lifecycle.m_type_declaration);
+        if (ASRUtils::is_trait_array(x.m_type)) {
+            // A trait array borrows a nonpolymorphic array descriptor in place
+            // (TD-46): a variable, a component or a section of one without a
+            // vector subscript, whose elements the witness implements.
+            auto *designator = ASRUtils::get_past_array_physical_cast(x.m_payload);
+            bool vector = false;
+            if (ASR::is_a<ArraySection_t>(*designator)) {
+                auto *section = ASR::down_cast<ArraySection_t>(designator);
+                for (size_t i = 0; i < section->n_args; i++) {
+                    auto &index = section->m_args[i];
+                    vector |= index.m_right && !index.m_left && !index.m_step &&
+                        ASRUtils::is_array(ASRUtils::expr_type(index.m_right));
+                }
+                designator = section->m_v;
+            }
+            require_id(ASRUtils::is_array(type) &&
+                    ASRUtils::extract_physical_type(type) ==
+                        ASR::array_physical_typeType::DescriptorArray &&
+                    ASRUtils::extract_n_dims_from_ttype(type) ==
+                        ASRUtils::extract_n_dims_from_ttype(x.m_type) &&
+                    ASR::is_a<StructType_t>(*scalar) && !ASRUtils::is_class_type(scalar) &&
+                    ASRUtils::trait_contracts_equal(
+                        &ASRUtils::trait_runtime_contract(x.m_type)->base, witness->m_contract) &&
+                    !witness->m_lifecycle.m_polymorphic && !vector &&
+                    (ASR::is_a<Var_t>(*designator) ||
+                     ASR::is_a<StructInstanceMember_t>(*designator)) &&
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(x.m_payload)) == declaration,
+                "asr.verify.trait_pack.array",
+                "A borrowed trait array requires a nonpolymorphic derived-type array "
+                "descriptor of the same rank, designated without a vector subscript, "
+                "whose type the witness implements");
+            return;
+        }
         // A class object is borrowed with its dynamic type by a polymorphic
         // witness of its declared type, or exactly when that type is sealed.
         bool polymorphic = ASR::is_a<StructType_t>(*scalar) && ASRUtils::is_class_type(scalar);
@@ -5973,7 +6007,8 @@ public:
                         ASR::down_cast<Var_t>(function->m_args[i])->m_v == &x.base;
                 }
             }
-            bool borrowed = ASR::is_a<TraitObjectType_t>(*x.m_type) &&
+            bool borrowed = (ASR::is_a<TraitObjectType_t>(*x.m_type) ||
+                    ASRUtils::is_trait_array(x.m_type)) &&
                 dummy && x.m_storage == storage_typeType::Default &&
                 (x.m_intent == intentType::In || x.m_intent == intentType::InOut);
             bool slot = ASRUtils::is_trait_owner(x.m_type) && dummy &&
@@ -6025,8 +6060,9 @@ public:
                     ((!x.m_symbolic_value && !x.m_value) || null_initialized) &&
                     !x.m_type_declaration && !x.n_codims,
                 "asr.verify.trait_view.borrowed_storage",
-                "Trait storage must be a required intent(in) or intent(inout) view, a scalar "
-                "allocatable slot/result, or an initially unallocated local owner");
+                "Trait storage must be a required intent(in) or intent(inout) view or "
+                "assumed-shape array of views, a scalar allocatable slot/result, or an "
+                "initially unallocated local owner");
             if (slot || result || (pointer && dummy)) {
                 auto *signature = ASRUtils::get_FunctionType(function);
                 require_id(signature->m_abi != abiType::BindC &&
@@ -7313,6 +7349,12 @@ public:
                                 : ASR::is_a<Var_t>(*passed_arg_expr) ||
                                   ASR::is_a<StructInstanceMember_t>(*passed_arg_expr))
                             : pointer ? pointer_actual
+                            : ASRUtils::is_trait_array(formal_type)
+                                ? ASRUtils::is_trait_array(actual_type) &&
+                                    (ASR::is_a<TraitPack_t>(*ASRUtils::get_past_array_physical_cast(
+                                        passed_arg_expr)) ||
+                                     ASR::is_a<Var_t>(*ASRUtils::get_past_array_physical_cast(
+                                        passed_arg_expr)))
                             : ASR::is_a<TraitObjectType_t>(*actual_type)) &&
                         ASRUtils::check_equal_type(formal_type, actual_type,
                             func->m_args[i], passed_arg_expr),
@@ -7330,7 +7372,8 @@ public:
                     // payload and never borrows a value.
                     require_with_loc_id(!check_external || slot || pointer ||
                             callee_param->m_intent != intentType::InOut ||
-                            ASRUtils::association_is_definable(passed_arg_expr),
+                            ASRUtils::association_is_definable(
+                                ASRUtils::get_past_array_physical_cast(passed_arg_expr)),
                         "asr.verify.trait_view.definable_actual",
                         "An intent(inout) borrowed trait view requires a definable payload",
                         passed_arg_expr->base.loc);

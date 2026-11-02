@@ -395,6 +395,16 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
             fix_trait_call_arguments(al, *x);
         }
 
+        // A runtime trait array borrows its payload through a descriptor.
+        void replace_TraitPack(ASR::TraitPack_t* x) {
+            ASR::BaseExprReplacer<FixArrayPhysicalCast>::replace_TraitPack(x);
+            if( ASRUtils::is_trait_array(x->m_type) &&
+                ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_payload)) !=
+                    ASR::array_physical_typeType::DescriptorArray ) {
+                x->m_payload = ASRUtils::cast_to_descriptor(al, x->m_payload);
+            }
+        }
+
         void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
             ASR::BaseExprReplacer<FixArrayPhysicalCast>::replace_ArrayReshape(x);
             if( ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_array)) ==

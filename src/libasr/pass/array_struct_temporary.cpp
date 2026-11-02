@@ -2672,6 +2672,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_SubroutineCall(x);
     }
 
+    // A runtime trait array borrows its payload's storage in place (TD-46).
+    void visit_TraitPack(const ASR::TraitPack_t &x) {
+        if (ASRUtils::is_trait_array(x.m_type)) return;
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_TraitPack(x);
+    }
+
     void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {
         visit_Call(x, "_trait_subroutine_call_");
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_TraitSubroutineCall(x);
@@ -3241,6 +3247,23 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         return array_expr_ptr;
     }
 
+    // A runtime trait array borrows its payload's storage in place (TD-46):
+    // a section is associated with a pointer, never copied, so that a
+    // defining callee updates its original elements.
+    void replace_TraitPack(ASR::TraitPack_t* x) {
+        if (!ASRUtils::is_trait_array(x->m_type)) {
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_TraitPack(x);
+            return;
+        }
+        ASR::expr_t *section = ASRUtils::get_past_array_physical_cast(x->m_payload);
+        if (!ASR::is_a<ASR::ArraySection_t>(*section)) return;
+        ASR::expr_t **saved = current_expr;
+        ASR::expr_t **payload = &section;
+        x->m_payload = generate_associate_for_array_section(payload, al,
+            section->base.loc, current_scope, current_body);
+        current_expr = saved;
+    }
+
     void replace_ArraySection(ASR::ArraySection_t* x) {
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(x);
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
@@ -3759,6 +3782,13 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.in_array_context = elemental_array_call;
         ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_SubroutineCall(x);
         replacer.in_array_context = false;
+    }
+
+    // A runtime trait array borrows its payload's storage in place, so a
+    // defining callee updates the original elements of a section (TD-46).
+    void visit_TraitPack(const ASR::TraitPack_t& x) {
+        if (ASRUtils::is_trait_array(x.m_type)) return;
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_TraitPack(x);
     }
 
     // So is an elemental message.

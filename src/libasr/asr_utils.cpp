@@ -7165,6 +7165,21 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
                     arg->n_codims) return false;
             continue;
         }
+        // A runtime trait array is passed on as its descriptor (TD-46).
+        if (is_trait_array(arg->m_type)) {
+            auto *array = ASR::down_cast<ASR::Array_t>(arg->m_type);
+            bool assumed_shape = true;
+            for (size_t j = 0; j < array->n_dims; j++) {
+                if (array->m_dims[j].m_length) assumed_shape = false;
+            }
+            if (trait_method_template(method) || !assumed_shape ||
+                    (arg->m_intent != ASR::intentType::In &&
+                     arg->m_intent != ASR::intentType::InOut) ||
+                    arg->m_presence != ASR::presenceType::Required ||
+                    arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
+                    arg->m_contiguous_attr || arg->n_codims) return false;
+            continue;
+        }
         // A dummy procedure or a procedure pointer dummy keeps its ordinary
         // calling convention: the slot passes the procedure, or the pointer
         // by reference, on unchanged.
@@ -7417,6 +7432,13 @@ bool association_is_definable(ASR::expr_t *value) {
     }
     if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
         return association_is_definable(ASR::down_cast<ASR::ArrayItem_t>(value)->m_v);
+    }
+    // A section without a vector subscript, as a borrowed trait array has.
+    if (ASR::is_a<ASR::ArraySection_t>(*value)) {
+        return association_is_definable(ASR::down_cast<ASR::ArraySection_t>(value)->m_v);
+    }
+    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*value)) {
+        return association_is_definable(ASR::down_cast<ASR::ArrayPhysicalCast_t>(value)->m_arg);
     }
     if (auto *variable = association_variable(value)) {
         return variable->m_intent != ASR::intentType::In;

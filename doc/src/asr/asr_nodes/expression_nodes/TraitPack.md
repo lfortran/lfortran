@@ -30,3 +30,12 @@ existing view of the same contract uses `Var`, not another `TraitPack`.
 Anonymous construction retains the selected evidence for every original
 nominal requirement. Known-parent/subset weakening uses `TraitProject`, not a
 new pack. Unknown polymorphic actuals remain unsupported.
+
+For a runtime trait array dummy (TD-46), `type` is an assumed-shape array of
+that `TraitObjectType` and `payload` is a nonpolymorphic derived-type array
+descriptor of the same rank: a variable, a component, or a section without a
+vector subscript (which the passes associate with a pointer, never copy),
+behind an `ArrayPhysicalCast` to a descriptor when needed. LLVM builds a byte
+descriptor of the borrowed elements followed by the witness's view without a
+payload; an element of the array is a view of the element's address with that
+view's dynamic type and slots.

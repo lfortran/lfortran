@@ -5132,9 +5132,40 @@ public:
         tmp = concat_tuple;
     }
 
+    // Whether visit_ArrayItem addresses an element of a runtime trait array.
+    bool trait_array_element = false;
+
+    // An element of a runtime trait array (TD-46) is a view of the array's
+    // dynamic type and witness whose payload is the element's address.
+    void visit_trait_array_item(const ASR::ArrayItem_t &x) {
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 0;
+        trait_array_element = true;
+        visit_ArrayItem(x);
+        trait_array_element = false;
+        llvm::Value *element = builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
+        ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v));
+        this->visit_expr_wrapper(x.m_v, false);
+        ptr_loads = saved_loads;
+        llvm::Value *descriptor = tmp;
+        ASR::ttype_t *array = ASRUtils::expr_type(x.m_v);
+        llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
+            ASRUtils::type_get_past_allocatable_pointer(array), module.get());
+        auto *view_type = llvm_utils->getTraitType(array);
+        llvm::Value *view = llvm_utils->CreateAlloca(view_type, nullptr, "trait_element");
+        builder->CreateStore(llvm_utils->CreateLoad2(view_type,
+            llvm_utils->create_gep2(array_type, descriptor, 9)), view);
+        builder->CreateStore(element, llvm_utils->create_gep2(view_type, view, 1));
+        tmp = view;
+    }
+
     void visit_ArrayItem(const ASR::ArrayItem_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        if (!trait_array_element && ASRUtils::is_trait_array(ASRUtils::expr_type(x.m_v))) {
+            visit_trait_array_item(x);
             return;
         }
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
@@ -11159,6 +11190,17 @@ public:
                 arr_descr->reset_array_details(
                     desc_array_type, array_desc, arg_array_desc, lbs.p, lengths.p, n_dims);
                 ptr_loads = ptr_loads_copy;
+                // A runtime trait array keeps its elements' view and its
+                // element size (TD-46).
+                if (ASRUtils::is_trait_array(symbol_type)) {
+                    for (int field : {1, 9}) {
+                        llvm::Type *field_type = llvm::cast<llvm::StructType>(
+                            desc_array_type)->getElementType(field);
+                        builder->CreateStore(llvm_utils->CreateLoad2(field_type,
+                                llvm_utils->create_gep2(desc_array_type, arg_array_desc, field)),
+                            llvm_utils->create_gep2(desc_array_type, array_desc, field));
+                    }
+                }
                 // Note: For bind(C) functions, the CFI→internal conversion
                 // (including byte→element stride conversion) is already
                 // handled in the prologue. No additional conversion needed.
@@ -16454,6 +16496,8 @@ public:
         }
         this->visit_expr_wrapper(x.m_arg, false);
         ptr_loads = ptr_loads_copy;
+        // A runtime trait array is passed on as the descriptor it is.
+        if (ASRUtils::is_trait_array(x.m_type)) return;
         // For assumed-rank targets (rank-15 descriptor), use the argument's
         // type for dimension info since the target dims are empty placeholders.
         ASR::ttype_t* m_type_for_dims = x.m_type;
@@ -16707,10 +16751,13 @@ public:
             return;
         }
 
+        // An element of a runtime trait array is the address of its view.
+        bool trait_element = x->type == ASR::exprType::ArrayItem &&
+            ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::expr_type(x));
         if( x->type == ASR::exprType::ArrayItem ||
             x->type == ASR::exprType::ArraySection ||
             x->type == ASR::exprType::StructInstanceMember ) {
-            if( load_ref && !inline_array_member &&
+            if( load_ref && !inline_array_member && !trait_element &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
                 (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
                 tmp = logical_load_val(tmp, x, is_volatile);
@@ -29310,6 +29357,27 @@ public:
         auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
             ASRUtils::symbol_get_past_external(x.m_witness));
         auto *payload_type = expr_type(x.m_payload);
+        if (ASRUtils::is_trait_array(x.m_type)) {
+            // A runtime trait array (TD-46): a byte descriptor of the borrowed
+            // elements, then the view of their type without a payload.
+            int64_t saved_loads = ptr_loads;
+            ptr_loads = 2 - LLVM::is_llvm_pointer(*payload_type);
+            this->visit_expr_wrapper(x.m_payload, false);
+            ptr_loads = saved_loads;
+            llvm::Value *source = tmp;
+            llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(
+                const_cast<ASR::expr_t*>(&x.base), x.m_type, module.get());
+            llvm::Value *target = arr_descr->create_descriptor_alloca(array_type,
+                "trait_array");
+            byte_descriptor(x.m_payload, source, array_type, target);
+            auto *view_type = llvm_utils->getTraitType(x.m_type);
+            llvm::Value *view = trait_witness_view(*witness,
+                llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+            builder->CreateStore(llvm_utils->CreateLoad2(view_type, view),
+                llvm_utils->create_gep2(array_type, target, 9));
+            tmp = target;
+            return;
+        }
         if (ASRUtils::is_class_type(ASRUtils::extract_type(payload_type))) {
             // A polymorphic payload keeps its dynamic type: the view takes the
             // vptr and data address of its class object.
@@ -29854,13 +29922,24 @@ public:
         if (ASRUtils::is_trait_erased(actual_type)) {
             return builder->CreateBitCast(source, dummy_type);
         }
+        llvm::Value *target = arr_descr->create_descriptor_alloca(erased_type, "erased_array");
+        byte_descriptor(actual, source, erased_type, target);
+        return builder->CreateBitCast(target, dummy_type);
+    }
+
+    // Describes the elements of the array `actual`, whose descriptor is
+    // `source`, in bytes in the descriptor `target` of type `target_type`:
+    // its offset and strides are scaled by the element size, which it records.
+    void byte_descriptor(ASR::expr_t *actual, llvm::Value *source, llvm::Type *target_type,
+            llvm::Value *target) {
+        ASR::ttype_t *actual_type = ASRUtils::expr_type(actual);
+        llvm::Type *erased_type = target_type;
         llvm::Type *source_type = llvm_utils->get_type_from_ttype_t_util(actual,
             ASRUtils::type_get_past_allocatable_pointer(actual_type), module.get());
         llvm::Type *element_type = llvm_utils->get_el_type(actual,
             ASRUtils::extract_type(actual_type), module.get());
         uint64_t element_size = llvm::DataLayout(module->getDataLayout())
             .getTypeAllocSize(element_type);
-        llvm::Value *target = arr_descr->create_descriptor_alloca(erased_type, "erased_array");
         llvm::Value *data = llvm_utils->CreateLoad2(element_type->getPointerTo(),
             arr_descr->get_pointer_to_data(source_type, source));
         builder->CreateStore(builder->CreateBitCast(data, llvm_utils->i8_ptr),
@@ -29882,7 +29961,6 @@ public:
         }
         builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
             element_size), llvm_utils->create_gep2(erased_type, target, 1));
-        return builder->CreateBitCast(target, dummy_type);
     }
 
     llvm::Type *trait_recovered_type(const ASR::TraitRecover_t &x) {

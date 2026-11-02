@@ -2006,8 +2006,8 @@ view dummy accept a view whose contract implies its own, or a nonpolymorphic
 derived value whose visible implementations provide every required trait,
 the same nominal evidence its association then selects. A reference that more
 than one specific accepts in that second tier is diagnosed as ambiguous.
-Trait arrays, pointer, trait-object and unlimited polymorphic array method
-results, derived-type results that are finalized and not allocatable, array
+Trait arrays other than assumed-shape dummies (see "Trait arrays"),
+pointer, trait-object and unlimited polymorphic array method results, derived-type results that are finalized and not allocatable, array
 and allocatable results of generic messages and unrestricted generic methods
 remain unsupported. A plain nondummy trait local is
 invalid, not an implicitly owning box. Concrete SELECT TYPE inspection, described
@@ -2200,6 +2200,47 @@ in a function message, and checks contiguity, every defined element and the
 elements outside each section. `continue_compilation_traits_array_inout`
 checks the diagnostics, also of associate names, through views, and for
 comparison through ordinary calls and static bindings.
+
+### Trait arrays
+
+An assumed-shape dummy `class(ITrait) :: arr(:)` is a runtime trait array: a
+borrowed view of an array whose elements share one dynamic type, as the
+elements of a Fortran `class(T)` array do (TD-46). The reported module takes
+one as a message argument:
+
+```fortran
+abstract interface :: IClient
+   subroutine user(self, arr)
+      type(itself), pass,   intent(inout) :: self
+      class(ISomeTrait),    intent(inout) :: arr(:)
+   end subroutine user
+end interface
+```
+
+A nonpolymorphic derived-type array of the same rank is borrowed in place
+with the witness of its element type: a whole array of any layout, a
+component, or a section without a vector subscript, also strided or
+reversed, in an explicit `TraitPack` whose payload is the array and whose
+type is the array of views. A trait array is forwarded unchanged. An element
+`arr(i)` is a view of that element, whose messages dispatch, also through a
+defining receiver, and which can be passed to a scalar view dummy; `size`,
+`lbound`, `ubound` and `shape` inquire the array. Nothing is copied, so a
+defining callee updates the actual's own elements. A message that is not
+generic may take a trait array of INTENT(IN) or INTENT(INOUT), which its slot
+and witness adapter pass on unchanged. The array is a byte descriptor of the
+borrowed elements, as an erased array is, followed by the view of their
+dynamic type without a payload; an element's view takes that view and the
+element's address.
+
+Trait-array locals, components, owners and pointers, explicit-shape and
+assumed-size trait arrays, polymorphic or vector-subscripted actuals,
+forwarding to a dummy of another contract and trait arrays of generic
+messages are diagnosed as not implemented. `traits_runtime_array_01` passes
+whole arrays, strided and reversed sections, explicit-shape, allocatable,
+component and rank-two arrays, forwards them, updates elements through a
+defining receiver and calls the reported message statically and through a
+view; `traits_runtime_array_02` compiles the reported module separately.
+`continue_compilation_traits_12` checks the diagnostics.
 
 ### Optional and allocatable arguments
 
@@ -2634,9 +2675,8 @@ diagnostic instead of reading a null header. PURE
 and non-Fortran-ABI trait results are not implemented because their dynamic
 lifecycle effects and calling conventions have not been established.
 
-Trait arrays, pointer results, general ASSOCIATE
-views and `move_alloc` remain
-unsupported. Allocation currently accepts one object and one concrete
+Trait arrays other than assumed-shape dummies, pointer results, general
+ASSOCIATE views and `move_alloc` remain unsupported. Allocation currently accepts one object and one concrete
 type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
 options are rejected rather than ignored. Allocation failure terminates, including
 failure while initializing/copying owned components. Owning operations in PURE
@@ -3151,7 +3191,7 @@ before any matching/default decision, even when the construct has no default.
 
 A trait name in TYPE IS is diagnosed, because a trait is not a type; in
 CLASS IS it queries conformance, as described in the next section. Intrinsic
-guards, runtime trait arrays,
+guards, selectors that are runtime trait arrays or their elements,
 pointer components, pointer results and unrestricted generic methods are
 not added by this scalar slice. Parameterized implementation declarations remain
 part of the separate generic-derived-type work; inspection reuses the existing

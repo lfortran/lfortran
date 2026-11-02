@@ -1267,9 +1267,10 @@ public:
             std::string message;
             bool slot = ASRUtils::is_trait_owner(dummy->m_type);
             bool pointer = ASRUtils::is_trait_pointer(dummy->m_type);
-            if ((!slot && !pointer && !ASR::is_a<ASR::TraitObjectType_t>(*dummy->m_type)) ||
-                    dummy->n_codims) {
-                message = "runtime trait objects currently require a scalar dummy";
+            if ((!slot && !pointer && !ASR::is_a<ASR::TraitObjectType_t>(*dummy->m_type) &&
+                    !ASRUtils::is_trait_array(dummy->m_type)) || dummy->n_codims) {
+                message = "runtime trait objects currently require a scalar or "
+                    "assumed-shape dummy";
             } else if (dummy->m_storage != ASR::storage_typeType::Default ||
                     dummy->m_symbolic_value || dummy->m_value) {
                 message = "runtime trait dummies cannot have saved or initialized storage";

@@ -368,10 +368,10 @@ semantic error: runtime trait objects currently require a scalar dummy
 1824 |         class(IValue) :: object
      |                          ^^^^^^ 
 
-semantic error: runtime trait arrays are not implemented yet
+semantic error: runtime trait arrays other than assumed-shape dummy arguments without the allocatable or pointer attribute are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:1989:9
      |
-1989 |         class(IValue), intent(in) :: object(:)
+1989 |         class(IValue), intent(in) :: object(3)
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'object' not defined
@@ -564,10 +564,10 @@ semantic error: runtime trait components currently require scalar allocatable st
 3063 |         class(A + B), pointer :: component
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait arrays are not implemented yet
+semantic error: runtime trait arrays other than assumed-shape dummy arguments without the allocatable or pointer attribute are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:3067:9
      |
-3067 |         class(A + B), intent(in) :: view(:)
+3067 |         class(A + B), intent(in) :: view(2)
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'view' not defined
@@ -892,7 +892,7 @@ semantic error: runtime trait components currently require scalar allocatable st
 4481 |         class(IValue), pointer :: item
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait arrays are not implemented yet
+semantic error: runtime trait arrays other than assumed-shape dummy arguments without the allocatable or pointer attribute are not implemented yet
     --> tests/errors/continue_compilation_traits_01.f90:4488:9
      |
 4488 |         class(IValue), allocatable :: items(:)

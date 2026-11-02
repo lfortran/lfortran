@@ -762,8 +762,10 @@ namespace LCompilers {
                 el_type = llvm::Type::getVoidTy(context)->getPointerTo();
                 break;
             }
-            case ASR::ttypeType::TraitErasedType: {
-                // Erased elements are addressed in bytes.
+            case ASR::ttypeType::TraitErasedType:
+            case ASR::ttypeType::TraitObjectType: {
+                // Erased elements and the borrowed elements of a runtime
+                // trait array are addressed in bytes.
                 el_type = llvm::Type::getInt8Ty(context);
                 break;
             }

@@ -1986,7 +1986,7 @@ module traits_runtime_nyi_array_m
     end interface
 contains
     subroutine array_view(object)
-        class(IValue), intent(in) :: object(:)
+        class(IValue), intent(in) :: object(3)
     end subroutine
 end module traits_runtime_nyi_array_m
 
@@ -3064,7 +3064,7 @@ module traits_runtime_combination_declarations_m
     end type
 contains
     subroutine arrays(view)
-        class(A + B), intent(in) :: view(:)
+        class(A + B), intent(in) :: view(2)
     end subroutine
     subroutine bare_local()
         class(A + B) :: view
