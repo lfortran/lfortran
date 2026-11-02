@@ -987,6 +987,11 @@ fortran = true
 pass = "array_struct_temporary"
 
 [[test]]
+filename = "../integration_tests/pointer_intent_in_04.f90"
+fortran = true
+pass = "array_struct_temporary"
+
+[[test]]
 filename = "../integration_tests/external_string_arg_02.f90"
 asr = true
 llvm = true
