@@ -239,18 +239,20 @@ namespace {
 
 // Appends to every call of a routine in `lower_bounds` the lower bounds
 // of the actual arguments for the dummies listed there, one per
-// dimension, in the order the routine was given dummies for them.
+// dimension, in the order the routine was given dummies for them, as
+// integers of kind `kind`.
 class GpuLowerBoundActuals :
         public ASRUtils::BlockBodyWalkVisitor<GpuLowerBoundActuals> {
 public:
     Allocator &al;
     const std::map<ASR::Function_t*, std::vector<ASR::symbol_t*>>
         &lower_bounds;
+    int kind;
 
     GpuLowerBoundActuals(Allocator &al_,
             const std::map<ASR::Function_t*, std::vector<ASR::symbol_t*>>
-                &lower_bounds_)
-        : al(al_), lower_bounds(lower_bounds_) {}
+                &lower_bounds_, int kind_)
+        : al(al_), lower_bounds(lower_bounds_), kind(kind_) {}
 
     void extend(ASR::symbol_t *name, ASR::call_arg_t *&args,
             size_t &n_args, bool passes_object) {
@@ -268,6 +270,8 @@ public:
         for (size_t i = 0; i < n_args; i++) extended.push_back(al, args[i]);
         ASR::ttype_t *int4 = ASRUtils::TYPE(ASR::make_Integer_t(al,
             fn->base.base.loc, 4));
+        ASR::ttype_t *bound_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+            fn->base.base.loc, kind));
         for (ASR::symbol_t *dummy : it->second) {
             ASR::expr_t *actual = nullptr;
             for (size_t i = 0; i < fn->n_args; i++) {
@@ -294,10 +298,10 @@ public:
                         loc, actual, ASRUtils::EXPR(
                             ASR::make_IntegerConstant_t(al, loc, d + 1,
                                 int4, ASR::integerbozType::Decimal)),
-                        int4, ASR::arrayboundType::LBound, nullptr));
+                        bound_type, ASR::arrayboundType::LBound, nullptr));
                 } else {
                     arg.m_value = ASRUtils::EXPR(
-                        ASR::make_IntegerConstant_t(al, loc, 1, int4,
+                        ASR::make_IntegerConstant_t(al, loc, 1, bound_type,
                             ASR::integerbozType::Decimal));
                 }
                 extended.push_back(al, arg);
@@ -328,7 +332,9 @@ public:
 // which an array a device routine is handed as a plain array does not
 // carry. Each such dummy of a routine the kernel reaches is given them as
 // dummies of their own, as an assumed-shape dummy `a(lb:)` is, and every
-// call passes `lbound(actual, d)` for them.
+// call passes `lbound(actual, d)` for them, as integers of the kind the
+// kernel computes element offsets in (GpuDeviceCapabilities::offset_kind),
+// like the lower bounds of the kernel's own arrays.
 void GpuOffloadVisitor::pass_plain_dummy_lower_bounds(
         ASR::Function_t &kernel) {
     std::vector<ASR::Function_t*> code = {&kernel};
@@ -357,7 +363,8 @@ void GpuOffloadVisitor::pass_plain_dummy_lower_bounds(
                 ASR::symbol_t *lb = gpu_new_variable(al, loc, fn->m_symtab,
                     fn->m_symtab->get_unique_name(GpuNames::lower_bound(
                         var->m_name, d)),
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                        device_caps.offset_kind)),
                     ASR::intentType::In);
                 arr->m_dims[d].m_start = ASRUtils::EXPR(
                     ASR::make_Var_t(al, loc, lb));
@@ -375,7 +382,7 @@ void GpuOffloadVisitor::pass_plain_dummy_lower_bounds(
         plain_allocatable_dummy_args.erase(it);
     }
     if (lower_bounds.empty()) return;
-    GpuLowerBoundActuals actuals(al, lower_bounds);
+    GpuLowerBoundActuals actuals(al, lower_bounds, device_caps.offset_kind);
     for (ASR::Function_t *fn : code) {
         for (size_t i = 0; i < fn->n_body; i++) {
             actuals.visit_stmt(*fn->m_body[i]);

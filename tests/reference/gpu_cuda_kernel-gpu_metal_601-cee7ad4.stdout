@@ -1,0 +1,194 @@
+#include <stdint.h>
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    long __dim_v_0;
+    long __lb_v_0;
+    long __dim_v_1;
+    long __lb_v_1;
+    long __dim_z_0;
+    long __lb_z_0;
+    long __dim_z_1;
+    long __lb_z_1;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* __restrict__ v,
+    float* __restrict__ z,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    long __dim_v_0 = __scalar_args.__dim_v_0;
+    long __lb_v_0 = __scalar_args.__lb_v_0;
+    long __lb_v_1 = __scalar_args.__lb_v_1;
+    long __dim_z_0 = __scalar_args.__dim_z_0;
+    long __lb_z_0 = __scalar_args.__lb_z_0;
+    long __lb_z_1 = __scalar_args.__lb_z_1;
+    long __flat_idx;
+    int __gpu_sec_i;
+    int j__dc;
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)2))) {
+        return;
+    }
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    j__dc = ((int)(__flat_idx + ((long)1)));
+    for (__gpu_sec_i = 1; __gpu_sec_i <= ((((int)((((long)__dim_v_0) + ((long)__lb_v_0)) - ((long)1))) - ((int)((long)__lb_v_0))) + 1); __gpu_sec_i++) {
+        v[((long)((unsigned int)(((((int)((long)__lb_v_0)) + (__gpu_sec_i - 1))) - (__lb_v_0)))) + (__dim_v_0 * ((long)((unsigned int)((j__dc) - (__lb_v_1)))))] = (z[((long)((unsigned int)(((((int)((long)__lb_z_0)) + (__gpu_sec_i - 1))) - (__lb_z_0)))) + (__dim_z_0 * ((long)((unsigned int)((j__dc) - (__lb_z_1)))))] + ((float)1));
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    long lo8;
+    long __dim_r_0;
+    long __lb_r_0;
+    long __dim_v_0;
+    long __lb_v_0;
+    long __dim_v_1;
+    long __lb_v_1;
+    long __dim_z_0;
+    long __lb_z_0;
+    long __dim_z_1;
+    long __lb_z_1;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    float* __restrict__ r,
+    float* __restrict__ rt,
+    float* __restrict__ tot,
+    float* __restrict__ v,
+    float* __restrict__ z,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+{
+    long lo8 = __scalar_args.lo8;
+    long __dim_r_0 = __scalar_args.__dim_r_0;
+    long __lb_r_0 = __scalar_args.__lb_r_0;
+    long __dim_v_0 = __scalar_args.__dim_v_0;
+    long __lb_v_0 = __scalar_args.__lb_v_0;
+    long __lb_v_1 = __scalar_args.__lb_v_1;
+    long __dim_z_0 = __scalar_args.__dim_z_0;
+    long __lb_z_0 = __scalar_args.__lb_z_0;
+    long __lb_z_1 = __scalar_args.__lb_z_1;
+    long __flat_idx;
+    int __gpu_sec_i1;
+    long __gpu_sum_k;
+    int __gpu_sum_k1;
+    float __gpu_sum_res;
+    float __gpu_sum_res1;
+    float __gpu_sum_tmp;
+    int j__dc1;
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)2))) {
+        return;
+    }
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    j__dc1 = ((int)(__flat_idx + ((long)1)));
+    for (__gpu_sec_i1 = 1; __gpu_sec_i1 <= ((((int)(lo8 + ((long)2))) - ((int)lo8)) + 1); __gpu_sec_i1++) {
+        v[((long)((unsigned int)(((((int)lo8) + (__gpu_sec_i1 - 1))) - (__lb_v_0)))) + (__dim_v_0 * ((long)((unsigned int)((j__dc1) - (__lb_v_1)))))] = ((float)0);
+    }
+    __gpu_sum_res =   0.00000000000000000e+00f;
+    for (__gpu_sum_k = ((long)__lb_z_0); __gpu_sum_k <= ((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)); __gpu_sum_k++) {
+        __gpu_sum_res = (__gpu_sum_res + z[((long)(__gpu_sum_k) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc1) - (__lb_z_1)))))]);
+    }
+    tot[((long)((unsigned int)((j__dc1) - (1))))] = __gpu_sum_res;
+    __gpu_sum_res1 =   0.00000000000000000e+00f;
+    for (__gpu_sum_k1 = 1; __gpu_sum_k1 <= ((int)__dim_r_0); __gpu_sum_k1++) {
+        __gpu_sum_res1 = (__gpu_sum_res1 + r[((long)((unsigned int)(((((int)__lb_r_0) + (__gpu_sum_k1 - 1))) - (__lb_r_0))))]);
+    }
+    __gpu_sum_tmp = __gpu_sum_res1;
+    rt[((long)((unsigned int)((j__dc1) - (1))))] = (((float)j__dc1) * __gpu_sum_tmp);
+}
+
+__device__ inline float f_gpu_30(float* a, long __size_a_dim1, long __stride_a_dim1) {
+    float f;
+    int i;
+    f = ((float)0);
+    const int __lfortran_end_0 = ((int)(__size_a_dim1));
+    for (i = 1; i <= __lfortran_end_0; i++) {
+        f = (f + a[(__stride_a_dim1 * ((long)((unsigned int)((i) - (1)))))]);
+    }
+    return f;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_2 {
+    long lo8;
+    long __dim_z_0;
+    long __lb_z_0;
+    long __dim_z_1;
+    long __lb_z_1;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_2(
+    float* __restrict__ t1,
+    float* __restrict__ t2,
+    float* __restrict__ t3,
+    float* __restrict__ z,
+    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+{
+    long lo8 = __scalar_args.lo8;
+    long __dim_z_0 = __scalar_args.__dim_z_0;
+    long __lb_z_0 = __scalar_args.__lb_z_0;
+    long __lb_z_1 = __scalar_args.__lb_z_1;
+    long __flat_idx;
+    long __gpu_sum_k2;
+    long __gpu_sum_k3;
+    float __gpu_sum_res2;
+    float __gpu_sum_res3;
+    float* __libasr_created__function_call_f;
+    int j__dc2;
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)2))) {
+        return;
+    }
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    j__dc2 = ((int)(__flat_idx + ((long)1)));
+    __gpu_sum_res2 =   0.00000000000000000e+00f;
+    for (__gpu_sum_k2 = (lo8 + ((long)3)); __gpu_sum_k2 <= ((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)); __gpu_sum_k2++) {
+        __gpu_sum_res2 = (__gpu_sum_res2 + z[((long)(__gpu_sum_k2) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc2) - (__lb_z_1)))))]);
+    }
+    t1[((long)((unsigned int)((j__dc2) - (1))))] = __gpu_sum_res2;
+    __gpu_sum_res3 =   0.00000000000000000e+00f;
+    for (__gpu_sum_k3 = ((long)__lb_z_0); __gpu_sum_k3 <= (lo8 + ((long)3)); __gpu_sum_k3++) {
+        __gpu_sum_res3 = (__gpu_sum_res3 + z[((long)(__gpu_sum_k3) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc2) - (__lb_z_1)))))]);
+    }
+    t2[((long)((unsigned int)((j__dc2) - (1))))] = __gpu_sum_res3;
+    __libasr_created__function_call_f = z + ((long)(((long)__lb_z_0)) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc2) - (__lb_z_1)))));
+    t3[((long)((unsigned int)((j__dc2) - (1))))] = f_gpu_30(__libasr_created__function_call_f, (((((lo8 + ((long)1))) - (((long)__lb_z_0))) / (((long)1))) + 1), 1);
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_3 {
+    long lo8;
+    long __dim_w_0;
+    long __lb_w_0;
+    long __dim_w_1;
+    long __lb_w_1;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_3(
+    float* __restrict__ t1,
+    float* __restrict__ w,
+    float* __restrict__ wt,
+    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
+{
+    long lo8 = __scalar_args.lo8;
+    long __dim_w_0 = __scalar_args.__dim_w_0;
+    long __lb_w_0 = __scalar_args.__lb_w_0;
+    long __lb_w_1 = __scalar_args.__lb_w_1;
+    long __flat_idx;
+    long __gpu_sum_k4;
+    long __gpu_sum_k5;
+    float __gpu_sum_res4;
+    float __gpu_sum_res5;
+    int j__dc3;
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)2))) {
+        return;
+    }
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    j__dc3 = ((int)(__flat_idx + ((long)1)));
+    __gpu_sum_res4 =   0.00000000000000000e+00f;
+    for (__gpu_sum_k4 = ((long)__lb_w_0); __gpu_sum_k4 <= ((((long)__dim_w_0) + ((long)__lb_w_0)) - ((long)1)); __gpu_sum_k4++) {
+        __gpu_sum_res4 = (__gpu_sum_res4 + w[((long)(__gpu_sum_k4) - (__lb_w_0)) + (__dim_w_0 * ((long)((unsigned int)((j__dc3) - (__lb_w_1)))))]);
+    }
+    wt[((long)((unsigned int)((j__dc3) - (1))))] = __gpu_sum_res4;
+    __gpu_sum_res5 =   0.00000000000000000e+00f;
+    for (__gpu_sum_k5 = (lo8 + ((long)3)); __gpu_sum_k5 <= ((((long)__dim_w_0) + ((long)__lb_w_0)) - ((long)1)); __gpu_sum_k5++) {
+        __gpu_sum_res5 = (__gpu_sum_res5 + w[((long)(__gpu_sum_k5) - (__lb_w_0)) + (__dim_w_0 * ((long)((unsigned int)((j__dc3) - (__lb_w_1)))))]);
+    }
+    t1[((long)((unsigned int)((j__dc3) - (1))))] = __gpu_sum_res5;
+}
+

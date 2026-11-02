@@ -1999,7 +1999,8 @@ public:
                     std::string len_str = dim_extent_str(arr, d, arr_name,
                         as->base.base.loc);
                     stride = stride == "1" ? len_str
-                        : "(" + stride + " * " + len_str + ")";
+                        : gpu_index_product(stride, len_str,
+                            dialect.offset_kind());
                 }
             }
         }
@@ -2110,10 +2111,18 @@ public:
         return value == 1;
     }
 
-    // The integer kind of a subscript, which gpu_offset_term() narrows to
-    // the dialect's offset kind.
+    // The integer kind of a subscript, which gpu_offset_term() takes into
+    // account when it converts the subscript's offset to the dialect's
+    // offset kind.
     static int subscript_kind(ASR::expr_t *idx) {
         return ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(idx));
+    }
+
+    // The device C type of the extents, strides and lower bounds a device
+    // routine is handed beside an array dummy, which its subscripts are
+    // counted by in the dialect's kind for element offsets.
+    std::string offset_type() const {
+        return gpu_offset_type(dialect.offset_kind());
     }
 
     // Emits gpu_offset_term() of the subscript `idx` and lower bound `lb`.
@@ -3518,7 +3527,8 @@ public:
                             std::string size_name =
                                 GpuNames::member_size(arg->m_name,
                                     mem_name);
-                            src << ", int " << size_name;
+                            src << ", " << offset_type() << " "
+                                << size_name;
                             func_array_size_params[key] = size_name;
                             // Per-dimension extents, so that
                             // size(arg%member, dim) inside the function
@@ -3530,7 +3540,8 @@ public:
                                     std::string dim_name =
                                         struct_member_dim_param(
                                             arg->m_name, mem_name, d);
-                                    src << ", int " << dim_name;
+                                    src << ", " << offset_type() << " "
+                                        << dim_name;
                                     func_array_size_params[
                                         dim_size_key(key, d)]
                                         = dim_name;
@@ -3541,7 +3552,8 @@ public:
                                 std::string lb_name =
                                     GpuNames::member_lower_bound(
                                         arg->m_name, mem_name, d);
-                                src << ", int " << lb_name;
+                                src << ", " << offset_type() << " "
+                                    << lb_name;
                                 func_array_lb_params[dim_size_key(key, d)]
                                     = lb_name;
                             }
@@ -3585,7 +3597,8 @@ public:
                     for (size_t d = 0; d < arr->n_dims; d++) {
                         std::string dim_name = GpuNames::dim_size(
                             aname, d);
-                        src << ", int " << dim_name;
+                        src << ", " << offset_type() << " "
+                            << dim_name;
                         func_array_size_params[dim_size_key(aname, d)]
                             = dim_name;
                     }
@@ -3596,7 +3609,8 @@ public:
                     for (size_t d = 0; d < arr->n_dims; d++) {
                         std::string stride_name = GpuNames::dim_stride(
                             aname, d);
-                        src << ", int " << stride_name;
+                        src << ", " << offset_type() << " "
+                            << stride_name;
                         strides.push_back(stride_name);
                     }
                     register_strides(aname, strides);
@@ -3611,7 +3625,7 @@ public:
                 if (!extents_explicit && !desc_per_dim) {
                     std::string size_name = GpuNames::array_size(
                         arg->m_name);
-                    src << ", int " << size_name;
+                    src << ", " << offset_type() << " " << size_name;
                     func_array_size_params[std::string(arg->m_name)]
                         = size_name;
                 }
@@ -3642,7 +3656,8 @@ public:
                     for (size_t d = 0; d < aarr->n_dims; d++) {
                         std::string dim_name = GpuNames::dim_size(
                             aname, d);
-                        src << ", int " << dim_name;
+                        src << ", " << offset_type() << " "
+                            << dim_name;
                         func_array_size_params[dim_size_key(aname, d)]
                             = dim_name;
                         total += total.empty()

@@ -849,10 +849,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     // Pass dimension sizes for decomposed allocatable struct
-    // members so the kernel can compute ArraySize and strides.
+    // members so the kernel can compute ArraySize and strides. The extents
+    // and lower bounds are passed in the kind the kernel computes element
+    // offsets in, like those of the arrays below.
     {
         ASR::ttype_t *int_type_dim = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+            ASR::make_Integer_t(al, loc, device_caps.offset_kind));
         for (auto &di : decomp_infos) {
             ASR::ttype_t *inner =
                 ASRUtils::type_get_past_allocatable(di.alloc_type);
@@ -980,8 +982,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 break;
             }
         }
+        // In the offset kind, as for the components above.
         ASR::ttype_t *int_type_dim = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+            ASR::make_Integer_t(al, loc, device_caps.offset_kind));
 
         for (size_t d = 0; d < k_arr->n_dims; d++) {
             if (shape_from_type && d < orig_arr->n_dims
@@ -1099,7 +1102,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         gpu_struct_member_extent_arguments(al, loc, kernel_scope, sym_name,
             gpu_struct_definition(orig_var->m_type_declaration),
             [&](ASR::symbol_t *m) { return host_member(v, m); },
-            kernel_args, call_args);
+            device_caps.offset_kind, kernel_args, call_args);
     }
     for (auto &[sym_name, orig_var] : struct_params) {
         ASR::Variable_t *v = orig_var;

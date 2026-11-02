@@ -5255,6 +5255,42 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_kernel_source_23.f90"
 gpu_cuda_kernel = true
 
+# With --descriptor-index-64 element offsets, extents and lower bounds are
+# 64-bit, so arrays of more than huge(0) elements are addressed unwrapped.
+# Compile-only: a device run copies 2 GB arrays there and back.
+[[test]]
+filename = "gpu_cuda_kernel_wide_arrays.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# Small run-time-shaped arrays of rank 2 and 3 with lower bounds other than
+# 1, an integer(8) subscript and an assumed-shape dummy, run on the device
+# with the same flag: the kernels take their extents and lower bounds as
+# `long` and compute offsets in it. Arrays with a lower bound beyond huge(0)
+# reach the kernel as a component of a derived-type variable or of an array
+# of one, and through device routines: their lower bounds are `long` too.
+[[test]]
+filename = "../integration_tests/gpu_metal_600.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# Sections and sum() lowered inside the kernel, of arrays with a lower bound
+# beyond huge(0), with the same flag: the offset of their integer(4)
+# subscripts is taken modulo 2**32 before it is widened to `long`.
+[[test]]
+filename = "../integration_tests/gpu_metal_601.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# The same flag with an array whose first extent alone exceeds huge(0), and
+# one whose first two extents multiply past it: the strides of their later
+# dimensions are 64-bit. Compile-only: each array takes 4 GB, which a run
+# copies to the device and back.
+[[test]]
+filename = "gpu_cuda_kernel_wide_stride.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
 # An integer(8) subscript of an array whose lower bound is beyond huge(0):
 # the lower bound is subtracted before the offset is narrowed to `int`.
 [[test]]

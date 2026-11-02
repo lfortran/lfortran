@@ -83,11 +83,15 @@ ASR::symbol_t* gpu_new_variable(Allocator &al, const Location &loc,
 // for a component of rank more than one, the extent of each dimension.
 // The data follows, one array per component. The parameters are named as
 // the device code generators look them up (see GpuNames), so they find the
-// component's buffers by the name of the parameter and the component.
+// component's buffers by the name of the parameter and the component. The
+// extents and lower bounds are integers of kind `offset_kind`, the kind
+// the kernel computes element offsets in
+// (GpuDeviceCapabilities::offset_kind).
 void gpu_struct_member_extent_arguments(Allocator &al, const Location &loc,
         SymbolTable *kernel_scope, const std::string &name, ASR::Struct_t *st,
         const std::function<ASR::expr_t*(ASR::symbol_t*)> &host_member,
-        Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args);
+        int offset_kind, Vec<ASR::expr_t*> &kernel_args,
+        Vec<ASR::call_arg_t> &call_args);
 
 // `element_declaration` gives the kernel's declaration of the derived type
 // of the elements of a component that has elements of one.

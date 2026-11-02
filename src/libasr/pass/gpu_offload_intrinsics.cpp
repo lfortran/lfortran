@@ -1831,11 +1831,48 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
         };
 
+        // A loop that runs over the subscripts of the summed array itself
+        // counts in the dialect's kind for element offsets. With 64-bit
+        // offsets the bounds of such a loop need not fit integer(4): a
+        // lower bound beyond huge(0), or one near it that the last index
+        // carries past it.
+        ASR::ttype_t *counter_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, device_caps.offset_kind));
+        auto in_counter_kind = [&](ASR::expr_t *e) -> ASR::expr_t* {
+            if (e == nullptr || ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(e)) == device_caps.offset_kind) {
+                return e;
+            }
+            if (ASR::is_a<ASR::ArrayBound_t>(*e)) {
+                ASR::ArrayBound_t *b = ASR::down_cast<ASR::ArrayBound_t>(e);
+                return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+                    b->m_v, b->m_dim, counter_type, b->m_bound, nullptr));
+            }
+            if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                    ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n,
+                    counter_type, ASR::integerbozType::Decimal));
+            }
+            return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, e,
+                ASR::cast_kindType::IntegerToInteger, counter_type,
+                nullptr, nullptr));
+        };
+
         // The last index of a dimension that starts at `start` and has
         // `length` elements.
         auto last_index = [&](ASR::expr_t *start,
                 ASR::expr_t *length) -> ASR::expr_t* {
             if (is_int_literal(start, 1)) return length;
+            if (device_caps.offset_kind != 4) {
+                return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                        in_counter_kind(start), ASR::binopType::Add,
+                        in_counter_kind(length), counter_type, nullptr)),
+                    ASR::binopType::Sub,
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+                        counter_type, ASR::integerbozType::Decimal)),
+                    counter_type, nullptr));
+            }
             return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                 ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     to_int32(loc, start), ASR::binopType::Add,
@@ -1885,7 +1922,7 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
             }
             for (size_t ri = 0; ri < range_dims.size(); ri++) {
                 size_t d = range_dims[ri];
-                loop_vars.push_back(make_var("__gpu_sum_k", int_type));
+                loop_vars.push_back(make_var("__gpu_sum_k", counter_type));
                 loop_starts.push_back(section->m_args[d].m_left);
                 loop_ends.push_back(section->m_args[d].m_right);
                 loop_steps.push_back(section->m_args[d].m_step);
@@ -2065,7 +2102,7 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
                 base_arr = arr_arg;
                 for (int d = 0; d < rank; d++) {
                     loop_vars.push_back(
-                        make_var("__gpu_sum_k", int_type));
+                        make_var("__gpu_sum_k", counter_type));
                     if (dims[d].m_start && dims[d].m_length) {
                         loop_starts.push_back(dims[d].m_start);
                         loop_ends.push_back(last_index(dims[d].m_start,
@@ -2283,6 +2320,14 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
             head.m_start = loop_starts[d];
             head.m_end = loop_ends[d];
             head.m_increment = loop_steps[d];
+            if (device_caps.offset_kind != 4
+                    && ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::expr_type(loop_vars[d]))
+                            == device_caps.offset_kind) {
+                head.m_start = in_counter_kind(head.m_start);
+                head.m_end = in_counter_kind(head.m_end);
+                head.m_increment = in_counter_kind(head.m_increment);
+            }
             if (d == n_loops - 1) {
                 loop_nest = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,
                     nullptr, head, innermost_body.p, innermost_body.n,

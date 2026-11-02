@@ -81,8 +81,10 @@ class DeviceLaunchExpandVisitor :
     public:
 
         DeviceLaunchExpandVisitor(Allocator &al_,
-                ASR::TranslationUnit_t &unit_, int64_t chunk_limit_) :
+                ASR::TranslationUnit_t &unit_, bool check_element_counts_,
+                int64_t chunk_limit_) :
             PassVisitor(al_, nullptr), unit(unit_),
+            check_element_counts(check_element_counts_),
             chunk_limit(chunk_limit_) {}
 
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
@@ -157,6 +159,10 @@ class DeviceLaunchExpandVisitor :
     private:
 
         ASR::TranslationUnit_t &unit;
+        // Whether a launch checks that no array it hands the kernel has
+        // more elements than its 32-bit offsets reach (see
+        // check_element_count).
+        bool check_element_counts;
         // The most iterations one launch of a kernel runs
         // (PassOptions::gpu_chunk_limit).
         int64_t chunk_limit;
@@ -314,6 +320,66 @@ class DeviceLaunchExpandVisitor :
                 b.Call(sym, args, b.CPtr())));
         }
 
+        // Without --descriptor-index-64 a kernel computes element offsets
+        // in 32 bits (GpuDeviceCapabilities::offset_kind), which would
+        // silently address the wrong elements of an array of more than
+        // huge(0) of them. The host allocates and addresses such an array
+        // without the flag, and the compiler makes buffers with one element
+        // per iteration. So the launch stops before it
+        // hands such an array to the kernel, with what to do about it.
+        // `count` is the number of elements, in integer(8).
+        ASR::stmt_t* check_element_count(const Location &loc,
+                ASR::expr_t *count) {
+            ASRUtils::ASRBuilder b(al, loc);
+            std::string message = "a gpu kernel needs an array of more "
+                "than 2147483647 elements; recompile with "
+                "--descriptor-index-64";
+            ASR::expr_t *code = b.StringConstant(message,
+                b.String(b.i32(message.size()), ASR::ExpressionLength));
+            return b.If(b.Gt(count, b.i64(2147483647)),
+                {ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc, code))}, {});
+        }
+
+        // The checks of check_element_count for every array of a launch
+        // whose number of elements is only known at run time. The
+        // per-thread workspaces of block local arrays are not checked: a
+        // thread's slice of one starts at an unsigned 32-bit product, also
+        // with --descriptor-index-64 (#15380).
+        void check_element_counts_of(const ASR::GpuKernelLaunch_t &x,
+                Vec<ASR::stmt_t*> &out) {
+            const Location &loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            const ASR::gpu_kernel_layout_t &layout =
+                *ASR::down_cast<ASR::Function_t>(x.m_kernel)->m_gpu;
+            for (size_t i = 0; i < layout.n_buffers; i++) {
+                const auto &entry = layout.m_buffers[i];
+                if (entry.m_member) continue;
+                ASR::expr_t *arg = x.m_args[entry.m_argument_index].m_value;
+                ASR::expr_t *count = nullptr;
+                for (size_t k = 0; k < x.n_scratch; k++) {
+                    if (x.m_scratch[k].m_argument_index
+                            == entry.m_argument_index) {
+                        count = b.i2i_t(x.m_scratch[k].m_size, int64);
+                    }
+                }
+                if (count == nullptr) {
+                    ASR::ttype_t *type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::expr_type(arg)));
+                    if (!ASRUtils::is_array(type)) continue;
+                    int64_t fixed = ASRUtils::get_fixed_size_of_array(type);
+                    if (fixed > 0 && fixed <= 2147483647) continue;
+                    count = b.ArraySize(arg, nullptr, int64);
+                    if (ASRUtils::is_allocatable(ASRUtils::expr_type(arg))) {
+                        count = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                            is_allocated(loc, arg), count, b.i64(0), int64,
+                            nullptr));
+                    }
+                }
+                out.push_back(al, check_element_count(loc, count));
+            }
+        }
+
         // Number of bytes the runtime has to copy for one buffer argument.
         ASR::expr_t* buffer_byte_size(const Location &loc, ASR::expr_t *arg) {
             ASRUtils::ASRBuilder b(al, loc);
@@ -326,8 +392,9 @@ class DeviceLaunchExpandVisitor :
             }
             ASR::ttype_t *element = gpu_size_of_type_argument(al, arg,
                 ASRUtils::type_get_past_array(type));
-            ASR::expr_t *size = b.Mul(
-                b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
+            // Counted in integer(8): an array may hold more than huge(0)
+            // elements.
+            ASR::expr_t *size = b.Mul(b.ArraySize(arg, nullptr, int64),
                 ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, element,
                     int64, nullptr)));
             // An allocatable the loop only uses when it is allocated -- a
@@ -418,8 +485,16 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *total = declare_local(loc, "gpu_member_total",
                     int32);
                 ASR::expr_t *k = declare_local(loc, "gpu_struct_index", int32);
+                // The extents and lower bounds are in the kind the kernel
+                // reads them in (gpu_create_kernel_layout), the kind it
+                // computes element offsets in.
+                int size_kind = component.sizes
+                    ? ASRUtils::extract_kind_from_ttype_t(
+                        component.sizes->m_type) : 4;
+                ASR::ttype_t *size_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, size_kind));
                 ASR::expr_t *sizes = declare_local(loc, "gpu_member_sizes",
-                    b.allocatable(b.Array({-1}, int32)));
+                    b.allocatable(b.Array({-1}, size_type)));
                 ASR::expr_t *offsets = declare_local(loc, "gpu_member_offsets",
                     b.allocatable(b.Array({-1}, int32)));
                 ASR::expr_t *data = declare_local(loc, "gpu_member_data",
@@ -457,16 +532,17 @@ class DeviceLaunchExpandVisitor :
                         member_extent(loc, sizes, k, rank, d),
                         b.ArraySize(struct_member(loc, arg, k, member),
                             rank > 1 ? b.i32((int)d + 1) : nullptr,
-                            int32)));
+                            size_type)));
                     extents.push_back(b.Assignment(
                         member_lower_bound(loc, sizes, k, rank, d),
                         b.GetLBound(struct_member(loc, arg, k, member),
-                            (int)d + 1)));
+                            (int)d + 1, size_kind)));
                     no_extents.push_back(b.Assignment(
-                        member_extent(loc, sizes, k, rank, d), b.i32(0)));
+                        member_extent(loc, sizes, k, rank, d),
+                        b.i_t(0, size_type)));
                     no_extents.push_back(b.Assignment(
                         member_lower_bound(loc, sizes, k, rank, d),
-                        b.i32(1)));
+                        b.i_t(1, size_type)));
                 }
                 if (may_be_unallocated) {
                     measure.push_back(b.If(is_allocated(loc,
@@ -476,8 +552,12 @@ class DeviceLaunchExpandVisitor :
                     measure.insert(measure.end(), extents.begin(),
                         extents.end());
                 }
-                measure.push_back(b.Assignment(total, b.Add(total,
-                    member_element_count(loc, sizes, k, rank))));
+                // The offsets into the packed data are still counted in
+                // 32 bits (#15929).
+                ASR::expr_t *count = member_element_count(loc, sizes, k,
+                    rank);
+                if (size_kind != 4) count = b.i2i_t(count, int32);
+                measure.push_back(b.Assignment(total, b.Add(total, count)));
                 out.push_back(al, b.DoLoop(k, b.i32(1), n, measure));
                 member_sizes_bufs[key] = sizes;
                 // A member that is allocated but holds no elements in any
@@ -506,8 +586,9 @@ class DeviceLaunchExpandVisitor :
                 }
 
                 ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64), b.i64(4));
-                ASR::expr_t *sizes_bytes =
-                    b.Mul(index_bytes, b.i64(2 * (int64_t)rank));
+                ASR::expr_t *sizes_bytes = b.Mul(size_kind == 4 ? index_bytes
+                    : b.Mul(b.i2i_t(n, int64), b.i64(size_kind)),
+                    b.i64(2 * (int64_t)rank));
                 buffers.push_back({data, address_of(loc, data), data_bytes});
                 buffers.push_back({offsets, address_of(loc, offsets),
                     index_bytes});
@@ -641,9 +722,13 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *index, size_t rank,
                 ASR::expr_t *element_bytes) {
             ASRUtils::ASRBuilder b(al, loc);
-            return b.Mul(b.i2i_t(
-                member_element_count(loc, sizes, index, rank), int64),
-                element_bytes);
+            ASR::expr_t *count = member_element_count(loc, sizes, index,
+                rank);
+            if (ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(count)) != 8) {
+                count = b.i2i_t(count, int64);
+            }
+            return b.Mul(count, element_bytes);
         }
 
         // Copy every element between a strided array and its contiguous
@@ -901,6 +986,7 @@ class DeviceLaunchExpandVisitor :
             std::vector<ASR::stmt_t*> writebacks;
             std::vector<ASR::stmt_t*> cleanups;
 
+            if (check_element_counts) check_element_counts_of(x, out);
             ASR::expr_t *ctx = declare_local(loc, "gpu_ctx", b.CPtr());
             ASR::expr_t *gpu_kernel = declare_local(loc, "gpu_kernel",
                 b.CPtr());
@@ -1623,10 +1709,15 @@ GpuBufferHandling gpu_launch_buffer_handling(
 
 void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
                                const LCompilers::PassOptions &pass_options) {
-    if (!gpu_device_capabilities(pass_options).device_selected()) {
+    GpuDeviceCapabilities caps = gpu_device_capabilities(pass_options);
+    if (!caps.device_selected()) {
         return;
     }
-    DeviceLaunchExpandVisitor v(al, unit, pass_options.gpu_chunk_limit);
+    // A device without a 64-bit integer (Metal) cannot be given 64-bit
+    // offsets by the flag the message names, so it is not checked.
+    DeviceLaunchExpandVisitor v(al, unit,
+        caps.offset_kind == 4 && caps.max_integer_kind >= 8,
+        pass_options.gpu_chunk_limit);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

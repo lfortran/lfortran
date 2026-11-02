@@ -350,7 +350,8 @@ public:
         if (!kernel.m_gpu) {
             GpuDecline decline;
             if (!gpu_create_kernel_layout(al, kernel, x.m_args, x.n_args,
-                    decline, options.fast)) {
+                    decline, options.fast,
+                    gpu_device_capabilities(options).offset_kind)) {
                 report_gpu_decline(options, x.base.base.loc, decline);
                 return;
             }

@@ -2170,6 +2170,12 @@ ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);
 
+// The extent (end - start)/step + 1 of a section triplet, in the type
+// `size_type`.
+ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
+    ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step,
+    ASR::ttype_t* size_type);
+
 ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x);
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
@@ -3539,8 +3545,10 @@ template <typename SemanticAbort>
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                                      std::string bound, Allocator& al, diag::Diagnostics &diag, int index_kind = 4) {
     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, index_kind));
+    // Only the bound takes the index kind; `dim` stays a default integer,
+    // as in lbound(a, 1, kind=8).
     ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc,
-                                                                       dim, int_type));
+        dim, ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4))));
     ASR::arrayboundType bound_type = ASR::arrayboundType::LBound;
     if( bound == "ubound" ) {
         bound_type = ASR::arrayboundType::UBound;

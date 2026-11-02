@@ -1254,6 +1254,8 @@ RUN(NAME array_constructor_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_constructor_08 LABELS gfortran llvm)
 RUN(NAME array_constructor_09 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME array_constructor_10 LABELS gfortran llvm EXTRAFILES array_constructor_10_mod.f90)
+RUN(NAME array_constructor_11 LABELS gfortran llvm) # section elements with integer(8) bounds
+RUN(NAME array_constructor_12 FILE array_constructor_11 LABELS llvm EXTRA_ARGS --descriptor-index-64)
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_nested_dealloc_derived_pointer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4626,6 +4628,7 @@ RUN(NAME array_section_39 LABELS gfortran llvm)
 RUN(NAME array_section_40 LABELS gfortran llvm)
 RUN(NAME array_section_41 LABELS gfortran llvm c)
 RUN(NAME array_section_42 LABELS gfortran llvm)
+RUN(NAME array_section_43 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64) # omitted section bounds beyond huge(0) (#15067)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)
@@ -6932,6 +6935,9 @@ RUN(NAME gpu_metal_562 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_563 LABELS gfortran metal cuda) # plain LLVM cannot find a do concurrent by name
 RUN(NAME gpu_metal_565 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_566 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_601 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_602 LABELS llvm cuda EXTRA_ARGS --descriptor-index-64) # no gfortran: the GFortran in CI rejects reduce
 RUN(NAME gpu_metal_599 LABELS gfortran llvm cuda)
 # Procedures copied into a kernel and the entities they name of their
 # hosts and modules.
@@ -6972,6 +6978,10 @@ RUN(NAME gpu_metal_337_chunked FILE gpu_metal_337 FAIL LABELS gfortran llvm meta
 RUN(NAME gpu_metal_410_chunked FILE gpu_metal_410 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4)
 RUN(NAME gpu_metal_78_chunked FILE gpu_metal_78 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1)
 RUN(NAME gpu_liveout_01_chunked FILE gpu_liveout_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
+RUN(NAME gpu_metal_597 FAIL LABELS cuda) # stops: an array of more than huge(0) elements needs --descriptor-index-64
+# 64-bit kernel offsets in a launch that runs in chunks: every loop of
+# gpu_metal_600, those over lower bounds beyond huge(0) included.
+RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
@@ -7042,6 +7052,11 @@ RUN(NAME gpu_metal_402 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-
 RUN(NAME gpu_metal_403 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_404 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_405 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_603 LABELS gfortran llvm cuda) # no metal: Metal declines integer(8)
+RUN(NAME gpu_metal_604 FILE gpu_metal_405 LABELS llvm metal cuda
+    EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_605 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_606 LABELS gfortran llvm cuda) # no metal: Metal declines integer(8)
 RUN(NAME gpu_metal_413 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_413_mod.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays)
 RUN(NAME gpu_metal_435 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_435_mod.f90 EXTRA_ARGS --separate-compilation $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)

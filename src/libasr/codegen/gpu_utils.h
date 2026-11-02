@@ -425,7 +425,7 @@ inline std::string gpu_referenced_declarations(
 }
 
 // The device C type of the integer kind `offset_kind` a dialect computes
-// element offsets in.
+// element offsets in (GpuDeviceCapabilities::offset_kind).
 inline std::string gpu_offset_type(int offset_kind) {
     LCOMPILERS_ASSERT(offset_kind == 4 || offset_kind == 8);
     return offset_kind == 8 ? "long" : "int";
@@ -433,10 +433,32 @@ inline std::string gpu_offset_type(int offset_kind) {
 
 // The offset `sub - lb` of a subscript of integer kind `subscript_kind`
 // within its dimension, as device source in the integer of kind
-// `offset_kind`, the dialect's kind for element offsets. A subscript wider
-// than that is narrowed only once its lower bound is subtracted: the
+// `offset_kind`, the dialect's kind for element offsets. The difference is
+// taken in the narrower of the two kinds. A subscript wider than the
+// offsets is narrowed only once its lower bound is subtracted: the
 // difference fits where the subscript itself need not, as in an integer(8)
 // subscript of an array whose lower bound is 3000000000.
+//
+// An integer(4) subscript with 64-bit offsets has its difference reduced
+// modulo 2**32, as an unsigned int, before it is widened. The offload
+// passes count the subscripts of the array expressions they lower inside
+// a kernel (sections, whole arrays, ...) in integer(4) from the lower
+// bound, so a lower bound beyond huge(0) reaches such a subscript
+// truncated, and the truncation cancels only modulo 2**32. The reduction
+// is exact whenever the true offset is in [0, 2**32): for every user
+// integer(4) subscript of an array whose lower bound is at least
+// -huge(0)-1 (`a(-n:n)` with n = 1500000000 included), and for a subscript
+// the passes count from a truncated lower bound up to an extent of 2**32.
+// It is still wrong for
+//  - an integer(4) subscript of an array whose lower bound is below
+//    -huge(0)-1, at an offset of 2**32 or more;
+//  - a subscript the passes count past an extent of huge(0), or across
+//    huge(0) from a lower bound near it, since their integer(4) counter or
+//    bound overflows before it gets here.
+// An offset below zero, which only an element outside the array has (the
+// start of an empty section), becomes a far one that is never read. The
+// proper fix is for the passes to count these subscripts in the offset
+// kind (#16571); this branch goes once they do.
 //
 // The source before and after the subscript is the pair this returns, for
 // a caller that emits the subscript itself in between.
@@ -446,6 +468,10 @@ inline std::pair<std::string, std::string> gpu_offset_term_parts(
     if (subscript_kind > offset_kind) {
         return {"((" + type + ")((", ") - (" + lb + ")))"};
     }
+    if (subscript_kind == 4 && offset_kind == 8) {
+        return {"((" + type + ")((unsigned int)((", ") - (" + lb
+            + "))))"};
+    }
     return {"((" + type + ")(", ") - (" + lb + "))"};
 }
 
@@ -453,6 +479,16 @@ inline std::string gpu_offset_term(const std::string &sub,
         const std::string &lb, int subscript_kind, int offset_kind) {
     auto parts = gpu_offset_term_parts(lb, subscript_kind, offset_kind);
     return parts.first + sub + parts.second;
+}
+
+// The product `a * b` of two extents, as device source, computed in the
+// integer of kind `offset_kind`: two extents of a large array multiply past
+// huge(0). A dialect whose offsets are 32-bit already multiplies in them.
+inline std::string gpu_index_product(const std::string &a,
+        const std::string &b, int offset_kind) {
+    if (offset_kind == 4) return "(" + a + " * " + b + ")";
+    return "(((" + gpu_offset_type(offset_kind) + ")(" + a + ")) * " + b
+        + ")";
 }
 
 // An allocatable array component of a kernel argument that is an array of a
@@ -483,9 +519,12 @@ inline std::string gpu_offset_term(const std::string &sub,
 // so it needs no extent; an empty `extent(d)` says the caller has none for
 // that dimension either, and an empty subscript that it has none for it.
 //
-// Each subscript's offset is gpu_offset_term(), given the subscript's
-// integer kind in `subscript_kinds`, in the integer of kind `offset_kind`,
-// the dialect's kind for element offsets.
+// The position is counted in the integer of kind `offset_kind`, the
+// dialect's kind for element offsets: each subscript's offset
+// (gpu_offset_term, given the subscript's integer kind in
+// `subscript_kinds`) and each product of extents is converted to it before
+// it is multiplied, so with 64-bit offsets an array of more than huge(0)
+// elements is addressed without wrapping.
 inline std::string gpu_linearized_index_str(
         const std::vector<std::string> &subscripts,
         const std::vector<int> &subscript_kinds,
@@ -503,7 +542,7 @@ inline std::string gpu_linearized_index_str(
             std::string ext = extent(d);
             if (ext.empty()) continue;
             stride = stride.empty() ? ext
-                : ("(" + stride + " * " + ext + ")");
+                : gpu_index_product(stride, ext, offset_kind);
         }
     }
     return out;
