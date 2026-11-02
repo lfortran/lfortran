@@ -57,6 +57,15 @@ class GpuMathHelperScanner : public ASR::BaseWalkVisitor<GpuMathHelperScanner> {
 public:
     bool needs_erf = false;
     bool needs_erfc = false;
+    // The type of an integer power device code computes, by kind.
+    std::map<int64_t, ASR::ttype_t*> integer_power_types;
+    void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+        if (x.m_op == ASR::binopType::Pow) {
+            integer_power_types.emplace(
+                ASRUtils::extract_kind_from_ttype_t(x.m_type), x.m_type);
+        }
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_IntegerBinOp(x);
+    }
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         std::string fn_name(ASRUtils::symbol_name(
             ASRUtils::symbol_get_past_external(x.m_name)));
@@ -3120,19 +3129,61 @@ public:
 
     bool needs_erf_helper = false;
     bool needs_erfc_helper = false;
+    std::map<int64_t, ASR::ttype_t*> integer_power_types;
 
     void scan_for_math_helpers(const ASR::TranslationUnit_t &tu) {
         GpuMathHelperScanner scanner;
         for (auto &item : tu.m_symtab->get_scope()) {
             if (ASRUtils::is_device_kernel(item.second)) {
                 scanner.visit_symbol(*item.second);
+                // The device functions of a kernel can be declared outside
+                // it, and are emitted with it.
+                const ASR::Function_t *kernel =
+                    ASR::down_cast<ASR::Function_t>(item.second);
+                for (size_t i = 0; i < kernel->m_gpu->n_device_functions;
+                        i++) {
+                    scanner.visit_symbol(
+                        *kernel->m_gpu->m_device_functions[i]);
+                }
             }
         }
         needs_erf_helper = scanner.needs_erf;
         needs_erfc_helper = scanner.needs_erfc;
+        integer_power_types = scanner.integer_power_types;
+    }
+
+    static std::string integer_power_helper(int64_t kind) {
+        return "_lf_ipow_i" + std::to_string(kind);
+    }
+
+    // An integer power, exactly, in the operands' own type: `pow` on
+    // `float`s rounds results past 2**24, and could not hold an
+    // integer(8) result at all. A negative exponent gives 0, except of a
+    // base of 1 or -1, as integer division would.
+    void emit_integer_power_helpers() {
+        for (auto &[kind, type] : integer_power_types) {
+            std::string t = gpu_type(type);
+            src << dialect.device_fn_qualifier() << t << " "
+                << integer_power_helper(kind) << "(" << t << " base, " << t
+                << " exponent) {\n";
+            src << "    if (exponent < 0) {\n";
+            src << "        if (base == 1) return 1;\n";
+            src << "        if (base == -1) return (exponent & 1) ? -1 : 1;\n";
+            src << "        return 0;\n";
+            src << "    }\n";
+            src << "    " << t << " result = 1;\n";
+            src << "    while (exponent > 0) {\n";
+            src << "        if (exponent & 1) result *= base;\n";
+            src << "        exponent >>= 1;\n";
+            src << "        if (exponent > 0) base *= base;\n";
+            src << "    }\n";
+            src << "    return result;\n";
+            src << "}\n\n";
+        }
     }
 
     void emit_math_helpers() {
+        emit_integer_power_helpers();
         if (needs_erf_helper) {
             src << "// Abramowitz & Stegun approximation (7.1.26), max error ~1.5e-7\n";
             src << dialect.device_fn_qualifier()
@@ -5304,9 +5355,14 @@ public:
                 bool narrow = is_narrow_integer(op->m_type);
                 if (narrow) src << "((" << gpu_type(op->m_type) << ")";
                 if (op->m_op == ASR::binopType::Pow) {
-                    src << "(int)pow((float)(";
+                    int64_t kind = ASRUtils::extract_kind_from_ttype_t(
+                        op->m_type);
+                    LCOMPILERS_ASSERT(integer_power_types.count(kind));
+                    std::string type = gpu_type(op->m_type);
+                    src << integer_power_helper(kind) << "((" << type
+                        << ")(";
                     visit_expr(op->m_left);
-                    src << "), (float)(";
+                    src << "), (" << type << ")(";
                     visit_expr(op->m_right);
                     src << "))";
                 } else {
