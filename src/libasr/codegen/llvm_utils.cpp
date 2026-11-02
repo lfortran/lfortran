@@ -11072,16 +11072,27 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             llvm::Value* dest_elem_ptr = builder->CreateInBoundsGEP(llvm_data_type, dest_data, i_val);
             {
                     // Elements are plain structs (declared as type(), not
-                    // class()), so they have no class wrapper.  Copy each
-                    // element directly via deepcopy on the element type.
+                    // class()), so they have no class wrapper.
                     ASR::ttype_t* elem_type = ASRUtils::extract_type(src_ty);
                     if (is_descriptor_array) {
                         allocate_struct_array_members(
                             struct_sym, dest_elem_ptr, elem_type, false);
                     }
-                    llvm_utils->deepcopy(src_expr, src_elem_ptr, dest_elem_ptr,
-                        elem_type, ASRUtils::extract_type(dest_ty), module,
-                        false, finalize_dest);
+                    if (!is_src_class && !is_dest_class) {
+                        // Call the type's copy function instead of expanding
+                        // the element copy inline: inline expansion follows
+                        // the type definition and never terminates for a
+                        // type with an allocatable array component of its
+                        // own type.
+                        builder->CreateCall(fnTy, fn, {
+                            builder->CreateBitCast(src_elem_ptr, llvm_utils->i8_ptr),
+                            builder->CreateBitCast(dest_elem_ptr, llvm_utils->i8_ptr),
+                            finalize_dest});
+                    } else {
+                        llvm_utils->deepcopy(src_expr, src_elem_ptr, dest_elem_ptr,
+                            elem_type, ASRUtils::extract_type(dest_ty), module,
+                            false, finalize_dest);
+                    }
                 }
 
             llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
