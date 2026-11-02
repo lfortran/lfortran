@@ -3329,6 +3329,7 @@ class ASRToLLVMVisitor;
         public:
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2typeinfo;   // Contains type-info object pointer for each struct
+            std::map<ASR::symbol_t*, llvm::Function*> newclass2copyfn;   // Contains the `_copy_<owner>_<type>` function for each struct
             std::map<std::string, llvm::Constant*> intrinsic_type_info;   // Contains type-info object pointer for each intrincic type and kind
             std::map<std::string, llvm::Constant*> intrinsic_type_vtab;
             std::map<std::string, llvm::Type*> intrinsic_type_vtabtype;
@@ -3340,6 +3341,7 @@ class ASRToLLVMVisitor;
                       LLVMFinalize &finalizer_instance_);
     
             llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym, llvm::Module* module);
+            llvm::Function* get_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module);
             llvm::Function* get_Upoly_finalize_fn(ASR::Struct_t* struct_sym, llvm::Value* upoly_ptr);
             void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module);
             void store_class_struct(ASR::Struct_t* class_sym, llvm::Value* class_ptr, llvm::Value* struct_ptr);

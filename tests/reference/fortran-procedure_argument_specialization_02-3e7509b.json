@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-procedure_argument_specialization_02-3e7509b",
+    "cmd": "lfortran --pass=specialize_procedure_arguments --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1 --fast",
+    "infile": "tests/../integration_tests/procedure_argument_specialization_02.f90",
+    "infile_hash": "be9a6cced83f81d95f192c8ee93b2edac66b1f856969b5ebdc1158a2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-procedure_argument_specialization_02-3e7509b.f90",
+    "stdout_hash": "556c71bf1c91a1ec0666cdbbce4b333f954489aa2f8cdaf4af6fdce0",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

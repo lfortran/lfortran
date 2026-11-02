@@ -328,6 +328,28 @@ public:
     }
 };
 
+// Walk statement containers, including nested parallel regions, but leave
+// entering a construct's symbol-owned body to the callback that rebinds it.
+class GpuConstructCallVisitor :
+        public ASR::BaseWalkVisitor<GpuConstructCallVisitor> {
+public:
+    std::function<void(ASR::BlockCall_t&)> block;
+    std::function<void(ASR::AssociateBlockCall_t&)> associate;
+
+    GpuConstructCallVisitor(
+            std::function<void(ASR::BlockCall_t&)> block_,
+            std::function<void(ASR::AssociateBlockCall_t&)> associate_ = {})
+        : block(block_), associate(associate_) {}
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        block(const_cast<ASR::BlockCall_t&>(x));
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        if (associate) associate(const_cast<ASR::AssociateBlockCall_t&>(x));
+    }
+};
+
 // Resolves associate variable references to their original targets.
 // A workspace extent written as `size(a(i)%m, d)` -- the extent of an
 // allocatable array component reached through a subscript into an array

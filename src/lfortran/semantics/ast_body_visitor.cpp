@@ -767,6 +767,9 @@ public:
                 if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
                     ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
                     omp_region_body.push_back(tmp_stmt);
+                } else if (!tmp_vec.empty()) {
+                    for (auto &x : tmp_vec) omp_region_body.push_back(ASRUtils::STMT(x));
+                    tmp_vec.clear();
                 }
             } else {
                 if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
@@ -3983,6 +3986,17 @@ public:
             }
         }
 
+        ASR::expr_t *size_target = nullptr;
+        SymbolTable *size_scope = nullptr;
+        if (size && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(size)) != 8) {
+            size_target = size;
+            size_scope = al.make_new<SymbolTable>(current_scope);
+            ASR::ttype_t *size_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));
+            ASRUtils::ASRBuilder b(al, x.base.base.loc);
+            size = b.Variable(size_scope, "__lfortran_inquire_size",
+                size_type, ASRUtils::intent_local);
+        }
+
         tmp = ASR::make_FileInquire_t(al, x.base.base.loc, x.m_label,
                                   unit, file, iostat, err,
                                   exist, opened, number, named,
@@ -3995,6 +4009,25 @@ public:
                                   iolength_args.p, iolength_args.n, decimal,
                                   sign, encoding, stream, iomsg, round,
                                   pending, asynchronous);
+        if (size_target) {
+            // The query and conversion share statement-local storage, including
+            // when the containing region executes concurrently.
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 2);
+            body.push_back(al, ASRUtils::STMT(tmp));
+            ASR::expr_t *value = size;
+            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                ASRUtils::expr_type(value),
+                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(size_target)), diag);
+            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, x.base.base.loc, size_target, value, nullptr, false, false)));
+            std::string name = current_scope->get_unique_name("__lfortran_inquire");
+            ASR::symbol_t *block = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_Block_t(al, x.base.base.loc, size_scope,
+                    s2c(al, name), body.p, body.n));
+            current_scope->add_symbol(name, block);
+            tmp = ASR::make_BlockCall_t(al, x.base.base.loc, -1, block);
+        }
     }
 
     void visit_Flush(const AST::Flush_t& x) {
@@ -4762,6 +4795,20 @@ public:
         }
     }
 
+    // The dynamic type that MOLD= gives a polymorphic `target`, when the
+    // mold is of a derived type known at compile time, as a type-spec does.
+    // The dynamic type of a polymorphic mold is known only at run time.
+    ASR::symbol_t* get_mold_subclass(ASR::expr_t* target, ASR::expr_t* mold) {
+        ASR::ttype_t* mold_elem_type = ASRUtils::extract_type(ASRUtils::expr_type(mold));
+        if (!ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(target)))
+                || !ASR::is_a<ASR::StructType_t>(*mold_elem_type)
+                || ASRUtils::is_class_type(mold_elem_type)) {
+            return nullptr;
+        }
+        return ASRUtils::import_struct_sym_as_external(al, mold->base.loc,
+            mold, current_scope);
+    }
+
     void visit_Allocate(const AST::Allocate_t& x) {
         Vec<ASR::alloc_arg_t> alloc_args_vec;
         alloc_args_vec.reserve(al, x.n_args);
@@ -5095,14 +5142,18 @@ public:
                                         )
                                     );
                                 }
+                                // Record the mold's element type: it marks the
+                                // allocation as MOLD=, so the mold's values are not
+                                // copied, and gives a class(*) target its dynamic type.
+                                ASR::ttype_t* mold_elem_type = ASRUtils::extract_type(mold_type);
                                 if (ASR::is_a<ASR::Array_t>(*mold_type) && ASR::down_cast<ASR::Array_t>(mold_type)->n_dims > 0 && ASR::down_cast<ASR::Array_t>(mold_type)->m_dims[0].m_length != nullptr) {
                                     ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
                                     ASR::alloc_arg_t new_arg;
                                     new_arg.loc = alloc_args_vec[i].loc;
                                     new_arg.m_a = alloc_args_vec[i].m_a;
                                     new_arg.m_len_expr = len_expr;
-                                    new_arg.m_type = nullptr;
-                                    new_arg.m_sym_subclass = nullptr;
+                                    new_arg.m_type = mold_elem_type;
+                                    new_arg.m_sym_subclass = get_mold_subclass(alloc_args_vec[i].m_a, mold);
                                     new_arg.m_dims = mold_array_type->m_dims;
                                     new_arg.n_dims = mold_array_type->n_dims;
                                     new_arg.m_codims = nullptr;
@@ -5145,8 +5196,8 @@ public:
                                     new_arg.loc = alloc_args_vec[i].loc;
                                     new_arg.m_a = alloc_args_vec[i].m_a;
                                     new_arg.m_len_expr = len_expr;
-                                    new_arg.m_type = nullptr;
-                                    new_arg.m_sym_subclass = nullptr;
+                                    new_arg.m_type = mold_elem_type;
+                                    new_arg.m_sym_subclass = get_mold_subclass(alloc_args_vec[i].m_a, mold);
                                     new_arg.m_dims = mold_dims_vec.p;
                                     new_arg.n_dims = mold_dims_vec.size();
                                     new_arg.m_codims = nullptr;
@@ -5261,20 +5312,15 @@ public:
                     }
                 } else {
                     // n_dims > 0: explicit bounds provided in the allocate statement.
-                    // For mold with unlimited polymorphic target, record the mold type
-                    // so the codegen can copy type info from the mold at runtime.
+                    // Record the mold's element type: it marks the allocation as
+                    // MOLD=, so the mold's values are not copied, and gives a
+                    // class(*) target its dynamic type.
                     if (mold_cond) {
-                        ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(
-                            ASRUtils::expr_type(alloc_args_vec[i].m_a));
-                        if (ASRUtils::is_unlimited_polymorphic_type(a_type)) {
-                            ASR::ttype_t* mold_type = ASRUtils::type_get_past_allocatable_pointer(
-                                ASRUtils::expr_type(mold));
-                            ASR::alloc_arg_t new_arg = alloc_args_vec[i];
-                            new_arg.m_type = mold_type;
-                            new_alloc_args_vec.push_back(al, new_arg);
-                        } else {
-                            new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
-                        }
+                        ASR::alloc_arg_t new_arg = alloc_args_vec[i];
+                        new_arg.m_type = ASRUtils::extract_type(
+                            ASRUtils::expr_type(mold));
+                        new_arg.m_sym_subclass = get_mold_subclass(alloc_args_vec[i].m_a, mold);
+                        new_alloc_args_vec.push_back(al, new_arg);
                     } else {
                         new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
                     }

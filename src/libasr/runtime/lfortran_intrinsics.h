@@ -311,7 +311,7 @@ LFORTRAN_API int32_t _lfortran_get_round_mode(int32_t unit_num);
 LFORTRAN_API void _lfortran_inquire(
     const fchar* f_name_data, int64_t f_name_len,
     bool *exists, int32_t unit_num,
-    bool *opened, int32_t *size, int32_t *pos,
+    bool *opened, int64_t *size, int32_t *pos,
     char *write, int64_t write_len,
     char *read, int64_t read_len,
     char *readwrite, int64_t readwrite_len,

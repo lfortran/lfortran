@@ -3249,6 +3249,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // Whether an argument of the call being visited was replaced by a
     // temporary
     bool replaced_call_arg = false;
+    // The temporary pointer associated with an optional dummy array, keyed by
+    // the scope of the call and the dummy (see guard_maybe_absent_actuals)
+    std::map<std::pair<SymbolTable*, ASR::symbol_t*>, ASR::symbol_t*>
+        optional_pointer_temporaries;
 
     public:
 
@@ -3302,7 +3306,107 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
     }
 
+    // The index of the first actual of `x` that is an optional dummy array
+    // which may be absent, bound to an optional pointer dummy; `x.n_args`
+    // if there is none.
+    size_t find_maybe_absent_target_actual(ASR::SubroutineCall_t* x) {
+        ASR::expr_t** orig_args = get_dummy_args(x->m_name);
+        if( orig_args == nullptr ) {
+            return x->n_args;
+        }
+        for( size_t i = 0; i < x->n_args; i++ ) {
+            ASR::expr_t* value = x->m_args[i].m_value;
+            ASR::Variable_t* dummy = ASRUtils::expr_to_variable_or_null(orig_args[i]);
+            if( is_target_of_pointer_dummy(value, dummy) &&
+                    is_maybe_absent_actual_of_optional_dummy(value, dummy) ) {
+                return i;
+            }
+        }
+        return x->n_args;
+    }
+
+    // A pointer dummy given a target array becomes associated with it
+    // through a temporary pointer (see traverse_call_args), which would make
+    // an optional dummy present even when the actual, itself an optional
+    // dummy, is absent. ASR has no actual whose presence follows that of
+    // another variable: the backend derives the presence of an optional
+    // dummy from an optional `Var` actual only. So such a call becomes
+    //     if (present(x)) then
+    //         tmp => x; call s(tmp)
+    //     else
+    //         call s()
+    //     end if
+    // where every actual naming `x` is replaced by `tmp` in the first call
+    // and omitted in the second. The other actuals are evaluated by one
+    // branch only. Both branches are transformed again when the `If` is
+    // visited, which splits them on the next such optional actual, so `n`
+    // distinct optional actuals give `2**n` calls.
+    void guard_maybe_absent_actuals(ASR::stmt_t** m_body, size_t n_body) {
+        for( size_t i = 0; i < n_body; i++ ) {
+            if( !ASR::is_a<ASR::SubroutineCall_t>(*m_body[i]) ) {
+                continue;
+            }
+            ASR::SubroutineCall_t* call = ASR::down_cast<ASR::SubroutineCall_t>(m_body[i]);
+            size_t arg = find_maybe_absent_target_actual(call);
+            if( arg == call->n_args ) {
+                continue;
+            }
+            const Location& loc = call->base.base.loc;
+            ASR::expr_t* actual = ASRUtils::get_past_array_physical_cast(
+                call->m_args[arg].m_value);
+            ASR::symbol_t* actual_sym = ASR::down_cast<ASR::Var_t>(actual)->m_v;
+            ASR::expr_t** orig_args = get_dummy_args(call->m_name);
+            ASR::Variable_t* dummy = ASRUtils::expr_to_variable_or_null(orig_args[arg]);
+            // The branches of one optional share its temporary
+            ASR::symbol_t*& pointer_temporary = optional_pointer_temporaries[
+                std::make_pair(current_scope, actual_sym)];
+            if( pointer_temporary == nullptr ) {
+                ASR::ttype_t* actual_type = ASRUtils::expr_type(actual);
+                ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+                    al, loc, ASRUtils::create_array_type_with_empty_dims(al,
+                        ASRUtils::extract_n_dims_from_ttype(actual_type), actual_type)));
+                pointer_temporary = ASR::down_cast<ASR::Var_t>(
+                    create_temporary_variable_for_array(al, loc, current_scope,
+                        "_subroutine_call_", pointer_type, actual,
+                        dummy->m_type_declaration))->m_v;
+            }
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::SubroutineCall_t* absent_call = ASR::down_cast<ASR::SubroutineCall_t>(
+                duplicator.duplicate_stmt(m_body[i]));
+            for( size_t j = arg; j < call->n_args; j++ ) {
+                ASR::expr_t* value = call->m_args[j].m_value;
+                ASR::Variable_t* dummy_j = ASRUtils::expr_to_variable_or_null(orig_args[j]);
+                if( is_target_of_pointer_dummy(value, dummy_j) &&
+                        is_maybe_absent_actual_of_optional_dummy(value, dummy_j) &&
+                        ASR::down_cast<ASR::Var_t>(ASRUtils::get_past_array_physical_cast(
+                            value))->m_v == actual_sym ) {
+                    call->m_args[j].m_value = ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc, pointer_temporary));
+                    absent_call->m_args[j].m_value = nullptr;
+                }
+            }
+            Vec<ASR::expr_t*> present_args; present_args.reserve(al, 1);
+            present_args.push_back(al, actual);
+            ASR::expr_t* is_present = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+                al, loc, static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present),
+                present_args.p, present_args.n, 0,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+            Vec<ASR::stmt_t*> body; body.reserve(al, 2);
+            body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+                al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, pointer_temporary)),
+                actual, ASR::pointer_bounds_formType::NoPointerBounds)));
+            body.push_back(al, m_body[i]);
+            Vec<ASR::stmt_t*> orelse; orelse.reserve(al, 1);
+            orelse.push_back(al, &absent_call->base);
+            m_body[i] = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, is_present,
+                body.p, body.n, orelse.p, orelse.n));
+        }
+    }
+
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
+        if( !inside_where ) {
+            guard_maybe_absent_actuals(m_body, n_body);
+        }
         transform_stmts_impl(al, m_body, n_body, current_body, inside_where,
             [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); },
             &body_after_curr_stmt, stack_arrays ? current_scope : nullptr,
@@ -3426,23 +3530,68 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
     }
 
-    // Declares a temporary pointer variable of the same type as `null_constant`,
-    // associates it with `null_constant` and returns it. The temporary gives the
-    // null pointer constant the array descriptor its uses require. The null
-    // pointer constant carries no type declaration of its own, so for a struct
-    // element type the declaration of the dummy argument it is bound to is used.
-    ASR::expr_t* create_and_associate_null_pointer_temporary(
-        ASR::expr_t* null_constant, ASR::symbol_t* type_declaration,
-        const std::string& name_hint) {
-        ASR::expr_t* null_constant_no_cast = ASRUtils::get_past_array_physical_cast(null_constant);
-        const Location& loc = null_constant_no_cast->base.loc;
-        ASR::expr_t* null_pointer_temporary = create_temporary_variable_for_array(
-            al, loc, current_scope, name_hint,
-            ASRUtils::expr_type(null_constant_no_cast), null_constant_no_cast,
+    // Declares a temporary pointer variable of type `pointer_type`,
+    // associates it with `target` and passes it as the next actual in
+    // `x_m_args_vec`. An argument bound to a pointer array dummy is passed
+    // as the address of a pointer descriptor, which `target` lacks: it is
+    // either the null pointer constant or a nonpointer array. The null
+    // pointer constant carries no type declaration of its own, so for a
+    // struct element type the declaration of the dummy argument is used.
+    void pass_associated_pointer_temporary(Vec<ASR::call_arg_t>& x_m_args_vec,
+        ASR::expr_t* target, ASR::ttype_t* pointer_type,
+        ASR::symbol_t* type_declaration, const std::string& name_hint) {
+        const Location& loc = target->base.loc;
+        ASR::expr_t* pointer_temporary = create_temporary_variable_for_array(
+            al, loc, current_scope, name_hint, pointer_type, target,
             type_declaration);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-            al, loc, null_pointer_temporary, null_constant_no_cast, ASR::pointer_bounds_formType::NoPointerBounds)));
-        return null_pointer_temporary;
+            al, loc, pointer_temporary, target,
+            ASR::pointer_bounds_formType::NoPointerBounds)));
+        ASR::call_arg_t call_arg;
+        call_arg.loc = loc;
+        call_arg.m_value = pointer_temporary;
+        x_m_args_vec.push_back(al, call_arg);
+    }
+
+    // Whether `value` is a whole array variable or array component that is
+    // neither a pointer nor allocatable, which a pointer dummy can be
+    // associated with only through a pointer of its own.
+    bool is_nonpointer_array_target(ASR::expr_t* value) {
+        if( value == nullptr ) {
+            return false;
+        }
+        ASR::expr_t* value_no_cast = ASRUtils::get_past_array_physical_cast(value);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(value_no_cast);
+        return (ASR::is_a<ASR::Var_t>(*value_no_cast) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*value_no_cast)) &&
+            ASRUtils::is_array(value_type) &&
+            !ASRUtils::is_pointer(value_type) &&
+            !ASRUtils::is_allocatable(value_type);
+    }
+
+    // Whether `value` is a nonpointer array target bound to the pointer
+    // dummy `dummy`, passed through a temporary pointer.
+    bool is_target_of_pointer_dummy(ASR::expr_t* value, ASR::Variable_t* dummy) {
+        return dummy && ASRUtils::is_pointer(dummy->m_type) &&
+            is_nonpointer_array_target(value);
+    }
+
+    // Whether `value`, the actual of the pointer dummy `dummy`, may be
+    // absent while `dummy` may be absent too: `value` is an optional dummy
+    // array and `dummy` is optional. Associating a temporary pointer with
+    // it unconditionally would make `dummy` present.
+    bool is_maybe_absent_actual_of_optional_dummy(ASR::expr_t* value,
+            ASR::Variable_t* dummy) {
+        if( value == nullptr || dummy == nullptr ||
+                dummy->m_presence != ASR::presenceType::Optional ) {
+            return false;
+        }
+        ASR::expr_t* value_no_cast = ASRUtils::get_past_array_physical_cast(value);
+        if( !ASR::is_a<ASR::Var_t>(*value_no_cast) ) {
+            return false;
+        }
+        ASR::Variable_t* variable = ASRUtils::expr_to_variable_or_null(value_no_cast);
+        return variable && variable->m_presence == ASR::presenceType::Optional;
     }
 
     // Gathers `arg`, a component of an array of derived type, into a
@@ -3579,13 +3728,36 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     // the address of an array descriptor. The null pointer constant
                     // carries no descriptor, so associate it with a temporary pointer
                     // variable and pass that variable instead.
-                    ASR::expr_t* null_pointer_temporary =
-                        create_and_associate_null_pointer_temporary(
-                            x_m_args[i].m_value, orig_variable->m_type_declaration, name_hint);
-                    ASR::call_arg_t call_arg;
-                    call_arg.loc = null_pointer_temporary->base.loc;
-                    call_arg.m_value = null_pointer_temporary;
-                    x_m_args_vec.push_back(al, call_arg);
+                    ASR::expr_t* null_constant =
+                        ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value);
+                    pass_associated_pointer_temporary(x_m_args_vec, null_constant,
+                        ASRUtils::expr_type(null_constant),
+                        orig_variable->m_type_declaration, name_hint);
+                    continue;
+                }
+                if (is_call && current_body != nullptr &&
+                    is_target_of_pointer_dummy(x_m_args[i].m_value, orig_variable) &&
+                    !is_maybe_absent_actual_of_optional_dummy(
+                        x_m_args[i].m_value, orig_variable)) {
+                    // A pointer dummy given a nonpointer, nonallocatable
+                    // array target becomes associated with it. Such an
+                    // array has no pointer descriptor of its own, so
+                    // associate a temporary pointer with it and pass that
+                    // pointer instead. An actual that may be absent is
+                    // associated by guard_maybe_absent_actuals instead.
+                    // asr_verify rejects a nonpointer actual for a pointer
+                    // dummy that is not INTENT(IN).
+                    LCOMPILERS_ASSERT(orig_variable->m_intent == ASRUtils::intent_in);
+                    ASR::expr_t* target =
+                        ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value);
+                    ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+                    ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+                        al, target->base.loc,
+                        ASRUtils::create_array_type_with_empty_dims(al,
+                            ASRUtils::extract_n_dims_from_ttype(target_type),
+                            target_type)));
+                    pass_associated_pointer_temporary(x_m_args_vec, target,
+                        pointer_type, orig_variable->m_type_declaration, name_hint);
                     continue;
                 }
                 if (orig_variable &&
@@ -4465,22 +4637,26 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
     }
 
-    template <typename T>
-    void visit_Call(const T& x, const std::string& name_hint) {
-        // LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
-        Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
-        // The dummy arguments of the procedure, of the type-bound one, or of
-        // the interface of a procedure pointer or a dummy procedure.
-        ASR::expr_t **orig_args = nullptr;
-        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_name);
+    // The dummy arguments of the procedure `name`, of the type-bound one, or
+    // of the interface of a procedure pointer or a dummy procedure.
+    ASR::expr_t** get_dummy_args(ASR::symbol_t* name) {
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(name);
         if (ASR::is_a<ASR::Function_t>(*sym) ||
             ASR::is_a<ASR::StructMethodDeclaration_t>(*sym) ||
             ASR::is_a<ASR::Variable_t>(*sym)) {
             ASR::Function_t* func = ASRUtils::get_function(sym);
             if (func) {
-                orig_args = func->m_args;
+                return func->m_args;
             }
         }
+        return nullptr;
+    }
+
+    template <typename T>
+    void visit_Call(const T& x, const std::string& name_hint) {
+        // LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
+        Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
+        ASR::expr_t **orig_args = get_dummy_args(x.m_name);
         bool is_elemental_array_call = false;
         if (ASRUtils::is_elemental(x.m_name)) {
             for (size_t i = 0; i < x.n_args; i++) {
@@ -5544,6 +5720,22 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayReshape(x);
+        ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
+        if( x->m_value == nullptr && x->m_result == nullptr && x->m_pad == nullptr &&
+            ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_array)) ==
+                ASR::array_physical_typeType::DescriptorArray &&
+            (ASRUtils::is_integer(*element_type) || ASRUtils::is_real(*element_type) ||
+             ASRUtils::is_complex(*element_type) || ASRUtils::is_logical(*element_type)) ) {
+            // The result owns storage independent of the source, including
+            // when an assignment will reallocate or overwrite that source.
+            ASR::ttype_t* temporary_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
+                al, x->base.base.loc, ASRUtils::create_array_type_with_empty_dims(
+                    al, ASRUtils::extract_n_dims_from_ttype(x->m_type), x->m_type)));
+            x->m_result = create_temporary_variable_for_array(
+                al, x->base.base.loc, current_scope, "_array_reshape_",
+                temporary_type, &x->base);
+            insert_allocate_stmt_for_array(al, x->m_result, &x->base, current_body);
+        }
         replace_current_expr(x, "_array_reshape_");
     }
 
@@ -5581,6 +5773,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             return ;
         }
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
+    }
+
+    // The argument of GetPointer is storage, e.g. `dst(lv(1))` passed by
+    // sequence association, so it must not be replaced by a copy.
+    void replace_GetPointer(ASR::GetPointer_t* x) {
+        bool saved_context = in_array_context;
+        in_array_context = false;
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_GetPointer(x);
+        in_array_context = saved_context;
     }
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {

@@ -2611,6 +2611,23 @@ public:
         llvm::appendToCompilerUsed(*module, {source});
     }
 
+    // Returns the address of the data that an allocatable or pointer
+    // `source=` expression refers to. A variable yields it with one pointer
+    // load, but a non-character component is lowered to the address of its
+    // slot, which holds the data address, so that slot is loaded as well.
+    // A character component stores its string descriptor inline, so its
+    // address is already what the copy expects.
+    llvm::Value* visit_allocatable_or_pointer_source(ASR::expr_t* source) {
+        visit_expr_load_wrapper(source, 1);
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*source)
+                && LLVM::is_llvm_pointer(*ASRUtils::expr_type(source))) {
+            llvm::Type* source_llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                source, ASRUtils::expr_type(source), module.get());
+            tmp = llvm_utils->CreateLoad2(source_llvm_type, tmp);
+        }
+        return tmp;
+    }
+
     template <typename T>
     void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc, ASR::expr_t* m_source = nullptr) {
         llvm::Value* stat_target = nullptr;
@@ -2822,13 +2839,11 @@ public:
                         continue;
                     }
 
-                    if (m_source && !m_source_is_class && (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source)))) {
-                        int64_t saved_ptr_loads = ptr_loads;
-                        ptr_loads = 1;
-                        this->visit_expr(*m_source);
-                        llvm::Value* source_ptr = tmp;
-                        ptr_loads = saved_ptr_loads;
-                        tmp = nullptr;
+                    bool source_is_allocatable_or_pointer = m_source
+                        && (ASRUtils::is_allocatable(m_source)
+                            || ASRUtils::is_pointer(ASRUtils::expr_type(m_source)));
+                    if (m_source && !m_source_is_class && source_is_allocatable_or_pointer) {
+                        llvm::Value* source_ptr = visit_allocatable_or_pointer_source(m_source);
 
                         llvm::Value* is_source_not_allocated = builder->CreateICmpEQ(
                             builder->CreatePtrToInt(source_ptr, llvm::Type::getInt64Ty(context)),
@@ -2860,14 +2875,11 @@ public:
                             x_arr,
                             curr_arg_m_a_type);
                         if (m_source && !m_source_is_class && !curr_arg.m_type) {
-                            int64_t ptr_loads_copy = ptr_loads;
-                            if (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source))) {
-                                ptr_loads = 1;
+                            if (source_is_allocatable_or_pointer) {
+                                tmp = visit_allocatable_or_pointer_source(m_source);
                             } else {
-                                ptr_loads = 0;
+                                this->visit_expr_load_wrapper(m_source, 0);
                             }
-                            this->visit_expr(*m_source);
-                            ptr_loads = ptr_loads_copy;
 
                             llvm_utils->deepcopy(m_source, tmp, x_arr, ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get(),
                                 false, llvm::ConstantInt::getFalse(context));
@@ -3030,9 +3042,12 @@ public:
                         }
                         if (m_source && !m_source_is_class && !curr_arg.m_type) {
                             llvm::Value* src = nullptr; {
-                                const auto load = (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source))) && !ASRUtils::is_string_only(ASRUtils::expr_type(m_source)) ? 1 : 0;
-                                this->visit_expr_load_wrapper(m_source, load);
-                                src = tmp;
+                                if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_source))) {
+                                    src = visit_allocatable_or_pointer_source(m_source);
+                                } else {
+                                    this->visit_expr_load_wrapper(m_source, 0);
+                                    src = tmp;
+                                }
                                 tmp = nullptr;
                             }
                             llvm::Value* dest = x_arr;
@@ -5434,6 +5449,14 @@ public:
         llvm::Value* array = tmp;
         this->visit_expr(*x.m_shape);
         llvm::Value* shape = tmp;
+        llvm::Value* result = nullptr;
+        if (x.m_result) {
+            this->visit_expr(*x.m_result);
+            llvm::Type* result_type = llvm_utils->get_type_from_ttype_t_util(
+                x.m_result, ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(x.m_result)), module.get());
+            result = llvm_utils->CreateLoad2(result_type->getPointerTo(), tmp);
+        }
         ptr_loads = ptr_loads_copy;
         ASR::ttype_t* x_m_array_type = ASRUtils::expr_type(x.m_array);
         ASR::array_physical_typeType array_physical_type = ASRUtils::extract_physical_type(x_m_array_type);
@@ -5466,7 +5489,7 @@ public:
                 }
                 tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get(),
                     const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
-                    result_desc_type, order, x.m_order);
+                    result_desc_type, order, x.m_order, result);
                 // If the result type is PointerArray, extract the data pointer
                 // from the descriptor, since the assignment expects a raw pointer.
                 ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
@@ -5491,8 +5514,19 @@ public:
                 uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
                 // Allocate flat buffer for target_size elements.
                 llvm::ArrayType* flat_target_type = llvm::ArrayType::get(llvm_data_type, target_size);
-                llvm::Value* target = llvm_utils->CreateAlloca(
-                    flat_target_type, nullptr, "fixed_size_reshaped_array");
+                llvm::Value* target;
+                if (result) {
+                    llvm::Type* result_type = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_result, ASRUtils::type_get_past_allocatable_pointer(
+                            ASRUtils::expr_type(x.m_result)), module.get());
+                    llvm::Value* data = llvm_utils->CreateLoad2(
+                        llvm_data_type->getPointerTo(),
+                        arr_descr->get_pointer_to_data(result_type, result));
+                    target = builder->CreateBitCast(data, flat_target_type->getPointerTo());
+                } else {
+                    target = llvm_utils->CreateAlloca(
+                        flat_target_type, nullptr, "fixed_size_reshaped_array");
+                }
                 llvm::Value* target_ = llvm_utils->create_gep2(flat_target_type, target, 0);
 
                 bool is_struct_type = ASR::is_a<ASR::StructType_t>(
@@ -5694,7 +5728,8 @@ public:
             case ASR::PointerArray: {
                 ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
                     ASRUtils::expr_type(const_cast<ASR::expr_t*>(&(x.base))));
-                if ((result_ptype == ASR::array_physical_typeType::DescriptorArray ||
+                if ((result != nullptr ||
+                     result_ptype == ASR::array_physical_typeType::DescriptorArray ||
                      x.m_order != nullptr) &&
                     !ASRUtils::is_character(*x_m_array_type)) {
                     ASR::ttype_t* desc_input_type = ASRUtils::duplicate_type(al, x_m_array_type,
@@ -5727,7 +5762,7 @@ public:
                     tmp = arr_descr->reshape(array_type, array, llvm_data_type,
                         shape_type, shape, asr_shape_type, module.get(),
                         const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
-                        result_desc_type, order, x.m_order);
+                        result_desc_type, order, x.m_order, result);
                     // If the result type is not a descriptor, extract the data
                     // pointer from the descriptor, since the consumer expects
                     // a raw pointer.
@@ -23784,7 +23819,7 @@ public:
         llvm::Value *opened_actual = nullptr;
         if (x.m_opened) {
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_opened));
             this->visit_expr_wrapper(x.m_opened, true);
             opened_actual = tmp;
             ptr_loads = ptr_loads_copy;
@@ -23792,25 +23827,14 @@ public:
         opened_val = llvm_utils->CreateAlloca(*builder,
                         llvm::Type::getInt1Ty(context));
 
-        llvm::Value *size_orig_ptr = nullptr;
-        int size_kind = 4;
         if (x.m_size) {
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_size));
             this->visit_expr_wrapper(x.m_size, false);
             ptr_loads = ptr_loads_copy;
-            size_kind = ASRUtils::extract_kind_from_ttype_t(
-                ASRUtils::expr_type(x.m_size));
-            if (size_kind == 4) {
-                size_val = tmp;
-            } else {
-                size_orig_ptr = tmp;
-                size_val = llvm_utils->CreateAlloca(*builder,
-                                llvm::Type::getInt32Ty(context));
-            }
+            size_val = tmp;
         } else {
-            size_val = llvm_utils->CreateAlloca(*builder,
-                            llvm::Type::getInt32Ty(context));
+            size_val = llvm::Constant::getNullValue(llvm_utils->i64->getPointerTo());
         }
 
         llvm::Value *pos_orig_ptr = nullptr;
@@ -24285,7 +24309,7 @@ public:
                     llvm_utils->i1->getPointerTo(),
                     llvm_utils->i32,
                     llvm_utils->i1->getPointerTo(),
-                    llvm_utils->i32->getPointerTo(),
+                    llvm_utils->i64->getPointerTo(), // size
                     llvm_utils->i32->getPointerTo(),
                     character_type, llvm_utils->i64, // write_data, write_len
                     character_type, llvm_utils->i64, // read_data, read_len
@@ -24365,13 +24389,6 @@ public:
             int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_named));
             llvm::Value *converted = builder->CreateZExt(loaded, llvm_utils->getIntType(kind));
             builder->CreateStore(converted, named_actual);
-        }
-        if (size_orig_ptr) {
-            llvm::Value *loaded = builder->CreateLoad(
-                llvm::Type::getInt32Ty(context), size_val);
-            llvm::Value *converted = builder->CreateSExtOrTrunc(loaded,
-                llvm_utils->getIntType(size_kind));
-            builder->CreateStore(converted, size_orig_ptr);
         }
         if (pos_orig_ptr) {
             llvm::Value *loaded = builder->CreateLoad(

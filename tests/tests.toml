@@ -987,6 +987,11 @@ fortran = true
 pass = "array_struct_temporary"
 
 [[test]]
+filename = "../integration_tests/pointer_intent_in_04.f90"
+fortran = true
+pass = "array_struct_temporary"
+
+[[test]]
 filename = "../integration_tests/external_string_arg_02.f90"
 asr = true
 llvm = true
@@ -1774,6 +1779,14 @@ run = true
 
 [[test]]
 filename = "errors/allocate_03.f90"
+run = true
+
+[[test]]
+filename = "errors/allocate_04.f90"
+run = true
+
+[[test]]
+filename = "errors/allocate_05.f90"
 run = true
 
 [[test]]
@@ -5250,6 +5263,30 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_526.f90"
 gpu_cuda_kernel = true
 
+# The kernel numbers the 2**31 + 1 iterations in integer(8).
+[[test]]
+filename = "../integration_tests/gpu_metal_565.f90"
+gpu_cuda_kernel = true
+
+# The same nest with literal bounds: the kernel's iteration count is a product
+# of integer(8) constants, which must be emitted as 64-bit values.
+[[test]]
+filename = "../integration_tests/gpu_metal_566.f90"
+gpu_cuda_kernel = true
+
+# One dimension has more than huge(0) iterations: its extent and indices are
+# computed in integer(8). Compile-only: a run executes more than 2**32
+# iterations, and GFortran counts them in integer(4) and runs none.
+[[test]]
+filename = "gpu_cuda_kernel_wide_extent.f90"
+gpu_cuda_kernel = true
+
+# integer(8) loop indices: the kernel widens the device's 32-bit thread and
+# block built-ins before it numbers the iterations, flat and in tiles.
+[[test]]
+filename = "../integration_tests/gpu_metal_599.f90"
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_19.f90"
 gpu_cuda_kernel = true
@@ -7421,3 +7458,19 @@ semantics_only_cc = true
 [[test]]
 filename = "../integration_tests/do_variable_after_loop_01.f90"
 semantics_only_cc = true
+
+# With --fast, a procedure that an internal procedure is passed to is copied
+# into the host, and the recursive call in the copy calls the copy.
+[[test]]
+filename = "../integration_tests/procedure_argument_specialization_03.f90"
+fortran = true
+pass = "specialize_procedure_arguments"
+options = "--fast"
+
+# With --fast, the copy in the recursive host calls the internal procedure
+# directly, so no thunk of it is needed.
+[[test]]
+filename = "../integration_tests/procedure_argument_specialization_02.f90"
+fortran = true
+pass = "specialize_procedure_arguments"
+options = "--fast"
