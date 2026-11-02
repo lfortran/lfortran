@@ -294,6 +294,15 @@ shell = "==0.3.0"
 
 [feature.wasm-build.target.unix.dependencies]
 bison = "==3.4"
+# "Build LFortran to WASM" links lfortran.js with Makefiles (see that job).
+make = "==4.4.1"
+
+# wasm-build0.sh builds a native lfortran (without LLVM) for the runtime .mod
+# files. The plain gcc/gxx packages add no activation flags, which em++ would
+# otherwise inherit; macOS uses Xcode's Clang.
+[feature.wasm-build.target.linux-64.dependencies]
+gcc = "==15.3.0"
+gxx = "==15.3.0"
 
 [feature.wasm-host]
 channels = [
@@ -321,20 +330,23 @@ jupyterlite-xeus = "==5.1.0"
 [feature.wasm-build.tasks.wasm-host-env]
 cmd = "pixi install -e wasm-host --platform emscripten-wasm32"
 
+# The wasm-build tasks name their environment in depends-on: `pixi run -e lite
+# lab-build` would otherwise look their dependencies up in the lite environment.
+
 # Build the runtime .mod files with a native lfortran and install them into the
 # wasm-host environment. Only needed again after changes under src/runtime/.
 # It rebuilds a native lfortran from scratch, so it is cached on its inputs.
 [feature.wasm-build.tasks.wasm-mods]
 cmd = "./wasm-build0.sh"
 env = { PREFIX = "$PIXI_PROJECT_ROOT/.pixi/envs/wasm-host" }
-depends-on = ["wasm-host-env"]
+depends-on = [{ task = "wasm-host-env", environment = "wasm-build" }]
 inputs = ["src/runtime/**", "wasm-build0.sh", "build0.sh", "grammar/**"]
 
 # Cross-compile LFortran and the xlfortran kernel to WebAssembly.
 [feature.wasm-build.tasks.wasm-kernel]
 cmd = "./wasm-build1.sh"
 env = { PREFIX = "$PIXI_PROJECT_ROOT/.pixi/envs/wasm-host" }
-depends-on = ["wasm-mods"]
+depends-on = [{ task = "wasm-mods", environment = "wasm-build" }]
 inputs = [
     "src/**/*.cpp",
     "src/**/*.h",
@@ -356,7 +368,7 @@ outputs = [
 [feature.wasm-build.tasks.wasm-test]
 cmd = "node test_lfortran.js"
 cwd = "build-wasm/src/lfortran/tests"
-depends-on = ["wasm-kernel"]
+depends-on = [{ task = "wasm-kernel", environment = "wasm-build" }]
 
 # Assemble the JupyterLite site into dist/, embedding the kernel and the demo
 # notebooks. default_channels has to be given explicitly: jupyterlite-xeus
