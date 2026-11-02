@@ -18,7 +18,7 @@ SubroutineCall(symbol name, symbol? original_name, call_arg* args,
 | `name` | the subroutine actually called, after generic resolution. |
 | `original_name` | the symbol as written, when it differs: a [GenericProcedure](../symbol_nodes/GenericProcedure.md) or an [ExternalSymbol](../symbol_nodes/ExternalSymbol.md). `nil` when the call named the procedure directly. |
 | `args` | the actual arguments, each a [call_arg](../helper_nodes/call_arg.md). An absent optional argument is a `call_arg` with a `nil` value. |
-| `dt` | for a call through a type-bound procedure, the object it was reached through; `nil` otherwise. |
+| `dt` | for a call through a type-bound procedure, the object it was reached through; for a call through a procedure-pointer component with an implicit interface, a [FunctionPointerCast](../expression_nodes/FunctionPointerCast.md) of the component whose `to` is `name`, the call-site interface; `nil` otherwise. |
 | `strict_bounds_checking` | `true` when the actual and dummy shapes must be checked to agree at run time. |
 
 ### Return values
