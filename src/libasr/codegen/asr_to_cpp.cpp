@@ -9,6 +9,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/nested_vars.h>
 
 
 namespace LCompilers {
@@ -233,15 +234,57 @@ public:
         return value;
     }
 
+    // The C++ type of a Var of a variable of type `t`: the descriptor
+    // pointer of an array, and otherwise the type of its value.
+    std::string designator_type(ASR::ttype_t* t, ASR::symbol_t* type_declaration,
+            const Location& loc) {
+        ASR::ttype_t* elem = ASRUtils::type_get_past_array(t);
+        if (ASRUtils::is_allocatable_or_pointer(t) || !(ASRUtils::is_integer(*elem) ||
+                ASRUtils::is_real(*elem) || ASRUtils::is_complex(*elem) ||
+                ASRUtils::is_logical(*elem) || ASRUtils::is_character(*elem)) ||
+                (ASRUtils::is_array(t) && (ASRUtils::is_logical(*elem) ||
+                    ASRUtils::is_character(*elem)))) {
+            throw CodeGenError("a host-associated variable of type '"
+                + ASRUtils::type_to_str_python_symbol(t, type_declaration)
+                + "' is not supported by the cpp backend yet", loc);
+        }
+        if (ASRUtils::is_logical(*elem)) {
+            return "bool";
+        }
+        if (ASRUtils::is_character(*elem)) {
+            return "std::string";
+        }
+        std::string type_name = CUtils::get_c_type_from_ttype_t(elem, false);
+        if (!ASRUtils::is_array(t)) {
+            return type_name;
+        }
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(t, m_dims);
+        size_t size;
+        std::string dims = convert_dims(n_dims, m_dims, size);
+        // As convert_variable_decl encodes the element type.
+        std::string bits = std::to_string(ASRUtils::extract_kind_from_ttype_t(elem) * 8);
+        std::string encoded_type_name = (ASRUtils::is_integer(*elem) ? "i"
+            : ASRUtils::is_real(*elem) ? "f" : "c") + bits;
+        return get_array_type(type_name, encoded_type_name, dims, n_dims);
+    }
+
     std::string convert_variable_decl(const ASR::Variable_t &v, DeclarationOptions* decl_options=nullptr)
     {
         if (v.m_storage == ASR::storage_typeType::Threadprivate) {
             throw CodeGenError("threadprivate variables are not supported by the cpp backend",
                 v.base.base.loc);
         }
-        if (ASRUtils::is_host_associated(v) || ASRUtils::is_reference(v.m_type)) {
-            throw CodeGenError("host association is not supported by the cpp backend yet",
-                v.base.base.loc);
+        LCOMPILERS_ASSERT(!ASRUtils::is_host_associated(v));
+        if (ASRUtils::is_reference(v.m_type)) {
+            // A member of Reference type holds the address of the variable
+            // that it designates (see visit_StructInstanceMember).
+            return designator_type(ASR::down_cast<ASR::Reference_t>(v.m_type)->m_type,
+                v.m_type_declaration, v.base.base.loc) + " *" + std::string(v.m_name);
+        }
+        if (ASR::is_a<ASR::StructType_t>(*v.m_type) &&
+                ASRUtils::is_frame_type(v.m_type_declaration)) {
+            return convert_frame_decl(v);
         }
         bool use_static;
         bool use_templates_for_arrays;
@@ -515,7 +558,45 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         current_scope = current_scope_copy;
     }
 
+    // Declares at file scope the frame types (see nested_vars) that `scope`
+    // declares.
+    void declare_frame_types(SymbolTable &scope) {
+        for (auto &item : scope.get_scope()) {
+            if (!ASRUtils::is_frame_type(item.second)) {
+                continue;
+            }
+            ASR::Struct_t* frame_type = ASR::down_cast<ASR::Struct_t>(item.second);
+            std::string body;
+            CPPDeclarationOptions decl_options;
+            decl_options.use_static = false;
+            decl_options.use_templates_for_arrays = false;
+            for (size_t i = 0; i < frame_type->n_members; i++) {
+                ASR::symbol_t* member = frame_type->m_symtab->get_symbol(
+                    frame_type->m_members[i]);
+                body += "    " + convert_variable_decl(
+                    *ASR::down_cast<ASR::Variable_t>(member), &decl_options) + ";\n";
+            }
+            array_types_decls += "\nstruct " + std::string(frame_type->m_name)
+                + " {\n" + body + "};\n";
+        }
+    }
+
+    // The declaration of the frame `v` (see nested_vars), which a Var of it
+    // designates by its address, as in the C backend.
+    std::string convert_frame_decl(const ASR::Variable_t &v) {
+        std::string type_name = "struct " + std::string(ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(v.m_type_declaration)));
+        if (ASRUtils::is_arg_dummy(v.m_intent)) {
+            return type_name + "* " + std::string(v.m_name);
+        }
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string value_name = std::string(v.m_name) + "_value";
+        return type_name + " " + value_name + ";\n" + indent + type_name + "* "
+            + std::string(v.m_name) + " = &" + value_name;
+    }
+
     void visit_Program(const ASR::Program_t &x) {
+        declare_frame_types(*x.m_symtab);
         // Generate code for nested subroutines and functions first:
         std::string contains;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -821,6 +902,9 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
 {
     co.po.always_run = true;
     pass_unused_functions(al, asr, co.po);
+    // Internal procedures reach the variables of their host through a
+    // frame, which the visitor lowers.
+    pass_nested_vars(al, asr, co.po);
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);
