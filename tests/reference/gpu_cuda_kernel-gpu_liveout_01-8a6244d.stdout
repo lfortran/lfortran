@@ -17,7 +17,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int i__dc;
     int k;
     int last;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)__loop_start_0))) ? (((((long)__loop_end_0) - ((long)__loop_start_0)) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)__loop_start_0))) ? (((((long)__loop_end_0) - ((long)__loop_start_0)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
@@ -60,11 +60,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int i__dc;
     int k;
     int last;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= 100)) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)100))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i__dc = ((int)(__flat_idx + 1));
+    i__dc = ((int)(__flat_idx + ((long)1)));
     k = __gpu_buf_k1[((int)(1) - (1))];
     last = __gpu_buf_last1[((int)(1) - (1))];
     k = (i__dc * 10);

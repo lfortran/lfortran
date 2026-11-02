@@ -23,11 +23,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float __gpu_before;
     int i__dc;
     float x;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i__dc = ((int)(__flat_idx + 1));
+    i__dc = ((int)(__flat_idx + ((long)1)));
     x = __gpu_buf_x[((int)(1) - (1))];
     a[((int)(i__dc) - (__lb_a_0))] = i__dc;
     __gpu_before = x;

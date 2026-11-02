@@ -27,11 +27,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __gpu_private_z_k;
     int __gpu_private_z_last;
     int i__dc;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i__dc = ((int)(__flat_idx + 1));
+    i__dc = ((int)(__flat_idx + ((long)1)));
     __gpu_private_z_k = z.k;
     __gpu_private_z_last = z.last;
     __gpu_private_z_k = (3 * i__dc);
@@ -66,11 +66,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __gpu_private_self_k;
     int __gpu_private_self_last;
     int i__dc;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= 1)) ? (((((long)__loop_end_0) - 1) + 1)) : (0)))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
-    i__dc = ((int)(__flat_idx + 1));
+    i__dc = ((int)(__flat_idx + ((long)1)));
     __gpu_private_self_k = self.k;
     __gpu_private_self_last = self.last;
     __gpu_private_self_k = i__dc;
