@@ -4762,6 +4762,20 @@ public:
         }
     }
 
+    // The dynamic type that MOLD= gives a polymorphic `target`, when the
+    // mold is of a derived type known at compile time, as a type-spec does.
+    // The dynamic type of a polymorphic mold is known only at run time.
+    ASR::symbol_t* get_mold_subclass(ASR::expr_t* target, ASR::expr_t* mold) {
+        ASR::ttype_t* mold_elem_type = ASRUtils::extract_type(ASRUtils::expr_type(mold));
+        if (!ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(target)))
+                || !ASR::is_a<ASR::StructType_t>(*mold_elem_type)
+                || ASRUtils::is_class_type(mold_elem_type)) {
+            return nullptr;
+        }
+        return ASRUtils::import_struct_sym_as_external(al, mold->base.loc,
+            mold, current_scope);
+    }
+
     void visit_Allocate(const AST::Allocate_t& x) {
         Vec<ASR::alloc_arg_t> alloc_args_vec;
         alloc_args_vec.reserve(al, x.n_args);
@@ -5106,7 +5120,7 @@ public:
                                     new_arg.m_a = alloc_args_vec[i].m_a;
                                     new_arg.m_len_expr = len_expr;
                                     new_arg.m_type = mold_elem_type;
-                                    new_arg.m_sym_subclass = nullptr;
+                                    new_arg.m_sym_subclass = get_mold_subclass(alloc_args_vec[i].m_a, mold);
                                     new_arg.m_dims = mold_array_type->m_dims;
                                     new_arg.n_dims = mold_array_type->n_dims;
                                     new_arg.m_codims = nullptr;
@@ -5150,7 +5164,7 @@ public:
                                     new_arg.m_a = alloc_args_vec[i].m_a;
                                     new_arg.m_len_expr = len_expr;
                                     new_arg.m_type = mold_elem_type;
-                                    new_arg.m_sym_subclass = nullptr;
+                                    new_arg.m_sym_subclass = get_mold_subclass(alloc_args_vec[i].m_a, mold);
                                     new_arg.m_dims = mold_dims_vec.p;
                                     new_arg.n_dims = mold_dims_vec.size();
                                     new_arg.m_codims = nullptr;
@@ -5272,6 +5286,7 @@ public:
                         ASR::alloc_arg_t new_arg = alloc_args_vec[i];
                         new_arg.m_type = ASRUtils::extract_type(
                             ASRUtils::expr_type(mold));
+                        new_arg.m_sym_subclass = get_mold_subclass(alloc_args_vec[i].m_a, mold);
                         new_alloc_args_vec.push_back(al, new_arg);
                     } else {
                         new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
