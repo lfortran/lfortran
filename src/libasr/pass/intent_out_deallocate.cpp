@@ -774,25 +774,57 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         emit_array_loops(arr_expr, idx_vars, innermost_body, loc, out_stmts);
     }
 
-    // Helper: Wrap statement in optional presence check if needed
-    ASR::stmt_t* wrap_optional_check(Location loc, ASR::expr_t* var_expr,
-                                      ASR::presenceType presence, ASR::stmt_t* stmt_to_wrap) {
-        if (presence != ASR::presenceType::Optional) {
+    // The condition under which the dummy `x.m_args[i]` is present, or
+    // nullptr when it is always present.  An absent optional dummy is
+    // neither finalized, deallocated nor default-initialized (F2018 8.5.10,
+    // 7.5.6.3): the caller passes a stand-in for it, which can be smaller
+    // than the dummy.  This pass runs after
+    // transform_optional_argument_functions, which makes an optional dummy
+    // required and passes its presence as the logical argument right after
+    // it; a procedure that pass leaves alone (bind(C)) still has optional
+    // dummies.
+    ASR::expr_t* presence_condition(const ASR::Function_t &x, size_t i,
+            const ASR::Variable_t &arg_var, const Location &loc) {
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(
+            ASR::make_Logical_t(al, loc, 4));
+        if (arg_var.m_presence == ASR::presenceType::Optional) {
+            Vec<ASR::expr_t*> present_args;
+            present_args.reserve(al, 1);
+            present_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al,
+                loc, ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v)));
+            return ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+                al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present),
+                present_args.p, present_args.n, 0, logical_type, nullptr));
+        }
+        if (i + 1 >= x.n_args || !ASR::is_a<ASR::Var_t>(*x.m_args[i + 1])) {
+            return nullptr;
+        }
+        ASR::symbol_t* flag_sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(x.m_args[i + 1])->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*flag_sym)) return nullptr;
+        ASR::Variable_t* flag = ASR::down_cast<ASR::Variable_t>(flag_sym);
+        // unique_symbols, which runs before this pass, can add a prefix to
+        // the name of the flag when it mangles the names of all symbols.
+        if (flag->m_intent != ASR::intentType::In ||
+                !ASR::is_a<ASR::Logical_t>(*flag->m_type) ||
+                std::string(flag->m_name).find("__libasr_is_present_")
+                    == std::string::npos) {
+            return nullptr;
+        }
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            ASR::down_cast<ASR::Var_t>(x.m_args[i + 1])->m_v));
+    }
+
+    // Wrap `stmt_to_wrap` in a check that the dummy `x.m_args[i]` is
+    // present, unless it is always present.
+    ASR::stmt_t* wrap_optional_check(const ASR::Function_t &x, size_t i,
+            const ASR::Variable_t &arg_var, const Location &loc,
+            ASR::stmt_t* stmt_to_wrap) {
+        ASR::expr_t* is_present = presence_condition(x, i, arg_var, loc);
+        if (is_present == nullptr) {
             return stmt_to_wrap;
         }
-
-        // Create present(var_expr) check
-        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));  // 4 = default logical kind
-        Vec<ASR::expr_t*> present_args;
-        present_args.reserve(al, 1);
-        present_args.push_back(al, var_expr);
-
-        ASR::expr_t* is_present = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
-            al, loc,
-            static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present),
-            present_args.p, present_args.n, 0, logical_type, nullptr));
-
-        // Wrap stmt_to_wrap in: if (present(var_expr)) then stmt_to_wrap end if
         Vec<ASR::stmt_t*> present_body;
         present_body.reserve(al, 1);
         present_body.push_back(al, stmt_to_wrap);
@@ -947,7 +979,7 @@ public:
                     al, loc, nullptr, is_allocated, if_body.p, if_body.n, nullptr, 0));
 
                 // Wrap in optional presence check if needed
-                ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc, var_expr, arg_var->m_presence, if_stmt);
+                ASR::stmt_t* wrapped_stmt = wrap_optional_check(xx, i, *arg_var, loc, if_stmt);
                 dealloc_stmts.push_back(al, wrapped_stmt);
             } else if (ASR::is_a<ASR::StructType_t>(*arg_var->m_type)) {
                 // Handle non-allocatable StructType arguments with allocatable components
@@ -986,8 +1018,8 @@ public:
                         xx.m_symtab, loc, entry_stmts);
                 }
                 for (size_t k = 0; k < entry_stmts.size(); k++) {
-                    ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
-                        var_expr, arg_var->m_presence, entry_stmts[k]);
+                    ASR::stmt_t* wrapped_stmt = wrap_optional_check(xx, i,
+                        *arg_var, loc, entry_stmts[k]);
                     dealloc_stmts.push_back(al, wrapped_stmt);
                 }
 
@@ -996,8 +1028,8 @@ public:
                 emit_struct_cleanup_stmts(var_expr, struct_type, xx.m_symtab,
                     loc, logical_type, cleanup);
                 for (size_t k = 0; k < cleanup.size(); k++) {
-                    ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
-                        var_expr, arg_var->m_presence, cleanup[k]);
+                    ASR::stmt_t* wrapped_stmt = wrap_optional_check(xx, i,
+                        *arg_var, loc, cleanup[k]);
                     dealloc_stmts.push_back(al, wrapped_stmt);
                 }
             } else if (is_array_of_struct) {
@@ -1052,7 +1084,7 @@ public:
                     }
 
                     ASR::stmt_t* wrapped_stmt = wrap_optional_check(
-                        loc, var_expr_full, arg_var->m_presence, wrapper_block);
+                        xx, i, *arg_var, loc, wrapper_block);
                     dealloc_stmts.push_back(al, wrapped_stmt);
                 }
             }
