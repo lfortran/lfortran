@@ -464,6 +464,8 @@ RUN(NAME stack_array_function_temporaries LABELS gfortran llvm
     EXTRA_ARGS --stack-arrays GFORTRAN_ARGS -fstack-arrays)
 RUN(NAME stack_array_polymorphic_results LABELS gfortran llvm
     EXTRA_ARGS --stack-arrays GFORTRAN_ARGS -fstack-arrays)
+RUN(NAME stack_array_automatic_elements LABELS gfortran llvm
+    EXTRA_ARGS --stack-arrays GFORTRAN_ARGS -fstack-arrays)
 # CMake links the shared library through the compiler driver with `--shared`
 # for LFortran and `-shared` for GFortran (see SHARED_LIBRARY_FILES above).
 # On macOS CMake uses `-dynamiclib` instead, and Windows needs an import library.
