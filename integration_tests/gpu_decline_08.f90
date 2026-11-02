@@ -3,11 +3,11 @@
 ! type of the same width for.
 program gpu_decline_08
     implicit none
-    integer(2) :: k
+    logical(8) :: k
     integer :: a(4), i
-    k = 3_2
+    k = .true._8
     do concurrent (i = 1:4)
-        a(i) = i * int(k)
+        a(i) = i * merge(3, 0, k)
     end do
     do i = 1, 4
         if (a(i) /= 3*i) error stop "bad a"

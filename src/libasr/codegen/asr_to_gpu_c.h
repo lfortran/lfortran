@@ -752,10 +752,36 @@ public:
             ") on the gpu */";
     }
 
+    // C and MSL promote integer(1)/(2) operands of arithmetic to int, so
+    // such an expression has to spell its own device type to keep the
+    // Fortran kind ASR gives it (overloaded calls such as min need it).
+    static bool is_narrow_integer(ASR::ttype_t *type) {
+        return ASRUtils::is_integer(*type) &&
+            ASRUtils::extract_kind_from_ttype_t(type) < 4;
+    }
+
+    // min/max of two arguments, each spelled with the result's device type
+    // when that is narrower than int.
+    void emit_min_max(const char *name, ASR::ttype_t *type,
+            ASR::expr_t *a, ASR::expr_t *b) {
+        std::string open = "", close = "";
+        if (type && is_narrow_integer(type)) {
+            open = "((" + gpu_type(type) + ")(";
+            close = "))";
+        }
+        src << name << "(" << open;
+        if (a) visit_expr(a);
+        src << close << ", " << open;
+        if (b) visit_expr(b);
+        src << close << ")";
+    }
+
     std::string gpu_type(ASR::ttype_t *type) {
         switch (type->type) {
             case ASR::ttypeType::Integer: {
                 int kind = checked_integer_cast<int>(ASR::down_cast<ASR::Integer_t>(type)->m_kind);
+                if (kind == 1) return "int8_t";
+                if (kind == 2) return "int16_t";
                 if (kind == 4) return "int";
                 if (kind == 8) return "long";
                 // gpu_scalar_width_supported keeps the launch from handing
@@ -5237,9 +5263,10 @@ public:
                 ASR::IntegerConstant_t *c = ASR::down_cast<ASR::IntegerConstant_t>(expr);
                 // A bare literal is an int in C, so arithmetic between two
                 // integer(8) constants (e.g. a flattened iteration count with
-                // literal bounds) would be done, and overflow, in 32 bits.
-                // Give it the device type of its kind instead.
-                if (ASRUtils::extract_kind_from_ttype_t(c->m_type) == 8) {
+                // literal bounds) would be done, and overflow, in 32 bits,
+                // and an integer(1)/(2) one would not match its kind in an
+                // overloaded call. Give it the device type of its kind.
+                if (ASRUtils::extract_kind_from_ttype_t(c->m_type) != 4) {
                     src << "((" << gpu_type(c->m_type) << ")" << c->m_n << ")";
                 } else {
                     src << c->m_n;
@@ -5259,6 +5286,8 @@ public:
             }
             case ASR::exprType::IntegerBinOp: {
                 ASR::IntegerBinOp_t *op = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+                bool narrow = is_narrow_integer(op->m_type);
+                if (narrow) src << "((" << gpu_type(op->m_type) << ")";
                 if (op->m_op == ASR::binopType::Pow) {
                     src << "(int)pow((float)(";
                     visit_expr(op->m_left);
@@ -5272,6 +5301,7 @@ public:
                     visit_expr(op->m_right);
                     src << ")";
                 }
+                if (narrow) src << ")";
                 break;
             }
             case ASR::exprType::RealBinOp: {
@@ -5311,9 +5341,12 @@ public:
             }
             case ASR::exprType::IntegerUnaryMinus: {
                 ASR::IntegerUnaryMinus_t *u = ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr);
+                bool narrow = is_narrow_integer(u->m_type);
+                if (narrow) src << "((" << gpu_type(u->m_type) << ")";
                 src << "(-(";
                 visit_expr(u->m_arg);
                 src << "))";
+                if (narrow) src << ")";
                 break;
             }
             case ASR::exprType::RealUnaryMinus: {
@@ -5546,22 +5579,14 @@ public:
                     }
                 } else if (fn_name.find("_lcompilers_min_") == 0 ||
                            fn_name.find("_lcompilers_min0_") == 0) {
-                    src << "min(";
-                    if (fc->n_args > 0 && fc->m_args[0].m_value)
-                        visit_expr(fc->m_args[0].m_value);
-                    src << ", ";
-                    if (fc->n_args > 1 && fc->m_args[1].m_value)
-                        visit_expr(fc->m_args[1].m_value);
-                    src << ")";
+                    emit_min_max("min", fc->m_type,
+                        fc->n_args > 0 ? fc->m_args[0].m_value : nullptr,
+                        fc->n_args > 1 ? fc->m_args[1].m_value : nullptr);
                 } else if (fn_name.find("_lcompilers_max_") == 0 ||
                            fn_name.find("_lcompilers_max0_") == 0) {
-                    src << "max(";
-                    if (fc->n_args > 0 && fc->m_args[0].m_value)
-                        visit_expr(fc->m_args[0].m_value);
-                    src << ", ";
-                    if (fc->n_args > 1 && fc->m_args[1].m_value)
-                        visit_expr(fc->m_args[1].m_value);
-                    src << ")";
+                    emit_min_max("max", fc->m_type,
+                        fc->n_args > 0 ? fc->m_args[0].m_value : nullptr,
+                        fc->n_args > 1 ? fc->m_args[1].m_value : nullptr);
                 } else if (fn_name.find("_lcompilers_merge_") == 0) {
                     // merge(tsource, fsource, mask) -> (mask ? tsource : fsource)
                     src << "(";
@@ -6226,17 +6251,9 @@ public:
                 src << ")";
             }
         } else if (id == static_cast<int64_t>(IEF::Min)) {
-            src << "min(";
-            visit_expr(f->m_args[0]);
-            src << ", ";
-            visit_expr(f->m_args[1]);
-            src << ")";
+            emit_min_max("min", f->m_type, f->m_args[0], f->m_args[1]);
         } else if (id == static_cast<int64_t>(IEF::Max)) {
-            src << "max(";
-            visit_expr(f->m_args[0]);
-            src << ", ";
-            visit_expr(f->m_args[1]);
-            src << ")";
+            emit_min_max("max", f->m_type, f->m_args[0], f->m_args[1]);
         } else if (id == static_cast<int64_t>(IEF::Real)) {
             // Real cast: just emit the argument with a float cast
             src << "((" << gpu_type(f->m_type) << ")(";
