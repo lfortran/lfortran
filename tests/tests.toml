@@ -7404,10 +7404,9 @@ semantics_only_cc = true
 # into the host, and the recursive call in the copy calls the copy.
 [[test]]
 filename = "../integration_tests/procedure_argument_specialization_03.f90"
-asr = true
-pass_with_llvm = true
+fortran = true
 pass = "specialize_procedure_arguments"
-fast = true
+options = "--fast"
 
 # With --fast, the copy in the recursive host calls the internal procedure
 # directly: there are no thunks of it.
