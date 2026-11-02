@@ -177,6 +177,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Test Moved Build and Installation moves the whole checkout. Keep the
+      # Pixi environment, and so Kokkos and the compilers, where it was.
+      - name: Detach the Pixi environment from the checkout
+        shell: bash -e {0}
+        run: |
+          printf 'detached-environments = "%s"\n' "$RUNNER_TEMP/pixi-envs" \
+            > "$RUNNER_TEMP/pixi-config.toml"
+          echo "PIXI_CONFIG_FILE=$RUNNER_TEMP/pixi-config.toml" >> "$GITHUB_ENV"
+
       - uses: prefix-dev/setup-pixi@v0.11.3
         with:
           pixi-version: v0.83.0
