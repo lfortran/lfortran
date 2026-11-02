@@ -6984,6 +6984,8 @@ RUN(NAME gpu_metal_628 LABELS metal cuda EXTRA_ARGS --openmp --gpu-offload-omp-l
 RUN(NAME gpu_metal_629 LABELS llvm metal cuda) # gfortran on CI lacks reduce clause
 RUN(NAME gpu_metal_630 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_631 LABELS gfortran llvm cuda) # metal declines real(8)
+RUN(NAME gpu_metal_640 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_641 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_log_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_nested_block_calls_01 LABELS gfortran llvm metal cuda)
 # Launches that run their kernel in chunks of the iteration space
