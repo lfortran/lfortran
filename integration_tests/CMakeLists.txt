@@ -5084,8 +5084,8 @@ RUN(NAME procedure_62 LABELS gfortran llvm c cpp)
 RUN(NAME procedure_63 LABELS gfortran llvm c cpp)
 RUN(NAME procedure_64 LABELS gfortran llvm)
 RUN(NAME procedure_65 LABELS gfortran llvm)
-RUN(NAME procedure_bounds_01 FAIL NO_FAST LABELS llvm)
-RUN(NAME procedure_bounds_02 FAIL NO_FAST LABELS llvm)
+RUN(NAME procedure_bounds_01 FAIL NO_FAST LABELS llvm) # run-time "Array shape mismatch" through a procedure pointer
+RUN(NAME procedure_bounds_02 FAIL NO_FAST LABELS llvm) # run-time "Array shape mismatch" through a dummy procedure
 RUN(NAME procedure_pointer_abstract_02 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_01 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_02 LABELS gfortran llvm)
@@ -5788,7 +5788,7 @@ RUN(NAME openmp_bindc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_04 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_host_assoc_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
-RUN(NAME openmp_host_assoc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_host_assoc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp) # #16382's part with orphaned barriers is left out until #16619 is fixed
 RUN(NAME openmp_host_assoc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp EXTRA_ARGS --internal-procedure-thunks=16)
 
 RUN(NAME openmp_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
