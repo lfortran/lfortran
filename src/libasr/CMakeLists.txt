@@ -83,7 +83,6 @@ set(SRC
     pass/sign_from_value.cpp
     pass/inline_function_calls.cpp
     pass/scoped_inlining.cpp
-    pass/loop_unroll.cpp
     pass/dead_code_removal.cpp
     pass/instantiate_template.cpp
     pass/update_array_dim_intrinsic_calls.cpp

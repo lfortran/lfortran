@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <set>
 #include <vector>
 
@@ -1194,6 +1195,42 @@ end module
     }
 }
 
+TEST_CASE("LLVM stack automatic arrays allocate their element type") {
+    std::string source = R"(module stack_alloca_m
+implicit none
+contains
+subroutine work(n, x)
+    integer, intent(in) :: n
+    real, intent(out) :: x
+    real :: w(n)
+    integer(8) :: k(n, 2)
+    w = 1
+    k = 2
+    x = sum(w) + real(sum(k))
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"work", "work"}},
+            [&](const std::string &, llvm::Function &fn) {
+                std::map<std::string, std::string> types;
+                for (llvm::Instruction &inst: fn.getEntryBlock()) {
+                    auto *alloca = llvm::dyn_cast<llvm::AllocaInst>(&inst);
+                    if (!alloca) continue;
+                    std::string name = alloca->getName().str();
+                    if (name != "w" && name != "k") continue;
+                    std::string type;
+                    llvm::raw_string_ostream os(type);
+                    alloca->getAllocatedType()->print(os);
+                    types[name] = os.str();
+                }
+                CAPTURE(fast);
+                CHECK(types["w"] == "float");
+                CHECK(types["k"] == "i64");
+            }, true);
+    }
+}
+
 // The dummy arguments, as "procedure:argument ...", whose parameters the LLVM
 // backend marks noalias when it compiles `source`.
 std::string noalias_parameters(const std::string &source, bool fast,
@@ -1415,6 +1452,39 @@ end module
         "mvbits:frompos mvbits:len mvbits:topos ";
     CHECK(noalias_parameters(source, true, procedures) == expected);
     CHECK(noalias_parameters(source, false, procedures).empty());
+}
+
+TEST_CASE("LLVM signed integer arithmetic is nsw under --fast") {
+    std::string source = R"(module integer_nsw_m
+implicit none
+contains
+integer function combine(a, b, c) result(r)
+    integer, intent(in) :: a, b, c
+    r = a*b + c - a
+end function
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"combine", "_combine"}},
+            [&](const std::string &, llvm::Function &fn) {
+                size_t ops = 0, nsw = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        auto *op = llvm::dyn_cast<llvm::BinaryOperator>(&inst);
+                        if (!op || !op->getType()->isIntegerTy(32)) continue;
+                        unsigned opcode = op->getOpcode();
+                        if (opcode != llvm::Instruction::Add &&
+                                opcode != llvm::Instruction::Sub &&
+                                opcode != llvm::Instruction::Mul) continue;
+                        ops++;
+                        if (op->hasNoSignedWrap()) nsw++;
+                    }
+                }
+                CAPTURE(fast);
+                CHECK(ops == 3);
+                CHECK(nsw == (fast ? 3u : 0u));
+            });
+    }
 }
 
 TEST_CASE("LLVM loops are not runtime unrolled under --fast") {

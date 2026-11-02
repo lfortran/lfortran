@@ -6,6 +6,7 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
+#include <algorithm>
 #include <set>
 
 namespace LCompilers {
@@ -243,6 +244,7 @@ public:
             LCOMPILERS_ASSERT(x.m_body[i]);
             visit_stmt(*x.m_body[i]);
         }
+        verify_frames_bound(x.m_symtab, x.m_body, x.n_body);
         current_symtab = parent_symtab;
     }
 
@@ -1290,6 +1292,7 @@ public:
                                    x.m_name, x.base.base.loc);
         verify_elemental_arguments(x);
         verify_argument_memory_spaces(x);
+        verify_frames_bound(x.m_symtab, x.m_body, x.n_body);
         if (check_string_length_arguments) verify_hidden_string_lengths(x);
         if (x.m_gpu) verify_gpu_kernel_layout(x);
 
@@ -2582,6 +2585,11 @@ public:
             }
             BaseWalkVisitor<FrameCallInDeclaration>::visit_FunctionCall(x);
         }
+
+        // The interface of a procedure variable is not evaluated by its
+        // declaration: a bound or length in it is evaluated by a call
+        // through the variable
+        void visit_FunctionType(const FunctionType_t &/*x*/) {}
     };
 
     // See ASRVerifyOptions::nested_vars.
@@ -2607,6 +2615,155 @@ public:
             "internal procedure '" + (calls.found ? std::string(
                 ASRUtils::symbol_name(calls.found)) : std::string()) +
             "', which takes the frame of its host, before the frame is bound");
+    }
+
+    // The frame type of `e` when it designates a frame (see nested_vars):
+    // the frame object or the frame dummy of a procedure, or a frame slot
+    // that points at a frame; nullptr otherwise.
+    static ASR::symbol_t *frame_type_of(ASR::expr_t *e) {
+        ASR::symbol_t *s = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            s = ASR::down_cast<ASR::Var_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            s = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m;
+        }
+        s = s != nullptr ? ASRUtils::symbol_get_past_external(s) : nullptr;
+        ASR::ttype_t *t = ASRUtils::expr_type(e);
+        if (s == nullptr || !ASR::is_a<ASR::Variable_t>(*s) || t == nullptr ||
+                !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_pointer(t))) {
+            return nullptr;
+        }
+        ASR::symbol_t *decl = ASR::down_cast<ASR::Variable_t>(s)->m_type_declaration;
+        return ASRUtils::is_frame_type(decl)
+            ? ASRUtils::symbol_get_past_external(decl) : nullptr;
+    }
+
+    // A procedure that takes the frame of its host (see nested_vars) is
+    // always passed a frame of that type: a call has no other way to give
+    // it the variables of the host.
+    template <typename T>
+    void verify_frame_actuals(const T &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+        if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) {
+            return;
+        }
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+        for (size_t i = 0; i < fn->n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+                continue;
+            }
+            ASR::symbol_t *arg = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*arg)) {
+                continue;
+            }
+            ASR::Variable_t *dummy = ASR::down_cast<ASR::Variable_t>(arg);
+            if (dummy->m_type == nullptr ||
+                    !ASR::is_a<ASR::StructType_t>(*dummy->m_type) ||
+                    !ASRUtils::is_frame_type(dummy->m_type_declaration)) {
+                continue;
+            }
+            ASR::symbol_t *type = ASRUtils::symbol_get_past_external(
+                dummy->m_type_declaration);
+            ASR::expr_t *actual = i < x.n_args ? x.m_args[i].m_value : nullptr;
+            // In an interface, a dummy argument is a FunctionParam, whose
+            // type is all that tells which dummy it is
+            bool frame = actual != nullptr &&
+                (ASR::is_a<ASR::FunctionParam_t>(*actual)
+                    ? ASRUtils::types_equal(ASRUtils::expr_type(actual),
+                        dummy->m_type, nullptr, nullptr, false)
+                    : frame_type_of(actual) == type);
+            if (!frame) {
+                require_id(false, "asr.verify.call.frame_argument",
+                    "the call to '" + std::string(fn->m_name) + "' must "
+                    "pass a frame of type '" +
+                    std::string(ASRUtils::symbol_name(type)) + "' as its "
+                    "argument '" + std::string(dummy->m_name) + "'");
+            }
+        }
+    }
+
+    // The statements that use a frame object, also in the BLOCK constructs
+    // they enter
+    class FrameUse: public BaseWalkVisitor<FrameUse> {
+    public:
+        ASR::symbol_t *frame;
+        bool found = false;
+
+        FrameUse(ASR::symbol_t *frame_): frame(frame_) {}
+
+        void visit_Var(const Var_t &x) {
+            found = found || x.m_v == frame;
+        }
+
+        void visit_BlockCall(const BlockCall_t &x) {
+            if (ASR::is_a<ASR::Block_t>(*x.m_m)) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+                for (size_t i = 0; i < block->n_body; i++) {
+                    visit_stmt(*block->m_body[i]);
+                }
+            }
+        }
+    };
+
+    // The frame object of a host (see nested_vars) is a local object of a
+    // frame type. Its host binds each of its reference members at the start
+    // of its body, before the frame is used: passed to a procedure, read
+    // through a member or pointed at by a frame slot. A member that is not
+    // bound refers to no variable.
+    void verify_frames_bound(SymbolTable *scope, ASR::stmt_t **body,
+            size_t n_body) {
+        for (auto &item: scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (v->m_intent != ASR::intentType::Local ||
+                    ASRUtils::is_host_associated(*v) || v->m_type == nullptr ||
+                    !ASR::is_a<ASR::StructType_t>(*v->m_type) ||
+                    !ASRUtils::is_frame_type(v->m_type_declaration)) {
+                continue;
+            }
+            ASR::Struct_t *type = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(v->m_type_declaration));
+            std::vector<std::string> unbound;
+            for (size_t i = 0; i < type->n_members; i++) {
+                ASR::symbol_t *m = type->m_symtab->get_symbol(type->m_members[i]);
+                if (m != nullptr && ASR::is_a<ASR::Variable_t>(*m) &&
+                        ASRUtils::is_reference(
+                            ASR::down_cast<ASR::Variable_t>(m)->m_type)) {
+                    unbound.push_back(type->m_members[i]);
+                }
+            }
+            for (size_t i = 0; i < n_body && !unbound.empty(); i++) {
+                ASR::stmt_t *stmt = body[i];
+                if (ASR::is_a<ASR::BindReference_t>(*stmt)) {
+                    ASR::expr_t *ref = ASR::down_cast<ASR::BindReference_t>(
+                        stmt)->m_reference;
+                    if (ASR::is_a<ASR::StructInstanceMember_t>(*ref)) {
+                        ASR::StructInstanceMember_t *m =
+                            ASR::down_cast<ASR::StructInstanceMember_t>(ref);
+                        ASR::Variable_t *member =
+                            ASRUtils::get_reference_member(*m);
+                        if (member != nullptr && ASR::is_a<ASR::Var_t>(*m->m_v) &&
+                                ASR::down_cast<ASR::Var_t>(m->m_v)->m_v ==
+                                    item.second) {
+                            unbound.erase(std::remove(unbound.begin(),
+                                unbound.end(), std::string(member->m_name)),
+                                unbound.end());
+                            continue;
+                        }
+                    }
+                }
+                FrameUse use(item.second);
+                use.visit_stmt(*stmt);
+                if (use.found) {
+                    require_with_loc_id(false, "asr.verify.frame.member_unbound",
+                        "the frame '" + std::string(v->m_name) + "' is used "
+                        "before its member '" + unbound.front() + "' is bound",
+                        stmt->base.loc);
+                }
+            }
+        }
     }
 
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
@@ -4067,6 +4224,7 @@ public:
         record_subroutine_call_dependencies(x.m_name);
 
         verify_args(x);
+        verify_frame_actuals(x);
         if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
     }
 
@@ -4335,6 +4493,7 @@ public:
             }
         }
         verify_args(x);
+        verify_frame_actuals(x);
         if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
         visit_ttype(*x.m_type);
     }
@@ -5585,6 +5744,24 @@ public:
 
 } // namespace ASR
 
+// Whether `scope`, or a scope nested in it, declares the type of a frame,
+// which only the nested_vars pass makes (see ASRVerifyOptions::nested_vars).
+static bool declares_frame_type(SymbolTable *scope) {
+    for (auto &item: scope->get_scope()) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            continue;
+        }
+        if (ASRUtils::is_frame_type(item.second)) {
+            return true;
+        }
+        SymbolTable *nested = ASRUtils::symbol_symtab(item.second);
+        if (nested != nullptr && declares_frame_type(nested)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool asr_verify(const ASR::TranslationUnit_t &unit,
             const ASRVerifyOptions &options,
             diag::Diagnostics &diagnostics) {
@@ -5592,7 +5769,8 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
     v.check_string_length_arguments = options.string_length_arguments;
     v.check_string_format_array_args = options.string_format_array_args;
     v.check_intrinsic_function = options.intrinsic_function;
-    v.check_nested_vars = options.nested_vars;
+    v.check_nested_vars = options.nested_vars ||
+        declares_frame_type(unit.m_symtab);
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {

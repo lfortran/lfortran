@@ -1438,7 +1438,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 // statement (F2018 7.5.6.3 p5): it is an object of its own,
                 // and not the variable. Return it into a temporary, assign
                 // that to the variable and deallocate it, which finalizes it.
-                finalizable_allocatable_result =
+                // A new target is not finalized: the result is returned into
+                // it and becomes it (see below).
+                finalizable_allocatable_result = !assignment->m_new_target &&
                     is_finalizable_allocatable_scalar_result_to_allocatable(
                         value, target);
                 use_temp_var_for_return = use_temp_var_for_return ||
@@ -1601,11 +1603,17 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
 
             bool value_and_target_allocatable_array = false;
+            // A new target has no shape for the result to conform to, so an
+            // allocatable array result is returned straight into it rather
+            // than into a temporary that is then moved into it: an assignment
+            // that defines a new target copies its value (asr_verify.cpp).
+            bool new_target = ASR::is_a<ASR::Assignment_t>(xx) &&
+                ASR::down_cast<ASR::Assignment_t>(&xx)->m_new_target;
             if (ASRUtils::is_allocatable(value) && ASRUtils::is_allocatable(target)) {
                 // Pass in a temporary instead of the target, this is done for bounds checking in assignment to an array from a FunctionCall
                 if (ASRUtils::is_array(ASRUtils::expr_type(target)) &&
                     ASRUtils::is_array(ASRUtils::expr_type(value)) &&
-                    ASR::is_a<ASR::Assignment_t>(xx)) {
+                    ASR::is_a<ASR::Assignment_t>(xx) && !new_target) {
                     // If we already used a temp var for return don't use it here
                     if (!use_temp_var_for_return) {
                         target = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");
@@ -1625,7 +1633,13 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             result_arg.loc = target->base.loc;
             result_arg.m_value = target;
             s_args.push_back(al, result_arg);
-            if (replacer.is_call_with_finalizable_result(fc)) {
+            // A new target, which the assignment only defines, is not
+            // finalized (F2018 7.5.6.3). Returned into it, the result is the
+            // new object, such as the result of a thunk (nested_vars.cpp),
+            // which its caller finalizes.
+            if (replacer.is_call_with_finalizable_result(fc) &&
+                    !(new_target && target == ASR::down_cast<ASR::Assignment_t>(
+                        &xx)->m_target)) {
                 finalize_result_argument(al, target, current_scope,
                     pass_result);
             }

@@ -51,6 +51,22 @@ filename = "asr/verify/host_associated_type_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/nested_vars_host_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/nested_vars_frame_call_in_declaration.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/frame_member_not_bound.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_frame_argument_not_frame.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 
@@ -3463,21 +3479,6 @@ pass = "fma"
 [[test]]
 filename = "../integration_tests/fma_04.f90"
 pass = "fma"
-
-[[test]]
-filename = "../integration_tests/loop_unroll_small.f90"
-asr = true
-pass = "loop_unroll"
-
-[[test]]
-filename = "../integration_tests/loop_unroll_large.f90"
-asr = true
-pass = "loop_unroll"
-
-[[test]]
-filename = "../integration_tests/loop_unroll_integer8.f90"
-asr = true
-pass = "loop_unroll"
 
 [[test]]
 filename = "../integration_tests/div_to_mul.f90"
@@ -7409,4 +7410,8 @@ semantics_only_cc = true
 
 [[test]]
 filename = "errors/save_before_declaration_01.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "../integration_tests/do_variable_after_loop_01.f90"
 semantics_only_cc = true

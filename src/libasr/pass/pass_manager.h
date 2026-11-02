@@ -34,7 +34,6 @@
 #include <libasr/pass/replace_intrinsic_function.h>
 #include <libasr/pass/replace_intrinsic_subroutine.h>
 #include <libasr/pass/replace_fma.h>
-#include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/replace_sign_from_value.h>
 #include <libasr/pass/replace_class_constructor.h>
 #include <libasr/pass/unused_functions.h>
@@ -124,7 +123,6 @@ namespace LCompilers {
             {"fma", &pass_replace_fma},
             {"sign_from_value", &pass_replace_sign_from_value},
             {"inline_function_calls", &pass_inline_function_calls},
-            {"loop_unroll", &pass_loop_unroll},
             {"dead_code_removal", &pass_dead_code_removal},
             {"forall", &pass_replace_for_all},
             {"select_case", &pass_replace_select_case},
@@ -225,6 +223,9 @@ namespace LCompilers {
                         passes.push_back(_with_optimization_passes[i]);
                 }
             }
+            // The verifier options for the ASR after each pass
+            ASRVerifyOptions verify_options;
+            verify_options.check_external = true;
             for (size_t i = 0; i < passes.size(); i++) {
                 // TODO: rework the whole pass manager: construct the passes
                 // ahead of time (not at the last minute), and remove this much
@@ -249,8 +250,11 @@ namespace LCompilers {
 #if defined(WITH_LFORTRAN_ASSERT)
                 verify_after_pass = true;
 #endif
+                if (passes[i] == "nested_vars") {
+                    verify_options.nested_vars = true;
+                }
                 if (verify_after_pass &&
-                        !asr_verify(*asr, true, diagnostics)) {
+                        !asr_verify(*asr, verify_options, diagnostics)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException(
                         "pass=" + passes[i],
@@ -543,6 +547,9 @@ namespace LCompilers {
                 passes = _passes;
             }
             size_t pass_cnt_asr_dump = 0, pass_cnt_fortran_dump = 0;
+            // The verifier options for the ASR after each pass
+            ASRVerifyOptions verify_options;
+            verify_options.check_external = true;
             for (size_t i = 0; i < passes.size(); i++) {
                 // TODO: rework the whole pass manager: construct the passes
                 // ahead of time (not at the last minute), and remove this much
@@ -600,8 +607,11 @@ namespace LCompilers {
 #if defined(WITH_LFORTRAN_ASSERT)
                 verify_after_pass = true;
 #endif
+                if (passes[i] == "nested_vars") {
+                    verify_options.nested_vars = true;
+                }
                 if (verify_after_pass &&
-                        !asr_verify(*asr, true, diagnostics)) {
+                        !asr_verify(*asr, verify_options, diagnostics)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException(
                         "pass=" + passes[i],

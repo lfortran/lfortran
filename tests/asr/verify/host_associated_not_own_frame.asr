@@ -15,41 +15,6 @@
               "n"
               :Public
             )
-            "f" (Variable
-              1
-              "f"
-              []
-              :Local
-              nil
-              nil
-              :Default
-              (StructType
-                [
-                  (Reference
-                    (Integer
-                      4
-                    )
-                  )
-                ]
-                []
-                true
-                false
-              )
-              (SymbolRef 1 "frame")
-              :Source
-              :Public
-              :Required
-              false
-              false
-              false
-              nil
-              false false
-              false
-              :NotMethod
-              nil
-              []
-              nil
-            )
             "frame" (Struct
               (SymbolTable
                 2
@@ -116,6 +81,41 @@
               (SymbolTable
                 3
                 {
+                    "f" (Variable
+                      3
+                      "f"
+                      []
+                      :Local
+                      nil
+                      nil
+                      :Default
+                      (StructType
+                        [
+                          (Reference
+                            (Integer
+                              4
+                            )
+                          )
+                        ]
+                        []
+                        true
+                        false
+                      )
+                      (SymbolRef 1 "frame")
+                      :Source
+                      :Public
+                      :Required
+                      false
+                      false
+                      false
+                      nil
+                      false false
+                      false
+                      :NotMethod
+                      nil
+                      []
+                      nil
+                    )
                     "n" (Variable
                       3
                       "n"
@@ -125,7 +125,7 @@
                       :Local
                       (StructInstanceMember
                         (Var
-                          (SymbolRef 1 "f")
+                          (SymbolRef 3 "f")
                         )
                         (SymbolRef 1 "1_frame_n")
                         (Integer

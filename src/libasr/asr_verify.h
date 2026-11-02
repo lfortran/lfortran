@@ -32,6 +32,10 @@ namespace LCompilers {
         // its HostAssociated alias, bound through the frame dummy argument;
         // and no declaration of a host calls one of its internal procedures
         // that takes the frame, which is bound only when its body starts.
+        // These rules also hold after every later pass: the pass manager
+        // sets this option once the pass has run, and the verifier applies
+        // them by itself to ASR that declares a frame type, such as `.asr`
+        // input, since only the pass makes one.
         bool nested_vars = false;
     };
 

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-do_variable_after_loop_01-319a9f9",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/../integration_tests/do_variable_after_loop_01.f90",
+    "infile_hash": "7c6e89ac697ac384af5029151d2702302e1de7dfe5a70626e7376c5e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-do_variable_after_loop_01-319a9f9.stderr",
+    "stderr_hash": "de9429f8b848c95315ffb617b00940b59bb2b4543afc27c649989dec",
+    "returncode": 0
+}

@@ -464,6 +464,8 @@ RUN(NAME stack_array_function_temporaries LABELS gfortran llvm
     EXTRA_ARGS --stack-arrays GFORTRAN_ARGS -fstack-arrays)
 RUN(NAME stack_array_polymorphic_results LABELS gfortran llvm
     EXTRA_ARGS --stack-arrays GFORTRAN_ARGS -fstack-arrays)
+RUN(NAME stack_array_automatic_elements LABELS gfortran llvm
+    EXTRA_ARGS --stack-arrays GFORTRAN_ARGS -fstack-arrays)
 # CMake links the shared library through the compiler driver with `--shared`
 # for LFortran and `-shared` for GFortran (see SHARED_LIBRARY_FILES above).
 # On macOS CMake uses `-dynamiclib` instead, and Windows needs an import library.
@@ -868,6 +870,7 @@ RUN(NAME arrays_10_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_11_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_12_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_13_size LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME arrays_14_size LABELS gfortran llvm)
 RUN(NAME matrix_01_transpose LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME matrix_02_matmul LABELS gfortran fortran)
 RUN(NAME matrix_03_transpose_param LABELS gfortran llvm)
@@ -1601,6 +1604,7 @@ RUN(NAME procedure_pointer_40 LABELS llvm) # gfortran 13 at CI rejects procedure
 # comparison operator '/=' ... are TYPE(pc)/INTEGER(4)")
 RUN(NAME procedure_pointer_41 LABELS llvm)
 RUN(NAME procedure_pointer_42 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_43 LABELS gfortran llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
@@ -4166,8 +4170,6 @@ RUN(NAME fma_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME fma_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME fma_04 LABELS gfortran llvm)
 RUN(NAME loop_unroll_small LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
-# Unrolled with the loop_unroll pass alone, so the program uses no intrinsics.
-RUN(NAME loop_unroll_01 LABELS gfortran llvm EXTRA_ARGS --pass=loop_unroll)
 RUN(NAME loop_unroll_large LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME loop_unroll_integer8 LABELS gfortran llvm)
 RUN(NAME loop_var_use_after_loop LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -4681,6 +4683,7 @@ RUN(NAME finalization_45 LABELS gfortran llvm)
 RUN(NAME finalization_46 LABELS gfortran llvm)
 RUN(NAME finalization_47 LABELS gfortran llvm)
 RUN(NAME finalization_48 LABELS gfortran llvm)
+RUN(NAME finalization_49 LABELS gfortran llvm)
 RUN(NAME finalization_16 LABELS gfortran llvm)
 RUN(NAME finalization_17 LABELS gfortran llvm)
 RUN(NAME finalization_18 LABELS gfortran llvm)
@@ -4924,9 +4927,11 @@ RUN(NAME do_loop_19 LABELS gfortran llvm c cpp wasm mlir x86)
 RUN(NAME do_loop_20 LABELS gfortran llvm c cpp EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME do_loop_21 LABELS gfortran llvm c cpp wasm mlir x86)
 RUN(NAME do_loop_22 LABELS gfortran llvm c cpp wasm)
+RUN(NAME do_variable_after_loop_01 LABELS gfortran llvm)
 RUN(NAME do_loop_mlir_01 LABELS gfortran llvm mlir)
 RUN(NAME do_loop_array_copy_01 LABELS gfortran llvm c cpp mlir EXTRA_ARGS --fast)
 RUN(NAME intrinsic_reduction_dim_01 LABELS gfortran llvm)
+RUN(NAME intrinsic_reduction_dim_02 LABELS gfortran llvm)
 
 
 RUN(NAME array_op_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm) #TODO: fix mlir, commented in PR: #6060
@@ -5715,7 +5720,7 @@ RUN(NAME openmp_bindc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_04 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_host_assoc_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
-RUN(NAME openmp_host_assoc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_host_assoc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp EXTRA_ARGS --internal-procedure-thunks=16)
 
 RUN(NAME openmp_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)

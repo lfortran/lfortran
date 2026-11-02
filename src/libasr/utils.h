@@ -40,7 +40,6 @@ struct PassOptions {
     std::string runtime_library_dir;
     bool always_run = false; // for unused_functions pass
     bool inline_external_symbol_calls = true; // for inline_function_calls pass
-    int64_t unroll_factor = 32; // for loop_unroll pass
     bool fast = false; // is fast flag enabled.
     bool no_fast_math = false; // disable fast-math optimizations (NaN, Inf, etc.)
     bool verbose = false; // For developer debugging
@@ -118,7 +117,7 @@ struct PassOptions {
     diag::Diagnostics *diagnostics = nullptr;
     // The number of activations of a host that can hold a procedure value of
     // one of its internal procedures at the same time (nested_vars)
-    int64_t internal_procedure_thunks = 64;
+    int64_t internal_procedure_thunks = 8;
 };
 
 struct CompilerOptions {
