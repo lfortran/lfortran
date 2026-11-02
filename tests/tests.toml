@@ -3465,21 +3465,6 @@ filename = "../integration_tests/fma_04.f90"
 pass = "fma"
 
 [[test]]
-filename = "../integration_tests/loop_unroll_small.f90"
-asr = true
-pass = "loop_unroll"
-
-[[test]]
-filename = "../integration_tests/loop_unroll_large.f90"
-asr = true
-pass = "loop_unroll"
-
-[[test]]
-filename = "../integration_tests/loop_unroll_integer8.f90"
-asr = true
-pass = "loop_unroll"
-
-[[test]]
 filename = "../integration_tests/div_to_mul.f90"
 asr = true
 pass = "div_to_mul"

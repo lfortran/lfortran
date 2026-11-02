@@ -34,7 +34,6 @@
 #include <libasr/pass/replace_intrinsic_function.h>
 #include <libasr/pass/replace_intrinsic_subroutine.h>
 #include <libasr/pass/replace_fma.h>
-#include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/replace_sign_from_value.h>
 #include <libasr/pass/replace_class_constructor.h>
 #include <libasr/pass/unused_functions.h>
@@ -124,7 +123,6 @@ namespace LCompilers {
             {"fma", &pass_replace_fma},
             {"sign_from_value", &pass_replace_sign_from_value},
             {"inline_function_calls", &pass_inline_function_calls},
-            {"loop_unroll", &pass_loop_unroll},
             {"dead_code_removal", &pass_dead_code_removal},
             {"forall", &pass_replace_for_all},
             {"select_case", &pass_replace_select_case},
