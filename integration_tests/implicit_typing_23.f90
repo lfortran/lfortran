@@ -1,7 +1,6 @@
-! `implicit none (external)` alone requires an explicit EXTERNAL attribute
-! for external procedures, but keeps the implicit typing rules (F2018 8.7):
-! in the scoping unit itself, in its contained procedures, and together
-! with an IMPLICIT statement.
+! `implicit none (external)` alone keeps the implicit typing rules
+! (F2018 8.7): in the scoping unit itself, in its contained procedures, and
+! together with an IMPLICIT statement.
 module implicit_typing_23_mod
 implicit none (external)
 contains
