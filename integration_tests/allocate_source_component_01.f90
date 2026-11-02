@@ -1,7 +1,18 @@
 program allocate_source_component_01
 ! allocate(..., source=) with an allocatable or pointer derived-type
 ! component as the source
+use iso_c_binding, only: c_int, c_double
 implicit none
+type, bind(c) :: ct_t
+    integer(c_int) :: a
+    real(c_double) :: b
+end type ct_t
+type :: ch_t
+    type(ct_t), pointer :: p => null()
+    type(ct_t), allocatable :: q
+    complex, allocatable :: z
+    logical, pointer :: lp => null()
+end type ch_t
 type :: more_t
     integer :: n = 0
     integer, allocatable :: v(:)
@@ -37,6 +48,9 @@ type(e_t), allocatable :: arr(:)
 type(more_t), allocatable :: m1, m2
 class(*), allocatable :: w
 real, allocatable :: x1
+type(ch_t) :: h
+type(ct_t), allocatable :: y1, y2
+class(*), allocatable :: v1, v2
 integer :: item, copy
 
 allocate(a%more)
@@ -147,6 +161,34 @@ arr(2)%more%v = [6, 7]
 allocate(m2, source=arr(2)%more)
 if (m2%n /= 13) error stop
 if (any(m2%v /= [6, 7])) error stop
+
+allocate(h%p, h%q)
+h%p%a = 3
+h%p%b = 1.5d0
+h%q%a = 4
+h%q%b = 2.5d0
+allocate(y1, source=h%p)
+allocate(y2, source=h%q)
+if (y1%a /= 3 .or. y1%b /= 1.5d0) error stop
+if (y2%a /= 4 .or. y2%b /= 2.5d0) error stop
+
+allocate(h%z, h%lp)
+h%z = (1.0, 2.0)
+h%lp = .true.
+allocate(v1, source=h%z)
+allocate(v2, source=h%lp)
+select type (v1)
+type is (complex)
+    if (v1 /= (1.0, 2.0)) error stop
+class default
+    error stop
+end select
+select type (v2)
+type is (logical)
+    if (.not. v2) error stop
+class default
+    error stop
+end select
 
 call check_class_dummy(a)
 print *, q%n, r%n, cq%n, b%more%n, p%list%box(copy)%e%more%n
