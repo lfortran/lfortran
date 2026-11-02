@@ -1420,6 +1420,9 @@ public:
     // thunk, so that only `p` applies the effects of intent(out) on entry
     // (deallocation, finalization, default initialization), and a pointer
     // result is associated with the result of `p`, not assigned its target.
+    // Any other result is the new target of its assignment: the thunk hands
+    // the result of `p` to its caller, which finalizes it, and finalizes
+    // neither it nor its own result variable (F2018 7.5.6.3 p5).
     ASR::symbol_t *make_thunk(SymbolTable *host, ASR::Function_t *p,
             const std::string &suffix = "__lcompilers_value") {
         const Location &loc = p->base.base.loc;
@@ -1527,7 +1530,7 @@ public:
             } else {
                 body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
                     loc, return_var, call, nullptr, ASRUtils::is_allocatable(type),
-                    false)));
+                    false, true)));
             }
         } else {
             body.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
