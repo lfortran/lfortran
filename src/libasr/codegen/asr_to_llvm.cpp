@@ -22259,7 +22259,7 @@ public:
             builder->CreateStore(zero_val, iostat_user);
             if (iostat_kind != 4) {
                 // use temporary i32 for iostat
-                iostat = llvm_utils->CreateAlloca(*builder,
+                iostat = llvm_utils->CreateAlloca(
                     llvm::Type::getInt32Ty(context), nullptr, "tmp_iostat");
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
@@ -24912,7 +24912,7 @@ public:
             ptr_loads = ptr_copy;
             iostat = tmp;
         } else {
-            iostat = llvm_utils->CreateAlloca(*builder,
+            iostat = llvm_utils->CreateAlloca(
                         llvm::Type::getInt32Ty(context)->getPointerTo());
             builder->CreateStore(llvm::ConstantInt::getNullValue(
                 llvm::Type::getInt32Ty(context)->getPointerTo()), iostat);
@@ -30131,7 +30131,7 @@ public:
             args.push_back(serialization_info);
 
             // Create and Push a pointer to int64 to store the result size in
-            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt64Ty(context));
+            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context));
             args.push_back(result_size_ptr);
 
             // Check unallocated arguments
@@ -30254,7 +30254,7 @@ public:
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
                     tmp = logical_store_val(tmp, x.m_args[i]);
-                    llvm::Value* tmp_ptr = builder->CreateAlloca(tmp->getType());
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(tmp->getType());
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;
                 }
