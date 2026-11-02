@@ -15,6 +15,7 @@ type :: f_t
     integer, pointer :: kp => null()
     character(:), allocatable :: s
     character(:), pointer :: sp => null()
+    real, pointer :: rp => null()
 end type f_t
 type :: box_t
     type(f_t), pointer :: e => null()
@@ -32,6 +33,10 @@ type(proj_t), pointer :: p
 class(more_t), allocatable :: cq
 class(*), allocatable :: u1, u2, u3, u4
 character(:), allocatable :: s1, s2
+type(e_t), allocatable :: arr(:)
+type(more_t), allocatable :: m1, m2
+class(*), allocatable :: w
+real, allocatable :: x1
 integer :: item, copy
 
 allocate(a%more)
@@ -117,5 +122,43 @@ allocate(s1, source=c%s)
 allocate(s2, source=c%sp)
 if (len(s1) /= 5 .or. s1 /= "hello") error stop
 if (len(s2) /= 5 .or. s2 /= "world") error stop
+
+allocate(c%rp)
+c%rp = 2.5
+allocate(x1, source=c%rp)
+if (abs(x1 - 2.5) > 1e-6) error stop
+
+allocate(m1, mold=a%more)
+if (m1%n /= 0) error stop
+if (allocated(m1%v)) error stop
+allocate(w, mold=c%more)
+select type (w)
+type is (more_t)
+    if (w%n /= 0) error stop
+class default
+    error stop
+end select
+
+allocate(arr(2))
+allocate(arr(2)%more)
+arr(2)%more%n = 13
+allocate(arr(2)%more%v(2))
+arr(2)%more%v = [6, 7]
+allocate(m2, source=arr(2)%more)
+if (m2%n /= 13) error stop
+if (any(m2%v /= [6, 7])) error stop
+
+call check_class_dummy(a)
 print *, q%n, r%n, cq%n, b%more%n, p%list%box(copy)%e%more%n
+
+contains
+
+subroutine check_class_dummy(x)
+    class(e_t), intent(in) :: x
+    type(more_t), allocatable :: t
+    allocate(t, source=x%more)
+    if (t%n /= 5) error stop
+    if (any(t%v /= [1, 2, 3])) error stop
+end subroutine check_class_dummy
+
 end program allocate_source_component_01
