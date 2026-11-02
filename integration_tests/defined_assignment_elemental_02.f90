@@ -16,6 +16,18 @@ elemental subroutine copy(to, from)
 end subroutine copy
 end module defined_assignment_elemental_02_m1
 
+module defined_assignment_elemental_02_m3
+implicit none
+contains
+function f(x) result(r)
+    integer, intent(inout) :: x(:)
+    integer :: r(2)
+    r(1) = x(1)
+    r(2) = 5
+    x(2) = 100
+end function f
+end module defined_assignment_elemental_02_m3
+
 module defined_assignment_elemental_02_m2
 implicit none
 type :: s
@@ -36,7 +48,7 @@ subroutine check_interface(n)
 use defined_assignment_elemental_02_m1
 implicit none
 integer, intent(in) :: n
-type(t) :: a(3), b(3), c(3, 3)
+type(t) :: a(3), b(3), c(3, 3), d(4)
 integer :: i
 a%k = [1, 2, 3]
 b(1:3) = a
@@ -53,6 +65,12 @@ if (any(b%k /= [11, 0, 12])) error stop 4
 b%k = [1, 2, 3]
 b(1:2) = b(2:3)
 if (any(b%k /= [12, 13, 3])) error stop 5
+b%k = [1, 2, 3]
+b(2:3) = b(1:2)
+if (any(b%k /= [1, 11, 12])) error stop 8
+d%k = [1, 2, 3, 4]
+d(4:1:-1) = d
+if (any(d%k /= [14, 13, 12, 11])) error stop 9
 c%k = reshape([(i, i = 1, 9)], [3, 3])
 c(2, :) = a
 if (any(c(2, :)%k /= [11, 12, 13])) error stop 6
@@ -63,7 +81,7 @@ subroutine check_type_bound(n)
 use defined_assignment_elemental_02_m2
 implicit none
 integer, intent(in) :: n
-type(s) :: a(3), b(3), c(3, 3)
+type(s) :: a(3), b(3), c(3, 3), d(4)
 integer :: i
 a%k = [1, 2, 3]
 b(1:3) = a
@@ -80,15 +98,36 @@ if (any(b%k /= [11, 0, 12])) error stop 14
 b%k = [1, 2, 3]
 b(1:2) = b(2:3)
 if (any(b%k /= [12, 13, 3])) error stop 15
+b%k = [1, 2, 3]
+b(2:3) = b(1:2)
+if (any(b%k /= [1, 11, 12])) error stop 18
+d%k = [1, 2, 3, 4]
+d(4:1:-1) = d
+if (any(d%k /= [14, 13, 12, 11])) error stop 19
 c%k = reshape([(i, i = 1, 9)], [3, 3])
 c(2, :) = a
 if (any(c(2, :)%k /= [11, 12, 13])) error stop 16
 if (any(c(1, :)%k /= [1, 4, 7])) error stop 17
 end subroutine check_type_bound
 
+! A function in the value defines its `intent(inout)` section argument in
+! place.
+subroutine check_function()
+use defined_assignment_elemental_02_m3
+implicit none
+integer :: b(4)
+b = [1, 2, 3, 4]
+b(1:2) = f(b(2:3))
+if (any(b /= [2, 5, 100, 4])) error stop 21
+b = [1, 2, 3, 4]
+b(1:2) = f(b(2:4:2))
+if (any(b /= [2, 5, 3, 100])) error stop 22
+end subroutine check_function
+
 program defined_assignment_elemental_02
 implicit none
 call check_interface(3)
 call check_type_bound(3)
+call check_function()
 print *, "ok"
 end program defined_assignment_elemental_02

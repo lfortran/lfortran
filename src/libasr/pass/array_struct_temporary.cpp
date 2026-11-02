@@ -3728,6 +3728,45 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_If(x);
     }
 
+    // F2018 10.2.1.4: the defined assignment `x1 = x2` is the call
+    // `s(x1, (x2))`, so its value is evaluated before any element of the
+    // target is defined. A target section is defined in place (see
+    // `call_create_and_allocate_temporary_variable`) and a value that is an
+    // array expression other than a variable is copied into a temporary
+    // when it may refer to the target (`traverse_call_args`). A value that
+    // is a variable is copied here when it may refer to the target, e.g.
+    // `b(4:1:-1) = b`.
+    void copy_defined_assignment_value_aliasing_target(ASR::Assignment_t& x) {
+        if( x.m_overloaded == nullptr ||
+            !ASR::is_a<ASR::SubroutineCall_t>(*x.m_overloaded) ) {
+            return;
+        }
+        ASR::SubroutineCall_t* call = ASR::down_cast<ASR::SubroutineCall_t>(
+            x.m_overloaded);
+        if( call->n_args != 2 || call->m_args[0].m_value == nullptr ||
+            call->m_args[1].m_value == nullptr ) {
+            return;
+        }
+        ASR::expr_t* target = ASRUtils::get_past_array_physical_cast(
+            call->m_args[0].m_value);
+        ASR::expr_t* value_arg = call->m_args[1].m_value;
+        ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(value_arg);
+        if( !ASR::is_a<ASR::ArraySection_t>(*target) ||
+            !ASR::is_a<ASR::Var_t>(*value) ||
+            !ASRUtils::is_array(ASRUtils::expr_type(value)) ||
+            !can_rhs_refer_to_lhs(al, target, value, dummies_sharing_actual) ) {
+            return;
+        }
+        ASR::expr_t* temporary = create_and_allocate_temporary_variable_for_array(
+            value, "_defined_assignment_value_", al, current_body, current_scope,
+            exprs_with_target);
+        if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*value_arg) ) {
+            temporary = rebuild_array_physical_cast(al,
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(value_arg), temporary);
+        }
+        call->m_args[1].m_value = temporary;
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         if (reuse_pure_calls && !inside_where && !x.m_overloaded &&
@@ -3905,6 +3944,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
+        copy_defined_assignment_value_aliasing_target(xx);
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
         lhs_var = nullptr;
         matmul_into_target = nullptr;
