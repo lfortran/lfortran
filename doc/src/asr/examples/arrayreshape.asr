@@ -229,6 +229,7 @@
                 :memory_space :Global
               )
               :value nil
+              :result nil
             )
             :overloaded nil
             :realloc_lhs false

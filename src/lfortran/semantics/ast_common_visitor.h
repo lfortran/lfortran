@@ -5257,7 +5257,7 @@ public:
                             ASR::array_physical_typeType::DescriptorArray, ASR::memory_spaceType::Global));
                     arr_const = ASRUtils::EXPR(ASR::make_ArrayReshape_t(
                         al, x.base.base.loc, arr_const, shape, nullptr,
-                        nullptr, reshape_type, nullptr));
+                        nullptr, reshape_type, nullptr, nullptr));
                 }
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
                             object->base.loc, object, arr_const, nullptr, compiler_options.po.realloc_lhs_arrays, false));
@@ -20276,7 +20276,7 @@ public:
                 ASR::down_cast<ASR::ArrayConstant_t>(value)->m_type = reshape_ttype;
             }
         }
-        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, pad_expr, order_expr, reshape_ttype, value);
+        return ASR::make_ArrayReshape_t(al, x.base.base.loc, array, newshape, pad_expr, order_expr, reshape_ttype, value, nullptr);
     }
 
     ASR::asr_t* create_ArrayIsContiguous(const AST::FuncCallOrArray_t& x) {

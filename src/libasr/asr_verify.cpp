@@ -2899,6 +2899,39 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_CoarrayRef(x);
     }
 
+    void visit_ArrayReshape(const ArrayReshape_t& x) {
+        if (x.m_result) {
+            ASR::ttype_t* result_type = ASRUtils::expr_type(x.m_result);
+            require_id(x.m_value == nullptr && x.m_pad == nullptr,
+                "asr.verify.reshape.runtime_result",
+                "RESHAPE scratch storage requires a runtime value without PAD");
+            require_id(ASR::is_a<ASR::Var_t>(*x.m_result) &&
+                    ASRUtils::is_allocatable(result_type) &&
+                    ASRUtils::is_array(result_type) &&
+                    ASRUtils::extract_physical_type(result_type) ==
+                        ASR::array_physical_typeType::DescriptorArray,
+                "asr.verify.reshape.result_storage",
+                "RESHAPE scratch storage must be an allocatable descriptor array variable");
+            ASR::symbol_t* result_symbol = ASR::down_cast<ASR::Var_t>(x.m_result)->m_v;
+            require_id(ASRUtils::EXPR2VAR(x.m_result)->m_intent == ASR::intentType::Local &&
+                    !ASRUtils::expr_references_symbol(x.m_array, result_symbol),
+                "asr.verify.reshape.independent_result",
+                "RESHAPE scratch storage must be local and independent of the source");
+            require_id(ASRUtils::extract_n_dims_from_ttype(result_type) ==
+                    ASRUtils::extract_n_dims_from_ttype(x.m_type) &&
+                    ASRUtils::check_equal_type(ASRUtils::extract_type(result_type),
+                        ASRUtils::extract_type(x.m_type), x.m_result,
+                        const_cast<ASR::expr_t*>(&x.base)),
+                "asr.verify.reshape.result_type",
+                "RESHAPE scratch storage must have the result's rank and element type");
+            require_id(ASRUtils::is_integer(*x.m_type) || ASRUtils::is_real(*x.m_type) ||
+                    ASRUtils::is_complex(*x.m_type) || ASRUtils::is_logical(*x.m_type),
+                "asr.verify.reshape.result_elements",
+                "RESHAPE scratch storage requires numeric or logical elements");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_ArrayReshape(x);
+    }
+
     void visit_ArraySize(const ArraySize_t& x) {
         if (check_external) {
             require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
