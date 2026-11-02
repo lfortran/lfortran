@@ -5501,6 +5501,7 @@ RUN(NAME array_size_empty_triplet_01 LABELS gfortran llvm)
 RUN(NAME array_size_section_01 LABELS gfortran llvm)
 RUN(NAME array_size_assumed_size_01 LABELS gfortran llvm)
 RUN(NAME array_size_rank_one_01 LABELS gfortran llvm)
+RUN(NAME array_size_kind_01 LABELS gfortran llvm) # size() kind differs from the extent kind in a result extent (#15394)
 RUN(NAME simd_01 LABELS gfortran c llvm llvm_nopragma c_nopragma)
 RUN(NAME simd_02 LABELS gfortran c llvm llvm_nopragma c_nopragma NO_FAST_MATH)
 RUN(NAME legacy_array_sections_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray EXTRA_ARGS --legacy-array-sections)
@@ -6982,6 +6983,7 @@ RUN(NAME gpu_metal_597 FAIL LABELS cuda) # stops: an array of more than huge(0) 
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
 RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)
+RUN(NAME gpu_metal_614 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
