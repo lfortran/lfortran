@@ -26,6 +26,12 @@ contains
         if (present(p)) r = p(1)
     end function
 
+    integer function len_size_or(p)
+        character(len=*), pointer, optional, intent(in) :: p(:)
+        len_size_or = -1
+        if (present(p)) len_size_or = 100*len(p) + size(p)
+    end function
+
     integer function next()
         calls = calls + 1
         next = calls
@@ -93,17 +99,31 @@ contains
             inner = size_or(x)
         end function
     end subroutine
+
+    subroutine forward_character(n, xc)
+        integer, intent(in) :: n
+        character(len=*), optional, target, intent(in) :: xc(:)
+        integer :: r(2)
+        if (len_size_or(xc) /= n) error stop
+        r = 0
+        where (r == 0) r = len_size_or(xc)
+        if (any(r /= n)) error stop
+    end subroutine
 end module
 
 program pointer_intent_in_05
     use pointer_intent_in_05_mod
     implicit none
     integer, target :: a(3), b(2, 2)
+    character(len=4), target :: c(2)
     a = 7
     b = 1
     call forward(-1)
     call forward(3, a)
     call forward(-1, y=b)
     call forward(3, a, b)
+    c = ['ab  ', 'cd  ']
+    call forward_character(-1)
+    call forward_character(402, c)
     print *, "ok"
 end program

@@ -5,6 +5,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
 #include <vector>
@@ -372,16 +373,20 @@ void associate_maybe_absent_target_with_pointer(Allocator& al,
         return;
     }
     ASR::expr_t* target = ASRUtils::get_past_array_physical_cast(call_arg.m_value);
+    // `is_present` is the presence of the optional dummy the actual names
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*target));
     ASR::ttype_t* target_type = ASRUtils::expr_type(target);
-    if( !ASR::is_a<ASR::Var_t>(*target) || !ASRUtils::is_array(target_type) ||
-            ASRUtils::is_pointer(target_type) ||
+    if( !ASRUtils::is_array(target_type) || ASRUtils::is_pointer(target_type) ||
             ASRUtils::is_allocatable(target_type) ) {
         return;
     }
     const Location& loc = call_arg.loc;
-    ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
-        ASRUtils::create_array_type_with_empty_dims(al,
-            ASRUtils::extract_n_dims_from_ttype(target_type), target_type)));
+    // An assumed-length `character(len=*)` target gives the local temporary
+    // a deferred length instead
+    ASR::ttype_t* pointer_type = normalize_string_temporary_type(al, loc,
+        ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+            ASRUtils::create_array_type_with_empty_dims(al,
+                ASRUtils::extract_n_dims_from_ttype(target_type), target_type))));
     std::string pointer_name = scope->get_unique_name(
         "__libasr_created_optional_target_pointer_");
     ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(loc,
@@ -839,7 +844,12 @@ class ReplaceFunctionCallsWithOptionalArgumentsVisitor : public ASR::CallReplace
         Vec<ASR::stmt_t*>* parent_body;
         // The body that holds the outermost WHERE being visited, if any. A
         // WHERE construct contains assignments only, so the statements made
-        // for the calls in it go before it instead.
+        // for the calls in it go before it instead. This keeps the pointer
+        // association of associate_maybe_absent_target_with_pointer valid,
+        // as it depends only on a dummy. Other statements, such as one
+        // evaluating a function result into a temporary, are then evaluated
+        // before the construct, as they already are for calls without
+        // optional arguments (see #14901).
         Vec<ASR::stmt_t*>* where_parent_body;
 
     public:
