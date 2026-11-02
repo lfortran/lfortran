@@ -1213,6 +1213,7 @@ R"(#include <stdio.h>
             return;
         }
         std::string sub = "";
+        self().declare_frame_types(*x.m_symtab);
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(item.second);
@@ -1302,9 +1303,12 @@ R"(#include <stdio.h>
                 ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
                 if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
+                    // A HostAssociated variable designates a variable of the
+                    // host through the frame, see visit_Var.
                     if ((v->m_intent == ASRUtils::intent_local ||
                             v->m_intent == ASRUtils::intent_return_var) &&
-                            ASRUtils::get_common_block(v) == nullptr) {
+                            ASRUtils::get_common_block(v) == nullptr &&
+                            !ASRUtils::is_host_associated(*v)) {
                         std::string d = indent + self().convert_variable_decl(*v) + ";\n";
                         decl += check_tmp_buffer() + d;
                     }
@@ -2210,9 +2214,112 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             + indent + target_desc + "->n_dims = " + std::to_string(target_rank) + ";\n";
     }
 
+    // The variable of a BLOCK construct in `scope` that `pointer`, a pointer
+    // variable of `scope`, stands for, or nullptr. A procedure that reads a
+    // variable of a BLOCK construct from outside of it reads it through such
+    // a pointer, which the BLOCK associates with the variable on entry, at
+    // the location of the variable's declaration. The BLOCK can be nested in
+    // other BLOCK and ASSOCIATE constructs.
+    static const ASR::Variable_t* construct_variable_of(SymbolTable *scope,
+            const ASR::Variable_t &pointer) {
+        const ASR::Variable_t *result = nullptr;
+        ASRUtils::for_each_symbol_in_scope_and_constructs(scope,
+                [&](ASR::symbol_t *sym) {
+            if (result != nullptr || !ASR::is_a<ASR::Block_t>(*sym)) {
+                return;
+            }
+            const ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(sym);
+            for (size_t i = 0; i < block->n_body; i++) {
+                if (!ASR::is_a<ASR::Associate_t>(*block->m_body[i])) {
+                    continue;
+                }
+                const ASR::Associate_t *a = ASR::down_cast<ASR::Associate_t>(
+                    block->m_body[i]);
+                const Location &loc = a->base.base.loc;
+                if (ASR::is_a<ASR::Var_t>(*a->m_target) && ASR::is_a<ASR::Var_t>(*a->m_value)
+                        && ASR::down_cast<ASR::Var_t>(a->m_target)->m_v
+                            == (const ASR::symbol_t*) &pointer
+                        && loc.first == pointer.base.base.loc.first
+                        && loc.last == pointer.base.base.loc.last) {
+                    const ASR::symbol_t *v = ASR::down_cast<ASR::Var_t>(a->m_value)->m_v;
+                    if (ASR::is_a<ASR::Variable_t>(*v)) {
+                        result = ASR::down_cast<ASR::Variable_t>(v);
+                        return;
+                    }
+                }
+            }
+        });
+        return result;
+    }
+
+    // The error for a member of a frame (see nested_vars), named after the
+    // host variable it refers to, whose variable the backend cannot designate
+    // yet. A member that refers to a frame passes it to an internal procedure
+    // of a more distant host.
+    CodeGenError unsupported_reference_member(const ASR::Variable_t &member) {
+        std::string backend = is_c ? "c" : "cpp";
+        const Location &loc = member.base.base.loc;
+        if (ASRUtils::is_frame_type(member.m_type_declaration)) {
+            return CodeGenError("calling an internal procedure of an outer host "
+                "from an internal procedure of an internal procedure is not "
+                "supported by the " + backend + " backend yet", loc);
+        }
+        ASR::ttype_t *t = ASR::down_cast<ASR::Reference_t>(member.m_type)->m_type;
+        std::string name = member.m_name;
+        ASR::symbol_t *type_declaration = member.m_type_declaration;
+        std::string what_prefix;
+        // A variable of a BLOCK construct is reached through a pointer of the
+        // host; describe the variable itself.
+        SymbolTable *host = member.m_parent_symtab->parent;
+        ASR::symbol_t *host_sym = host != nullptr
+            ? host->get_symbol(member.m_name) : nullptr;
+        if (host_sym != nullptr && ASR::is_a<ASR::Variable_t>(*host_sym)
+                && ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(host_sym)->m_type)) {
+            if (const ASR::Variable_t *v = construct_variable_of(host,
+                    *ASR::down_cast<ASR::Variable_t>(host_sym))) {
+                name = v->m_name;
+                t = v->m_type;
+                type_declaration = v->m_type_declaration;
+                what_prefix = "BLOCK ";
+            }
+        }
+        ASR::ttype_t *past_pointer = ASRUtils::type_get_past_allocatable_pointer(t);
+        if (ASR::is_a<ASR::FunctionType_t>(*past_pointer)) {
+            return CodeGenError("the host-associated procedure '" + name
+                + "' is not supported by the " + backend + " backend yet", loc);
+        }
+        ASR::ttype_t *elem = ASRUtils::type_get_past_array(past_pointer);
+        // A non-allocatable array or a character variable is reached through
+        // a pointer view, so only a pointer to a scalar of another type is
+        // known to be a pointer.
+        std::string what = ASRUtils::is_array(past_pointer) ? "array" : "variable";
+        if (ASRUtils::is_allocatable(t)) {
+            what = "allocatable " + what;
+        } else if (ASRUtils::is_pointer(t) && !ASRUtils::is_array(past_pointer) &&
+                !ASRUtils::is_character(*elem)) {
+            what = "pointer " + what;
+        }
+        // The length of a character variable is that of its view.
+        std::string type = ASRUtils::is_character(*elem) ? "character"
+            : ASRUtils::type_to_str_fortran_symbol(elem, type_declaration, true);
+        if (ASR::is_a<ASR::StructType_t>(*elem) &&
+                !ASR::down_cast<ASR::StructType_t>(elem)->m_is_unlimited_polymorphic) {
+            type = (ASRUtils::is_class_type(elem) ? "class(" : "type(") + type + ")";
+        }
+        return CodeGenError("the host-associated " + what_prefix + what + " '"
+            + name + "' of type " + type + " is not supported by the "
+            + backend + " backend yet", loc);
+    }
+
+    // Makes the member store the address of the variable, which it then
+    // designates (see visit_StructInstanceMember).
     void visit_BindReference(const ASR::BindReference_t &x) {
-        throw CodeGenError(std::string("host association is not supported by the ") +
-            (is_c ? "c" : "cpp") + " backend yet", x.base.base.loc);
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        self().visit_expr(*x.m_variable);
+        std::string variable = std::move(src);
+        std::string reference = reference_member_storage(
+            *ASR::down_cast<ASR::StructInstanceMember_t>(x.m_reference));
+        src = indent + reference + " = &(" + variable + ");\n";
     }
 
     void visit_Associate(const ASR::Associate_t &x) {
@@ -2621,6 +2728,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             return;
         }
         ASR::Variable_t* sv = ASR::down_cast<ASR::Variable_t>(s);
+        if (ASRUtils::is_host_associated(*sv)) {
+            // The variable of the host that the member of the frame refers to.
+            self().visit_expr(*sv->m_symbolic_value);
+            return;
+        }
         auto placement = common_placement.find(sv);
         if (placement != common_placement.end()) {
             if (ASRUtils::is_array(sv->m_type)) {
@@ -2652,18 +2764,38 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         last_expr_precedence = 2;
     }
 
-    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
-        CHECK_FAST_C_CPP(compiler_options, x)
+    // The member that `x` designates, and for a member of Reference type the
+    // member itself, which holds the address of a variable.
+    std::string reference_member_storage(const ASR::StructInstanceMember_t& x) {
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
         der_expr = std::move(src);
         member = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_m));
-        if( ASR::is_a<ASR::ArrayItem_t>(*x.m_v) ||
+        bool designates_value = ASR::is_a<ASR::ArrayItem_t>(*x.m_v) ||
             ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
-            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) ) {
-            src = der_expr + "." + member;
+            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v);
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
+                ASRUtils::get_reference_member(
+                    *ASR::down_cast<ASR::StructInstanceMember_t>(x.m_v))) {
+            // A referenced variable of derived type is designated by its
+            // address, as a Var of it is.
+            designates_value = false;
+        }
+        if (designates_value) {
+            return der_expr + "." + member;
         } else {
-            src = der_expr + "->" + member;
+            return der_expr + "->" + member;
+        }
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+        CHECK_FAST_C_CPP(compiler_options, x)
+        src = reference_member_storage(x);
+        if (ASRUtils::get_reference_member(x)) {
+            // A member of Reference type designates the variable whose
+            // address it holds.
+            src = "(*" + src + ")";
+            last_expr_precedence = 2;
         }
     }
 
@@ -3235,6 +3367,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             }
             std::string sym = ASRUtils::symbol_name(tmp_sym);
             if (ASRUtils::is_array(type)) {
+                // The descriptor that the Var designates, also through a
+                // frame for a HostAssociated variable.
+                self().visit_expr(*tmp_expr);
+                sym = src;
                 std::string size_str = "1";
                 out += indent + sym + "->n_dims = " + std::to_string(x.m_args[i].n_dims) + ";\n";
                 std::string stride = "1";
