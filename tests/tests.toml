@@ -51,6 +51,14 @@ filename = "asr/verify/host_associated_type_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/nested_vars_host_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/nested_vars_frame_call_in_declaration.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
 

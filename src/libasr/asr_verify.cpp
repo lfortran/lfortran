@@ -2582,6 +2582,11 @@ public:
             }
             BaseWalkVisitor<FrameCallInDeclaration>::visit_FunctionCall(x);
         }
+
+        // The interface of a procedure variable is not evaluated by its
+        // declaration: a bound or length in it is evaluated by a call
+        // through the variable
+        void visit_FunctionType(const FunctionType_t &/*x*/) {}
     };
 
     // See ASRVerifyOptions::nested_vars.
@@ -5585,6 +5590,24 @@ public:
 
 } // namespace ASR
 
+// Whether `scope`, or a scope nested in it, declares the type of a frame,
+// which only the nested_vars pass makes (see ASRVerifyOptions::nested_vars).
+static bool declares_frame_type(SymbolTable *scope) {
+    for (auto &item: scope->get_scope()) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            continue;
+        }
+        if (ASRUtils::is_frame_type(item.second)) {
+            return true;
+        }
+        SymbolTable *nested = ASRUtils::symbol_symtab(item.second);
+        if (nested != nullptr && declares_frame_type(nested)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool asr_verify(const ASR::TranslationUnit_t &unit,
             const ASRVerifyOptions &options,
             diag::Diagnostics &diagnostics) {
@@ -5592,7 +5615,8 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
     v.check_string_length_arguments = options.string_length_arguments;
     v.check_string_format_array_args = options.string_format_array_args;
     v.check_intrinsic_function = options.intrinsic_function;
-    v.check_nested_vars = options.nested_vars;
+    v.check_nested_vars = options.nested_vars ||
+        declares_frame_type(unit.m_symtab);
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {
