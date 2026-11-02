@@ -2620,7 +2620,7 @@ public:
     llvm::Value* visit_allocatable_or_pointer_source(ASR::expr_t* source) {
         visit_expr_load_wrapper(source, 1);
         if (ASR::is_a<ASR::StructInstanceMember_t>(*source)
-                && !ASRUtils::is_string_only(ASRUtils::expr_type(source))) {
+                && LLVM::is_llvm_pointer(*ASRUtils::expr_type(source))) {
             llvm::Type* source_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                 source, ASRUtils::expr_type(source), module.get());
             tmp = llvm_utils->CreateLoad2(source_llvm_type, tmp);
@@ -3042,8 +3042,7 @@ public:
                         }
                         if (m_source && !m_source_is_class && !curr_arg.m_type) {
                             llvm::Value* src = nullptr; {
-                                const bool load = (ASRUtils::is_allocatable(m_source) || ASRUtils::is_pointer(ASRUtils::expr_type(m_source))) && !ASRUtils::is_string_only(ASRUtils::expr_type(m_source));
-                                if (load) {
+                                if (LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_source))) {
                                     src = visit_allocatable_or_pointer_source(m_source);
                                 } else {
                                     this->visit_expr_load_wrapper(m_source, 0);
