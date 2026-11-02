@@ -164,7 +164,8 @@ jupyter_kernel_test = "==0.7.0"
 nbconvert = "==7.17.2"
 pandoc = "==3.12.1"
 numpy = "==1.26.4"
-rapidjson = "==1.1.0"
+# 1.1.0 headers fail to compile with GCC >= 14 (-Wtemplate-body).
+rapidjson = "==1.1.0.post20250205"
 # Different LLVM versions require different zlib and zstd versions.
 zlib = "*"
 zstd-static = ">=1.5.6,<2"
@@ -401,6 +402,8 @@ llvm21 = {features = ["llvm21", "build", "test"]}
 llvm22 = {features = ["llvm22", "build", "test"]}
 llvm23 = {features = ["llvm23", "build", "test"]}
 mlir = {features = ["mlir", "build", "test"]}
+# Builds without LLVM (-DWITH_LLVM=no), as Quick's "Test without LLVM Backend".
+nollvm = {features = ["build", "test"]}
 test = {features = ["llvm11", "build", "test", "node"]}
 wasm-build = {features = ["wasm-build"], no-default-feature = true}
 wasm-host = {features = ["wasm-host"], no-default-feature = true}
