@@ -13,6 +13,8 @@ type :: f_t
     type(more_t), pointer :: more => null()
     integer, allocatable :: k
     integer, pointer :: kp => null()
+    character(:), allocatable :: s
+    character(:), pointer :: sp => null()
 end type f_t
 type :: box_t
     type(f_t), pointer :: e => null()
@@ -28,7 +30,8 @@ type(f_t) :: c
 type(more_t), allocatable :: q, r
 type(proj_t), pointer :: p
 class(more_t), allocatable :: cq
-class(*), allocatable :: u1, u2
+class(*), allocatable :: u1, u2, u3, u4
+character(:), allocatable :: s1, s2
 integer :: item, copy
 
 allocate(a%more)
@@ -90,5 +93,29 @@ type is (integer)
 class default
     error stop
 end select
+
+c%s = "hello"
+allocate(character(5) :: c%sp)
+c%sp = "world"
+allocate(u3, source=c%s)
+allocate(u4, source=c%sp)
+select type (u3)
+type is (character(*))
+    if (len(u3) /= 5) error stop
+    if (u3 /= "hello") error stop
+class default
+    error stop
+end select
+select type (u4)
+type is (character(*))
+    if (len(u4) /= 5) error stop
+    if (u4 /= "world") error stop
+class default
+    error stop
+end select
+allocate(s1, source=c%s)
+allocate(s2, source=c%sp)
+if (len(s1) /= 5 .or. s1 /= "hello") error stop
+if (len(s2) /= 5 .or. s2 /= "world") error stop
 print *, q%n, r%n, cq%n, b%more%n, p%list%box(copy)%e%more%n
 end program allocate_source_component_01

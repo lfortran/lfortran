@@ -2613,11 +2613,14 @@ public:
 
     // Returns the address of the data that an allocatable or pointer
     // `source=` expression refers to. A variable yields it with one pointer
-    // load, but a component is lowered to the address of its slot, which
-    // holds the data address, so that slot is loaded as well.
+    // load, but a non-character component is lowered to the address of its
+    // slot, which holds the data address, so that slot is loaded as well.
+    // A character component stores its string descriptor inline, so its
+    // address is already what the copy expects.
     llvm::Value* visit_allocatable_or_pointer_source(ASR::expr_t* source) {
         visit_expr_load_wrapper(source, 1);
-        if (ASR::is_a<ASR::StructInstanceMember_t>(*source)) {
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*source)
+                && !ASRUtils::is_string_only(ASRUtils::expr_type(source))) {
             llvm::Type* source_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                 source, ASRUtils::expr_type(source), module.get());
             tmp = llvm_utils->CreateLoad2(source_llvm_type, tmp);
