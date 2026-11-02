@@ -245,6 +245,18 @@ public:
     ASR::dimension_t dim_or_runtime_extent(ASR::expr_t *operand,
             ASR::dimension_t *dims, size_t d);
 
+    // True while rewrite_loop_body_for_kernel lowers the kernel's loop
+    // nest, whose BLOCKs are remapped into the kernel in place.
+    bool lowering_kernel_nest = false;
+
+    // Each bound own_bound copied, mapped to the node it was first
+    // copied from.
+    std::map<ASR::expr_t*, ASR::expr_t*> bound_copies;
+
+    ASR::expr_t* own_bound(ASR::expr_t *bound);
+
+    ASR::expr_t* bound_origin(ASR::expr_t *e);
+
     void inline_intrinsic_matmul(ParallelLoopNest &nest);
 
     ASR::expr_t* index_array_expr(ASR::expr_t *expr,

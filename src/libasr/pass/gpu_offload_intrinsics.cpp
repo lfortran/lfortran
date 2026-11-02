@@ -739,16 +739,14 @@ void GpuOffloadVisitor::inline_matmul_stmts(
 
         // The bounds and starts below may be the very expressions an
         // operand's declaration holds; what is built from them gets its
-        // own copies, so that remapping it into the kernel leaves the
-        // declaration alone.
-        ASRUtils::ExprStmtDuplicator bound_dup(al);
+        // own copies (own_bound).
         auto make_do_loop = [&](ASR::expr_t *var, ASR::expr_t *start,
                 ASR::expr_t *end, Vec<ASR::stmt_t*> &body) -> ASR::stmt_t* {
             ASR::do_loop_head_t head;
             head.loc = loc;
             head.m_v = var;
-            head.m_start = bound_dup.duplicate_expr(start);
-            head.m_end = bound_dup.duplicate_expr(end);
+            head.m_start = own_bound(start);
+            head.m_end = own_bound(end);
             head.m_increment = nullptr;
             return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 head, body.p, body.n, nullptr, 0));
@@ -801,10 +799,10 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             ASR::expr_t *offset = ASRUtils::EXPR(
                 ASR::make_IntegerBinOp_t(al, loc, var,
                     ASR::binopType::Sub,
-                    to_int32(loc, bound_dup.duplicate_expr(ref_start)),
+                    to_int32(loc, own_bound(ref_start)),
                     int_type, nullptr));
             return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                to_int32(loc, bound_dup.duplicate_expr(start)),
+                to_int32(loc, own_bound(start)),
                 ASR::binopType::Add, offset, int_type, nullptr));
         };
 
@@ -1357,19 +1355,47 @@ bool GpuOffloadVisitor::intrinsic_array_result_dims(ASR::expr_t *e,
     return true;
 }
 
+// A copy of `bound`, an expression the lowering of the kernel's loop
+// nest may have taken from an array's declaration, for a loop or a
+// shape that the kernel will own.  The statements of a BLOCK in the
+// nest are remapped into the kernel in place, so a node embedded there
+// that a host declaration also holds would be rewritten to name a
+// kernel symbol.  Each copy records the node it was made from:
+// process_block_for_kernel replaces a function-call extent of a BLOCK
+// local by the value the host computes, and finds the loops built from
+// that extent through their origin (bound_origin).  A device routine's
+// statements are already the kernel's own copy, so outside the nest
+// the bound is returned as it is.
+ASR::expr_t* GpuOffloadVisitor::own_bound(ASR::expr_t *bound) {
+    if (bound == nullptr || !lowering_kernel_nest) return bound;
+    ASRUtils::ExprStmtDuplicator dup(al);
+    ASR::expr_t *copy = dup.duplicate_expr(bound);
+    bound_copies[copy] = bound_origin(bound);
+    return copy;
+}
+
+// The node `e` was copied from by own_bound, through any number of
+// copies, or `e` itself.
+ASR::expr_t* GpuOffloadVisitor::bound_origin(ASR::expr_t *e) {
+    auto it = bound_copies.find(e);
+    return it == bound_copies.end() ? e : it->second;
+}
+
 // Dimension `d` of `operand`, described so that the extent is
 // available wherever the shape is needed.  A deferred-shape operand
 // -- an allocatable, a pointer or an assumed-shape dummy -- carries no
 // declared length, so its extent is the operand's own run-time
 // `size(operand, d + 1)` instead.  That expression is what the VLA
 // workspace machinery resolves back to the extents the host already
-// passes to the kernel.  A declared dimension is copied: its
-// expressions belong to the operand's declaration, which the kernel's
-// symbol remapping must not reach.
+// passes to the kernel.  A declared dimension is copied (own_bound):
+// its expressions belong to the operand's declaration.
 ASR::dimension_t GpuOffloadVisitor::dim_or_runtime_extent(ASR::expr_t *operand,
         ASR::dimension_t *dims, size_t d) {
     if (dims && dims[d].m_length) {
-        return ASRUtils::duplicate_dimensions(al, &dims[d], 1)[0];
+        ASR::dimension_t dim = dims[d];
+        dim.m_start = own_bound(dim.m_start);
+        dim.m_length = own_bound(dim.m_length);
+        return dim;
     }
     const Location &loc = operand->base.loc;
     ASR::ttype_t *int_type = ASRUtils::TYPE(
@@ -2323,16 +2349,15 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
         innermost_body.push_back(al, accum_stmt);
 
         // The bounds may be the very expressions an array's declaration
-        // or an ALLOCATE of it holds; the loops get their own copies, so
-        // that remapping the loops into the kernel leaves those alone.
-        ASRUtils::ExprStmtDuplicator bound_dup(al);
+        // or an ALLOCATE of it holds; the loops get their own copies
+        // (own_bound).
         ASR::stmt_t *loop_nest = nullptr;
         for (int d = n_loops - 1; d >= 0; d--) {
             ASR::do_loop_head_t head;
             head.loc = loc;
             head.m_v = loop_vars[d];
-            head.m_start = bound_dup.duplicate_expr(loop_starts[d]);
-            head.m_end = bound_dup.duplicate_expr(loop_ends[d]);
+            head.m_start = own_bound(loop_starts[d]);
+            head.m_end = own_bound(loop_ends[d]);
             head.m_increment = loop_steps[d];
             if (device_caps.offset_kind != 4
                     && ASRUtils::extract_kind_from_ttype_t(

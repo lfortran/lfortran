@@ -297,6 +297,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // shares with the rest of the program.
     ParallelLoopNest work;
     kernel_blocks.clear();
+    bound_copies.clear();
     {
         ASRUtils::ExprStmtDuplicator dup(al);
         dup.allow_procedure_calls = true;
@@ -2810,11 +2811,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             }
         }
         // The ArrayBroadcast lowering (inline_elemental_array_var_
-        // in_body) may have created DoLoop statements whose bounds
-        // copied the old VLA dimension expression pointers before
-        // the pre-computation above replaced them. Walk the block
-        // body and patch any DoLoop bounds that still reference the
-        // old expressions.
+        // in_body) and the SUM and MATMUL lowerings may have created
+        // DoLoop statements whose bounds are the old VLA dimension
+        // expressions, or copies of them (own_bound), made before the
+        // pre-computation above replaced them. Walk the block body and
+        // patch any DoLoop bounds that still stand for the old
+        // expressions.
         if (!dim_replacements.empty()) {
             std::function<void(ASR::stmt_t**, size_t)>
                 patch_do_loop_bounds = [&](ASR::stmt_t **stmts,
@@ -2826,9 +2828,11 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                                 stmts[si]);
                         for (auto &[old_e, new_e] :
                                 dim_replacements) {
-                            if (dl->m_head.m_start == old_e)
+                            if (bound_origin(dl->m_head.m_start)
+                                    == old_e)
                                 dl->m_head.m_start = new_e;
-                            if (dl->m_head.m_end == old_e)
+                            if (bound_origin(dl->m_head.m_end)
+                                    == old_e)
                                 dl->m_head.m_end = new_e;
                         }
                         patch_do_loop_bounds(dl->m_body,
