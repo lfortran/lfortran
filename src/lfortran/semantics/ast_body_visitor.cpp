@@ -4221,6 +4221,12 @@ public:
             if (v->m_is_asynchronous) {
                 return dummy + "is asynchronous";
             }
+            if (v->m_is_volatile) {
+                return dummy + "is volatile";
+            }
+            if (v->n_codims > 0) {
+                return dummy + "is a coarray";
+            }
             if (ASRUtils::is_assumed_rank_array(v->m_type)) {
                 return dummy + "is assumed-rank";
             }
@@ -4242,6 +4248,16 @@ public:
             }
             if (ASRUtils::is_pointer(result)) {
                 return "the result of the target is a pointer";
+            }
+            ASR::ttype_t* result_type = ASRUtils::extract_type(result);
+            if (ASR::is_a<ASR::String_t>(*result_type)) {
+                ASR::String_t* str = ASR::down_cast<ASR::String_t>(result_type);
+                if (str->m_len_kind == ASR::string_length_kindType::ExpressionLength
+                        && str->m_len != nullptr
+                        && ASRUtils::expr_value(str->m_len) == nullptr) {
+                    return "the result of the target has a character length "
+                        "that is not a constant expression";
+                }
             }
         }
         return "";

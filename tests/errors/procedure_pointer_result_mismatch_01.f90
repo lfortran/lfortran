@@ -87,3 +87,23 @@ contains
         integer, intent(in), optional :: y
     end subroutine
 end subroutine
+
+subroutine explicit_interface_required_2()
+    implicit none
+    procedure(), pointer :: p
+    p => vol  ! {Error} `x` of the target is volatile
+    p => coa  ! {Error} `x` of the target is a coarray
+    p => chn  ! {Error} result length is not a constant expression
+contains
+    subroutine vol(x)
+        integer, volatile :: x
+    end subroutine
+    subroutine coa(x)
+        integer :: x[*]
+    end subroutine
+    function chn(n)
+        integer, intent(in) :: n
+        character(len=n) :: chn
+        chn = ""
+    end function
+end subroutine

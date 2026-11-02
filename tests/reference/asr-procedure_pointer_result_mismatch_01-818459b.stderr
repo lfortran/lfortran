@@ -45,3 +45,21 @@ semantic error: interface mismatch in procedure pointer assignment
    |
 79 |     p => opt  ! {Error} `y` of the target is optional
    |     ^    ^^^ the pointer has an implicit interface, but the dummy argument 'y' of the target is optional, which requires an explicit interface
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:94:5
+   |
+94 |     p => vol  ! {Error} `x` of the target is volatile
+   |     ^    ^^^ the pointer has an implicit interface, but the dummy argument 'x' of the target is volatile, which requires an explicit interface
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:95:5
+   |
+95 |     p => coa  ! {Error} `x` of the target is a coarray
+   |     ^    ^^^ the pointer has an implicit interface, but the dummy argument 'x' of the target is a coarray, which requires an explicit interface
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:96:5
+   |
+96 |     p => chn  ! {Error} result length is not a constant expression
+   |     ^    ^^^ the pointer has an implicit interface, but the result of the target has a character length that is not a constant expression, which requires an explicit interface
