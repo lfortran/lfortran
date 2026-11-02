@@ -636,6 +636,10 @@ public:
                 }
             }
             try {
+                // A program unit has no host, so it never starts from the
+                // implicit typing rules of an earlier one (F2018 8.7 p4),
+                // even if an aborted unit left its rules on the stack.
+                implicit_stack.clear();
                 if (compiler_options.interactive) {
                     implicit_dictionary = implicit_mapping[get_hash(tmp0)];
                 }
@@ -761,18 +765,43 @@ public:
     void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         size_t n_implicit = AST::count_kind(x.m_items, x.n_items,
             AST::DeclStmtKind::Implicit);
-        if (implicit_stack.size() > 0 && n_implicit == 0) {
-            // We are inside a module and visiting a function / subroutine with no implicit statement
-            if (!is_interface) {
-                implicit_dictionary = implicit_stack.back();
-                return;
+        // A scoping unit has at most one IMPLICIT NONE statement (F2018 8.7).
+        bool seen_implicit_none = false;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) continue;
+            if (seen_implicit_none) {
+                diag.add(diag::Diagnostic(
+                    "duplicate implicit none statement",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_items[i]->base.loc})}));
+                throw SemanticAbort();
             }
+            seen_implicit_none = true;
+        }
+        if (implicit_stack.size() > 0 && !is_interface) {
+            // A procedure contained in a module, submodule, program or
+            // procedure starts from its host's mapping; its own IMPLICIT
+            // statements, if any, override only the letters they name
+            // (F2018 8.7 p4). Interface bodies start from the default rules.
+            implicit_dictionary = implicit_stack.back();
+            if (n_implicit == 0) return;
         }
         //iterate over all implicit statements
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
             //check if the implicit statement is of type "none"
             if (AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
+                // `implicit none (external)` alone keeps the implicit typing
+                // rules; only `implicit none` and `implicit none (type)` clear
+                // them and exclude other IMPLICIT statements (F2018 C894).
+                AST::ImplicitNone_t *none = AST::down_cast<AST::ImplicitNone_t>(x.m_items[i]);
+                bool none_type = none->n_specs == 0;
+                for (size_t si = 0; si < none->n_specs; si++) {
+                    if (AST::is_a<AST::ImplicitNoneType_t>(*none->m_specs[si])) {
+                        none_type = true;
+                    }
+                }
+                if (!none_type) continue;
                 //if yes, clear the implicit dictionary i.e. set all characters to nullptr
                 if (n_implicit != 1) {
                     diag.add(diag::Diagnostic(
@@ -1119,6 +1148,9 @@ public:
             }
             default_storage_save = current_storage_save;
         }
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
+        }
         external_procedures = saved_external_procedures;
         current_module_sym = nullptr;
         add_generic_procedures();
@@ -1183,9 +1215,6 @@ public:
         forward_procedure_targets.clear();
         deferred_procedure_component_values.clear();
         in_module = false;
-        if (compiler_options.implicit_typing) {
-            implicit_stack.pop_back();
-        }
         if (undefined_forward_target && !compiler_options.continue_compilation) {
             throw SemanticAbort();
         }
@@ -1416,9 +1445,17 @@ public:
         // The assignment(=) blocks of the internal procedures are not the program's.
         std::vector<std::pair<std::string, Location>> program_assgn_proc_names_locations
             = assgn_proc_names_locations;
+        // An internal procedure without an IMPLICIT statement has the
+        // implicit typing rules of the program (F2018 8.7 p4), as a module
+        // procedure has those of its module.
+        if (compiler_options.implicit_typing) {
+            implicit_stack.push_back(implicit_dictionary);
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
+            // An internal procedure leaves its own implicit typing rules.
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             SymbolTable *host_scope = current_scope;
             try {
                 visit_program_unit(*x.m_contains[i]);
@@ -1428,7 +1465,11 @@ public:
                 // current.
                 current_scope = host_scope;
             }
+            implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
+        }
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
         }
         assgn_proc_names_locations = program_assgn_proc_names_locations;
         for (size_t i : procedure_decl_indices) {
@@ -1974,6 +2015,22 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+        } else {
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_items[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+        }
         is_Function = true;
         bool old_in_Subroutine = in_Subroutine;
         in_Subroutine = true;
@@ -1989,6 +2046,11 @@ public:
         }
         in_Subroutine = old_in_Subroutine;
         is_Function = false;
+        // The internal procedures start from this procedure's implicit
+        // typing rules (F2018 8.7 p4).
+        if (compiler_options.implicit_typing) {
+            implicit_stack.push_back(implicit_dictionary);
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -2004,6 +2066,9 @@ public:
             }
             implicit_dictionary = implicit_dictionary_copy;
             default_storage_save = current_storage_save;
+        }
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
         }
 
         tmp = ASR::make_Function_t(al, x.base.base.loc, current_scope,
@@ -2032,6 +2097,10 @@ public:
         func_type->m_deftype = ASR::deftypeType::Implementation;
         parent_scope->add_or_overwrite_symbol(to_lower(x.m_name), ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
+        if (compiler_options.implicit_typing) {
+            implicit_mapping[get_hash(tmp)] = implicit_dictionary;
+            implicit_dictionary.clear();
+        }
     }
 
     // The part of `item`, in the specification part of a templated
@@ -2414,6 +2483,11 @@ public:
             is_Function = false;
         }
         process_simd_variables();
+        // The internal procedures start from this procedure's implicit
+        // typing rules (F2018 8.7 p4).
+        if (compiler_options.implicit_typing) {
+            implicit_stack.push_back(implicit_dictionary);
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -2432,6 +2506,9 @@ public:
             implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
+        }
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
         }
         visit_later_interface_decls(later_interface_decls);
         Vec<ASR::expr_t*> args;
@@ -3402,9 +3479,15 @@ public:
         ASR::asr_t *return_var_ref = ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var));
 
+        // The internal procedures start from this function's implicit
+        // typing rules (F2018 8.7 p4).
+        if (compiler_options.implicit_typing) {
+            implicit_stack.push_back(implicit_dictionary);
+        }
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
+            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
             current_procedure_args.clear();
             SymbolTable *host_scope = current_scope;
@@ -3416,8 +3499,12 @@ public:
                 // current.
                 current_scope = host_scope;
             }
+            implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
             default_storage_save = current_storage_save;
+        }
+        if (compiler_options.implicit_typing) {
+            implicit_stack.pop_back();
         }
 
         // Create and register the function

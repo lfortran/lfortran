@@ -1297,6 +1297,13 @@ public:
             require_own_symbol(x.m_return_var, func_name, "result variable");
             visit_expr(*x.m_return_var);
         }
+        // A function has a result variable, which code generators lower its
+        // result from, so that it agrees with its procedure type.
+        require(ASR::is_a<ASR::FunctionType_t>(*x.m_function_signature) && (
+                (ASR::down_cast<ASR::FunctionType_t>(x.m_function_signature)
+                    ->m_return_var_type == nullptr) == (x.m_return_var == nullptr)),
+            "The function '" + func_name + "' must have a result variable "
+            "exactly when its type has a result type");
 
         verify_unique_dependencies(x.m_dependencies, x.n_dependencies,
                                    x.m_name, x.base.base.loc);
@@ -3340,11 +3347,25 @@ public:
         }
     }
 
+    // True if the call `x` is made through a procedure value: `m_dt` is that
+    // procedure (e.g. the procedure pointer component `a(i)%f`) cast to the
+    // interface `m_name`, not a passed object.
+    template <typename T>
+    bool is_call_through_procedure_value(const T& x) {
+        if (x.m_dt == nullptr || !ASR::is_a<ASR::FunctionPointerCast_t>(*x.m_dt)) {
+            return false;
+        }
+        require(ASR::down_cast<ASR::FunctionPointerCast_t>(x.m_dt)->m_to == x.m_name,
+            "A call whose dt is a FunctionPointerCast must name the interface "
+            "the cast is to");
+        return true;
+    }
+
     template <typename T>
     void verify_args(const T& x) {
         ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
         ASR::Function_t* func = nullptr;
-        bool is_method = (x.m_dt != nullptr);
+        bool is_method = (x.m_dt != nullptr) && !is_call_through_procedure_value(x);
         bool nopass = false;
         if (func_sym && ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
             ASR::StructMethodDeclaration_t* method = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);

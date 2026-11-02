@@ -1,0 +1,39 @@
+semantic error: Variable 'n' is not declared
+  --> tests/errors/implicit_none_host_01.f90:13:34
+   |
+13 |         integer, intent(in) :: x(n)  ! {Error} `n` is used before it is typed
+   |                                  ^ 'n' is undeclared
+
+semantic error: Dummy argument 'x' not defined
+  --> tests/errors/implicit_none_host_01.f90:12:5 - 15:18
+   |
+12 |        subroutine t(n, x)
+   |        ^^^^^^^^^^^^^^^^^^...
+...
+   |
+15 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate implicit none statement
+  --> tests/errors/implicit_none_host_01.f90:21:5
+   |
+21 |     implicit none (external)  ! {Error} duplicate implicit none statement
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate implicit none statement
+  --> tests/errors/implicit_none_host_01.f90:26:5
+   |
+26 |     implicit none (external)  ! {Error} duplicate implicit none statement
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'y' is not declared
+ --> tests/errors/implicit_none_host_01.f90:6:5
+  |
+6 |     y = 1  ! {Error} `y` is not declared
+  |     ^ 'y' is undeclared
+
+semantic error: Variable 'q' is not declared
+  --> tests/errors/implicit_none_host_01.f90:10:9
+   |
+10 |         q = 1  ! {Error} `q` is not declared
+   |         ^ 'q' is undeclared

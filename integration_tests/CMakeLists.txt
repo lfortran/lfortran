@@ -1013,7 +1013,7 @@ RUN(NAME arrays_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray 
 RUN(NAME arrays_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
-RUN(NAME arrays_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
+RUN(NAME arrays_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran NO_STD_F23) # 'n' is used before it is typed under implicit none, an extension
 RUN(NAME arrays_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm_integer_8) # maxloc, minloc
 RUN(NAME arrays_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray llvm_integer_8) # maxloc
@@ -1561,6 +1561,8 @@ RUN(NAME submodule_55 LABELS gfortran llvm)
 RUN(NAME submodule_56 LABELS gfortran llvm)
 RUN(NAME submodule_57 LABELS gfortran llvm)
 RUN(NAME submodule_58 LABELS gfortran llvm)
+RUN(NAME submodule_59 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # IMPLICIT of a submodule ends with it
+RUN(NAME submodule_60 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # IMPLICIT of a separate module procedure
 RUN(NAME procedure_pointer_12 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_13 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_14 LABELS gfortran llvm)
@@ -1606,6 +1608,13 @@ RUN(NAME procedure_pointer_40 LABELS llvm) # gfortran 13 at CI rejects procedure
 RUN(NAME procedure_pointer_41 LABELS llvm)
 RUN(NAME procedure_pointer_42 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_43 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_44 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # reassociation of pointers without explicit interface (#16414)
+RUN(NAME procedure_pointer_45 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # same, with components (#16414)
+RUN(NAME procedure_pointer_46 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # same, external pointers with implicitly typed results (#16414)
+RUN(NAME procedure_pointer_47 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # components referenced in implied do loops (#16414)
+RUN(NAME procedure_pointer_48 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type of the declaring scope (#16414)
+RUN(NAME procedure_pointer_49 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # typed pointer passed to an external dummy (#16414)
+RUN(NAME procedure_pointer_50 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type in an internal procedure of a program (#16414)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
@@ -2693,6 +2702,9 @@ RUN(NAME implicit_typing_15 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --
 RUN(NAME implicit_typing_16 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_17 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
 RUN(NAME implicit_typing_18 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME implicit_typing_21 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # IMPLICIT of a main program with internal procedures
+RUN(NAME implicit_typing_22 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # IMPLICIT of a module procedure with internal procedures
+RUN(NAME implicit_typing_23 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # implicit none (external) keeps implicit typing
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -5999,6 +6011,9 @@ RUN(NAME separate_compilation_external_symbol_01 LABELS gfortran llvm
 RUN(NAME separate_compilation_external_symbol_02 LABELS gfortran llvm
     EXTRAFILES separate_compilation_external_symbol_02a.f90
     EXTRA_ARGS --implicit-interface)
+RUN(NAME separate_compilation_procedure_pointer_01 LABELS gfortran llvm
+    EXTRAFILES separate_compilation_procedure_pointer_01a.f90
+    EXTRA_ARGS --implicit-interface) # calls through procedure pointer components with implicit interfaces in a module (#16414)
 RUN(NAME class_star_pointer_01 LABELS gfortran llvm)
 RUN(NAME class_star_pointer_02 LABELS gfortran llvm)
 

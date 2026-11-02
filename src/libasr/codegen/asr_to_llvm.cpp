@@ -28796,6 +28796,18 @@ public:
         }
 
         std::vector<llvm::Value*> args;
+        if (x.m_dt && ASR::is_a<ASR::FunctionPointerCast_t>(*x.m_dt)) {
+            // A call through a procedure value: `m_dt` is the procedure cast
+            // to the interface `m_name`.
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(x.m_name));
+            this->visit_expr_wrapper(x.m_dt, true);
+            llvm::Value* callee = tmp;
+            args = convert_call_args(x, false);
+            tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
+                callee, args);
+            return;
+        }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(x.m_name))) ) {
@@ -29454,6 +29466,19 @@ public:
         }
 
         std::vector<llvm::Value*> args;
+        if (x.m_dt && ASR::is_a<ASR::FunctionPointerCast_t>(*x.m_dt)) {
+            // A call through a procedure value: `m_dt` is the procedure cast
+            // to the interface `m_name`.
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(x.m_name));
+            this->visit_expr_wrapper(x.m_dt, true);
+            llvm::Value* callee = tmp;
+            args = convert_call_args(x, false);
+            tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
+                callee, args);
+            wrap_string_function_result(x.m_type);
+            return;
+        }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
             ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name)) &&
             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(x.m_name))) ) {
