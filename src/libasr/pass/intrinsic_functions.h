@@ -4269,11 +4269,24 @@ namespace Ibset {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t result;
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if ( val2 < 0 ) {
             diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be non-negative", {loc}, "");
+            return nullptr;
         }
-        result = val1 | (int64_t{1} << val2);
+        if ( val2 >= 8 * kind ) {
+            diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be less than bit_size(i)", {loc}, "");
+            return nullptr;
+        }
+        int64_t result = val1 | (int64_t{1} << val2);
+        // Sign-extend the bit pattern from the result's declared integer kind.
+        if (kind == 1) {
+            result = checked_bit_pattern_cast<int8_t>(result);
+        } else if (kind == 2) {
+            result = checked_bit_pattern_cast<int16_t>(result);
+        } else if (kind == 4) {
+            result = checked_bit_pattern_cast<int32_t>(result);
+        }
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
