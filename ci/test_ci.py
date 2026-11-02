@@ -1178,6 +1178,10 @@ class QuickScriptTests(unittest.TestCase):
                                    if path == str(self.directory / "integration_tests/run_tests.py")]
                     reference = [args for path, args in calls
                                  if path == str(self.directory / "run_tests.py")]
+                    # The Release job runs the suites with the Pixi tasks.
+                    pixi = [args[3:] for path, args in calls if path == str(self.bin / "pixi")]
+                    integration += [args for args in pixi if args[0] == "integration_tests"]
+                    reference += [args for args in pixi if args[0] == "tests"]
                     self.assertEqual(len(integration), count)
                     self.assertEqual(len(reference), 2 if job == "release" else 0)
                     for args in integration:
