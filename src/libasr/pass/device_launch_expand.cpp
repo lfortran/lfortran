@@ -116,8 +116,8 @@ class DeviceLaunchExpandVisitor :
                 {b.Assignment(threads, b.i64(0))}, {}));
             if (kernel->m_gpu->m_lanes) {
                 pass_result.push_back(al, b.Assignment(started,
-                    b.Mul(threads,
-                        b.i2i_t(x.m_args[x.n_args - 1].m_value, int64))));
+                    b.Mul(threads, b.i2i_t(x.m_args[gpu_parameter_index(
+                        *kernel, kernel->m_gpu->m_lanes)].m_value, int64))));
             }
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_If_t(al,
                 loc, nullptr, b.Gt(started, b.i64(0)), stmts.p, stmts.n,
@@ -1357,14 +1357,15 @@ class DeviceLaunchExpandVisitor :
                 // Those are more than one only for a launch of a few
                 // iterations, which runs in chunks only under a low
                 // --gpu-chunk-limit, so a chunk still starts at most
-                // huge(0) threads.
+                // huge(0) threads (pass_gpu_vector_lanes asserts it).
                 LCOMPILERS_ASSERT(scalars != nullptr);
                 auto with_lanes = [&](ASR::expr_t *n_threads) {
                     if (layout.m_lanes == nullptr) return n_threads;
                     ASRUtils::ExprStmtDuplicator dup(al);
                     dup.success = true;
                     ASR::expr_t *lanes = dup.duplicate_expr(
-                        x.m_args[x.n_args - 1].m_value);
+                        x.m_args[gpu_parameter_index(*kernel,
+                            layout.m_lanes)].m_value);
                     LCOMPILERS_ASSERT(dup.success && lanes);
                     return b.Mul(n_threads, b.i2i_t(lanes, int64));
                 };
