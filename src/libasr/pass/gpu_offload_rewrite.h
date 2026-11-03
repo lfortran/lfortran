@@ -147,7 +147,10 @@ public:
         ASR::BaseExprReplacer<GpuArraySizeFromTypeReplacer>
             ::replace_ArraySize(x);
         ASR::expr_t *rep = gpu_array_size_from_type(al, x);
-        if (rep) *current_expr = rep;
+        if (!rep) return;
+        LCOMPILERS_ASSERT(ASRUtils::check_equal_type(
+            ASRUtils::expr_type(rep), x->m_type, rep, &x->base));
+        *current_expr = rep;
     }
 };
 
