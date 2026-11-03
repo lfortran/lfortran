@@ -440,25 +440,27 @@ inline std::string gpu_offset_type(int offset_kind) {
 // subscript of an array whose lower bound is 3000000000.
 //
 // An integer(4) subscript with 64-bit offsets has its difference reduced
-// modulo 2**32, as an unsigned int, before it is widened. The offload
-// passes count the subscripts of the array expressions they lower inside
-// a kernel (sections, whole arrays, ...) in integer(4) from the lower
-// bound, so a lower bound beyond huge(0) reaches such a subscript
-// truncated, and the truncation cancels only modulo 2**32. The reduction
-// is exact whenever the true offset is in [0, 2**32): for every user
-// integer(4) subscript of an array whose lower bound is at least
-// -huge(0)-1 (`a(-n:n)` with n = 1500000000 included), and for a subscript
-// the passes count from a truncated lower bound up to an extent of 2**32.
-// It is still wrong for
+// modulo 2**32, as an unsigned int, before it is widened. Under
+// --descriptor-index-64 the offload passes count the array expressions
+// they lower inside a kernel in the offset kind (#16571), so the integer(4)
+// subscripts that still get here are user subscripts and the counters the
+// passes still build in integer(4): the inlined `transpose` loops and
+// fusion's affine bounds and run-time checks. These see a lower bound
+// beyond huge(0) truncated, and the truncation cancels only modulo 2**32.
+// The reduction is exact whenever the true offset is in [0, 2**32): for
+// every user integer(4) subscript of an array whose lower bound is at
+// least -huge(0)-1 (`a(-n:n)` with n = 1500000000 included), and for such
+// a counter run from a truncated lower bound up to an extent of 2**32. It
+// is still wrong for
 //  - an integer(4) subscript of an array whose lower bound is below
 //    -huge(0)-1, at an offset of 2**32 or more;
-//  - a subscript the passes count past an extent of huge(0), or across
-//    huge(0) from a lower bound near it, since their integer(4) counter or
-//    bound overflows before it gets here.
+//  - such a counter run past an extent of huge(0), or across huge(0) from
+//    a lower bound near it, since it overflows before it gets here.
 // An offset below zero, which only an element outside the array has (the
-// start of an empty section), becomes a far one that is never read. The
-// proper fix is for the passes to count these subscripts in the offset
-// kind (#16571); this branch goes once they do.
+// start of an empty section), becomes a far one that is never read.
+// Without the flag the offset kind is integer(4) and this branch is not
+// taken; whether kernels use 64-bit offsets by default is #16578
+// (tracking: #16572).
 //
 // The source before and after the subscript is the pair this returns, for
 // a caller that emits the subscript itself in between.
