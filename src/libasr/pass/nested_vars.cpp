@@ -6,6 +6,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/update_array_dim_intrinsic_calls.h>
 #include <deque>
 #include <functional>
 #include <map>
@@ -2611,16 +2612,37 @@ public:
         // imports it, a namelist group (which a BLOCK cannot have) or a
         // dummy argument would have to move too: the host
         // is then not wrapped (a local that a final procedure reaches could
-        // be freed before the final procedure runs)
+        // be freed before the final procedure runs). A declaration of a
+        // variable or an interface body that refers to a moved array only
+        // by LBOUND, UBOUND and SIZE refers instead to the bounds the array
+        // is declared with, so that the host is wrapped (#16610). This is
+        // an interim workaround, to be replaced by an explicit point in ASR
+        // where the locals of a procedure go out of scope (#16575), after
+        // which the slot is given back without a BLOCK.
         std::set<ASR::symbol_t*> moved_set;
         for (const std::string &name: moved) {
             moved_set.insert(host->get_symbol(name));
         }
+        std::set<ASR::symbol_t*> declared = declared_arrays(moved_set);
         for (auto &item: host->get_scope()) {
-            if (moved_set.count(item.second) == 0 &&
-                    refers_to(item.second, moved_set)) {
+            ASR::symbol_t *sym = item.second;
+            if (moved_set.count(sym) != 0 || !refers_to(sym, moved_set)) {
+                continue;
+            }
+            if (!declared.empty() && (ASR::is_a<ASR::Variable_t>(*sym) ||
+                    (ASR::is_a<ASR::Function_t>(*sym) &&
+                        ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(
+                            sym))->m_deftype == ASR::deftypeType::Interface))) {
+                replace_declared_array_inquiries(al, sym, declared);
+            }
+            if (refers_to(sym, moved_set)) {
                 return false;
             }
+        }
+        if (!declared.empty()) {
+            // The interface of the host has the types of its dummy arguments
+            replace_declared_array_inquiries(al, f.m_function_signature,
+                declared);
         }
         SymbolTable *scope = al.make_new<SymbolTable>(host);
         for (const std::string &name: moved) {
@@ -2649,6 +2671,35 @@ public:
         f.m_body = body.p;
         f.n_body = body.size();
         return true;
+    }
+
+    // The arrays of `moved` declared with bounds that do not refer to
+    // `moved`, which are also the bounds outside the BLOCK construct
+    static std::set<ASR::symbol_t*> declared_arrays(
+            const std::set<ASR::symbol_t*> &moved) {
+        std::set<ASR::symbol_t*> arrays;
+        for (ASR::symbol_t *sym: moved) {
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(sym)->m_type;
+            ASR::dimension_t *dims = nullptr;
+            size_t n = ASRUtils::extract_dimensions_from_ttype(type, dims);
+            if (n == 0 || ASRUtils::is_allocatable(type) ||
+                    ASRUtils::is_dimension_empty(dims, n)) {
+                continue;
+            }
+            SymbolUses uses;
+            uses.visit_ttype(*type);
+            bool outer = true;
+            for (ASR::symbol_t *used: uses.symbols) {
+                outer = outer && moved.count(used) == 0;
+            }
+            if (outer) {
+                arrays.insert(sym);
+            }
+        }
+        return arrays;
     }
 
     // Whether the declaration of `sym`, or a procedure `sym` and the

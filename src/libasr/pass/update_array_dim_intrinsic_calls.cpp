@@ -56,8 +56,37 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
     // Device code keeps the declared extents (see entry_initialized_locals).
     bool zero_extent_bounds = true;
 
+    // If set, the inquiries about these arrays, whose bounds are declared,
+    // are replaced instead of those about dummy arguments, and a size of
+    // zero extent is 0, also when its declared extent is negative.
+    const std::set<ASR::symbol_t*>* arrays = nullptr;
+
     ReplaceArrayDimIntrinsicCalls(Allocator& al_, bool fast_) : al(al_), fast(fast_)
     {}
+
+    // Whether the inquiries about `var` are replaced, where `argument` is
+    // whether it is a dummy argument whose inquiries are
+    bool is_replaced(ASR::expr_t* var, bool argument) {
+        if( arrays != nullptr ) {
+            return arrays->count(ASR::down_cast<ASR::Var_t>(var)->m_v) > 0;
+        }
+        return argument;
+    }
+
+    // The extent `length` of a dimension, of kind `type`
+    ASR::expr_t* extent(ASR::expr_t* length, ASR::ttype_t* type,
+            const Location& loc) {
+        if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length)) !=
+                ASRUtils::extract_kind_from_ttype_t(type) ) {
+            length = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al,
+                loc, length, ASR::cast_kindType::IntegerToInteger, type));
+        }
+        if( arrays != nullptr ) {
+            ASRUtils::ASRBuilder b(al, loc);
+            length = b.Max(length, b.i_t(0, type));
+        }
+        return length;
+    }
 
     // The size of an array section follows from its subscripts, so it is
     // computed here and the backend only reads the sizes of the arrays it
@@ -137,7 +166,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         ASR::dimension_t* dims = nullptr;
         int n = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(array_type, dims));
         bool is_argument = v->m_intent == ASRUtils::intent_in || v->m_intent == ASRUtils::intent_out || v->m_intent == ASRUtils::intent_inout;
-        if( !(n > 0 && is_argument &&
+        if( !(n > 0 && is_replaced(x_m_v, is_argument) &&
               !ASRUtils::is_dimension_empty(dims, n)) ) {
             return ;
         }
@@ -146,21 +175,17 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
             ASRUtils::extract_value(x->m_dim, dim);
             // The extent is declared with a kind of its own, as for `a(n)`
             // with an integer(8) `n`, and SIZE returns its own kind
-            ASR::expr_t* length = copy_of(dims[dim - 1].m_length);
-            if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length)) !=
-                    ASRUtils::extract_kind_from_ttype_t(x->m_type) ) {
-                length = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al,
-                    x->base.base.loc, length, ASR::cast_kindType::IntegerToInteger,
-                    x->m_type));
-            }
-            *current_expr = length;
+            *current_expr = extent(copy_of(dims[dim - 1].m_length), x->m_type,
+                x->base.base.loc);
             return ;
         }
 
         ASR::expr_t* array_size = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                                     al, x->base.base.loc, 1, x->m_type));
         for( int i = 0; i < n; i++ ) {
-            ASR::expr_t* dim_length = ASRUtils::EXPR(ASR::make_Cast_t(
+            ASR::expr_t* dim_length = arrays != nullptr
+                ? extent(copy_of(dims[i].m_length), x->m_type, x->base.base.loc)
+                : ASRUtils::EXPR(ASR::make_Cast_t(
                 al, x->base.base.loc, copy_of(dims[i].m_length), ASR::cast_kindType::IntegerToInteger, x->m_type, nullptr, nullptr));
 
             array_size = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x->base.base.loc,
@@ -180,8 +205,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         ASR::ttype_t* array_type = ASRUtils::expr_type(x->m_v);
         ASR::dimension_t* dims = nullptr;
         int n = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(array_type, dims));
-        bool is_argument = ASRUtils::is_arg_dummy(v->m_intent);
-        if( !(n > 0 && is_argument &&
+        if( !(n > 0 && is_replaced(x->m_v, ASRUtils::is_arg_dummy(v->m_intent)) &&
               !ASRUtils::is_dimension_empty(dims, n)) ) {
             return ;
         }
@@ -261,6 +285,39 @@ class ArrayDimIntrinsicCallsVisitor : public ASR::CallReplacerOnExpressionsVisit
         }
 
 };
+
+// Replaces the inquiries about `arrays` in the declarations of a symbol
+class DeclaredArrayInquiriesVisitor : public ASR::CallReplacerOnExpressionsVisitor<DeclaredArrayInquiriesVisitor>
+{
+    private:
+
+        ReplaceArrayDimIntrinsicCalls replacer;
+
+    public:
+
+        DeclaredArrayInquiriesVisitor(Allocator& al_,
+                const std::set<ASR::symbol_t*>& arrays) : replacer(al_, false) {
+            replacer.arrays = &arrays;
+        }
+
+        void call_replacer() {
+            replacer.current_expr = current_expr;
+            replacer.replace_expr(*current_expr);
+        }
+
+};
+
+void replace_declared_array_inquiries(Allocator &al, ASR::symbol_t *sym,
+        const std::set<ASR::symbol_t*> &arrays) {
+    DeclaredArrayInquiriesVisitor v(al, arrays);
+    v.visit_symbol(*sym);
+}
+
+void replace_declared_array_inquiries(Allocator &al, ASR::ttype_t *type,
+        const std::set<ASR::symbol_t*> &arrays) {
+    DeclaredArrayInquiriesVisitor v(al, arrays);
+    v.visit_ttype(*type);
+}
 
 void pass_update_array_dim_intrinsic_calls(Allocator &al, ASR::TranslationUnit_t &unit,
                                            const LCompilers::PassOptions& pass_options) {
