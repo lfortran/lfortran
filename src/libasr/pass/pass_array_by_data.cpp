@@ -1487,6 +1487,19 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             return true;
         }
         
+        // A dummy procedure that takes arrays by data replaces the one that
+        // took descriptors, so no procedure taking descriptors is left to
+        // call: every call has to go to the replacement.
+        bool replaces_dummy_procedure(ASR::symbol_t* sym) {
+            auto it = v.proc2newproc.find(sym);
+            if( it == v.proc2newproc.end() ) {
+                return false;
+            }
+            ASR::symbol_t* new_sym = ASRUtils::symbol_get_past_external(it->second.first);
+            return ASR::is_a<ASR::Function_t>(*new_sym) &&
+                ASRUtils::is_dummy_procedure(*ASR::down_cast<ASR::Function_t>(new_sym));
+        }
+
         static bool is_struct_method_declaration(ASR::symbol_t* const sym){
             return ASR::is_a<ASR::StructMethodDeclaration_t>(*ASRUtils::symbol_get_past_external(sym));
         }
@@ -1597,7 +1610,8 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 return;
             }
             if( !can_edit_call(x.m_args, x.n_args)
-                    && !is_struct_method_declaration(x.m_name) ) {
+                    && !is_struct_method_declaration(x.m_name)
+                    && !replaces_dummy_procedure(subrout_sym) ) {
                 not_to_be_erased.insert(subrout_sym);
                 return ;
             }

@@ -4695,6 +4695,7 @@ RUN(NAME pass_array_by_data_17 LABELS gfortran llvm
     EXTRAFILES pass_array_by_data_17_module.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fcheck=bounds)
 RUN(NAME pass_array_by_data_18 LABELS gfortran llvm EXTRA_ARGS --separate-compilation)
+RUN(NAME pass_array_by_data_19 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_value_extents LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_extname_01 LABELS gfortran llvm)
 
