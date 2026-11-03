@@ -254,6 +254,88 @@ static int failed_free()
     return 1;
 }
 
+// The unified memory model (LFORTRAN_GPU_MEMORY=unified): a kernel uses a
+// range it writes, and a range it only reads that is larger than
+// UNIFIED_COPY_MAX_BYTES, in place; a smaller range it only reads is still
+// copied. A launch that reads host memory in place waits for the kernel,
+// since the host may change that memory as soon as the launch returns, and
+// discarding a range a pending launch writes in place waits for it, since
+// the host frees that memory. Nothing is ever copied back.
+static int32_t unified_out[2];
+static int32_t unified_small[4];
+static std::vector<int32_t> unified_large(64 * 1024);
+
+static void unified_entry(void **args)
+{
+    unit_launch();
+    int32_t *out = arg<int32_t *>(args, 0);
+    int32_t *small = arg<int32_t *>(args, 1);
+    int32_t *large = arg<int32_t *>(args, 2);
+    int32_t sequence = arg<int32_t>(args, 3);
+    require(out == unified_out, "a written range is used in place");
+    require(small != unified_small, "a small read-only range is copied");
+    live(small, sizeof(unified_small));
+    require(large == nullptr || large == unified_large.data(),
+        "a large read-only range is used in place");
+    out[0] = small[0] + (large ? large[unified_large.size() - 1] : 0)
+        + sequence;
+}
+
+static int unified_memory_model()
+{
+    setenv("LFORTRAN_GPU_MEMORY", "unified", 1);
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    require(unified_memory, "LFORTRAN_GPU_MEMORY=unified selects the model");
+    lfortran_gpu_register_kernel("unified", entry(unified_entry));
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    unified_small[0] = 10;
+    unified_large.back() = 100;
+    for (int32_t sequence = 1; sequence <= 2; sequence++) {
+        size_t syncs = sync_launches.size();
+        auto *k = lfortran_gpu_load_kernel(ctx, "unified", 7);
+        lfortran_gpu_set_buffer_arg(k, 0, unified_out, sizeof(unified_out),
+            LFORTRAN_GPU_WRITE);
+        lfortran_gpu_set_buffer_arg(k, 1, unified_small,
+            sizeof(unified_small), LFORTRAN_GPU_READ);
+        // Only the first launch reads the large range.
+        lfortran_gpu_set_buffer_arg(k, 2, unified_large.data(),
+            sequence == 1 ? unified_large.size() * sizeof(int32_t) : 0,
+            LFORTRAN_GPU_READ);
+        lfortran_gpu_set_scalar_arg(k, 3, &sequence, sizeof(sequence));
+        lfortran_gpu_launch(ctx, k, grid, block);
+        lfortran_gpu_release_kernel(k);
+        require(sync_launches.size() == syncs + (sequence == 1 ? 1 : 0),
+            "only a launch that reads host memory in place waits");
+        // The host may change what the launch only reads right away.
+        unified_small[0] = 20;
+        unified_large.back() = 200;
+        if (sequence == 1) {
+            lfortran_gpu_sync(ctx);
+            require(unified_out[0] == 10 + 100 + 1,
+                "the kernel read the large range before the host changed it");
+        }
+    }
+    size_t syncs = sync_launches.size();
+    lfortran_gpu_discard(ctx, unified_out, sizeof(unified_out));
+    require(sync_launches.size() == syncs + 1,
+        "discarding a range a pending launch writes in place waits");
+    lfortran_gpu_sync(ctx);
+    printf("unified memory: out=%d, uploads=%llu, readbacks=%llu, "
+        "allocations=%llu\n", unified_out[0],
+        stats().async_copies[cudaMemcpyHostToDevice],
+        stats().copies[cudaMemcpyDeviceToHost], stats().mallocs);
+    require(unified_out[0] == 20 + 2, "the last launch's value is in place");
+    require(stats().async_copies[cudaMemcpyHostToDevice] == 2,
+        "only the small read-only range is uploaded, at each launch");
+    require(stats().copies[cudaMemcpyDeviceToHost] == 0,
+        "nothing is copied back");
+    require(stats().mallocs == 1, "device memory only for the small copy");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    return 0;
+}
+
 // Without a device the runtime stops at initialization: it must not skip
 // the launch and leave the program with the values never computed.
 static int no_device()
@@ -305,6 +387,9 @@ int main(int argc, char **argv)
     }
     if (argc == 2 && strcmp(argv[1], "no-device") == 0) {
         return no_device();
+    }
+    if (argc == 2 && strcmp(argv[1], "unified") == 0) {
+        return unified_memory_model();
     }
     if (argc == 2 && strcmp(argv[1], "resident") == 0) {
         return resident_table_order(output_access);

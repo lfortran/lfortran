@@ -174,6 +174,12 @@ cudaError_t cudaDeviceGetAttribute(int *value, cudaDeviceAttr attr,
         case cudaDevAttrMaxGridDimZ: *value = MAX_GRID_DIM_Z; break;
         case cudaDevAttrWarpSize: *value = WARP_SIZE; break;
         case cudaDevAttrL2CacheSize: *value = L2_CACHE_SIZE; break;
+        // The emulated device memory is host memory, so a kernel can use
+        // what the host allocated in place (LFORTRAN_GPU_MEMORY=unified),
+        // but the emulation reports a separate device, so that the default
+        // memory model is the copy model, as on a GPU with memory of its own.
+        case cudaDevAttrIntegrated: *value = 0; break;
+        case cudaDevAttrPageableMemoryAccess: *value = 1; break;
         default: return fail(cudaErrorInvalidValue);
     }
     return cudaSuccess;

@@ -31,6 +31,13 @@ static const cudaMemcpyKind cudaMemcpyDeviceToHost = hipMemcpyDeviceToHost;
 
 static const cudaDeviceAttr cudaDevAttrL2CacheSize =
     hipDeviceAttributeL2CacheSize;
+// Whether the GPU shares the host's physical memory (an APU such as the
+// MI300A), and whether it can access memory the host allocated with malloc
+// through the host's page tables (on AMD, only with HSA_XNACK=1).
+static const cudaDeviceAttr cudaDevAttrIntegrated =
+    hipDeviceAttributeIntegrated;
+static const cudaDeviceAttr cudaDevAttrPageableMemoryAccess =
+    hipDeviceAttributePageableMemoryAccess;
 
 static inline cudaError_t cudaSetDevice(int device) {
     return hipSetDevice(device);
@@ -72,6 +79,19 @@ static inline cudaError_t cudaLaunchKernel(const void *func, dim3 grid,
 }
 static inline const char *cudaGetErrorString(cudaError_t error) {
     return hipGetErrorString(error);
+}
+
+// Host memory the GPU uses in place (the unified memory model of
+// lfortran_gpu_cuda.c) is accessed at full speed only once the driver is told
+// that the GPU uses it: on an MI300A a kernel reads malloc memory at about
+// 127 GB/s without this advice and at about 3.4 TB/s with it. Advice is a
+// hint, so a range it cannot be given to is used as it is.
+static inline void lfortran_gpu_hip_advise_device_use(void *ptr, size_t size,
+        int device) {
+    if (hipMemAdvise(ptr, size, hipMemAdviseSetPreferredLocation, device)
+            != hipSuccess) {
+        (void)hipGetLastError();
+    }
 }
 
 #ifdef __cplusplus
