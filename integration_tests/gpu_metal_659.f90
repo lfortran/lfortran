@@ -5,16 +5,17 @@ contains
     pure subroutine evaluate(out, blocks)
         integer(int16), contiguous, intent(out) :: out(:, :, :)
         integer, intent(in) :: blocks
-        integer :: d_head
+        integer :: d_head, token, h
         d_head = size(out, 1)
-        do concurrent (integer :: token = 1:size(out,3), h = 1:size(out,2))
+        do concurrent (token = 1:size(out,3), h = 1:size(out,2))
             block
                 real(real32) :: factors(blocks), total
                 integer(int16) :: partials(d_head,blocks)
+                integer :: d
                 partials = 16256_int16
                 factors = 1.0_real32
                 total = 1.0_real32
-                do concurrent (integer :: d = 1:d_head)
+                do concurrent (d = 1:d_head)
                     out(d,h,token) = real32_to_bf16_bits( &
                         sum(bf16_bits_to_real32(partials(d,:))*factors)/total)
                 end do
@@ -25,16 +26,17 @@ contains
     pure subroutine evaluate_bounds(out, blocks, lower)
         integer(int16), contiguous, intent(out) :: out(:, :, :)
         integer(int64), intent(in) :: blocks, lower
-        integer :: d_head
+        integer :: d_head, token, h
         d_head = size(out, 1)
-        do concurrent (integer :: token = 1:size(out,3), h = 1:size(out,2))
+        do concurrent (token = 1:size(out,3), h = 1:size(out,2))
             block
                 real(real32) :: factors(blocks), total
                 integer(int16) :: partials(-1:d_head-2,lower:lower+blocks-1)
+                integer :: d
                 partials = 16256_int16
                 factors = 1.0_real32
                 total = 1.0_real32
-                do concurrent (integer :: d = 1:d_head)
+                do concurrent (d = 1:d_head)
                     out(d,h,token) = real32_to_bf16_bits( &
                         sum(bf16_bits_to_real32(partials(d-2,:))*factors)/total)
                 end do
