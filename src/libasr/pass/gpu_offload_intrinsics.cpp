@@ -712,13 +712,15 @@ void GpuOffloadVisitor::inline_matmul_stmts(
         // operand's declaration holds; what is built from them gets its
         // own copies (own_bound).
         auto make_do_loop = [&](ASR::expr_t *var, ASR::expr_t *start,
-                ASR::expr_t *end, Vec<ASR::stmt_t*> &body) -> ASR::stmt_t* {
+                ASR::expr_t *end, ASR::expr_t *step,
+                Vec<ASR::stmt_t*> &body) -> ASR::stmt_t* {
             ASR::do_loop_head_t head;
             head.loc = loc;
             head.m_v = var;
             head.m_start = own_bound(start);
             head.m_end = own_bound(end);
-            head.m_increment = nullptr;
+            head.m_increment = step == nullptr || is_int_literal(step, 1)
+                ? nullptr : own_bound(step);
             return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 head, body.p, body.n, nullptr, 0));
         };
@@ -747,31 +749,70 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 (size_t)dim_idx, arg);
         };
 
+        // The step of the `dim_idx`-th range of a section, or nullptr
+        // when the operand is not a section.
+        auto section_step = [&](ASR::expr_t *arg,
+                int dim_idx) -> ASR::expr_t* {
+            if (!ASR::is_a<ASR::ArraySection_t>(*arg)) return nullptr;
+            ASR::ArraySection_t *sec =
+                ASR::down_cast<ASR::ArraySection_t>(arg);
+            int range_idx = 0;
+            for (size_t d = 0; d < sec->n_args; d++) {
+                if (sec->m_args[d].m_left != nullptr) {
+                    if (range_idx == dim_idx) return sec->m_args[d].m_step;
+                    range_idx++;
+                }
+            }
+            return nullptr;
+        };
+
         // matmul pairs its operands by position: the k-th column of
         // `a` multiplies the k-th element of `b` whatever lower bound
         // either operand declares and wherever an operand that is an
-        // array section starts inside its parent array.  The loop
-        // variables run over the index space of one chosen operand,
-        // so a variable used to index a different operand is first
-        // rebased onto that operand's own first index.  When both
-        // spaces are known to start at the same index the variable is
-        // used as it is, which leaves the usual lower-bound-of-one
-        // case exactly as it was.
+        // array section starts inside its parent array, and whatever
+        // step a section has.  The loop variables run over the index
+        // space of one chosen operand, with its start and step
+        // (`ref_start`, `ref_step`), so a variable used to index a
+        // different operand is first turned into the position of the
+        // element, (var - ref_start)/ref_step, and then into that
+        // operand's own index: its first index plus the position times
+        // its step.  The n-th element of `v(3:1:-1)` is `v(3 - (n-1))`.
+        // When both spaces are known to start at the same index and
+        // neither has a step the variable is used as it is, which leaves
+        // the usual lower-bound-of-one case exactly as it was.
         auto rebase_index = [&](ASR::expr_t *operand,
                 ASR::dimension_t *operand_dims, int dim_idx,
-                ASR::expr_t *var,
-                ASR::expr_t *ref_start) -> ASR::expr_t* {
+                ASR::expr_t *var, ASR::expr_t *ref_start,
+                ASR::expr_t *ref_step) -> ASR::expr_t* {
             ASR::expr_t *start = get_loop_bounds(operand, operand_dims,
                 dim_idx).first;
             if (start == nullptr || ref_start == nullptr) return var;
-            if (start == ref_start) return var;
-            if (is_int_literal(start, 1) && is_int_literal(ref_start, 1))
-                return var;
+            ASR::expr_t *step = section_step(operand, dim_idx);
+            bool unit_step = step == nullptr || is_int_literal(step, 1);
+            bool unit_ref_step = ref_step == nullptr
+                || is_int_literal(ref_step, 1);
+            if (unit_step && unit_ref_step) {
+                if (start == ref_start) return var;
+                if (is_int_literal(start, 1)
+                        && is_int_literal(ref_start, 1))
+                    return var;
+            }
             ASR::expr_t *offset = ASRUtils::EXPR(
                 ASR::make_IntegerBinOp_t(al, loc, var,
                     ASR::binopType::Sub,
                     to_int32(loc, own_bound(ref_start)),
                     int_type, nullptr));
+            if (!unit_ref_step) {
+                offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    offset, ASR::binopType::Div,
+                    to_int32(loc, own_bound(ref_step)), int_type,
+                    nullptr));
+            }
+            if (!unit_step) {
+                offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                    offset, ASR::binopType::Mul,
+                    to_int32(loc, own_bound(step)), int_type, nullptr));
+            }
             return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                 to_int32(loc, own_bound(start)),
                 ASR::binopType::Add, offset, int_type, nullptr));
@@ -856,7 +897,8 @@ void GpuOffloadVisitor::inline_matmul_stmts(
         // checked.
         auto make_binop_other_item = [&](ASR::expr_t *other,
                 std::vector<ASR::expr_t*> loop_vars,
-                std::vector<ASR::expr_t*> ref_starts) -> ASR::expr_t* {
+                std::vector<ASR::expr_t*> ref_starts,
+                std::vector<ASR::expr_t*> ref_steps) -> ASR::expr_t* {
             while (true) {
                 if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*other)) {
                     other = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
@@ -876,7 +918,7 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             std::vector<ASR::expr_t*> idx;
             for (size_t d = 0; d < loop_vars.size(); d++) {
                 idx.push_back(rebase_index(other, other_dims, (int)d,
-                    loop_vars[d], ref_starts[d]));
+                    loop_vars[d], ref_starts[d], ref_steps[d]));
             }
             return make_section_item(other, idx);
         };
@@ -909,6 +951,7 @@ void GpuOffloadVisitor::inline_matmul_stmts(
         auto accumulate_element = [&](Vec<ASR::stmt_t*> &out,
                 ASR::expr_t *c_elem, ASR::expr_t *var_k,
                 ASR::expr_t *k_start, ASR::expr_t *k_end,
+                ASR::expr_t *k_step,
                 ASR::expr_t *a_elem, ASR::expr_t *b_elem,
                 ASR::expr_t *other_elem) {
             ASR::expr_t *acc = make_accumulator();
@@ -921,7 +964,8 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 ASR::make_RealBinOp_t(al, loc, acc,
                     ASR::binopType::Add, prod, elem_type, nullptr))));
             out.push_back(al, assign(acc, zero));
-            out.push_back(al, make_do_loop(var_k, k_start, k_end, k_body));
+            out.push_back(al, make_do_loop(var_k, k_start, k_end, k_step,
+                k_body));
             ASR::expr_t *value = acc;
             if (other_elem) {
                 ASR::expr_t *lhs = matmul_is_left ? acc : other_elem;
@@ -944,24 +988,26 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             int k_dim = transpose_a ? 0 : 1;
             auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, k_dim);
             auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, i_dim);
+            ASR::expr_t *k_step = section_step(arg_a, k_dim);
+            ASR::expr_t *i_step = section_step(arg_a, i_dim);
 
             ASR::expr_t *c_i = make_section_item(asgn->m_target,
                 {rebase_index(asgn->m_target, dims_c, 0, var_i,
-                    i_start)});
+                    i_start, i_step)});
             ASR::expr_t *a_ik = transpose_a
                 ? make_section_item(arg_a, {var_k, var_i})
                 : make_section_item(arg_a, {var_i, var_k});
             ASR::expr_t *b_k = make_section_item(arg_b,
-                {rebase_index(arg_b, dims_b, 0, var_k, k_start)});
+                {rebase_index(arg_b, dims_b, 0, var_k, k_start, k_step)});
 
             Vec<ASR::stmt_t*> i_body;
             i_body.reserve(al, 3);
-            accumulate_element(i_body, c_i, var_k, k_start, k_end, a_ik,
-                b_k, binop_other ? make_binop_other_item(binop_other,
-                    {var_i}, {i_start}) : nullptr);
+            accumulate_element(i_body, c_i, var_k, k_start, k_end, k_step,
+                a_ik, b_k, binop_other ? make_binop_other_item(binop_other,
+                    {var_i}, {i_start}, {i_step}) : nullptr);
 
             new_body.push_back(al,
-                make_do_loop(var_i, i_start, i_end, i_body));
+                make_do_loop(var_i, i_start, i_end, i_step, i_body));
         } else if (overload_id == 1 && rank_a == 1 && rank_b == 2) {
             // c(j) = sum_k a(k) * b(k, j)
             // With transpose_b: c(j) = sum_k a(k) * b(j, k)
@@ -972,24 +1018,26 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             int j_dim = transpose_b ? 0 : 1;
             auto [k_start, k_end] = get_loop_bounds(arg_b, dims_b, k_dim);
             auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, j_dim);
+            ASR::expr_t *k_step = section_step(arg_b, k_dim);
+            ASR::expr_t *j_step = section_step(arg_b, j_dim);
 
             ASR::expr_t *c_j = make_section_item(asgn->m_target,
                 {rebase_index(asgn->m_target, dims_c, 0, var_j,
-                    j_start)});
+                    j_start, j_step)});
             ASR::expr_t *a_k = make_section_item(arg_a,
-                {rebase_index(arg_a, dims_a, 0, var_k, k_start)});
+                {rebase_index(arg_a, dims_a, 0, var_k, k_start, k_step)});
             ASR::expr_t *b_kj = transpose_b
                 ? make_section_item(arg_b, {var_j, var_k})
                 : make_section_item(arg_b, {var_k, var_j});
 
             Vec<ASR::stmt_t*> j_body;
             j_body.reserve(al, 3);
-            accumulate_element(j_body, c_j, var_k, k_start, k_end, a_k,
-                b_kj, binop_other ? make_binop_other_item(binop_other,
-                    {var_j}, {j_start}) : nullptr);
+            accumulate_element(j_body, c_j, var_k, k_start, k_end, k_step,
+                a_k, b_kj, binop_other ? make_binop_other_item(binop_other,
+                    {var_j}, {j_start}, {j_step}) : nullptr);
 
             new_body.push_back(al,
-                make_do_loop(var_j, j_start, j_end, j_body));
+                make_do_loop(var_j, j_start, j_end, j_step, j_body));
         } else if (overload_id == 3 && rank_a == 2 && rank_b == 2) {
             // c(i,j) = sum_k a(i,k) * b(k,j)
             // With transpose_a: a(i,k) becomes a(k,i)
@@ -1005,15 +1053,20 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             auto [k_start, k_end] = get_loop_bounds(arg_a, dims_a, a_k_dim);
             auto [j_start, j_end] = get_loop_bounds(arg_b, dims_b, b_j_dim);
             auto [i_start, i_end] = get_loop_bounds(arg_a, dims_a, a_i_dim);
+            ASR::expr_t *k_step = section_step(arg_a, a_k_dim);
+            ASR::expr_t *j_step = section_step(arg_b, b_j_dim);
+            ASR::expr_t *i_step = section_step(arg_a, a_i_dim);
 
             // `k` runs over `a`'s contraction dimension, so only
             // `b`'s copy of it is rebased; `j` already runs over
             // `b`'s own dimension.
             ASR::expr_t *var_k_b = rebase_index(arg_b, dims_b, b_k_dim,
-                var_k, k_start);
+                var_k, k_start, k_step);
             ASR::expr_t *c_ij = make_section_item(asgn->m_target,
-                {rebase_index(asgn->m_target, dims_c, 0, var_i, i_start),
-                 rebase_index(asgn->m_target, dims_c, 1, var_j, j_start)});
+                {rebase_index(asgn->m_target, dims_c, 0, var_i, i_start,
+                    i_step),
+                 rebase_index(asgn->m_target, dims_c, 1, var_j, j_start,
+                    j_step)});
             ASR::expr_t *a_ik = transpose_a
                 ? make_section_item(arg_a, {var_k, var_i})
                 : make_section_item(arg_a, {var_i, var_k});
@@ -1023,17 +1076,18 @@ void GpuOffloadVisitor::inline_matmul_stmts(
 
             Vec<ASR::stmt_t*> j_body;
             j_body.reserve(al, 3);
-            accumulate_element(j_body, c_ij, var_k, k_start, k_end, a_ik,
-                b_kj, binop_other ? make_binop_other_item(binop_other,
-                    {var_i, var_j}, {i_start, j_start}) : nullptr);
+            accumulate_element(j_body, c_ij, var_k, k_start, k_end, k_step,
+                a_ik, b_kj, binop_other ? make_binop_other_item(binop_other,
+                    {var_i, var_j}, {i_start, j_start}, {i_step, j_step})
+                    : nullptr);
 
             Vec<ASR::stmt_t*> i_body;
             i_body.reserve(al, 1);
             i_body.push_back(al,
-                make_do_loop(var_j, j_start, j_end, j_body));
+                make_do_loop(var_j, j_start, j_end, j_step, j_body));
 
             new_body.push_back(al,
-                make_do_loop(var_i, i_start, i_end, i_body));
+                make_do_loop(var_i, i_start, i_end, i_step, i_body));
         } else {
             new_body.push_back(al, stmt);
             continue;
