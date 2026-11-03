@@ -921,7 +921,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             }
         }
 
-        NSUInteger total_threads = (NSUInteger)(grid[0] * block[0]);
+        NSUInteger total_threads = (NSUInteger)grid[0] * (NSUInteger)block[0];
         NSUInteger threads_per_group = (NSUInteger)block[0];
         NSUInteger max_threads = [k->pipeline maxTotalThreadsPerThreadgroup];
         if (threads_per_group > max_threads) {
