@@ -881,7 +881,9 @@ class ASRToLLVMVisitor;
             // Pointer to a function of the opaque procedure type `x`: no
             // parameters, returning the explicit result type or void. The
             // result is lowered as `get_function_type` lowers it, so that a
-            // procedure declared with the opaque type has this type.
+            // procedure declared with the opaque type has this type; a
+            // result returned through a pointer (complex(8) on Windows)
+            // becomes the only parameter.
             llvm::PointerType* get_opaque_procedure_ptr_type(const ASR::FunctionType_t &x,
                 llvm::Module* module);
 
