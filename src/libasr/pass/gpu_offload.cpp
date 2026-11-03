@@ -231,8 +231,9 @@ static uint64_t gpu_value_count(int64_t start, int64_t end) {
 // The number of threads a tiled launch of a nest whose extents are all
 // constants runs (gpu_offload_launch.cpp): whole tiles of `width` iterations
 // of dimension `across` by `threads_per_block / width` of `down`, for every
-// value of the other dimensions. UINT64_MAX when that does not fit, and 0
-// when a bound is not a constant, which leaves the decision to the launch.
+// value of the other dimensions. UINT64_MAX when that does not fit. 0 when a
+// bound is not a constant or the nest is empty; either way the nest stays
+// tiled and the launch decides at run time.
 static uint64_t gpu_constant_tile_threads(
         const std::vector<ASR::expr_t*> &starts,
         const std::vector<ASR::expr_t*> &ends, size_t across, size_t down,
@@ -2492,16 +2493,21 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         host_starts.push_back(dim.host_start);
         host_ends.push_back(dim.host_end);
     }
+    // The second dimension iterations are numbered along: `tile_down`, the
+    // one a tile's height runs along, when the launch is tiled, and
+    // `flat_second` otherwise.
+    size_t flat_second = fastest_dimension == 0 ? 1 : 0;
+    size_t tile_down = next_store_dimension != fastest_dimension
+        ? next_store_dimension : flat_second;
     // Where a launch may run in chunks and every extent is a constant, the
     // number of threads a tiled launch would run is known now, padding
-    // included. When it is more than one launch runs (the chunk limit), the
-    // kernel numbers the iterations flat, one thread each, as a launch that
-    // runs in chunks would at run time anyway: the iterations then decide,
-    // below, whether the launch is ever split.
+    // included. When it is more than the chunk limit, the most threads one
+    // launch runs, the kernel numbers the iterations flat, one thread each,
+    // as a launch that runs in chunks would at run time anyway: the
+    // iterations then decide, below, whether the launch is ever split.
     if (tiled && device_caps.chunked_launches
             && gpu_constant_tile_threads(host_starts, host_ends,
-                fastest_dimension, next_store_dimension != fastest_dimension
-                    ? next_store_dimension : (fastest_dimension == 0 ? 1 : 0),
+                fastest_dimension, tile_down,
                 device_caps.tile_width, device_caps.threads_per_block)
                 > static_cast<uint64_t>(pass_options.gpu_chunk_limit)) {
         tiled = false;
@@ -2512,8 +2518,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     std::vector<size_t> order;
     order.push_back(fastest_dimension);
     if (n_dims >= 2) {
-        order.push_back(tiled && next_store_dimension != fastest_dimension
-            ? next_store_dimension : (fastest_dimension == 0 ? 1 : 0));
+        order.push_back(tiled ? tile_down : flat_second);
     }
     for (size_t d = 0; d < n_dims; d++) {
         if (std::find(order.begin(), order.end(), d) == order.end()) {
