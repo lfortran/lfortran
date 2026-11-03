@@ -7059,6 +7059,13 @@ RUN(NAME gpu_metal_610 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-li
 RUN(NAME gpu_metal_611 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 RUN(NAME gpu_metal_612 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1000)
 RUN(NAME gpu_metal_613 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=5)
+# Chunks at the ends of the integer(4) range, which the kernel numbers in 32
+# bits, and of the integer(8) range, and nests of a tiled shape in chunks
+# with scalars the host reads.
+RUN(NAME gpu_metal_680 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
+RUN(NAME gpu_metal_680_limit_1 FILE gpu_metal_680 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1)
+RUN(NAME gpu_metal_681 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1000)
+RUN(NAME gpu_metal_682 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-chunk-limit=7) # metal declines integer(8) loop indices
 # Reductions across the chunks of a launch.
 RUN(NAME gpu_metal_665 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 RUN(NAME gpu_metal_665_limit_1 FILE gpu_metal_665 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1)
