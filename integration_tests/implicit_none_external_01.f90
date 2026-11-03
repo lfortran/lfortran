@@ -1,7 +1,7 @@
 ! Procedures that are explicitly declared where `implicit none (external)`
 ! applies: EXTERNAL, interface blocks, module, internal and intrinsic
 ! procedures, a procedure pointer, and an external procedure referencing
-! itself recursively. A unit after it is not affected.
+! itself or its ENTRY recursively. A unit after it is not affected.
 module implicit_none_external_01_mod
 implicit none (type, external)
 contains
@@ -34,6 +34,10 @@ recursive function fact(n) result(r)
 integer, intent(in) :: n
 integer :: r
 end function
+recursive subroutine ping(n, total)
+integer, intent(in) :: n
+integer, intent(inout) :: total
+end subroutine
 end interface
 procedure(ms), pointer :: p
 real :: x, y
@@ -52,6 +56,9 @@ total = 0
 call countdown(4, total)
 if (total /= 10) error stop
 if (fact(5) /= 120) error stop
+total = 0
+call ping(3, total)
+if (total /= 24) error stop
 if (i /= 5) error stop
 if (abs(x - 3) > 1e-6) error stop
 print *, 'ok'
@@ -103,3 +110,14 @@ else
     r = n * fact(n - 1)
 end if
 end function
+recursive subroutine ping(n, total)
+implicit none (type, external)
+integer, intent(in) :: n
+integer, intent(inout) :: total
+total = total + n
+if (n > 0) call pong(n - 1, total)
+return
+entry pong(n, total)
+total = total + 10*n
+if (n > 0) call ping(n - 1, total)
+end subroutine

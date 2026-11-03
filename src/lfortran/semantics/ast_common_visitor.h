@@ -2370,7 +2370,8 @@ public:
     // has the EXTERNAL attribute or an explicit interface, i.e. when its name
     // is declared in the unit or a host of it. A procedure defined at the top
     // level of the file is resolved without such a declaration, except within
-    // its own definition, where its interface is explicit.
+    // its own definition, where its interface and those of its ENTRY
+    // statements are explicit.
     void check_implicit_none_external(const std::string &name,
             ASR::symbol_t *sym, const Location &loc) {
         if (implicit_none_external_stack.empty()
@@ -2380,9 +2381,21 @@ public:
         if (sym && ASRUtils::symbol_parent_symtab(sym)->parent != nullptr) {
             return;
         }
-        for (SymbolTable *s = current_scope; sym && s; s = s->parent) {
-            if (s->asr_owner == &sym->base) {
+        for (SymbolTable *s = current_scope; s; s = s->parent) {
+            if (sym && s->asr_owner == &sym->base) {
                 return;
+            }
+            if (s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner)) {
+                // A procedure with ENTRY statements is implemented by a
+                // master function named after it.
+                std::string owner = to_lower(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::symbol_t>(s->asr_owner)));
+                owner = owner.substr(0, owner.find("_main__lcompilers"));
+                auto entries = entry_functions.find(owner);
+                if (entries != entry_functions.end() && (name == owner
+                        || entries->second.count(name) > 0)) {
+                    return;
+                }
             }
         }
         diag.add(diag::Diagnostic(
