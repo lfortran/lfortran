@@ -204,6 +204,13 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     if (LFORTRAN_TEST_PYTHON)
         if (NOT WIN32 AND NOT EMSCRIPTEN)
             add_test(
+                NAME test_gpu_run
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_run.py
+                    --workdir ${PROJECT_BINARY_DIR}/gpu-run
+            )
+            set_tests_properties(test_gpu_run PROPERTIES TIMEOUT 120)
+            add_test(
                 NAME test_scoped_attribute_roundtrip
                 COMMAND ${LFORTRAN_TEST_PYTHON}
                     ${CMAKE_CURRENT_SOURCE_DIR}/test_scoped_attribute_roundtrip.py

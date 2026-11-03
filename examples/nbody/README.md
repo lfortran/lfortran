@@ -49,6 +49,21 @@ a 4 GiB RSS limit. `GPU_TIMEOUT` accepts 1..30 seconds; `GPU_MAXMEM_MB`
 changes the memory threshold. `GPU_RUN=/absolute/path/to/guard.sh` selects
 another guard with the same command-prefix interface.
 
+The coordination directory defaults to `/tmp/gpurun.lock.d`. To use another
+location, set `LFORTRAN_GPU_LOCK_DIR` to the full directory path. Its parent
+must already exist and be writable; do not pre-create the lock directory.
+All concurrent workers, including different worktrees, **must use the same
+shared absolute path** to preserve serialization. Do not use a per-process
+path or an existing lock file from another locking protocol. An unset or
+empty value keeps the default; `TMPDIR` does not change it.
+
+The unit tests inherit this configuration without replacing the runner:
+
+```bash
+export LFORTRAN_GPU_LOCK_DIR="/absolute/shared/writable/state/gpurun.lock.d"
+pixi run -e llvm11 ctest -j1
+```
+
 **A process timeout is not GPU cancellation.** Already submitted commands
 may continue after their host exits, RSS does not cover every driver
 allocation, and a long kernel can make the desktop unresponsive. Keep

@@ -14,7 +14,7 @@ if (( $# == 0 )); then
     exit 2
 fi
 
-lock=/tmp/gpurun.lock.d
+lock=${LFORTRAN_GPU_LOCK_DIR:-/tmp/gpurun.lock.d}
 acquired=false
 for ((i = 0; i < 300; i++)); do
     if mkdir "$lock" 2>/dev/null; then
