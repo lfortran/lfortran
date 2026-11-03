@@ -4088,3 +4088,18 @@ module cc1_procptr_component_nopass
         procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
     end type
 end module
+
+module cc1_duplicate_implicit_none
+    implicit none
+    implicit none  ! {Error} duplicate implicit none statement
+contains
+    subroutine cc1_duplicate_implicit_none_sub()
+        implicit none
+        implicit none (external)  ! {Error} duplicate implicit none statement
+    end subroutine
+    integer function cc1_duplicate_implicit_none_fn()
+        implicit none (type)
+        implicit none  ! {Error} duplicate implicit none statement
+        cc1_duplicate_implicit_none_fn = 1
+    end function
+end module

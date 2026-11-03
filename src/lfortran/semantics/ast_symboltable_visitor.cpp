@@ -761,11 +761,10 @@ public:
         }
     }
 
+    // A scoping unit has at most one IMPLICIT NONE statement (F2018 8.7),
+    // whether or not implicit typing is enabled. Every later one is reported.
     template <typename T>
-    void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
-        size_t n_implicit = AST::count_kind(x.m_items, x.n_items,
-            AST::DeclStmtKind::Implicit);
-        // A scoping unit has at most one IMPLICIT NONE statement (F2018 8.7).
+    void check_single_implicit_none(const T &x) {
         bool seen_implicit_none = false;
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) continue;
@@ -774,9 +773,21 @@ public:
                     "duplicate implicit none statement",
                     diag::Level::Error, diag::Stage::Semantic, {
                         diag::Label("", {x.m_items[i]->base.loc})}));
-                throw SemanticAbort();
+                if (!compiler_options.continue_compilation) {
+                    throw SemanticAbort();
+                }
             }
             seen_implicit_none = true;
+        }
+    }
+
+    template <typename T>
+    void process_implicit_statements(const T &x, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
+        size_t n_implicit = AST::count_kind(x.m_items, x.n_items,
+            AST::DeclStmtKind::Implicit);
+        size_t n_implicit_none = 0;
+        for (size_t i=0; i<x.n_items; i++) {
+            if (AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) n_implicit_none++;
         }
         if (implicit_stack.size() > 0 && !is_interface) {
             // A procedure contained in a module, submodule, program or
@@ -803,7 +814,7 @@ public:
                 }
                 if (!none_type) continue;
                 //if yes, clear the implicit dictionary i.e. set all characters to nullptr
-                if (n_implicit != 1) {
+                if (n_implicit != n_implicit_none) {
                     diag.add(diag::Diagnostic(
                         "No other implicit statement is allowed when 'implicit none' is used",
                         diag::Level::Error, diag::Stage::Semantic, {
@@ -1014,6 +1025,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        check_single_implicit_none(x);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -1386,6 +1398,7 @@ public:
             }
         }
 
+        check_single_implicit_none(x);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -2015,6 +2028,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        check_single_implicit_none(x);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -2380,6 +2394,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        check_single_implicit_none(x);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -3043,6 +3058,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        check_single_implicit_none(x);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
@@ -4419,6 +4435,7 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
             visit_item(*x.m_items[i]);
         }
+        check_single_implicit_none(x);
         if (compiler_options.implicit_typing) {
             Location a_loc = x.base.base.loc;
             populate_implicit_dictionary(a_loc, implicit_dictionary);
