@@ -82,9 +82,11 @@ class DeviceLaunchExpandVisitor :
 
         DeviceLaunchExpandVisitor(Allocator &al_,
                 ASR::TranslationUnit_t &unit_, bool check_element_counts_,
+                const std::string &element_count_message_,
                 int64_t chunk_limit_, int index_kind_) :
             PassVisitor(al_, nullptr), unit(unit_),
             check_element_counts(check_element_counts_),
+            element_count_message(element_count_message_),
             chunk_limit(chunk_limit_), index_kind(index_kind_) {}
 
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
@@ -163,6 +165,9 @@ class DeviceLaunchExpandVisitor :
         // more elements than its 32-bit offsets reach (see
         // check_element_count).
         bool check_element_counts;
+        // What the launch stops with when one has more: how to get 64-bit
+        // offsets where the device has them, that it has none otherwise.
+        std::string element_count_message;
         // The most iterations one launch of a kernel runs
         // (PassOptions::gpu_chunk_limit).
         int64_t chunk_limit;
@@ -323,20 +328,19 @@ class DeviceLaunchExpandVisitor :
                 b.Call(sym, args, b.CPtr())));
         }
 
-        // Without --descriptor-index-64 a kernel computes element offsets
-        // in 32 bits (GpuDeviceCapabilities::offset_kind), which would
+        // A kernel computes element offsets in 32 bits without
+        // --descriptor-index-64, and always on a device that does not index
+        // in 64 bits (GpuDeviceCapabilities::offset_kind), which would
         // silently address the wrong elements of an array of more than
         // huge(0) of them. The host allocates and addresses such an array
-        // without the flag, and the compiler makes buffers with one element
-        // per iteration. So the launch stops before it
-        // hands such an array to the kernel, with what to do about it.
+        // either way, and the compiler makes buffers with one element per
+        // iteration. So the launch stops before it hands such an array to
+        // the kernel, with element_count_message.
         // `count` is the number of elements, in integer(8).
         ASR::stmt_t* check_element_count(const Location &loc,
                 ASR::expr_t *count) {
             ASRUtils::ASRBuilder b(al, loc);
-            std::string message = "a gpu kernel needs an array of more "
-                "than 2147483647 elements; recompile with "
-                "--descriptor-index-64";
+            const std::string &message = element_count_message;
             ASR::expr_t *code = b.StringConstant(message,
                 b.String(b.i32(message.size()), ASR::ExpressionLength));
             return b.If(b.Gt(count, b.i64(2147483647)),
@@ -1721,10 +1725,18 @@ void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
         return;
     }
     // A device that does not index in 64 bits (Metal) cannot be given
-    // 64-bit offsets by the flag the message names, so it is not checked.
-    DeviceLaunchExpandVisitor v(al, unit,
-        caps.offset_kind == 4 && caps.max_index_kind >= 8,
-        pass_options.gpu_chunk_limit,
+    // 64-bit offsets by --descriptor-index-64, so its message does not
+    // suggest the flag.
+    std::string element_count_message = "a gpu kernel needs an array of "
+        "more than 2147483647 elements";
+    if (caps.offsets_follow_descriptor_index_64()) {
+        element_count_message += "; recompile with --descriptor-index-64";
+    } else {
+        element_count_message += ", which is not supported on " + caps.name
+            + " yet";
+    }
+    DeviceLaunchExpandVisitor v(al, unit, caps.offset_kind == 4,
+        element_count_message, pass_options.gpu_chunk_limit,
         pass_options.descriptor_index_64 ? 8 : 4);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);

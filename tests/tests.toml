@@ -5048,9 +5048,11 @@ gpu_offload_metal = true
 options = "--gpu-allow-cpu-fallback"
 
 # Metal kernels compute element offsets in 32 bits whatever the flags, so a
-# launch on Metal does not stop for an array of more than huge(0) elements
-# with an error that suggests --descriptor-index-64: the LLVM output has no
-# such check. On CUDA it has one (gpu_metal_597 in CMakeLists.txt).
+# launch on Metal stops for an array of more than huge(0) elements: the LLVM
+# output has the host-side element-count check, and its message says Metal
+# does not support such arrays yet instead of suggesting
+# --descriptor-index-64, which does not widen Metal's offsets. On CUDA the
+# message suggests that flag (gpu_metal_597 in CMakeLists.txt).
 [[test]]
 filename = "../integration_tests/gpu_metal_597.f90"
 options = "--gpu=metal"

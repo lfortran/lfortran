@@ -107,9 +107,17 @@ struct GpuDeviceCapabilities {
     // The integer kind a kernel computes the offset of an element in an
     // array in. Like the host's array descriptors, the offsets are 64-bit
     // only with --descriptor-index-64, and only on a device that indexes in
-    // 64 bits (max_index_kind); otherwise a launch on such a device stops
+    // 64 bits (offsets_follow_descriptor_index_64); otherwise a launch stops
     // before it hands a kernel an array of more than huge(0) elements.
     int offset_kind = 4;
+
+    // Whether --descriptor-index-64 makes offset_kind 8: whether the device
+    // indexes in 64 bits (max_index_kind). Where it does not, the flag does
+    // not help an array of more than huge(0) elements, and a diagnostic
+    // must not suggest it.
+    bool offsets_follow_descriptor_index_64() const {
+        return max_index_kind >= 8;
+    }
 
     // Whether the device has a scalar type of the same in-memory width as
     // `t`. Every dialect shares a floor -- the widths in
