@@ -1712,6 +1712,24 @@ semantic error: procedure pointer component 'g' with an implicit interface must 
 4088 |         procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
      |                                        ^ 
 
+semantic error: duplicate implicit none statement
+    --> tests/errors/continue_compilation_1.f90:4094:5
+     |
+4094 |     implicit none  ! {Error} duplicate implicit none statement
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate implicit none statement
+    --> tests/errors/continue_compilation_1.f90:4098:9
+     |
+4098 |         implicit none (external)  ! {Error} duplicate implicit none statement
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate implicit none statement
+    --> tests/errors/continue_compilation_1.f90:4102:9
+     |
+4102 |         implicit none  ! {Error} duplicate implicit none statement
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
