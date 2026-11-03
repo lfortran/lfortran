@@ -186,13 +186,6 @@ class MacOSEnvironmentTests(unittest.TestCase):
         self.assertIn("environments: llvm${{ inputs.llvm-version }}\n", setup)
         self.assertIn("activate-environment: llvm${{ inputs.llvm-version }}\n", setup)
 
-    def test_compatibility_macos_environment_uses_copy_mode(self):
-        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
-        setup = source.split("if: contains(matrix.os, 'macos')\n", 1)[1]
-        setup = setup.split("\n      - uses:", 1)[0]
-        self.assertIn("condarc: |", setup)
-        self.assertIn("always_copy: true", setup)
-
 
     def test_pixi_compatibility_job_activates_its_llvm_environment(self):
         source = pixi_compatibility_job()
@@ -279,9 +272,9 @@ class MacOSEnvironmentTests(unittest.TestCase):
         check = source.index("python ci/check_macos_environment.py")
         self.assertGreater(check, source.index("uses: prefix-dev/setup-pixi@"))
         self.assertLess(check, source.index("- name: Build (Linux / macOS)"))
-        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        source = pixi_compatibility_job()
         check = source.index("python ci/check_macos_environment.py")
-        self.assertGreater(check, source.index("always_copy: true"))
+        self.assertGreater(check, source.index("uses: prefix-dev/setup-pixi@"))
         self.assertLess(check, source.index("      - name: Build\n"))
 
 
