@@ -289,6 +289,8 @@ public:
 
     ASR::expr_t *to_index_kind(const Location &loc, ASR::expr_t *e);
 
+    ASR::expr_t *bound_to_index_kind(const Location &loc, ASR::expr_t *e);
+
     ASR::expr_t *section_extent(const Location &loc,
             const ASR::array_index_t &d);
 

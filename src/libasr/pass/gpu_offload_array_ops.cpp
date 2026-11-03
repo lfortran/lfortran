@@ -93,6 +93,29 @@ ASR::expr_t *GpuOffloadVisitor::to_index_kind(const Location &loc,
     return gpu_to_int_kind(al, loc, e, device_caps.offset_kind);
 }
 
+// A loop bound or index term of another integer kind in index_type, like
+// to_index_kind, except that an lbound/ubound inquiry is made again in
+// index_type rather than converted, since its integer(4) result may
+// already have lost the bound, and a literal just changes its kind.
+// A missing bound (the step of a loop without one) stays missing.
+ASR::expr_t *GpuOffloadVisitor::bound_to_index_kind(const Location &loc,
+        ASR::expr_t *e) {
+    if (e == nullptr || ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(e)) == device_caps.offset_kind) {
+        return e;
+    }
+    if (ASR::is_a<ASR::ArrayBound_t>(*e)) {
+        ASR::ArrayBound_t *b = ASR::down_cast<ASR::ArrayBound_t>(e);
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, b->m_v,
+            b->m_dim, index_type(loc), b->m_bound, nullptr));
+    }
+    if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+        return index_const(loc,
+            ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n);
+    }
+    return to_index_kind(loc, e);
+}
+
 // Number of elements of a section dimension `lo:hi:step`, which is
 // (hi - lo)/step + 1. Truncating integer division gives the right
 // answer for a negative step too, since numerator and denominator

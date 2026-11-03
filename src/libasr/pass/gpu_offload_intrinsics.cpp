@@ -620,9 +620,15 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             continue;
         }
 
+        // The loops count, and the indices of the operands are computed,
+        // in the dialect's kind for element offsets (index_type): with
+        // 64-bit offsets an operand's bounds need not fit integer(4).
         Location loc = stmt->base.loc;
-        ASR::ttype_t *int_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t *int_type = index_type(loc);
+        auto in_index_kind = [&](ASR::expr_t *e) -> ASR::expr_t* {
+            return device_caps.offset_kind == 4 ? to_int32(loc, e)
+                : bound_to_index_kind(loc, e);
+        };
 
         // Strip ArrayPhysicalCast from arguments
         ASR::expr_t *arg_a = iaf->m_args[0];
@@ -741,6 +747,12 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             head.m_end = own_bound(end);
             head.m_increment = step == nullptr || is_int_literal(step, 1)
                 ? nullptr : own_bound(step);
+            if (device_caps.offset_kind != 4) {
+                head.m_start = bound_to_index_kind(loc, head.m_start);
+                head.m_end = bound_to_index_kind(loc, head.m_end);
+                head.m_increment = bound_to_index_kind(loc,
+                    head.m_increment);
+            }
             return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 head, body.p, body.n, nullptr, 0));
         };
@@ -820,21 +832,21 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             ASR::expr_t *offset = ASRUtils::EXPR(
                 ASR::make_IntegerBinOp_t(al, loc, var,
                     ASR::binopType::Sub,
-                    to_int32(loc, own_bound(ref_start)),
+                    in_index_kind(own_bound(ref_start)),
                     int_type, nullptr));
             if (!unit_ref_step) {
                 offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     offset, ASR::binopType::Div,
-                    to_int32(loc, own_bound(ref_step)), int_type,
+                    in_index_kind(own_bound(ref_step)), int_type,
                     nullptr));
             }
             if (!unit_step) {
                 offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     offset, ASR::binopType::Mul,
-                    to_int32(loc, own_bound(step)), int_type, nullptr));
+                    in_index_kind(own_bound(step)), int_type, nullptr));
             }
             return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                to_int32(loc, own_bound(start)),
+                in_index_kind(own_bound(start)),
                 ASR::binopType::Add, offset, int_type, nullptr));
         };
 
@@ -1874,25 +1886,6 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
         // not fit integer(4): a lower bound beyond huge(0), or one near it
         // that the last index carries past it.
         ASR::ttype_t *counter_type = index_type(loc);
-        auto in_counter_kind = [&](ASR::expr_t *e) -> ASR::expr_t* {
-            if (e == nullptr || ASRUtils::extract_kind_from_ttype_t(
-                    ASRUtils::expr_type(e)) == device_caps.offset_kind) {
-                return e;
-            }
-            if (ASR::is_a<ASR::ArrayBound_t>(*e)) {
-                ASR::ArrayBound_t *b = ASR::down_cast<ASR::ArrayBound_t>(e);
-                return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
-                    b->m_v, b->m_dim, counter_type, b->m_bound, nullptr));
-            }
-            if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
-                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-                    ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n,
-                    counter_type, ASR::integerbozType::Decimal));
-            }
-            return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, e,
-                ASR::cast_kindType::IntegerToInteger, counter_type,
-                nullptr, nullptr));
-        };
 
         // The last index of a dimension that starts at `start` and has
         // `length` elements.
@@ -1902,8 +1895,10 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
             if (device_caps.offset_kind != 4) {
                 return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                        in_counter_kind(start), ASR::binopType::Add,
-                        in_counter_kind(length), counter_type, nullptr)),
+                        bound_to_index_kind(loc, start),
+                        ASR::binopType::Add,
+                        bound_to_index_kind(loc, length), counter_type,
+                        nullptr)),
                     ASR::binopType::Sub,
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                         counter_type, ASR::integerbozType::Decimal)),
@@ -2363,9 +2358,10 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
                     && ASRUtils::extract_kind_from_ttype_t(
                         ASRUtils::expr_type(loop_vars[d]))
                             == device_caps.offset_kind) {
-                head.m_start = in_counter_kind(head.m_start);
-                head.m_end = in_counter_kind(head.m_end);
-                head.m_increment = in_counter_kind(head.m_increment);
+                head.m_start = bound_to_index_kind(loc, head.m_start);
+                head.m_end = bound_to_index_kind(loc, head.m_end);
+                head.m_increment = bound_to_index_kind(loc,
+                    head.m_increment);
             }
             if (d == n_loops - 1) {
                 loop_nest = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,

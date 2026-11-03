@@ -5315,6 +5315,14 @@ filename = "../integration_tests/gpu_metal_692.f90"
 options = "--descriptor-index-64"
 gpu_cuda_kernel = true
 
+# matmul lowered inside the kernel, of operands with lower bounds that do
+# not fit integer(4), with the same flag: its loops count, and the indices
+# of the other operands are computed, in `long`.
+[[test]]
+filename = "../integration_tests/gpu_metal_694.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
 # The same flag with an array whose first extent alone exceeds huge(0), and
 # one whose first two extents multiply past it: the strides of their later
 # dimensions are 64-bit. Compile-only: each array takes 4 GB, which a run
