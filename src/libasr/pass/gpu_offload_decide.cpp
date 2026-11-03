@@ -107,6 +107,18 @@ bool GpuOffloadVisitor::offloadable_loop_nest(const ASR::OMPRegion_t &region,
         }
     }
 
+    // The iterations are numbered in the device's index kind, so a loop
+    // index wider than that has no iteration number of its own.
+    for (size_t d = 0; d < n_dims; d++) {
+        ASR::ttype_t *index_type = ASRUtils::expr_type(nest.head(d).m_v);
+        if (ASRUtils::extract_kind_from_ttype_t(index_type)
+                > device_caps.max_index_kind) {
+            report_not_offloaded(loc, GpuDecline(
+                GpuDeclineReason::LoopIndexKind, "", index_type));
+            return false;
+        }
+    }
+
     // The kernel maps a flat thread id onto `start + (flat % extent)`, which
     // is only the loop's iteration set when the stride is one. A strided
     // head would silently address the wrong elements, so it is an error
