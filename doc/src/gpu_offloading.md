@@ -95,7 +95,9 @@ when a captured argument is absent. The optional-argument ASR pass supplies
 the kernel's explicit presence flag, including when forwarding to device
 procedures. Host buffer addresses and shape queries use a safe view associated
 with the actual argument only when it is present; absent arrays use an empty
-view. Scalar ABI placeholders likewise never read absent storage. These
+view. Decomposed allocatable components use the root argument's presence
+before associating their host views or reading their bounds. Scalar ABI
+placeholders likewise never read absent storage. These
 placeholders are not Fortran default values: guarded device accesses retain
 the original absence semantics.
 

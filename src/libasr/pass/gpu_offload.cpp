@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <libasr/asr.h>
+#include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
@@ -713,6 +714,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         std::string param_name;
         ASR::symbol_t *orig_mem_sym;
         ASR::ttype_t *alloc_type;
+        ASR::expr_t *host_arg = nullptr;
     };
     std::vector<DecompInfo> decomp_infos;
     for (auto &[struct_name, members] :
@@ -913,6 +915,49 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                     orig_struct_sym)),
                 di.orig_mem_sym, di.alloc_type, nullptr));
+        if (ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(orig_struct_sym))
+                    ->m_presence == ASR::presenceType::Optional) {
+            // Decomposition removes the optional root from the kernel's
+            // dummies. Guard the host association before evaluating any
+            // component address, extent or lower bound.
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(di.orig_mem_sym))
+                    ->m_type_declaration;
+            ASR::expr_t *view = b.Variable(orig_scope,
+                orig_scope->get_unique_name("__gpu_optional_component"),
+                ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    ASRUtils::duplicate_type_with_empty_dims(al, flat_type))),
+                ASR::intentType::Local, type_decl);
+            ASR::expr_t *empty = b.Variable(orig_scope,
+                orig_scope->get_unique_name("__gpu_absent_component"),
+                b.Array(std::vector<int64_t>(
+                    ASRUtils::extract_n_dims_from_ttype(flat_type), 0),
+                    ASRUtils::duplicate_type(al,
+                        ASRUtils::extract_type(flat_type))),
+                ASR::intentType::Local, type_decl);
+            Vec<ASR::expr_t*> present_args;
+            present_args.reserve(al, 1);
+            present_args.push_back(al,
+                ASRUtils::EXPR(ASR::make_Var_t(al, loc, orig_struct_sym)));
+            ASR::expr_t *present = ASRUtils::EXPR(
+                ASR::make_IntrinsicElementalFunction_t(al, loc,
+                    static_cast<int64_t>(
+                        ASRUtils::IntrinsicElementalFunctions::Present),
+                    present_args.p, present_args.n, 0,
+                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)),
+                    nullptr));
+            auto associate = [&](ASR::expr_t *target) {
+                return ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+                    view, target,
+                    ASR::pointer_bounds_formType::NoPointerBounds));
+            };
+            gather_stmts.push_back(al, b.If(present,
+                {associate(carg.m_value)}, {associate(empty)}));
+            carg.m_value = view;
+        }
+        di.host_arg = carg.m_value;
         call_args.push_back(al, carg);
     }
 
@@ -937,13 +982,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             ASR::Array_t *k_arr = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_allocatable(k_var->m_type));
 
-            ASR::symbol_t *orig_struct_sym =
-                orig_scope->resolve_symbol(di.struct_name);
-            ASR::expr_t *host_member_expr = ASRUtils::EXPR(
-                ASR::make_StructInstanceMember_t(al, loc,
-                    ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                        orig_struct_sym)),
-                    di.orig_mem_sym, di.alloc_type, nullptr));
+            ASR::expr_t *host_member_expr = di.host_arg;
 
             for (size_t d = 0; d < arr->n_dims; d++) {
                 std::string dim_name =
