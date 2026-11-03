@@ -2,7 +2,7 @@
 using namespace metal;
 
 inline int triangle_gpu_53(int n_gpu) {
-    int s_gpu;
+    int s_gpu{};
     int __gpu_loop_end_gpu;
     int __gpu_loop_group_gpu;
     int k_gpu;

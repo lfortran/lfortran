@@ -142,7 +142,7 @@ __device__ inline void copy_element_gpu_23(int* source, int __1source, int __2so
 }
 
 __device__ inline int read_element_gpu_24(int* source, int __1source, int __2source, int row, int column) {
-    int value;
+    int value{};
     value = source[((int)(row) - (1)) + (__1source * ((int)(column) - (1)))];
     return value;
 }

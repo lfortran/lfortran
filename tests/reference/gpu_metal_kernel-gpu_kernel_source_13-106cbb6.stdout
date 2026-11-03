@@ -74,7 +74,7 @@ inline void copy_element_gpu_23(device int* source_gpu, int __1source_gpu, int _
 }
 
 inline int read_element_gpu_24(device int* source_gpu, int __1source_gpu, int __2source_gpu, int row_gpu, int column_gpu) {
-    int value_gpu;
+    int value_gpu{};
     value_gpu = source_gpu[((int)(row_gpu) - (1)) + (__1source_gpu * ((int)(column_gpu) - (1)))];
     return value_gpu;
 }

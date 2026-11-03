@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 __device__ inline int triangle_gpu_53(int n) {
-    int s;
+    int s{};
     int k;
     s = 0;
     for (k = 1; k <= n; k++) {

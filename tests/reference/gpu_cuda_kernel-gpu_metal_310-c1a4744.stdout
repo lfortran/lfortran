@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 __device__ inline float vla_fill_gpu_9(int m, float v, float* tmp) {
-    float s;
+    float s{};
     int __gpu_sum_k;
     float __gpu_sum_res;
     int k;

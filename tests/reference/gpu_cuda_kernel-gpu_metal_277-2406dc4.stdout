@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 __device__ inline float _lcompilers_dot_product_gpu_57(float* matrix_a, int __1matrix_a, float* matrix_b, int __size_matrix_b_dim1, int __stride_matrix_b_dim1) {
-    float result;
+    float result{};
     int i;
     result =   0.00000000000000000e+00f;
     for (i = ((int)1); i <= ((((int)__1matrix_a) + ((int)1)) - 1); i++) {
@@ -135,7 +135,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 }
 
 __device__ inline float _lcompilers_dot_product1_gpu_59(float* matrix_a, int __1matrix_a, float* matrix_b, int __size_matrix_b_dim1, int __stride_matrix_b_dim1) {
-    float result;
+    float result{};
     int i;
     result =   0.00000000000000000e+00f;
     for (i = ((int)1); i <= ((((int)__1matrix_a) + ((int)1)) - 1); i++) {
