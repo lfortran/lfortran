@@ -1694,6 +1694,24 @@ semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a proced
 4061 | procedure(cc1_ept_iface), pointer :: cc1_ept_later => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
      |                                                       ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
 
+semantic error: procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4082:33
+     |
+4082 |         procedure(), pointer :: s  ! {Error} procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+     |                                 ^ 
+
+semantic error: procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4085:40
+     |
+4085 |         procedure(integer), pointer :: f  ! {Error} procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+     |                                        ^ 
+
+semantic error: procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4088:40
+     |
+4088 |         procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+     |                                        ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
