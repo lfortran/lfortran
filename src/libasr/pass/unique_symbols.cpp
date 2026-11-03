@@ -5,6 +5,8 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
+#include <set>
 #include <unordered_map>
 #include<unordered_set>
 
@@ -418,6 +420,53 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
 };
 
 
+class MetalSymbolRenameVisitor:
+        public ASR::BaseWalkVisitor<MetalSymbolRenameVisitor> {
+    std::map<SymbolTable*, std::set<std::string>> allocated;
+    std::set<ASR::symbol_t*> collected;
+
+    void collect(ASR::symbol_t *symbol) {
+        symbol = ASRUtils::symbol_get_past_external(symbol);
+        if (!symbol || !collected.insert(symbol).second) return;
+        if (ASR::is_a<ASR::Variable_t>(*symbol)) {
+            auto *var = ASR::down_cast<ASR::Variable_t>(symbol);
+            if (var->m_type_declaration) collect(var->m_type_declaration);
+        } else if (ASR::is_a<ASR::Struct_t>(*symbol)) {
+            auto *type = ASR::down_cast<ASR::Struct_t>(symbol);
+            if (type->m_parent) collect(type->m_parent);
+            for (auto &item : type->m_symtab->get_scope()) {
+                collect(item.second);
+            }
+        } else {
+            return;
+        }
+        SymbolTable *scope = ASRUtils::symbol_parent_symtab(symbol);
+        std::string base = std::string(ASRUtils::symbol_name(symbol)) + "_gpu";
+        std::string name = scope->get_unique_name(base, false);
+        for (size_t i = 1; !allocated[scope].insert(name).second; i++) {
+            name = scope->get_unique_name(base + std::to_string(i), false);
+        }
+        sym_to_renamed[symbol] = name;
+    }
+
+public:
+    std::unordered_map<ASR::symbol_t*, std::string> sym_to_renamed;
+
+    void visit_Function(const ASR::Function_t &x) {
+        if (ASRUtils::runs_on_device(x)) {
+            std::vector<SymbolTable*> scopes;
+            gpu_routine_scopes(x.m_symtab, scopes);
+            for (SymbolTable *scope : scopes) {
+                for (auto &item : scope->get_scope()) {
+                    collect(item.second);
+                }
+            }
+        }
+        ASR::BaseWalkVisitor<MetalSymbolRenameVisitor>::visit_Function(x);
+    }
+};
+
+
 class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
     private:
 
@@ -425,10 +474,36 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
 
     public:
     std::unordered_map<ASR::symbol_t*, std::string>& sym_to_new_name;
+    std::unordered_map<ASR::symbol_t*, std::string> original_names;
     std::map<std::string, ASR::symbol_t*> current_scope;
 
     UniqueSymbolVisitor(Allocator& al_,
-    std::unordered_map<ASR::symbol_t*, std::string> &sn) : al(al_), sym_to_new_name(sn){}
+    std::unordered_map<ASR::symbol_t*, std::string> &sn) : al(al_), sym_to_new_name(sn) {
+        for (auto &entry : sn) {
+            original_names[entry.first] = ASRUtils::symbol_name(entry.first);
+        }
+    }
+
+    void rename_names(char **&names, size_t n_names) {
+        Vec<char*> renamed;
+        renamed.reserve(al, n_names);
+        bool changed = false;
+        for (size_t i = 0; i < n_names; i++) {
+            char *name = names[i];
+            auto symbol = current_scope.find(name);
+            if (symbol != current_scope.end()) {
+                auto replacement = sym_to_new_name.find(symbol->second);
+                if (replacement != sym_to_new_name.end()) {
+                    name = s2c(al, replacement->second);
+                    changed = true;
+                }
+            }
+            renamed.push_back(al, name);
+        }
+        // Duplicated symbols can share these lists, but their scopes need not
+        // allocate the same replacement names.
+        if (changed) names = renamed.p;
+    }
 
     // Renames the captured symbols of `symtab`, whose original contents are
     // in `current_scope`. All old names are erased before any new name is
@@ -470,14 +545,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
             xx.m_name = s2c(al, sym_to_new_name[sym]);
         }
-        for (size_t i=0; i<xx.n_dependencies; i++) {
-            if (current_scope.find(xx.m_dependencies[i]) != current_scope.end()) {
-                sym = current_scope[xx.m_dependencies[i]];
-                if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
-                    xx.m_dependencies[i] = s2c(al, sym_to_new_name[sym]);
-                }
-            }
-        }
+        rename_names(xx.m_dependencies, xx.n_dependencies);
         current_scope = x.m_symtab->get_scope();
         for (auto &a : x.m_symtab->get_scope()) {
                 visit_symbol(*a.second);
@@ -538,23 +606,9 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
             xx.m_name = s2c(al, sym_to_new_name[sym]);
         }
         std::map<std::string, ASR::symbol_t*> current_scope_copy = current_scope;
-        for (size_t i=0; i<xx.n_dependencies; i++) {
-            if (current_scope.find(xx.m_dependencies[i]) != current_scope.end()) {
-                sym = current_scope[xx.m_dependencies[i]];
-                if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
-                    xx.m_dependencies[i] = s2c(al, sym_to_new_name[sym]);
-                }
-            }
-        }
+        rename_names(xx.m_dependencies, xx.n_dependencies);
         current_scope = x.m_symtab->get_scope();
-        for (size_t i=0; i<xx.n_members; i++) {
-            if (current_scope.find(xx.m_members[i]) != current_scope.end()) {
-                sym = current_scope[xx.m_members[i]];
-                if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
-                    xx.m_members[i] = s2c(al, sym_to_new_name[sym]);
-                }
-            }
-        }
+        rename_names(xx.m_members, xx.n_members);
         for (auto &a : x.m_symtab->get_scope()) {
             visit_symbol(*a.second);
         }
@@ -580,14 +634,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
             xx.m_name = s2c(al, sym_to_new_name[sym]);
         }
-        for (size_t i=0; i<xx.n_dependencies; i++) {
-            if (current_scope.find(xx.m_dependencies[i]) != current_scope.end()) {
-                sym = current_scope[xx.m_dependencies[i]];
-                if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
-                    xx.m_dependencies[i] = s2c(al, sym_to_new_name[sym]);
-                }
-            }
-        }
+        rename_names(xx.m_dependencies, xx.n_dependencies);
     }
 
     void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
@@ -595,6 +642,21 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
         if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
             xx.m_name = s2c(al, sym_to_new_name[sym]);
+        }
+        ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(x.m_proc);
+        if (x.m_self_argument && ASR::is_a<ASR::Function_t>(*proc)) {
+            auto *fn = ASR::down_cast<ASR::Function_t>(proc);
+            for (size_t i = 0; i < fn->n_args; i++) {
+                ASR::symbol_t *arg = ASR::down_cast<ASR::Var_t>(
+                    fn->m_args[i])->m_v;
+                auto name = original_names.find(arg);
+                // The procedure may already have been visited and renamed.
+                if (name != original_names.end() &&
+                        name->second == x.m_self_argument) {
+                    xx.m_self_argument = s2c(al, sym_to_new_name.at(arg));
+                    break;
+                }
+            }
         }
     }
 
@@ -633,10 +695,84 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
 };
 
 
+// Symbol-table renaming does not reach ExternalSymbols retained in duplicated
+// expressions. Refresh those references only after all defining scopes have
+// their final names; leave the expressions' types and wrappers unchanged.
+class SymbolReferenceRenameVisitor:
+        public ASR::ASRPassBaseWalkVisitor<SymbolReferenceRenameVisitor> {
+    Allocator &al;
+
+    void update_reference(ASR::symbol_t *&symbol) {
+        if (!symbol || !ASR::is_a<ASR::ExternalSymbol_t>(*symbol)) return;
+        auto *external = ASR::down_cast<ASR::ExternalSymbol_t>(symbol);
+        visit_ExternalSymbol(*external);
+        ASR::symbol_t *local = current_scope->resolve_symbol(external->m_name);
+        if (local && ASRUtils::symbol_get_past_external(local) ==
+                external->m_external) {
+            symbol = local;
+        }
+    }
+
+public:
+    SymbolReferenceRenameVisitor(Allocator &al): al(al) {}
+
+    void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+        auto &xx = const_cast<ASR::ExternalSymbol_t&>(x);
+        xx.m_original_name = s2c(al, ASRUtils::symbol_name(x.m_external));
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(x.m_external);
+        LCOMPILERS_ASSERT(owner != nullptr);
+        if (ASR::is_a<ASR::Struct_t>(*owner)) {
+            xx.m_module_name = s2c(al, ASRUtils::symbol_name(owner));
+            xx.m_scope_names = nullptr;
+            xx.n_scope_names = 0;
+            ASRUtils::set_struct_member_owner_path(al, &xx);
+        }
+    }
+
+    void visit_Variable(const ASR::Variable_t &x) {
+        update_reference(const_cast<ASR::Variable_t&>(x).m_type_declaration);
+        ASR::ASRPassBaseWalkVisitor<SymbolReferenceRenameVisitor>::visit_Variable(x);
+    }
+
+    void visit_Var(const ASR::Var_t &x) {
+        update_reference(const_cast<ASR::Var_t&>(x).m_v);
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        update_reference(const_cast<ASR::StructInstanceMember_t&>(x).m_m);
+        ASR::ASRPassBaseWalkVisitor<SymbolReferenceRenameVisitor>::visit_StructInstanceMember(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        auto &xx = const_cast<ASR::FunctionCall_t&>(x);
+        update_reference(xx.m_name);
+        update_reference(xx.m_original_name);
+        ASR::ASRPassBaseWalkVisitor<SymbolReferenceRenameVisitor>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        auto &xx = const_cast<ASR::SubroutineCall_t&>(x);
+        update_reference(xx.m_name);
+        update_reference(xx.m_original_name);
+        ASR::ASRPassBaseWalkVisitor<SymbolReferenceRenameVisitor>::visit_SubroutineCall(x);
+    }
+
+    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+        update_reference(const_cast<ASR::StructConstructor_t&>(x).m_dt_sym);
+        ASR::ASRPassBaseWalkVisitor<SymbolReferenceRenameVisitor>::visit_StructConstructor(x);
+    }
+
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        update_reference(const_cast<ASR::StructConstant_t&>(x).m_dt_sym);
+        ASR::ASRPassBaseWalkVisitor<SymbolReferenceRenameVisitor>::visit_StructConstant(x);
+    }
+};
+
+
 void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& pass_options) {
     /*
-     * This pass is applied iff the following options are passed; otherwise, return
+     * Ordinary symbol mangling applies with the following options:
      * MANGLING_OPTION="--all-mangling"
      * MANGLING_OPTION="--module-mangling"
      * MANGLING_OPTION="--global-mangling"
@@ -656,15 +792,17 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
     if (pass_options.mangle_underscore) {
         lcompilers_unique_ID_separate_compilation = "";
     }
-    if ((!any_present || (!(pass_options.mangle_underscore ||
-            pass_options.fortran_mangling || pass_options.mangle_underscore_external) &&
-            lcompilers_unique_ID_separate_compilation.empty())) &&
-                !pass_options.c_mangling) {
-        // `--mangle-underscore` doesn't require `lcompilers_unique_ID_separate_compilation`
-        // `lcompilers_unique_ID_separate_compilation` is not mandatory for `--apply-fortran-mangling`
+    // Metal data renaming must not enable otherwise ineligible global mangling:
+    // kernel lookup strings have already been lowered before this pass.
+    bool mangle_symbols = pass_options.c_mangling || (any_present &&
+        (pass_options.mangle_underscore || pass_options.fortran_mangling ||
+         pass_options.mangle_underscore_external ||
+         !lcompilers_unique_ID_separate_compilation.empty()));
+    if (!mangle_symbols && !pass_options.gpu_offload_metal) {
         return;
     }
-    SymbolRenameVisitor v(pass_options.intrinsic_module_name_mangling,
+    if (mangle_symbols) {
+        SymbolRenameVisitor v(pass_options.intrinsic_module_name_mangling,
                 pass_options.module_name_mangling,
                 pass_options.global_symbols_mangling,
                 pass_options.intrinsic_symbols_mangling,
@@ -673,9 +811,21 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
                 pass_options.fortran_mangling,
                 pass_options.c_mangling,
                 pass_options.mangle_underscore_external);
-    v.visit_TranslationUnit(unit);
-    UniqueSymbolVisitor u(al, v.sym_to_renamed);
-    u.visit_TranslationUnit(unit);
+        v.visit_TranslationUnit(unit);
+        UniqueSymbolVisitor u(al, v.sym_to_renamed);
+        u.visit_TranslationUnit(unit);
+    }
+    if (pass_options.gpu_offload_metal) {
+        // Allocate target-safe data names by symbol in its defining scope.
+        // Procedure names stay intact: kernel lookup strings are already
+        // lowered, and device helpers have their own emission names.
+        MetalSymbolRenameVisitor metal;
+        metal.visit_TranslationUnit(unit);
+        UniqueSymbolVisitor rename_metal(al, metal.sym_to_renamed);
+        rename_metal.visit_TranslationUnit(unit);
+        SymbolReferenceRenameVisitor references(al);
+        references.visit_TranslationUnit(unit);
+    }
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);
 }

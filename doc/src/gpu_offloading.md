@@ -63,6 +63,16 @@ components are all offloaded, or are an error until the pipeline supports them.
 Adding an entry to the list is a design decision, not a way to make a failing
 loop compile.
 
+### Device identifiers
+
+Valid Fortran names such as `half`, `kernel`, `int` and `device` need not be
+valid Metal identifiers. The `unique_symbols` pass gives Metal device data
+and derived types collision-free names in their defining scopes, updating
+component references and binding scalar record component arguments by symbol.
+It preserves types, layout, host ABI and kernel registration names, without
+enabling otherwise ineligible global mangling. Device helper declarations
+and calls use their existing emission names. CPU and CUDA naming is unchanged.
+
 ### Scalar logarithms
 
 Real `log` in a kernel or a device-only procedure retains its intrinsic
