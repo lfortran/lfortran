@@ -38,6 +38,7 @@
 "expr.TupleContains" = "helper:container runtime"
 "expr.StringContains" = "helper:string runtime"
 "expr.SymbolicCompare" = "lowered:replace_symbolic"
+"expr.FrameAddress" = "lowered:nested_vars"
 "expr.FunctionParam" = "helper:type expression substitution"
 "expr.ArrayTranspose" = "helper:array runtime"
 "expr.ArrayPack" = "helper:array runtime"

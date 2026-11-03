@@ -263,6 +263,14 @@ expr
     | DictItem(expr a, expr key, expr? default, ttype type, expr? value)
     | CLoc(expr arg, ttype type, expr? value)
     | PointerToCPtr(expr arg, ttype type, expr? value)
+    -- The address, as a type(c_ptr), of the frame that the internal
+    -- procedure `procedure` (a frame entry) takes through its last dummy
+    -- argument, a type(c_ptr) value dummy, instead of a frame dummy: the
+    -- frame of the instance of its host that evaluates this expression, or
+    -- a null pointer when the procedure needs no frame. It only exists
+    -- before the nested_vars pass, which replaces it (see
+    -- specialize_frame_arguments.cpp).
+    | FrameAddress(symbol procedure, ttype type, expr? value)
     | GetPointer(expr arg, ttype type, expr? value)
     | ListItem(expr a, expr pos, ttype type, expr? value)
     | TupleItem(expr a, expr pos, ttype type, expr? value)

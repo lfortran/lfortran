@@ -2212,6 +2212,30 @@ public:
         return ASRUtils::types_equal(a, b, a_expr, b_expr, false);
     }
 
+    // A FrameAddress names a frame entry: an internal procedure, visible
+    // here, whose last dummy argument is a type(c_ptr) value dummy, through
+    // which it takes its frame. The nested_vars pass replaces it.
+    void visit_FrameAddress(const FrameAddress_t &x) {
+        BaseWalkVisitor<VerifyVisitor>::visit_FrameAddress(x);
+        require_id(!check_nested_vars,
+            "asr.verify.nested_vars.frame_address",
+            "the address of the frame of '" + std::string(
+                ASRUtils::symbol_name(x.m_procedure)) + "' remains after the "
+            "nested_vars pass");
+        require_id(symtab_in_scope(current_symtab, x.m_procedure),
+            "asr.verify.frame_address.scope",
+            "the procedure '" + std::string(ASRUtils::symbol_name(
+                x.m_procedure)) + "' of a frame address is not visible here");
+        require_id(x.m_type != nullptr && ASR::is_a<ASR::CPtr_t>(*x.m_type) &&
+            x.m_value == nullptr, "asr.verify.frame_address.type",
+            "a frame address must be a type(c_ptr) without a value");
+        require_id(ASRUtils::is_frame_entry(x.m_procedure),
+            "asr.verify.frame_address.procedure",
+            "the procedure '" + std::string(ASRUtils::symbol_name(
+                x.m_procedure)) + "' of a frame address must be an internal "
+            "procedure whose last dummy argument is a type(c_ptr) value");
+    }
+
     void visit_BindReference(const BindReference_t &x) {
         BaseWalkVisitor<VerifyVisitor>::visit_BindReference(x);
         if (diagnostics.has_error()) {

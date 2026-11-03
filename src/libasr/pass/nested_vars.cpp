@@ -129,6 +129,22 @@ statement has restored it before the statement goes on. If the interface of
 P depends on host variables, a thunk reaches them, like an internal
 procedure, through aliases bound from the frame in its slot.
 
+A frame entry is an internal procedure that a FrameAddress names (made with
+--fast, see specialize_frame_arguments.cpp): it takes the frame through its
+last dummy argument, a type(c_ptr) value, instead of a frame dummy. A
+procedure value of it is its raw code address, which needs no thunk: it is
+only passed together with a FrameAddress of it, which becomes the address of
+the frame of the instance that makes the value, or a null pointer if the
+entry needs no frame. The entry points a local pointer at the frame on entry:
+
+    integer function inner__lcompilers_frame_entry(x, __lcompilers_frame_address)
+        integer, intent(in) :: x
+        type(c_ptr), value :: __lcompilers_frame_address
+        type(__lcompilers_frame_h), pointer :: __lcompilers_frame
+        call c_f_pointer(__lcompilers_frame_address, __lcompilers_frame)
+        inner__lcompilers_frame_entry = inner(x, __lcompilers_frame)
+    end function
+
 An instance gives back or restores its slot when it ends, after its locals
 are finalized: a final procedure can invoke a value the instance made. The
 backends finalize the locals of a procedure after its last statement, so a
@@ -280,6 +296,15 @@ public:
     void visit_dtio_binding(const ASR::dtio_binding_t &x) {
         note(x.m_callback);
         ASR::BaseWalkVisitor<HostReferenceCollector>::visit_dtio_binding(x);
+    }
+
+    // The frame address of a frame entry of the host is the frame that the
+    // entry needs (see above)
+    void visit_FrameAddress(const ASR::FrameAddress_t &x) {
+        if (in_interface == 0 &&
+                ASRUtils::symbol_parent_symtab(x.m_procedure) == host) {
+            called.insert(x.m_procedure);
+        }
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
@@ -435,10 +460,32 @@ struct PoolSlots {
     ASR::ttype_t *member_type = nullptr;
 };
 
+// The address of the frame `frame` designates as a type(c_ptr), or a null
+// pointer if `frame` is nullptr
+static ASR::expr_t *frame_address_of(Allocator &al, const Location &loc,
+        ASR::expr_t *frame) {
+    ASR::ttype_t *cptr = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc,
+        ASR::cptr_kindType::CPointer));
+    if (frame == nullptr) {
+        return ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, loc, cptr,
+            nullptr));
+    }
+    ASRUtils::ExprStmtDuplicator duplicator(al);
+    ASR::ttype_t *type = duplicator.duplicate_ttype(
+        ASRUtils::type_get_past_pointer(ASRUtils::expr_type(frame)));
+    return ASRUtils::EXPR(ASR::make_PointerToCPtr_t(al, loc,
+        ASRUtils::EXPR(ASR::make_GetPointer_t(al, loc, frame,
+            ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, type)), nullptr)),
+        cptr, nullptr));
+}
+
 // Replaces the entities of the host in an expression
 class HostEntityReplacer: public ASR::BaseExprReplacer<HostEntityReplacer> {
 public:
     Child *child = nullptr;
+    // The replacement of the frame address of a frame entry of the host,
+    // or nullptr for one of another host
+    std::function<ASR::expr_t*(ASR::symbol_t*, const Location&)> frame_address;
 
     void replace_Var(ASR::Var_t *x) {
         auto it = child->replacements.find(x->m_v);
@@ -451,6 +498,43 @@ public:
         ASR::BaseExprReplacer<HostEntityReplacer>::replace_ArrayPhysicalCast(x);
         x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
     }
+
+    void replace_FrameAddress(ASR::FrameAddress_t *x) {
+        ASR::expr_t *address = frame_address
+            ? frame_address(x->m_procedure, x->base.base.loc) : nullptr;
+        if (address != nullptr) {
+            *current_expr = address;
+        }
+    }
+};
+
+// Replaces the frame address of a frame entry of a host in an expression
+class FrameAddressReplacer: public ASR::BaseExprReplacer<FrameAddressReplacer> {
+public:
+    std::function<ASR::expr_t*(ASR::symbol_t*, const Location&)> frame_address;
+
+    void replace_FrameAddress(ASR::FrameAddress_t *x) {
+        ASR::expr_t *address = frame_address(x->m_procedure, x->base.base.loc);
+        if (address != nullptr) {
+            *current_expr = address;
+        }
+    }
+};
+
+// Replaces the frame addresses of the frame entries of a host in its body
+// and its BLOCK and ASSOCIATE constructs, but not in its internal procedures
+class HostFrameAddresses: public ASR::CallReplacerOnExpressionsVisitor<HostFrameAddresses> {
+public:
+    FrameAddressReplacer replacer;
+
+    void call_replacer() {
+        if (*current_expr != nullptr) {
+            replacer.current_expr = current_expr;
+            replacer.replace_expr(*current_expr);
+        }
+    }
+
+    void visit_Function(const ASR::Function_t &/*x*/) {}
 };
 
 // Whether a node refers to an entity of the host that is replaced, or calls
@@ -460,10 +544,18 @@ class HostEntityFinder: public ASR::BaseWalkVisitor<HostEntityFinder> {
 public:
     const Child &child;
     const std::set<ASR::symbol_t*> &needs_frame;
+    const std::set<ASR::symbol_t*> &entries;
     bool found = false;
 
-    HostEntityFinder(const Child &child_, const std::set<ASR::symbol_t*> &needs_frame_):
-        child(child_), needs_frame(needs_frame_) {}
+    HostEntityFinder(const Child &child_, const std::set<ASR::symbol_t*> &needs_frame_,
+            const std::set<ASR::symbol_t*> &entries_):
+        child(child_), needs_frame(needs_frame_), entries(entries_) {}
+
+    void visit_FrameAddress(const ASR::FrameAddress_t &x) {
+        if (entries.count(x.m_procedure)) {
+            found = true;
+        }
+    }
 
     void visit_Var(const ASR::Var_t &x) {
         if (child.replacements.find(x.m_v) != child.replacements.end()) {
@@ -495,6 +587,9 @@ class FrameActuals {
 public:
     Allocator &al;
     const std::set<ASR::symbol_t*> &needs_frame;
+    // The frame entries of the host (see above), which are never called
+    // directly
+    std::set<ASR::symbol_t*> entries;
     std::set<const ASR::asr_t*> done;
 
     FrameActuals(Allocator &al_, const std::set<ASR::symbol_t*> &needs_frame_):
@@ -578,16 +673,24 @@ public:
     Rewriter(Allocator &al_, Child &child_, FrameActuals &actuals_):
             al(al_), child(child_), actuals(actuals_) {
         replacer.child = &child;
+        replacer.frame_address = [this](ASR::symbol_t *entry,
+                const Location &loc) -> ASR::expr_t* {
+            if (!actuals.entries.count(entry)) {
+                return nullptr;
+            }
+            return frame_address_of(al, loc, actuals.needs_frame.count(entry)
+                ? frame_actual(loc) : nullptr);
+        };
     }
 
     bool refers_to_host(ASR::expr_t *expr) {
-        HostEntityFinder finder(child, actuals.needs_frame);
+        HostEntityFinder finder(child, actuals.needs_frame, actuals.entries);
         finder.visit_expr(*expr);
         return finder.found;
     }
 
     bool refers_to_host(ASR::ttype_t *type) {
-        HostEntityFinder finder(child, actuals.needs_frame);
+        HostEntityFinder finder(child, actuals.needs_frame, actuals.entries);
         finder.visit_ttype(*type);
         return finder.found;
     }
@@ -1209,6 +1312,9 @@ public:
     Allocator &al;
     // thunk -> the internal procedure it calls
     std::map<ASR::symbol_t*, ASR::symbol_t*> thunk_targets;
+    // The frame entries (see above): the procedures that a FrameAddress
+    // names
+    std::set<ASR::symbol_t*> frame_entries;
 
     diag::Diagnostics *diagnostics;
     // The number of thunks of each pool (see above)
@@ -1464,6 +1570,63 @@ public:
         return (ASR::symbol_t*) dummy;
     }
 
+    // The frame of a frame entry of the host: a local pointer, pointed at
+    // the frame that its last dummy argument holds the address of on entry
+    ASR::symbol_t *add_entry_frame(ASR::Function_t *entry, const Frame &frame) {
+        const Location &loc = entry->base.base.loc;
+        ASR::Variable_t *pointer = add_variable(entry->m_symtab,
+            "__lcompilers_frame", loc, ASR::intentType::Local, nullptr, nullptr,
+            ASR::storage_typeType::Default, ASRUtils::TYPE(ASR::make_Pointer_t(
+                al, loc, frame_type(loc, frame))), frame.type);
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, entry->n_body + 1);
+        body.push_back(al, ASRUtils::STMT(ASR::make_CPtrToPointer_t(al, loc,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::Var_t>(
+                entry->m_args[entry->n_args - 1])->m_v)),
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, (ASR::symbol_t*) pointer)),
+            nullptr, nullptr)));
+        for (size_t i = 0; i < entry->n_body; i++) {
+            body.push_back(al, entry->m_body[i]);
+        }
+        entry->m_body = body.p;
+        entry->n_body = body.size();
+        return (ASR::symbol_t*) pointer;
+    }
+
+    // Replaces the frame addresses of the frame entries `entries` of the
+    // host in its body: the address of its frame object, or a null pointer
+    // for an entry that needs no frame
+    void replace_frame_addresses(ASR::symbol_t *host_sym, const Frame &frame,
+            const std::set<ASR::symbol_t*> &entries,
+            const std::set<ASR::symbol_t*> &needs_frame) {
+        HostFrameAddresses addresses;
+        addresses.replacer.frame_address = [&](ASR::symbol_t *entry,
+                const Location &loc) -> ASR::expr_t* {
+            if (!entries.count(entry)) {
+                return nullptr;
+            }
+            return frame_address_of(al, loc, needs_frame.count(entry)
+                ? ASRUtils::EXPR(ASR::make_Var_t(al, loc, frame.object))
+                : nullptr);
+        };
+        SymbolTable *host = procedure_scope(host_sym);
+        ASR::stmt_t **body = ASR::is_a<ASR::Function_t>(*host_sym)
+            ? ASR::down_cast<ASR::Function_t>(host_sym)->m_body
+            : ASR::down_cast<ASR::Program_t>(host_sym)->m_body;
+        size_t n_body = ASR::is_a<ASR::Function_t>(*host_sym)
+            ? ASR::down_cast<ASR::Function_t>(host_sym)->n_body
+            : ASR::down_cast<ASR::Program_t>(host_sym)->n_body;
+        for (size_t i = 0; i < n_body; i++) {
+            addresses.visit_stmt(*body[i]);
+        }
+        for (auto &item: host->get_scope()) {
+            if (ASR::is_a<ASR::Block_t>(*item.second) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                addresses.visit_symbol(*item.second);
+            }
+        }
+    }
+
     // The alias in `child` of the host entity `sym`, which `member` of the
     // frame refers to
     ASR::symbol_t *make_alias(Child &child, const Frame &frame,
@@ -1656,10 +1819,15 @@ public:
         }
         const Location &loc = host_sym->base.loc;
 
-        // Every procedure value of an internal procedure names its thunk
-        std::set<ASR::symbol_t*> proc_set;
+        // Every procedure value of an internal procedure names its thunk,
+        // except that of a frame entry, which takes its frame as an argument
+        std::set<ASR::symbol_t*> proc_set, entries;
         for (ASR::Function_t *proc: procs) {
-            proc_set.insert((ASR::symbol_t*) proc);
+            if (frame_entries.count((ASR::symbol_t*) proc)) {
+                entries.insert((ASR::symbol_t*) proc);
+            } else {
+                proc_set.insert((ASR::symbol_t*) proc);
+            }
         }
         ProcedureValueFinder values(proc_set);
         values.visit_symbol(*host_sym);
@@ -1857,7 +2025,11 @@ public:
         for (ASR::Function_t *proc: children_procs) {
             Child &child = children[proc];
             child.proc = proc;
-            if (needs_frame.count((ASR::symbol_t*) proc)) {
+            if (entries.count((ASR::symbol_t*) proc)) {
+                if (needs_frame.count((ASR::symbol_t*) proc)) {
+                    child.frame = add_entry_frame(proc, frame);
+                }
+            } else if (needs_frame.count((ASR::symbol_t*) proc)) {
                 child.frame_dummy = add_frame_dummy(proc, frame);
                 child.frame = child.frame_dummy;
             } else if (thunks.count((ASR::symbol_t*) proc)) {
@@ -1874,6 +2046,7 @@ public:
             }
         }
         FrameActuals actuals(al, needs_frame);
+        actuals.entries = entries;
         for (ASR::Function_t *proc: children_procs) {
             Child &child = children[proc];
             // The aliases and copies, including those of the entities that
@@ -1924,6 +2097,10 @@ public:
                 rewriter.visit_Variable(*ASR::down_cast<ASR::Variable_t>(r));
             }
             rewriter.visit_Function(*proc);
+        }
+
+        if (!entries.empty()) {
+            replace_frame_addresses(host_sym, frame, entries, needs_frame);
         }
 
         if (!captured.empty()) {
@@ -2550,6 +2727,19 @@ public:
     }
 };
 
+// The procedures that a FrameAddress names
+class FrameEntryCollector: public ASR::BaseWalkVisitor<FrameEntryCollector> {
+public:
+    std::set<ASR::symbol_t*> &entries;
+
+    FrameEntryCollector(std::set<ASR::symbol_t*> &entries_): entries(entries_) {}
+
+    void visit_FrameAddress(const ASR::FrameAddress_t &x) {
+        LCOMPILERS_ASSERT(ASRUtils::is_frame_entry(x.m_procedure));
+        entries.insert(x.m_procedure);
+    }
+};
+
 // The procedures and main programs that are not nested in a procedure
 static void collect_program_units(SymbolTable *scope,
         std::vector<ASR::symbol_t*> &units) {
@@ -2571,6 +2761,8 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     HostFrames::collect_program_units(unit.m_symtab, units);
     HostFrames::HostFrameBuilder builder(al, pass_options.diagnostics,
         pass_options.internal_procedure_thunks, pass_options.openmp);
+    HostFrames::FrameEntryCollector entries(builder.frame_entries);
+    entries.visit_TranslationUnit(unit);
     for (ASR::symbol_t *u: units) {
         // A procedure defined in another translation unit (loaded from a
         // module file) is lowered there.
