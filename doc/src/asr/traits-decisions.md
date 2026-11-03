@@ -1420,13 +1420,18 @@ specification action, that is, what the paper should say.
   source's bounds and dynamic type and an independent copy of each element,
   as for any allocatable component (F2018 10.2.1.3), and finalizing the
   structure destroys its elements.
+- **Extension (2026-11-03).** A further report passes the section
+  `objs(1:1)` of an owner to a `class(ITrait) :: obj(:)` dummy. A section
+  of a trait array is a trait array of the same elements, as a section of a
+  Fortran CLASS array is: it is passed in place, never copied, so a defining
+  callee updates the original elements.
 - **Implementation status.** Implemented, also through runtime views and
   under separate compilation. Structure constructor values of trait-array
   components, trait-array module variables, pointers, MOLD allocation, assignment and MOVE_ALLOC of owners,
-  explicit-shape and assumed-size trait arrays, sections of trait arrays as
-  actuals, polymorphic or vector-subscripted actuals, forwarding to a dummy of
-  another contract, trait arrays of generic messages and heterogeneous arrays
-  are not implemented.
+  explicit-shape and assumed-size trait arrays, sections of trait arrays with
+  a vector subscript, polymorphic or vector-subscripted actuals, forwarding
+  to a dummy of another contract, trait arrays of generic messages and
+  heterogeneous arrays are not implemented.
 - **Specification action.** Say whether trait arrays are homogeneous, as
   Fortran CLASS arrays are, and which actuals they accept.
 

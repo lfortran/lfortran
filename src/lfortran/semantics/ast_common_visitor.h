@@ -28183,8 +28183,15 @@ public:
         const Location &loc = actual->base.loc;
         auto *source = ASRUtils::expr_type(actual);
         if (ASRUtils::is_trait_array(ASRUtils::type_get_past_allocatable(source))) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*actual) &&
+                    ASRUtils::is_array_indexed_with_array_indices(
+                        ASR::down_cast<ASR::ArrayItem_t>(actual))) {
+                trait_call_error("passing a section with a vector subscript of a "
+                    "runtime trait array is not implemented yet", loc);
+            }
             if (!ASR::is_a<ASR::Var_t>(*actual) &&
-                    !ASRUtils::is_trait_array_owner_designator(actual)) {
+                    !ASRUtils::is_trait_array_owner_designator(actual) &&
+                    !ASR::is_a<ASR::ArraySection_t>(*actual)) {
                 trait_call_error("passing a section of a runtime trait array is not "
                     "implemented yet", loc);
             }
@@ -28192,6 +28199,21 @@ public:
                     &ASRUtils::trait_runtime_contract(target)->base)) {
                 trait_call_error("passing a runtime trait array to a dummy of another "
                     "trait contract is not implemented yet", loc);
+            }
+            if (ASR::is_a<ASR::ArraySection_t>(*actual)) {
+                // A section is a descriptor of the selected elements in
+                // place; its view references the contract in this scope,
+                // also for a section of a component.
+                auto *section = ASR::down_cast<ASR::ArraySection_t>(actual);
+                auto *contract = ASRUtils::trait_runtime_contract(source);
+                auto *view = ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc,
+                    make_operator_proc_visible(&contract->base, "trait", current_scope)));
+                section->m_type = ASRUtils::duplicate_type_with_empty_dims(al,
+                    ASRUtils::make_Array_t_util(al, loc, view,
+                        ASR::down_cast<ASR::Array_t>(section->m_type)->m_dims,
+                        ASR::down_cast<ASR::Array_t>(section->m_type)->n_dims,
+                        ASR::abiType::Source, true),
+                    ASR::array_physical_typeType::DescriptorArray, true);
             }
             return;
         }

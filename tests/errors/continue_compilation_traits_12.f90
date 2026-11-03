@@ -4,7 +4,7 @@
 module continue_compilation_traits_12_m
     implicit none
     private
-    public :: ISomeTrait, IOther, Item, Other, use_items, use_other, touch_items
+    public :: ISomeTrait, IOther, Item, Other, use_items, use_other, touch_items, look_items
 
     abstract interface :: ISomeTrait
         integer function value(self)
@@ -49,6 +49,10 @@ contains
     subroutine touch_items(items)
         class(ISomeTrait), intent(inout) :: items(:)
     end subroutine touch_items
+
+    subroutine look_items(items)
+        class(ISomeTrait), intent(in) :: items(:)
+    end subroutine look_items
 
     integer function use_other(items) result(s)
         class(IOther), intent(in) :: items(:)
@@ -136,8 +140,11 @@ program continue_compilation_traits_12
     ! Its element type must implement the dummy's trait.
     n = use_items(others)
     n = use_other(others)
-    ! A section of a trait array is not passed yet.
+    ! A section of a trait array is passed in place, but not one with a
+    ! vector subscript yet.
     allocate(Item :: owned(2))
     n = use_items(owned)
     call touch_items(owned(1:1))
+    call touch_items(owned([2, 1]))
+    call look_items(owned([2, 1]))
 end program continue_compilation_traits_12

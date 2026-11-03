@@ -1603,10 +1603,15 @@ bool is_temporary_needed(ASR::expr_t* value) {
     // consumer (e.g. `Associate`) unchanged.
     bool is_null_pointer = ASR::is_a<ASR::PointerNullConstant_t>(
         *ASRUtils::get_past_array_physical_cast(value));
+    // A section of a runtime trait array is a descriptor of the selected
+    // elements in place, never a copy (TD-46).
+    bool is_trait_array_section = ASRUtils::is_trait_array(ASRUtils::expr_type(value)) &&
+        ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_physical_cast(value));
     return is_expr_with_no_type 
         && !ASRUtils::is_stringToArray_cast(value)
         && !is_directly_addressable_expr(value)
         && !is_null_pointer
+        && !is_trait_array_section
         && is_non_empty_fixed_size_array;
 }
 
@@ -3266,6 +3271,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
 
     void replace_ArraySection(ASR::ArraySection_t* x) {
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(x);
+        // A section of a runtime trait array is a descriptor of the selected
+        // elements in place, never a copy (TD-46).
+        if (ASRUtils::is_trait_array(x->m_type)) return;
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) ||

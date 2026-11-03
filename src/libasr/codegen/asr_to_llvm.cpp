@@ -5387,9 +5387,78 @@ public:
         }
     }
 
+    // A section of a runtime trait array (TD-46) is a descriptor of the
+    // selected elements in place. The array's data address, offset and
+    // strides are in bytes, so the section is computed as one of bytes; it
+    // keeps the element length and the view of the elements' dynamic type.
+    void visit_trait_array_section(const ASR::ArraySection_t &x) {
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr_wrapper(x.m_v, false);
+        ptr_loads = saved_loads;
+        llvm::Value *source = tmp;
+        ASR::ttype_t *array = ASRUtils::expr_type(x.m_v);
+        llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
+            ASRUtils::type_get_past_allocatable_pointer(array), module.get());
+        // An owner, a variable or a component, holds a descriptor pointer.
+        if (LLVM::is_llvm_pointer(*array)) {
+            source = llvm_utils->CreateLoad2(array_type->getPointerTo(), source);
+        }
+        llvm::Type *index_type = arr_descr->get_index_type();
+        llvm::Value *dimensions = arr_descr->get_pointer_to_dimension_descriptor_array(
+            array_type, source);
+        Vec<llvm::Value*> lbs, ubs, ds, indices;
+        lbs.reserve(al, x.n_args);
+        ubs.reserve(al, x.n_args);
+        ds.reserve(al, x.n_args);
+        indices.reserve(al, x.n_args);
+        int target_rank = 0;
+        for (size_t i = 0; i < x.n_args; i++) {
+            const ASR::array_index_t &index = x.m_args[i];
+            llvm::Value *dimension = arr_descr->get_pointer_to_dimension_descriptor(
+                dimensions, llvm::ConstantInt::get(context, llvm::APInt(32, i)));
+            auto bound = [&](ASR::expr_t *expression, llvm::Value *fallback) {
+                if (!expression) return fallback;
+                this->visit_expr_wrapper(expression, true);
+                return builder->CreateSExtOrTrunc(tmp, index_type);
+            };
+            if (!index.m_step) {
+                lbs.push_back(al, nullptr);
+                ubs.push_back(al, nullptr);
+                ds.push_back(al, nullptr);
+                indices.push_back(al, bound(index.m_right, nullptr));
+                continue;
+            }
+            lbs.push_back(al, bound(index.m_left, arr_descr->get_lower_bound(dimension)));
+            ubs.push_back(al, bound(index.m_right, arr_descr->get_upper_bound(dimension)));
+            ds.push_back(al, bound(index.m_step, nullptr));
+            indices.push_back(al, nullptr);
+            target_rank++;
+        }
+        llvm::Type *section_type = llvm_utils->get_type_from_ttype_t_util(
+            const_cast<ASR::expr_t*>(&x.base), x.m_type, module.get());
+        llvm::Value *target = arr_descr->create_descriptor_alloca(section_type,
+            "trait_array_section");
+        arr_descr->fill_descriptor_for_array_section(source, llvm::Type::getInt8Ty(context),
+            array, array_type, target, x.m_type, nullptr, section_type, lbs.p, ubs.p,
+            ds.p, indices.p, x.n_args, target_rank, location_manager);
+        builder->CreateStore(llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context),
+                llvm_utils->create_gep2(array_type, source, 1)),
+            llvm_utils->create_gep2(section_type, target, 1));
+        auto *view_type = llvm_utils->getTraitType(x.m_type);
+        builder->CreateStore(llvm_utils->CreateLoad2(view_type,
+                llvm_utils->create_gep2(array_type, source, 9)),
+            llvm_utils->create_gep2(section_type, target, 9));
+        tmp = target;
+    }
+
     void visit_ArraySection(const ASR::ArraySection_t& x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
+            return;
+        }
+        if (ASRUtils::is_trait_array(x.m_type)) {
+            visit_trait_array_section(x);
             return;
         }
         int64_t ptr_loads_copy = ptr_loads;

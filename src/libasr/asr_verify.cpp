@@ -7403,6 +7403,8 @@ public:
                                         passed_arg_expr)) ||
                                      ASR::is_a<Var_t>(*ASRUtils::get_past_array_physical_cast(
                                         passed_arg_expr)) ||
+                                     ASR::is_a<ArraySection_t>(*ASRUtils::get_past_array_physical_cast(
+                                        passed_arg_expr)) ||
                                      ASRUtils::is_trait_array_owner_designator(
                                         ASRUtils::get_past_array_physical_cast(passed_arg_expr)))
                             : ASR::is_a<TraitObjectType_t>(*actual_type)) &&

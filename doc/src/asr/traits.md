@@ -2313,12 +2313,31 @@ are destroyed, so a structure can be assigned to itself; an unallocated source
 deallocates it. Finalizing the structure destroys its elements and frees the
 descriptor.
 
+A section of a trait array, an owner, a component or a borrowed dummy, is
+passed to a trait array dummy of the same contract, as a fourth report does:
+
+```fortran
+class(ITrait), allocatable :: objs(:)
+allocate(MyType :: objs(2))
+call process(objs(1:1))   ! subroutine process(obj); class(ITrait), intent(in) :: obj(:)
+```
+
+The section is a descriptor of the selected elements in place, never a copy:
+the array's data address, offset and strides are in bytes, so the section's
+first element and strides are computed in bytes, and it keeps the element
+length and the view of the elements' dynamic type. Strided, reversed, empty
+and rank-reducing sections are passed, also through a slot of a message, and
+a defining callee updates the caller's own elements. The section's view
+references the contract in the caller's scope, also for a section of a
+component of a type of another scope. A section with a vector subscript is
+diagnosed as not implemented; one that is the actual of an `intent(inout)`
+dummy is not definable, as in any call.
+
 Trait-array module variables and pointers, a structure constructor value for a
 trait-array component, MOLD allocation, assignment and MOVE_ALLOC of owners,
-explicit-shape and assumed-size trait arrays, sections of trait arrays as
-actuals, polymorphic or vector-subscripted actuals, forwarding to a dummy of
-another contract and trait arrays of generic messages are diagnosed as not
-implemented.
+explicit-shape and assumed-size trait arrays, polymorphic or
+vector-subscripted actuals, forwarding to a dummy of another contract and
+trait arrays of generic messages are diagnosed as not implemented.
 `traits_runtime_array_01` passes whole arrays, strided and reversed sections,
 explicit-shape, allocatable, component and rank-two arrays, forwards them,
 updates elements through a defining receiver and calls the reported message
@@ -2327,6 +2346,9 @@ reported module separately. `traits_runtime_array_owner_01` allocates owners
 of two element types in the reported `intent(out)` message, called statically
 and through a view, reallocates one through an `intent(inout)` dummy, and
 checks their cleanup, also with `--detect-leaks`.
+`traits_runtime_array_section_01` passes sections of owners, of a component
+and of a borrowed dummy, of ranks one and two, to read-only and defining
+dummies and through a view of a message, also with `--detect-leaks`.
 `traits_runtime_array_component_01` allocates, passes, assigns and finalizes
 the reported component in each kind of containing object, also with
 `--detect-leaks`. `continue_compilation_traits_12` checks the diagnostics.
