@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the loop index is integer(8), but the gpu numbers the iterations of a loop in a narrower integer
+  --> tests/../integration_tests/gpu_metal_653.f90:9:1 - 11:6
+   |
+ 9 |    do concurrent (i = 1_int64:10_int64)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+11 |    end do
+   | ...^^^^^^ the loop index is integer(8), but the gpu numbers the iterations of a loop in a narrower integer

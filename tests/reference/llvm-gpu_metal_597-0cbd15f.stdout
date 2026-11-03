@@ -1,0 +1,719 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+target datalayout = "..."
+
+%string_descriptor = type { i8*, i64 }
+%array.2 = type { i8*, i64, i32, i8, i8, i8, i8, i64, [2 x %dimension_descriptor] }
+%dimension_descriptor = type { i64, i64, i64 }
+%__ScalarArgs___lfortran_gpu_kernel_0.9 = type { i32, i32, i32, i32 }
+
+@0 = private unnamed_addr constant [2 x i8] c"b\00", align 1
+@1 = private unnamed_addr constant [45 x i8] c"tests/../integration_tests/gpu_metal_597.f90\00", align 1
+@2 = private unnamed_addr constant [53 x i8] c"Cannot allocate '%s' because it is already allocated\00", align 1
+@3 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([45 x i8], [45 x i8]* @1, i32 0, i32 0), i32 14, i32 14, i32 14, i32 20 }]
+@4 = private unnamed_addr constant [55 x i8] c"Attempting to allocate already allocated variable '%s'\00", align 1
+@5 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([53 x i8], [53 x i8]* @2, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @3, i32 0, i32 0), i32 1 }]
+@6 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([55 x i8], [55 x i8]* @4, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @5, i32 0, i32 0), i32 1 }
+@string_const_data = private constant [23 x i8] c"__lfortran_gpu_kernel_0"
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([23 x i8], [23 x i8]* @string_const_data, i32 0, i32 0), i64 23 }
+@string_const_data.1 = private constant [23 x i8] c"__lfortran_gpu_kernel_0"
+@string_const.2 = private global %string_descriptor { i8* getelementptr inbounds ([23 x i8], [23 x i8]* @string_const_data.1, i32 0, i32 0), i64 23 }
+@7 = private unnamed_addr constant [11 x i8] c"__gpu_grid\00", align 1
+@8 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@9 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([45 x i8], [45 x i8]* @1, i32 0, i32 0), i32 15, i32 5, i32 17, i32 10 }]
+@10 = private unnamed_addr constant [118 x i8] c"Runtime error: Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.\00", align 1
+@11 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @8, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @9, i32 0, i32 0), i32 1 }]
+@12 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([118 x i8], [118 x i8]* @10, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @11, i32 0, i32 0), i32 1 }
+@13 = private unnamed_addr constant [12 x i8] c"__gpu_block\00", align 1
+@14 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [6 x i8] c"L8,L8\00", align 1
+@15 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([45 x i8], [45 x i8]* @1, i32 0, i32 0), i32 18, i32 14, i32 18, i32 20 }]
+@16 = private unnamed_addr constant [41 x i8] c"Array '%s' is indexed but not allocated.\00", align 1
+@17 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @8, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @15, i32 0, i32 0), i32 1 }]
+@18 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([41 x i8], [41 x i8]* @16, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @17, i32 0, i32 0), i32 1 }
+@19 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([45 x i8], [45 x i8]* @1, i32 0, i32 0), i32 18, i32 14, i32 18, i32 20 }]
+@20 = private unnamed_addr constant [103 x i8] c"Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.\00", align 1
+@21 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @8, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @19, i32 0, i32 0), i32 1 }]
+@22 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([103 x i8], [103 x i8]* @20, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @21, i32 0, i32 0), i32 1 }
+@23 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([45 x i8], [45 x i8]* @1, i32 0, i32 0), i32 18, i32 23, i32 18, i32 29 }]
+@24 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @8, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @23, i32 0, i32 0), i32 1 }]
+@25 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([41 x i8], [41 x i8]* @16, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @24, i32 0, i32 0), i32 1 }
+@26 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([45 x i8], [45 x i8]* @1, i32 0, i32 0), i32 18, i32 23, i32 18, i32 29 }]
+@27 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @8, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @26, i32 0, i32 0), i32 1 }]
+@28 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([103 x i8], [103 x i8]* @20, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @27, i32 0, i32 0), i32 1 }
+@29 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@__lfortran_gpu_metal_source = private unnamed_addr constant [922 x i8] c"#include <metal_stdlib>\0Ausing namespace metal;\0A\0Astruct __ScalarArgs___lfortran_gpu_kernel_0 {\0A    int __dim_b_0;\0A    int __lb_b_0;\0A    int __dim_b_1;\0A    int __lb_b_1;\0A};\0A\0Akernel void __lfortran_gpu_kernel_0(\0A    device char* b [[buffer(0)]],\0A    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],\0A    uint __thread_id [[thread_position_in_grid]])\0A{\0A    int __dim_b_0 = __scalar_args.__dim_b_0;\0A    int __lb_b_0 = __scalar_args.__lb_b_0;\0A    int __lb_b_1 = __scalar_args.__lb_b_1;\0A    int __flat_idx;\0A    int i__dc;\0A    int j__dc;\0A    if ((((0 * 0) + __thread_id) >= (2 * 3))) {\0A        return;\0A    }\0A    __flat_idx = ((0 * 0) + __thread_id);\0A    i__dc = ((__flat_idx - ((__flat_idx / ((3 - 1) + 1)) * ((3 - 1) + 1))) + 1);\0A    __flat_idx = (__flat_idx / ((3 - 1) + 1));\0A    j__dc = (__flat_idx + 1);\0A    b[((int)(i__dc) - (__lb_b_0)) + (__dim_b_0 * ((int)(j__dc) - (__lb_b_1)))] = ((char)1);\0A}\0A\0A\00", align 1
+@30 = private unnamed_addr constant [24 x i8] c"__lfortran_gpu_kernel_0\00", align 1
+@llvm.global_ctors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lfortran_gpu_metal_registrar___lfortran_gpu_kernel_0, i8* null }]
+
+declare void* @lfortran_gpu_init()
+
+declare void @lfortran_gpu_launch(void*, void*, void*, void*)
+
+declare void* @lfortran_gpu_load_kernel(void*, i8*, i32)
+
+declare void @lfortran_gpu_release_kernel(void*)
+
+declare void @lfortran_gpu_set_buffer_arg(void*, i32, void*, i64, i32)
+
+declare void @lfortran_gpu_set_scalar_arg(void*, i32, void*, i64)
+
+declare void @lfortran_gpu_set_scratch_arg(void*, i32, i64)
+
+declare void @lfortran_gpu_sync(void*)
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %2 = call i8* @_lfortran_get_default_allocator()
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca i64, align 8
+  %6 = alloca i64, align 8
+  %arr_desc = alloca %array.2, align 8
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %__gpu_block = alloca [3 x i32], align 4
+  %__gpu_ctx = alloca void*, align 8
+  %__gpu_ctx1 = alloca void*, align 8
+  %__gpu_grid = alloca [3 x i32], align 4
+  %__gpu_iteration_count = alloca i32, align 4
+  %__gpu_kernel = alloca void*, align 8
+  %__gpu_scalar_args = alloca %__ScalarArgs___lfortran_gpu_kernel_0.9, align 8
+  %7 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 0
+  %8 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 2
+  %9 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 1
+  %10 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 3
+  %__gpu_threads = alloca i64, align 8
+  %b = alloca %array.2*, align 8
+  store %array.2* null, %array.2** %b, align 8
+  %11 = getelementptr %array.2, %array.2* %arr_desc, i32 0, i32 8
+  %12 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %11, i32 0, i32 0
+  %13 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %12, i32 0
+  %14 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 0
+  store i64 1, i64* %14, align 8
+  %15 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 1
+  store i64 1, i64* %15, align 8
+  %16 = getelementptr %dimension_descriptor, %dimension_descriptor* %13, i32 0, i32 2
+  store i64 0, i64* %16, align 8
+  %17 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %12, i32 1
+  %18 = getelementptr %dimension_descriptor, %dimension_descriptor* %17, i32 0, i32 0
+  store i64 1, i64* %18, align 8
+  %19 = getelementptr %dimension_descriptor, %dimension_descriptor* %17, i32 0, i32 1
+  store i64 1, i64* %19, align 8
+  %20 = getelementptr %dimension_descriptor, %dimension_descriptor* %17, i32 0, i32 2
+  store i64 0, i64* %20, align 8
+  %21 = getelementptr %array.2, %array.2* %arr_desc, i32 0, i32 3
+  store i8 2, i8* %21, align 1
+  %22 = getelementptr %array.2, %array.2* %arr_desc, i32 0, i32 0
+  store i8* null, i8** %22, align 8
+  store %array.2* %arr_desc, %array.2** %b, align 8
+  %i = alloca i32, align 4
+  %i__dc = alloca i32, align 4
+  %j = alloca i32, align 4
+  %j__dc = alloca i32, align 4
+  %m = alloca i32, align 4
+  store i32 715827883, i32* %m, align 4
+  %23 = load %array.2*, %array.2** %b, align 8
+  %24 = ptrtoint %array.2* %23 to i64
+  %25 = icmp eq i64 %24, 0
+  br i1 %25, label %merge_allocated, label %check_data
+
+check_data:                                       ; preds = %.entry
+  %26 = getelementptr %array.2, %array.2* %23, i32 0, i32 0
+  %27 = load i8*, i8** %26, align 1
+  %28 = ptrtoint i8* %27 to i64
+  %29 = icmp ne i64 %28, 0
+  br label %merge_allocated
+
+merge_allocated:                                  ; preds = %check_data, %.entry
+  %is_allocated = phi i1 [ false, %.entry ], [ %29, %check_data ]
+  br i1 %is_allocated, label %then, label %ifcont
+
+then:                                             ; preds = %merge_allocated
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @6 to i8*), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  unreachable
+
+ifcont:                                           ; preds = %merge_allocated
+  %30 = load i32, i32* %m, align 4
+  %31 = load %array.2*, %array.2** %b, align 8
+  %32 = getelementptr %array.2, %array.2* %31, i32 0, i32 7
+  store i64 0, i64* %32, align 8
+  %33 = getelementptr %array.2, %array.2* %31, i32 0, i32 3
+  store i8 2, i8* %33, align 1
+  %34 = getelementptr %array.2, %array.2* %31, i32 0, i32 8
+  %35 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %34, i32 0, i32 0
+  %36 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %35, i32 0
+  %37 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 2
+  %38 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 0
+  %39 = getelementptr %dimension_descriptor, %dimension_descriptor* %36, i32 0, i32 1
+  store i64 1, i64* %37, align 8
+  store i64 1, i64* %38, align 8
+  store i64 3, i64* %39, align 8
+  %40 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %35, i32 1
+  %41 = getelementptr %dimension_descriptor, %dimension_descriptor* %40, i32 0, i32 2
+  %42 = getelementptr %dimension_descriptor, %dimension_descriptor* %40, i32 0, i32 0
+  %43 = getelementptr %dimension_descriptor, %dimension_descriptor* %40, i32 0, i32 1
+  %44 = sext i32 %30 to i64
+  %45 = icmp slt i64 %44, 0
+  %46 = select i1 %45, i64 0, i64 %44
+  store i64 3, i64* %41, align 8
+  store i64 1, i64* %42, align 8
+  store i64 %46, i64* %43, align 8
+  %47 = mul i64 3, %46
+  %48 = getelementptr %array.2, %array.2* %31, i32 0, i32 0
+  %49 = mul i64 %47, 1
+  %50 = call i8* @_lfortran_get_default_allocator()
+  %51 = call i8* @_lfortran_malloc_alloc(i8* %50, i64 %49)
+  store i8* %51, i8** %48, align 8
+  store i32 6, i32* %__gpu_iteration_count, align 4
+  %52 = load i32, i32* %__gpu_iteration_count, align 4
+  %53 = icmp sgt i32 %52, 0
+  br i1 %53, label %then1, label %else28
+
+then1:                                            ; preds = %ifcont
+  %54 = load i32, i32* %__gpu_iteration_count, align 4
+  %55 = sext i32 %54 to i64
+  store i64 %55, i64* %__gpu_threads, align 8
+  %56 = load i64, i64* %__gpu_threads, align 8
+  %57 = icmp slt i64 %56, 0
+  br i1 %57, label %then2, label %else
+
+then2:                                            ; preds = %then1
+  store i64 0, i64* %__gpu_threads, align 8
+  br label %ifcont3
+
+else:                                             ; preds = %then1
+  br label %ifcont3
+
+ifcont3:                                          ; preds = %else, %then2
+  %58 = load i64, i64* %__gpu_threads, align 8
+  %59 = icmp sgt i64 %58, 0
+  br i1 %59, label %then4, label %else26
+
+then4:                                            ; preds = %ifcont3
+  %60 = call void* @lfortran_gpu_init()
+  store void* %60, void** %__gpu_ctx, align 8
+  %61 = load void*, void** %__gpu_ctx, align 8
+  %62 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  %63 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  %64 = call void* @lfortran_gpu_load_kernel(void* %61, i8* %63, i32 23)
+  store void* %64, void** %__gpu_kernel, align 8
+  %65 = load void*, void** %__gpu_kernel, align 8
+  %66 = load %array.2*, %array.2** %b, align 8
+  %67 = getelementptr %array.2, %array.2* %66, i32 0, i32 0
+  %68 = load i8*, i8** %67, align 1
+  %69 = bitcast i8* %68 to void*
+  %70 = load %array.2*, %array.2** %b, align 8
+  %71 = load %array.2*, %array.2** %b, align 8
+  %72 = ptrtoint %array.2* %71 to i64
+  %73 = icmp eq i64 %72, 0
+  br i1 %73, label %merge_allocated6, label %check_data5
+
+check_data5:                                      ; preds = %then4
+  %74 = getelementptr %array.2, %array.2* %71, i32 0, i32 0
+  %75 = load i8*, i8** %74, align 1
+  %76 = ptrtoint i8* %75 to i64
+  %77 = icmp ne i64 %76, 0
+  br label %merge_allocated6
+
+merge_allocated6:                                 ; preds = %check_data5, %then4
+  %is_allocated7 = phi i1 [ false, %then4 ], [ %77, %check_data5 ]
+  br i1 %is_allocated7, label %then8, label %else9
+
+then8:                                            ; preds = %merge_allocated6
+  %78 = load %array.2*, %array.2** %b, align 8
+  %79 = getelementptr %array.2, %array.2* %78, i32 0, i32 8
+  %80 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %79, i32 0, i32 0
+  %81 = getelementptr %array.2, %array.2* %78, i32 0, i32 3
+  %82 = load i8, i8* %81, align 1
+  %83 = zext i8 %82 to i32
+  store i64 1, i64* %5, align 8
+  store i32 0, i32* %4, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %loop.body, %then8
+  %84 = load i32, i32* %4, align 4
+  %85 = icmp slt i32 %84, %83
+  br i1 %85, label %loop.body, label %loop.end
+
+loop.body:                                        ; preds = %loop.head
+  %86 = load i32, i32* %4, align 4
+  %87 = load i64, i64* %5, align 8
+  %88 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %80, i32 %86
+  %89 = getelementptr %dimension_descriptor, %dimension_descriptor* %88, i32 0, i32 1
+  %90 = load i64, i64* %89, align 1
+  %91 = mul i64 %87, %90
+  store i64 %91, i64* %5, align 8
+  %92 = add i32 %86, 1
+  store i32 %92, i32* %4, align 4
+  br label %loop.head
+
+loop.end:                                         ; preds = %loop.head
+  %93 = load i64, i64* %5, align 8
+  %94 = mul i64 %93, 1
+  store i64 %94, i64* %6, align 8
+  br label %ifcont10
+
+else9:                                            ; preds = %merge_allocated6
+  store i64 0, i64* %6, align 8
+  br label %ifcont10
+
+ifcont10:                                         ; preds = %else9, %loop.end
+  %95 = load i64, i64* %6, align 8
+  %96 = load %array.2*, %array.2** %b, align 8
+  %97 = getelementptr %array.2, %array.2* %96, i32 0, i32 8
+  %98 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %97, i32 0, i32 0
+  %99 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %98, i64 0
+  %100 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %98, i64 0
+  %101 = getelementptr %dimension_descriptor, %dimension_descriptor* %100, i32 0, i32 1
+  %102 = load i64, i64* %101, align 1
+  %103 = icmp eq i64 %102, 0
+  %104 = getelementptr %dimension_descriptor, %dimension_descriptor* %99, i32 0, i32 0
+  %105 = load i64, i64* %104, align 1
+  %106 = select i1 %103, i64 1, i64 %105
+  %107 = icmp eq i64 1, %106
+  %108 = load %array.2*, %array.2** %b, align 8
+  %109 = getelementptr %array.2, %array.2* %108, i32 0, i32 8
+  %110 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %109, i32 0, i32 0
+  %111 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %110, i64 0
+  %112 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %110, i64 0
+  %113 = getelementptr %dimension_descriptor, %dimension_descriptor* %112, i32 0, i32 1
+  %114 = load i64, i64* %113, align 1
+  %115 = icmp eq i64 %114, 0
+  %116 = getelementptr %dimension_descriptor, %dimension_descriptor* %111, i32 0, i32 0
+  %117 = load i64, i64* %116, align 1
+  %118 = getelementptr %dimension_descriptor, %dimension_descriptor* %111, i32 0, i32 1
+  %119 = load i64, i64* %118, align 1
+  %120 = add i64 %119, %117
+  %121 = sub i64 %120, 1
+  %122 = select i1 %115, i64 0, i64 %121
+  %123 = icmp eq i64 3, %122
+  %124 = and i1 %107, %123
+  %125 = load %array.2*, %array.2** %b, align 8
+  %126 = getelementptr %array.2, %array.2* %125, i32 0, i32 8
+  %127 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %126, i32 0, i32 0
+  %128 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %127, i64 1
+  %129 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %127, i64 1
+  %130 = getelementptr %dimension_descriptor, %dimension_descriptor* %129, i32 0, i32 1
+  %131 = load i64, i64* %130, align 1
+  %132 = icmp eq i64 %131, 0
+  %133 = getelementptr %dimension_descriptor, %dimension_descriptor* %128, i32 0, i32 0
+  %134 = load i64, i64* %133, align 1
+  %135 = select i1 %132, i64 1, i64 %134
+  %136 = icmp eq i64 1, %135
+  %137 = load %array.2*, %array.2** %b, align 8
+  %138 = getelementptr %array.2, %array.2* %137, i32 0, i32 8
+  %139 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %138, i32 0, i32 0
+  %140 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %139, i64 1
+  %141 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %139, i64 1
+  %142 = getelementptr %dimension_descriptor, %dimension_descriptor* %141, i32 0, i32 1
+  %143 = load i64, i64* %142, align 1
+  %144 = icmp eq i64 %143, 0
+  %145 = getelementptr %dimension_descriptor, %dimension_descriptor* %140, i32 0, i32 0
+  %146 = load i64, i64* %145, align 1
+  %147 = getelementptr %dimension_descriptor, %dimension_descriptor* %140, i32 0, i32 1
+  %148 = load i64, i64* %147, align 1
+  %149 = add i64 %148, %146
+  %150 = sub i64 %149, 1
+  %151 = select i1 %144, i64 0, i64 %150
+  %152 = icmp eq i64 2, %151
+  %153 = and i1 %136, %152
+  %154 = and i1 %124, %153
+  br i1 %154, label %then11, label %else12
+
+then11:                                           ; preds = %ifcont10
+  store i32 2, i32* %3, align 4
+  br label %ifcont13
+
+else12:                                           ; preds = %ifcont10
+  store i32 1, i32* %3, align 4
+  br label %ifcont13
+
+ifcont13:                                         ; preds = %else12, %then11
+  %155 = load i32, i32* %3, align 4
+  call void @lfortran_gpu_set_buffer_arg(void* %65, i32 0, void* %69, i64 %95, i32 %155)
+  %156 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 0
+  %157 = load %array.2*, %array.2** %b, align 8
+  %158 = getelementptr %array.2, %array.2* %157, i32 0, i32 8
+  %159 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %158, i32 0, i32 0
+  %160 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %159, i32 0
+  %161 = getelementptr %dimension_descriptor, %dimension_descriptor* %160, i32 0, i32 1
+  %162 = load i64, i64* %161, align 1
+  %163 = trunc i64 %162 to i32
+  store i32 %163, i32* %156, align 4
+  %164 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 1
+  %165 = load %array.2*, %array.2** %b, align 8
+  %166 = getelementptr %array.2, %array.2* %165, i32 0, i32 8
+  %167 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %166, i32 0, i32 0
+  %168 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %167, i32 0
+  %169 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %167, i32 0
+  %170 = getelementptr %dimension_descriptor, %dimension_descriptor* %169, i32 0, i32 1
+  %171 = load i64, i64* %170, align 1
+  %172 = icmp eq i64 %171, 0
+  %173 = getelementptr %dimension_descriptor, %dimension_descriptor* %168, i32 0, i32 0
+  %174 = load i64, i64* %173, align 1
+  %175 = select i1 %172, i64 1, i64 %174
+  %176 = trunc i64 %175 to i32
+  store i32 %176, i32* %164, align 4
+  %177 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 2
+  %178 = load %array.2*, %array.2** %b, align 8
+  %179 = getelementptr %array.2, %array.2* %178, i32 0, i32 8
+  %180 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %179, i32 0, i32 0
+  %181 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %180, i32 1
+  %182 = getelementptr %dimension_descriptor, %dimension_descriptor* %181, i32 0, i32 1
+  %183 = load i64, i64* %182, align 1
+  %184 = trunc i64 %183 to i32
+  store i32 %184, i32* %177, align 4
+  %185 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 3
+  %186 = load %array.2*, %array.2** %b, align 8
+  %187 = getelementptr %array.2, %array.2* %186, i32 0, i32 8
+  %188 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %187, i32 0, i32 0
+  %189 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %188, i32 1
+  %190 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %188, i32 1
+  %191 = getelementptr %dimension_descriptor, %dimension_descriptor* %190, i32 0, i32 1
+  %192 = load i64, i64* %191, align 1
+  %193 = icmp eq i64 %192, 0
+  %194 = getelementptr %dimension_descriptor, %dimension_descriptor* %189, i32 0, i32 0
+  %195 = load i64, i64* %194, align 1
+  %196 = select i1 %193, i64 1, i64 %195
+  %197 = trunc i64 %196 to i32
+  store i32 %197, i32* %185, align 4
+  %198 = load void*, void** %__gpu_kernel, align 8
+  %199 = bitcast %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args to void*
+  call void @lfortran_gpu_set_scalar_arg(void* %198, i32 1, void* %199, i64 16)
+  br i1 false, label %then14, label %ifcont15
+
+then14:                                           ; preds = %ifcont13
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @12 to i8*), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @7, i32 0, i32 0), i64 1, i32 1, i64 1, i64 3)
+  unreachable
+
+ifcont15:                                         ; preds = %ifcont13
+  %200 = getelementptr [3 x i32], [3 x i32]* %__gpu_grid, i32 0, i64 0
+  %201 = load i64, i64* %__gpu_threads, align 8
+  %202 = add i64 %201, 64
+  %203 = sub i64 %202, 1
+  %204 = sdiv i64 %203, 64
+  %205 = trunc i64 %204 to i32
+  store i32 %205, i32* %200, align 4
+  br i1 false, label %then16, label %ifcont17
+
+then16:                                           ; preds = %ifcont15
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @12 to i8*), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @7, i32 0, i32 0), i64 2, i32 1, i64 1, i64 3)
+  unreachable
+
+ifcont17:                                         ; preds = %ifcont15
+  %206 = getelementptr [3 x i32], [3 x i32]* %__gpu_grid, i32 0, i64 1
+  store i32 1, i32* %206, align 4
+  br i1 false, label %then18, label %ifcont19
+
+then18:                                           ; preds = %ifcont17
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @12 to i8*), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @7, i32 0, i32 0), i64 3, i32 1, i64 1, i64 3)
+  unreachable
+
+ifcont19:                                         ; preds = %ifcont17
+  %207 = getelementptr [3 x i32], [3 x i32]* %__gpu_grid, i32 0, i64 2
+  store i32 1, i32* %207, align 4
+  br i1 false, label %then20, label %ifcont21
+
+then20:                                           ; preds = %ifcont19
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @12 to i8*), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @13, i32 0, i32 0), i64 1, i32 1, i64 1, i64 3)
+  unreachable
+
+ifcont21:                                         ; preds = %ifcont19
+  %208 = getelementptr [3 x i32], [3 x i32]* %__gpu_block, i32 0, i64 0
+  store i32 64, i32* %208, align 4
+  br i1 false, label %then22, label %ifcont23
+
+then22:                                           ; preds = %ifcont21
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @12 to i8*), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @13, i32 0, i32 0), i64 2, i32 1, i64 1, i64 3)
+  unreachable
+
+ifcont23:                                         ; preds = %ifcont21
+  %209 = getelementptr [3 x i32], [3 x i32]* %__gpu_block, i32 0, i64 1
+  store i32 1, i32* %209, align 4
+  br i1 false, label %then24, label %ifcont25
+
+then24:                                           ; preds = %ifcont23
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @12 to i8*), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @13, i32 0, i32 0), i64 3, i32 1, i64 1, i64 3)
+  unreachable
+
+ifcont25:                                         ; preds = %ifcont23
+  %210 = getelementptr [3 x i32], [3 x i32]* %__gpu_block, i32 0, i64 2
+  store i32 1, i32* %210, align 4
+  %211 = load void*, void** %__gpu_ctx, align 8
+  %212 = load void*, void** %__gpu_kernel, align 8
+  %213 = getelementptr [3 x i32], [3 x i32]* %__gpu_grid, i32 0, i32 0
+  %214 = bitcast i32* %213 to void*
+  %215 = getelementptr [3 x i32], [3 x i32]* %__gpu_block, i32 0, i32 0
+  %216 = bitcast i32* %215 to void*
+  call void @lfortran_gpu_launch(void* %211, void* %212, void* %214, void* %216)
+  %217 = load void*, void** %__gpu_kernel, align 8
+  call void @lfortran_gpu_release_kernel(void* %217)
+  br label %ifcont27
+
+else26:                                           ; preds = %ifcont3
+  br label %ifcont27
+
+ifcont27:                                         ; preds = %else26, %ifcont25
+  br label %ifcont29
+
+else28:                                           ; preds = %ifcont
+  br label %ifcont29
+
+ifcont29:                                         ; preds = %else28, %ifcont27
+  %218 = call void* @lfortran_gpu_init()
+  store void* %218, void** %__gpu_ctx1, align 8
+  %219 = load void*, void** %__gpu_ctx1, align 8
+  call void @lfortran_gpu_sync(void* %219)
+  %220 = alloca i64, align 8
+  %221 = load %array.2*, %array.2** %b, align 8
+  %222 = ptrtoint %array.2* %221 to i64
+  %223 = icmp eq i64 %222, 0
+  br i1 %223, label %merge_allocated31, label %check_data30
+
+check_data30:                                     ; preds = %ifcont29
+  %224 = getelementptr %array.2, %array.2* %221, i32 0, i32 0
+  %225 = load i8*, i8** %224, align 1
+  %226 = ptrtoint i8* %225 to i64
+  %227 = icmp ne i64 %226, 0
+  br label %merge_allocated31
+
+merge_allocated31:                                ; preds = %check_data30, %ifcont29
+  %is_allocated32 = phi i1 [ false, %ifcont29 ], [ %227, %check_data30 ]
+  %228 = xor i1 %is_allocated32, true
+  br i1 %228, label %then33, label %ifcont34
+
+then33:                                           ; preds = %merge_allocated31
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @18 to i8*), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  unreachable
+
+ifcont34:                                         ; preds = %merge_allocated31
+  %229 = getelementptr %array.2, %array.2* %221, i32 0, i32 8
+  %230 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %229, i32 0, i32 0
+  %231 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %230, i32 0
+  %232 = getelementptr %dimension_descriptor, %dimension_descriptor* %231, i32 0, i32 0
+  %233 = load i64, i64* %232, align 1
+  %234 = getelementptr %dimension_descriptor, %dimension_descriptor* %231, i32 0, i32 1
+  %235 = load i64, i64* %234, align 1
+  %236 = sub i64 1, %233
+  %237 = add i64 %233, %235
+  %238 = sub i64 %237, 1
+  %239 = icmp slt i64 1, %233
+  %240 = icmp sgt i64 1, %238
+  %241 = or i1 %239, %240
+  br i1 %241, label %then35, label %ifcont36
+
+then35:                                           ; preds = %ifcont34
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @22 to i8*), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 1, i32 1, i64 %233, i64 %238)
+  unreachable
+
+ifcont36:                                         ; preds = %ifcont34
+  %242 = getelementptr %dimension_descriptor, %dimension_descriptor* %231, i32 0, i32 2
+  %243 = load i64, i64* %242, align 1
+  %244 = mul i64 %243, %236
+  %245 = add i64 0, %244
+  %246 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %230, i32 1
+  %247 = getelementptr %dimension_descriptor, %dimension_descriptor* %246, i32 0, i32 0
+  %248 = load i64, i64* %247, align 1
+  %249 = getelementptr %dimension_descriptor, %dimension_descriptor* %246, i32 0, i32 1
+  %250 = load i64, i64* %249, align 1
+  %251 = sub i64 1, %248
+  %252 = add i64 %248, %250
+  %253 = sub i64 %252, 1
+  %254 = icmp slt i64 1, %248
+  %255 = icmp sgt i64 1, %253
+  %256 = or i1 %254, %255
+  br i1 %256, label %then37, label %ifcont38
+
+then37:                                           ; preds = %ifcont36
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @22 to i8*), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 1, i32 2, i64 %248, i64 %253)
+  unreachable
+
+ifcont38:                                         ; preds = %ifcont36
+  %257 = getelementptr %dimension_descriptor, %dimension_descriptor* %246, i32 0, i32 2
+  %258 = load i64, i64* %257, align 1
+  %259 = mul i64 %258, %251
+  %260 = add i64 %245, %259
+  %261 = getelementptr %array.2, %array.2* %221, i32 0, i32 7
+  %262 = load i64, i64* %261, align 1
+  %263 = add i64 %260, %262
+  %264 = getelementptr %array.2, %array.2* %221, i32 0, i32 0
+  %265 = load i8*, i8** %264, align 1
+  %266 = getelementptr inbounds i8, i8* %265, i64 %263
+  %267 = load i8, i8* %266, align 1
+  %268 = alloca i8, align 1
+  store i8 %267, i8* %268, align 1
+  %269 = load %array.2*, %array.2** %b, align 8
+  %270 = ptrtoint %array.2* %269 to i64
+  %271 = icmp eq i64 %270, 0
+  br i1 %271, label %merge_allocated40, label %check_data39
+
+check_data39:                                     ; preds = %ifcont38
+  %272 = getelementptr %array.2, %array.2* %269, i32 0, i32 0
+  %273 = load i8*, i8** %272, align 1
+  %274 = ptrtoint i8* %273 to i64
+  %275 = icmp ne i64 %274, 0
+  br label %merge_allocated40
+
+merge_allocated40:                                ; preds = %check_data39, %ifcont38
+  %is_allocated41 = phi i1 [ false, %ifcont38 ], [ %275, %check_data39 ]
+  %276 = xor i1 %is_allocated41, true
+  br i1 %276, label %then42, label %ifcont43
+
+then42:                                           ; preds = %merge_allocated40
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @25 to i8*), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  unreachable
+
+ifcont43:                                         ; preds = %merge_allocated40
+  %277 = getelementptr %array.2, %array.2* %269, i32 0, i32 8
+  %278 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %277, i32 0, i32 0
+  %279 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %278, i32 0
+  %280 = getelementptr %dimension_descriptor, %dimension_descriptor* %279, i32 0, i32 0
+  %281 = load i64, i64* %280, align 1
+  %282 = getelementptr %dimension_descriptor, %dimension_descriptor* %279, i32 0, i32 1
+  %283 = load i64, i64* %282, align 1
+  %284 = sub i64 3, %281
+  %285 = add i64 %281, %283
+  %286 = sub i64 %285, 1
+  %287 = icmp slt i64 3, %281
+  %288 = icmp sgt i64 3, %286
+  %289 = or i1 %287, %288
+  br i1 %289, label %then44, label %ifcont45
+
+then44:                                           ; preds = %ifcont43
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @28 to i8*), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 3, i32 1, i64 %281, i64 %286)
+  unreachable
+
+ifcont45:                                         ; preds = %ifcont43
+  %290 = getelementptr %dimension_descriptor, %dimension_descriptor* %279, i32 0, i32 2
+  %291 = load i64, i64* %290, align 1
+  %292 = mul i64 %291, %284
+  %293 = add i64 0, %292
+  %294 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %278, i32 1
+  %295 = getelementptr %dimension_descriptor, %dimension_descriptor* %294, i32 0, i32 0
+  %296 = load i64, i64* %295, align 1
+  %297 = getelementptr %dimension_descriptor, %dimension_descriptor* %294, i32 0, i32 1
+  %298 = load i64, i64* %297, align 1
+  %299 = sub i64 2, %296
+  %300 = add i64 %296, %298
+  %301 = sub i64 %300, 1
+  %302 = icmp slt i64 2, %296
+  %303 = icmp sgt i64 2, %301
+  %304 = or i1 %302, %303
+  br i1 %304, label %then46, label %ifcont47
+
+then46:                                           ; preds = %ifcont45
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @28 to i8*), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 2, i32 2, i64 %296, i64 %301)
+  unreachable
+
+ifcont47:                                         ; preds = %ifcont45
+  %305 = getelementptr %dimension_descriptor, %dimension_descriptor* %294, i32 0, i32 2
+  %306 = load i64, i64* %305, align 1
+  %307 = mul i64 %306, %299
+  %308 = add i64 %293, %307
+  %309 = getelementptr %array.2, %array.2* %269, i32 0, i32 7
+  %310 = load i64, i64* %309, align 1
+  %311 = add i64 %308, %310
+  %312 = getelementptr %array.2, %array.2* %269, i32 0, i32 0
+  %313 = load i8*, i8** %312, align 1
+  %314 = getelementptr inbounds i8, i8* %313, i64 %311
+  %315 = load i8, i8* %314, align 1
+  %316 = alloca i8, align 1
+  store i8 %315, i8* %316, align 1
+  %317 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info, i32 0, i32 0), i64* %220, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, i8* %268, i8* %316)
+  %318 = load i64, i64* %220, align 8
+  %319 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %317, i8** %319, align 8
+  %320 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %318, i64* %320, align 8
+  %321 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %322 = load i8*, i8** %321, align 8
+  %323 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %324 = load i64, i64* %323, align 8
+  %325 = trunc i64 %324 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0), i8* %322, i32 %325, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 1)
+  %326 = icmp eq i8* %317, null
+  br i1 %326, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %ifcont47
+  call void @_lfortran_free_alloc(i8* %2, i8* %317)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %ifcont47
+  br label %return
+
+return:                                           ; preds = %free_done
+  br label %FINALIZE_SYMTABLE_gpu_metal_597
+
+FINALIZE_SYMTABLE_gpu_metal_597:                  ; preds = %return
+  br label %Finalize_Variable_b
+
+Finalize_Variable_b:                              ; preds = %FINALIZE_SYMTABLE_gpu_metal_597
+  %327 = load %array.2*, %array.2** %b, align 8
+  call void @finalize_allocatable__Array_2_l8(%array.2* %327)
+  call void @_lfortran_internal_alloc_finalize()
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, i8**)
+
+; Function Attrs: cold noreturn nounwind
+declare void @_lcompilers_runtime_error_exit(i8*, ...) #0
+
+declare i8* @_lfortran_malloc_alloc(i8*, i64)
+
+declare i8* @_lfortran_get_default_allocator()
+
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...)
+
+declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
+
+declare void @_lfortran_free_alloc(i8*, i8*)
+
+define internal void @finalize_allocatable__Array_2_l8(%array.2* %0) {
+entry:
+  %1 = icmp ne %array.2* %0, null
+  br i1 %1, label %is_allocated.then, label %is_allocated.else
+
+is_allocated.then:                                ; preds = %entry
+  call void @finalize_descriptorArray_Array_2_l8(%array.2* %0)
+  br label %is_allocated.ifcont
+
+is_allocated.else:                                ; preds = %entry
+  br label %is_allocated.ifcont
+
+is_allocated.ifcont:                              ; preds = %is_allocated.else, %is_allocated.then
+  ret void
+}
+
+define internal void @finalize_descriptorArray_Array_2_l8(%array.2* %0) {
+entry:
+  %1 = call i8* @_lfortran_get_default_allocator()
+  %2 = getelementptr %array.2, %array.2* %0, i32 0, i32 0
+  %3 = load i8*, i8** %2, align 8
+  %4 = ptrtoint i8* %3 to i64
+  %5 = icmp ne i64 %4, 0
+  br i1 %5, label %then, label %else
+
+then:                                             ; preds = %entry
+  call void @_lfortran_free_alloc(i8* %1, i8* %3)
+  br label %ifcont
+
+else:                                             ; preds = %entry
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  ret void
+}
+
+declare void @_lfortran_internal_alloc_finalize()
+
+declare void @lfortran_gpu_register_metal_source(i8*, i8*)
+
+define internal void @__lfortran_gpu_metal_registrar___lfortran_gpu_kernel_0() {
+entry:
+  call void @lfortran_gpu_register_metal_source(i8* getelementptr inbounds ([24 x i8], [24 x i8]* @30, i32 0, i32 0), i8* getelementptr inbounds ([922 x i8], [922 x i8]* @__lfortran_gpu_metal_source, i32 0, i32 0))
+  ret void
+}
+
+attributes #0 = { cold noreturn nounwind }

@@ -25,6 +25,7 @@ namespace LCompilers {
 // below can decline any more.
 void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
+    lowering_kernel_nest = true;
     // Every call of a function returning an array is made once, before
     // the element loops below are built around its statement.
     hoist_array_function_results(work);
@@ -323,6 +324,7 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
     // name is gathered with the selector substituted in.
     gather_strided_section_arguments(
         work);
+    lowering_kernel_nest = false;
 }
 
 } // namespace LCompilers
