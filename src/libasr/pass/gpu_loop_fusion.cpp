@@ -1693,16 +1693,20 @@ public:
             ASRUtils::ExprStmtDuplicator d(al);
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, rank);
+            // The copy has the bounds of the array, read in the kind the
+            // device computes element offsets in: with 64-bit offsets they
+            // need not fit integer(4).
+            int index_kind = gpu_device_capabilities(po).offset_kind;
             for (size_t r = 0; r < rank; r++) {
                 ASR::dimension_t dim;
                 dim.loc = loc;
                 dim.m_start = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
                     d.duplicate_expr(des), gpu_i32(al, loc, r + 1),
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, index_kind)),
                     ASR::arrayboundType::LBound, nullptr));
                 dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
                     d.duplicate_expr(des), gpu_i32(al, loc, r + 1),
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, index_kind)),
                     nullptr));
                 dims.push_back(al, dim);
             }
@@ -1718,7 +1722,7 @@ public:
                 f.hoisted_before.push_back(b.If(is_alloc,
                     {b.Allocate(b.Var(copy), dims),
                      gpu_device_copy_nest(al, loc, fn_scope, b.Var(copy),
-                        des)}, {}));
+                        des, index_kind)}, {}));
             } else {
                 f.hoisted_before.push_back(b.If(is_alloc,
                     {b.Allocate(b.Var(copy), dims)}, {}));

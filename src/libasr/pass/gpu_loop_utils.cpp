@@ -282,11 +282,13 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
 }
 
 ASR::stmt_t *gpu_device_copy_nest(Allocator &al, const Location &loc,
-        SymbolTable *scope, ASR::expr_t *dest, ASR::expr_t *src) {
+        SymbolTable *scope, ASR::expr_t *dest, ASR::expr_t *src,
+        int index_kind) {
     ASRUtils::ASRBuilder b(al, loc);
     ASRUtils::ExprStmtDuplicator d(al);
     size_t rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(src));
-    ASR::ttype_t *it = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+    ASR::ttype_t *it = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+        index_kind));
     std::vector<ASR::symbol_t*> vars;
     for (size_t r = 0; r < rank; r++) {
         vars.push_back(ASR::down_cast<ASR::Var_t>(b.Variable(scope,

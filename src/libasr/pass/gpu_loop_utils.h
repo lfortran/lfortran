@@ -100,9 +100,11 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
 
 // A parallel loop nest assigned to the device that copies every element of
 // the array `src` into the array `dest` of the same bounds, with index
-// variables of its own in `scope`.
+// variables of its own in `scope`, of integer kind `index_kind` (the kind
+// the device computes element offsets in, so that any bound fits).
 ASR::stmt_t *gpu_device_copy_nest(Allocator &al, const Location &loc,
-    SymbolTable *scope, ASR::expr_t *dest, ASR::expr_t *src);
+    SymbolTable *scope, ASR::expr_t *dest, ASR::expr_t *src,
+    int index_kind);
 
 // The designator an array is named by (a variable or a chain of
 // non-pointer components of one), as a key, or "".
