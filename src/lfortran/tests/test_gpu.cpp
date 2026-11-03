@@ -1095,6 +1095,53 @@ end program
     }, {1, 0, 0, 0, 1});
 }
 
+TEST_CASE("GPU tiled launches never start more threads than the chunk limit") {
+    // `j` has a run-time end, but its kind and constant start leave it at
+    // most 127 values, so neither nest can have more iterations than a
+    // limit of 4000 and neither runs in chunks. Whole tiles of the first, 30 by at
+    // most 127, start 32 by 128 threads: within the default limit it runs
+    // tiled, past a limit of 4000 it runs flat, one thread per iteration
+    // (gpu_metal_706).
+    const std::string source = R"(
+program p
+    implicit none
+    integer :: a(30, 127), b(31, 64), i, j, n
+    n = huge(0)
+    do concurrent (i = 1:30, j = huge(0) - 126:n)
+        a(i, j - huge(0) + 127) = i
+    end do
+    n = huge(0) - 63
+    do concurrent (i = 1:31, j = huge(0) - 126:n)
+        b(i, j - huge(0) + 127) = i
+    end do
+end program
+)";
+    auto check = [&](int64_t chunk_limit,
+            const std::vector<std::pair<int64_t, int64_t>> &geometry) {
+        INFO("chunk limit " << chunk_limit);
+        GpuLaunchGeometry launches;
+        size_t chunked = 0;
+        visit_cuda_program(source, "gpu_tile_limit.f90", "p",
+            [&](ASR::stmt_t &s) {
+                launches.visit_stmt(s);
+                struct Chunks : public ASR::BaseWalkVisitor<Chunks> {
+                    size_t n = 0;
+                    void visit_GpuKernelLaunch(
+                            const ASR::GpuKernelLaunch_t &x) {
+                        n += x.n_chunk_dimensions;
+                    }
+                } chunks;
+                chunks.visit_stmt(s);
+                chunked += chunks.n;
+            }, chunk_limit);
+        check_launch_geometry(launches.launches, geometry);
+        CHECK(chunked == 0);
+    };
+    check(2147483647, {{1, 32 * 128}, {1, 32 * 64}});
+    // The second nest, 31 by 64, still runs in tiles of 32 by 64 threads.
+    check(4000, {{0, 30 * 127}, {1, 32 * 64}});
+}
+
 #ifndef HAVE_BUILD_TO_WASM
 TEST_CASE("Scalar call actual reductions do not reserve a product heap") {
     std::string source = read_project_file(

@@ -2518,14 +2518,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     size_t flat_second = fastest_dimension == 0 ? 1 : 0;
     size_t tile_down = next_store_dimension != fastest_dimension
         ? next_store_dimension : flat_second;
-    // Where a launch may run in chunks and every extent is a constant, the
-    // number of threads a tiled launch would run is known now, padding
-    // included. When it is more than the chunk limit, the most threads one
-    // launch runs, the kernel numbers the iterations flat, one thread each,
-    // as a launch that runs in chunks would at run time anyway: the
-    // iterations then decide, below, whether the launch is ever split.
-    if (tiled && device_caps.chunked_launches
-            && gpu_constant_tile_threads(host_starts, host_ends,
+    // Where every extent is a constant, the number of threads a tiled
+    // launch would run is known now, padding included. When it is more than
+    // the chunk limit, the most threads one launch runs, the kernel numbers
+    // the iterations flat, one thread each, as the launch would at run time
+    // anyway (gpu_offload_launch.cpp): the iterations then decide, below,
+    // whether the launch is ever split.
+    if (tiled && gpu_constant_tile_threads(host_starts, host_ends,
                 fastest_dimension, tile_down,
                 device_caps.tile_width, device_caps.threads_per_block)
                 > static_cast<uint64_t>(pass_options.gpu_chunk_limit)) {

@@ -431,15 +431,16 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             current_scope->get_unique_name("__gpu_tiled"),
             ASRUtils::duplicate_type(al, plan.int_type),
             ASR::intentType::Local);
-        // A launch of more threads than the chunk limit runs in chunks,
-        // which split the nest into boxes the kernel numbers flat.
-        ASR::expr_t *flat = b.Or(b.Gt(iteration_count, count(few)),
+        // One launch starts at most the chunk limit's threads, whether the
+        // nest may run in chunks or its iterations are known to fit the
+        // limit: whole tiles that pad the nest past it run flat instead,
+        // one thread per iteration, and a launch of more iterations than
+        // the limit runs in chunks, which split the nest into boxes the
+        // kernel numbers flat.
+        ASR::expr_t *flat = b.Or(b.Or(b.Gt(iteration_count, count(few)),
             b.Gt(b.Mul(count(4), b.Sub(tile_threads, iteration_count)),
-                iteration_count));
-        if (chunked) {
-            flat = b.Or(flat, b.Gt(tile_threads,
-                count(pass_options.gpu_chunk_limit)));
-        }
+                iteration_count)),
+            b.Gt(tile_threads, count(pass_options.gpu_chunk_limit)));
         prelude.push_back(al, b.Assignment(tiled,
             ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, flat,
                 b.i_t(0, plan.int_type), b.i_t(1, plan.int_type),

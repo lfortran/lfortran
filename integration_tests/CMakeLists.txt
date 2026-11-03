@@ -7107,6 +7107,7 @@ RUN(NAME gpu_metal_703 FAIL LABELS metal cuda) # stops: constant extents whose p
 RUN(NAME gpu_metal_705 FAIL LABELS cuda) # stops: a constant integer(8) extent overflows; metal declines integer(8) loop indices
 RUN(NAME gpu_metal_704 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_704_chunked FILE gpu_metal_704 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
+RUN(NAME gpu_metal_706 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4000)
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
 RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)
