@@ -37,5 +37,6 @@ program allocatable_polymorphic_source_02
         call add(u(i), total)
     end do
     if (total /= real(n)) error stop
+    deallocate(t, u)
     print *, "ok"
 end program allocatable_polymorphic_source_02
