@@ -3562,6 +3562,12 @@ public:
         visit_expr(*x.m_arg);
     }
 
+    void visit_FrameAddress(const ASR::FrameAddress_t &x) {
+        // Not Fortran: the frame of a procedure value (see FrameAddress)
+        src = "frame_address(" + std::string(ASRUtils::symbol_name(
+            x.m_procedure)) + ")";
+    }
+
     void visit_IntegerBitLen(const ASR::IntegerBitLen_t &x) {
         visit_expr(*x.m_a);
         src = "bit_size(" + src + ")";

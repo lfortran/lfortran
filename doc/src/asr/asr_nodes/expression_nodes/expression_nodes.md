@@ -46,6 +46,7 @@ EnumConstructor
 EnumName
 EnumStaticMember
 EnumValue
+FrameAddress
 FunctionCall
 FunctionParam
 FunctionPointerCast
