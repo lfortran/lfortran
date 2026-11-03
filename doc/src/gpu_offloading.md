@@ -773,13 +773,16 @@ barrier writes, or writes one that such a dispatch reads: launches that do
 not depend on each other overlap, and the others run in launch order. At
 most three committed command buffers are pending; a host that launches
 faster than the device runs waits for the oldest, which also bounds how many
-buffers the pending launches hold. A scratch buffer is kept per kernel and
-argument and used by every launch of the kernel, which writes it, so
-launches of one kernel never overlap, and what a launch leaves in it is dead
-when it ends. The chunks of a launch that runs in chunks are launches of one
-kernel handle, which they share every scratch buffer of, the device heap's
-arenas included, so that what an earlier chunk leaves there is still there
-for the later ones and for the host to read back.
+buffers the pending launches hold. A scratch buffer of at most 16 MiB is
+kept per kernel and argument and used by every launch of the kernel, which
+writes it, so launches of one kernel that share it never overlap. A larger
+one, such as a device-heap arena, is kept by the kernel handle of one launch
+and released with it, so a new launch gets a new one. A launch that runs in
+chunks encodes every chunk with its one kernel handle, so the chunks share
+all its scratch buffers, the small and the large ones: what an earlier chunk
+leaves in a scratch buffer is still there for the later chunks and for the
+host to read back. Between launches, what a launch leaves in a scratch
+buffer is dead.
 
 ### Where the host waits
 

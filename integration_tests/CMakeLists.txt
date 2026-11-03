@@ -7071,7 +7071,10 @@ RUN(NAME gpu_metal_415_chunked FILE gpu_metal_415 LABELS gfortran llvm metal cud
 RUN(NAME gpu_metal_420_chunked FILE gpu_metal_420 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays --gpu-chunk-limit=2)
 # Metal runs launches in chunks too (lfortran/lfortran#16541): a nest of
 # more than huge(0) iterations, and small loops forced into many chunks.
-RUN(NAME gpu_metal_685 LABELS gfortran metal) # 2**31 + 1 iterations: too slow on the CPU and cuda_cpu
+# gpu_metal_685 runs 2**31 + 1 iterations: about 1 s on Metal and 2.5 s with
+# GFortran, but about 4 s with LFortran on the CPU (`llvm`) and 6.6 s on
+# cuda_cpu (`cuda`), so it has neither label.
+RUN(NAME gpu_metal_685 LABELS gfortran metal)
 RUN(NAME gpu_metal_686 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=5)
 RUN(NAME gpu_metal_687 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=3)
 RUN(NAME gpu_metal_688 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4)
