@@ -2459,8 +2459,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             order.push_back(d);
         }
     }
-    // A launch with a reduction runs as one: its accumulators are numbered
-    // over all its iterations.
+    // A launch with a reduction may run in chunks too: the threads of each
+    // chunk number their accumulators from zero, so the first chunk starts
+    // them and the later ones keep combining into them.
     std::vector<ASR::expr_t*> host_starts, host_ends;
     for (const DimInfo &dim : dim_info) {
         host_starts.push_back(dim.host_start);
@@ -2469,8 +2470,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     int64_t chunk_fixed_iterations = 0;
     std::vector<bool> splittable = gpu_splittable_dimensions(host_starts,
         host_ends, index_kinds, order,
-        device_caps.chunked_launches && slot_index == nullptr,
-        pass_options.gpu_chunk_limit, chunk_fixed_iterations);
+        device_caps.chunked_launches, pass_options.gpu_chunk_limit,
+        chunk_fixed_iterations);
     std::vector<ASR::symbol_t*> start_parameters(n_dims, nullptr);
     std::vector<ASR::symbol_t*> end_parameters(n_dims, nullptr);
 
@@ -2520,6 +2521,29 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
             if (splittable[d]) end_parameters[d] = param;
         }
+    }
+
+    // A kernel whose launch may run in chunks and that has accumulators to
+    // start takes a flag the launch sets only for the first chunk
+    // (GpuKernelLaunch.first_chunk_parameter).
+    ASR::expr_t *first_chunk_flag = nullptr;
+    ASR::symbol_t *first_chunk_parameter = nullptr;
+    if (chunk_fixed_iterations > 0 && std::any_of(pending_reductions.begin(),
+            pending_reductions.end(), [&](const GpuReductionInfo &r) {
+                return r.host_buf_sym != nullptr
+                    && kernel_scope->get_symbol(r.orig_name) != nullptr;
+            })) {
+        first_chunk_parameter = gpu_new_variable(al, loc, kernel_scope,
+            "__gpu_first_chunk", ASRUtils::duplicate_type(al, int_type),
+            ASR::intentType::InOut);
+        first_chunk_flag = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            first_chunk_parameter));
+        kernel_args.push_back(al, first_chunk_flag);
+        ASR::call_arg_t carg;
+        carg.loc = loc;
+        carg.m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, int_type, ASR::integerbozType::Decimal));
+        call_args.push_back(al, carg);
     }
 
     // Decompose StructInstanceMember references in kernel head
@@ -2728,17 +2752,39 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // The loop indices below are recovered by dividing __flat_idx down,
     // which destroys it, so the thread keeps its own number separately.
     // Every slot starts at the identity, so a thread whose body never
-    // reaches the accumulator still leaves something the fold can use.
+    // reaches the accumulator still leaves something the fold can use. In
+    // a launch that runs in chunks only the threads of the first chunk, the
+    // largest, set it: a thread of a later chunk keeps combining into what
+    // the thread of the same number left in it, and one past the end of a
+    // partial chunk has returned above without touching it.
     if (slot_index != nullptr) {
         assign(ASRUtils::EXPR(ASR::make_Var_t(al, loc,
             kernel_scope->get_symbol("__gpu_slot"))), remain_var);
+        Vec<ASR::stmt_t*> starts;
+        starts.reserve(al, pending_reductions.size());
         for (auto &r : pending_reductions) {
             if (!r.host_buf_sym) continue;
             ASR::symbol_t *param = kernel_scope->get_symbol(r.orig_name);
             if (!param) continue;
-            assign(gpu_reduction_slot(al, loc, param, slot_index,
+            starts.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
+                loc, gpu_reduction_slot(al, loc, param, slot_index,
                     r.scalar_type),
-                gpu_reduction_identity(al, loc, r.op, r.scalar_type));
+                gpu_reduction_identity(al, loc, r.op, r.scalar_type),
+                nullptr, false, false, false, false)));
+        }
+        if (first_chunk_flag == nullptr) {
+            for (size_t i = 0; i < starts.n; i++) {
+                kernel_body.push_back(al, starts[i]);
+            }
+        } else {
+            kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
+                nullptr, ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                    first_chunk_flag, ASR::cmpopType::NotEq,
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                        int_type, ASR::integerbozType::Decimal)),
+                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)),
+                    nullptr)),
+                starts.p, starts.n, nullptr, 0)));
         }
     }
 
@@ -3133,6 +3179,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.start_parameters = start_parameters;
     plan.end_parameters = end_parameters;
     plan.chunk_fixed_iterations = chunk_fixed_iterations;
+    plan.first_chunk_parameter = first_chunk_parameter;
     plan.tile_dims[0] = tiled ? order[0] : 0;
     plan.tile_dims[1] = tiled ? order[1] : 0;
     build_kernel_launch(region, work, loc, plan);

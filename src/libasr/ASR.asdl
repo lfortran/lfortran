@@ -150,8 +150,12 @@ stmt
     -- (see gpu_launch_dimension). Every chunk covers the other dimensions
     -- whole: their extents are constants, whose product is
     -- `chunk_fixed_iterations` (1 when there are none, and 0 when
-    -- `chunk_dimensions` is empty).
-    | GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch, expr? stop_status, stmt* stop_replay, expr* overwritten, expr* overwritten_if, gpu_launch_dimension* chunk_dimensions, int chunk_fixed_iterations)
+    -- `chunk_dimensions` is empty). `first_chunk_parameter` is the kernel
+    -- parameter a launch with chunk dimensions sets to 1 for its first chunk
+    -- and to 0 for the others, so that only the threads of the first one
+    -- start the accumulators of its reductions, or nil when the kernel has
+    -- none to start.
+    | GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch, expr? stop_status, stmt* stop_replay, expr* overwritten, expr* overwritten_if, gpu_launch_dimension* chunk_dimensions, int chunk_fixed_iterations, symbol? first_chunk_parameter)
     | GpuSync()
     | GpuLaneBarrier()
     | GpuDiscard(expr* vars)

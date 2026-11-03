@@ -579,10 +579,12 @@ public:
     // slot of its own instead: the kernel sets its slot to the identity of
     // the operator, accumulates into that, and the host folds the slots
     // into the original scalar once the launch has finished. The device
-    // needs no atomics for it and the launch stays a single dispatch.
+    // needs no atomics for it and no kernel of its own to combine the slots.
     //
     // There is one slot per iteration, so a thread the bounds guard turns
-    // away has no slot to leave unwritten.
+    // away has no slot to leave unwritten. A launch that runs in chunks
+    // has one per iteration of its largest chunk, the first: the threads of
+    // the later chunks combine into the slots the first one started.
     struct GpuReductionInfo {
         std::string orig_name;
         ASR::reduction_opType op;
@@ -638,6 +640,10 @@ public:
         std::vector<ASR::symbol_t*> start_parameters;
         std::vector<ASR::symbol_t*> end_parameters;
         int64_t chunk_fixed_iterations = 0;
+        // The kernel parameter a launch that may run in chunks sets only
+        // for the first chunk, or nullptr (see
+        // GpuKernelLaunch.first_chunk_parameter).
+        ASR::symbol_t *first_chunk_parameter = nullptr;
     };
 
     void decline(const ASR::OMPRegion_t &x);

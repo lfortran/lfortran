@@ -4,6 +4,8 @@
 #include <libasr/asr.h>
 #include <libasr/utils.h>
 
+#include <vector>
+
 namespace LCompilers {
 
     void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
@@ -39,6 +41,19 @@ namespace LCompilers {
         // A buffer only the device holds.
         Scratch,
     };
+
+    // How a launch with chunk dimensions (GpuKernelLaunch.chunk_dimensions)
+    // that has more iterations than the chunk limit `limit` splits them:
+    // appends to `out` the statements that set `pieces[p]` to the number of
+    // values of the p-th dimension it splits a chunk covers, given the
+    // `extents` of those dimensions, fastest first and each at least one,
+    // and `largest` to the iterations of the largest chunk, the first one.
+    // `fixed_iterations` is GpuKernelLaunch.chunk_fixed_iterations. Every
+    // expression is an integer(8), and `pieces` and `largest` are variables.
+    void gpu_chunk_pieces(Allocator &al, const Location &loc,
+        Vec<ASR::stmt_t*> &out, const std::vector<ASR::expr_t*> &extents,
+        int64_t fixed_iterations, int64_t limit,
+        const std::vector<ASR::expr_t*> &pieces, ASR::expr_t *largest);
 
     GpuBufferHandling gpu_launch_buffer_handling(
         const ASR::GpuKernelLaunch_t &launch,

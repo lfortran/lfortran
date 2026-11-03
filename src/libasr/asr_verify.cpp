@@ -4170,7 +4170,9 @@ public:
     // chunk covers whole is positive exactly when there are dimensions to
     // split. The chunks of a launch count its iterations, so a kernel whose
     // launch runs several threads per iteration (lanes) is not run in
-    // chunks.
+    // chunks. The flag that tells the kernel whether it runs the first
+    // chunk is a scalar integer parameter too, and only a launch that may
+    // run in chunks has one.
     void verify_gpu_kernel_launch_chunks(const GpuKernelLaunch_t &x,
             const ASR::Function_t &kernel) {
         auto is_integer_parameter = [&](ASR::symbol_t *parameter) {
@@ -4204,6 +4206,16 @@ public:
                 || kernel.m_gpu->m_lanes == nullptr,
             "asr.verify.gpu_kernel_launch.chunk_lanes",
             "a GpuKernelLaunch of a kernel with lanes cannot run in chunks");
+        if (x.m_first_chunk_parameter != nullptr) {
+            require_id(x.n_chunk_dimensions > 0,
+                "asr.verify.gpu_kernel_launch.first_chunk_without_chunks",
+                "only a GpuKernelLaunch with chunk dimensions can have a "
+                "first chunk parameter");
+            require_id(is_integer_parameter(x.m_first_chunk_parameter),
+                "asr.verify.gpu_kernel_launch.first_chunk_parameter_kind",
+                "the first chunk parameter of a GpuKernelLaunch must be a "
+                "scalar integer parameter of its kernel");
+        }
     }
 
     // The procedure whose code `scope` belongs to, past the BLOCK and

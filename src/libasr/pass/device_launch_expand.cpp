@@ -69,7 +69,10 @@ and that has more iterations than the chunk limit (PassOptions::
 gpu_chunk_limit) runs its kernel once per chunk, a box of at most that many
 iterations (launch_chunks below): the buffers and workspaces are set once,
 and each chunk sets the bounds of its box in the scalar struct, hands the
-struct over again and launches its own grid.
+struct over again and launches its own grid. The flag a kernel with
+reductions takes (GpuKernelLaunch.first_chunk_parameter) is cleared after the
+first chunk, so the later ones keep combining into the accumulators it
+started.
 
 The logical count is evaluated once and normalized before any launch setup.
 The entire sequence above, including its cleanup, runs only when the effective
@@ -1374,6 +1377,14 @@ class DeviceLaunchExpandVisitor :
                         body.push_back(al, set_scalars());
                         fill_grid(body, n_threads);
                         body.push_back(al, launch());
+                        // The threads of the chunks after the first keep
+                        // combining into the accumulators it started.
+                        if (x.m_first_chunk_parameter != nullptr) {
+                            ASR::expr_t *first = field(
+                                x.m_first_chunk_parameter);
+                            body.push_back(al, b.Assignment(first,
+                                b.i_t(0, ASRUtils::expr_type(first))));
+                        }
                         // What this chunk wrote of a buffer it was handed
                         // as written whole is kept for the next one.
                         for (auto &d : discardable) {
@@ -1520,8 +1531,6 @@ class DeviceLaunchExpandVisitor :
             std::vector<ASR::expr_t*> extents(n), pieces(n);
             ASR::expr_t *largest = declare_local(loc, "gpu_chunk_threads",
                 int64);
-            out.push_back(al, b.Assignment(largest,
-                b.i64(x.m_chunk_fixed_iterations)));
             for (size_t p = 0; p < n; p++) {
                 const ASR::gpu_launch_dimension_t &dim =
                     x.m_chunk_dimensions[p];
@@ -1530,15 +1539,9 @@ class DeviceLaunchExpandVisitor :
                     bound(dim.m_end_parameter),
                     bound(dim.m_start_parameter)), b.i64(1))));
                 pieces[p] = declare_local(loc, "gpu_chunk_piece", int64);
-                out.push_back(al, b.Assignment(pieces[p],
-                    b.Div(b.i64(chunk_limit), largest)));
-                out.push_back(al, b.If(b.Gt(pieces[p], extents[p]),
-                    {b.Assignment(pieces[p], extents[p])}, {}));
-                out.push_back(al, b.If(b.Lt(pieces[p], b.i64(1)),
-                    {b.Assignment(pieces[p], b.i64(1))}, {}));
-                out.push_back(al, b.Assignment(largest,
-                    b.Mul(largest, pieces[p])));
             }
+            gpu_chunk_pieces(al, loc, out, extents,
+                x.m_chunk_fixed_iterations, chunk_limit, pieces, largest);
             set_workspaces(out, largest);
 
             // The body of the innermost loop: the box of one chunk, which
@@ -1601,6 +1604,25 @@ class DeviceLaunchExpandVisitor :
 
 
 
+
+void gpu_chunk_pieces(Allocator &al, const Location &loc,
+        Vec<ASR::stmt_t*> &out, const std::vector<ASR::expr_t*> &extents,
+        int64_t fixed_iterations, int64_t limit,
+        const std::vector<ASR::expr_t*> &pieces, ASR::expr_t *largest) {
+    LCOMPILERS_ASSERT(pieces.size() == extents.size());
+    ASRUtils::ASRBuilder b(al, loc);
+    out.push_back(al, b.Assignment(largest, b.i64(fixed_iterations)));
+    for (size_t p = 0; p < extents.size(); p++) {
+        out.push_back(al, b.Assignment(pieces[p],
+            b.Div(b.i64(limit), largest)));
+        out.push_back(al, b.If(b.Gt(pieces[p], extents[p]),
+            {b.Assignment(pieces[p], extents[p])}, {}));
+        out.push_back(al, b.If(b.Lt(pieces[p], b.i64(1)),
+            {b.Assignment(pieces[p], b.i64(1))}, {}));
+        out.push_back(al, b.Assignment(largest,
+            b.Mul(largest, pieces[p])));
+    }
+}
 
 ASR::expr_t* gpu_associate_selector(ASR::symbol_t *name) {
     name = ASRUtils::symbol_get_past_external(name);

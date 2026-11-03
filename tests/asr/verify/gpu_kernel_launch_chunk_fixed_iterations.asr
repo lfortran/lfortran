@@ -141,6 +141,7 @@
                   :overwritten_if []
                   :chunk_dimensions []
                   :chunk_fixed_iterations 4
+                  :first_chunk_parameter nil
                 )
                 (GpuSync)
               ]
