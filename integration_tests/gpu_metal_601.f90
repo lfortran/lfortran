@@ -16,18 +16,15 @@ program gpu_metal_601
     ! lower bound, 3000000000, is beyond huge(0), compiled with
     ! --descriptor-index-64, so the kernels compute element offsets in
     ! 64 bits. The offload passes count the subscripts of the array
-    ! expressions they lower inside a kernel in integer(4) from the lower
-    ! bound, which reaches them truncated; the offset of each such
-    ! subscript has to cancel the truncation (modulo 2**32, #16571).
+    ! expressions they lower inside a kernel in integer(8) from the lower
+    ! bound too (#16571).
     ! A section with one bound omitted (z(lo8 + 3:, j), z(:lo8 + 3, j))
     ! needs the omitted bound in integer(8): in integer(4) it is
     ! truncated, while the explicit bound beside it is exact. The last
     ! part sums sections of arrays whose bounds cross huge(0) (or
     ! huge(0) + 2**32): their loop's last index needs integer(8) even
-    ! where the lower bound fits integer(4). A whole allocatable, sum(r),
-    ! is still summed with an integer(4) counter, so it is not summed
-    ! across huge(0) here (#16571). The arrays are small, so the test
-    ! runs on the device (cuda_cpu in CI) and on the host.
+    ! where the lower bound fits integer(4). The arrays are small, so the
+    ! test runs on the device (cuda_cpu in CI) and on the host.
     use gpu_metal_601_m, only: f
     implicit none
     real, allocatable :: z(:,:), v(:,:), w(:,:), r(:)

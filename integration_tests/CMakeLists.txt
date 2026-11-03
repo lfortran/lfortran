@@ -6967,6 +6967,7 @@ RUN(NAME gpu_metal_565 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_566 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64)
 RUN(NAME gpu_metal_601 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_690 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64) # metal declines integer(8) loop indices
 RUN(NAME gpu_metal_602 LABELS llvm cuda EXTRA_ARGS --descriptor-index-64) # no gfortran: the GFortran in CI rejects reduce
 RUN(NAME gpu_metal_599 LABELS gfortran llvm cuda)
 # Procedures copied into a kernel and the entities they name of their
