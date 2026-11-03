@@ -930,6 +930,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::duplicate_type_with_empty_dims(al, flat_type))),
                 ASR::intentType::Local, type_decl);
+            ASRUtils::EXPR2VAR(view)->m_contiguous_attr =
+                ASRUtils::is_simply_contiguous(carg.m_value);
             ASR::expr_t *empty = b.Variable(orig_scope,
                 orig_scope->get_unique_name("__gpu_absent_component"),
                 b.Array(std::vector<int64_t>(

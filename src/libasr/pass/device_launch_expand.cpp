@@ -1690,6 +1690,7 @@ static bool designates_contiguous(ASR::expr_t *e) {
 
 bool gpu_argument_may_be_strided(ASR::expr_t *arg) {
     if (!ASR::is_a<ASR::Var_t>(*arg)) return false;
+    if (ASRUtils::is_simply_contiguous(arg)) return false;
     ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
         ASR::down_cast<ASR::Var_t>(arg)->m_v);
     if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;

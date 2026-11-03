@@ -99,7 +99,9 @@ view. Decomposed allocatable components use the root argument's presence
 before associating their host views or reading their bounds. Scalar ABI
 placeholders likewise never read absent storage. These
 placeholders are not Fortran default values: guarded device accesses retain
-the original absence semantics.
+the original absence semantics. Views preserve proven contiguity without a
+host array copy; potentially strided arguments still use the normal
+copy-in/copy-out path.
 
 GPU synchronization recognizes the address-taken backing storage in the
 generated ASR associations, preserving host read/write and scope-exit

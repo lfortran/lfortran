@@ -998,6 +998,8 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
                         current_scope->get_unique_name("__gpu_optional"),
                         ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, target_type)),
                         ASR::intentType::Local, type_decl);
+                    ASRUtils::EXPR2VAR(capture)->m_contiguous_attr =
+                        ASRUtils::is_simply_contiguous(actual);
                     ASR::ttype_t *empty_type = ASRUtils::is_array(type)
                         ? b.Array(std::vector<int64_t>(
                             ASRUtils::extract_n_dims_from_ttype(type), 0),

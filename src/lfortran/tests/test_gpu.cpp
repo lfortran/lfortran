@@ -1305,4 +1305,52 @@ TEST_CASE("GPU split nests keep the write-discard of the loops they split") {
         CHECK(launches[i] == expected[i]);
     }
 }
+
+TEST_CASE("GPU optional views preserve known contiguity without host copies") {
+    std::string source = read_project_file(
+        "integration_tests/gpu_optional_launch_04.f90");
+    for (bool metal : {false, true}) {
+        CompilerOptions options;
+        options.gpu_backend = metal ? "metal" : "cuda";
+        options.po.gpu_offload_metal = metal;
+        options.po.gpu_offload_cuda = !metal;
+        options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        FortranEvaluator evaluator(options);
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = "gpu_optional_launch_04.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LFortran::source_offset(source.size()));
+        diag::Diagnostics diagnostics;
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        Allocator allocator(32 * 1024 * 1024);
+        PassManager passes;
+        std::string pass = "device_launch_expand", skip;
+        passes.parse_pass_arg(pass, skip);
+        options.po.pass_cumulative = true;
+        passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+        auto *module = ASR::down_cast<ASR::Module_t>(
+            parsed.result->m_symtab->get_symbol("gpu_optional_launch_04_m"));
+        for (auto name : {"explicit_input", "contiguous_input", "strided_update"}) {
+            INFO(name);
+            auto *function = ASR::down_cast<ASR::Function_t>(
+                module->m_symtab->get_symbol(name));
+            struct Allocations : public ASR::BaseWalkVisitor<Allocations> {
+                size_t count = 0;
+                void visit_Allocate(const ASR::Allocate_t &x) {
+                    count += x.n_args;
+                }
+            } allocations;
+            for (size_t i = 0; i < function->n_body; i++) {
+                allocations.visit_stmt(*function->m_body[i]);
+            }
+            CHECK(allocations.count == (std::string(name) == "strided_update" ? 1 : 0));
+        }
+    }
+}
 #endif
