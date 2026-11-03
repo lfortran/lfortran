@@ -84,6 +84,23 @@ contains
         get = k
     end function
 end subroutine
+! The frame of the host refers to `m` and to its bounds
+subroutine host_frame(n)
+    integer, intent(in) :: n
+    type(t) :: x(n)
+    integer :: m(lbound(x, 1):n)
+    integer :: k
+    m = 4
+    k = total()
+    saved => get
+contains
+    integer function get()
+        get = k
+    end function
+    integer function total()
+        total = sum(m) + lbound(m, 1) + 10*ubound(m, 1)
+    end function
+end subroutine
 ! An array of zero extent
 subroutine host_empty(n)
     integer, intent(in) :: n
@@ -119,6 +136,10 @@ print *, seen
 if (seen /= 6) error stop
 seen = 0
 call host_unit(3, y)
+print *, seen
+if (seen /= 12 + 1 + 30) error stop
+seen = 0
+call host_frame(3)
 print *, seen
 if (seen /= 12 + 1 + 30) error stop
 seen = 0

@@ -1818,6 +1818,9 @@ public:
         if (procs.empty()) {
             return;
         }
+        if (ASR::is_a<ASR::Function_t>(*host_sym)) {
+            replace_bound_inquiries(*ASR::down_cast<ASR::Function_t>(host_sym));
+        }
         const Location &loc = host_sym->base.loc;
 
         // Every procedure value of an internal procedure names its thunk,
@@ -2582,31 +2585,13 @@ public:
     // can be invoked for when the instance ends and the BLOCK and
     // ASSOCIATE constructs of the host, which the statements of the body
     // execute and which can refer to those locals. Every return of the host
-    // exits the construct instead. Returns false if the host has no such
-    // local or if another symbol of the host refers to one of them other
-    // than by the inquiries that are replaced below. The body is then not
-    // moved, and the declarations whose inquiries were replaced keep their
-    // values.
+    // exits the construct instead. Returns false, and changes nothing, if
+    // the host has no such local or if another symbol of the host refers to
+    // one of them.
     bool wrap_body(ASR::Function_t &f) {
         SymbolTable *host = f.m_symtab;
-        std::vector<std::string> moved;
-        bool finalizable = false;
-        for (auto &item: host->get_scope()) {
-            ASR::symbol_t *sym = item.second;
-            if (ASR::is_a<ASR::Block_t>(*sym) ||
-                    ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
-                moved.push_back(item.first);
-            } else if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                if (v->m_intent == ASR::intentType::Local &&
-                        v->m_storage == ASR::storage_typeType::Default &&
-                        may_invoke_final(v->m_type, v->m_type_declaration)) {
-                    moved.push_back(item.first);
-                    finalizable = true;
-                }
-            }
-        }
-        if (!finalizable) {
+        std::vector<std::string> moved = instance_locals(*host);
+        if (moved.empty()) {
             return false;
         }
         // A local whose declaration refers to a moved local, such as an
@@ -2614,43 +2599,17 @@ public:
         // imports it, a namelist group (which a BLOCK cannot have) or a
         // dummy argument would have to move too: the host
         // is then not wrapped (a local that a final procedure reaches could
-        // be freed before the final procedure runs). A declaration of a
-        // variable or an interface body that refers to a moved array only
-        // by LBOUND, UBOUND and SIZE refers instead to the bounds the array
-        // is declared with, so that the host is wrapped (#16610). This is
-        // an interim workaround, to be replaced by an explicit point in ASR
-        // where the locals of a procedure go out of scope (#16575), after
-        // which the slot is given back without a BLOCK.
+        // be freed before the final procedure runs). Most such inquiries
+        // were replaced by replace_bound_inquiries.
         std::set<ASR::symbol_t*> moved_set;
         for (const std::string &name: moved) {
             moved_set.insert(host->get_symbol(name));
         }
-        std::set<ASR::symbol_t*> declared = declared_arrays(moved_set);
         for (auto &item: host->get_scope()) {
-            ASR::symbol_t *sym = item.second;
-            if (moved_set.count(sym) != 0 || !refers_to(sym, moved_set)) {
-                continue;
-            }
-            if (!declared.empty() && (ASR::is_a<ASR::Variable_t>(*sym) ||
-                    (ASR::is_a<ASR::Function_t>(*sym) &&
-                        ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(
-                            sym))->m_deftype == ASR::deftypeType::Interface))) {
-                bool entry_initialized = ASR::is_a<ASR::Variable_t>(*sym) &&
-                    ASRUtils::is_entry_initialized_local(
-                        *ASR::down_cast<ASR::Variable_t>(sym));
-                replace_declared_array_inquiries(al, sym, declared);
-                if (entry_initialized) {
-                    keep_defined_on_entry(*ASR::down_cast<ASR::Variable_t>(sym));
-                }
-            }
-            if (refers_to(sym, moved_set)) {
+            if (moved_set.count(item.second) == 0 &&
+                    refers_to(item.second, moved_set)) {
                 return false;
             }
-        }
-        if (!declared.empty()) {
-            // The interface of the host has the types of its dummy arguments
-            replace_declared_array_inquiries(al, f.m_function_signature,
-                declared);
         }
         SymbolTable *scope = al.make_new<SymbolTable>(host);
         for (const std::string &name: moved) {
@@ -2679,6 +2638,75 @@ public:
         f.m_body = body.p;
         f.n_body = body.size();
         return true;
+    }
+
+    // The symbols of `host` that wrap_body moves into a BLOCK construct:
+    // its locals that a final procedure can be invoked for when the
+    // instance ends, and its BLOCK and ASSOCIATE constructs. None if it has
+    // no such local.
+    static std::vector<std::string> instance_locals(SymbolTable &host) {
+        std::vector<std::string> moved;
+        bool finalizable = false;
+        for (auto &item: host.get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (ASR::is_a<ASR::Block_t>(*sym) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                moved.push_back(item.first);
+            } else if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (v->m_intent == ASR::intentType::Local &&
+                        v->m_storage == ASR::storage_typeType::Default &&
+                        may_invoke_final(v->m_type, v->m_type_declaration)) {
+                    moved.push_back(item.first);
+                    finalizable = true;
+                }
+            }
+        }
+        if (!finalizable) {
+            moved.clear();
+        }
+        return moved;
+    }
+
+    // In the declarations of the variables and interface bodies of host
+    // `f` that wrap_body does not move, and in the interface of `f`,
+    // replaces LBOUND, UBOUND and SIZE of a moved array by the bounds the
+    // array is declared with, so that they do not keep the host from being
+    // wrapped (#16610). It runs before the frame of the host is made,
+    // since a local can become a named constant (keep_defined_on_entry).
+    // This is an interim workaround, to be replaced by an explicit point in
+    // ASR where the locals of a procedure go out of scope (#16575), after
+    // which the slot is given back without a BLOCK.
+    void replace_bound_inquiries(ASR::Function_t &f) {
+        SymbolTable *host = f.m_symtab;
+        std::set<ASR::symbol_t*> moved_set;
+        for (const std::string &name: instance_locals(*host)) {
+            moved_set.insert(host->get_symbol(name));
+        }
+        std::set<ASR::symbol_t*> declared = declared_arrays(moved_set);
+        if (declared.empty()) {
+            return;
+        }
+        for (auto &item: host->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (moved_set.count(sym) != 0 || !refers_to(sym, moved_set)) {
+                continue;
+            }
+            if (ASR::is_a<ASR::Variable_t>(*sym) ||
+                    (ASR::is_a<ASR::Function_t>(*sym) &&
+                        ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(
+                            sym))->m_deftype == ASR::deftypeType::Interface)) {
+                bool entry_initialized = ASR::is_a<ASR::Variable_t>(*sym) &&
+                    ASRUtils::is_entry_initialized_local(
+                        *ASR::down_cast<ASR::Variable_t>(sym));
+                replace_declared_array_inquiries(al, sym, declared);
+                if (entry_initialized) {
+                    keep_defined_on_entry(*ASR::down_cast<ASR::Variable_t>(sym));
+                }
+            }
+        }
+        // The interface of the host has the types of its dummy arguments
+        replace_declared_array_inquiries(al, f.m_function_signature, declared);
     }
 
     // A local that captures a bound on entry (see
