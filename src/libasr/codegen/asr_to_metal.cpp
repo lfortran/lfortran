@@ -117,6 +117,12 @@ struct MetalDialect {
         return "uint";
     }
 
+    // The bits of `value` read as a `type` of the same width.
+    std::string bit_cast(const std::string &type, bool /*to_real*/,
+            int /*kind*/, const std::string &value) const {
+        return "as_type<" + type + ">(" + value + ")";
+    }
+
     // A relaxed atomic add to an `int` in device memory, giving the old value.
     std::string atomic_fetch_add(const std::string &address,
             const std::string &increment) const {

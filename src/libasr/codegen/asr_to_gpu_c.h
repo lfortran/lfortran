@@ -5506,6 +5506,10 @@ public:
                 }
                 break;
             }
+            case ASR::exprType::BitCast: {
+                emit_bit_cast(ASR::down_cast<ASR::BitCast_t>(expr));
+                break;
+            }
             case ASR::exprType::Cast: {
                 ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(expr);
                 std::string target_type = gpu_type(c->m_type);
@@ -6032,6 +6036,44 @@ public:
             default:
                 src << "/* unsupported expr type " << expr->type << " */";
                 break;
+        }
+    }
+
+    // A scalar TRANSFER between an integer and a real of the same kind
+    // reads the bits of its source as the other type, which the dialect
+    // spells; between two values of one type it is that value. The source
+    // is first given its own device type, so that the bit cast is handed an
+    // operand of exactly that width. A value folded at compile time is not
+    // used: a real literal cannot spell every bit pattern.
+    void emit_bit_cast(ASR::BitCast_t *bc) {
+        ASR::ttype_t *from = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(bc->m_source));
+        ASR::ttype_t *to = ASRUtils::type_get_past_allocatable_pointer(
+            bc->m_type);
+        if (bc->m_size != nullptr || ASRUtils::is_array(from)
+                || ASRUtils::is_array(to)) {
+            throw CodeGenError("gpu offload: a transfer to or from an array "
+                "is not supported on the GPU", bc->base.base.loc);
+        }
+        bool from_numeric = ASRUtils::is_integer(*from)
+            || ASRUtils::is_real(*from);
+        bool to_numeric = ASRUtils::is_integer(*to) || ASRUtils::is_real(*to);
+        int kind = ASRUtils::extract_kind_from_ttype_t(to);
+        if (!from_numeric || !to_numeric
+                || ASRUtils::extract_kind_from_ttype_t(from) != kind
+                || (from->type != to->type && kind != 4 && kind != 8)) {
+            throw CodeGenError("gpu offload: transfer from "
+                + ASRUtils::type_to_str_with_kind(from, bc->m_source) + " to "
+                + ASRUtils::type_to_str_with_kind(to, nullptr)
+                + " is not supported on the GPU", bc->base.base.loc);
+        }
+        std::string value = "((" + gpu_type(from) + ")("
+            + expr_str(bc->m_source) + "))";
+        if (from->type == to->type) {
+            src << value;
+        } else {
+            src << dialect.bit_cast(gpu_type(to), ASRUtils::is_real(*to),
+                kind, value);
         }
     }
 
