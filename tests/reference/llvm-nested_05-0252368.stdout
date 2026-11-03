@@ -134,7 +134,7 @@ FINALIZE_SYMTABLE_b:                              ; preds = %return
   ret void
 }
 
-define void @b.__module_nested_05_a_c(%nested_05_a.__lcompilers_frame_b.6* %__lcompilers_frame) {
+define internal void @b.__module_nested_05_a_c(%nested_05_a.__lcompilers_frame_b.6* %__lcompilers_frame) {
 .entry:
   %stringFormat_desc1 = alloca %string_descriptor, align 8
   %stringFormat_desc = alloca %string_descriptor, align 8

@@ -26,7 +26,7 @@ FINALIZE_SYMTABLE_b:                              ; preds = %return
   ret void
 }
 
-define void @b.__module_nested_02_a_c() {
+define internal void @b.__module_nested_02_a_c() {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()

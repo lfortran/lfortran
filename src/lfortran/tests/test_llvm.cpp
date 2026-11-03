@@ -1149,6 +1149,72 @@ end module
     }
 }
 
+TEST_CASE("LLVM internal procedures have internal linkage") {
+    // With --fast, `integrate` is copied into `host` as the internal procedure
+    // `integrate__f`, which calls `f` directly. Only `host` can name either,
+    // so neither is exported, and once both are inlined into `host`, LLVM
+    // deletes them.
+    std::string source = R"(module integ_m
+implicit none
+abstract interface
+    real(8) function fun(x)
+        real(8), intent(in) :: x
+    end function
+end interface
+contains
+    real(8) function integrate(f, a, b, n) result(s)
+        procedure(fun) :: f
+        real(8), intent(in) :: a, b
+        integer, intent(in) :: n
+        integer :: i
+        real(8) :: h
+        h = (b - a)/n
+        s = 0
+        do i = 1, n
+            s = s + f(a + (i - 0.5d0)*h)
+        end do
+        s = s*h
+    end function
+end module
+
+module host_m
+use integ_m, only: integrate
+implicit none
+contains
+    subroutine host(p, q, r, n, res)
+        real(8), intent(in) :: p, q, r
+        integer, intent(in) :: n
+        real(8), intent(out) :: res
+        res = integrate(f, 0d0, 1d0, n)
+    contains
+        real(8) function f(x)
+            real(8), intent(in) :: x
+            f = (p*x + q)*x + r
+        end function
+    end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        CAPTURE(fast);
+        std::vector<std::pair<std::string, std::string>> procedures = {
+            {"host", "_m_host"}, {"f", "_m_f"}};
+        if (fast) procedures.push_back({"integrate__f", "_integrate__f"});
+        inspect_definitions(source, fast, procedures,
+            [&](const std::string &procedure, llvm::Function &fn) {
+                CAPTURE(procedure);
+                CHECK(fn.hasInternalLinkage() == (procedure != "host"));
+            });
+    }
+    inspect_definitions(source, true, {{"host", "_m_host"}},
+        [&](const std::string &, llvm::Function &fn) {
+            for (llvm::Function &other: *fn.getParent()) {
+                std::string name = other.getName().str();
+                CAPTURE(name);
+                CHECK(name.rfind("host.", 0) != 0);
+            }
+        }, false, true);
+}
+
 TEST_CASE("LLVM rank-one SIZE avoids a runtime rank loop") {
     std::string source = R"(module size_calls
 implicit none

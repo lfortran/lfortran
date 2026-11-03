@@ -70,7 +70,7 @@ FINALIZE_SYMTABLE_sub1:                           ; preds = %return
   ret void
 }
 
-define void @sub1.__module_recursion_01_sub2(%recursion_01.__lcompilers_frame_sub1.6* %__lcompilers_frame) {
+define internal void @sub1.__module_recursion_01_sub2(%recursion_01.__lcompilers_frame_sub1.6* %__lcompilers_frame) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()

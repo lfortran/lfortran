@@ -8193,6 +8193,20 @@ public:
             && parent_symtab->parent == nullptr;
     }
 
+    // An internal procedure can be named only in its host, whose body is in
+    // the same translation unit, so it is not exported either. A copy that
+    // LLVM has inlined into every caller, such as one that
+    // specialize_procedure_arguments makes in the host with --fast, is then
+    // deleted instead of staying in the binary. A bind(c) internal procedure
+    // is left out: it can share its LLVM function with an external procedure
+    // of the same binding name.
+    static bool is_internal_procedure(const ASR::Function_t &x) {
+        ASR::asr_t *host = x.m_symtab->parent->asr_owner;
+        return host != nullptr && ASR::is_a<ASR::symbol_t>(*host)
+            && (ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(host))
+                || ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(host)));
+    }
+
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){
         llvm::Type* value_type;
 
@@ -11413,9 +11427,11 @@ public:
             // An interface to the procedure, such as the one an OpenMP
             // outlined procedure is passed through, may have declared it
             // first under the same name.
-            if (is_translation_unit_private(x.m_symtab->parent, x.m_access)
-                    && (ftype->m_abi == ASR::abiType::Source
-                        || ftype->m_abi == ASR::abiType::BindC)
+            if (((is_translation_unit_private(x.m_symtab->parent, x.m_access)
+                            && (ftype->m_abi == ASR::abiType::Source
+                                || ftype->m_abi == ASR::abiType::BindC))
+                        || (is_internal_procedure(x)
+                            && ftype->m_abi == ASR::abiType::Source))
                     && ftype->m_deftype == ASR::deftypeType::Implementation) {
                 F->setLinkage(llvm::Function::InternalLinkage);
             }

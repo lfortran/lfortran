@@ -48,7 +48,7 @@ FINALIZE_SYMTABLE_b:                              ; preds = %return
   ret i32 %5
 }
 
-define i32 @b.__module_nested_04_a_c(i32* %z, %nested_04_a.__lcompilers_frame_b.6* %__lcompilers_frame) {
+define internal i32 @b.__module_nested_04_a_c(i32* %z, %nested_04_a.__lcompilers_frame_b.6* %__lcompilers_frame) {
 .entry:
   %stringFormat_desc4 = alloca %string_descriptor, align 8
   %stringFormat_desc1 = alloca %string_descriptor, align 8

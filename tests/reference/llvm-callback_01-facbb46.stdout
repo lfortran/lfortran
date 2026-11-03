@@ -66,7 +66,7 @@ FINALIZE_SYMTABLE_foo:                            ; preds = %return
   ret void
 }
 
-define float @foo.__module_callback_01_f(float* %x) {
+define internal float @foo.__module_callback_01_f(float* %x) {
 .entry:
   %f = alloca float, align 4
   %0 = load float, float* %x, align 1

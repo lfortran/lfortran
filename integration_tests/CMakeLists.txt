@@ -3761,6 +3761,7 @@ RUN(NAME procedure_argument_specialization_06 LABELS gfortran llvm)
 # and ASSOCIATE bodies.
 RUN(NAME procedure_argument_specialization_07 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME procedure_argument_specialization_08 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME procedure_argument_specialization_09 LABELS gfortran llvm EXTRA_ARGS --fast)
 # With --fast, a dummy procedure that is only called or passed on is passed
 # with the frame of its host instead of a thunk: these recursive hosts need
 # more than the default --internal-procedure-thunks without it (#16665).

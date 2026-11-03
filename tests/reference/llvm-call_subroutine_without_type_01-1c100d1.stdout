@@ -47,7 +47,7 @@ FINALIZE_SYMTABLE_get_i:                          ; preds = %return
   ret void
 }
 
-define void @get_i.__module_module_call_subroutine_without_type_01_get_r(%module_call_subroutine_without_type_01.__lcompilers_frame_get_i.7* %__lcompilers_frame) {
+define internal void @get_i.__module_module_call_subroutine_without_type_01_get_r(%module_call_subroutine_without_type_01.__lcompilers_frame_get_i.7* %__lcompilers_frame) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()

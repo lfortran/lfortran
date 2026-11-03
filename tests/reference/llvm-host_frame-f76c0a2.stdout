@@ -48,7 +48,7 @@ FINALIZE_SYMTABLE_host_frame:                     ; preds = %return
   ret i32 0
 }
 
-define void @host_frame.outer(i32* %n) {
+define internal void @host_frame.outer(i32* %n) {
 .entry:
   %f = alloca %frame.4, align 8
   %0 = getelementptr %frame.4, %frame.4* %f, i32 0, i32 0
@@ -63,7 +63,7 @@ FINALIZE_SYMTABLE_outer:                          ; preds = %return
   ret void
 }
 
-define void @outer.inner(%frame.4* %f) {
+define internal void @outer.inner(%frame.4* %f) {
 .entry:
   %0 = getelementptr %frame.4, %frame.4* %f, i32 0, i32 0
   %1 = load i32*, i32** %0, align 1
