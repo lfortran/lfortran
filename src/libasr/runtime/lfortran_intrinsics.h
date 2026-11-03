@@ -440,6 +440,15 @@ typedef enum {
     LFORTRAN_NML_CHAR
 } lfortran_nml_type_t;
 
+// An array of a derived type that encloses a namelist item
+typedef struct {
+    const char *name;          // name segment, e.g. "x" or "%inner"
+    int32_t rank;
+    int64_t stride;            // byte stride between its elements
+    const int64_t *shape;      // rank-sized array of extents (Fortran order)
+    const int64_t *lbound;     // rank-sized array of lower bounds
+} lfortran_nml_level_t;
+
 typedef struct {
     const char *name;          // lower-case, null-terminated
     lfortran_nml_type_t type;
@@ -448,6 +457,13 @@ typedef struct {
     int64_t stride;            // byte stride between array elements
     void *data;                // scalar ptr or base address of array
     const int64_t *shape;      // rank-sized array of extents (Fortran order)
+    // If n_levels > 0, the item is a component of the elements of the
+    // enclosing derived-type arrays `levels` (outermost first): `name` is
+    // the last name segment (e.g. "%a"), `data` addresses it in their first
+    // elements, and it is written once per element as
+    // `x(i,...)%inner(j,...)%a=...`.
+    int32_t n_levels;
+    const lfortran_nml_level_t *levels;
 } lfortran_nml_item_t;
 
 typedef struct {
