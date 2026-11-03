@@ -1,0 +1,347 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "nested_vars_frame_call_in_declaration" (Program
+        (SymbolTable
+          1
+          {
+            "k" (Variable
+              1
+              "k"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Integer 4)
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              false
+              :NotMethod
+              nil
+              []
+              nil)
+            "outer" (Function
+              (SymbolTable
+                2
+                {
+                  "1_frame_n" (ExternalSymbol
+                    2
+                    "1_frame_n"
+                    (SymbolRef 3 "n")
+                    "frame"
+                    []
+                    "n"
+                    :Public)
+                  "f" (Variable
+                    2
+                    "f"
+                    []
+                    :Local
+                    nil
+                    nil
+                    :Default
+                    (StructType [(Reference (Integer 4))] [] true false)
+                    (SymbolRef 2 "frame")
+                    :Source
+                    :Public
+                    :Required
+                    false
+                    false
+                    false
+                    nil
+                    false
+                    false
+                    false
+                    :NotMethod
+                    nil
+                    []
+                    nil)
+                  "frame" (Struct
+                    (SymbolTable
+                      3
+                      {
+                        "n" (Variable
+                          3
+                          "n"
+                          []
+                          :Unspecified
+                          nil
+                          nil
+                          :Default
+                          (Reference (Integer 4))
+                          nil
+                          :Source
+                          :Public
+                          :Required
+                          false
+                          false
+                          false
+                          nil
+                          false
+                          false
+                          false
+                          :NotMethod
+                          nil
+                          []
+                          nil)
+                      })
+                    "frame"
+                    (StructType [(Reference (Integer 4))] [] true false)
+                    []
+                    ["n"]
+                    []
+                    :Source
+                    :Public
+                    false
+                    false
+                    false
+                    []
+                    nil
+                    nil
+                    [])
+                  "g" (Function
+                    (SymbolTable
+                      4
+                      {
+                        "f" (Variable
+                          4
+                          "f"
+                          []
+                          :In
+                          nil
+                          nil
+                          :Default
+                          (StructType
+                            [(Reference (Integer 4))]
+                            []
+                            true
+                            false)
+                          (SymbolRef 2 "frame")
+                          :Source
+                          :Public
+                          :Required
+                          false
+                          false
+                          false
+                          nil
+                          false
+                          false
+                          false
+                          :NotMethod
+                          nil
+                          []
+                          nil)
+                        "g" (Variable
+                          4
+                          "g"
+                          []
+                          :ReturnVar
+                          nil
+                          nil
+                          :Default
+                          (Integer 4)
+                          nil
+                          :Source
+                          :Public
+                          :Required
+                          false
+                          false
+                          false
+                          nil
+                          false
+                          false
+                          false
+                          :NotMethod
+                          nil
+                          []
+                          nil)
+                        "n" (Variable
+                          4
+                          "n"
+                          ["f"]
+                          :Local
+                          (StructInstanceMember
+                            (Var (SymbolRef 4 "f"))
+                            (SymbolRef 2 "1_frame_n")
+                            (Integer 4)
+                            nil)
+                          nil
+                          :HostAssociated
+                          (Integer 4)
+                          nil
+                          :Source
+                          :Public
+                          :Required
+                          false
+                          false
+                          false
+                          nil
+                          false
+                          false
+                          false
+                          :NotMethod
+                          nil
+                          []
+                          nil)
+                      })
+                    "g"
+                    (FunctionType
+                      [
+                        (StructType
+                          [(Reference (Integer 4))]
+                          []
+                          true
+                          false)]
+                      (Integer 4)
+                      :Source
+                      :Implementation
+                      nil
+                      false
+                      false
+                      false
+                      false
+                      false
+                      []
+                      false
+                      :Host)
+                    []
+                    [(Var (SymbolRef 4 "f"))]
+                    [
+                      (Assignment
+                        (Var (SymbolRef 4 "g"))
+                        (Var (SymbolRef 4 "n"))
+                        nil
+                        false
+                        false
+                        false
+                        false)]
+                    (Var (SymbolRef 4 "g"))
+                    :Public
+                    true
+                    true
+                    nil)
+                  "m" (Variable
+                    2
+                    "m"
+                    ["g" "f"]
+                    :Local
+                    (FunctionCall
+                      (SymbolRef 2 "g")
+                      nil
+                      [(call_arg (Var (SymbolRef 2 "f")))]
+                      (Integer 4)
+                      nil
+                      nil)
+                    nil
+                    :Default
+                    (Integer 4)
+                    nil
+                    :Source
+                    :Public
+                    :Required
+                    false
+                    false
+                    false
+                    nil
+                    false
+                    false
+                    false
+                    :NotMethod
+                    nil
+                    []
+                    nil)
+                  "n" (Variable
+                    2
+                    "n"
+                    []
+                    :InOut
+                    nil
+                    nil
+                    :Default
+                    (Integer 4)
+                    nil
+                    :Source
+                    :Public
+                    :Required
+                    false
+                    false
+                    false
+                    nil
+                    false
+                    false
+                    false
+                    :NotMethod
+                    nil
+                    []
+                    nil)
+                })
+              "outer"
+              (FunctionType
+                [(Integer 4)]
+                nil
+                :Source
+                :Implementation
+                nil
+                false
+                false
+                false
+                false
+                false
+                []
+                false
+                :Host)
+              []
+              [(Var (SymbolRef 2 "n"))]
+              [
+                (BindReference
+                  (StructInstanceMember
+                    (Var (SymbolRef 2 "f"))
+                    (SymbolRef 2 "1_frame_n")
+                    (Integer 4)
+                    nil)
+                  (Var (SymbolRef 2 "n")))
+                (Assignment
+                  (Var (SymbolRef 2 "n"))
+                  (Var (SymbolRef 2 "m"))
+                  nil
+                  false
+                  false
+                  false
+                  false)]
+              nil
+              :Public
+              true
+              true
+              nil)
+          })
+        "nested_vars_frame_call_in_declaration"
+        []
+        [
+          (Assignment
+            (Var (SymbolRef 1 "k"))
+            (IntegerConstant 1 (Integer 4) :Decimal)
+            nil
+            false
+            false
+            false
+            false)
+          (SubroutineCall
+            (SymbolRef 1 "outer")
+            nil
+            [(call_arg (Var (SymbolRef 1 "k")))]
+            nil
+            false)]
+        nil)
+    })
+  []
+  nil)

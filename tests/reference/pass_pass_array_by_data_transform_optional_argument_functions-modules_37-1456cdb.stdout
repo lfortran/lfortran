@@ -521,7 +521,7 @@
                                             (Integer 4)
                                             ()
                                         )
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(AssociateBlockCall
                                             13 associate_block
                                         )]

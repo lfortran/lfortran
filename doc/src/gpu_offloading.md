@@ -63,6 +63,13 @@ components are all offloaded, or are an error until the pipeline supports them.
 Adding an entry to the list is a design decision, not a way to make a failing
 loop compile.
 
+### Scalar logarithms
+
+Real `log` in a kernel or a device-only procedure retains its intrinsic
+identity through the intrinsic-function pass and lowers to the device's native
+`log` operation. This includes transitive helper calls. Host procedures retain
+their normal runtime lowering; Metal still requires `real(real32)`.
+
 ## The unsupported-construct check
 
 The check decides from the program as written, before any lowering, whether a
@@ -132,6 +139,9 @@ kernel, lowers it through the shared ASR passes, lays out its arguments and
 generates the device source. It never falls back to the CPU:
 
 * There is no CPU alternative kept alongside the kernel, and nothing to undo.
+* Outlining copies nested `block` and `associate` scopes with their bodies.
+  Calls inside nested parallel regions name those copied scopes and the
+  kernel's copies of their helper procedures, not the host's symbols.
 * A construct the pipeline cannot lower yet is a compiler error at the loop
   ("not yet implemented"). It is fixed like any other compiler bug: reduce it to
   a minimal reproducer, fix the pipeline, add an integration test.

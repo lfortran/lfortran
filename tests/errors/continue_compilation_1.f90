@@ -3691,7 +3691,7 @@ subroutine implied_do_mixed_derived_types_error(n)
     print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
     print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
-    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! not conforming, but accepted: the nested loop has a variable of its own
     print '(*(i0,1x))', (x(1), y(1), i=1,m)  ! {Error} more than 256 iterations, bounds that are not all literals ... is not supported yet
     write(10) (x(i), y(i), i=1,3)  ! {Error} unformatted output of an implied-do loop ... is not supported yet
     print '(*(i0,1x))', (x(i), y(i), i=1,3)
@@ -3990,4 +3990,101 @@ contains
         object%value = 2  ! {Error} cannot assign to use-associated variable 'object' in a pure procedure
         cc1_pa_values(1:2) = 3  ! {Error} cannot assign to use-associated variable 'cc1_pa_values' in a pure procedure
     end subroutine
+end module
+
+module cc1_logical_reduce
+contains
+    subroutine cc1_logical_reduce_sub()
+        integer :: i, k
+        real :: r
+        logical :: l
+        k = 7
+        r = 1.0
+        l = .true.
+        do concurrent (i = 1:4) reduce(.and.: k)  ! {Error} reduction variable 'k' for operator .and. must be of type logical, found integer(4)
+            k = iand(k, 7)
+        end do
+        do concurrent (i = 1:4) reduce(.or.: r)  ! {Error} reduction variable 'r' for operator .or. must be of type logical, found real(4)
+            r = r + 1.0
+        end do
+        do concurrent (i = 1:4) reduce(.eqv.: l, k)  ! {Error} reduction variable 'k' for operator .eqv. must be of type logical, found integer(4)
+            l = l .eqv. .true.
+        end do
+        do concurrent (i = 1:4) reduce(.neqv.: k)  ! {Error} reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
+            k = k + 1
+        end do
+    end subroutine
+end module
+
+module cc1_branch_into_construct
+contains
+    subroutine cc1_branch_into_construct_sub()
+        integer :: i, k
+        k = 0
+        go to 20  ! {Error} branch to label 20 enters a DO loop from outside it
+        do i = 1, 3
+20          k = k + 1
+        end do
+        go to 30  ! {Error} branch to label 30 enters a BLOCK construct from outside it
+        block
+            integer :: m
+30          m = k
+            k = m + 1
+        end block
+    end subroutine
+end module
+
+module cc1_ibset_pos
+    integer(1), parameter :: lower_ok = ibset(0_1, 0), upper_ok = ibset(0_1, 7)
+    integer(8), parameter :: widest_ok = ibset(0_8, 63_8)
+    integer(1), parameter :: above8 = ibset(0_1, 8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(2), parameter :: above16 = ibset(0_2, 16)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(4), parameter :: above32 = ibset(0_4, 32)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(8), parameter :: above64 = ibset(0_8, 64_8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(8), parameter :: large_pos = ibset(0_8, 9223372036854775807_8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(1), parameter :: negative = ibset(0_1, -1)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
+    integer(8), parameter :: lowest_pos = ibset(0_8, -9223372036854775807_8 - 1_8)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
+end module
+
+! A nonintrinsic elemental procedure cannot be a procedure pointer target
+! (Fortran 2018 C1031), nor an initial procedure target (C1519) (#16573).
+module cc1_elemental_proc_target
+implicit none
+abstract interface
+    integer function cc1_ept_iface(x)
+        integer, intent(in) :: x
+    end function
+end interface
+type cc1_ept_t
+    procedure(cc1_ept_iface), pointer, nopass :: c => null()
+end type
+procedure(cc1_ept_iface), pointer :: cc1_ept_later => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+contains
+elemental integer function cc1_ept_ef(x)
+    integer, intent(in) :: x
+    cc1_ept_ef = x + 1
+end function
+subroutine cc1_ept_sub()
+    type cc1_ept_u
+        procedure(cc1_ept_iface), pointer, nopass :: c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    end type
+    procedure(cc1_ept_iface), pointer :: p
+    procedure(cc1_ept_iface), pointer :: q => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    type(cc1_ept_t) :: a
+    p => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    a%c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    a = cc1_ept_t(cc1_ept_ef)  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+end subroutine
+end module
+
+module cc1_procptr_component_nopass
+    type :: t_implicit_procptr
+        procedure(), pointer :: s  ! {Error} procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+    end type
+    type :: t_typed_procptr
+        procedure(integer), pointer :: f  ! {Error} procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+    end type
+    type :: t_kinded_procptr
+        procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+    end type
 end module

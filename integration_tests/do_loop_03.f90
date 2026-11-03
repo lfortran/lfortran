@@ -4,8 +4,6 @@ program do_loop_03
         print *, k
     end do
 
-    ! with --use-loop-variable-after-loop
-
     if (k /= 3) error stop
 
     print *, "k after = ", k

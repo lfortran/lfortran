@@ -1161,7 +1161,7 @@ class ASRBuilder {
         head.m_increment = step;
         Vec<ASR::stmt_t *> body;
         body.from_pointer_n_copy(al, &loop_body[0], loop_body.size());
-        return STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, body.p, body.n, nullptr, 0));
+        return STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head, body.p, body.n, nullptr, 0));
     }
 
     /*
@@ -1205,7 +1205,7 @@ class ASRBuilder {
             } else {
                 doloop_body.push_back(al, doloop);
             }
-            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                         head, doloop_body.p, doloop_body.size(), nullptr, 0));
         }
         return doloop;
@@ -1232,7 +1232,7 @@ class ASRBuilder {
             } else {
                 doloop_body.push_back(al, doloop);
             }
-            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                         head, doloop_body.p, doloop_body.size(), nullptr, 0));
         }
         return doloop;

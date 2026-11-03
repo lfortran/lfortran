@@ -231,7 +231,7 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
         head.m_start = starts[k];
         head.m_end = ends[k];
         head.m_increment = nullptr;
-        ASR::stmt_t *loop = ASRUtils::STMT(ASR::make_DoLoop_t(al,
+        ASR::stmt_t *loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al,
             l->base.base.loc, nullptr, head, cur_body, cur_n, nullptr, 0));
         Vec<ASR::stmt_t*> one;
         one.reserve(al, 1);
@@ -326,7 +326,7 @@ ASR::stmt_t *gpu_device_copy_nest(Allocator &al, const Location &loc,
             ASRUtils::duplicate_type(al, it), ASR::arrayboundType::UBound,
             nullptr));
         head.m_increment = nullptr;
-        ASR::stmt_t *loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+        ASR::stmt_t *loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,
             nullptr, head, body.p, body.n, nullptr, 0));
         Vec<ASR::stmt_t*> one;
         one.reserve(al, 1);

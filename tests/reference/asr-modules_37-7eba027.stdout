@@ -489,7 +489,7 @@
                                             (Integer 4)
                                             ()
                                         )
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(AssociateBlockCall
                                             9 associate_block
                                         )]

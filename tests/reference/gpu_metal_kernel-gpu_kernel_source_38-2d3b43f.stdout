@@ -29,18 +29,12 @@ kernel void __lfortran_gpu_kernel_0(
     i__dc = (__flat_idx + 1);
     {
         {
-            int __do_loop_end;
-            int __do_loop_inc;
             int __gpu_loop_end;
             int __gpu_loop_group;
             int __gpu_sum_k;
             int __gpu_sum_res;
             device int* work = __workspace_2 + __thread_id * __workspace_extent;
-            __do_loop_end = max(0, n);
-            __do_loop_inc = (1 * ((int)__gpu_lanes));
-            __gpu_bc_i = ((1 + (((int)__gpu_lane) * 1)) - __do_loop_inc);
-            while (((int)(((int)((__do_loop_inc > 0) && ((__gpu_bc_i + __do_loop_inc) <= __do_loop_end))) || ((int)((__do_loop_inc <= 0) && ((__gpu_bc_i + __do_loop_inc) >= __do_loop_end)))))) {
-                __gpu_bc_i = (__gpu_bc_i + __do_loop_inc);
+            for (__gpu_bc_i = (1 + (((int)__gpu_lane) * 1)); __gpu_bc_i <= max(0, n); __gpu_bc_i += (1 * ((int)__gpu_lanes))) {
                 work[((int)(__gpu_bc_i) - (1))] = 2;
             }
             if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);

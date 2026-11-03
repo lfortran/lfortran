@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.gpu_kernel_launch.chunk_parameter_kind]: the bound parameters of a GpuKernelLaunch chunk dimension must be scalar integer parameters of its kernel
+   --> tests/asr/verify/gpu_kernel_launch_chunk_parameter_kind.asr:113:18
+    |
+113 |                 (GpuKernelLaunch
+    |                  ^^^^^^^^^^^^^^^ failed here

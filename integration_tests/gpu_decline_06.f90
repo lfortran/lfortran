@@ -5,19 +5,19 @@ program gpu_decline_06
     implicit none
     type :: t
         real :: x
-        integer(2) :: n
+        logical(8) :: n
     end type
     type(t) :: s(4)
     integer :: i
     do i = 1, 4
         s(i)%x = 0.0
-        s(i)%n = 1_2
+        s(i)%n = .true._8
     end do
     do concurrent (i = 1:4)
         s(i)%x = real(i)
     end do
     do i = 1, 4
         if (abs(s(i)%x - real(i)) > 1.0e-6) error stop "bad x"
-        if (s(i)%n /= 1_2) error stop "bad n"
+        if (.not. s(i)%n) error stop "bad n"
     end do
 end program

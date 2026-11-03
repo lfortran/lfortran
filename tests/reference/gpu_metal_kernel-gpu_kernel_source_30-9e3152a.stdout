@@ -172,7 +172,6 @@ kernel void __lfortran_gpu_kernel_6(
     int __lb_s_0 = __scalar_args.__lb_s_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
-    int __do_loop_end;
     int __flat_idx;
     device float* __libasr_created__array_section_ = __workspace_2 + __thread_id * (__workspace_extent);
     device float* __libasr_created__array_section_pointer_;
@@ -187,10 +186,7 @@ kernel void __lfortran_gpu_kernel_6(
     i__dc2 = (__flat_idx + 1);
     __libasr_created__array_section_pointer_ = s + ((int)((n + 1)) - (__lb_s_0));
     __libasr_index_0_1 = 1;
-    __do_loop_end = (1 + ((((2 * 8) - (8 + 1)) / 1) + 1) - 1);
-    __libasr_index_0_ = (1 - 1);
-    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
-        __libasr_index_0_ = (__libasr_index_0_ + 1);
+    for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + ((((2 * 8) - (8 + 1)) / 1) + 1) - 1); __libasr_index_0_++) {
         __libasr_created__array_section_[((int)(__libasr_index_0_) - (1))] = __libasr_created__array_section_pointer_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
     }

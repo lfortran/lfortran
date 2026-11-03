@@ -1634,6 +1634,84 @@ semantic error: character length must be a constant expression in this context
 3926 |     character(generic_length()) :: t  ! {Error} character length must be a constant expression in this context
      |               ^^^^^^^^^^^^^^^^ 
 
+semantic error: `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    --> tests/errors/continue_compilation_1.f90:4040:39
+     |
+4040 |     integer(1), parameter :: above8 = ibset(0_1, 8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+     |                                       ^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    --> tests/errors/continue_compilation_1.f90:4041:40
+     |
+4041 |     integer(2), parameter :: above16 = ibset(0_2, 16)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+     |                                        ^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    --> tests/errors/continue_compilation_1.f90:4042:40
+     |
+4042 |     integer(4), parameter :: above32 = ibset(0_4, 32)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+     |                                        ^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    --> tests/errors/continue_compilation_1.f90:4043:40
+     |
+4043 |     integer(8), parameter :: above64 = ibset(0_8, 64_8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+     |                                        ^^^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    --> tests/errors/continue_compilation_1.f90:4044:42
+     |
+4044 |     integer(8), parameter :: large_pos = ibset(0_8, 9223372036854775807_8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be non-negative
+    --> tests/errors/continue_compilation_1.f90:4045:41
+     |
+4045 |     integer(1), parameter :: negative = ibset(0_1, -1)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
+     |                                         ^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be non-negative
+    --> tests/errors/continue_compilation_1.f90:4046:43
+     |
+4046 |     integer(8), parameter :: lowest_pos = ibset(0_8, -9223372036854775807_8 - 1_8)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
+     |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4069:59
+     |
+4069 |         procedure(cc1_ept_iface), pointer, nopass :: c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                                                           ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4072:47
+     |
+4072 |     procedure(cc1_ept_iface), pointer :: q => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                                               ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4061:55
+     |
+4061 | procedure(cc1_ept_iface), pointer :: cc1_ept_later => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                                                       ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4082:33
+     |
+4082 |         procedure(), pointer :: s  ! {Error} procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+     |                                 ^ 
+
+semantic error: procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4085:40
+     |
+4085 |         procedure(integer), pointer :: f  ! {Error} procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+     |                                        ^ 
+
+semantic error: procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4088:40
+     |
+4088 |         procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+     |                                        ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -4685,15 +4763,6 @@ semantic error: output of an implied-do loop with run-time bounds or step and va
 3693 |     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
      |                                                ~ not a constant expression
 
-semantic error: output of an implied-do loop with a nested loop that reuses an enclosing loop variable and values of different types, including derived types, is not supported yet
-    --> tests/errors/continue_compilation_1.f90:3694:25
-     |
-3694 |     print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
-     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-     |
-3694 |     print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
-     |                          ~~~~~~~~~~~~~ reuses the variable of an enclosing loop
-
 semantic error: output of an implied-do loop with more than 256 iterations, bounds that are not all literals and values of different types, including derived types, is not supported yet
     --> tests/errors/continue_compilation_1.f90:3695:25
      |
@@ -4963,3 +5032,71 @@ semantic error: cannot assign to use-associated variable 'cc1_pa_values' in a pu
      |
 3991 |         cc1_pa_values(1:2) = 3  ! {Error} cannot assign to use-associated variable 'cc1_pa_values' in a pure procedure
      |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'k' for operator .and. must be of type logical, found integer(4)
+    --> tests/errors/continue_compilation_1.f90:4004:33
+     |
+4004 |         do concurrent (i = 1:4) reduce(.and.: k)  ! {Error} reduction variable 'k' for operator .and. must be of type logical, found integer(4)
+     |                                 ^^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'r' for operator .or. must be of type logical, found real(4)
+    --> tests/errors/continue_compilation_1.f90:4007:33
+     |
+4007 |         do concurrent (i = 1:4) reduce(.or.: r)  ! {Error} reduction variable 'r' for operator .or. must be of type logical, found real(4)
+     |                                 ^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'k' for operator .eqv. must be of type logical, found integer(4)
+    --> tests/errors/continue_compilation_1.f90:4010:33
+     |
+4010 |         do concurrent (i = 1:4) reduce(.eqv.: l, k)  ! {Error} reduction variable 'k' for operator .eqv. must be of type logical, found integer(4)
+     |                                 ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
+    --> tests/errors/continue_compilation_1.f90:4013:33
+     |
+4013 |         do concurrent (i = 1:4) reduce(.neqv.: k)  ! {Error} reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
+     |                                 ^^^^^^^^^^^^^^^^^ 
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4074:10
+     |
+4074 |     p => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |          ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4075:12
+     |
+4075 |     a%c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |            ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4076:19
+     |
+4076 |     a = cc1_ept_t(cc1_ept_ef)  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                   ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: branch to label 20 enters a DO loop from outside it
+    --> tests/errors/continue_compilation_1.f90:4024:9
+     |
+4024 |         go to 20  ! {Error} branch to label 20 enters a DO loop from outside it
+     |         ^^^^^^^^ 
+     |
+4025 |            do i = 1, 3
+     |            ~~~~~~~~~~~...
+...
+     |
+4027 |            end do
+     | ...~~~~~~~~~~~~~~ label 20 is inside this DO loop
+
+semantic error: branch to label 30 enters a BLOCK construct from outside it
+    --> tests/errors/continue_compilation_1.f90:4028:9
+     |
+4028 |         go to 30  ! {Error} branch to label 30 enters a BLOCK construct from outside it
+     |         ^^^^^^^^ 
+     |
+4029 |            block
+     |            ~~~~~...
+...
+     |
+4033 |            end block
+     | ...~~~~~~~~~~~~~~~~~ label 30 is inside this BLOCK construct

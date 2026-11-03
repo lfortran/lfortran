@@ -64,6 +64,13 @@ The finalized Function.gpu layout fixes the buffer order, scalar fields and
 workspace bindings. This pass expands that contract without deciding whether
 the loop can be offloaded or deriving workspace extents again.
 
+A launch whose iteration space may be split (GpuKernelLaunch.chunk_dimensions)
+and that has more iterations than the chunk limit (PassOptions::
+gpu_chunk_limit) runs its kernel once per chunk, a box of at most that many
+iterations (launch_chunks below): the buffers and workspaces are set once,
+and each chunk sets the bounds of its box in the scalar struct, hands the
+struct over again and launches its own grid.
+
 The logical count is evaluated once and normalized before any launch setup.
 The entire sequence above, including its cleanup, runs only when the effective
 count (including lanes) is positive. The common runtime rejects empty geometry.
@@ -74,8 +81,11 @@ class DeviceLaunchExpandVisitor :
     public:
 
         DeviceLaunchExpandVisitor(Allocator &al_,
-                ASR::TranslationUnit_t &unit_) :
-            PassVisitor(al_, nullptr), unit(unit_) {}
+                ASR::TranslationUnit_t &unit_, bool check_element_counts_,
+                int64_t chunk_limit_, int index_kind_) :
+            PassVisitor(al_, nullptr), unit(unit_),
+            check_element_counts(check_element_counts_),
+            chunk_limit(chunk_limit_), index_kind(index_kind_) {}
 
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
             const auto *kernel = ASR::down_cast<ASR::Function_t>(x.m_kernel);
@@ -149,6 +159,16 @@ class DeviceLaunchExpandVisitor :
     private:
 
         ASR::TranslationUnit_t &unit;
+        // Whether a launch checks that no array it hands the kernel has
+        // more elements than its 32-bit offsets reach (see
+        // check_element_count).
+        bool check_element_counts;
+        // The most iterations one launch of a kernel runs
+        // (PassOptions::gpu_chunk_limit).
+        int64_t chunk_limit;
+        // The kind of the bounds and extents of an array descriptor: 8
+        // with --descriptor-index-64, 4 otherwise.
+        int index_kind;
         std::map<ASR::Function_t*, ASR::symbol_t*> scalar_arg_structs;
         // Sizes buffer of a decomposed member, so a workspace can be
         // counted from the same element the device strides by.
@@ -303,6 +323,66 @@ class DeviceLaunchExpandVisitor :
                 b.Call(sym, args, b.CPtr())));
         }
 
+        // Without --descriptor-index-64 a kernel computes element offsets
+        // in 32 bits (GpuDeviceCapabilities::offset_kind), which would
+        // silently address the wrong elements of an array of more than
+        // huge(0) of them. The host allocates and addresses such an array
+        // without the flag, and the compiler makes buffers with one element
+        // per iteration. So the launch stops before it
+        // hands such an array to the kernel, with what to do about it.
+        // `count` is the number of elements, in integer(8).
+        ASR::stmt_t* check_element_count(const Location &loc,
+                ASR::expr_t *count) {
+            ASRUtils::ASRBuilder b(al, loc);
+            std::string message = "a gpu kernel needs an array of more "
+                "than 2147483647 elements; recompile with "
+                "--descriptor-index-64";
+            ASR::expr_t *code = b.StringConstant(message,
+                b.String(b.i32(message.size()), ASR::ExpressionLength));
+            return b.If(b.Gt(count, b.i64(2147483647)),
+                {ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc, code))}, {});
+        }
+
+        // The checks of check_element_count for every array of a launch
+        // whose number of elements is only known at run time. The
+        // per-thread workspaces of block local arrays are not checked: a
+        // thread's slice of one starts at an unsigned 32-bit product, also
+        // with --descriptor-index-64 (#15380).
+        void check_element_counts_of(const ASR::GpuKernelLaunch_t &x,
+                Vec<ASR::stmt_t*> &out) {
+            const Location &loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            const ASR::gpu_kernel_layout_t &layout =
+                *ASR::down_cast<ASR::Function_t>(x.m_kernel)->m_gpu;
+            for (size_t i = 0; i < layout.n_buffers; i++) {
+                const auto &entry = layout.m_buffers[i];
+                if (entry.m_member) continue;
+                ASR::expr_t *arg = x.m_args[entry.m_argument_index].m_value;
+                ASR::expr_t *count = nullptr;
+                for (size_t k = 0; k < x.n_scratch; k++) {
+                    if (x.m_scratch[k].m_argument_index
+                            == entry.m_argument_index) {
+                        count = b.i2i_t(x.m_scratch[k].m_size, int64);
+                    }
+                }
+                if (count == nullptr) {
+                    ASR::ttype_t *type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::expr_type(arg)));
+                    if (!ASRUtils::is_array(type)) continue;
+                    int64_t fixed = ASRUtils::get_fixed_size_of_array(type);
+                    if (fixed > 0 && fixed <= 2147483647) continue;
+                    count = b.ArraySize(arg, nullptr, int64);
+                    if (ASRUtils::is_allocatable(ASRUtils::expr_type(arg))) {
+                        count = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                            is_allocated(loc, arg), count, b.i64(0), int64,
+                            nullptr));
+                    }
+                }
+                out.push_back(al, check_element_count(loc, count));
+            }
+        }
+
         // Number of bytes the runtime has to copy for one buffer argument.
         ASR::expr_t* buffer_byte_size(const Location &loc, ASR::expr_t *arg) {
             ASRUtils::ASRBuilder b(al, loc);
@@ -315,8 +395,9 @@ class DeviceLaunchExpandVisitor :
             }
             ASR::ttype_t *element = gpu_size_of_type_argument(al, arg,
                 ASRUtils::type_get_past_array(type));
-            ASR::expr_t *size = b.Mul(
-                b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
+            // Counted in integer(8): an array may hold more than huge(0)
+            // elements.
+            ASR::expr_t *size = b.Mul(b.ArraySize(arg, nullptr, int64),
                 ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, element,
                     int64, nullptr)));
             // An allocatable the loop only uses when it is allocated -- a
@@ -407,8 +488,16 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *total = declare_local(loc, "gpu_member_total",
                     int32);
                 ASR::expr_t *k = declare_local(loc, "gpu_struct_index", int32);
+                // The extents and lower bounds are in the kind the kernel
+                // reads them in (gpu_create_kernel_layout), the kind it
+                // computes element offsets in.
+                int size_kind = component.sizes
+                    ? ASRUtils::extract_kind_from_ttype_t(
+                        component.sizes->m_type) : 4;
+                ASR::ttype_t *size_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, size_kind));
                 ASR::expr_t *sizes = declare_local(loc, "gpu_member_sizes",
-                    b.allocatable(b.Array({-1}, int32)));
+                    b.allocatable(b.Array({-1}, size_type)));
                 ASR::expr_t *offsets = declare_local(loc, "gpu_member_offsets",
                     b.allocatable(b.Array({-1}, int32)));
                 ASR::expr_t *data = declare_local(loc, "gpu_member_data",
@@ -446,16 +535,17 @@ class DeviceLaunchExpandVisitor :
                         member_extent(loc, sizes, k, rank, d),
                         b.ArraySize(struct_member(loc, arg, k, member),
                             rank > 1 ? b.i32((int)d + 1) : nullptr,
-                            int32)));
+                            size_type)));
                     extents.push_back(b.Assignment(
                         member_lower_bound(loc, sizes, k, rank, d),
                         b.GetLBound(struct_member(loc, arg, k, member),
-                            (int)d + 1)));
+                            (int)d + 1, size_kind)));
                     no_extents.push_back(b.Assignment(
-                        member_extent(loc, sizes, k, rank, d), b.i32(0)));
+                        member_extent(loc, sizes, k, rank, d),
+                        b.i_t(0, size_type)));
                     no_extents.push_back(b.Assignment(
                         member_lower_bound(loc, sizes, k, rank, d),
-                        b.i32(1)));
+                        b.i_t(1, size_type)));
                 }
                 if (may_be_unallocated) {
                     measure.push_back(b.If(is_allocated(loc,
@@ -465,8 +555,12 @@ class DeviceLaunchExpandVisitor :
                     measure.insert(measure.end(), extents.begin(),
                         extents.end());
                 }
-                measure.push_back(b.Assignment(total, b.Add(total,
-                    member_element_count(loc, sizes, k, rank))));
+                // The offsets into the packed data are still counted in
+                // 32 bits (#15929).
+                ASR::expr_t *count = member_element_count(loc, sizes, k,
+                    rank);
+                if (size_kind != 4) count = b.i2i_t(count, int32);
+                measure.push_back(b.Assignment(total, b.Add(total, count)));
                 out.push_back(al, b.DoLoop(k, b.i32(1), n, measure));
                 member_sizes_bufs[key] = sizes;
                 // A member that is allocated but holds no elements in any
@@ -495,8 +589,9 @@ class DeviceLaunchExpandVisitor :
                 }
 
                 ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64), b.i64(4));
-                ASR::expr_t *sizes_bytes =
-                    b.Mul(index_bytes, b.i64(2 * (int64_t)rank));
+                ASR::expr_t *sizes_bytes = b.Mul(size_kind == 4 ? index_bytes
+                    : b.Mul(b.i2i_t(n, int64), b.i64(size_kind)),
+                    b.i64(2 * (int64_t)rank));
                 buffers.push_back({data, address_of(loc, data), data_bytes});
                 buffers.push_back({offsets, address_of(loc, offsets),
                     index_bytes});
@@ -630,9 +725,13 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *index, size_t rank,
                 ASR::expr_t *element_bytes) {
             ASRUtils::ASRBuilder b(al, loc);
-            return b.Mul(b.i2i_t(
-                member_element_count(loc, sizes, index, rank), int64),
-                element_bytes);
+            ASR::expr_t *count = member_element_count(loc, sizes, index,
+                rank);
+            if (ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(count)) != 8) {
+                count = b.i2i_t(count, int64);
+            }
+            return b.Mul(count, element_bytes);
         }
 
         // Copy every element between a strided array and its contiguous
@@ -644,17 +743,20 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *tmp, ASR::expr_t *arg, int rank,
                 bool back) {
             ASRUtils::ASRBuilder b(al, loc);
+            // Counted in the descriptor's index kind: a bound or an extent
+            // may be beyond huge(0).
+            ASR::ttype_t *index_type = b.int_type(index_kind);
             std::vector<ASR::expr_t*> idx;
             for (int d = 0; d < rank; d++) {
                 idx.push_back(declare_local(loc,
-                    "gpu_copy_i" + std::to_string(d), int32));
+                    "gpu_copy_i" + std::to_string(d), index_type));
             }
             std::vector<ASR::expr_t*> arg_subs;
             for (int d = 0; d < rank; d++) {
                 // The stand-in is 1-based; the argument keeps its own
                 // lower bound.
-                arg_subs.push_back(b.Add(b.Sub(idx[d], b.i32(1)),
-                    b.ArrayLBound(arg, d + 1)));
+                arg_subs.push_back(b.Add(b.Sub(idx[d], b.i_t(1, index_type)),
+                    b.ArrayLBound(arg, d + 1, index_kind)));
             }
             ASR::expr_t *tmp_el = b.ArrayItem_01(tmp, idx);
             ASR::expr_t *arg_el = b.ArrayItem_01(arg, arg_subs);
@@ -662,8 +764,8 @@ class DeviceLaunchExpandVisitor :
             body.push_back(back ? b.Assignment(arg_el, tmp_el)
                                 : b.Assignment(tmp_el, arg_el));
             for (int d = 0; d < rank; d++) {
-                body = {b.DoLoop(idx[d], b.i32(1),
-                    b.ArraySize(arg, b.i32(d + 1), int32), body)};
+                body = {b.DoLoop(idx[d], b.i_t(1, index_type),
+                    b.ArraySize(arg, b.i32(d + 1), index_type), body)};
             }
             out.push_back(al, body[0]);
         }
@@ -833,8 +935,9 @@ class DeviceLaunchExpandVisitor :
             for (int d = 0; d < rank; d++) {
                 ASR::dimension_t dd;
                 dd.loc = loc;
-                dd.m_start = b.i32(1);
-                dd.m_length = b.ArraySize(arg, b.i32(d + 1), int32);
+                dd.m_start = b.i_t(1, b.int_type(index_kind));
+                dd.m_length = b.ArraySize(arg, b.i32(d + 1),
+                    b.int_type(index_kind));
                 alloc_dims.push_back(al, dd);
             }
             out.push_back(al, b.Allocate(tmp, alloc_dims.p, alloc_dims.n));
@@ -882,12 +985,15 @@ class DeviceLaunchExpandVisitor :
 
             std::vector<BufferArg> buffers;
             std::vector<std::pair<std::string, ASR::ttype_t*>> scalar_fields;
+            // The field of the scalar struct each scalar argument is in.
+            std::map<size_t, std::string> scalar_field_of;
             std::vector<ASR::expr_t*> scalar_values;
             // What the host does with what the kernel wrote, and the
             // temporaries it frees, after the launch.
             std::vector<ASR::stmt_t*> writebacks;
             std::vector<ASR::stmt_t*> cleanups;
 
+            if (check_element_counts) check_element_counts_of(x, out);
             ASR::expr_t *ctx = declare_local(loc, "gpu_ctx", b.CPtr());
             ASR::expr_t *gpu_kernel = declare_local(loc, "gpu_kernel",
                 b.CPtr());
@@ -1026,6 +1132,11 @@ class DeviceLaunchExpandVisitor :
                 "lfortran_gpu_set_scratch_arg", {b.CPtr(), int32, int64},
                 {true, true, true});
             int buffer_idx = 0;
+            // The buffers a launch may hand over as written whole before
+            // they are read (LFORTRAN_GPU_WRITE_DISCARD), with their index:
+            // each chunk of a launch that runs in chunks writes only part of
+            // them, so the chunks after the first keep what it wrote.
+            std::vector<std::pair<size_t, int>> discardable;
             std::vector<std::pair<BufferArg, int>> read_backs;
             std::vector<PackedBuffer> packed_buffers;
             ASR::expr_t *packed = nullptr;
@@ -1084,10 +1195,15 @@ class DeviceLaunchExpandVisitor :
                             args));
                         continue;
                     }
+                    ASR::expr_t *buffer_access_i = buffer_access(i);
+                    if (!ASR::is_a<ASR::IntegerConstant_t>(
+                            *buffer_access_i)) {
+                        discardable.push_back({i, buffer_idx});
+                    }
                     args.push_back(al, call_arg(loc, b.i32(buffer_idx++)));
                     args.push_back(al, call_arg(loc, buffer.address));
                     args.push_back(al, call_arg(loc, buffer.byte_size));
-                    args.push_back(al, call_arg(loc, buffer_access(i)));
+                    args.push_back(al, call_arg(loc, buffer_access_i));
                     out.push_back(al, b.SubroutineCall(set_buffer_sym, args));
                 }
             }
@@ -1111,15 +1227,24 @@ class DeviceLaunchExpandVisitor :
                 scalar_fields.push_back({gpu_argument_name(entry, layout),
                     entry.m_type});
                 scalar_values.push_back(value);
+                scalar_field_of[entry.m_argument_index] =
+                    scalar_fields.back().first;
             }
+            // The struct of scalar arguments, and the call that hands it
+            // over, which a launch that runs in chunks makes for each chunk.
+            ASR::expr_t *scalars = nullptr;
+            ASR::Struct_t *scalars_struct = nullptr;
+            ASR::ttype_t *scalars_type = nullptr;
+            int scalars_index = -1;
             if (!scalar_fields.empty()) {
                 ASR::symbol_t *struct_sym = get_scalar_args_struct(loc,
                     kernel, scalar_fields);
                 ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(struct_sym);
                 ASR::ttype_t *struct_type = ASRUtils::make_StructType_t_util(
                     al, loc, struct_sym, true);
-                ASR::expr_t *scalars = declare_local(loc, "gpu_scalar_args",
+                scalars = declare_local(loc, "gpu_scalar_args",
                     struct_type, struct_sym);
+                scalars_struct = st;
                 for (size_t i = 0; i < scalar_fields.size(); i++) {
                     ASR::symbol_t *member = st->m_symtab->get_symbol(
                         scalar_fields[i].first);
@@ -1129,30 +1254,36 @@ class DeviceLaunchExpandVisitor :
                     out.push_back(al, b.Assignment(target,
                         scalar_values[i]));
                 }
+                scalars_type = struct_type;
+                scalars_index = buffer_idx++;
+            }
+            auto set_scalars = [&]() {
                 Vec<ASR::call_arg_t> args;
                 args.reserve(al, 4);
                 args.push_back(al, call_arg(loc, gpu_kernel));
-                args.push_back(al, call_arg(loc, b.i32(buffer_idx++)));
+                args.push_back(al, call_arg(loc, b.i32(scalars_index)));
                 args.push_back(al, call_arg(loc, address_of(loc, scalars)));
                 args.push_back(al, call_arg(loc, ASRUtils::EXPR(
-                    ASR::make_SizeOfType_t(al, loc, struct_type, int64,
+                    ASR::make_SizeOfType_t(al, loc, scalars_type, int64,
                         nullptr))));
-                out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
+                return b.SubroutineCall(runtime_subroutine(loc,
                     "lfortran_gpu_set_scalar_arg",
                     {b.CPtr(), int32, b.CPtr(), int64},
-                    {true, true, true, true}), args));
-            }
+                    {true, true, true, true}), args);
+            };
 
             // The threads that run the body are numbered from zero, and
             // the runtime starts whole blocks of them, given as int[3]: the
             // kernel sends the threads past the last back before its body.
-            ASR::expr_t *block_size = b.i2i_t(x.m_block_size, int64);
             ASR::ttype_t *dim3 = b.Array({3}, int32);
             ASR::expr_t *grid = declare_local(loc, "gpu_grid", dim3);
             ASR::expr_t *block = declare_local(loc, "gpu_block", dim3);
-            fill_geometry(loc, out, grid, b.Div(b.Sub(b.Add(started,
-                block_size), b.i64(1)), block_size));
-            fill_geometry(loc, out, block, x.m_block_size);
+            auto fill_grid = [&](Vec<ASR::stmt_t*> &body,
+                    ASR::expr_t *n_threads) {
+                ASR::expr_t *block_size = b.i2i_t(x.m_block_size, int64);
+                fill_geometry(loc, body, grid, b.Div(b.Sub(b.Add(n_threads,
+                    block_size), b.i64(1)), block_size));
+            };
 
             // A block local variable length array in the kernel becomes an
             // extra device buffer holding one instance per thread that runs
@@ -1160,37 +1291,114 @@ class DeviceLaunchExpandVisitor :
             // length arrays. What a thread finds in its instance is
             // undefined, as for any local, and nothing reads it after the
             // launch, so it is a scratch buffer: only the device holds it.
-            for (size_t w = 0; w < layout.n_workspaces; w++) {
-                const ASR::gpu_workspace_t &workspace = layout.m_workspaces[w];
-                ASR::expr_t *n_elements = threads;
-                for (size_t d = 0; d < workspace.n_dims; d++) {
-                    const auto &dim = workspace.m_dims[d];
-                    ASR::expr_t *extent = dim.m_parameter
-                        ? x.m_args[gpu_parameter_index(*kernel,
-                            dim.m_parameter)].m_value
-                        : dim.m_extent;
-                    n_elements = b.Mul(n_elements, b.i2i_t(extent, int64));
+            // Sized for `n_threads`, the most threads one launch runs.
+            auto set_workspaces = [&](Vec<ASR::stmt_t*> &body,
+                    ASR::expr_t *n_threads) {
+                for (size_t w = 0; w < layout.n_workspaces; w++) {
+                    const ASR::gpu_workspace_t &workspace =
+                        layout.m_workspaces[w];
+                    ASR::expr_t *n_elements = n_threads;
+                    for (size_t d = 0; d < workspace.n_dims; d++) {
+                        const auto &dim = workspace.m_dims[d];
+                        ASR::expr_t *extent = dim.m_parameter
+                            ? x.m_args[gpu_parameter_index(*kernel,
+                                dim.m_parameter)].m_value
+                            : dim.m_extent;
+                        n_elements = b.Mul(n_elements,
+                            b.i2i_t(extent, int64));
+                    }
+                    Vec<ASR::call_arg_t> args;
+                    args.reserve(al, 3);
+                    args.push_back(al, call_arg(loc, gpu_kernel));
+                    args.push_back(al, call_arg(loc,
+                        b.i32(workspace.m_buffer_index)));
+                    args.push_back(al, call_arg(loc, b.Mul(n_elements,
+                        b.i64(workspace.m_element_size))));
+                    body.push_back(al, b.SubroutineCall(set_scratch_sym,
+                        args));
                 }
-                Vec<ASR::call_arg_t> args;
-                args.reserve(al, 3);
-                args.push_back(al, call_arg(loc, gpu_kernel));
-                args.push_back(al, call_arg(loc,
-                    b.i32(workspace.m_buffer_index)));
-                args.push_back(al, call_arg(loc, b.Mul(n_elements,
-                    b.i64(workspace.m_element_size))));
-                out.push_back(al, b.SubroutineCall(set_scratch_sym, args));
-            }
+            };
 
-            Vec<ASR::call_arg_t> launch_args;
-            launch_args.reserve(al, 4);
-            launch_args.push_back(al, call_arg(loc, ctx));
-            launch_args.push_back(al, call_arg(loc, gpu_kernel));
-            launch_args.push_back(al, call_arg(loc, address_of(loc, grid)));
-            launch_args.push_back(al, call_arg(loc, address_of(loc, block)));
-            out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
-                "lfortran_gpu_launch",
-                {b.CPtr(), b.CPtr(), b.CPtr(), b.CPtr()},
-                {true, true, true, true}), launch_args));
+            auto launch = [&]() {
+                Vec<ASR::call_arg_t> launch_args;
+                launch_args.reserve(al, 4);
+                launch_args.push_back(al, call_arg(loc, ctx));
+                launch_args.push_back(al, call_arg(loc, gpu_kernel));
+                launch_args.push_back(al, call_arg(loc,
+                    address_of(loc, grid)));
+                launch_args.push_back(al, call_arg(loc,
+                    address_of(loc, block)));
+                return b.SubroutineCall(runtime_subroutine(loc,
+                    "lfortran_gpu_launch",
+                    {b.CPtr(), b.CPtr(), b.CPtr(), b.CPtr()},
+                    {true, true, true, true}), launch_args);
+            };
+
+            if (x.n_chunk_dimensions == 0) {
+                if (scalars) out.push_back(al, set_scalars());
+                fill_grid(out, started);
+                fill_geometry(loc, out, block, x.m_block_size);
+                set_workspaces(out, threads);
+                out.push_back(al, launch());
+            } else {
+                // A launch of at most the chunk limit runs as above; the
+                // threads of a tiled one then number no more than that
+                // either (gpu_offload_launch.cpp). One of more runs in
+                // chunks of the iterations, numbered flat.
+                LCOMPILERS_ASSERT(layout.m_lanes == nullptr);
+                LCOMPILERS_ASSERT(scalars != nullptr);
+                Vec<ASR::stmt_t*> single;
+                single.reserve(al, 8);
+                single.push_back(al, set_scalars());
+                fill_grid(single, threads);
+                fill_geometry(loc, single, block, x.m_block_size);
+                set_workspaces(single, threads);
+                single.push_back(al, launch());
+                Vec<ASR::stmt_t*> chunks;
+                chunks.reserve(al, 16);
+                fill_geometry(loc, chunks, block, x.m_block_size);
+                // The field of the scalar struct a kernel parameter is
+                // handed over in.
+                auto field = [&](ASR::symbol_t *parameter) {
+                    auto it = scalar_field_of.find(
+                        gpu_parameter_index(*kernel, parameter));
+                    LCOMPILERS_ASSERT(it != scalar_field_of.end());
+                    ASR::symbol_t *member =
+                        scalars_struct->m_symtab->get_symbol(it->second);
+                    return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                        al, loc, scalars, member,
+                        ASRUtils::symbol_type(member), nullptr));
+                };
+                launch_chunks(x, chunks, field, set_workspaces,
+                    [&](Vec<ASR::stmt_t*> &body, ASR::expr_t *n_threads) {
+                        body.push_back(al, set_scalars());
+                        fill_grid(body, n_threads);
+                        body.push_back(al, launch());
+                        // What this chunk wrote of a buffer it was handed
+                        // as written whole is kept for the next one.
+                        for (auto &d : discardable) {
+                            const BufferArg &buffer = buffers[d.first];
+                            ASRUtils::ExprStmtDuplicator dup(al);
+                            dup.success = true;
+                            Vec<ASR::call_arg_t> args;
+                            args.reserve(al, 5);
+                            args.push_back(al, call_arg(loc, gpu_kernel));
+                            args.push_back(al, call_arg(loc,
+                                b.i32(d.second)));
+                            args.push_back(al, call_arg(loc,
+                                dup.duplicate_expr(buffer.address)));
+                            args.push_back(al, call_arg(loc,
+                                dup.duplicate_expr(buffer.byte_size)));
+                            args.push_back(al, call_arg(loc, access(true)));
+                            LCOMPILERS_ASSERT(dup.success);
+                            body.push_back(al, b.SubroutineCall(
+                                set_buffer_sym, args));
+                        }
+                    });
+                out.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
+                    nullptr, b.Gt(threads, b.i64(chunk_limit)),
+                    chunks.p, chunks.n, single.p, single.n)));
+            }
             // The launch does not wait for the kernel. What the host reads
             // back below -- the copies it made of its own, and the part of
             // a scratch buffer the kernel used, which a value the kernel
@@ -1267,6 +1475,114 @@ class DeviceLaunchExpandVisitor :
                 out.push_back(al, cleanup);
             }
             return true;
+        }
+
+        // Appends to `out` the launches of `x`, which has more iterations
+        // than the chunk limit, one per chunk of its iteration space: a box
+        // of at most `chunk_limit` iterations. A chunk covers the dimensions
+        // the launch does not split whole, `chunk_fixed_iterations` of them
+        // in all. Of the ones it splits (GpuKernelLaunch.chunk_dimensions,
+        // fastest first) it covers as many values of each as fit beside
+        // those, and those of the ones before it, and at least one: the
+        // whole of the first ones, then part of the next one, then one
+        // value of each of the others. Their bound parameters (`field` is
+        // where each one is handed over) are set to the box of the chunk,
+        // and `launch_chunk` launches the threads of one chunk;
+        // `set_workspaces` sizes what the kernel takes per thread for the
+        // largest chunk. The launches run in order, and the iterations of a
+        // `do concurrent` may run in any order.
+        void launch_chunks(const ASR::GpuKernelLaunch_t &x,
+                Vec<ASR::stmt_t*> &out,
+                const std::function<ASR::expr_t*(ASR::symbol_t*)> &field,
+                const std::function<void(Vec<ASR::stmt_t*>&, ASR::expr_t*)>
+                    &set_workspaces,
+                const std::function<void(Vec<ASR::stmt_t*>&, ASR::expr_t*)>
+                    &launch_chunk) {
+            const Location &loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            const ASR::Function_t &kernel =
+                *ASR::down_cast<ASR::Function_t>(x.m_kernel);
+            size_t n = x.n_chunk_dimensions;
+            // The bound of the whole dimension the launch passes for the
+            // kernel parameter `parameter`.
+            auto bound = [&](ASR::symbol_t *parameter) {
+                ASRUtils::ExprStmtDuplicator dup(al);
+                dup.success = true;
+                ASR::expr_t *copy = dup.duplicate_expr(x.m_args[
+                    gpu_parameter_index(kernel, parameter)].m_value);
+                LCOMPILERS_ASSERT(dup.success && copy);
+                return b.i2i_t(copy, int64);
+            };
+            // The extent of each dimension the launch splits, every one of
+            // which is at least one: the launch has iterations. Then how
+            // many values of it a chunk covers, and the iterations of the
+            // largest chunk.
+            std::vector<ASR::expr_t*> extents(n), pieces(n);
+            ASR::expr_t *largest = declare_local(loc, "gpu_chunk_threads",
+                int64);
+            out.push_back(al, b.Assignment(largest,
+                b.i64(x.m_chunk_fixed_iterations)));
+            for (size_t p = 0; p < n; p++) {
+                const ASR::gpu_launch_dimension_t &dim =
+                    x.m_chunk_dimensions[p];
+                extents[p] = declare_local(loc, "gpu_chunk_extent", int64);
+                out.push_back(al, b.Assignment(extents[p], b.Add(b.Sub(
+                    bound(dim.m_end_parameter),
+                    bound(dim.m_start_parameter)), b.i64(1))));
+                pieces[p] = declare_local(loc, "gpu_chunk_piece", int64);
+                out.push_back(al, b.Assignment(pieces[p],
+                    b.Div(b.i64(chunk_limit), largest)));
+                out.push_back(al, b.If(b.Gt(pieces[p], extents[p]),
+                    {b.Assignment(pieces[p], extents[p])}, {}));
+                out.push_back(al, b.If(b.Lt(pieces[p], b.i64(1)),
+                    {b.Assignment(pieces[p], b.i64(1))}, {}));
+                out.push_back(al, b.Assignment(largest,
+                    b.Mul(largest, pieces[p])));
+            }
+            set_workspaces(out, largest);
+
+            // The body of the innermost loop: the box of one chunk, which
+            // starts `ordinal` values into each dimension it splits, and
+            // its launch.
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 4 * n + 8);
+            std::vector<ASR::expr_t*> ordinals(n);
+            ASR::expr_t *threads = declare_local(loc, "gpu_chunk_count",
+                int64);
+            body.push_back(al, b.Assignment(threads,
+                b.i64(x.m_chunk_fixed_iterations)));
+            for (size_t p = 0; p < n; p++) {
+                const ASR::gpu_launch_dimension_t &dim =
+                    x.m_chunk_dimensions[p];
+                ordinals[p] = declare_local(loc, "gpu_chunk_ordinal", int64);
+                ASR::expr_t *count = declare_local(loc, "gpu_chunk_values",
+                    int64);
+                body.push_back(al, b.Assignment(count, pieces[p]));
+                body.push_back(al, b.If(b.Gt(count,
+                    b.Sub(extents[p], ordinals[p])),
+                    {b.Assignment(count, b.Sub(extents[p], ordinals[p]))},
+                    {}));
+                ASR::expr_t *start = field(dim.m_start_parameter);
+                ASR::expr_t *end = field(dim.m_end_parameter);
+                body.push_back(al, b.Assignment(start, b.i2i_t(
+                    b.Add(bound(dim.m_start_parameter), ordinals[p]),
+                    ASRUtils::expr_type(start))));
+                body.push_back(al, b.Assignment(end, b.i2i_t(
+                    b.Sub(b.Add(b.Add(bound(dim.m_start_parameter),
+                        ordinals[p]), count), b.i64(1)),
+                    ASRUtils::expr_type(end))));
+                body.push_back(al, b.Assignment(threads,
+                    b.Mul(threads, count)));
+            }
+            launch_chunk(body, threads);
+            // One loop per dimension the launch splits, the slowest
+            // outermost, over the ordinals the chunks start at.
+            std::vector<ASR::stmt_t*> loop(body.p, body.p + body.n);
+            for (size_t p = 0; p < n; p++) {
+                loop = {b.DoLoop(ordinals[p], b.i64(0),
+                    b.Sub(extents[p], b.i64(1)), loop, pieces[p])};
+            }
+            out.push_back(al, loop[0]);
         }
 
         void fill_geometry(const Location &loc, Vec<ASR::stmt_t*> &out,
@@ -1400,10 +1716,16 @@ GpuBufferHandling gpu_launch_buffer_handling(
 
 void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
                                const LCompilers::PassOptions &pass_options) {
-    if (!gpu_device_capabilities(pass_options).device_selected()) {
+    GpuDeviceCapabilities caps = gpu_device_capabilities(pass_options);
+    if (!caps.device_selected()) {
         return;
     }
-    DeviceLaunchExpandVisitor v(al, unit);
+    // A device that does not index in 64 bits (Metal) cannot be given
+    // 64-bit offsets by the flag the message names, so it is not checked.
+    DeviceLaunchExpandVisitor v(al, unit,
+        caps.offset_kind == 4 && caps.max_index_kind >= 8,
+        pass_options.gpu_chunk_limit,
+        pass_options.descriptor_index_64 ? 8 : 4);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

@@ -14,6 +14,13 @@ filename = "asr/compile/procedure_declaration_interface.asr"
 asr_clojure = true
 llvm = true
 
+# A host frame: an internal procedure updates a variable of the program
+# through a Reference member that BindReference binds.
+[[test]]
+filename = "asr/compile/host_frame.asr"
+asr_clojure = true
+llvm = true
+
 # The LLVM reference of a fixture is tied to the LLVM version that printed it,
 # so this one stores only the ASR. The registered `test_asr_compile_` and
 # `test_asr_object_` CTests still build and link it on every LLVM version.
@@ -26,6 +33,42 @@ asr_clojure = true
 [[test]]
 filename = "asr/compile/common_block_views.asr"
 asr_clojure = true
+
+[[test]]
+filename = "asr/verify/reference_type_outside_member.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/bind_reference_not_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/host_associated_not_own_frame.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/host_associated_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/nested_vars_host_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/nested_vars_frame_call_in_declaration.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/dtio_callback_arity.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/frame_member_not_bound.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/call_frame_argument_not_frame.asr"
+asr = true
 
 [[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
@@ -948,6 +991,11 @@ fortran = true
 pass = "array_struct_temporary"
 
 [[test]]
+filename = "../integration_tests/pointer_intent_in_04.f90"
+fortran = true
+pass = "array_struct_temporary"
+
+[[test]]
 filename = "../integration_tests/external_string_arg_02.f90"
 asr = true
 llvm = true
@@ -967,7 +1015,6 @@ asr = true
 filename = "../integration_tests/doloop_01.f90"
 asr = true
 llvm = true
-pass = "do_loops"
 wat = true
 julia = true
 
@@ -991,7 +1038,6 @@ ast = true
 ast_f90 = true
 asr = true
 llvm = true
-pass = "do_loops"
 
 [[test]]
 filename = "../integration_tests/doloop_05.f90"
@@ -1737,6 +1783,14 @@ run = true
 
 [[test]]
 filename = "errors/allocate_03.f90"
+run = true
+
+[[test]]
+filename = "errors/allocate_04.f90"
+run = true
+
+[[test]]
+filename = "errors/allocate_05.f90"
 run = true
 
 [[test]]
@@ -2948,6 +3002,21 @@ asr = true
 pass = "nested_vars"
 
 [[test]]
+filename = "errors/host_assoc_bindc_value_01.f90"
+llvm = true
+
+[[test]]
+filename = "host_assoc_frame_01.f90"
+fortran = true
+pass = "nested_vars"
+options = "--cumulative"
+
+[[test]]
+filename = "host_assoc_frame_02.f90"
+fortran = true
+pass = "nested_vars"
+
+[[test]]
 filename = "../integration_tests/callback_01.f90"
 asr = true
 llvm = true
@@ -3429,16 +3498,6 @@ filename = "../integration_tests/fma_04.f90"
 pass = "fma"
 
 [[test]]
-filename = "../integration_tests/loop_unroll_small.f90"
-asr = true
-pass = "loop_unroll"
-
-[[test]]
-filename = "../integration_tests/loop_unroll_large.f90"
-asr = true
-pass = "loop_unroll"
-
-[[test]]
 filename = "../integration_tests/div_to_mul.f90"
 asr = true
 pass = "div_to_mul"
@@ -3664,6 +3723,16 @@ semantics_only_cc = true
 [[test]]
 filename = "errors/continue_compilation_proc_component_constant.f90"
 continue_compilation = true
+
+[[test]]
+filename = "errors/procedure_pointer_result_mismatch_01.f90"
+semantics_only_cc = true
+options = "--implicit-interface --implicit-typing"
+
+[[test]]
+filename = "errors/implicit_none_host_01.f90"
+semantics_only_cc = true
+options = "--implicit-typing"
 
 [[test]]
 filename = "errors/namelist_implicit_type_01.f90"
@@ -4886,10 +4955,6 @@ gpu_offload_cuda = true
 # labels of the backends it fails on, and the reference keeps the reason.
 
 [[test]]
-filename = "../integration_tests/gpu_metal_13.f90"
-gpu_offload_metal = true
-
-[[test]]
 filename = "../integration_tests/gpu_metal_60.f90"
 gpu_offload_cuda = true
 
@@ -4974,13 +5039,29 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_345.f90"
 gpu_offload_metal = true
 
-# Metal kernels have no lowering for integer(8) yet: that is a gap, not an
-# entry of the unsupported list, so the compilation fails even with
-# --gpu-allow-cpu-fallback.
+# Metal kernels number their iterations in 32 bits, so they take no
+# integer(8) loop index yet: that is a gap, not an entry of the unsupported
+# list, so the compilation fails even with --gpu-allow-cpu-fallback.
 [[test]]
-filename = "../integration_tests/gpu_metal_346.f90"
+filename = "../integration_tests/gpu_metal_653.f90"
 gpu_offload_metal = true
 options = "--gpu-allow-cpu-fallback"
+
+# Metal kernels compute element offsets in 32 bits whatever the flags, so a
+# launch on Metal does not stop for an array of more than huge(0) elements
+# with an error that suggests --descriptor-index-64: the LLVM output has no
+# such check. On CUDA it has one (gpu_metal_597 in CMakeLists.txt).
+[[test]]
+filename = "../integration_tests/gpu_metal_597.f90"
+options = "--gpu=metal"
+llvm = true
+
+# --descriptor-index-64 leaves Metal's element offsets, and so the extents
+# and lower bounds a kernel computes them from, in 32 bits.
+[[test]]
+filename = "../integration_tests/gpu_discard_guard_extremes.f90"
+options = "--descriptor-index-64"
+gpu_metal_kernel = true
 
 # A real(8) allocatable component read by the loop, in a type that also holds
 # a character component ahead of it: the error names real(8).
@@ -5102,6 +5183,18 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_480.f90"
 gpu_metal_kernel = true
 
+# Counted DO loops, DO CONCURRENT and FORALL of device code are written as C
+# `for` loops.
+[[test]]
+filename = "../integration_tests/gpu_do_loop_01.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_do_loop_02.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
 # Loop nests of two and three dimensions run in tiles of 32 x 8 iterations
 # on CUDA, or flat where whole tiles would pad the nest by more than a
 # quarter.
@@ -5178,6 +5271,48 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_kernel_source_23.f90"
 gpu_cuda_kernel = true
 
+# With --descriptor-index-64 element offsets, extents and lower bounds are
+# 64-bit, so arrays of more than huge(0) elements are addressed unwrapped.
+# Compile-only: a device run copies 2 GB arrays there and back.
+[[test]]
+filename = "gpu_cuda_kernel_wide_arrays.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# Small run-time-shaped arrays of rank 2 and 3 with lower bounds other than
+# 1, an integer(8) subscript and an assumed-shape dummy, run on the device
+# with the same flag: the kernels take their extents and lower bounds as
+# `long` and compute offsets in it. Arrays with a lower bound beyond huge(0)
+# reach the kernel as a component of a derived-type variable or of an array
+# of one, and through device routines: their lower bounds are `long` too.
+[[test]]
+filename = "../integration_tests/gpu_metal_600.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# Sections and sum() lowered inside the kernel, of arrays with a lower bound
+# beyond huge(0), with the same flag: the offset of their integer(4)
+# subscripts is taken modulo 2**32 before it is widened to `long`.
+[[test]]
+filename = "../integration_tests/gpu_metal_601.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# The same flag with an array whose first extent alone exceeds huge(0), and
+# one whose first two extents multiply past it: the strides of their later
+# dimensions are 64-bit. Compile-only: each array takes 4 GB, which a run
+# copies to the device and back.
+[[test]]
+filename = "gpu_cuda_kernel_wide_stride.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# An integer(8) subscript of an array whose lower bound is beyond huge(0):
+# the lower bound is subtracted before the offset is narrowed to `int`.
+[[test]]
+filename = "../integration_tests/gpu_metal_596.f90"
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_24.f90"
 gpu_cuda_kernel = true
@@ -5188,6 +5323,30 @@ gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_526.f90"
+gpu_cuda_kernel = true
+
+# The kernel numbers the 2**31 + 1 iterations in integer(8).
+[[test]]
+filename = "../integration_tests/gpu_metal_565.f90"
+gpu_cuda_kernel = true
+
+# The same nest with literal bounds: the kernel's iteration count is a product
+# of integer(8) constants, which must be emitted as 64-bit values.
+[[test]]
+filename = "../integration_tests/gpu_metal_566.f90"
+gpu_cuda_kernel = true
+
+# One dimension has more than huge(0) iterations: its extent and indices are
+# computed in integer(8). Compile-only: a run executes more than 2**32
+# iterations, and GFortran counts them in integer(4) and runs none.
+[[test]]
+filename = "gpu_cuda_kernel_wide_extent.f90"
+gpu_cuda_kernel = true
+
+# integer(8) loop indices: the kernel widens the device's 32-bit thread and
+# block built-ins before it numbers the iterations, flat and in tiles.
+[[test]]
+filename = "../integration_tests/gpu_metal_599.f90"
 gpu_cuda_kernel = true
 
 [[test]]
@@ -5247,6 +5406,15 @@ gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_41.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_42.f90"
+gpu_cuda_kernel = true
+options = "--gpu-chunk-limit=50"
+
+[[test]]
 filename = "../integration_tests/gpu_liveout_01.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
@@ -5303,6 +5471,20 @@ gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_liveout_15.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+# The extent of a BLOCK local that calls a function is computed on the host
+# and passed in as `__lfortran_gpu_dim_`: the kernel's loops over the local,
+# of a whole-array assignment and of SUM, run to it and never call the
+# function on the device.
+[[test]]
+filename = "../integration_tests/gpu_metal_47.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_636.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
@@ -6371,16 +6553,6 @@ filename = "document_symbols_continuation.f90"
 document_symbols = true
 
 [[test]]
-filename = "../integration_tests/loop_var_use_after_loop.f90"
-pass = "do_loops"
-options = "--use-loop-variable-after-loop"
-
-[[test]]
-filename = "../integration_tests/doloop_23.f90"
-pass = "do_loops"
-options = "--fast"
-
-[[test]]
 filename = "../integration_tests/use_02.f90"
 asr = true
 
@@ -7049,6 +7221,21 @@ asr = true
 filename = "asr/verify/gpu_kernel_launch_scratch_not_allocatable.asr"
 asr = true
 
+# A launch without chunk dimensions must have no fixed iterations.
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_chunk_fixed_iterations.asr"
+asr = true
+
+# The bounds of a chunk dimension must be scalar integer kernel parameters.
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_chunk_parameter_kind.asr"
+asr = true
+
+# A launch of a kernel with lanes must not run in chunks.
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_chunk_lanes.asr"
+asr = true
+
 [[test]]
 filename = "asr/verify/gpu_atomic_fetch_add_host_code.asr"
 asr = true
@@ -7367,3 +7554,23 @@ semantics_only_cc = true
 [[test]]
 filename = "errors/save_before_declaration_01.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "../integration_tests/do_variable_after_loop_01.f90"
+semantics_only_cc = true
+
+# With --fast, a procedure that an internal procedure is passed to is copied
+# into the host, and the recursive call in the copy calls the copy.
+[[test]]
+filename = "../integration_tests/procedure_argument_specialization_03.f90"
+fortran = true
+pass = "specialize_procedure_arguments"
+options = "--fast"
+
+# With --fast, the copy in the recursive host calls the internal procedure
+# directly, so no thunk of it is needed.
+[[test]]
+filename = "../integration_tests/procedure_argument_specialization_02.f90"
+fortran = true
+pass = "specialize_procedure_arguments"
+options = "--fast"

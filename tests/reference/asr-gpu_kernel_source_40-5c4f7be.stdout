@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -427,7 +427,7 @@
                                         ((Var 23 __gpu_bc_i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal)
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (ArrayItem
                                                 (Var 8 head)
@@ -488,7 +488,7 @@
                                             (Integer 4)
                                             ()
                                         )
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (ArrayItem
                                                 (Var 8 tail)
@@ -545,7 +545,7 @@
                                             (Integer 4)
                                             ()
                                         )
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (ArrayItem
                                                 (Var 8 bounds)
@@ -580,7 +580,7 @@
                                         ((Var 8 __gpu_sum_k)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 4 (Integer 4) Decimal)
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (Var 8 __gpu_sum_res)
                                             (IntegerBinOp
@@ -782,31 +782,49 @@
                         (IntegerCompare
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (GpuBlockIndex
-                                        0
-                                        (Integer 4)
+                                    (Cast
+                                        (GpuBlockIndex
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
                                         ()
                                     )
                                     Mul
-                                    (GpuBlockSize
+                                    (Cast
+                                        (GpuBlockSize
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
+                                        ()
+                                    )
+                                    (Integer 8)
+                                    ()
+                                )
+                                Add
+                                (Cast
+                                    (GpuThreadIndex
                                         0
                                         (Integer 4)
                                         ()
                                     )
-                                    (Integer 4)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
                                     ()
                                 )
-                                Add
-                                (GpuThreadIndex
-                                    0
-                                    (Integer 4)
-                                    ()
-                                )
-                                (Integer 4)
+                                (Integer 8)
                                 ()
                             )
                             GtE
-                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (IntegerConstant 4 (Integer 8) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -817,27 +835,45 @@
                         (Var 23 __flat_idx)
                         (IntegerBinOp
                             (IntegerBinOp
-                                (GpuBlockIndex
-                                    0
-                                    (Integer 4)
+                                (Cast
+                                    (GpuBlockIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
                                     ()
                                 )
                                 Mul
-                                (GpuBlockSize
+                                (Cast
+                                    (GpuBlockSize
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
+                                    ()
+                                )
+                                (Integer 8)
+                                ()
+                            )
+                            Add
+                            (Cast
+                                (GpuThreadIndex
                                     0
                                     (Integer 4)
                                     ()
                                 )
-                                (Integer 4)
+                                IntegerToInteger
+                                (Integer 8)
+                                ()
                                 ()
                             )
-                            Add
-                            (GpuThreadIndex
-                                0
-                                (Integer 4)
-                                ()
-                            )
-                            (Integer 4)
+                            (Integer 8)
                             ()
                         )
                         ()
@@ -848,11 +884,17 @@
                     )
                     (Assignment
                         (Var 23 i__dc)
-                        (IntegerBinOp
-                            (Var 23 __flat_idx)
-                            Add
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                        (Cast
+                            (IntegerBinOp
+                                (Var 23 __flat_idx)
+                                Add
+                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (Integer 8)
+                                ()
+                            )
+                            IntegerToInteger
                             (Integer 4)
+                            ()
                             ()
                         )
                         ()
@@ -963,7 +1005,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -2260,7 +2302,7 @@
                     )
                     (Assignment
                         (Var 2 __gpu_iteration_count)
-                        (IntegerConstant 4 (Integer 4) Decimal)
+                        (IntegerConstant 4 (Integer 8) Decimal)
                         ()
                         .false.
                         .false.
@@ -2272,7 +2314,7 @@
                         (IntegerCompare
                             (Var 2 __gpu_iteration_count)
                             Gt
-                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 0 (Integer 8) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -2288,6 +2330,8 @@
                             []
                             []
                             []
+                            []
+                            0
                         )]
                         []
                     )

@@ -509,6 +509,21 @@ public:
                 }
                 return true;
             }
+            case ASR::exprType::LogicalBinOp: {
+                auto &op = *ASR::down_cast<ASR::LogicalBinOp_t>(x);
+                if (!evaluate(op.m_left, left)
+                        || !evaluate(op.m_right, right)) return false;
+                switch (op.m_op) {
+                    case ASR::logicalbinopType::And:
+                        result = left && right;
+                        break;
+                    case ASR::logicalbinopType::Or:
+                        result = left || right;
+                        break;
+                    default: return false;
+                }
+                return true;
+            }
             case ASR::exprType::IfExp: {
                 auto &choice = *ASR::down_cast<ASR::IfExp_t>(x);
                 int64_t test = 0;
@@ -607,8 +622,10 @@ end program
         bool has_lanes = false;
         size_t wide_counts = 0;
         for (auto *launch : work.launches) {
-            // CUDA launches the two-dimensional nest in whole tiles, whose
-            // count can exceed the kind of the loop indices.
+            // CUDA counts the iterations of a nest, and the whole tiles it
+            // launches a two-dimensional one in, in integer(8): the count
+            // can exceed the kind of the loop indices. Metal has no
+            // integer(8).
             if (ASRUtils::extract_kind_from_ttype_t(
                     ASRUtils::expr_type(launch->m_thread_count)) == 8) {
                 wide_counts++;
@@ -627,7 +644,7 @@ end program
             }
         }
         CHECK(has_lanes == metal);
-        CHECK(wide_counts == (metal ? 0 : 1));
+        CHECK(wide_counts == (metal ? 0 : 3));
         pass_gpu_launch_sync(allocator, unit, options.po);
         pass_device_launch_expand(allocator, unit, options.po);
         REQUIRE(asr_verify(unit, true, diagnostics));
@@ -636,7 +653,10 @@ end program
             expanded.visit_stmt(*program->m_body[i]);
         }
         CHECK(expanded.launches.empty());
-        CHECK(expanded.runtime_launches == 3);
+        // On CUDA the two launches without a reduction may run in chunks
+        // (GpuKernelLaunch.chunk_dimensions): each launches its kernel once
+        // when it fits in a chunk, and once per chunk in a loop otherwise.
+        CHECK(expanded.runtime_launches == (metal ? 3 : 5));
         CHECK(expanded.runtime_releases == 3);
         CHECK(expanded.source_allocations == 1);
         CHECK(expanded.empty_lane_guards == (metal ? 1 : 0));
@@ -645,14 +665,17 @@ end program
 
 namespace {
 
-// Runs the CUDA pipeline on the program `name` in `source` and hands
-// `visit` each statement of its body.
+// Runs the CUDA pipeline on the program `name` in `source`, with launches
+// of more than `chunk_limit` iterations run in chunks, and hands `visit`
+// each statement of its body.
 template <class Visit>
 void visit_cuda_program(const std::string &source,
-        const std::string &filename, const std::string &name, Visit visit) {
+        const std::string &filename, const std::string &name, Visit visit,
+        int64_t chunk_limit = 2147483647) {
     CompilerOptions options;
     options.gpu_backend = "cuda";
     options.po.gpu_offload_cuda = true;
+    options.po.gpu_chunk_limit = chunk_limit;
     options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     FortranEvaluator evaluator(options);
     LocationManager lm;
@@ -731,6 +754,120 @@ std::string read_project_file(const std::string &path) {
 #endif
 
 } // namespace
+
+// The dimensions every CUDA launch of the program `name` in `source` splits
+// into chunks of at most `chunk_limit` iterations, as the names of their
+// bound parameters, and the iterations of the dimensions it covers whole
+// (GpuKernelLaunch.chunk_dimensions and chunk_fixed_iterations).
+std::vector<std::pair<std::vector<std::string>, int64_t>> cuda_launch_chunks(
+        const std::string &source, const std::string &filename,
+        const std::string &name, int64_t chunk_limit) {
+    struct Chunks : public ASR::BaseWalkVisitor<Chunks> {
+        std::vector<std::pair<std::vector<std::string>, int64_t>> launches;
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            std::vector<std::string> bounds;
+            for (size_t i = 0; i < x.n_chunk_dimensions; i++) {
+                bounds.push_back(ASRUtils::symbol_name(
+                    x.m_chunk_dimensions[i].m_start_parameter));
+                bounds.push_back(ASRUtils::symbol_name(
+                    x.m_chunk_dimensions[i].m_end_parameter));
+            }
+            launches.push_back({bounds, x.m_chunk_fixed_iterations});
+        }
+    } chunks;
+    visit_cuda_program(source, filename, name,
+        [&](ASR::stmt_t &s) { chunks.visit_stmt(s); }, chunk_limit);
+    return chunks.launches;
+}
+
+TEST_CASE("GPU launches split only what can exceed the chunk limit") {
+    // Dimensions with constant extents are covered whole by every chunk,
+    // wherever they are numbered, while their extents fit the limit; a
+    // nest the kinds of its indices and its constant bounds keep within
+    // the limit is never split.
+    const std::string source = R"(
+program p
+    implicit none
+    integer :: n, m, i, j, k, c
+    integer(8) :: n8, l
+    integer :: a(8, 2, 2), x(100), w(0:100), v(100, 3), z(4, 5, 6)
+    integer :: b(10, 10, 10), d(10, 10, 4), y(10)
+    n = 2
+    m = 100
+    n8 = 10
+    do concurrent (i = 1:8, j = 1:n, k = 1:n)
+        a(i, j, k) = i + j + k
+    end do
+    do concurrent (i = 1:m)
+        x(i) = i
+    end do
+    do concurrent (i = 0:m)
+        w(i) = i
+    end do
+    do concurrent (i = 1:m, c = 1:3)
+        v(i, c) = i * c
+    end do
+    do concurrent (i = 1:4, j = 1:5, k = 1:6)
+        z(i, j, k) = i + j + k
+    end do
+    do concurrent (l = 1:n8)
+        y(l) = int(l)
+    end do
+    do concurrent (i = 1:10, j = 1:10, k = 1:10)
+        b(i, j, k) = i + j + k
+    end do
+    do concurrent (i = 1:10, j = 1:10, k = 1:4)
+        d(i, j, k) = i + j + k
+    end do
+    print *, a(1, 1, 1), x(1), w(0), v(1, 1), z(1, 1, 1), y(1), b(1, 1, 1), &
+        d(1, 1, 1)
+end program
+)";
+    using Launches = std::vector<std::pair<std::vector<std::string>,
+        int64_t>>;
+    auto check = [](const Launches &launches, const Launches &expected) {
+        REQUIRE(launches.size() == expected.size());
+        for (size_t i = 0; i < launches.size(); i++) {
+            INFO("launch " << i);
+            CHECK(launches[i].first == expected[i].first);
+            CHECK(launches[i].second == expected[i].second);
+        }
+    };
+    std::vector<std::string> none;
+    std::vector<std::string> first = {"__loop_start_0", "__loop_end_0"};
+    std::vector<std::string> second = {"__loop_start_1", "__loop_end_1"};
+    std::vector<std::string> second_third = {"__loop_start_1",
+        "__loop_end_1", "__loop_start_2", "__loop_end_2"};
+    check(cuda_launch_chunks(source, "gpu_chunks.f90", "p", 2147483647), {
+        // `i` (8 values) is covered whole; `j` and `k` are split.
+        {second_third, 8},
+        // An integer(4) index from 1 takes at most huge(0) values.
+        {none, 0},
+        // From 0 it can take huge(0) + 1.
+        {first, 1},
+        // `c` (3 values), numbered after `i`, is still covered whole.
+        {first, 3},
+        // 120 constant iterations.
+        {none, 0},
+        // An integer(8) index.
+        {first, 1},
+        {none, 0},
+        {none, 0},
+    });
+    check(cuda_launch_chunks(source, "gpu_chunks.f90", "p", 50), {
+        {second_third, 8},
+        {first, 1},
+        {first, 1},
+        {first, 3},
+        // 4 * 5 = 20 iterations fit beside each other, 6 more do not.
+        {{"__loop_start_2", "__loop_end_2"}, 20},
+        {first, 1},
+        // 10 values of `i` fit, and 100 of `i` and `j` do not.
+        {second_third, 10},
+        // The 4 values of `k` fit beside the 10 of `i`; `j` is split.
+        {second, 40},
+    });
+}
 
 TEST_CASE("GPU tiled launches pad a nest by at most a quarter") {
     // CI has no GPU to time a launch, so pin the geometry the host picks:

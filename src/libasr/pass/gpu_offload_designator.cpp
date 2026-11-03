@@ -1,7 +1,16 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/gpu_offload_designator.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 
 namespace LCompilers {
+
+bool gpu_reads_other_operand_elements(
+        const ASR::IntrinsicArrayFunction_t &x) {
+    auto id = static_cast<ASRUtils::IntrinsicArrayFunctions>(
+        x.m_arr_intrinsic_id);
+    return id == ASRUtils::IntrinsicArrayFunctions::Transpose
+        || id == ASRUtils::IntrinsicArrayFunctions::MatMul;
+}
 
 GpuDesignatorBase gpu_designator_base(ASR::expr_t *e) {
     GpuDesignatorBase base;

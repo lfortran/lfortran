@@ -564,7 +564,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        ())
+                                                        (IntegerConstant 1 (Integer 4) Decimal))
                                                         [(Assignment
                                                             (ArrayItem
                                                                 (Var 10 tmp)
@@ -1465,7 +1465,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        ())
+                                                        (IntegerConstant 1 (Integer 4) Decimal))
                                                         [(Assignment
                                                             (ArrayItem
                                                                 (Var 6 tmp)

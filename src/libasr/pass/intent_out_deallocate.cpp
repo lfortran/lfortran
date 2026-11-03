@@ -312,19 +312,16 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             }
             return;
         }
-        emit_array_loops(arr_expr, idx_vars, body, current_scope, loc,
-            out_stmts);
+        emit_array_loops(arr_expr, idx_vars, body, loc, out_stmts);
     }
 
     // Run `body` once for every element of `arr_expr`, with `idx_vars` (one
     // per dimension, first dimension innermost) running over its bounds.
-    // The loops are emitted already lowered, because this pass runs after the
-    // one that lowers `DoLoop`.  Nothing is emitted for an empty body.
+    // Nothing is emitted for an empty body.
     void emit_array_loops(
             ASR::expr_t* arr_expr,
             Vec<ASR::expr_t*>& idx_vars,
             Vec<ASR::stmt_t*>& body,
-            SymbolTable* current_scope,
             const Location& loc,
             Vec<ASR::stmt_t*>& out_stmts) {
         if (body.size() == 0) return;
@@ -337,21 +334,18 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 al, 4);
             head.m_end = PassUtils::get_bound(arr_expr, d + 1, "ubound",
                 al, 4);
-            head.m_increment = nullptr;
+            head.m_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                loc, 1, ASRUtils::expr_type(idx_vars[d])));
             head.loc = loc;
 
             ASR::stmt_t* doloop = ASRUtils::STMT(
-                ASR::make_DoLoop_t(al, loc, nullptr, head, current_body.p,
+                ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head, current_body.p,
                     current_body.size(), nullptr, 0));
-            Vec<ASR::stmt_t*> init_and_while = PassUtils::replace_doloop(al,
-                *ASR::down_cast<ASR::DoLoop_t>(doloop), -1, false,
-                current_scope);
-
-            current_body.reserve(al, init_and_while.size());
-            current_body.n = 0;
-            for (size_t k = 0; k < init_and_while.size(); k++) {
-                current_body.push_back(al, init_and_while[k]);
-            }
+            // The loop keeps the buffer of current_body as its body.
+            Vec<ASR::stmt_t*> loop;
+            loop.reserve(al, 1);
+            loop.push_back(al, doloop);
+            current_body = loop;
         }
 
         for (size_t i = 0; i < current_body.size(); i++) {
@@ -777,8 +771,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         emit_struct_default_init_stmts(arr_ref, struct_type,
             current_scope, loc, innermost_body);
 
-        emit_array_loops(arr_expr, idx_vars, innermost_body, current_scope,
-            loc, out_stmts);
+        emit_array_loops(arr_expr, idx_vars, innermost_body, loc, out_stmts);
     }
 
     // Helper: Wrap statement in optional presence check if needed
@@ -841,6 +834,17 @@ public:
             logical_type, out_stmts);
     }
 
+    // See apply_intent_out_on_entry.
+    void emit_intent_out_dummy_entry(ASR::Function_t &fn, size_t i) {
+        if (is_compiler_generated(fn)) {
+            return;
+        }
+        Vec<ASR::stmt_t*> stmts;
+        stmts.reserve(al, 1);
+        emit_intent_out_arg_entry_stmts(fn, i, stmts);
+        prepend_stmts(fn, stmts);
+    }
+
     // See finalize_entity.
     void emit_entity_finalization(ASR::expr_t *entity, SymbolTable *scope,
             Vec<ASR::stmt_t*> &out_stmts) {
@@ -857,16 +861,11 @@ public:
             out_stmts);
     }
 
-    void visit_Function(const ASR::Function_t &x) {
+    // Compiler-generated intrinsic implementations handle their own
+    // intent(out) dummies.  They are recognized by a compiler-generated
+    // name, or as an implementation in a lfortran_intrinsic_* module.
+    static bool is_compiler_generated(const ASR::Function_t &x) {
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(&x);
-        if (func_type->m_abi == ASR::abiType::ExternalUndefined) {
-            return;
-        }
-        // Skip compiler-generated intrinsic implementations
-        // These functions handle their own intent(out) allocatable deallocation internally
-        // We identify them by:
-        // 1. Function name carries a compiler-generated prefix, OR
-        // 2. deftype == Implementation AND parent module is lfortran_intrinsic_*
         std::string func_name = x.m_name;
         bool is_compiler_generated = ASRUtils::is_compiler_generated_name(func_name);
         if (!is_compiler_generated && func_type->m_deftype == ASR::deftypeType::Implementation) {
@@ -880,7 +879,209 @@ public:
                 }
             }
         }
-        if (is_compiler_generated) {
+        return is_compiler_generated;
+    }
+
+    // Append to `dealloc_stmts` what the dummy `xx.m_args[i]` gets on entry
+    // to `xx` when it is intent(out): its finalization, the deallocation of
+    // it or of its allocatable components, and its default initialization.
+    void emit_intent_out_arg_entry_stmts(ASR::Function_t &xx, size_t i,
+            Vec<ASR::stmt_t*> &dealloc_stmts) {
+        ASR::expr_t* arg_expr = xx.m_args[i];
+        if (!ASR::is_a<ASR::Var_t>(*arg_expr)) return;
+
+        ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(arg_expr)->m_v;
+        ASR::symbol_t* arg_sym_deref = ASRUtils::symbol_get_past_external(arg_sym);
+        if (!ASR::is_a<ASR::Variable_t>(*arg_sym_deref)) return;
+        ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym_deref);
+
+        // Check if intent(out) and (allocatable or struct with allocatable components)
+        if (arg_var->m_intent != ASR::intentType::Out) return;
+        bool is_array_of_struct =
+            !ASRUtils::is_allocatable(arg_var->m_type) &&
+            ASRUtils::is_array(arg_var->m_type) &&
+            ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::type_get_past_array(arg_var->m_type));
+        if (!ASRUtils::is_allocatable(arg_var->m_type) &&
+            !ASR::is_a<ASR::StructType_t>(*arg_var->m_type) &&
+            !is_array_of_struct) return;
+
+        // Skip if this is the function's return variable (used in intrinsic implementations)
+        if (xx.m_return_var && ASR::is_a<ASR::Var_t>(*xx.m_return_var)) {
+            ASR::symbol_t* return_sym = ASR::down_cast<ASR::Var_t>(xx.m_return_var)->m_v;
+            if (arg_sym == return_sym) return;
+        }
+
+        Location loc = arg_var->base.base.loc;
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));  // 4 = default logical kind
+
+        // Handle allocatable arguments (scalars, arrays, or structs)
+        // CRITICAL: If the struct itself is allocatable, deallocate it as a whole.
+        // Deep deallocation of nested components is handled by runtime/codegen.
+        // DO NOT manually deallocate components here - that would be use-after-free!
+        if (ASRUtils::is_allocatable(arg_var->m_type)) {
+            // Create: if (allocated(arg)) deallocate(arg)
+            ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
+
+            // Create Allocated check
+            Vec<ASR::expr_t*> allocated_args;
+            allocated_args.reserve(al, 1);
+            allocated_args.push_back(al, var_expr);
+
+            ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(
+                al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.n, 0, logical_type, nullptr));
+
+            // Create Deallocate statement
+            Vec<ASR::expr_t*> dealloc_args;
+            dealloc_args.reserve(al, 1);
+            dealloc_args.push_back(al, var_expr);
+            ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                al, loc, dealloc_args.p, dealloc_args.n, nullptr, nullptr));
+
+            // Create If statement: if (allocated(arg)) deallocate(arg)
+            Vec<ASR::stmt_t*> if_body;
+            if_body.reserve(al, 1);
+            if_body.push_back(al, dealloc_stmt);
+            ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
+                al, loc, nullptr, is_allocated, if_body.p, if_body.n, nullptr, 0));
+
+            // Wrap in optional presence check if needed
+            ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc, var_expr, arg_var->m_presence, if_stmt);
+            dealloc_stmts.push_back(al, wrapped_stmt);
+        } else if (ASR::is_a<ASR::StructType_t>(*arg_var->m_type)) {
+            // Handle non-allocatable StructType arguments with allocatable components
+            // (If the struct itself is allocatable, we already handled it above)
+            ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
+
+            // Fortran 2018 7.5.6.3 p7: an actual argument corresponding
+            // to a nonpointer, nonallocatable `intent(out)` dummy is
+            // finalized when the procedure is invoked.  7.5.6.2 defines
+            // that as calling the type's own final subroutines and then
+            // finalizing its finalizable components, so a type without a
+            // final subroutine of its own still has work to do here.
+            bool has_finalizer =
+                struct_hierarchy_has_finalizer(struct_type);
+            bool is_polymorphic = ASRUtils::is_class_type(
+                arg_var->m_type);
+            ASR::expr_t* var_expr = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, arg_sym));
+            Vec<ASR::stmt_t*> entry_stmts;
+            entry_stmts.reserve(al, 1);
+            if (has_finalizer) {
+                emit_final_calls(var_expr, struct_type, xx.m_symtab, loc,
+                    entry_stmts);
+            }
+            if (!is_polymorphic) {
+                emit_struct_component_finalize_stmts(var_expr,
+                    struct_type, xx.m_symtab, loc, entry_stmts);
+            }
+            if (has_finalizer || entry_stmts.size() > 0) {
+                // Finalization leaves the dummy with whatever its final
+                // subroutines left behind, so its default initialization
+                // is applied afterwards (F2018 8.5.10).  A component that
+                // was finalized needs this as much as a dummy that was.
+                emit_struct_default_init_stmts(var_expr, struct_type,
+                    xx.m_symtab, loc, entry_stmts);
+            }
+            for (size_t k = 0; k < entry_stmts.size(); k++) {
+                ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
+                    var_expr, arg_var->m_presence, entry_stmts[k]);
+                dealloc_stmts.push_back(al, wrapped_stmt);
+            }
+
+            Vec<ASR::stmt_t*> cleanup;
+            cleanup.reserve(al, 1);
+            emit_struct_cleanup_stmts(var_expr, struct_type, xx.m_symtab,
+                loc, logical_type, cleanup);
+            for (size_t k = 0; k < cleanup.size(); k++) {
+                ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
+                    var_expr, arg_var->m_presence, cleanup[k]);
+                dealloc_stmts.push_back(al, wrapped_stmt);
+            }
+        } else if (is_array_of_struct) {
+            // An unlimited polymorphic dummy has no declared derived
+            // type, so it has neither components to clean up nor
+            // defaults to apply.
+            ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(
+                arg_var->m_type_declaration);
+            if (decl_sym == nullptr ||
+                    !ASR::is_a<ASR::Struct_t>(*decl_sym)) return;
+            ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
+                decl_sym);
+
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(arg_var->m_type);
+
+            ASR::expr_t* var_expr_full = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, arg_sym));
+
+            // Fortran 2018 8.5.10: an `intent(out)` dummy of a type with
+            // default initialization is default-initialized on entry,
+            // element by element for an array dummy.  A polymorphic
+            // dummy is initialized with the defaults of its declared
+            // type; the components that a dynamic extension type adds
+            // need the dynamic type, which this pass cannot see, and are
+            // left alone -- which is what a scalar polymorphic
+            // `intent(out)` dummy already does.
+            //
+            // 7.5.6.3 requires the dummy to be finalized before that, but
+            // which final procedures run is decided by the dynamic type,
+            // so the component finalization below is emitted only for a
+            // non-polymorphic dummy.
+            bool is_polymorphic = ASRUtils::is_class_type(
+                ASRUtils::type_get_past_array(arg_var->m_type));
+
+            Vec<ASR::stmt_t*> cleanup;
+            cleanup.reserve(al, 1);
+            emit_array_of_struct_entry_stmts(var_expr_full, struct_type,
+                n_dims, xx.m_symtab, loc, logical_type, is_polymorphic,
+                cleanup);
+
+            if (cleanup.size() > 0) {
+                ASR::stmt_t* wrapper_block = nullptr;
+                if (cleanup.size() == 1) {
+                    wrapper_block = cleanup[0];
+                } else {
+                    ASR::expr_t* true_cond = ASRUtils::EXPR(
+                        ASR::make_LogicalConstant_t(al, loc, true,
+                            logical_type));
+                    wrapper_block = ASRUtils::STMT(ASR::make_If_t(al, loc,
+                        nullptr, true_cond, cleanup.p, cleanup.size(),
+                        nullptr, 0));
+                }
+
+                ASR::stmt_t* wrapped_stmt = wrap_optional_check(
+                    loc, var_expr_full, arg_var->m_presence, wrapper_block);
+                dealloc_stmts.push_back(al, wrapped_stmt);
+            }
+        }
+    }
+
+    // Put `stmts` at the start of the body of `xx`.
+    void prepend_stmts(ASR::Function_t &xx, const Vec<ASR::stmt_t*> &stmts) {
+        if (stmts.size() == 0) {
+            return;
+        }
+        Vec<ASR::stmt_t*> new_body;
+        new_body.reserve(al, stmts.size() + xx.n_body);
+        for (size_t i = 0; i < stmts.size(); i++) {
+            new_body.push_back(al, stmts[i]);
+        }
+        for (size_t i = 0; i < xx.n_body; i++) {
+            new_body.push_back(al, xx.m_body[i]);
+        }
+        xx.m_body = new_body.p;
+        xx.n_body = new_body.size();
+    }
+
+    void visit_Function(const ASR::Function_t &x) {
+        ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(&x);
+        if (func_type->m_abi == ASR::abiType::ExternalUndefined) {
+            return;
+        }
+        if (is_compiler_generated(x)) {
             for (auto &a : x.m_symtab->get_scope()) {
                 visit_symbol(*a.second);
             }
@@ -893,191 +1094,10 @@ public:
         dealloc_stmts.reserve(al, 1);
 
         for (size_t i = 0; i < xx.n_args; i++) {
-            ASR::expr_t* arg_expr = xx.m_args[i];
-            if (!ASR::is_a<ASR::Var_t>(*arg_expr)) continue;
-
-            ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(arg_expr)->m_v;
-            ASR::symbol_t* arg_sym_deref = ASRUtils::symbol_get_past_external(arg_sym);
-            if (!ASR::is_a<ASR::Variable_t>(*arg_sym_deref)) continue;
-            ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym_deref);
-
-            // Check if intent(out) and (allocatable or struct with allocatable components)
-            if (arg_var->m_intent != ASR::intentType::Out) continue;
-            bool is_array_of_struct =
-                !ASRUtils::is_allocatable(arg_var->m_type) &&
-                ASRUtils::is_array(arg_var->m_type) &&
-                ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::type_get_past_array(arg_var->m_type));
-            if (!ASRUtils::is_allocatable(arg_var->m_type) &&
-                !ASR::is_a<ASR::StructType_t>(*arg_var->m_type) &&
-                !is_array_of_struct) continue;
-
-            // Skip if this is the function's return variable (used in intrinsic implementations)
-            if (xx.m_return_var && ASR::is_a<ASR::Var_t>(*xx.m_return_var)) {
-                ASR::symbol_t* return_sym = ASR::down_cast<ASR::Var_t>(xx.m_return_var)->m_v;
-                if (arg_sym == return_sym) continue;
-            }
-
-            Location loc = arg_var->base.base.loc;
-            ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));  // 4 = default logical kind
-
-            // Handle allocatable arguments (scalars, arrays, or structs)
-            // CRITICAL: If the struct itself is allocatable, deallocate it as a whole.
-            // Deep deallocation of nested components is handled by runtime/codegen.
-            // DO NOT manually deallocate components here - that would be use-after-free!
-            if (ASRUtils::is_allocatable(arg_var->m_type)) {
-                // Create: if (allocated(arg)) deallocate(arg)
-                ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, arg_sym));
-
-                // Create Allocated check
-                Vec<ASR::expr_t*> allocated_args;
-                allocated_args.reserve(al, 1);
-                allocated_args.push_back(al, var_expr);
-
-                ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(
-                    al, loc,
-                    static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
-                    allocated_args.p, allocated_args.n, 0, logical_type, nullptr));
-
-                // Create Deallocate statement
-                Vec<ASR::expr_t*> dealloc_args;
-                dealloc_args.reserve(al, 1);
-                dealloc_args.push_back(al, var_expr);
-                ASR::stmt_t* dealloc_stmt = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-                    al, loc, dealloc_args.p, dealloc_args.n, nullptr, nullptr));
-
-                // Create If statement: if (allocated(arg)) deallocate(arg)
-                Vec<ASR::stmt_t*> if_body;
-                if_body.reserve(al, 1);
-                if_body.push_back(al, dealloc_stmt);
-                ASR::stmt_t* if_stmt = ASRUtils::STMT(ASR::make_If_t(
-                    al, loc, nullptr, is_allocated, if_body.p, if_body.n, nullptr, 0));
-
-                // Wrap in optional presence check if needed
-                ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc, var_expr, arg_var->m_presence, if_stmt);
-                dealloc_stmts.push_back(al, wrapped_stmt);
-            } else if (ASR::is_a<ASR::StructType_t>(*arg_var->m_type)) {
-                // Handle non-allocatable StructType arguments with allocatable components
-                // (If the struct itself is allocatable, we already handled it above)
-                ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
-
-                // Fortran 2018 7.5.6.3 p7: an actual argument corresponding
-                // to a nonpointer, nonallocatable `intent(out)` dummy is
-                // finalized when the procedure is invoked.  7.5.6.2 defines
-                // that as calling the type's own final subroutines and then
-                // finalizing its finalizable components, so a type without a
-                // final subroutine of its own still has work to do here.
-                bool has_finalizer =
-                    struct_hierarchy_has_finalizer(struct_type);
-                bool is_polymorphic = ASRUtils::is_class_type(
-                    arg_var->m_type);
-                ASR::expr_t* var_expr = ASRUtils::EXPR(
-                    ASR::make_Var_t(al, loc, arg_sym));
-                Vec<ASR::stmt_t*> entry_stmts;
-                entry_stmts.reserve(al, 1);
-                if (has_finalizer) {
-                    emit_final_calls(var_expr, struct_type, xx.m_symtab, loc,
-                        entry_stmts);
-                }
-                if (!is_polymorphic) {
-                    emit_struct_component_finalize_stmts(var_expr,
-                        struct_type, xx.m_symtab, loc, entry_stmts);
-                }
-                if (has_finalizer || entry_stmts.size() > 0) {
-                    // Finalization leaves the dummy with whatever its final
-                    // subroutines left behind, so its default initialization
-                    // is applied afterwards (F2018 8.5.10).  A component that
-                    // was finalized needs this as much as a dummy that was.
-                    emit_struct_default_init_stmts(var_expr, struct_type,
-                        xx.m_symtab, loc, entry_stmts);
-                }
-                for (size_t k = 0; k < entry_stmts.size(); k++) {
-                    ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
-                        var_expr, arg_var->m_presence, entry_stmts[k]);
-                    dealloc_stmts.push_back(al, wrapped_stmt);
-                }
-
-                Vec<ASR::stmt_t*> cleanup;
-                cleanup.reserve(al, 1);
-                emit_struct_cleanup_stmts(var_expr, struct_type, xx.m_symtab,
-                    loc, logical_type, cleanup);
-                for (size_t k = 0; k < cleanup.size(); k++) {
-                    ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
-                        var_expr, arg_var->m_presence, cleanup[k]);
-                    dealloc_stmts.push_back(al, wrapped_stmt);
-                }
-            } else if (is_array_of_struct) {
-                // An unlimited polymorphic dummy has no declared derived
-                // type, so it has neither components to clean up nor
-                // defaults to apply.
-                ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(
-                    arg_var->m_type_declaration);
-                if (decl_sym == nullptr ||
-                        !ASR::is_a<ASR::Struct_t>(*decl_sym)) continue;
-                ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
-                    decl_sym);
-
-                int n_dims = ASRUtils::extract_n_dims_from_ttype(arg_var->m_type);
-
-                ASR::expr_t* var_expr_full = ASRUtils::EXPR(
-                    ASR::make_Var_t(al, loc, arg_sym));
-
-                // Fortran 2018 8.5.10: an `intent(out)` dummy of a type with
-                // default initialization is default-initialized on entry,
-                // element by element for an array dummy.  A polymorphic
-                // dummy is initialized with the defaults of its declared
-                // type; the components that a dynamic extension type adds
-                // need the dynamic type, which this pass cannot see, and are
-                // left alone -- which is what a scalar polymorphic
-                // `intent(out)` dummy already does.
-                //
-                // 7.5.6.3 requires the dummy to be finalized before that, but
-                // which final procedures run is decided by the dynamic type,
-                // so the component finalization below is emitted only for a
-                // non-polymorphic dummy.
-                bool is_polymorphic = ASRUtils::is_class_type(
-                    ASRUtils::type_get_past_array(arg_var->m_type));
-
-                Vec<ASR::stmt_t*> cleanup;
-                cleanup.reserve(al, 1);
-                emit_array_of_struct_entry_stmts(var_expr_full, struct_type,
-                    n_dims, xx.m_symtab, loc, logical_type, is_polymorphic,
-                    cleanup);
-
-                if (cleanup.size() > 0) {
-                    ASR::stmt_t* wrapper_block = nullptr;
-                    if (cleanup.size() == 1) {
-                        wrapper_block = cleanup[0];
-                    } else {
-                        ASR::expr_t* true_cond = ASRUtils::EXPR(
-                            ASR::make_LogicalConstant_t(al, loc, true,
-                                logical_type));
-                        wrapper_block = ASRUtils::STMT(ASR::make_If_t(al, loc,
-                            nullptr, true_cond, cleanup.p, cleanup.size(),
-                            nullptr, 0));
-                    }
-
-                    ASR::stmt_t* wrapped_stmt = wrap_optional_check(
-                        loc, var_expr_full, arg_var->m_presence, wrapper_block);
-                    dealloc_stmts.push_back(al, wrapped_stmt);
-                }
-            }
+            emit_intent_out_arg_entry_stmts(xx, i, dealloc_stmts);
         }
 
-        // Prepend deallocation statements to function body
-        if (dealloc_stmts.size() > 0) {
-            Vec<ASR::stmt_t*> new_body;
-            new_body.reserve(al, dealloc_stmts.size() + xx.n_body);
-            for (size_t i = 0; i < dealloc_stmts.size(); i++) {
-                new_body.push_back(al, dealloc_stmts[i]);
-            }
-            for (size_t i = 0; i < xx.n_body; i++) {
-                new_body.push_back(al, xx.m_body[i]);
-            }
-            xx.m_body = new_body.p;
-            xx.n_body = new_body.size();
-        }
+        prepend_stmts(xx, dealloc_stmts);
 
         // Continue visiting nested functions
         for (auto &a : x.m_symtab->get_scope()) {
@@ -1101,6 +1121,12 @@ void finalize_entity(Allocator &al, ASR::expr_t *entity, SymbolTable *scope,
                      Vec<ASR::stmt_t*> &out) {
     IntentOutDeallocateVisitor iod(al);
     iod.emit_entity_finalization(entity, scope, out);
+}
+
+void apply_intent_out_on_entry(Allocator &al, ASR::Function_t &fn,
+                               size_t i) {
+    IntentOutDeallocateVisitor iod(al);
+    iod.emit_intent_out_dummy_entry(fn, i);
 }
 
 void initialize_function_result_on_entry(Allocator &al, ASR::Function_t &fn,

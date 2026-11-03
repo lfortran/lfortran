@@ -83,11 +83,15 @@ ASR::symbol_t* gpu_new_variable(Allocator &al, const Location &loc,
 // for a component of rank more than one, the extent of each dimension.
 // The data follows, one array per component. The parameters are named as
 // the device code generators look them up (see GpuNames), so they find the
-// component's buffers by the name of the parameter and the component.
+// component's buffers by the name of the parameter and the component. The
+// extents and lower bounds are integers of kind `offset_kind`, the kind
+// the kernel computes element offsets in
+// (GpuDeviceCapabilities::offset_kind).
 void gpu_struct_member_extent_arguments(Allocator &al, const Location &loc,
         SymbolTable *kernel_scope, const std::string &name, ASR::Struct_t *st,
         const std::function<ASR::expr_t*(ASR::symbol_t*)> &host_member,
-        Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args);
+        int offset_kind, Vec<ASR::expr_t*> &kernel_args,
+        Vec<ASR::call_arg_t> &call_args);
 
 // `element_declaration` gives the kernel's declaration of the derived type
 // of the elements of a component that has elements of one.
@@ -143,7 +147,10 @@ public:
         ASR::BaseExprReplacer<GpuArraySizeFromTypeReplacer>
             ::replace_ArraySize(x);
         ASR::expr_t *rep = gpu_array_size_from_type(al, x);
-        if (rep) *current_expr = rep;
+        if (!rep) return;
+        LCOMPILERS_ASSERT(ASRUtils::check_equal_type(
+            ASRUtils::expr_type(rep), x->m_type, rep, &x->base));
+        *current_expr = rep;
     }
 };
 
@@ -325,6 +332,28 @@ public:
         replacer.retarget_call(xx.m_name, xx.m_original_name);
         ASR::CallReplacerOnExpressionsVisitor<GpuReplaceSymbolsVisitor>
             ::visit_SubroutineCall(x);
+    }
+};
+
+// Walk statement containers, including nested parallel regions, but leave
+// entering a construct's symbol-owned body to the callback that rebinds it.
+class GpuConstructCallVisitor :
+        public ASR::BaseWalkVisitor<GpuConstructCallVisitor> {
+public:
+    std::function<void(ASR::BlockCall_t&)> block;
+    std::function<void(ASR::AssociateBlockCall_t&)> associate;
+
+    GpuConstructCallVisitor(
+            std::function<void(ASR::BlockCall_t&)> block_,
+            std::function<void(ASR::AssociateBlockCall_t&)> associate_ = {})
+        : block(block_), associate(associate_) {}
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        block(const_cast<ASR::BlockCall_t&>(x));
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        if (associate) associate(const_cast<ASR::AssociateBlockCall_t&>(x));
     }
 };
 

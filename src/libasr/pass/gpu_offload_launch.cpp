@@ -239,32 +239,38 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // The number of threads the launch runs, evaluated once into the
     // variable that guards the launch below. Bounds are still evaluated for
     // a zero-trip loop, but gathers, allocations and readbacks belong only
-    // to actual offload work.
+    // to actual offload work. The iterations are counted in the type the
+    // kernel numbers them in (gpu_iteration_number_type). The count is
+    // positive exactly when every dimension is non-empty.
     ASR::expr_t *thread_count = nullptr;
+    ASR::ttype_t *count_type = gpu_iteration_number_type(al, loc,
+        plan.int_type, device_caps);
+    // Whether the launch may run in chunks (GpuKernelLaunch.chunk_dimensions).
+    bool chunked = plan.chunk_fixed_iterations > 0;
+    auto widen = [&](ASR::expr_t *limit) {
+        ASRUtils::ExprStmtDuplicator copy(al);
+        copy.success = true;
+        ASR::expr_t *value = copy.duplicate_expr(limit);
+        LCOMPILERS_ASSERT(copy.success && value);
+        return ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(value))
+                == ASRUtils::extract_kind_from_ttype_t(count_type)
+            ? value : b.i2i_t(value, count_type);
+    };
+    auto extent = [&](size_t d) {
+        return gpu_loop_extent(al, loc, widen(starts[d]),
+            widen(ends[d]), count_type);
+    };
     if (plan.tiled_arg >= 0) {
         // A launch that can run in tiles (gpu_offload.cpp) runs whole tiles
         // of the device's tile width by the rest of a block, unless that
         // pads the nest by more than a quarter, as a short dimension does:
         // then it runs one thread per iteration, numbered flat. Padding can
         // take the count past the kind of the loop indices, so it is
-        // computed in integer(8). It is positive exactly when every
-        // dimension is non-empty. A tiled nest has no reduction (that keeps
+        // computed in integer(8). A tiled nest has no reduction (that keeps
         // the flat numbering), so nothing below needs the iteration count.
-        ASR::ttype_t *count_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 8));
-        auto widen = [&](ASR::expr_t *limit) {
-            ASRUtils::ExprStmtDuplicator copy(al);
-            copy.success = true;
-            ASR::expr_t *value = copy.duplicate_expr(limit);
-            LCOMPILERS_ASSERT(copy.success && value);
-            return ASRUtils::extract_kind_from_ttype_t(
-                    ASRUtils::expr_type(value)) == 8
-                ? value : b.i2i_t(value, count_type);
-        };
-        auto extent = [&](size_t d) {
-            return gpu_loop_extent(al, loc, widen(starts[d]),
-                widen(ends[d]), count_type);
-        };
+        LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(count_type)
+            == 8);
         auto count = [&](int64_t value) {
             return b.i_t(value, count_type);
         };
@@ -299,10 +305,16 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             current_scope->get_unique_name("__gpu_tiled"),
             ASRUtils::duplicate_type(al, plan.int_type),
             ASR::intentType::Local);
+        // A launch of more threads than the chunk limit runs in chunks,
+        // which split the nest into boxes the kernel numbers flat.
+        ASR::expr_t *flat = b.Gt(b.Mul(count(4),
+            b.Sub(tile_threads, iteration_count)), iteration_count);
+        if (chunked) {
+            flat = b.Or(flat, b.Gt(tile_threads,
+                count(pass_options.gpu_chunk_limit)));
+        }
         prelude.push_back(al, b.Assignment(tiled,
-            ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
-                b.Gt(b.Mul(count(4), b.Sub(tile_threads, iteration_count)),
-                    iteration_count),
+            ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, flat,
                 b.i_t(0, plan.int_type), b.i_t(1, plan.int_type),
                 plan.int_type, nullptr))));
         plan.call_args.p[plan.tiled_arg].m_value = tiled;
@@ -318,15 +330,12 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         // the product.
         ASR::expr_t *host_total = nullptr;
         for (size_t d = 0; d < plan.n_dims; d++) {
-            ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
-                plan.dim_info[d].host_start, plan.dim_info[d].host_end,
-                plan.int_type);
-            host_total = host_total ? b.Mul(host_total, dim_range)
-                : dim_range;
+            host_total = host_total ? b.Mul(host_total, extent(d))
+                : extent(d);
         }
         thread_count = b.Variable(current_scope,
             current_scope->get_unique_name("__gpu_iteration_count"),
-            plan.int_type, ASR::intentType::Local);
+            count_type, ASR::intentType::Local);
         prelude.push_back(al, b.Assignment(thread_count, host_total));
     }
     for (size_t i = 0; i < plan.private_shapes.n; i++) {
@@ -412,8 +421,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         alloc_dims.reserve(al, 1);
         ASR::dimension_t dim;
         dim.loc = loc;
-        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
-            plan.int_type, ASR::integerbozType::Decimal));
+        dim.m_start = b.i_t(1, count_type);
         dim.m_length = thread_count;
         alloc_dims.push_back(al, dim);
         arg.m_dims = alloc_dims.p;
@@ -429,13 +437,29 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 nullptr, nullptr, nullptr)));
     }
 
+    // The dimensions a launch that may run in chunks splits, in the order
+    // the kernel numbers its iterations.
+    Vec<ASR::gpu_launch_dimension_t> chunk_dimensions;
+    chunk_dimensions.reserve(al, chunked ? plan.n_dims : 0);
+    if (chunked) {
+        for (size_t d : plan.order) {
+            if (plan.start_parameters[d] == nullptr) continue;
+            ASR::gpu_launch_dimension_t dim;
+            dim.loc = loc;
+            dim.m_start_parameter = plan.start_parameters[d];
+            dim.m_end_parameter = plan.end_parameters[d];
+            chunk_dimensions.push_back(al, dim);
+        }
+    }
+
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
             thread_count, block_size_const,
             plan.call_args.p, plan.call_args.n, component_fit, nullptr,
             0, nullptr, nullptr, 0, overwritten.p, overwritten.n,
-            overwritten_if.p, overwritten_if.n)));
+            overwritten_if.p, overwritten_if.n, chunk_dimensions.p,
+            chunk_dimensions.n, plan.chunk_fixed_iterations)));
 
     // The launch does not wait for the kernel. What follows reads what the
     // kernel wrote, so the `gpu_launch_sync` pass puts the GpuSync that
@@ -470,7 +494,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             ASR::make_Var_t(al, loc, r.orig_scalar_sym));
         std::string index_name = current_scope->get_unique_name("__gpu_fold_i");
         ASR::symbol_t *index_sym = gpu_new_variable(al, loc, current_scope,
-            index_name, ASRUtils::duplicate_type(al, plan.int_type));
+            index_name, ASRUtils::duplicate_type(al, count_type));
         ASR::expr_t *index_var = ASRUtils::EXPR(
             ASR::make_Var_t(al, loc, index_sym));
         ASR::expr_t *slot = gpu_reduction_slot(al, loc, r.host_buf_sym,
@@ -508,12 +532,11 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::do_loop_head_t head;
         head.loc = loc;
         head.m_v = index_var;
-        head.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
-            plan.int_type, ASR::integerbozType::Decimal));
+        head.m_start = b.i_t(1, count_type);
         head.m_end = thread_count;
         head.m_increment = nullptr;
         launch_stmts.push_back(al, ASRUtils::STMT(
-            ASR::make_DoLoop_t(al, loc, nullptr, head,
+            ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                 fold_body.p, fold_body.n, nullptr, 0)));
 
         Vec<ASR::expr_t*> dealloc_args;

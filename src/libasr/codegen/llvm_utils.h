@@ -879,9 +879,18 @@ class ASRToLLVMVisitor;
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
             // Pointer to a function of the opaque procedure type `x`: no
-            // parameters, returning the explicit result type or void.
+            // parameters, returning the explicit result type or void. The
+            // result is lowered as `get_function_type` lowers it, so that a
+            // procedure declared with the opaque type has this type; a
+            // result returned through a pointer (complex(8) on Windows)
+            // becomes the only parameter.
             llvm::PointerType* get_opaque_procedure_ptr_type(const ASR::FunctionType_t &x,
                 llvm::Module* module);
+
+            // The type a procedure returns a complex(a_kind) result as, by
+            // the platform C ABI; null when the result is instead returned
+            // through a leading pointer argument (complex(8) on Windows).
+            llvm::Type* get_complex_return_type(int a_kind);
 
             // Convert complex return value from platform ABI to internal representation
             // (\<2 x float\>, i64 on Windows, etc.) to the internal complex_4 struct.
@@ -2572,8 +2581,9 @@ class ASRToLLVMVisitor;
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             // The storage of a common block outlives every scope that
-            // declares the block.
-            if (v->m_common_block != nullptr) {
+            // declares the block, and a HostAssociated variable denotes a
+            // variable of the host, which the host owns.
+            if (!ASRUtils::has_own_storage(*v)) {
                 return true;
             }
             if (LLVM::is_struct_value_dummy_copied(*v)) {
@@ -2795,6 +2805,8 @@ class ASRToLLVMVisitor;
                 return true;
                 case ASR::FunctionType:
                 case ASR::CPtr:
+                // A reference refers to a variable that something else owns.
+                case ASR::Reference:
                     return false;
                 default:
                     throw LCompilersException("Handle this case");
@@ -3326,6 +3338,7 @@ class ASRToLLVMVisitor;
         public:
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2typeinfo;   // Contains type-info object pointer for each struct
+            std::map<ASR::symbol_t*, llvm::Function*> newclass2copyfn;   // Contains the `_copy_<owner>_<type>` function for each struct
             std::map<std::string, llvm::Constant*> intrinsic_type_info;   // Contains type-info object pointer for each intrincic type and kind
             std::map<std::string, llvm::Constant*> intrinsic_type_vtab;
             std::map<std::string, llvm::Type*> intrinsic_type_vtabtype;
@@ -3337,6 +3350,7 @@ class ASRToLLVMVisitor;
                       LLVMFinalize &finalizer_instance_);
     
             llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym, llvm::Module* module);
+            llvm::Function* get_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module);
             llvm::Function* get_Upoly_finalize_fn(ASR::Struct_t* struct_sym, llvm::Value* upoly_ptr);
             void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module);
             void store_class_struct(ASR::Struct_t* class_sym, llvm::Value* class_ptr, llvm::Value* struct_ptr);

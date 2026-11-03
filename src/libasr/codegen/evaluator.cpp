@@ -1015,6 +1015,25 @@ void LLVMEvaluator::create_empty_object_file(const std::string &filename) {
     save_object_file(*module, filename);
 }
 
+#if LLVM_VERSION_MAJOR < 9
+// IndVarSimplify in LLVM 7 and 8 can mark the increment of a loop counter
+// that starts at -1 (a DO loop starting at 0) as `nuw`. Unrolling an inner
+// loop by the upper bound of its trip count then trusts that flag, assumes at
+// least two iterations and drops the first exit test, so a one-trip loop runs
+// twice. LLVM 9 fixed this. X86 enables upper-bound unrolling for CPUs with a
+// loop buffer, so the miscompile depends on the host CPU under `--fast`.
+static void disable_upper_bound_unrolling() {
+    llvm::StringMap<llvm::cl::Option*> &options
+        = llvm::cl::getRegisteredOptions();
+    auto option = options.find("unroll-max-upperbound");
+    // The option may occur only once per process; opt() runs for every file
+    // and REPL cell.
+    if (option != options.end() && option->second->getNumOccurrences() == 0) {
+        option->second->addOccurrence(0, "unroll-max-upperbound", "0");
+    }
+}
+#endif
+
 void LLVMEvaluator::opt(llvm::Module &m) {
     configure_module(m);
 
@@ -1039,6 +1058,9 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     MPM.run(m, MAM);
 
 #else
+#if LLVM_VERSION_MAJOR < 9
+    disable_upper_bound_unrolling();
+#endif
     llvm::legacy::PassManager mpm;
     mpm.add(new llvm::TargetLibraryInfoWrapperPass(TM->getTargetTriple()));
     mpm.add(llvm::createTargetTransformInfoWrapperPass(TM->getTargetIRAnalysis()));

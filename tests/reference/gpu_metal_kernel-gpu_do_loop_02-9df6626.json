@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_do_loop_02-9df6626",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_do_loop_02.f90",
+    "infile_hash": "ef490a169cee054c65084ea2d603bda108e1933f031e5741d8071e6d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_do_loop_02-9df6626.stdout",
+    "stdout_hash": "6452b147b158241ce3080bc87c9f927b876c0623e699eb35dbf19448",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -15,9 +15,9 @@ subroutine shift(a, x, i, m)
     real(4), dimension(:), intent(in) :: x
     deallocate(__libasr_created_real_binop_left_)
     allocate(__libasr_created_real_binop_left_((m - 1 - 1)/1 + 1))
-__libasr_created__array_section_pointer_ => a(i, 1:m - 1)
+    __libasr_created__array_section_pointer_ => a(i, 1:m - 1)
     __libasr_created_real_binop_left_ = __libasr_created__array_section_pointer_
-__libasr_created_real_binop_right_ => x(1:m - 1)
+    __libasr_created_real_binop_right_ => x(1:m - 1)
     __libasr_created__array_section_subscript_ = i
     __libasr_created__array_section_subscript_1 = m
     a(__libasr_created__array_section_subscript_,&
@@ -34,8 +34,8 @@ subroutine upd(a, x, i, m)
     integer(4), intent(in) :: i
     integer(4), intent(in) :: m
     real(4), dimension(:), intent(in) :: x
-__libasr_created_real_binop_left_ => a(i, 1:m)
-__libasr_created_real_binop_left_1 => x(1:m)
+    __libasr_created_real_binop_left_ => a(i, 1:m)
+    __libasr_created_real_binop_left_1 => x(1:m)
     __libasr_created__array_section_subscript_ = i
     __libasr_created__array_section_subscript_1 = m
     a(__libasr_created__array_section_subscript_,&

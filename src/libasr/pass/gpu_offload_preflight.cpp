@@ -233,6 +233,7 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
         const std::vector<std::string> &arg_names,
         std::string &unresolved_name) {
     if (symtab == nullptr) return true;
+    const GpuExtentScope scope{nullptr, arg_names, symtab, root_body, root_n};
     for (auto &item : symtab->get_scope()) {
         if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
         ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(item.second);
@@ -257,9 +258,7 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
                 }
             }
             if (!runtime) continue;
-            if (declared_shape_to_vla_workspace(arr, vname,
-                    GpuExtentScope{nullptr, arg_names, symtab, root_body,
-                        root_n}, ws)) {
+            if (declared_shape_to_vla_workspace(arr, vname, scope, ws)) {
                 continue;
             }
             unresolved_name = vname;
@@ -279,9 +278,7 @@ static bool gpu_scope_workspaces_resolvable(SymbolTable *symtab,
             }
         }
         if (!runtime) continue;
-        if (alloc_shape_to_vla_workspace(*target, arr, vname,
-                GpuExtentScope{nullptr, arg_names, symtab, root_body,
-                    root_n}, ws)) {
+        if (alloc_shape_to_vla_workspace(*target, arr, vname, scope, ws)) {
             continue;
         }
         unresolved_name = vname;

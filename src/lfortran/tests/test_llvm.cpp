@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <set>
 #include <vector>
 
@@ -710,6 +711,153 @@ end program)";
     }
 }
 
+TEST_CASE("ASR -> LLVM lowers DoLoop with loop-else and EXIT") {
+    std::string source = R"(
+integer function f_normal()
+    integer :: i
+    f_normal = 0
+    do i = 1, 3
+        f_normal = f_normal + 1
+    end do
+    f_normal = f_normal + 10
+    f_normal = f_normal + 100 * i
+end function
+
+integer function f_zero_trip()
+    integer :: i
+    f_zero_trip = 0
+    do i = 1, 0
+        f_zero_trip = f_zero_trip + 1
+    end do
+    f_zero_trip = f_zero_trip + 10
+    f_zero_trip = f_zero_trip + 100 * i
+end function
+
+integer function f_exit()
+    integer :: i
+    f_exit = 0
+    do i = 1, 3
+        f_exit = f_exit + 1
+        exit
+    end do
+    f_exit = f_exit + 10
+    f_exit = f_exit + 100 * i
+end function
+
+integer function f_while_nested_exit()
+    integer :: i, s
+    s = 0
+    do while (s < 2)
+        do i = 1, 3
+            exit
+        end do
+        s = s + 1
+    end do
+    s = s + 40
+    f_while_nested_exit = s
+end function
+)";
+
+    Allocator al(64*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions co;
+    co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    co.platform = LCompilers::get_platform();
+    FortranEvaluator evaluator(co);
+    LCompilers::LocationManager lm;
+    LCompilers::LocationManager::FileLocations file;
+    file.in_filename = "doloop_else.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    LCompilers::ASR::TranslationUnit_t *asr = parsed.result;
+
+    // Fortran has no loop-else, so move the statement that follows the
+    // first loop of `name` into the loop-else of that loop: it then runs
+    // only when the loop completes normally (not after an EXIT).
+    auto seed_orelse_from_next_stmt = [&](const std::string &name,
+                                          bool while_loop) {
+        LCompilers::ASR::symbol_t *sym = asr->m_symtab->resolve_symbol(name);
+        REQUIRE(sym != nullptr);
+        REQUIRE(LCompilers::ASR::is_a<LCompilers::ASR::Function_t>(*sym));
+        auto *fn = LCompilers::ASR::down_cast<LCompilers::ASR::Function_t>(sym);
+        size_t loop_idx = fn->n_body;
+        for (size_t i = 0; i < fn->n_body; i++) {
+            bool matched = while_loop
+                ? LCompilers::ASR::is_a<LCompilers::ASR::WhileLoop_t>(*fn->m_body[i])
+                : LCompilers::ASR::is_a<LCompilers::ASR::DoLoop_t>(*fn->m_body[i]);
+            if (matched) {
+                loop_idx = i;
+                break;
+            }
+        }
+        REQUIRE(loop_idx < fn->n_body);
+        REQUIRE(loop_idx + 1 < fn->n_body);
+        LCompilers::ASR::stmt_t *orelse_stmt = fn->m_body[loop_idx + 1];
+        auto **orelse_block = al.allocate<LCompilers::ASR::stmt_t*>(1);
+        orelse_block[0] = orelse_stmt;
+        if (while_loop) {
+            auto *loop = LCompilers::ASR::down_cast<LCompilers::ASR::WhileLoop_t>(
+                fn->m_body[loop_idx]);
+            LCompilers::ASR::WhileLoop_t &loop_mut = *loop;
+            loop_mut.m_orelse = orelse_block;
+            loop_mut.n_orelse = 1;
+        } else {
+            auto *loop = LCompilers::ASR::down_cast<LCompilers::ASR::DoLoop_t>(
+                fn->m_body[loop_idx]);
+            LCompilers::ASR::DoLoop_t &loop_mut = *loop;
+            loop_mut.m_orelse = orelse_block;
+            loop_mut.n_orelse = 1;
+        }
+        for (size_t i = loop_idx + 1; i + 1 < fn->n_body; i++) {
+            fn->m_body[i] = fn->m_body[i + 1];
+        }
+        fn->n_body--;
+    };
+
+    seed_orelse_from_next_stmt("f_normal", false);
+    seed_orelse_from_next_stmt("f_zero_trip", false);
+    seed_orelse_from_next_stmt("f_exit", false);
+    seed_orelse_from_next_stmt("f_while_nested_exit", true);
+
+    auto function_has_doloop = [&](const std::string &name) {
+        LCompilers::ASR::symbol_t *sym = asr->m_symtab->resolve_symbol(name);
+        REQUIRE(sym != nullptr);
+        auto *fn = LCompilers::ASR::down_cast<LCompilers::ASR::Function_t>(sym);
+        for (size_t i = 0; i < fn->n_body; i++) {
+            if (LCompilers::ASR::is_a<LCompilers::ASR::DoLoop_t>(*fn->m_body[i])) {
+                return true;
+            }
+        }
+        return false;
+    };
+    CHECK(function_has_doloop("f_normal"));
+    CHECK(function_has_doloop("f_zero_trip"));
+    CHECK(function_has_doloop("f_exit"));
+
+    LCompilers::LLVMEvaluator e(co);
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>> res =
+        LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+            e.get_target_config(), al, lpm, co, "", "", "", lm);
+    INFO(diagnostics.render2());
+    REQUIRE(res.ok);
+
+    // The passes kept the loops for the backend.
+    CHECK(function_has_doloop("f_normal"));
+    CHECK(function_has_doloop("f_zero_trip"));
+    CHECK(function_has_doloop("f_exit"));
+
+    e.add_module(std::move(res.result));
+    CHECK(e.execfn<int32_t>("f_normal") == 413);
+    CHECK(e.execfn<int32_t>("f_zero_trip") == 110);
+    CHECK(e.execfn<int32_t>("f_exit") == 101);
+    CHECK(e.execfn<int32_t>("f_while_nested_exit") == 42);
+}
+
 namespace {
 
 // Compiles `source` with the LLVM backend, with --fast if `fast`, and calls
@@ -1047,6 +1195,42 @@ end module
     }
 }
 
+TEST_CASE("LLVM stack automatic arrays allocate their element type") {
+    std::string source = R"(module stack_alloca_m
+implicit none
+contains
+subroutine work(n, x)
+    integer, intent(in) :: n
+    real, intent(out) :: x
+    real :: w(n)
+    integer(8) :: k(n, 2)
+    w = 1
+    k = 2
+    x = sum(w) + real(sum(k))
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"work", "work"}},
+            [&](const std::string &, llvm::Function &fn) {
+                std::map<std::string, std::string> types;
+                for (llvm::Instruction &inst: fn.getEntryBlock()) {
+                    auto *alloca = llvm::dyn_cast<llvm::AllocaInst>(&inst);
+                    if (!alloca) continue;
+                    std::string name = alloca->getName().str();
+                    if (name != "w" && name != "k") continue;
+                    std::string type;
+                    llvm::raw_string_ostream os(type);
+                    alloca->getAllocatedType()->print(os);
+                    types[name] = os.str();
+                }
+                CAPTURE(fast);
+                CHECK(types["w"] == "float");
+                CHECK(types["k"] == "i64");
+            }, true);
+    }
+}
+
 // The dummy arguments, as "procedure:argument ...", whose parameters the LLVM
 // backend marks noalias when it compiles `source`.
 std::string noalias_parameters(const std::string &source, bool fast,
@@ -1268,6 +1452,82 @@ end module
         "mvbits:frompos mvbits:len mvbits:topos ";
     CHECK(noalias_parameters(source, true, procedures) == expected);
     CHECK(noalias_parameters(source, false, procedures).empty());
+}
+
+TEST_CASE("LLVM signed integer arithmetic is nsw under --fast") {
+    std::string source = R"(module integer_nsw_m
+implicit none
+contains
+integer function combine(a, b, c) result(r)
+    integer, intent(in) :: a, b, c
+    r = a*b + c - a
+end function
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"combine", "_combine"}},
+            [&](const std::string &, llvm::Function &fn) {
+                size_t ops = 0, nsw = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        auto *op = llvm::dyn_cast<llvm::BinaryOperator>(&inst);
+                        if (!op || !op->getType()->isIntegerTy(32)) continue;
+                        unsigned opcode = op->getOpcode();
+                        if (opcode != llvm::Instruction::Add &&
+                                opcode != llvm::Instruction::Sub &&
+                                opcode != llvm::Instruction::Mul) continue;
+                        ops++;
+                        if (op->hasNoSignedWrap()) nsw++;
+                    }
+                }
+                CAPTURE(fast);
+                CHECK(ops == 3);
+                CHECK(nsw == (fast ? 3u : 0u));
+            });
+    }
+}
+
+TEST_CASE("LLVM loops are not runtime unrolled under --fast") {
+    std::string source = R"(module runtime_unroll_m
+implicit none
+contains
+subroutine window(x, y, i0, i1)
+    real, intent(in) :: x(:,:)
+    real, intent(inout) :: y(:,:)
+    integer, intent(in) :: i0, i1
+    integer :: j
+    do j = 1, size(y, 2)
+        y(:, j) = y(:, j) + x(i0:i1, j)
+    end do
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"window", "_window_real_______0_real_______1"}},
+            [&](const std::string &, llvm::Function &fn) {
+                size_t latches = 0, rolled = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    llvm::MDNode *loop = block.getTerminator()->getMetadata(
+                        llvm::LLVMContext::MD_loop);
+                    if (!loop) continue;
+                    latches++;
+                    for (const llvm::MDOperand &op: loop->operands()) {
+                        auto *node = llvm::dyn_cast_or_null<llvm::MDNode>(op.get());
+                        if (!node || node->getNumOperands() == 0) continue;
+                        auto *name = llvm::dyn_cast<llvm::MDString>(node->getOperand(0));
+                        if (name && name->getString() ==
+                                "llvm.loop.unroll.runtime.disable") {
+                            rolled++;
+                        }
+                    }
+                }
+                CAPTURE(fast);
+                CHECK(rolled == latches);
+                // Both the DO loop and the array-operation loop it contains.
+                CHECK(latches == (fast ? 2u : 0u));
+            });
+    }
 }
 
 TEST_CASE("LLVM TBAA metadata under --fast") {
@@ -1777,7 +2037,12 @@ end module
                 update_loops++;
                 CHECK(found.descriptor_loads == 0);
                 REQUIRE(loop->getParentLoop() != nullptr);
+#if LLVM_VERSION_MAJOR >= 18
+                // LLVM 17's non-trivial unswitching leaves these descriptor
+                // loads guarded inside the parent loop, so LICM cannot hoist
+                // them.
                 CHECK(accesses(loop->getParentLoop()).descriptor_loads == 0);
+#endif
             }
             CHECK(update_loops > 0);
         }, false, true);

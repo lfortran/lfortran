@@ -123,7 +123,8 @@ rather than maintaining a separate list of packages or CMake flags.
 `pixi.toml` pins every package to an exact version, except zlib and zstd,
 whose versions differ between LLVM versions, so local builds and CI use the
 same direct dependencies. When you change a dependency, pin it to an exact
-version.
+version. CI builds the platform compilers with the same environments and
+`build` task (see [Compiler caches](#compiler-caches)).
 
 Use the Pixi workflow for builds and tests; it supplies the declared
 project dependencies without separate system/global package installation.
@@ -194,6 +195,17 @@ The shared native compiler workflow has two explicit coverage roles:
 Full LLVM-WASM, no-LLVM and MLIR suites belong directly to Quick on every event.
 They are not declared in Exhaustive or its shared compiler workflow, so there
 are no duplicate or skipped Exhaustive copies of these jobs.
+
+To build and test the MLIR backend locally with the MLIR release that Quick
+uses:
+
+```sh
+pixi run -e mlir build -DWITH_MLIR=yes
+pixi run -e mlir integration_tests -b mlir -j8 > mlir.log 2>&1
+```
+
+Use `pixi run -e mlir rebuild` after source edits. This configuration has its
+own `build/mlir` directory; reference tests still require `llvm11`.
 
 The full LLVM-WASM suite runs in two parallel jobs that build the same
 compiler: `Test LLVM 19 WASM` runs the WASI backend (`llvm_wasm`, wasmtime)
@@ -272,7 +284,9 @@ exercise the runtime-enabled Release LLVM 11/19 and macOS LLVM 22 profiles;
 success with the former disabled-runtime flags is not evidence for this change.
 
 The distinct Kokkos/out-of-source and custom-install configurations run
-full suites. Standalone C++ builds, documentation/kernel tests, the
+full suites. The out-of-source job also removes the Prefix `shell` from its
+environment and checks that CMake runs `build0.sh` with Bash, which is how
+builds without Pixi work. Standalone C++ builds, documentation/kernel tests, the
 Docker build/tests, JupyterLite and source packaging remain additional checks.
 
 PRs do not run the Exhaustive workflow at all. For a rare, explicitly
@@ -303,8 +317,23 @@ caches when it closes.
 
 Keep compiler inputs identical between commits. The version comes from
 `git describe` and changes with every commit, so it must not appear in build
-paths: `ci/build.sh` unpacks the versioned source tarball into the fixed
-`lfortran-src/` directory before building.
+paths: `ci/source_tarball.sh` unpacks the versioned source tarball into the
+fixed `lfortran-src/` directory, which the platform builds compile into the
+fixed `build/<environment>/` directory.
+
+The platform builds use the same Pixi environments and `build` task as local
+development. `.github/actions/build-platform` installs and activates
+`llvm<version>` (`prefix-dev/setup-pixi`), creates the source tarball, and
+builds it with
+`LFORTRAN_SOURCE_DIR=lfortran-src pixi run -e llvm<version> build
+-DLFORTRAN_BUILD_ALL=no -DWITH_LSP=yes -DWITH_XEUS=yes`, so the release tarball
+itself is tested. `ci/check_build.sh` then installs it and runs the unit,
+Jupyter kernel and notebook checks. The Pixi environments are not cached:
+each one is about 0.7 GB compressed and would evict compiler caches. Pixi keeps
+the package files' modification times, so ccache's default compiler check
+still hits after every fresh installation. `pixi.toml` pins the compilers, so
+they change only with a deliberate `pixi.toml` update, which invalidates the
+compiler caches once.
 
 The action appends a timestamp to every saved key, so each save on `main` adds
 a new copy. After every Quick or Exhaustive run on `main`,
@@ -630,10 +659,17 @@ Then prepare the environment:
 conda env create -f environment_linux.yml
 conda activate lf
 ```
-Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`):
+Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`; run
+`PYTHON=python3 ./build0.sh` if your system only provides `python3`):
 ```bash
 ./build0.sh
 ```
+Configuring CMake with `-DLFORTRAN_BUILD_ALL=yes` (as `build1.sh` does) runs
+`build0.sh` itself, with the Prefix [`shell`](https://github.com/prefix-dev/shell)
+when it is installed and otherwise with Bash, so a build without Pixi needs
+only Bash. Pass `-DLFORTRAN_SHELL=/path/to/bash` to choose explicitly. CMake
+runs the generators with the first `python3` or `python` found on `PATH`;
+pass `-DLFORTRAN_PYTHON=/path/to/python` to choose explicitly.
 Now you can use our script `./build1.sh` to build in Debug mode:
 ```bash
 ./build1.sh
@@ -839,9 +875,11 @@ The build steps are the same as when building from git:
 ./build1.sh
 ```
 
-As of 2025-11-10, the environment passes the CI tests, provided you tell it where to install the Jupyter kernel:
+To run the CI platform build checks, tell it where to install the Jupyter kernel:
 ```bash
-LFORTRAN_CMAKE_GENERATOR=Ninja CONDA_PREFIX=$(pwd) JUPYTER_PATH=$(pwd)/share/jupyter bash ci/build.sh
+shell ci/source_tarball.sh
+LFORTRAN_SOURCE_DIR=lfortran-src ./build1.sh build -DLFORTRAN_BUILD_ALL=no -DWITH_LSP=yes -DWITH_XEUS=yes -DCMAKE_INSTALL_PREFIX=$(pwd)
+JUPYTER_PATH=$(pwd)/share/jupyter WIN=0 shell ci/check_build.sh build
 ```
 (take note that the Nix shell does not use conda)
 

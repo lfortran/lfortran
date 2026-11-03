@@ -1,0 +1,13 @@
+{
+    "basename": "asr-gpu_kernel_launch_chunk_lanes-9661454",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/gpu_kernel_launch_chunk_lanes.asr",
+    "infile_hash": "d9a09dd13ecf50b521bac75f6dc580bf00c42601942784deef443774",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-gpu_kernel_launch_chunk_lanes-9661454.stderr",
+    "stderr_hash": "d0e069b38348cd5c519aa9c18bf048d1277b337eb351e0362a05a96f",
+    "returncode": 2
+}

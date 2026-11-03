@@ -42,8 +42,12 @@ arguments:
   (before each evaluation of a DO WHILE condition), and the call is a call of
   that temporary, so the call agrees with its callee. The temporary belongs to
   the scope of the statements it is associated in (e.g. a statement function
-  has its own). A procedure with an implicit interface is not a specification
-  function, so it is never referenced in a specification expression.
+  has its own). A call through a procedure-pointer component with an implicit
+  interface (`obj%f(x)`) uses no temporary: the call's `dt` is a
+  `FunctionPointerCast` of the component to the call-site interface, which is
+  also the call's `name`. A procedure with an implicit interface is not a
+  specification function, so it is never referenced in a specification
+  expression.
 * **Procedure actuals and pointer targets.** A procedure passed to a dummy
   procedure, or associated with a procedure pointer, whose type differs from
   its own is cast to the type of the dummy or pointer: to the opaque type,

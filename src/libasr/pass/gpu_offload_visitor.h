@@ -228,16 +228,9 @@ public:
             Vec<ASR::stmt_t*> &out, SymbolTable *var_scope,
             bool scope_has_workspaces);
 
-    bool matmul_operand_aliases_target(ASR::IntrinsicArrayFunction_t *mm,
-            ASR::expr_t *target);
-
-    ASR::expr_t* matmul_temp_section(ASR::expr_t *tmp, ASR::expr_t *target);
-
-    bool declared_constant_dims(ASR::expr_t *e, Vec<ASR::dimension_t> &out);
-
     ASR::expr_t* make_matmul_result_temp(ASR::IntrinsicArrayFunction_t *mm,
             const Location &loc, SymbolTable *var_scope,
-            bool scope_has_workspaces, ASR::expr_t *target = nullptr);
+            bool scope_has_workspaces);
 
     bool intrinsic_array_result_dims(ASR::expr_t *e,
             Vec<ASR::dimension_t> &dims);
@@ -245,11 +238,24 @@ public:
     ASR::dimension_t dim_or_runtime_extent(ASR::expr_t *operand,
             ASR::dimension_t *dims, size_t d);
 
+    // True while rewrite_loop_body_for_kernel lowers the kernel's loop
+    // nest, whose BLOCKs are remapped into the kernel in place.
+    bool lowering_kernel_nest = false;
+
+    // Each bound copy_bound copied, mapped to the node it was first
+    // copied from.
+    std::map<ASR::expr_t*, ASR::expr_t*> bound_copies;
+
+    ASR::expr_t* own_bound(ASR::expr_t *bound);
+
+    ASR::expr_t* copy_bound(ASR::expr_t *bound);
+
+    ASR::expr_t* bound_origin(ASR::expr_t *e);
+
     void inline_intrinsic_matmul(ParallelLoopNest &nest);
 
     ASR::expr_t* index_array_expr(ASR::expr_t *expr,
-            ASR::array_index_t *idx_p, size_t idx_n,
-            ASR::ttype_t *elem_type, const Location &loc);
+            ASR::array_index_t *idx_p, size_t idx_n, const Location &loc);
 
     ASR::IntrinsicArrayFunction_t* find_array_intrinsic_in_expr(
             ASR::expr_t *expr, ASRUtils::IntrinsicArrayFunctions which,
@@ -268,6 +274,8 @@ public:
     void inline_intrinsic_sum(ParallelLoopNest &nest);
 
     void inline_intrinsic_transpose(ParallelLoopNest &nest);
+
+    bool inline_transpose_stmts(ASR::stmt_t **&body, size_t &n_body);
 
     static bool is_int_literal(ASR::expr_t *e, int64_t value);
 
@@ -288,7 +296,8 @@ public:
             ASR::expr_t **extents, size_t n_extents,
             const std::string &prefix);
 
-    ASR::expr_t *self_aliasing_target(ASR::Assignment_t *asgn);
+    ASR::expr_t *self_aliasing_target(ASR::Assignment_t *asgn,
+            bool *in_non_elemental = nullptr);
 
     bool alias_temp_is_fixed_size(ASR::expr_t *target);
 
@@ -468,6 +477,12 @@ public:
     // different blocks in two different scopes.
     std::vector<ASR::symbol_t*> kernel_blocks;
 
+    // The BLOCKs materialize_runtime_alias_blocks made for an assignment
+    // whose target a TRANSPOSE or MATMUL operand reads. The TRANSPOSE
+    // lowering, which takes only the statements of the loop body itself,
+    // takes the statements of these too.
+    std::set<ASR::symbol_t*> non_elemental_alias_blocks;
+
     ASR::stmt_t* copy_loop_stmt(ASR::stmt_t *stmt,
             ASRUtils::ExprStmtDuplicator &dup);
 
@@ -613,6 +628,16 @@ public:
         // the dimensions the width and the height of a tile run along.
         int tiled_arg = -1;
         size_t tile_dims[2] = {0, 0};
+        // The dimensions in the order the kernel numbers the iterations in,
+        // fastest first, and for each dimension the launch may split into
+        // chunks the kernel parameters that hold its bounds (nullptr for
+        // one it never splits), and the product of the constant extents of
+        // the others, or 0 when the launch is never split (see
+        // GpuKernelLaunch.chunk_dimensions).
+        std::vector<size_t> order;
+        std::vector<ASR::symbol_t*> start_parameters;
+        std::vector<ASR::symbol_t*> end_parameters;
+        int64_t chunk_fixed_iterations = 0;
     };
 
     void decline(const ASR::OMPRegion_t &x);

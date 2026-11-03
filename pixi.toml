@@ -10,6 +10,9 @@ platforms = ["osx-arm64", "win-64", "linux-64"]
 ctest = {cmd = 'ctest --test-dir "$LFORTRAN_BUILD_DIR" --output-on-failure', default-environment = "llvm11"}
 tests = {cmd = 'python run_tests.py --require-llvm 11 --compiler-dir "$LFORTRAN_BUILD_DIR/src/bin" --build-dir "$LFORTRAN_BUILD_DIR/reference_tests"', default-environment = "llvm11"}
 integration_tests = {cmd = 'python run_tests.py --build-dir "$LFORTRAN_BUILD_DIR/integration_tests" --compiler-dir "$LFORTRAN_BUILD_DIR/src/bin"', cwd = "integration_tests", default-environment = "llvm11"}
+# Language server tests: build with -DWITH_LSP=yes. Their test packages are
+# imported from the source tree instead of being installed with pip.
+lsp_tests = {cmd = 'pytest tests/server', env = {PYTHONPATH = "$PIXI_PROJECT_ROOT/src/server/tests/src:$PIXI_PROJECT_ROOT/tests/server/src", LFORTRAN_PATH = "$LFORTRAN_BUILD_DIR/src/bin/lfortran"}, default-environment = "llvm11"}
 
 [feature.coarray-reference]
 platforms = ["osx-arm64", "linux-64"]
@@ -45,11 +48,17 @@ llvmdev = "==7.0.1"
 clangdev = "==7.0.1"
 [feature.llvm7.target.win-64.dependencies]
 llvmdev = "==7.0.1"
+[feature.llvm7.target.linux-64.activation.env]
+# Clang 7 and 8 find no GCC installation for the C runtime startup files
+# (crtbegin.o), so LFortran links with the environment's GCC instead.
+LFORTRAN_LINKER = "gcc"
 [feature.llvm8]
 platforms = ["win-64", "linux-64"]
 [feature.llvm8.target.linux-64.dependencies]
 llvmdev = "==8.0.1"
 clangdev = "==8.0.1"
+[feature.llvm8.target.linux-64.activation.env]
+LFORTRAN_LINKER = "gcc"
 [feature.llvm8.target.win-64.dependencies]
 llvmdev = "==8.0.1"
 [feature.llvm9]
@@ -138,13 +147,74 @@ clangdev = "==22.1.0"
 libunwind = "==1.7.2"
 clangdev = "==23.1.0"
 
+# The LLVM WASM backends (llvm_wasm, llvm_wasm_emcc), as Quick's "Test LLVM 19
+# WASM" jobs. Run `pixi run -e llvm19-wasm wasm-tools` once to download their
+# toolchains (ci/wasm_tools.sh), then build with -DWITH_TARGET_WASM=yes.
+[feature.llvm-wasm]
+platforms = ["linux-64"]
+[feature.llvm-wasm.activation.env]
+LFORTRAN_WASM_TOOLS = "$PIXI_PROJECT_ROOT/.wasm-tools"
+WASI_SDK_PATH = "$PIXI_PROJECT_ROOT/.wasm-tools/wasi-sdk"
+EMSDK_PATH = "$PIXI_PROJECT_ROOT/.wasm-tools/emsdk"
+# Select wasmtime 19's old command line, which LFortran and the tests use.
+WASMTIME_NEW_CLI = "0"
+[feature.llvm-wasm.activation]
+scripts = ["ci/wasm_tools_activate.sh"]
+[feature.llvm-wasm.tasks]
+wasm-tools = {cmd = "bash ci/wasm_tools.sh"}
+
+# The MLIR backend, with the MLIR release of Quick's MLIR job. Build it with
+# `pixi run -e mlir build -DWITH_MLIR=yes` (see doc/src/installation.md).
+[feature.mlir]
+platforms = ["linux-64"]
+[feature.mlir.dependencies]
+llvmdev = "==19.1.6"
+mlir = "==19.1.6"
+clangdev = "==19.1.6"
+libunwind = "==1.7.2"
+
+# The third-party applications of ci/test_third_party_codes.sh, which the
+# Exhaustive compatibility jobs run with the apps<N> environments.
+[feature.apps]
+platforms = ["osx-arm64", "linux-64"]
+[feature.apps.dependencies]
+fypp = "==3.3"
+openblas = "==0.3.34"
+libblas = {version = "==3.11.0", build = "*openblas"}
+liblapack = {version = "==3.11.0", build = "*openblas"}
+
+# The MPI applications run on Linux only. Newer LLVM builds need a newer
+# libxml2 than OpenMPI 5.0.6 allows, so this is a separate feature.
+[feature.mpi]
+platforms = ["linux-64"]
+[feature.mpi.dependencies]
+openmpi = "==5.0.6"
+
+# The LAPACK application needs CMake >= 3.31, which recognizes LFortran. The
+# build environments pin 3.29.1, which every LLVM environment can install.
+[feature.cmake331]
+platforms = ["osx-arm64", "linux-64"]
+[feature.cmake331.dependencies]
+cmake = "==3.31.2"
+
+# The documentation (doc/build.py), which Exhaustive's "Documentation" job
+# builds with the docs environment after installing the Jupyter kernel.
+[feature.docs]
+platforms = ["osx-arm64", "linux-64"]
+[feature.docs.dependencies]
+sphinx = "==4.5.0"
+nbsphinx = "==0.8.9"
+myst-parser = "==0.18.0"
+sphinx-copybutton = "==0.5.0"
+sphinx-material = "==0.0.35"
+
 # Dependencies to build the project to be installed for the target architecture.
 # host == target
 [feature.build]
 platforms = ["osx-arm64", "win-64", "linux-64"]
 
 [feature.build.dependencies]
-pytest = "==8.1.1"
+pytest = "==9.2.0"
 jupyter = "==1.0.0"
 xeus = "==6.0.6"
 xeus-zmq = "==4.0.2"
@@ -154,7 +224,8 @@ jupyter_kernel_test = "==0.7.0"
 nbconvert = "==7.17.2"
 pandoc = "==3.12.1"
 numpy = "==1.26.4"
-rapidjson = "==1.1.0"
+# 1.1.0 headers fail to compile with GCC >= 14 (-Wtemplate-body).
+rapidjson = "==1.1.0.post20250205"
 # Different LLVM versions require different zlib and zstd versions.
 zlib = "*"
 zstd-static = ">=1.5.6,<2"
@@ -162,9 +233,6 @@ python = "==3.12"
 cmake = "==3.29.1"
 ninja = "==1.11.1"
 re2c = "==3.1"
-# Cross-platform Bash-like shell (https://github.com/prefix-dev/shell) that
-# runs build0.sh and build1.sh on every platform, including native Windows.
-shell = "==0.3.0"
 
 [feature.build.target.linux.dependencies]
 c-compiler = "==2.0.0"
@@ -200,6 +268,16 @@ PATH = "%PIXI_PROJECT_ROOT%\\build\\%PIXI_ENVIRONMENT_NAME%\\src\\bin;%PATH%"
 # restriction below applies: the wasm-host environment adds the
 # emscripten-wasm32 platform to the workspace, and an environment is only
 # solved for the platforms shared by all of its features.
+# Cross-platform Bash-compatible shell (https://github.com/prefix-dev/shell)
+# that runs build0.sh and build1.sh on every platform, including native
+# Windows. Builds without Pixi fall back to Bash (see CMakeLists.txt); the
+# llvm11-noshell environment leaves it out to test that fallback.
+[feature.shell]
+platforms = ["osx-arm64", "win-64", "linux-64"]
+
+[feature.shell.dependencies]
+shell = "==0.3.0"
+
 [feature.native]
 platforms = ["osx-arm64", "win-64", "linux-64"]
 
@@ -220,6 +298,12 @@ cmake = "==3.29.1"
 ninja = "==1.11.1"
 # The LSP tests install their test packages with pip.
 pip = "==26.2.2"
+# The LSP tests (lsp_tests task) and their test packages' dependencies.
+pytest-timeout = "==2.4.0"
+attrs = "==24.3.0"
+cattrs = "==24.1.2"
+lsprotocol = "==2023.0.1"
+psutil = "==7.0.0"
 
 # The direct WASM backend runs its integration tests with Node. No Node build
 # works with the older zlib that LLVM <= 10 and 12 require, so only the LLVM 11
@@ -232,10 +316,16 @@ nodejs = "==18.20.4"
 
 [feature.test.target.linux.dependencies]
 gfortran = "==15.3.0"
+# Caffeine (ci/test_caffeine.sh) and the third-party applications build with fpm.
+fpm = "==0.12.0"
 make = "==4.4.1"
 
 [feature.test.target.osx.dependencies]
 gfortran = "==16.2.0"
+# GNU timeout, which the LSP test step runs.
+coreutils = "==9.12"
+# fpm 0.12.0 on macOS cannot be installed with GFortran 16.
+fpm = "==0.13.0"
 make = "==4.4.1"
 
 [feature.build.target.unix.dependencies]
@@ -283,6 +373,15 @@ shell = "==0.3.0"
 
 [feature.wasm-build.target.unix.dependencies]
 bison = "==3.4"
+# "Build LFortran to WASM" links lfortran.js with Makefiles (see that job).
+make = "==4.4.1"
+
+# wasm-build0.sh builds a native lfortran (without LLVM) for the runtime .mod
+# files. The plain gcc/gxx packages add no activation flags, which em++ would
+# otherwise inherit; macOS uses Xcode's Clang.
+[feature.wasm-build.target.linux-64.dependencies]
+gcc = "==15.3.0"
+gxx = "==15.3.0"
 
 [feature.wasm-host]
 channels = [
@@ -310,20 +409,23 @@ jupyterlite-xeus = "==5.1.0"
 [feature.wasm-build.tasks.wasm-host-env]
 cmd = "pixi install -e wasm-host --platform emscripten-wasm32"
 
+# The wasm-build tasks name their environment in depends-on: `pixi run -e lite
+# lab-build` would otherwise look their dependencies up in the lite environment.
+
 # Build the runtime .mod files with a native lfortran and install them into the
 # wasm-host environment. Only needed again after changes under src/runtime/.
 # It rebuilds a native lfortran from scratch, so it is cached on its inputs.
 [feature.wasm-build.tasks.wasm-mods]
 cmd = "./wasm-build0.sh"
 env = { PREFIX = "$PIXI_PROJECT_ROOT/.pixi/envs/wasm-host" }
-depends-on = ["wasm-host-env"]
+depends-on = [{ task = "wasm-host-env", environment = "wasm-build" }]
 inputs = ["src/runtime/**", "wasm-build0.sh", "build0.sh", "grammar/**"]
 
 # Cross-compile LFortran and the xlfortran kernel to WebAssembly.
 [feature.wasm-build.tasks.wasm-kernel]
 cmd = "./wasm-build1.sh"
 env = { PREFIX = "$PIXI_PROJECT_ROOT/.pixi/envs/wasm-host" }
-depends-on = ["wasm-mods"]
+depends-on = [{ task = "wasm-mods", environment = "wasm-build" }]
 inputs = [
     "src/**/*.cpp",
     "src/**/*.h",
@@ -345,7 +447,7 @@ outputs = [
 [feature.wasm-build.tasks.wasm-test]
 cmd = "node test_lfortran.js"
 cwd = "build-wasm/src/lfortran/tests"
-depends-on = ["wasm-kernel"]
+depends-on = [{ task = "wasm-kernel", environment = "wasm-build" }]
 
 # Assemble the JupyterLite site into dist/, embedding the kernel and the demo
 # notebooks. default_channels has to be given explicitly: jupyterlite-xeus
@@ -372,25 +474,37 @@ depends-on = ["lab-build"]
 
 [environments]
 default = {features = ["native"]}
-llvm7 = {features = ["llvm7", "build", "test"]}
-llvm8 = {features = ["llvm8", "build", "test"]}
-llvm9 = {features = ["llvm9", "build", "test"]}
-llvm10 = {features = ["llvm10", "build", "test"]}
-llvm11 = {features = ["llvm11", "build", "test", "node"]}
-llvm12 = {features = ["llvm12", "build", "test"]}
-llvm13 = {features = ["llvm13", "build", "test"]}
-llvm14 = {features = ["llvm14", "build", "test"]}
-llvm15 = {features = ["llvm15", "build", "test"]}
-llvm16 = {features = ["llvm16", "build", "test"]}
-llvm17 = {features = ["llvm17", "build", "test"]}
-llvm18 = {features = ["llvm18", "build", "test"]}
-llvm19 = {features = ["llvm19", "build", "test"]}
-llvm20 = {features = ["llvm20", "build", "test"]}
-llvm21 = {features = ["llvm21", "build", "test"]}
-llvm22 = {features = ["llvm22", "build", "test"]}
-llvm23 = {features = ["llvm23", "build", "test"]}
-test = {features = ["llvm11", "build", "test", "node"]}
+llvm7 = {features = ["llvm7", "build", "shell", "test"]}
+llvm8 = {features = ["llvm8", "build", "shell", "test"]}
+llvm9 = {features = ["llvm9", "build", "shell", "test"]}
+llvm10 = {features = ["llvm10", "build", "shell", "test"]}
+llvm11 = {features = ["llvm11", "build", "shell", "test", "node"]}
+llvm12 = {features = ["llvm12", "build", "shell", "test"]}
+llvm13 = {features = ["llvm13", "build", "shell", "test"]}
+llvm14 = {features = ["llvm14", "build", "shell", "test"]}
+llvm15 = {features = ["llvm15", "build", "shell", "test"]}
+llvm16 = {features = ["llvm16", "build", "shell", "test"]}
+llvm17 = {features = ["llvm17", "build", "shell", "test"]}
+llvm18 = {features = ["llvm18", "build", "shell", "test"]}
+llvm19 = {features = ["llvm19", "build", "shell", "test"]}
+llvm20 = {features = ["llvm20", "build", "shell", "test"]}
+llvm21 = {features = ["llvm21", "build", "shell", "test"]}
+llvm22 = {features = ["llvm22", "build", "shell", "test"]}
+llvm23 = {features = ["llvm23", "build", "shell", "test"]}
+mlir = {features = ["mlir", "build", "shell", "test"]}
+# Builds without LLVM (-DWITH_LLVM=no), as Quick's "Test without LLVM Backend".
+nollvm = {features = ["build", "shell", "test"]}
+llvm19-wasm = {features = ["llvm19", "build", "shell", "test", "node", "llvm-wasm"]}
+apps11 = {features = ["llvm11", "build", "shell", "test", "node", "apps", "mpi"]}
+apps19 = {features = ["llvm19", "build", "shell", "test", "apps", "mpi"]}
+apps22 = {features = ["llvm22", "build", "shell", "test", "apps"]}
+cmake331 = {features = ["cmake331"], no-default-feature = true}
+docs = {features = ["llvm11", "build", "shell", "test", "docs"]}
+test = {features = ["llvm11", "build", "shell", "test", "node"]}
 wasm-build = {features = ["wasm-build"], no-default-feature = true}
 wasm-host = {features = ["wasm-host"], no-default-feature = true}
 lite = {features = ["lite"], no-default-feature = true}
 coarray-reference = {features = ["native", "coarray-reference"], no-default-feature = true}
+# The build without Pixi's shell, as Exhaustive's "Check Out-of-Source Debug
+# build": CMake runs build0.sh with Bash. The build tasks need shell.
+llvm11-noshell = {features = ["llvm11", "build", "test"]}

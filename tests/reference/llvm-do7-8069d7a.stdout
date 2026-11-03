@@ -8,28 +8,26 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca i32, align 4
   %i = alloca i32, align 4
-  store i32 0, i32* %i, align 4
-  br label %loop.head
+  store i32 1, i32* %i, align 4
+  br i1 true, label %do_loop.body, label %do_loop.end
 
-loop.head:                                        ; preds = %loop.body, %.entry
-  %2 = load i32, i32* %i, align 4
-  %3 = add i32 %2, 1
-  %4 = icmp sle i32 %3, 10
-  br i1 %4, label %loop.body, label %loop.end
-
-loop.body:                                        ; preds = %loop.head
-  %5 = load i32, i32* %i, align 4
-  %6 = add i32 %5, 1
-  store i32 %6, i32* %i, align 4
+do_loop.body:                                     ; preds = %do_loop.head, %.entry
   store i32 5, i32* %call_arg_value, align 4
-  %7 = call i32 @do7.f(i32* %call_arg_value)
-  store i32 %7, i32* %a, align 4
-  br label %loop.head
+  %2 = call i32 @do7.f(i32* %call_arg_value)
+  store i32 %2, i32* %a, align 4
+  br label %do_loop.head
 
-loop.end:                                         ; preds = %loop.head
+do_loop.head:                                     ; preds = %do_loop.body
+  %3 = load i32, i32* %i, align 4
+  %4 = add nsw i32 %3, 1
+  store i32 %4, i32* %i, align 4
+  %5 = icmp eq i32 %3, 10
+  br i1 %5, label %do_loop.end, label %do_loop.body
+
+do_loop.end:                                      ; preds = %do_loop.head, %.entry
   br label %return
 
-return:                                           ; preds = %loop.end
+return:                                           ; preds = %do_loop.end
   br label %FINALIZE_SYMTABLE_do7
 
 FINALIZE_SYMTABLE_do7:                            ; preds = %return

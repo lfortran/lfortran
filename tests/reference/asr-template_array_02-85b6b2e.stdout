@@ -294,7 +294,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        ())
+                                                        (IntegerConstant 1 (Integer 4) Decimal))
                                                         [(Assignment
                                                             (Var 14 r)
                                                             (FunctionCall
@@ -543,7 +543,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        ())
+                                                        (IntegerConstant 1 (Integer 4) Decimal))
                                                         [(Assignment
                                                             (Var 15 r)
                                                             (FunctionCall
@@ -1382,7 +1382,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        ())
+                                                        (IntegerConstant 1 (Integer 4) Decimal))
                                                         [(Assignment
                                                             (Var 17 r)
                                                             (FunctionCall
@@ -1598,7 +1598,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        ())
+                                                        (IntegerConstant 1 (Integer 4) Decimal))
                                                         [(Assignment
                                                             (Var 18 r)
                                                             (FunctionCall
@@ -1714,7 +1714,7 @@
                                             (Integer 4)
                                             (IntegerConstant 10 (Integer 4) Decimal)
                                         )
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(Assignment
                                             (ArrayItem
                                                 (Var 16 a)

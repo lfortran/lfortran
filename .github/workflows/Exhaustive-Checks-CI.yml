@@ -60,7 +60,7 @@ jobs:
           save-cache: 'false'
 
       - name: Test full platform coverage
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
@@ -72,6 +72,9 @@ jobs:
             fi
             bash ci/test_llvm_integration.sh --platform
 
+  # Besides the out-of-source configuration, this job builds the way a user
+  # without Pixi does: the Prefix `shell` is removed from the environment, so
+  # CMake must run build0.sh with Bash, and the CI scripts run with Bash too.
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
@@ -82,12 +85,23 @@ jobs:
           fetch-depth: 0
           path: src
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v3.2.1
         with:
-          micromamba-version: '1.5.10-0'
+          micromamba-version: '2.10.0-0'
           environment-file: src/ci/environment_linux.yml
+          # The last step removes src/; the post step reads the environment
+          # name from the file unless it is given here.
+          environment-name: lf
           create-args: >-
             python=3.10
+
+      - name: Remove the Prefix shell
+        shell: bash -e -l {0}
+        run: |
+            micromamba remove -y -n lf shell
+            if command -v shell; then
+                echo "shell is still installed" && exit 1
+            fi
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -98,7 +112,7 @@ jobs:
       - name: Build Linux
         shell: bash -e -l {0}
         run: |
-            ( cd src && ./build0.sh )
+            # No explicit ./build0.sh: CMake must run it itself, with Bash.
             export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"
             cmake -S src -B builddir -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
@@ -113,6 +127,7 @@ jobs:
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            grep '^LFORTRAN_SHELL:FILEPATH=.*/bash$' builddir/CMakeCache.txt
 
             cmake --build builddir  -j16 --target install
 
@@ -135,7 +150,7 @@ jobs:
         shell: bash -e -l {0}
         working-directory: src
         run: |
-            shell ci/test_cpp_version.sh
+            bash ci/test_cpp_version.sh
 
       - name: Test Moved Installation
         shell: bash -e -l {0}
@@ -162,60 +177,66 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.2
+      # Test Moved Build and Installation moves the whole checkout. Keep the
+      # Pixi environment, and so Kokkos and the compilers, where it was.
+      - name: Detach the Pixi environment from the checkout
+        shell: bash -e {0}
+        run: |
+          printf 'detached-environments = "%s"\n' "$RUNNER_TEMP/pixi-envs" \
+            > "$RUNNER_TEMP/pixi-config.toml"
+          echo "PIXI_CONFIG_FILE=$RUNNER_TEMP/pixi-config.toml" >> "$GITHUB_ENV"
+
+      - uses: prefix-dev/setup-pixi@v0.11.3
         with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
+          pixi-version: v0.83.0
+          environments: llvm11
+          activate-environment: llvm11
+          cache: false
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-ubuntu-latest
+          # The Pixi builds share no cache entries with the micromamba ones.
+          key: ${{ github.job }}-pixi-ubuntu-latest
           save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Linux
-        shell: bash -e -l {0}
+        shell: bash -e {0}
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: sccache
+          CMAKE_CXX_COMPILER_LAUNCHER: sccache
         run: |
-            ./build0.sh
             export CXXFLAGS="-Werror"
             export CFLAGS="-Werror"
-            cmake . -GNinja \
+            pixi run -e llvm11 build \
               -DCMAKE_BUILD_TYPE=Release \
-              -DWITH_LLVM=yes \
               -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DWITH_RUNTIME_STACKTRACE=yes \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DWITH_INTERNAL_ALLOC_CHECK=no \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_INSTALL_BINDIR=bin/tastic \
               -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
               -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
-              -DCMAKE_INSTALL_MANDIR=man/O/man \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
+              -DCMAKE_INSTALL_MANDIR=man/O/man
+            cmake --build build/llvm11 --target install
 
       - name: Test Linux
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         run: |
-            ctest
-            ./run_tests.py
-            ./run_tests.py -vh
-            cd integration_tests
-            ./run_tests.py -m
+            pixi run -e llvm11 ctest
+            pixi run -e llvm11 tests
+            pixi run -e llvm11 tests -vh
             NPROC=$(nproc)
-            ./run_tests.py -b llvm -j${NPROC}
-            ./run_tests.py -b llvm -f -j${NPROC}
-            ./run_tests.py -b llvm_single_invocation -j${NPROC}
-            ./run_tests.py -b llvm --std=f23 -j${NPROC}
-            ./run_tests.py -b llvm -f --std=f23 -j${NPROC}
+            pixi run -e llvm11 integration_tests -m
+            pixi run -e llvm11 integration_tests -b llvm -j${NPROC}
+            pixi run -e llvm11 integration_tests -b llvm -f -j${NPROC}
+            pixi run -e llvm11 integration_tests -b llvm_single_invocation -j${NPROC}
+            pixi run -e llvm11 integration_tests -b llvm --std=f23 -j${NPROC}
+            pixi run -e llvm11 integration_tests -b llvm -f --std=f23 -j${NPROC}
 
       - name: Test Installation
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         run: |
             test -x inst/bin/tastic/lfortran
             test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
@@ -224,10 +245,10 @@ jobs:
             test -f inst/man/O/man/man1/lfortran.1
 
       - name: Test Moved Build and Installation
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         run: |
             python3 ci/test_runtime_headers.py \
-              --source-dir . --build-dir . --install-prefix inst \
+              --source-dir . --build-dir build/llvm11 --install-prefix inst \
               --install-bindir bin/tastic --kokkos-dir "$CONDA_PREFIX" --relocate
 
 
@@ -243,9 +264,9 @@ jobs:
 #      - uses: actions/checkout@v7
 #        with:
 #          fetch-depth: 0
-#      - uses: prefix-dev/setup-pixi@v0.8.1
+#      - uses: prefix-dev/setup-pixi@v0.11.3
 #        with:
-#          pixi-version: v0.37.0
+#          pixi-version: v0.83.0
 #          cache: true
 #      - name: LLVM 10
 #        run: |
@@ -279,24 +300,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.2
+      - uses: prefix-dev/setup-pixi@v0.11.3
         with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
+          pixi-version: v0.83.0
+          environments: llvm11
+          cache: false
 
+      # Generates the sources and the man page, then creates the tarball in
+      # dist/ (and unpacks it, which the platform builds use).
       - name: Upload Tarball
-        shell: bash -e -l {0}
-        run: |
-          ./build0.sh
-          lfortran_version=$(<version)
-          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
-          ci/create_source_tarball.sh $lfortran_version
+        shell: bash -e {0}
+        run: pixi run -e llvm11 shell ci/source_tarball.sh
 
       - name: Upload Tarball to Release
         if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') }}
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         run: |
           ci/upload_tarball_to_release.sh
         env:
@@ -311,45 +329,44 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v2.0.2
+      # The docs environment adds Sphinx to the LLVM 11 build environment.
+      - uses: prefix-dev/setup-pixi@v0.11.3
         with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_docs_linux.yml
+          pixi-version: v0.83.0
+          environments: docs
+          activate-environment: docs
+          cache: false
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-ubuntu-latest
+          # The Pixi builds share no cache entries with the micromamba ones.
+          key: ${{ github.job }}-pixi-ubuntu-latest
           save: ${{ github.ref == 'refs/heads/main' }}
 
+      # doc/build.py runs the notebooks with the installed Jupyter kernel.
       - name: Build Kernel
-        shell: bash -e -l {0}
+        shell: bash -e {0}
+        env:
+          CMAKE_C_COMPILER_LAUNCHER: sccache
+          CMAKE_CXX_COMPILER_LAUNCHER: sccache
         run: |
-          ./build0.sh
           export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"
-          cmake . -GNinja \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DWITH_LLVM=yes \
-            -DWITH_LSP=yes \
-            -DWITH_XEUS=yes \
-            -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
-            -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-          ninja install
-          ctest --output-on-failure
+          pixi run -e docs build -DWITH_LSP=yes -DWITH_XEUS=yes \
+            -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
+          cmake --build build/docs --target install
+          pixi run -e docs ctest
           jupyter kernelspec list --json
 
       - name: Build Docs
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         working-directory: doc
         run: |
           $(command -v python) build.py
 
       - name: Upload Docs
         if: github.event_name == 'push'
-        shell: bash -e -l {0}
+        shell: bash -e {0}
         working-directory: doc
         run: |
           ../ci/upload_docs.sh
@@ -402,59 +419,25 @@ jobs:
     timeout-minutes: 50
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash -e {0}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Install build0 prerequisites
-        uses: mamba-org/setup-micromamba@v2
+      # The tasks install the wasm-host environment (emscripten-wasm32) too.
+      - uses: prefix-dev/setup-pixi@v0.11.3
         with:
-          environment-file: ci/environment_linux.yml
-          init-shell: bash
-          environment-name: lf
+          pixi-version: v0.83.0
+          environments: wasm-build lite
+          cache: false
 
-      - name: Generate parser/ASR headers (build0.sh)
-        run: ./build0.sh
-
-      - name: Install WASM build environment
-        run: micromamba create -f environment-wasm-build.yml -y
-
-      - name: Create WASM host environment
-        run: |
-          set -ex
-          micromamba create -f environment-wasm-host.yml -y \
-            --platform=emscripten-wasm32 \
-            -c https://prefix.dev/emscripten-forge-4x \
-            -c https://prefix.dev/conda-forge
-          echo "PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host" >> $GITHUB_ENV
-
-      - name: Build native runtime .mod files
-        run: ./wasm-build0.sh
-
-      - name: Build WASM kernel
-        run: micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
-
-      - name: Run WASM evaluator tests
-        run: |
-          set -ex
-          cd build-wasm/src/lfortran/tests
-          micromamba run -n xeus-lfortran-wasm-build \
-            node test_lfortran.js
+      # wasm-mods, wasm-kernel and wasm-test of pixi.toml (doc/src/jupyterlite.md).
+      - name: Build the WASM kernel and run the WASM evaluator tests
+        run: pixi run -e wasm-build wasm-test
 
       - name: Build JupyterLite site
-        run: |
-          set -ex
-          micromamba create -n xeus-lite-host jupyter_server jupyterlite-xeus -c conda-forge -y
-          micromamba run -n xeus-lite-host jupyter lite build \
-              --XeusAddon.prefix=${{ env.PREFIX }} \
-              --contents share/lfortran/nb/Demo1.ipynb \
-              --contents share/lfortran/nb/Demo2.ipynb \
-              --contents share/lfortran/nb/Variables.ipynb \
-              --contents share/lfortran/nb/Mandelbrot.ipynb \
-              --contents share/lfortran/nb/Rich_Display.ipynb \
-              --output-dir dist
+        run: pixi run -e lite lab-build
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v5

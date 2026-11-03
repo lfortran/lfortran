@@ -161,9 +161,7 @@ kernel void __lfortran_gpu_kernel_0(
                     value = (value + (((float)j) *   5.00000000000000000e-01));
                 }
             }
-            j = (10 - (-(2)));
-            while (((j + (-(2))) >= 2)) {
-                j = (j + (-(2)));
+            for (j = 10; j >= 2; j -= 2) {
                 value = (value + (((float)j) *   1.25000000000000000e-01));
             }
             result[((int)(i__dc) - (1))] = value;

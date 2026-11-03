@@ -1,5 +1,6 @@
 #include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/codegen/asr_to_gpu_c.h>
+#include <libasr/pass/gpu_decline.h>
 
 namespace LCompilers {
 
@@ -13,9 +14,13 @@ struct CudaDialect {
     // Whether to emit the extra shims the CPU emulation needs. The real CUDA
     // output is left untouched.
     bool emulate_cpu = false;
+    // The integer kind element offsets are computed in
+    // (GpuDeviceCapabilities::offset_kind).
+    int element_offset_kind = 4;
 
-    CudaDialect(bool emit_registrar_, bool emulate_cpu_)
-        : emit_registrar(emit_registrar_), emulate_cpu(emulate_cpu_) {}
+    CudaDialect(bool emit_registrar_, bool emulate_cpu_, int offset_kind_)
+        : emit_registrar(emit_registrar_), emulate_cpu(emulate_cpu_),
+          element_offset_kind(offset_kind_) {}
 
     // CUDA has one flat address space for global memory, so a pointer into it
     // needs no qualifier at all; only the two special spaces are named.
@@ -31,6 +36,13 @@ struct CudaDialect {
 
     std::string real_type(int kind) const {
         return (kind == 8) ? "double" : "float";
+    }
+
+    // The integer kind an element's offset in an array is computed in:
+    // 8 with --descriptor-index-64, the flag that selects 64-bit array
+    // indexing, and 4 otherwise, which is cheaper to compute in.
+    int offset_kind() const {
+        return element_offset_kind;
     }
 
     void emit_prologue(std::stringstream &src) const {
@@ -122,6 +134,19 @@ struct CudaDialect {
         return "unsigned int";
     }
 
+    // The bits of `value` read as a `type` of the same width: a real of
+    // kind `kind` when `to_real`, else an integer of that kind. The CPU
+    // emulation defines these intrinsics in cuda_cpu_device.h.
+    std::string bit_cast(const std::string & /*type*/, bool to_real,
+            int kind, const std::string &value) const {
+        if (kind == 8) {
+            return std::string(to_real ? "__longlong_as_double("
+                : "__double_as_longlong(") + value + ")";
+        }
+        return std::string(to_real ? "__int_as_float(" : "__float_as_int(")
+            + value + ")";
+    }
+
     // A relaxed atomic add to an `int` in device memory, giving the old
     // value. The CPU emulation defines atomicAdd in cuda_cpu_device.h.
     std::string atomic_fetch_add(const std::string &address,
@@ -211,7 +236,8 @@ Result<std::string> asr_to_cuda(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, CompilerOptions &co, bool emit_registrar)
 {
     ASRToGpuCVisitor<CudaDialect> v(co,
-        CudaDialect(emit_registrar, co.gpu_cpu_emulation));
+        CudaDialect(emit_registrar, co.gpu_cpu_emulation,
+            gpu_device_capabilities(co.po).offset_kind));
     try {
         v.visit_TranslationUnit(asr);
     } catch (const CodeGenError &e) {

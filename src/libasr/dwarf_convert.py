@@ -152,7 +152,10 @@ class Parser:
             addresses.append([address, line, column, file_id])
             self.line = self.file.readline()
 
-        self.line = self.file.readline()
+        # llvm-dwarfdump 7 and 8 start the next table right after the rows,
+        # without the blank line that newer versions print.
+        if not self.line.startswith("debug_line"):
+            self.line = self.file.readline()
 
         d = DebugLine(include_directories, file_names, addresses)
         return d

@@ -286,7 +286,6 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--disable-implicit-argument-casting", disable_implicit_argument_casting, "Disable implicit argument casting")->group(group_language_options);
         app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting")->group(group_language_options);
         app.add_flag("--logical-short-circuit", compiler_options.po.logical_short_circuit, "Short-circuit evaluation of logical .and./.or. (permitted, not required, by the standard)")->group(group_language_options);
-        app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop")->group(group_language_options);
         app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required")->group(group_language_options);
         app.add_flag("--coarray", compiler_options.po.coarray, "Enable coarray")->group(group_language_options);
 
@@ -340,6 +339,12 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file")->group(group_pass_transformation_options);
         app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file")->group(group_pass_transformation_options);
         app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass")->group(group_pass_transformation_options);
+        app.add_option("--internal-procedure-thunks",
+            compiler_options.po.internal_procedure_thunks,
+            "Number of activations of a host that can hold a procedure value of "
+            "one of its internal procedures at the same time")
+            ->check(CLI::Range(int64_t(1), int64_t(1000000)))
+            ->capture_default_str()->group(group_pass_transformation_options);
 
         // Backend and code generation-related flags
         app.add_option("--backend", opts.arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran, mlir)")->capture_default_str()->group(group_backend_codegen_options);
@@ -368,6 +373,8 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("--gpu-loop-transforms", compiler_options.po.gpu_loop_transforms, "Loop transformations applied to device loops before offloading: all, none, or a comma separated list of fuse, swap, split, jam, skew")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--gpu-cache-bytes", compiler_options.po.gpu_cache_bytes, "The size in bytes of the device's last-level cache that the device loop transformations assume (default: the size the device reports at run time)")->group(group_backend_codegen_options);
         app.add_option("--gpu-split-min-iterations", compiler_options.po.gpu_split_min_iterations, "The fewest iterations of a device loop that index-set splitting splits when the loop runs; smaller loops run as written (0: split every loop that has an interior)")->capture_default_str()->group(group_backend_codegen_options);
+        // For tests only, so it is not listed in --help.
+        app.add_option("--gpu-chunk-limit", compiler_options.po.gpu_chunk_limit, "The most iterations one launch of a device kernel runs; a larger launch runs in chunks of at most this many")->check(CLI::Range(int64_t(1), int64_t(2147483647)))->group("");
 
         // Symbol and lookup-related flags
         app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);
@@ -506,7 +513,6 @@ namespace LCompilers::CommandLineInterface {
             // legacy options
             compiler_options.fixed_form = true;
             compiler_options.legacy_array_sections = true;
-            compiler_options.use_loop_variable_after_loop = true;
             compiler_options.separate_compilation = true;
         } else {
             throw lc::LCompilersException(

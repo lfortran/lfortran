@@ -68,7 +68,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -449,53 +449,83 @@
                         (IntegerCompare
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (GpuBlockIndex
-                                        0
-                                        (Integer 4)
+                                    (Cast
+                                        (GpuBlockIndex
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
                                         ()
                                     )
                                     Mul
-                                    (GpuBlockSize
+                                    (Cast
+                                        (GpuBlockSize
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
+                                        ()
+                                    )
+                                    (Integer 8)
+                                    ()
+                                )
+                                Add
+                                (Cast
+                                    (GpuThreadIndex
                                         0
                                         (Integer 4)
                                         ()
                                     )
-                                    (Integer 4)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
                                     ()
                                 )
-                                Add
-                                (GpuThreadIndex
-                                    0
-                                    (Integer 4)
-                                    ()
-                                )
-                                (Integer 4)
+                                (Integer 8)
                                 ()
                             )
                             GtE
                             (IfExp
                                 (IntegerCompare
-                                    (Var 5 __loop_end_0)
+                                    (Cast
+                                        (Var 5 __loop_end_0)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
+                                        ()
+                                    )
                                     GtE
-                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 8) Decimal)
                                     (Logical 4)
                                     ()
                                 )
                                 (IntegerBinOp
                                     (IntegerBinOp
-                                        (Var 5 __loop_end_0)
+                                        (Cast
+                                            (Var 5 __loop_end_0)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
                                         Sub
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
                                         ()
                                     )
                                     Add
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Integer 4)
+                                    (IntegerConstant 1 (Integer 8) Decimal)
+                                    (Integer 8)
                                     ()
                                 )
-                                (IntegerConstant 0 (Integer 4) Decimal)
-                                (Integer 4)
+                                (IntegerConstant 0 (Integer 8) Decimal)
+                                (Integer 8)
                                 ()
                             )
                             (Logical 4)
@@ -508,27 +538,45 @@
                         (Var 5 __flat_idx)
                         (IntegerBinOp
                             (IntegerBinOp
-                                (GpuBlockIndex
-                                    0
-                                    (Integer 4)
+                                (Cast
+                                    (GpuBlockIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
                                     ()
                                 )
                                 Mul
-                                (GpuBlockSize
+                                (Cast
+                                    (GpuBlockSize
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
+                                    ()
+                                )
+                                (Integer 8)
+                                ()
+                            )
+                            Add
+                            (Cast
+                                (GpuThreadIndex
                                     0
                                     (Integer 4)
                                     ()
                                 )
-                                (Integer 4)
+                                IntegerToInteger
+                                (Integer 8)
+                                ()
                                 ()
                             )
-                            Add
-                            (GpuThreadIndex
-                                0
-                                (Integer 4)
-                                ()
-                            )
-                            (Integer 4)
+                            (Integer 8)
                             ()
                         )
                         ()
@@ -539,11 +587,17 @@
                     )
                     (Assignment
                         (Var 5 i__dc)
-                        (IntegerBinOp
-                            (Var 5 __flat_idx)
-                            Add
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                        (Cast
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Add
+                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (Integer 8)
+                                ()
+                            )
+                            IntegerToInteger
                             (Integer 4)
+                            ()
                             ()
                         )
                         ()
@@ -705,7 +759,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -782,32 +836,6 @@
                                     []
                                     ()
                                 ),
-                            __libasr__created__var__0__idl_save_:
-                                (Variable
-                                    2
-                                    __libasr__created__var__0__idl_save_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
                             __libasr__created__var__1__array_constructor_:
                                 (Variable
                                     2
@@ -826,32 +854,6 @@
                                             Global
                                         )
                                     )
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                    ()
-                                ),
-                            __libasr__created__var__1__idl_save_:
-                                (Variable
-                                    2
-                                    __libasr__created__var__1__idl_save_
-                                    []
-                                    Local
-                                    ()
-                                    ()
-                                    Default
-                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -988,6 +990,58 @@
                                     []
                                     ()
                                 ),
+                            lfortran_implied_do_i:
+                                (Variable
+                                    2
+                                    lfortran_implied_do_i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            lfortran_implied_do_i1:
+                                (Variable
+                                    2
+                                    lfortran_implied_do_i1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             n:
                                 (Variable
                                     2
@@ -1101,27 +1155,51 @@
                         (Var 2 __gpu_iteration_count)
                         (IfExp
                             (IntegerCompare
-                                (Var 2 __gpu_loop_end)
+                                (Cast
+                                    (Var 2 __gpu_loop_end)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
+                                    ()
+                                )
                                 GtE
-                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Cast
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    (IntegerConstant 1 (Integer 8) Decimal)
+                                    ()
+                                )
                                 (Logical 4)
                                 ()
                             )
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (Var 2 __gpu_loop_end)
+                                    (Cast
+                                        (Var 2 __gpu_loop_end)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
+                                        ()
+                                    )
                                     Sub
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Integer 4)
+                                    (Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        ()
+                                    )
+                                    (Integer 8)
                                     ()
                                 )
                                 Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
+                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (Integer 8)
                                 ()
                             )
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (Integer 4)
+                            (IntegerConstant 0 (Integer 8) Decimal)
+                            (Integer 8)
                             ()
                         )
                         ()
@@ -1135,7 +1213,7 @@
                         (IntegerCompare
                             (Var 2 __gpu_iteration_count)
                             Gt
-                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 0 (Integer 8) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -1221,6 +1299,8 @@
                                 (Logical 4)
                                 ()
                             )]
+                            []
+                            0
                         )]
                         []
                     )
@@ -1262,21 +1342,12 @@
                         .false.
                         .false.
                     )
-                    (Assignment
-                        (Var 2 __libasr__created__var__0__idl_save_)
-                        (Var 2 i)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
                     (DoLoop
                         ()
-                        ((Var 2 i)
+                        ((Var 2 lfortran_implied_do_i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(Assignment
                             (ArrayItem
                                 (Var 2 __libasr__created__var__0__array_constructor_)
@@ -1302,7 +1373,7 @@
                                 Mul
                                 (IntrinsicElementalFunction
                                     Real
-                                    [(Var 2 i)]
+                                    [(Var 2 lfortran_implied_do_i)]
                                     0
                                     (Real 4)
                                     ()
@@ -1332,15 +1403,6 @@
                             .false.
                         )]
                         []
-                    )
-                    (Assignment
-                        (Var 2 i)
-                        (Var 2 __libasr__created__var__0__idl_save_)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
                     )
                     (If
                         ()
@@ -1406,21 +1468,12 @@
                         .false.
                         .false.
                     )
-                    (Assignment
-                        (Var 2 __libasr__created__var__1__idl_save_)
-                        (Var 2 i)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
                     (DoLoop
                         ()
-                        ((Var 2 i)
+                        ((Var 2 lfortran_implied_do_i1)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(Assignment
                             (ArrayItem
                                 (Var 2 __libasr__created__var__1__array_constructor_)
@@ -1458,7 +1511,7 @@
                                     Mul
                                     (IntrinsicElementalFunction
                                         Real
-                                        [(Var 2 i)]
+                                        [(Var 2 lfortran_implied_do_i1)]
                                         0
                                         (Real 4)
                                         ()
@@ -1491,15 +1544,6 @@
                             .false.
                         )]
                         []
-                    )
-                    (Assignment
-                        (Var 2 i)
-                        (Var 2 __libasr__created__var__1__idl_save_)
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
                     )
                     (If
                         ()

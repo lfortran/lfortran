@@ -1,0 +1,42 @@
+#include <stdint.h>
+
+__device__ inline void fill_device_t_gpu_18(float* a, int n) {
+    int k;
+    int k__dc;
+    for (k__dc = 1; k__dc <= n; k__dc++) {
+        a[((int)(k__dc) - (1))] = ((float)k__dc);
+    }
+    for (k = n; k >= 1; k -= 2) {
+        a[((int)(k) - (1))] = (-(a[((int)(k) - (1))]));
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* __restrict__ x,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    long __flat_idx;
+    int i__dc;
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+        return;
+    }
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    i__dc = ((int)(__flat_idx + ((long)1)));
+    {
+        int p__dc;
+        int q__dc;
+        float w[4];
+        fill_device_t_gpu_18(w, 4);
+        for (p__dc = 1; p__dc <= 4; p__dc++) {
+            for (q__dc = 1; q__dc <= 3; q__dc++) {
+                x[((int)(p__dc) - (1)) + (4 * ((int)(q__dc) - (1))) + ((4 * 3) * ((int)(i__dc) - (1)))] = ((w[((int)(p__dc) - (1))] * ((float)q__dc)) + ((float)i__dc));
+            }
+        }
+    }
+}
+

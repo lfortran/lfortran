@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdint>
 #include <filesystem>
 #include <iostream>
 #include <set>
@@ -33,6 +34,61 @@ using ASR::down_cast;
 using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
+
+// Replaces each expression that stands for an extent the host computes
+// -- the extent node of a BLOCK local's declaration, or a copy a
+// lowering made of it (copy_bound) -- by the kernel argument holding
+// that value.  The lowerings embed the extent wherever its value is
+// needed: as a loop bound, under a cast, in an IF or in a nested BLOCK,
+// such as the one of an alias temporary.  So the statements are walked
+// through every construct, nested BLOCKs and their declared shapes
+// included.
+class GpuHostExtentReplacer :
+        public ASR::CallReplacerOnExpressionsVisitor<GpuHostExtentReplacer> {
+    const std::function<ASR::expr_t*(ASR::expr_t*)> &origin;
+    const std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &replacements;
+
+public:
+    GpuHostExtentReplacer(
+            const std::function<ASR::expr_t*(ASR::expr_t*)> &origin,
+            const std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>>
+                &replacements)
+        : origin(origin), replacements(replacements) {}
+
+    void call_replacer() {
+        if (*current_expr == nullptr) return;
+        ASR::expr_t *o = origin(*current_expr);
+        for (auto &[old_e, new_e] : replacements) {
+            if (o == origin(old_e)) {
+                *current_expr = new_e;
+                return;
+            }
+        }
+    }
+
+    void replace_in_scope(SymbolTable *symtab) {
+        for (auto &item : symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                visit_ttype(*ASR::down_cast<ASR::Variable_t>(
+                    item.second)->m_type);
+            }
+        }
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        replace_in_scope(block->m_symtab);
+        transform_stmts(block->m_body, block->n_body);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
+        ASR::AssociateBlock_t *block =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        transform_stmts(block->m_body, block->n_body);
+    }
+};
 
 class GpuContiguousStoreFinder : public ASR::BaseWalkVisitor<GpuContiguousStoreFinder> {
     const std::set<ASR::symbol_t*> &loop_variables;
@@ -158,6 +214,85 @@ static size_t store_dimension(const ParallelLoopNest &nest, size_t subscript,
     return otherwise;
 }
 
+// `a * b`, or UINT64_MAX when that does not fit.
+static uint64_t gpu_saturating_product(uint64_t a, uint64_t b) {
+    if (a != 0 && b > UINT64_MAX / a) return UINT64_MAX;
+    return a * b;
+}
+
+// The number of values from `start` to `end`, or UINT64_MAX when that does
+// not fit, and 0 when `end < start`.
+static uint64_t gpu_value_count(int64_t start, int64_t end) {
+    if (end < start) return 0;
+    uint64_t span = static_cast<uint64_t>(end) - static_cast<uint64_t>(start);
+    return span == UINT64_MAX ? UINT64_MAX : span + 1;
+}
+
+// Which dimensions of a nest a launch splits into chunks of at most `limit`
+// iterations when it has more (GpuKernelLaunch.chunk_dimensions), given the
+// bounds of each dimension, the kind of its index and the order the kernel
+// numbers the iterations in, fastest first. A chunk covers a dimension it
+// does not split whole, wherever it is in that order: the kernel numbers the
+// iterations of each chunk from the bounds of its box. So a dimension with
+// a constant extent is never split, and keeps its bounds as constants in the
+// kernel, as long as its extent and those of the ones before it in that
+// order that are never split come to at most `limit` iterations in all; the
+// others are split, as is every dimension whose extent is not a constant.
+// None is split when `chunked` is false, when a constant extent makes the
+// nest empty, or when the nest cannot have more than `limit` iterations:
+// the value of an index fits its kind, which bounds the extent of a
+// dimension whose bounds are not both constants, as a constant bound does
+// further. `fixed_iterations` is set to the product of the extents of the
+// dimensions that are never split when one is (1 when there are none), and
+// to 0 otherwise.
+static std::vector<bool> gpu_splittable_dimensions(
+        const std::vector<ASR::expr_t*> &starts,
+        const std::vector<ASR::expr_t*> &ends,
+        const std::vector<int> &index_kinds,
+        const std::vector<size_t> &order, bool chunked, int64_t limit,
+        int64_t &fixed_iterations) {
+    std::vector<bool> splittable(order.size(), false);
+    fixed_iterations = 0;
+    if (!chunked) return splittable;
+    // The constant extent of each dimension, 0 where it is not a constant,
+    // and the most iterations the nest can have.
+    std::vector<uint64_t> extents(order.size(), 0);
+    uint64_t most = 1;
+    for (size_t d = 0; d < order.size(); d++) {
+        int64_t start = 0, end = 0;
+        bool start_known = ASRUtils::extract_value(
+            ASRUtils::expr_value(starts[d]), start);
+        bool end_known = ASRUtils::extract_value(
+            ASRUtils::expr_value(ends[d]), end);
+        uint64_t extent = 0;
+        if (start_known && end_known) {
+            if (end < start) return splittable;
+            extent = gpu_value_count(start, end);
+            extents[d] = extent;
+        } else {
+            int64_t huge = index_kinds[d] < 1 || index_kinds[d] >= 8
+                ? INT64_MAX
+                : (int64_t(1) << (8 * index_kinds[d] - 1)) - 1;
+            extent = gpu_value_count(
+                start_known ? std::max(start, -huge - 1) : -huge - 1,
+                end_known ? std::min(end, huge) : huge);
+        }
+        most = gpu_saturating_product(most, extent);
+    }
+    if (most <= static_cast<uint64_t>(limit)) return splittable;
+    uint64_t fixed = 1;
+    for (size_t d : order) {
+        if (extents[d] > 0
+                && extents[d] <= static_cast<uint64_t>(limit) / fixed) {
+            fixed *= extents[d];
+        } else {
+            splittable[d] = true;
+        }
+    }
+    fixed_iterations = static_cast<int64_t>(fixed);
+    return splittable;
+}
+
 // The loop was assigned to the device by the unsupported-construct check,
 // so a decline here is a lowering this pass is missing and is reported as
 // an error (see report_gpu_decline). Every loop of the round that finds
@@ -217,6 +352,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // shares with the rest of the program.
     ParallelLoopNest work;
     kernel_blocks.clear();
+    non_elemental_alias_blocks.clear();
+    bound_copies.clear();
     {
         ASRUtils::ExprStmtDuplicator dup(al);
         dup.allow_procedure_calls = true;
@@ -769,10 +906,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     // Pass dimension sizes for decomposed allocatable struct
-    // members so the kernel can compute ArraySize and strides.
+    // members so the kernel can compute ArraySize and strides. The extents
+    // and lower bounds are passed in the kind the kernel computes element
+    // offsets in, like those of the arrays below.
     {
         ASR::ttype_t *int_type_dim = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+            ASR::make_Integer_t(al, loc, device_caps.offset_kind));
         for (auto &di : decomp_infos) {
             ASR::ttype_t *inner =
                 ASRUtils::type_get_past_allocatable(di.alloc_type);
@@ -900,8 +1039,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 break;
             }
         }
+        // In the offset kind, as for the components above.
         ASR::ttype_t *int_type_dim = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+            ASR::make_Integer_t(al, loc, device_caps.offset_kind));
 
         for (size_t d = 0; d < k_arr->n_dims; d++) {
             if (shape_from_type && d < orig_arr->n_dims
@@ -1019,7 +1159,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         gpu_struct_member_extent_arguments(al, loc, kernel_scope, sym_name,
             gpu_struct_definition(orig_var->m_type_declaration),
             [&](ASR::symbol_t *m) { return host_member(v, m); },
-            kernel_args, call_args);
+            device_caps.offset_kind, kernel_args, call_args);
     }
     for (auto &[sym_name, orig_var] : struct_params) {
         ASR::Variable_t *v = orig_var;
@@ -2103,11 +2243,33 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     ASR::ttype_t *loop_int_type = ASRUtils::expr_type(work.head(0).m_v);
+    ASR::ttype_t *index_type = gpu_iteration_number_type(al, loc,
+        loop_int_type, device_caps);
+    // Unlike the launch's widen (gpu_offload_launch.cpp), this does not copy
+    // `value`: it widens kernel-scope expressions built for the kernel.
+    auto widen = [&](ASR::expr_t *value) {
+        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(value))
+                == ASRUtils::extract_kind_from_ttype_t(index_type)) {
+            return value;
+        }
+        int64_t constant = 0;
+        if (ASRUtils::extract_value(ASRUtils::expr_value(value), constant)) {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                constant, index_type, ASR::integerbozType::Decimal));
+        }
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, value,
+            ASR::cast_kindType::IntegerToInteger, index_type, nullptr,
+            nullptr));
+    };
 
     // Save host-side head expressions BEFORE in-place replacement
     std::vector<DimInfo> dim_info;
+    // The kind of each loop index, which bounds the values it takes.
+    std::vector<int> index_kinds;
     for (size_t d = 0; d < n_dims; d++) {
         dim_info.push_back({work.head(d).m_start, work.head(d).m_end});
+        index_kinds.push_back(ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(work.head(d).m_v)));
     }
 
     // Deep-copy the body statements so that in-place symbol remapping
@@ -2155,7 +2317,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // replacement contains nothing that would be replaced again.
     ASR::expr_t *slot_index = nullptr;
     if (!pending_reductions.empty()) {
-        ASR::ttype_t *slot_type = ASRUtils::duplicate_type(al, loop_int_type);
+        ASR::ttype_t *slot_type = ASRUtils::duplicate_type(al, index_type);
         gpu_new_variable(al, loc, kernel_scope, "__gpu_slot",
             ASRUtils::duplicate_type(al, slot_type));
         slot_index = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
@@ -2197,19 +2359,55 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     ASR::ttype_t *int_type = loop_int_type;
 
+    // The device's thread and block built-ins are 32-bit whatever the kind
+    // of the loop indices, so they are integer(4) and widen() casts them to
+    // the iteration-number type before any arithmetic: typed as integer(8)
+    // indices, they would be multiplied unwidened and wrap at 2**32.
+    ASR::ttype_t *builtin_type = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, loc, 4));
     ASR::expr_t *thread_idx = ASRUtils::EXPR(
-        ASR::make_GpuThreadIndex_t(al, loc, 0, int_type, nullptr));
+        ASR::make_GpuThreadIndex_t(al, loc, 0, builtin_type, nullptr));
     ASR::expr_t *block_idx = ASRUtils::EXPR(
-        ASR::make_GpuBlockIndex_t(al, loc, 0, int_type, nullptr));
+        ASR::make_GpuBlockIndex_t(al, loc, 0, builtin_type, nullptr));
     ASR::expr_t *block_sz = ASRUtils::EXPR(
-        ASR::make_GpuBlockSize_t(al, loc, 0, int_type, nullptr));
+        ASR::make_GpuBlockSize_t(al, loc, 0, builtin_type, nullptr));
+    // `op` of the thread index and a constant, in the built-ins' type.
+    auto thread_idx_op = [&](ASR::binopType op, int64_t value) {
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, thread_idx,
+            op, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value,
+                builtin_type, ASR::integerbozType::Decimal)),
+            builtin_type, nullptr));
+    };
 
-    // flat_idx = block_idx * block_size + thread_idx
-    ASR::expr_t *flat_idx = ASRUtils::EXPR(
-        ASR::make_IntegerBinOp_t(al, loc,
-            ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                block_idx, ASR::binopType::Mul, block_sz, int_type, nullptr)),
-            ASR::binopType::Add, thread_idx, int_type, nullptr));
+    auto index_binop = [&](ASR::expr_t *left, ASR::binopType op,
+            ASR::expr_t *right) {
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+            left, op, right, index_type, nullptr));
+    };
+    // ASR has no integer remainder operator: a - (a/b)*b.
+    auto index_mod = [&](ASR::expr_t *left, ASR::expr_t *right) {
+        return index_binop(left, ASR::binopType::Sub, index_binop(
+            index_binop(left, ASR::binopType::Div, right),
+            ASR::binopType::Mul, right));
+    };
+    // A loop index, recovered from the iteration number by adding its start
+    // to its ordinal in the iteration-number type, fits its kind.
+    auto narrow = [&](ASR::expr_t *value) {
+        if (ASRUtils::extract_kind_from_ttype_t(index_type)
+                == ASRUtils::extract_kind_from_ttype_t(int_type)) {
+            return value;
+        }
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, value,
+            ASR::cast_kindType::IntegerToInteger, int_type, nullptr,
+            nullptr));
+    };
+
+    // flat_idx = block_idx * block_size + thread_idx, in the type that
+    // numbers the iterations: the product of the device's (unsigned 32-bit)
+    // built-ins would wrap.
+    ASR::expr_t *flat_idx = index_binop(index_binop(widen(block_idx),
+        ASR::binopType::Mul, widen(block_sz)), ASR::binopType::Add,
+        widen(thread_idx));
 
     // For multi-dimensional: linearize index
     // For an iteration space (i=1:m, j=1:n, k=1:p):
@@ -2224,12 +2422,68 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // ArrayBound/ArraySize on allocatable arrays that cannot be
     // correctly evaluated in the kernel scope), pass the loop
     // bounds as pre-computed scalar parameters from the host.
+    // A nest of two or more dimensions can be launched in tiles where the
+    // device asks for them (GpuDeviceCapabilities::tile_width): a block
+    // covers tile_width iterations of the fastest dimension by the rest of
+    // its threads along a second one, the dimension the stores step through
+    // next in memory (or else the next one in loop order), and the block
+    // index numbers the tiles. The launch runs whole tiles, and a thread of
+    // a partial tile that falls outside the nest returns. Where whole tiles
+    // would pad the nest by more than a quarter, as a short dimension
+    // does, the launch passes __tiled = 0 instead and the kernel numbers
+    // the iterations flat, one thread each (gpu_offload_launch.cpp). Tile
+    // widths and block sizes are powers of two, so a thread finds its place
+    // in a tile with constant shifts and masks, which a device compiler
+    // folds, and one division of the block index finds the tile. A
+    // reduction keeps the flat numbering, which gives every thread an
+    // accumulator slot.
+    auto is_power_of_two = [](int64_t value) {
+        return value > 0 && (value & (value - 1)) == 0;
+    };
+    bool tiled = device_caps.tile_width > 0 && n_dims >= 2
+        && slot_index == nullptr
+        && is_power_of_two(device_caps.tile_width)
+        && is_power_of_two(device_caps.threads_per_block)
+        && device_caps.threads_per_block % device_caps.tile_width == 0;
+    // The dimensions in the order the iterations are numbered along: the
+    // fastest first, then the one a tile's height runs along, then the
+    // others in the order the loop names them.
+    std::vector<size_t> order;
+    order.push_back(fastest_dimension);
+    if (n_dims >= 2) {
+        order.push_back(tiled && next_store_dimension != fastest_dimension
+            ? next_store_dimension : (fastest_dimension == 0 ? 1 : 0));
+    }
+    for (size_t d = 0; d < n_dims; d++) {
+        if (std::find(order.begin(), order.end(), d) == order.end()) {
+            order.push_back(d);
+        }
+    }
+    // A launch with a reduction runs as one: its accumulators are numbered
+    // over all its iterations.
+    std::vector<ASR::expr_t*> host_starts, host_ends;
+    for (const DimInfo &dim : dim_info) {
+        host_starts.push_back(dim.host_start);
+        host_ends.push_back(dim.host_end);
+    }
+    int64_t chunk_fixed_iterations = 0;
+    std::vector<bool> splittable = gpu_splittable_dimensions(host_starts,
+        host_ends, index_kinds, order,
+        device_caps.chunked_launches && slot_index == nullptr,
+        pass_options.gpu_chunk_limit, chunk_fixed_iterations);
+    std::vector<ASR::symbol_t*> start_parameters(n_dims, nullptr);
+    std::vector<ASR::symbol_t*> end_parameters(n_dims, nullptr);
+
     std::vector<ASR::expr_t*> kernel_starts, kernel_ends;
     for (size_t d = 0; d < n_dims; d++) {
         ASR::expr_t *host_start = dim_info[d].host_start;
         ASR::expr_t *host_end = dim_info[d].host_end;
-        bool start_is_const = ASR::is_a<ASR::IntegerConstant_t>(*host_start);
-        bool end_is_const = ASR::is_a<ASR::IntegerConstant_t>(*host_end);
+        // A dimension a launch may split has the bounds of the chunk it
+        // runs, which the launch passes, even when they are constants.
+        bool start_is_const = ASR::is_a<ASR::IntegerConstant_t>(*host_start)
+            && !splittable[d];
+        bool end_is_const = ASR::is_a<ASR::IntegerConstant_t>(*host_end)
+            && !splittable[d];
 
         if (start_is_const) {
             kernel_starts.push_back(dup_expr_to_scope(host_start, kernel_scope));
@@ -2246,6 +2500,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             call_args.push_back(al, carg);
             kernel_starts.push_back(
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
+            if (splittable[d]) start_parameters[d] = param;
         }
 
         if (end_is_const) {
@@ -2263,6 +2518,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             call_args.push_back(al, carg);
             kernel_ends.push_back(
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
+            if (splittable[d]) end_parameters[d] = param;
         }
     }
 
@@ -2293,17 +2549,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         ASR::make_IntegerConstant_t(al, loc, 1, int_type,
             ASR::integerbozType::Decimal));
 
-    auto int_binop = [&](ASR::expr_t *left, ASR::binopType op,
-            ASR::expr_t *right) {
-        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-            left, op, right, int_type, nullptr));
-    };
-    // ASR has no integer remainder operator: a - (a/b)*b.
-    auto int_mod = [&](ASR::expr_t *left, ASR::expr_t *right) {
-        return int_binop(left, ASR::binopType::Sub, int_binop(
-            int_binop(left, ASR::binopType::Div, right),
-            ASR::binopType::Mul, right));
-    };
     auto assign = [&](ASR::expr_t *target, ASR::expr_t *value) {
         kernel_body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
             loc, target, value, nullptr, false, false, false, false)));
@@ -2317,44 +2562,29 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
             nullptr, test, exit_body.p, exit_body.n, no_else.p, no_else.n)));
     };
-    auto kernel_local = [&](const std::string &name) {
+    auto kernel_local = [&](const std::string &name, ASR::ttype_t *type) {
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, gpu_new_variable(al,
-            loc, kernel_scope, name, ASRUtils::duplicate_type(al,
-                int_type))));
+            loc, kernel_scope, name, ASRUtils::duplicate_type(al, type))));
     };
-    // The number of iterations of dimension d, in a launch that has some.
+    // The number of iterations of dimension d, in a launch that has some,
+    // in the type that numbers the iterations: a dimension can have more
+    // of them than the largest value of its indices' kind.
     auto kernel_range = [&](size_t d) {
-        return int_binop(int_binop(kernel_ends[d], ASR::binopType::Sub,
-            kernel_starts[d]), ASR::binopType::Add, one_const);
+        return index_binop(index_binop(widen(kernel_ends[d]),
+            ASR::binopType::Sub, widen(kernel_starts[d])),
+            ASR::binopType::Add, widen(one_const));
+    };
+    // The loop index of dimension d at the 0-based `ordinal`, an
+    // iteration number.
+    auto index_at = [&](size_t d, ASR::expr_t *ordinal) {
+        return narrow(index_binop(ordinal, ASR::binopType::Add,
+            widen(kernel_starts[d])));
     };
     auto loop_var = [&](size_t d) {
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc,
             kernel_scope->get_symbol(loop_var_names[d])));
     };
 
-    // A nest of two or more dimensions can be launched in tiles where the
-    // device asks for them (GpuDeviceCapabilities::tile_width): a block
-    // covers tile_width iterations of the fastest dimension by the rest of
-    // its threads along a second one, the dimension the stores step through
-    // next in memory (or else the next one in loop order), and the block
-    // index numbers the tiles. The launch runs whole tiles, and a thread of
-    // a partial tile that falls outside the nest returns. Where whole tiles
-    // would pad the nest by more than a quarter, as a short dimension
-    // does, the launch passes __tiled = 0 instead and the kernel numbers
-    // the iterations flat, one thread each (gpu_offload_launch.cpp). Tile
-    // widths and block sizes are powers of two, so a thread finds its place
-    // in a tile with constant shifts and masks, which a device compiler
-    // folds, and one division of the block index finds the tile. A
-    // reduction keeps the flat numbering, which gives every thread an
-    // accumulator slot.
-    auto is_power_of_two = [](int64_t value) {
-        return value > 0 && (value & (value - 1)) == 0;
-    };
-    bool tiled = device_caps.tile_width > 0 && n_dims >= 2
-        && slot_index == nullptr
-        && is_power_of_two(device_caps.tile_width)
-        && is_power_of_two(device_caps.threads_per_block)
-        && device_caps.threads_per_block % device_caps.tile_width == 0;
     ASR::expr_t *tiled_flag = nullptr;
     int tiled_arg = -1;
     if (tiled) {
@@ -2371,20 +2601,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         call_args.push_back(al, carg);
         tiled_arg = static_cast<int>(call_args.n) - 1;
     }
-    // The dimensions in the order the iterations are numbered along: the
-    // fastest first, then the one a tile's height runs along, then the
-    // others in the order the loop names them.
-    std::vector<size_t> order;
-    order.push_back(fastest_dimension);
-    if (n_dims >= 2) {
-        order.push_back(tiled && next_store_dimension != fastest_dimension
-            ? next_store_dimension : (fastest_dimension == 0 ? 1 : 0));
-    }
-    for (size_t d = 0; d < n_dims; d++) {
-        if (std::find(order.begin(), order.end(), d) == order.end()) {
-            order.push_back(d);
-        }
-    }
 
     // Every thread past the number of iterations returns, so the per-dim
     // ranges below are only computed when none is empty.
@@ -2393,9 +2609,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         for (size_t d = 0; d < n_dims; d++) {
             // dim_range = max(0, kernel_end - kernel_start + 1)
             ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
-                kernel_starts[d], kernel_ends[d], int_type);
+                widen(kernel_starts[d]), widen(kernel_ends[d]), index_type);
             total_size_kernel = total_size_kernel == nullptr ? dim_range
-                : int_binop(total_size_kernel, ASR::binopType::Mul,
+                : index_binop(total_size_kernel, ASR::binopType::Mul,
                     dim_range);
         }
 
@@ -2407,7 +2623,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     // Compute per-dim loop variable from flat_idx
     // We need a "remaining" variable in kernel scope
-    ASR::expr_t *remain_var = kernel_local("__flat_idx");
+    ASR::expr_t *remain_var = kernel_local("__flat_idx", index_type);
     // The loop indices at positions [first, last) of the order, recovered
     // by dividing __flat_idx down.
     auto number_flat = [&](size_t first, size_t last) {
@@ -2415,16 +2631,14 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             size_t d = order[position];
             if (position < n_dims - 1) {
                 // loop_var = __flat_idx % dim_range + start
-                assign(loop_var(d), int_binop(int_mod(remain_var,
-                    kernel_range(d)), ASR::binopType::Add,
-                    kernel_starts[d]));
+                assign(loop_var(d), index_at(d, index_mod(remain_var,
+                    kernel_range(d))));
                 // __flat_idx = __flat_idx / dim_range
-                assign(remain_var, int_binop(remain_var,
+                assign(remain_var, index_binop(remain_var,
                     ASR::binopType::Div, kernel_range(d)));
             } else {
                 // Last dim: loop_var = __flat_idx + start
-                assign(loop_var(d), int_binop(remain_var,
-                    ASR::binopType::Add, kernel_starts[d]));
+                assign(loop_var(d), index_at(d, remain_var));
             }
         }
     };
@@ -2456,44 +2670,46 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         };
         // ceil(range / 2**shift)
         auto tiles_of = [&](ASR::expr_t *range, int64_t shift) {
-            return int_binop(int_binop(range, ASR::binopType::Add,
-                constant((int64_t(1) << shift) - 1)), ASR::binopType::BitRShift,
-                constant(shift));
+            return index_binop(index_binop(range, ASR::binopType::Add,
+                widen(constant((int64_t(1) << shift) - 1))),
+                ASR::binopType::BitRShift, widen(constant(shift)));
         };
-        ASR::expr_t *tiles = kernel_local("__tiles");
-        assign(remain_var, block_idx);
+        ASR::expr_t *tiles = kernel_local("__tiles", index_type);
+        // The thread's ordinal along a dimension, an iteration number.
+        ASR::expr_t *ordinal = kernel_local("__ordinal", index_type);
+        // Reject a padded ordinal before adding the lower bound: a padded
+        // index could overflow even when every valid index fits.
+        auto index_in_tile = [&](size_t d) {
+            return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                ordinal, ASR::cmpopType::GtE, kernel_range(d),
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
+            assign(loop_var(d), index_at(d, ordinal));
+        };
+        assign(remain_var, widen(block_idx));
         assign(tiles, tiles_of(kernel_range(across), width_shift));
-        assign(loop_var(across), int_binop(
-            int_binop(int_mod(remain_var, tiles), ASR::binopType::BitLShift,
-                constant(width_shift)),
-            ASR::binopType::Add, int_binop(thread_idx, ASR::binopType::BitAnd,
-                constant(device_caps.tile_width - 1))));
-        assign(remain_var, int_binop(remain_var, ASR::binopType::Div, tiles));
+        assign(ordinal, index_binop(
+            index_binop(index_mod(remain_var, tiles),
+                ASR::binopType::BitLShift, widen(constant(width_shift))),
+            ASR::binopType::Add, widen(thread_idx_op(ASR::binopType::BitAnd,
+                device_caps.tile_width - 1))));
+        index_in_tile(across);
+        assign(remain_var, index_binop(remain_var, ASR::binopType::Div,
+            tiles));
         ASR::expr_t *row_tile = remain_var;
         if (n_dims > 2) {
             // The tiles of the first two dimensions repeat over the others.
             assign(tiles, tiles_of(kernel_range(down), height_shift));
-            row_tile = int_mod(remain_var, tiles);
+            row_tile = index_mod(remain_var, tiles);
         }
-        assign(loop_var(down), int_binop(
-            int_binop(row_tile, ASR::binopType::BitLShift,
-                constant(height_shift)),
-            ASR::binopType::Add, int_binop(thread_idx,
-                ASR::binopType::BitRShift, constant(width_shift))));
+        assign(ordinal, index_binop(
+            index_binop(row_tile, ASR::binopType::BitLShift,
+                widen(constant(height_shift))),
+            ASR::binopType::Add, widen(thread_idx_op(
+                ASR::binopType::BitRShift, width_shift))));
+        index_in_tile(down);
         if (n_dims > 2) {
-            assign(remain_var, int_binop(remain_var, ASR::binopType::Div,
+            assign(remain_var, index_binop(remain_var, ASR::binopType::Div,
                 tiles));
-        }
-        // Reject padded ordinals before adding the lower bounds: a padded
-        // source index could overflow even when every valid index fits.
-        for (size_t d : {across, down}) {
-            return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                loop_var(d), ASR::cmpopType::GtE, kernel_range(d),
-                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
-        }
-        for (size_t d : {across, down}) {
-            assign(loop_var(d), int_binop(loop_var(d), ASR::binopType::Add,
-                kernel_starts[d]));
         }
         Vec<ASR::stmt_t*> tiled_body = kernel_body;
         kernel_body = enclosing_body;
@@ -2650,34 +2866,20 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 }
             }
         }
-        // The ArrayBroadcast lowering (inline_elemental_array_var_
-        // in_body) may have created DoLoop statements whose bounds
-        // copied the old VLA dimension expression pointers before
-        // the pre-computation above replaced them. Walk the block
-        // body and patch any DoLoop bounds that still reference the
-        // old expressions.
+        // The ArrayBroadcast, SUM, MATMUL and alias-temporary lowerings
+        // embedded the old extents, or copies of them (copy_bound), in
+        // the block's statements before the pre-computation above
+        // replaced them in the declarations. Replace them there too, so
+        // that the kernel uses the host's value wherever the extent
+        // appears.
         if (!dim_replacements.empty()) {
-            std::function<void(ASR::stmt_t**, size_t)>
-                patch_do_loop_bounds = [&](ASR::stmt_t **stmts,
-                                           size_t n_stmts) {
-                for (size_t si = 0; si < n_stmts; si++) {
-                    if (ASR::is_a<ASR::DoLoop_t>(*stmts[si])) {
-                        ASR::DoLoop_t *dl =
-                            ASR::down_cast<ASR::DoLoop_t>(
-                                stmts[si]);
-                        for (auto &[old_e, new_e] :
-                                dim_replacements) {
-                            if (dl->m_head.m_start == old_e)
-                                dl->m_head.m_start = new_e;
-                            if (dl->m_head.m_end == old_e)
-                                dl->m_head.m_end = new_e;
-                        }
-                        patch_do_loop_bounds(dl->m_body,
-                            dl->n_body);
-                    }
-                }
-            };
-            patch_do_loop_bounds(block->m_body, block->n_body);
+            std::function<ASR::expr_t*(ASR::expr_t*)> origin =
+                [&](ASR::expr_t *e) { return bound_origin(e); };
+            GpuHostExtentReplacer extent_replacer(origin,
+                dim_replacements);
+            for (size_t j = 0; j < block->n_body; j++) {
+                extent_replacer.visit_stmt(*block->m_body[j]);
+            }
         }
         // Remap Var references inside the block body
         GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);
@@ -2748,50 +2950,26 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 }
             }
         }
-        // Recursively process nested BlockCall statements, including
-        // those inside a loop or an IF of the block.
-        std::function<void(ASR::stmt_t**, size_t)> process_nested =
-            [&](ASR::stmt_t **stmts, size_t n_stmts) {
-            for (size_t j = 0; j < n_stmts; j++) {
-                ASR::stmt_t *s = stmts[j];
-                if (ASR::is_a<ASR::DoLoop_t>(*s)) {
-                    ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(s);
-                    process_nested(dl->m_body, dl->n_body);
-                } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*s)) {
-                    ASR::DoConcurrentLoop_t *dc =
-                        ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
-                    process_nested(dc->m_body, dc->n_body);
-                } else if (ASR::is_a<ASR::If_t>(*s)) {
-                    ASR::If_t *ifs = ASR::down_cast<ASR::If_t>(s);
-                    process_nested(ifs->m_body, ifs->n_body);
-                    process_nested(ifs->m_orelse, ifs->n_orelse);
-                } else if (ASR::is_a<ASR::WhileLoop_t>(*s)) {
-                    ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(s);
-                    process_nested(wl->m_body, wl->n_body);
-                } else if (ASR::is_a<ASR::Select_t>(*s)) {
-                    gpu_for_each_case_body(ASR::down_cast<ASR::Select_t>(s),
-                        process_nested);
-                }
-                if (!ASR::is_a<ASR::BlockCall_t>(*s)) continue;
-                ASR::BlockCall_t *inner_bc =
-                    ASR::down_cast<ASR::BlockCall_t>(s);
-                if (!ASR::is_a<ASR::Block_t>(*inner_bc->m_m)) continue;
+        GpuConstructCallVisitor process_nested(
+            [&](ASR::BlockCall_t &inner_bc) {
+                if (!ASR::is_a<ASR::Block_t>(*inner_bc.m_m)) return;
                 ASR::Block_t *inner =
-                    ASR::down_cast<ASR::Block_t>(inner_bc->m_m);
+                    ASR::down_cast<ASR::Block_t>(inner_bc.m_m);
                 std::string inner_name = inner->m_name;
                 bool host_owned = orig_scope->get_symbol(inner_name)
-                    == inner_bc->m_m;
+                    == inner_bc.m_m;
                 process_block_for_kernel(inner, host_owned);
                 if (host_owned) {
                     orig_scope->erase_symbol(inner_name);
                     if (!kernel_scope->get_symbol(inner_name)) {
                         kernel_scope->add_symbol(inner_name,
-                            inner_bc->m_m);
+                            inner_bc.m_m);
                     }
                 }
-            }
-        };
-        process_nested(block->m_body, block->n_body);
+            });
+        for (size_t j = 0; j < block->n_body; j++) {
+            process_nested.visit_stmt(*block->m_body[j]);
+        }
         // Remap type expressions of block-local variables
         // (e.g., VLA dimensions like n(i) in real :: a(n(i)))
         GpuReplaceSymbols block_type_replacer(*kernel_scope);
@@ -2822,69 +3000,40 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // Recursively find and move all BlockCall targets from any
     // nesting depth (e.g., BlockCall inside a DoLoop inside the
     // loop body) into the kernel scope.
-    std::function<void(ASR::stmt_t**, size_t)>
-        move_blocks_to_kernel = [&](ASR::stmt_t **stmts,
-                                    size_t n_stmts) {
-        for (size_t i = 0; i < n_stmts; i++) {
-            if (ASR::is_a<ASR::BlockCall_t>(*stmts[i])) {
-                ASR::BlockCall_t *bc =
-                    ASR::down_cast<ASR::BlockCall_t>(stmts[i]);
-                if (ASR::is_a<ASR::Block_t>(*bc->m_m)) {
-                    ASR::Block_t *block =
-                        ASR::down_cast<ASR::Block_t>(bc->m_m);
-                    std::string block_name = block->m_name;
-                    // Only a copy this pass made is safe to take. A
-                    // BlockCall that still names the host's own block
-                    // is a copy_loop_stmt miss; mutating it here
-                    // would steal the host nest if the launch is then
-                    // declined.
-                    bool is_copy = false;
-                    for (ASR::symbol_t *b : kernel_blocks) {
-                        if (b == bc->m_m) {
-                            is_copy = true;
-                            break;
-                        }
-                    }
-                    if (!is_copy) continue;
-                    process_block_for_kernel(block, true);
-                    // The copy of the loop body names the block, whose
-                    // statements were not part of it above.
-                    import_folded_struct_constants(block->m_body,
-                        block->n_body, orig_scope, kernel_scope, loc);
-                    import_folded_struct_constants(block->m_symtab,
-                        orig_scope, kernel_scope, loc);
-                    if (orig_scope->get_symbol(block_name) == bc->m_m) {
-                        orig_scope->erase_symbol(block_name);
-                    }
-                    if (!kernel_scope->get_symbol(block_name)) {
-                        kernel_scope->add_symbol(block_name, bc->m_m);
-                    }
+    GpuConstructCallVisitor move_blocks_to_kernel(
+        [&](ASR::BlockCall_t &bc) {
+            if (!ASR::is_a<ASR::Block_t>(*bc.m_m)) return;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc.m_m);
+            std::string block_name = block->m_name;
+            // Only a copy this pass made is safe to take. A BlockCall
+            // that still names the host's own block is a copy_loop_stmt
+            // miss; mutating it here would steal the host nest if the
+            // launch is then declined.
+            bool is_copy = false;
+            for (ASR::symbol_t *b : kernel_blocks) {
+                if (b == bc.m_m) {
+                    is_copy = true;
+                    break;
                 }
-            } else if (ASR::is_a<ASR::DoLoop_t>(*stmts[i])) {
-                ASR::DoLoop_t *dl =
-                    ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
-                move_blocks_to_kernel(dl->m_body, dl->n_body);
-            } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmts[i])) {
-                ASR::DoConcurrentLoop_t *dc =
-                    ASR::down_cast<ASR::DoConcurrentLoop_t>(stmts[i]);
-                move_blocks_to_kernel(dc->m_body, dc->n_body);
-            } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
-                ASR::If_t *ifs =
-                    ASR::down_cast<ASR::If_t>(stmts[i]);
-                move_blocks_to_kernel(ifs->m_body, ifs->n_body);
-                move_blocks_to_kernel(ifs->m_orelse, ifs->n_orelse);
-            } else if (ASR::is_a<ASR::WhileLoop_t>(*stmts[i])) {
-                ASR::WhileLoop_t *wl =
-                    ASR::down_cast<ASR::WhileLoop_t>(stmts[i]);
-                move_blocks_to_kernel(wl->m_body, wl->n_body);
-            } else if (ASR::is_a<ASR::Select_t>(*stmts[i])) {
-                gpu_for_each_case_body(
-                    ASR::down_cast<ASR::Select_t>(stmts[i]),
-                    move_blocks_to_kernel);
             }
-        }
-    };
-    move_blocks_to_kernel(body_copy.p, body_copy.n);
+            if (!is_copy) return;
+            process_block_for_kernel(block, true);
+            // The copy of the loop body names the block, whose
+            // statements were not part of it above.
+            import_folded_struct_constants(block->m_body,
+                block->n_body, orig_scope, kernel_scope, loc);
+            import_folded_struct_constants(block->m_symtab,
+                orig_scope, kernel_scope, loc);
+            if (orig_scope->get_symbol(block_name) == bc.m_m) {
+                orig_scope->erase_symbol(block_name);
+            }
+            if (!kernel_scope->get_symbol(block_name)) {
+                kernel_scope->add_symbol(block_name, bc.m_m);
+            }
+        });
+    for (size_t i = 0; i < body_copy.n; i++) {
+        move_blocks_to_kernel.visit_stmt(*body_copy.p[i]);
+    }
 
     {
         std::vector<std::string> kernel_arg_names;
@@ -2980,6 +3129,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.dim_info = dim_info;
     plan.optional_syms = optional_syms;
     plan.tiled_arg = tiled_arg;
+    plan.order = order;
+    plan.start_parameters = start_parameters;
+    plan.end_parameters = end_parameters;
+    plan.chunk_fixed_iterations = chunk_fixed_iterations;
     plan.tile_dims[0] = tiled ? order[0] : 0;
     plan.tile_dims[1] = tiled ? order[1] : 0;
     build_kernel_launch(region, work, loc, plan);
