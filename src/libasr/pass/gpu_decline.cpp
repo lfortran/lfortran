@@ -87,7 +87,8 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
     GpuDeviceCapabilities caps = gpu_device_capabilities(
         gpu_device_selected(pass_options));
-    if (pass_options.descriptor_index_64 && caps.max_index_kind >= 8) {
+    if (pass_options.descriptor_index_64
+            && caps.offsets_follow_descriptor_index_64()) {
         caps.offset_kind = 8;
     }
     return caps;
