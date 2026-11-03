@@ -152,7 +152,11 @@ index has at most `huge(0)` iterations. `device_launch_expand` sets the
 buffers, scratch buffers and workspaces once, sized for the largest chunk,
 and then launches each chunk with its own scalar arguments and grid. A
 launch that may run in tiles runs flat when it would start more threads
-than the chunk limit, and a buffer handed over as
+than the chunk limit. Where every extent of the nest is a constant, that is
+decided at compile time: a nest whose whole tiles come to more threads than
+the limit gets a kernel that numbers its iterations flat, so a nest of at
+most that many iterations runs as one launch with no `chunk_dimensions`,
+and its constant bounds stay constants in the kernel. A buffer handed over as
 `LFORTRAN_GPU_WRITE_DISCARD` is handed over again as written after each
 chunk, so the chunks after the first keep what it wrote. Only CUDA launches
 have `chunk_dimensions`.

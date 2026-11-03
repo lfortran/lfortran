@@ -972,6 +972,84 @@ end program
     check_launch_geometry(launches, expected);
 }
 
+TEST_CASE("GPU constant nests decide tiles and chunks at compile time") {
+    // A nest whose extents are all constants runs in tiles only where its
+    // whole tiles come to at most the chunk limit; otherwise its kernel
+    // numbers the iterations flat (no tile flag, -1 below), so a nest of at
+    // most the limit iterations runs as one launch, without chunks.
+    const std::string source = R"(
+program p
+    implicit none
+    real, allocatable :: y(:,:)
+    real :: a(64, 7), b(64, 8), c(32, 8), d(64, 64)
+    integer :: i, j
+    allocate(y(64, 33554431))
+    do concurrent (i = 1:64, j = 1:33554431)
+        y(i, j) = 1
+    end do
+    do concurrent (i = 1:64, j = 1:7)
+        a(i, j) = 1
+    end do
+    do concurrent (i = 1:64, j = 1:8)
+        b(i, j) = 1
+    end do
+    do concurrent (i = 1:32, j = 1:8)
+        c(i, j) = 1
+    end do
+    do concurrent (i = 1:64, j = 1:64)
+        d(i, j) = 1
+    end do
+end program
+)";
+    struct Chunks : public ASR::BaseWalkVisitor<Chunks> {
+        std::vector<size_t> dimensions;
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            dimensions.push_back(x.n_chunk_dimensions);
+        }
+    };
+    auto check = [&](int64_t chunk_limit,
+            const std::vector<std::pair<int64_t, int64_t>> &geometry,
+            const std::vector<size_t> &chunk_dimensions) {
+        INFO("chunk limit " << chunk_limit);
+        GpuLaunchGeometry launches;
+        Chunks chunks;
+        visit_cuda_program(source, "gpu_constant_tiles.f90", "p",
+            [&](ASR::stmt_t &s) {
+                launches.visit_stmt(s);
+                chunks.visit_stmt(s);
+            }, chunk_limit);
+        check_launch_geometry(launches.launches, geometry);
+        CHECK(chunks.dimensions == chunk_dimensions);
+    };
+    check(2147483647, {
+        // 2147483584 iterations, at most huge(0); tiles would start 2**31.
+        {-1, int64_t(64) * 33554431},
+        // 64 by 7 is padded to 64 by 8 within a quarter: tiled.
+        {1, 64 * 8},
+        {1, 64 * 8},
+        {1, 32 * 8},
+        {1, 64 * 64},
+    }, {0, 0, 0, 0, 0});
+    check(480, {
+        {-1, int64_t(64) * 33554431},
+        // 448 iterations fit, 512 threads in tiles do not: flat, one launch.
+        {-1, 64 * 7},
+        // 512 iterations do not fit: flat, in chunks of `j`.
+        {-1, 64 * 8},
+        // One whole tile of 256 threads.
+        {1, 32 * 8},
+        {-1, 64 * 64},
+    }, {1, 0, 1, 0, 1});
+    check(512, {
+        {-1, int64_t(64) * 33554431},
+        // Whole tiles of exactly the limit stay tiled, and unsplit.
+        {1, 64 * 8},
+        {1, 64 * 8},
+        {1, 32 * 8},
+        {-1, 64 * 64},
+    }, {1, 0, 0, 0, 1});
+}
+
 #ifndef HAVE_BUILD_TO_WASM
 TEST_CASE("GPU tiled launch tests run tiled nests") {
     // gpu_metal_485, gpu_metal_490 and gpu_metal_491 check the tiled index
