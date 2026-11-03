@@ -4485,7 +4485,7 @@ end module
 module traits_component_error_array
     use traits_component_error_types
     type :: Bad
-        class(IValue), allocatable :: items(:)
+        class(IValue), pointer :: items(:)
     end type
 end module
 

@@ -1,6 +1,6 @@
 ! Runtime trait arrays (TD-46) are assumed-shape dummies that borrow a
 ! nonpolymorphic derived-type array in place, and deferred-shape allocatable
-! dummies and local variables that own their elements.
+! dummies, local variables and components that own their elements.
 module continue_compilation_traits_12_m
     implicit none
     private
@@ -59,8 +59,16 @@ end module continue_compilation_traits_12_m
 module continue_compilation_traits_12_storage
     use continue_compilation_traits_12_m, only: ISomeTrait, Item, use_items
     implicit none
-    ! Allocatable trait arrays are dummies and local variables.
+    ! Allocatable trait arrays are dummies, local variables and components.
     class(ISomeTrait), allocatable :: saved(:)
+    type :: Holder
+        class(ISomeTrait), allocatable :: items(:)
+        ! A component trait array is allocatable.
+        class(ISomeTrait), pointer :: linked(:)
+    end type Holder
+    type :: Box
+        class(ISomeTrait), allocatable :: items(:)
+    end type Box
 contains
     subroutine owners(a, b)
         ! Only assumed-shape dummies without allocatable or pointer, and
@@ -79,6 +87,17 @@ contains
         ! An intent(in) owner cannot be allocated.
         allocate(Item :: e(2))
     end subroutine allocations
+
+    subroutine components(f)
+        type(Box), intent(in) :: f
+        type(Box) :: g
+        ! A component of an intent(in) structure cannot be allocated or
+        ! deallocated.
+        allocate(Item :: f%items(2))
+        deallocate(f%items)
+        ! A constructor value of a trait array component is not implemented.
+        g = Box(f%items)
+    end subroutine components
 
 end module continue_compilation_traits_12_storage
 

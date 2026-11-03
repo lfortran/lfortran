@@ -201,6 +201,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-11-02 | Relayed the colleague's last interoperability case, `static_interop_concrete.f90` and its Swift version, in which a type that is not generic extends the instance `SimpleSum{BasicSum}` and overrides its generic `sum`, and asked to get it working. | TD-45 |
 | 2026-11-02 | Relayed `static_interop_ocp.f90`, the interoperability variant of the paper's `ocp.f90` whose generic `PairwiseSum{V}` overrides `sum{INumeric :: T}` with the open protocol `INumeric`, and a module whose trait message takes `class(ISomeTrait) :: arr(:)`. Chose, from the options offered, dispatch through an open slot that passes the type arguments' dictionaries, and homogeneous trait arrays with the Fortran CLASS semantics of one dynamic type, for dummies only. | TD-44, TD-46 |
 | 2026-11-02 | Relayed two further module MREs: a trait message taking `class(AbsType), intent(inout) :: arr(:)` of an abstract derived type, used by another message's `class(ITrait1), allocatable, intent(out)` argument, and a message taking `class(ITraitOne), allocatable, intent(out) :: arr(:)`. | TD-46 |
+| 2026-11-03 | Relayed a module MRE whose derived type `MyType` declares the component `class(ITrait), allocatable :: arr(:)`. | TD-46 |
 
 ## Entries
 
@@ -1412,9 +1413,15 @@ specification action, that is, what the paper should say.
   It is passed to a borrowed trait array dummy and to an allocatable one of
   the same contract and rank, also through a slot of a message that is not
   generic.
+- **Extension (2026-11-03).** A further report declares the component
+  `class(ITrait), allocatable :: arr(:)`. Such a component is an owner as
+  above. Intrinsic assignment of the containing structure gives it the
+  source's bounds and dynamic type and an independent copy of each element,
+  as for any allocatable component (F2018 10.2.1.3), and finalizing the
+  structure destroys its elements.
 - **Implementation status.** Implemented, also through runtime views and
-  under separate compilation. Trait-array components, module variables,
-  pointers, MOLD allocation, assignment and MOVE_ALLOC of owners,
+  under separate compilation. Structure constructor values of trait-array
+  components, trait-array module variables, pointers, MOLD allocation, assignment and MOVE_ALLOC of owners,
   explicit-shape and assumed-size trait arrays, sections of trait arrays as
   actuals, polymorphic or vector-subscripted actuals, forwarding to a dummy of
   another contract, trait arrays of generic messages and heterogeneous arrays

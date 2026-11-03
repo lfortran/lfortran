@@ -11549,6 +11549,13 @@ bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,
 ASR::Variable_t *association_variable(ASR::expr_t *expr);
 ASR::expr_t *association_value(const ASR::Variable_t &variable);
 bool association_is_definable(ASR::expr_t *value);
+// A variable or component designator of an allocatable runtime trait array
+// (TD-46), which owns its elements.
+inline bool is_trait_array_owner_designator(ASR::expr_t *value) {
+    return value && (ASR::is_a<ASR::Var_t>(*value) ||
+            ASR::is_a<ASR::StructInstanceMember_t>(*value)) &&
+        is_trait_array_owner(expr_type(value));
+}
 bool association_has_target(ASR::expr_t *value);
 ASR::Variable_t *trait_owner_variable(ASR::expr_t *value);
 bool trait_owner_is_definable(ASR::expr_t *value);

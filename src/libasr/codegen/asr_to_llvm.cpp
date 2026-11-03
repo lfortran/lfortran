@@ -5149,13 +5149,17 @@ public:
         visit_ArrayItem(x);
         trait_array_element = false;
         llvm::Value *element = builder->CreateBitCast(tmp, llvm_utils->i8_ptr);
-        ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_v));
+        ptr_loads = 0;
         this->visit_expr_wrapper(x.m_v, false);
         ptr_loads = saved_loads;
         llvm::Value *descriptor = tmp;
         ASR::ttype_t *array = ASRUtils::expr_type(x.m_v);
         llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_v,
             ASRUtils::type_get_past_allocatable_pointer(array), module.get());
+        // An owner, a variable or a component, holds a descriptor pointer.
+        if (LLVM::is_llvm_pointer(*array)) {
+            descriptor = llvm_utils->CreateLoad2(array_type->getPointerTo(), descriptor);
+        }
         auto *view_type = llvm_utils->getTraitType(array);
         llvm::Value *view = llvm_utils->CreateAlloca(view_type, nullptr, "trait_element");
         builder->CreateStore(llvm_utils->CreateLoad2(view_type,
@@ -29683,7 +29687,13 @@ public:
         ptr_loads = 0;
         visit_expr(*x.m_target);
         ptr_loads = saved_loads;
-        llvm::Value *descriptor = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
+        llvm::Value *slot = tmp;
+        // A component's descriptor is created on its first allocation.
+        llvm_utils->create_if_else(builder->CreateIsNull(
+                llvm_utils->CreateLoad2(array_type->getPointerTo(), slot)), [&]() {
+            builder->CreateStore(arr_descr->allocate_descriptor_on_heap(array_type), slot);
+        }, [](){});
+        llvm::Value *descriptor = llvm_utils->CreateLoad2(array_type->getPointerTo(), slot);
         llvm_utils->trait_error_if(arr_descr->get_is_allocated_flag(descriptor, x.m_target),
             "cannot allocate an already allocated runtime trait array");
         auto *concrete = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(

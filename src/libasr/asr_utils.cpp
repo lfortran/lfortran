@@ -7525,7 +7525,9 @@ static bool contains_trait_owner_impl(const ASR::ttype_t *type,
     if (ASR::is_a<ASR::StructType_t>(*type)) {
         auto *structure = ASR::down_cast<ASR::StructType_t>(type);
         for (size_t i = 0; i < structure->n_data_member_types; i++) {
-            if (contains_trait_owner_impl(structure->m_data_member_types[i], seen)) return true;
+            // An allocatable runtime trait array component owns its elements.
+            if (is_trait_array_owner(structure->m_data_member_types[i]) ||
+                    contains_trait_owner_impl(structure->m_data_member_types[i], seen)) return true;
         }
     }
     return false;

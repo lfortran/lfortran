@@ -2270,11 +2270,32 @@ it is passed to a borrowed trait array dummy, or to an allocatable trait array
 dummy of the same contract and rank, also through a slot of a message that is
 not generic.
 
-Trait-array components, module variables and pointers, MOLD allocation,
-assignment and MOVE_ALLOC of owners, explicit-shape and assumed-size trait
-arrays, sections of trait arrays as actuals, polymorphic or
-vector-subscripted actuals, forwarding to a dummy of another contract and
-trait arrays of generic messages are diagnosed as not implemented.
+A deferred-shape allocatable trait array can also be a component, as a
+third report declares:
+
+```fortran
+type :: MyType
+   class(ITrait), allocatable :: arr(:)
+end type MyType
+```
+
+It is allocated, inquired, indexed and passed as an owner variable is, through
+any definable designator: of a scalar, an array element, a nested or extended
+structure, an allocatable structure or a module variable. Its descriptor is
+created on its first allocation, as other allocatable array components'
+descriptors are. Intrinsic assignment of the containing structure gives the
+component the bounds, dynamic type and witness of the source's and an
+independent initialize-copy of each element, made before the elements it held
+are destroyed, so a structure can be assigned to itself; an unallocated source
+deallocates it. Finalizing the structure destroys its elements and frees the
+descriptor.
+
+Trait-array module variables and pointers, a structure constructor value for a
+trait-array component, MOLD allocation, assignment and MOVE_ALLOC of owners,
+explicit-shape and assumed-size trait arrays, sections of trait arrays as
+actuals, polymorphic or vector-subscripted actuals, forwarding to a dummy of
+another contract and trait arrays of generic messages are diagnosed as not
+implemented.
 `traits_runtime_array_01` passes whole arrays, strided and reversed sections,
 explicit-shape, allocatable, component and rank-two arrays, forwards them,
 updates elements through a defining receiver and calls the reported message
@@ -2283,7 +2304,9 @@ reported module separately. `traits_runtime_array_owner_01` allocates owners
 of two element types in the reported `intent(out)` message, called statically
 and through a view, reallocates one through an `intent(inout)` dummy, and
 checks their cleanup, also with `--detect-leaks`.
-`continue_compilation_traits_12` checks the diagnostics.
+`traits_runtime_array_component_01` allocates, passes, assigns and finalizes
+the reported component in each kind of containing object, also with
+`--detect-leaks`. `continue_compilation_traits_12` checks the diagnostics.
 
 ### Optional and allocatable arguments
 

@@ -4280,7 +4280,7 @@ public:
 
     void visit_TraitArrayAllocate(const TraitArrayAllocate_t &x) {
         auto *type = typed_expr_type(x.m_target);
-        require_id(ASRUtils::is_trait_array_owner(type) && ASR::is_a<Var_t>(*x.m_target) &&
+        require_id(ASRUtils::is_trait_array_owner_designator(x.m_target) &&
                 x.n_dims == (size_t)ASRUtils::extract_n_dims_from_ttype(type),
             "asr.verify.trait_array_allocate.target",
             "A runtime trait array allocation allocates every dimension of an owner variable");
@@ -6737,8 +6737,8 @@ public:
             auto *type = typed_expr_type(x.m_vars[i]);
             if (!type || !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(type))) continue;
             if (ASRUtils::is_trait_array_owner(type)) {
-                require_id(ASR::is_a<Var_t>(*x.m_vars[i]) &&
-                        ASRUtils::EXPR2VAR(x.m_vars[i])->m_intent != intentType::In,
+                require_id(ASRUtils::is_trait_array_owner_designator(x.m_vars[i]) &&
+                        ASRUtils::association_is_definable(x.m_vars[i]),
                     "asr.verify.trait_array_owner.deallocate",
                     "A runtime trait array deallocation requires a definable owner variable");
                 continue;
@@ -7395,15 +7395,16 @@ public:
                                   ASR::is_a<StructInstanceMember_t>(*passed_arg_expr))
                             : pointer ? pointer_actual
                             : ASRUtils::is_trait_array_owner(formal_type)
-                                ? ASRUtils::is_trait_array_owner(actual_type) &&
-                                    ASR::is_a<Var_t>(*passed_arg_expr)
+                                ? ASRUtils::is_trait_array_owner_designator(passed_arg_expr)
                             : ASRUtils::is_trait_array(formal_type)
                                 ? ASRUtils::is_trait_array(ASRUtils::type_get_past_allocatable(
                                         actual_type)) &&
                                     (ASR::is_a<TraitPack_t>(*ASRUtils::get_past_array_physical_cast(
                                         passed_arg_expr)) ||
                                      ASR::is_a<Var_t>(*ASRUtils::get_past_array_physical_cast(
-                                        passed_arg_expr)))
+                                        passed_arg_expr)) ||
+                                     ASRUtils::is_trait_array_owner_designator(
+                                        ASRUtils::get_past_array_physical_cast(passed_arg_expr)))
                             : ASR::is_a<TraitObjectType_t>(*actual_type)) &&
                         ASRUtils::check_equal_type(formal_type, actual_type,
                             func->m_args[i], passed_arg_expr),

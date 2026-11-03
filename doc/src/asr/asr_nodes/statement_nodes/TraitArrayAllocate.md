@@ -10,8 +10,8 @@ Allocate the elements of a runtime trait array owner (TD-46).
 TraitArrayAllocate(expr target, dimension* dims, expr? source, symbol witness)
 ```
 
-`target` is a variable of a deferred-shape allocatable runtime trait array
-type, `Allocatable(Array(TraitObjectType))`, and `dims` gives the lower bound
+`target` is a variable or component of a deferred-shape allocatable runtime
+trait array type, `Allocatable(Array(TraitObjectType))`, and `dims` gives the lower bound
 (1 when absent) and the extent of each of its dimensions. `witness` is the
 witness of the instantiable concrete type of every element, conforming to the
 target's exact contract. Without a `source` the allocation was typed and
@@ -19,7 +19,8 @@ default-initializes each element; with one, `source` is a nonpolymorphic
 scalar of that concrete type, which initialize-copies each element, as
 `allocate(arr(n), source=x)` does.
 
-The operation requires an unallocated target. It allocates contiguous storage
+The operation requires an unallocated target. It creates a component's
+descriptor if the component has none yet, allocates contiguous storage
 for the elements, records their size and byte strides in the descriptor,
 stores the witness's view without a payload after the dimensions, and
 initializes each element through the witness's lifecycle. Deallocating the

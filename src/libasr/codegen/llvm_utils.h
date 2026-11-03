@@ -938,7 +938,9 @@ class ASRToLLVMVisitor;
                 llvm::Value* view, llvm::Value* source);
             void destroy_trait_value(llvm::Value* view, bool finalize = true);
             void destroy_trait_array_elements(llvm::Type* array_type,
-                llvm::Value* descriptor, int rank);
+                llvm::Value* descriptor, int rank, bool finalize = true);
+            void copy_trait_array_component(llvm::Type* array_type, llvm::Value* source,
+                llvm::Value* slot, int rank, bool finalize_destination);
 
             // Calls `element` with the address of each element of the
             // contiguous storage of the allocated runtime trait array owner
@@ -1531,6 +1533,12 @@ class ASRToLLVMVisitor;
                     builder_->CreateStore(llvm::ConstantPointerNull::get(llvm_utils_->i8_ptr),
                         data);
                 });
+                // A component's descriptor is allocated with its structure.
+                if (in_struct) {
+                    llvm_utils_->create_if_else(builder_->CreateIsNotNull(ptr), [&]() {
+                        llvm_utils_->lfortran_free_nocheck(ptr);
+                    }, [](){});
+                }
                 return;
             }
             switch (t_past->type) {

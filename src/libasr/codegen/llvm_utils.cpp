@@ -10492,16 +10492,104 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     }
 
     // Destroys the elements of the allocated runtime trait array owner
-    // `descriptor` in place, finalizing them, before its storage is freed.
+    // `descriptor` in place, finalizing them unless `finalize` is false,
+    // before its storage is freed.
     void LLVMUtils::destroy_trait_array_elements(llvm::Type* array_type,
-            llvm::Value* descriptor, int rank) {
+            llvm::Value* descriptor, int rank, bool finalize) {
         auto *destroy = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
             {i8_ptr}, false);
         for_trait_array_elements(array_type, descriptor, rank,
                 [&](llvm::Value* element, llvm::Value* view) {
             trait_lifecycle_call(trait_field(view, 2), trait_field(view, 0),
-                TraitLifecycleEntry::Destroy, destroy, {element});
+                finalize ? TraitLifecycleEntry::Destroy : TraitLifecycleEntry::Discard,
+                destroy, {element});
         });
+    }
+
+    // Intrinsic assignment of an allocatable runtime trait array component
+    // (F2018 10.2.1.3): the component whose descriptor `slot` holds takes the
+    // bounds, dynamic type and witness of `source` and an independent copy of
+    // each of its elements, made before the elements it owned are destroyed,
+    // or becomes unallocated. A component's descriptor is created on first
+    // allocation, so either descriptor may be null.
+    void LLVMUtils::copy_trait_array_component(llvm::Type* array_type,
+            llvm::Value* source, llvm::Value* slot, int rank, bool finalize_destination) {
+        llvm::Type* i64 = llvm::Type::getInt64Ty(context);
+        llvm::Type* descriptor_type = array_type->getPointerTo();
+        auto release = [&]() {
+            llvm::Value* destination = CreateLoad2(descriptor_type, slot);
+            create_if_else(builder->CreateIsNotNull(destination), [&]() {
+                llvm::Value* data = arr_api->get_pointer_to_data(array_type, destination);
+                create_if_else(builder->CreateIsNotNull(CreateLoad2(i8_ptr, data)), [&]() {
+                    destroy_trait_array_elements(array_type, destination, rank,
+                        finalize_destination);
+                    lfortran_free(CreateLoad2(i8_ptr, data));
+                    builder->CreateStore(llvm::ConstantPointerNull::get(i8_ptr), data);
+                }, [](){});
+            }, [](){});
+        };
+        llvm::Value* allocated = CreateAlloca(*builder, llvm::Type::getInt1Ty(context));
+        builder->CreateStore(llvm::ConstantInt::getFalse(context), allocated);
+        create_if_else(builder->CreateIsNotNull(source), [&]() {
+            builder->CreateStore(builder->CreateIsNotNull(CreateLoad2(i8_ptr,
+                arr_api->get_pointer_to_data(array_type, source))), allocated);
+        }, [](){});
+        create_if_else(CreateLoad2(llvm::Type::getInt1Ty(context), allocated), [&]() {
+            llvm::Value* source_data = CreateLoad2(i8_ptr,
+                arr_api->get_pointer_to_data(array_type, source));
+            llvm::Value* element_size = CreateLoad2(i64, create_gep2(array_type, source, 1));
+            llvm::Value* from = arr_api->get_pointer_to_dimension_descriptor_array(
+                array_type, source, true);
+            llvm::Value* bytes = element_size;
+            for (int i = 0; i < rank; i++) {
+                llvm::Value* dimension = arr_api->get_pointer_to_dimension_descriptor(from,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, i)));
+                bytes = builder->CreateMul(bytes, builder->CreateSExtOrTrunc(
+                    arr_api->get_dimension_size(dimension), i64));
+            }
+            bytes = builder->CreateSelect(builder->CreateICmpEQ(bytes,
+                llvm::ConstantInt::get(i64, 0)), llvm::ConstantInt::get(i64, 1), bytes);
+            llvm::Value* data = LLVM::lfortran_malloc(context, *module, *builder, bytes);
+            trait_error_if(builder->CreateIsNull(data), "runtime trait allocation failed");
+            auto *initialize = llvm::FunctionType::get(i8_ptr, {i8_ptr}, false);
+            for_trait_array_elements(array_type, source, rank,
+                    [&](llvm::Value* element, llvm::Value* view) {
+                llvm::Value* offset = builder->CreateSub(builder->CreatePtrToInt(element, i64),
+                    builder->CreatePtrToInt(source_data, i64));
+                llvm::Value* value = trait_lifecycle_call(trait_field(view, 2),
+                    trait_field(view, 0), TraitLifecycleEntry::Initialize, initialize,
+                    {element});
+                builder->CreateMemCpy(create_ptr_gep2(llvm::Type::getInt8Ty(context),
+                    data, offset), llvm::MaybeAlign(), value, llvm::MaybeAlign(),
+                    element_size);
+                lfortran_free(value);
+            });
+            release();
+            create_if_else(builder->CreateIsNull(CreateLoad2(descriptor_type, slot)), [&]() {
+                builder->CreateStore(arr_api->allocate_descriptor_on_heap(array_type), slot);
+            }, [](){});
+            llvm::Value* destination = CreateLoad2(descriptor_type, slot);
+            builder->CreateStore(arr_api->get_offset(array_type, source),
+                arr_api->get_offset(array_type, destination, false));
+            arr_api->set_rank(array_type, destination, arr_api->get_rank(array_type, source));
+            builder->CreateStore(element_size, create_gep2(array_type, destination, 1));
+            llvm::Value* to = arr_api->get_pointer_to_dimension_descriptor_array(
+                array_type, destination, true);
+            for (int i = 0; i < rank; i++) {
+                llvm::Value* index = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+                llvm::Value* a = arr_api->get_pointer_to_dimension_descriptor(from, index);
+                llvm::Value* b = arr_api->get_pointer_to_dimension_descriptor(to, index);
+                builder->CreateStore(arr_api->get_lower_bound(a),
+                    arr_api->get_lower_bound(b, false));
+                builder->CreateStore(arr_api->get_stride(a), arr_api->get_stride(b, false));
+                builder->CreateStore(arr_api->get_dimension_size(a),
+                    arr_api->get_dimension_size(b, false));
+            }
+            llvm::Type* view_type = array_type->getStructElementType(9);
+            builder->CreateStore(CreateLoad2(view_type, create_gep2(array_type, source, 9)),
+                create_gep2(array_type, destination, 9));
+            builder->CreateStore(data, arr_api->get_pointer_to_data(array_type, destination));
+        }, release);
     }
 
     void LLVMUtils::retain_trait_owner(llvm::Value* storage, llvm::Value* owner) {
@@ -11658,6 +11746,19 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     if (ASRUtils::is_trait_owner(member_type)) {
                         llvm_utils->copy_trait_component(src_member, dest_member,
                             llvm_utils->getTraitType(member_type), use_defined_assignment,
+                            finalize_dest);
+                        continue;
+                    }
+                    if (ASRUtils::is_trait_array_owner(member_type)) {
+                        ASR::ttype_t* array = ASRUtils::type_get_past_allocatable(member_type);
+                        llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                            array, nullptr, module);
+                        if (src_member->getType()->isPointerTy() && src->getType()->isPointerTy()) {
+                            src_member = llvm_utils->CreateLoad2(array_type->getPointerTo(),
+                                src_member);
+                        }
+                        llvm_utils->copy_trait_array_component(array_type, src_member,
+                            dest_member, ASRUtils::extract_n_dims_from_ttype(array),
                             finalize_dest);
                         continue;
                     }

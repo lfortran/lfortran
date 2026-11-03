@@ -4799,6 +4799,10 @@ public:
                 tmp_v->m_intent == ASR::intentType::In) {
             trait_call_error("cannot deallocate an intent(in) runtime trait slot", loc);
         }
+        if (ASRUtils::is_trait_array_owner(tmp_v->m_type) &&
+                tmp_v->m_intent == ASR::intentType::In) {
+            trait_call_error("cannot deallocate an intent(in) runtime trait array", loc);
+        }
         if( ASR::is_a<ASR::Allocatable_t>(*tmp_v->m_type) &&
             tmp_v->m_storage != ASR::storage_typeType::Save ) {
             // If it is not allocatable, it can also be a pointer
@@ -4853,8 +4857,10 @@ public:
                 check_for_deallocation(tmp_sym, tmp_expr->base.loc);
             } else if( ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) ) {
                 const ASR::StructInstanceMember_t* tmp_struct_ref = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
-                if (ASRUtils::is_trait_owner(ASRUtils::expr_type(tmp_expr)) &&
-                        !ASRUtils::trait_owner_is_definable(tmp_expr)) {
+                if ((ASRUtils::is_trait_owner(ASRUtils::expr_type(tmp_expr)) &&
+                        !ASRUtils::trait_owner_is_definable(tmp_expr)) ||
+                        (ASRUtils::is_trait_array_owner(ASRUtils::expr_type(tmp_expr)) &&
+                        !ASRUtils::association_is_definable(tmp_expr))) {
                     trait_call_error("cannot deallocate a nondefinable runtime trait component",
                         tmp_expr->base.loc);
                 }
