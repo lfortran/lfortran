@@ -283,6 +283,8 @@ public:
 
     void inline_intrinsic_transpose(ParallelLoopNest &nest);
 
+    bool inline_transpose_stmts(ASR::stmt_t **&body, size_t &n_body);
+
     static bool is_int_literal(ASR::expr_t *e, int64_t value);
 
     ASR::expr_t *int32_const(const Location &loc, int64_t n);
@@ -302,7 +304,8 @@ public:
             ASR::expr_t **extents, size_t n_extents,
             const std::string &prefix);
 
-    ASR::expr_t *self_aliasing_target(ASR::Assignment_t *asgn);
+    ASR::expr_t *self_aliasing_target(ASR::Assignment_t *asgn,
+            bool *in_non_elemental = nullptr);
 
     bool alias_temp_is_fixed_size(ASR::expr_t *target);
 
@@ -481,6 +484,12 @@ public:
     // renames what it takes in, and one spelling can belong to two
     // different blocks in two different scopes.
     std::vector<ASR::symbol_t*> kernel_blocks;
+
+    // The BLOCKs materialize_runtime_alias_blocks made for an assignment
+    // whose target a TRANSPOSE or MATMUL operand reads. The TRANSPOSE
+    // lowering, which takes only the statements of the loop body itself,
+    // takes the statements of these too.
+    std::set<ASR::symbol_t*> non_elemental_alias_blocks;
 
     ASR::stmt_t* copy_loop_stmt(ASR::stmt_t *stmt,
             ASRUtils::ExprStmtDuplicator &dup);

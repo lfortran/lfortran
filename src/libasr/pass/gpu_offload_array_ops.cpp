@@ -199,9 +199,12 @@ ASR::expr_t *GpuOffloadVisitor::declare_temp_array(const Location &loc,
 
 // The target of `asgn` when its value reads the target's storage
 // through a designator that is not element-for-element identical to
-// it, and nullptr otherwise. See the comment above
-// gpu_designator_base for why such an assignment needs a temporary.
-ASR::expr_t *GpuOffloadVisitor::self_aliasing_target(ASR::Assignment_t *asgn) {
+// it, or through an operand of TRANSPOSE or MATMUL, and nullptr
+// otherwise; `in_non_elemental` tells whether it is the latter. See the
+// comment above gpu_designator_base for why such an assignment needs a
+// temporary.
+ASR::expr_t *GpuOffloadVisitor::self_aliasing_target(ASR::Assignment_t *asgn,
+        bool *in_non_elemental) {
     ASR::expr_t *target = asgn->m_target;
     while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*target)) {
         target = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
@@ -216,6 +219,9 @@ ASR::expr_t *GpuOffloadVisitor::self_aliasing_target(ASR::Assignment_t *asgn) {
     checker.base = base;
     checker.target = target;
     checker.visit_expr(*asgn->m_value);
+    if (in_non_elemental) {
+        *in_non_elemental = checker.aliased_in_non_elemental;
+    }
     return checker.aliased ? target : nullptr;
 }
 
@@ -592,8 +598,15 @@ void GpuOffloadVisitor::materialize_runtime_alias_in_body(
         }
         ASR::Assignment_t *asgn =
             ASR::down_cast<ASR::Assignment_t>(stmt);
-        ASR::expr_t *target = self_aliasing_target(asgn);
-        if (!target || alias_temp_is_fixed_size(target)) {
+        // A TRANSPOSE or MATMUL is lowered before the fixed-size
+        // temporaries are made (materialize_aliased_assignments), so
+        // one whose operand the target aliases gets its temporary here,
+        // whatever its size.
+        bool in_non_elemental = false;
+        ASR::expr_t *target = self_aliasing_target(asgn,
+            &in_non_elemental);
+        if (!target || (alias_temp_is_fixed_size(target)
+                && !in_non_elemental)) {
             new_body.push_back(al, stmt);
             continue;
         }
@@ -645,6 +658,9 @@ void GpuOffloadVisitor::materialize_runtime_alias_in_body(
         scope->add_symbol(block_name, block_sym);
         if (scope == current_scope) {
             kernel_blocks.push_back(block_sym);
+        }
+        if (in_non_elemental) {
+            non_elemental_alias_blocks.insert(block_sym);
         }
         new_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
             al, loc, -1, block_sym)));

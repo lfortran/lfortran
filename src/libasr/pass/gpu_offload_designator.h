@@ -81,19 +81,44 @@ bool gpu_same_designator(ASR::expr_t *a, ASR::expr_t *b);
 // `x%c_(k)`; `x%c_` is not, and neither is `x%c_(m)`.
 bool gpu_designator_within(ASR::expr_t *outer, ASR::expr_t *inner);
 
+// True for TRANSPOSE and MATMUL, which are not elementwise: each element
+// of the result is computed from other elements of an operand.
+bool gpu_reads_other_operand_elements(
+    const ASR::IntrinsicArrayFunction_t &x);
+
 // Reports whether an expression reads the storage of `base` through a
-// designator that is not element-for-element identical to `target`. Such
-// a read may see an element the assignment to `target` has already
-// overwritten, so the assignment needs a temporary.
+// designator that is not element-for-element identical to `target`, or
+// through any designator at all in an operand of TRANSPOSE or MATMUL,
+// which reads the operand's other elements too. Such a read may see an
+// element the assignment to `target` has already overwritten, so the
+// assignment needs a temporary.
 class GpuSelfAliasChecker : public ASR::BaseWalkVisitor<GpuSelfAliasChecker> {
 public:
     GpuDesignatorBase base;
     ASR::expr_t *target = nullptr;
     bool aliased = false;
+    // Whether a read in an operand of TRANSPOSE or MATMUL is aliased.
+    bool aliased_in_non_elemental = false;
+    // How many TRANSPOSE or MATMUL calls the walk is inside.
+    int in_non_elemental = 0;
 
     void check_designator(ASR::expr_t *e) {
         if (gpu_designator_base(e) != base) return;
-        if (!gpu_same_designator(target, e)) aliased = true;
+        if (in_non_elemental > 0) {
+            aliased = true;
+            aliased_in_non_elemental = true;
+        } else if (!gpu_same_designator(target, e)) {
+            aliased = true;
+        }
+    }
+
+    void visit_IntrinsicArrayFunction(
+            const ASR::IntrinsicArrayFunction_t &x) {
+        bool non_elemental = gpu_reads_other_operand_elements(x);
+        if (non_elemental) in_non_elemental++;
+        ASR::BaseWalkVisitor<GpuSelfAliasChecker>
+            ::visit_IntrinsicArrayFunction(x);
+        if (non_elemental) in_non_elemental--;
     }
 
     void visit_Var(const ASR::Var_t &x) {

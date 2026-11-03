@@ -2443,12 +2443,36 @@ void GpuOffloadVisitor::inline_intrinsic_sum(ParallelLoopNest &nest) {
 // This avoids generating a call to _lcompilers_transpose which is not
 // available inside Metal GPU kernels.
 void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
+    ASR::stmt_t **body = nest.body;
+    size_t n_body = nest.n_body;
+    if (inline_transpose_stmts(body, n_body)) {
+        // Through set_body, so the loop the nest reads from carries
+        // the rewrite too and not just the view of it.
+        nest.set_body(body, n_body);
+    }
+}
+
+// Lowers each `b = transpose(a)` of `body`, and of the BLOCKs made for
+// an assignment whose target a TRANSPOSE operand reads (whose own
+// statements are alias-free), into element loops. True when `body`
+// itself changed.
+bool GpuOffloadVisitor::inline_transpose_stmts(ASR::stmt_t **&body,
+        size_t &n_body) {
     Vec<ASR::stmt_t*> new_body;
-    new_body.reserve(al, nest.n_body * 4);
+    new_body.reserve(al, n_body * 4);
     bool changed = false;
 
-    for (size_t si = 0; si < nest.n_body; si++) {
-        ASR::stmt_t *stmt = nest.body[si];
+    for (size_t si = 0; si < n_body; si++) {
+        ASR::stmt_t *stmt = body[si];
+        if (ASR::is_a<ASR::BlockCall_t>(*stmt)
+                && non_elemental_alias_blocks.count(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m)) {
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+            inline_transpose_stmts(block->m_body, block->n_body);
+            new_body.push_back(al, stmt);
+            continue;
+        }
         if (!ASR::is_a<ASR::Assignment_t>(*stmt)) {
             new_body.push_back(al, stmt);
             continue;
@@ -2531,6 +2555,8 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
 
         // a is (m, n) => b = transpose(a) is (n, m)
         // b(i, j) = a(j, i) for i=1..n, j=1..m
+        // The bounds come from the declaration of `a`, so the loops get
+        // their own copies of them (own_bound).
         ASR::expr_t *var_i = make_var("__gpu_tr_i");
         ASR::expr_t *var_j = make_var("__gpu_tr_j");
 
@@ -2554,6 +2580,8 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
         inner_head.loc = loc;
         inner_head.m_v = var_i;
         set_loop_head_bounds(al, loc, inner_head, dims, 1, arr_arg);
+        inner_head.m_start = own_bound(inner_head.m_start);
+        inner_head.m_end = own_bound(inner_head.m_end);
         inner_head.m_increment = nullptr;
         ASR::stmt_t *inner_loop = ASRUtils::STMT(
             ASRUtils::make_DoLoop_t_util(al, loc, nullptr, inner_head,
@@ -2567,6 +2595,8 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
         outer_head.loc = loc;
         outer_head.m_v = var_j;
         set_loop_head_bounds(al, loc, outer_head, dims, 0, arr_arg);
+        outer_head.m_start = own_bound(outer_head.m_start);
+        outer_head.m_end = own_bound(outer_head.m_end);
         outer_head.m_increment = nullptr;
         ASR::stmt_t *outer_loop = ASRUtils::STMT(
             ASRUtils::make_DoLoop_t_util(al, loc, nullptr, outer_head,
@@ -2577,10 +2607,10 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
     }
 
     if (changed) {
-        // Through set_body, so the loop the nest reads from carries
-        // the rewrite too and not just the view of it.
-        nest.set_body(new_body.p, new_body.n);
+        body = new_body.p;
+        n_body = new_body.n;
     }
+    return changed;
 }
 
 } // namespace LCompilers

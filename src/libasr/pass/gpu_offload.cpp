@@ -352,6 +352,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // shares with the rest of the program.
     ParallelLoopNest work;
     kernel_blocks.clear();
+    non_elemental_alias_blocks.clear();
     bound_copies.clear();
     {
         ASRUtils::ExprStmtDuplicator dup(al);
