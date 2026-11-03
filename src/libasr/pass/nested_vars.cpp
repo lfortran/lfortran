@@ -2582,9 +2582,11 @@ public:
     // can be invoked for when the instance ends and the BLOCK and
     // ASSOCIATE constructs of the host, which the statements of the body
     // execute and which can refer to those locals. Every return of the host
-    // exits the construct instead. Returns false, and changes nothing, if
-    // the host has no such local or if another symbol of the host refers to
-    // one of them.
+    // exits the construct instead. Returns false if the host has no such
+    // local or if another symbol of the host refers to one of them other
+    // than by the inquiries that are replaced below. The body is then not
+    // moved, and the declarations whose inquiries were replaced keep their
+    // values.
     bool wrap_body(ASR::Function_t &f) {
         SymbolTable *host = f.m_symtab;
         std::vector<std::string> moved;

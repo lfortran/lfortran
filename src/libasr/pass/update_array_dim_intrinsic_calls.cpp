@@ -15,9 +15,10 @@ namespace LCompilers {
 
 The following class implements replacer methods for replacing
 calls to intrinsic functions (which provide dimensional information
-of arrays like size) with the actual result. This happens only for arrays
+of arrays like size) with the actual result. This pass does it for arrays
 which are input arguments to a procedure, and the dimensional information
-in their type is not empty. See the example below,
+in their type is not empty (replace_declared_array_inquiries does it for
+given arrays in a declaration). See the example below,
 
 subrotuine copy(x, y, n)
     integer, intent(in) :: n
@@ -64,8 +65,9 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
     ReplaceArrayDimIntrinsicCalls(Allocator& al_, bool fast_) : al(al_), fast(fast_)
     {}
 
-    // Whether the inquiries about `var` are replaced, where `argument` is
-    // whether it is a dummy argument whose inquiries are
+    // Whether the inquiries about `var` are replaced. Without `arrays`,
+    // they are if `argument` (whether `var` is a dummy argument that this
+    // pass handles) is true.
     bool is_replaced(ASR::expr_t* var, bool argument) {
         if( arrays != nullptr ) {
             return arrays->count(ASR::down_cast<ASR::Var_t>(var)->m_v) > 0;

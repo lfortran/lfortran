@@ -40,10 +40,10 @@ contains
 end subroutine
 subroutine host_dummy(n, y)
     integer, intent(in) :: n
-    type(t) :: x(n)
-    integer, intent(inout) :: y(size(x, 1))
+    type(t) :: x(n:2*n-1)
+    integer, intent(inout) :: y(lbound(x, 1):ubound(x, 1))
     integer :: k
-    k = n + y(1) + 1
+    k = 2*n
     saved => get
 contains
     integer function get()
