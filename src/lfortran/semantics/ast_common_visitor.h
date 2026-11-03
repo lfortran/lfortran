@@ -28099,7 +28099,7 @@ public:
     void check_association_definable(ASR::expr_t *expression) {
         auto *variable = ASRUtils::association_variable(expression);
         if (variable && variable->m_intent == ASR::intentType::In) {
-            trait_call_error("a select type association with a nondefinable selector "
+            trait_call_error("an associate name with a nondefinable selector "
                 "cannot appear in a variable definition context", expression->base.loc);
         }
     }

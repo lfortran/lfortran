@@ -164,9 +164,9 @@ contains
         type(Holder), intent(in) :: h
         call h%c%reset(3)
     end subroutine
-    ! C05: nor an associate name of a read-only view. An ASSOCIATE of a trait
-    ! view is not implemented yet and is diagnosed as such; once it is, the
-    ! call is diagnosed because the associate name is not definable.
+    ! C05: nor an associate name of a read-only view: an ASSOCIATE of a
+    ! trait view is a borrowed view that is definable only when its selector
+    ! is.
     subroutine bad_bump_associate_view(v)
         class(ICounter), intent(in) :: v
         associate (r => v)

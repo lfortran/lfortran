@@ -1,0 +1,27 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/traits_associate_01.f90:5:5 - 10:1
+   |
+ 5 |        abstract interface :: IValue
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+10 |    
+   | ...^ LFortran extension
+
+semantic error: associate names of runtime trait arrays are not implemented yet
+  --> tests/errors/traits_associate_01.f90:29:27
+   |
+29 |         associate (all => vals)  ! {Error} associate names of runtime trait arrays are not implemented yet
+   |                           ^^^^ 
+
+semantic error: associate views of runtime trait object expressions are not implemented yet
+  --> tests/errors/traits_associate_01.f90:35:26
+   |
+35 |         associate (p => (v))  ! {Error} associate views of runtime trait object expressions are not implemented yet
+   |                          ^ 
+
+semantic error: associate views of runtime trait object expressions are not implemented yet
+  --> tests/errors/traits_associate_01.f90:40:25
+   |
+40 |         associate (r => make())  ! {Error} associate views of runtime trait object expressions are not implemented yet
+   |                         ^^^^^^ 

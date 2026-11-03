@@ -125,13 +125,13 @@ semantic error: component 'item' of type 'privateholder' is private and cannot b
 347 |         class(IValue), allocatable :: item
     |                                       ~~~~ 'item' is declared here
 
-semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+semantic error: an associate name with a nondefinable selector cannot appear in a variable definition context
    --> tests/errors/continue_compilation_traits_02.f90:379:13
     |
 379 |             call counter%bump()
     |             ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+semantic error: an associate name with a nondefinable selector cannot appear in a variable definition context
    --> tests/errors/continue_compilation_traits_02.f90:386:13
     |
 386 |             call counter%bump()

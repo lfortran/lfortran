@@ -6708,6 +6708,10 @@ ast_f90 = true
 filename = "errors/traits_target_mismatch_01.f90"
 semantics_only_cc = true
 
+[[test]]
+filename = "errors/traits_associate_01.f90"
+semantics_only_cc = true
+
 # An array passed to a scalar dummy argument.
 [[test]]
 filename = "errors/array_to_scalar_dummy_01.f90"

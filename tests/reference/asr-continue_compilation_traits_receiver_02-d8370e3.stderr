@@ -72,11 +72,11 @@ semantic error: Argument `h` with intent(in) passed to a dummy argument with mod
 165 |         call h%c%reset(3)
     |         ^^^^^^^^^^^^^^^^^ 
 
-semantic error: associate views of runtime trait objects are not implemented yet
-   --> tests/errors/continue_compilation_traits_receiver_02.f90:172:25
+semantic error: an associate name with a nondefinable selector cannot appear in a variable definition context
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:173:13
     |
-172 |         associate (r => v)
-    |                         ^ 
+173 |             call r%bump(1)
+    |             ^^^^^^^^^^^^^^ 
 
 semantic error: the associate name 'r' is associated with an expression, not a variable, so it cannot be the receiver of a message with an intent(inout) or intent(out) receiver
    --> tests/errors/continue_compilation_traits_receiver_02.f90:179:13
@@ -90,7 +90,7 @@ semantic error: the associate name 'r' is associated with an expression, not a v
 186 |             call r%reset(4)
     |             ^^^^^^^^^^^^^^^ 
 
-semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+semantic error: an associate name with a nondefinable selector cannot appear in a variable definition context
    --> tests/errors/continue_compilation_traits_receiver_02.f90:194:13
     |
 194 |             call s%bump(1)

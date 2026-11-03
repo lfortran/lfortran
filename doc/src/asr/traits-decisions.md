@@ -1105,7 +1105,9 @@ specification action, that is, what the paper should say.
   receivers; a `type(itself)` dummy of a message other than its receiver,
   which was not implemented before TD-36 either (initializer and operator
   requirements support such operands); an ASSOCIATE whose selector is a trait
-  object; and `intent(out)`, omitted INTENT, OPTIONAL and VALUE trait-object
+  array or a trait-object expression (one whose selector is a scalar trait
+  object designator is a borrowed view since 2026-11-03); and `intent(out)`,
+  omitted INTENT, OPTIONAL and VALUE trait-object
   dummies that are neither allocatable nor pointers (TD-35).
 - **Specification action.** Decide whether messages declare their receivers.
   If they do, specify: the declaration (here a PASS-marked `type(itself)`

@@ -84,7 +84,7 @@ semantic error: Argument `e` with intent(in) passed to a dummy argument with mod
 140 |         call c%update(e)
     |                       ^ 
 
-semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+semantic error: an associate name with a nondefinable selector cannot appear in a variable definition context
    --> tests/errors/continue_compilation_traits_view_argument.f90:147:27
     |
 147 |             call c%update(alias)

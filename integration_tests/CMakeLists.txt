@@ -4402,6 +4402,8 @@ RUN(NAME traits_runtime_target_argument_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_array_section_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_associate_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
 # LFortran rejects modifying the target of an intent(in) pointer dummy (#14252).
 RUN(NAME traits_runtime_view_argument_01_oracle LABELS gfortran)
 RUN(NAME traits_runtime_view_argument_separate_01 LABELS llvm llvm2 NO_STD_F23

@@ -3675,6 +3675,57 @@ public:
         }
     }
 
+    // The associate name `name` of a scalar runtime trait object `selector`,
+    // a designator: a borrowed view of the selector's payload with its
+    // witness, captured when the ASSOCIATE statement executes, as the
+    // associate name of a SELECT TYPE on a view is. It is definable when the
+    // selector is, and has TARGET when the selector does.
+    void bind_associate_trait_view(const std::string &name, ASR::expr_t *selector,
+            bool parenthesized, SymbolTable *scope, Vec<ASR::stmt_t*> &body) {
+        const Location &loc = selector->base.loc;
+        auto *selector_type = ASRUtils::expr_type(selector);
+        if (ASRUtils::is_array(ASRUtils::type_get_past_allocatable_pointer(selector_type))) {
+            trait_call_error("associate names of runtime trait arrays are not "
+                "implemented yet", loc);
+        }
+        if (parenthesized || !(ASR::is_a<ASR::Var_t>(*selector) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*selector) ||
+                ASR::is_a<ASR::ArrayItem_t>(*selector))) {
+            trait_call_error("associate views of runtime trait object expressions "
+                "are not implemented yet", loc);
+        }
+        bool definable = ASRUtils::association_is_definable(selector);
+        bool target_attr = ASRUtils::association_has_target(selector);
+        auto *contract = ASRUtils::trait_runtime_contract(selector_type);
+        auto *parent_scope = current_scope;
+        current_scope = scope;
+        auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc,
+            ASRUtils::import_type_declaration(al, &contract->base, scope)));
+        ASR::expr_t *view = selector;
+        make_runtime_trait_view(view, view_type);
+        current_scope = parent_scope;
+        Vec<ASR::trait_projection_slot_t> slots;
+        slots.reserve(al, contract->n_slots);
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            ASR::trait_projection_slot_t slot;
+            slot.loc = loc;
+            slot.m_source = i;
+            slots.push_back(al, slot);
+        }
+        auto *snapshot = ASRUtils::EXPR(ASR::make_TraitProject_t(al, loc, view,
+            slots.p, slots.size(), view_type));
+        auto *symbol = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, loc, scope, s2c(al, name), nullptr, 0,
+            definable ? ASR::intentType::Local : ASR::intentType::In,
+            nullptr, nullptr, ASR::storage_typeType::Association, view_type,
+            nullptr, ASR::abiType::Source, ASR::accessType::Private,
+            ASR::presenceType::Required, false));
+        ASR::down_cast<ASR::Variable_t>(symbol)->m_target_attr = target_attr;
+        scope->add_symbol(name, symbol);
+        body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, symbol)), snapshot)));
+    }
+
     void visit_AssociateBlock(const AST::AssociateBlock_t& x) {
         SymbolTable* new_scope = al.make_new<SymbolTable>(current_scope);
         std::string name = current_scope->get_unique_name("associate_block");
@@ -3695,8 +3746,10 @@ public:
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
             ASR::ttype_t* tmp_type = ASRUtils::expr_type(tmp_expr);
             if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(tmp_type))) {
-                trait_call_error("associate views of runtime trait objects are not implemented yet",
-                    tmp_expr->base.loc);
+                bind_associate_trait_view(to_lower(x.m_syms[i].m_name), tmp_expr,
+                    AST::is_a<AST::Parenthesis_t>(*x.m_syms[i].m_initializer),
+                    new_scope, body);
+                continue;
             }
             // A function reference whose result is not a data pointer is an
             // expression, even when the associate name below is associated

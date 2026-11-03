@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_associate_01-37bd85e",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_associate_01.f90",
+    "infile_hash": "9478912d96ad086dec0b9b6afd385d15574d14f5dc25da98551d22f5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_associate_01-37bd85e.stderr",
+    "stderr_hash": "3fc9c4db36540d45eca38328914938bb865bff5eb03aec55befd6ee0",
+    "returncode": 1
+}

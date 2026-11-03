@@ -2353,6 +2353,34 @@ dummies and through a view of a message, also with `--detect-leaks`.
 the reported component in each kind of containing object, also with
 `--detect-leaks`. `continue_compilation_traits_12` checks the diagnostics.
 
+### Associate names of trait objects
+
+An ASSOCIATE name can be associated with a scalar runtime trait object, as a
+further report does with an element of a trait array:
+
+```fortran
+class(ITrait), allocatable :: objs(:)
+allocate(MyType :: objs(2))
+associate( obj => objs(2) )
+end associate
+```
+
+The selector is a designator: an element of a trait array, an owner, a
+component, a view or another associate name. The associate name is a
+borrowed view of the selector's payload with its witness, as the associate
+name of a SELECT TYPE on a view is: an `Association` variable of the view
+type bound, when the ASSOCIATE statement executes, to an identity
+`TraitProject` of the selector's view. Its messages dispatch as the
+selector's would; it is definable when the selector is, so a defining
+message updates the selector's own object. It is passed to a view dummy as
+the selector would be.
+Nothing is copied, allocated or finalized. An associate name of a trait
+array, or of an expression such as a function result or a parenthesized
+selector, is diagnosed as not implemented. `traits_runtime_associate_01`
+associates names with elements of an owner and of a component, a scalar
+owner, a component, a view dummy and another associate name, and
+`traits_associate_01` checks the diagnostics.
+
 ### Optional and allocatable arguments
 
 Non-generic messages preserve ordinary optional-argument presence and
