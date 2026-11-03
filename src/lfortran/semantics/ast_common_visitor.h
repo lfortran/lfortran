@@ -2327,6 +2327,66 @@ public:
         PendingAttributeScope(const PendingAttributeScope &) = delete;
         PendingAttributeScope &operator=(const PendingAttributeScope &) = delete;
     };
+
+    // Whether `implicit none (external)` applies to the scoping unit or BLOCK
+    // construct being visited: one entry per unit whose body is visited. It
+    // applies to the unit that has it and to its contained subprograms and
+    // BLOCK constructs (F2018 C895).
+    std::vector<bool> implicit_none_external_stack;
+
+    static bool has_implicit_none_external(AST::decl_stmt_t **items,
+            size_t n_items) {
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::ImplicitNone_t>(*items[i])) continue;
+            AST::ImplicitNone_t *none = AST::down_cast<AST::ImplicitNone_t>(items[i]);
+            for (size_t j = 0; j < none->n_specs; j++) {
+                if (AST::is_a<AST::ImplicitNoneExternal_t>(*none->m_specs[j])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    struct ImplicitNoneExternalScope {
+        CommonVisitor &v;
+        ImplicitNoneExternalScope(CommonVisitor &v_, AST::decl_stmt_t **items,
+                size_t n_items, bool inherit) : v{v_} {
+            bool host = inherit && !v.implicit_none_external_stack.empty()
+                && v.implicit_none_external_stack.back();
+            v.implicit_none_external_stack.push_back(host
+                || has_implicit_none_external(items, n_items));
+        }
+        ~ImplicitNoneExternalScope() {
+            v.implicit_none_external_stack.pop_back();
+        }
+        ImplicitNoneExternalScope(const ImplicitNoneExternalScope &) = delete;
+        ImplicitNoneExternalScope &operator=(const ImplicitNoneExternalScope &) = delete;
+    };
+
+    // Reports a reference to the procedure `name` that is not explicitly
+    // declared where `implicit none (external)` applies: `sym` is what `name`
+    // resolves to, null if nothing. A procedure is explicitly declared when it
+    // has the EXTERNAL attribute or an explicit interface, i.e. when its name
+    // is declared in the unit or a host of it. A procedure defined at the top
+    // level of the file is resolved without such a declaration.
+    void check_implicit_none_external(const std::string &name,
+            ASR::symbol_t *sym, const Location &loc) {
+        if (implicit_none_external_stack.empty()
+                || !implicit_none_external_stack.back()) {
+            return;
+        }
+        if (sym && ASRUtils::symbol_parent_symtab(sym)->parent != nullptr) {
+            return;
+        }
+        diag.add(diag::Diagnostic(
+            "procedure '" + name + "' is not explicitly declared",
+            diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label("help: declare it with the EXTERNAL attribute "
+                    "or give it an explicit interface, as required by "
+                    "'implicit none (external)'", {loc})}));
+        throw SemanticAbort();
+    }
     // Tracks (scope, module name) pairs for which the module's symbols were
     // brought into `scope` via a wildcard/all import (`use mod` or
     // `use mod, x => y`), as opposed to an explicit `use mod, only: name`.
@@ -24729,6 +24789,10 @@ public:
             if (!v) {
                 v = current_scope->resolve_symbol(var_name);
             }
+            if (v && !is_external_procedure && ASR::is_a<ASR::Function_t>(
+                    *ASRUtils::symbol_get_past_external(v))) {
+                check_implicit_none_external(var_name, v, x.base.base.loc);
+            }
         }
         if (compiler_options.implicit_interface && !is_external_procedure
                 && is_implicit_interface_decl(v)) {
@@ -24790,6 +24854,10 @@ public:
                 }
                 if (!type) {
                     type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 4));
+                }
+                if (!v && !external_sym) {
+                    check_implicit_none_external(var_name, nullptr,
+                        x.base.base.loc);
                 }
                 ASR::symbol_t* canonical = v ? v
                     : get_or_create_opaque_procedure(var_name, x.base.base.loc);
@@ -24910,6 +24978,10 @@ public:
                 // A dummy argument declared as a variable (e.g. by implicit
                 // typing) and referenced as a function is a dummy procedure
                 // with an implicit interface returning the variable's type.
+                if (!is_external_procedure) {
+                    check_implicit_none_external(var_name, nullptr,
+                        x.base.base.loc);
+                }
                 ASR::ttype_t* return_type = ASRUtils::symbol_type(v);
                 make_dummy_opaque_procedure(ASR::down_cast<ASR::Variable_t>(v),
                     return_type, x.base.base.loc);
@@ -24933,6 +25005,10 @@ public:
                 // print *, x(5)
                 // Which is a function call: `x` is a procedure with an
                 // implicit interface returning the type of the old `x`.
+                if (!is_external_procedure) {
+                    check_implicit_none_external(var_name, nullptr,
+                        x.base.base.loc);
+                }
                 ASR::ttype_t* old_type = ASRUtils::symbol_type(v);
                 ASR::symbol_t* canonical = replace_variable_with_opaque_procedure(
                     var_name, v, old_type, x.base.base.loc);
