@@ -58,6 +58,11 @@ bytes without changing array bounds or suppressing unrelated kernel work;
 inactive or empty slices do not form pointers into absent storage. Without
 an allocation predicate, the workspace is allocated unconditionally.
 
+Nested concurrent loops retain enclosing data-use guards and contribute their
+own branches to the same dominance proof. Loop controls are also storage uses;
+iteration-dependent predicates, locality/reduction domains, escaping storage
+and uses outside the guard conservatively retain unconditional allocation.
+
 `source_argument_count` separates original arguments from these appended
 parameters. `device_functions` records the device call graph in callee-first
 order; direct self-recursion is permitted.

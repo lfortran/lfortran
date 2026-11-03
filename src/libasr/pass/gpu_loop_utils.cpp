@@ -2274,6 +2274,14 @@ std::vector<GpuWorkspaceGuard> gpu_workspace_data_guards(
                 case ASR::stmtType::AssociateBlockCall:
                 case ASR::stmtType::SubroutineCall:
                     break;
+                case ASR::stmtType::DoConcurrentLoop: {
+                    auto *loop = ASR::down_cast<ASR::DoConcurrentLoop_t>(&x);
+                    // Walk controls as well as data uses in the body. The
+                    // existing uniformity/write checks reject inner indices;
+                    // locality and reduction domains remain conservative.
+                    opaque |= loop->n_local != 0 || loop->n_reduction != 0;
+                    break;
+                }
                 default: opaque = true;
             }
             ASR::BaseWalkVisitor<Uses>::visit_stmt(x);

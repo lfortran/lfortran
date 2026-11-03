@@ -1206,11 +1206,12 @@ end module
 }
 
 TEST_CASE("GPU workspace guards preserve shapes and reject private predicates") {
-    bool polarity = false;
+    bool polarity = false, nested = false;
     SUBCASE("data, bounds and conservative fallbacks") {}
     SUBCASE("equivalent predicates with reversed polarity") { polarity = true; }
-    std::string filename = polarity ? "gpu_workspace_guard_02.f90"
-        : "gpu_workspace_guard_01.f90";
+    SUBCASE("nested concurrent domains and unguarded data uses") { nested = true; }
+    std::string filename = nested ? "gpu_workspace_guard_03.f90"
+        : polarity ? "gpu_workspace_guard_02.f90" : "gpu_workspace_guard_01.f90";
     const std::string source = read_project_file("integration_tests/" + filename);
     CompilerOptions options;
     options.gpu_backend = "cuda";
@@ -1228,9 +1229,7 @@ TEST_CASE("GPU workspace guards preserve shapes and reject private predicates") 
     REQUIRE(parsed.ok);
     Allocator allocator(32 * 1024 * 1024);
     PassManager passes;
-    std::string pass = "gpu_kernel_finalize", skip;
-    passes.parse_pass_arg(pass, skip);
-    options.po.pass_cumulative = true;
+    passes.use_default_passes();
     passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
     INFO(diagnostics.render2());
     REQUIRE_FALSE(diagnostics.has_error());
@@ -1246,6 +1245,12 @@ TEST_CASE("GPU workspace guards preserve shapes and reject private predicates") 
             REQUIRE(workspace.n_dims == 1);
             CHECK(ASRUtils::extract_kind_from_ttype_t(
                 ASRUtils::expr_type(workspace.m_dims[0].m_extent)) == 4);
+            if (nested) {
+                std::string name = ASRUtils::symbol_name(workspace.m_variable);
+                INFO(name);
+                CHECK((workspace.m_allocation_if != nullptr) ==
+                    (name == "nested_work" || name == "inherited_work"));
+            }
             if (!workspace.m_allocation_if) continue;
             guarded++;
             negative += !workspace.m_allocation_on_true;
@@ -1260,9 +1265,9 @@ TEST_CASE("GPU workspace guards preserve shapes and reject private predicates") 
             workspace.m_allocation_on_true = !workspace.m_allocation_on_true;
         }
     }
-    CHECK(workspaces == (polarity ? 1 : 4));
-    CHECK(guarded == (polarity ? 1 : 3));
-    CHECK(negative == (polarity ? 1 : 0));
+    CHECK(workspaces == (nested ? 5 : polarity ? 1 : 4));
+    CHECK(guarded == (nested ? 2 : polarity ? 1 : 3));
+    CHECK(negative == (nested || polarity ? 1 : 0));
     for (auto form : {ASRTextForm::Named, ASRTextForm::Positional}) {
         ASRTextOptions text_options;
         text_options.form = form;
