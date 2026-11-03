@@ -7263,11 +7263,6 @@ asr = true
 filename = "asr/verify/gpu_kernel_launch_chunk_parameter_kind.asr"
 asr = true
 
-# A launch of a kernel with lanes must not run in chunks.
-[[test]]
-filename = "asr/verify/gpu_kernel_launch_chunk_lanes.asr"
-asr = true
-
 # Only a launch with chunk dimensions may have a first chunk parameter.
 [[test]]
 filename = "asr/verify/gpu_kernel_launch_first_chunk_without_chunks.asr"
