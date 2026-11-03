@@ -1362,6 +1362,7 @@ RUN(NAME namelist_39 LABELS llvm) # Test in not compatible with gfortran 13.0 us
 RUN(NAME namelist_40 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME namelist_41 LABELS gfortran llvm)
 RUN(NAME namelist_42 LABELS llvm) # GFortran 15 mishandles namelist arrays of extended types
+RUN(NAME namelist_43 LABELS gfortran llvm)
 RUN(NAME nested_namelist_01 LABELS gfortran llvm)
 RUN(NAME nested_namelist_02 LABELS gfortran llvm)
 RUN(NAME nested_namelist_03 LABELS gfortran llvm)

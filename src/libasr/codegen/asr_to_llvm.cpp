@@ -21037,7 +21037,7 @@ public:
             int32_t rank;
             llvm::Constant* stride;
             llvm::Value* shape;
-            llvm::Value* lbound;  // nullptr if only known at run time
+            llvm::Value* lbound;
         };
         std::vector<NmlLevel> levels;
 
@@ -21129,32 +21129,30 @@ public:
                     if (ASRUtils::is_character(*member_type)) {
                         throw CodeGenError("namelist character components of nested derived-type arrays are not supported yet");
                     }
-                    for (auto &level: levels) {
-                        if (!level.lbound) {
-                            throw CodeGenError("namelist arrays of derived types with array components in descriptor storage are not supported yet");
-                        }
-                    }
                     // Written by the runtime element by element as
                     // `name(i,...)%component=...`
                     add_namelist_item(member_name, member_type, member_ptr, nullptr);
-                    std::vector<llvm::Constant*> level_vals;
-                    for (auto &level: levels) {
-                        level_vals.push_back(llvm::ConstantStruct::get(level_type, {
-                            LCompilers::create_global_string_ptr(context, *module, *builder, level.name),
-                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), level.rank),
-                            level.stride, llvm::cast<llvm::Constant>(level.shape),
-                            llvm::cast<llvm::Constant>(level.lbound)}));
+                    // The extents and lower bounds of descriptor arrays are
+                    // only known at run time, so fill the levels in there
+                    llvm::ArrayType* levels_arr_type = llvm::ArrayType::get(level_type, levels.size());
+                    llvm::Value* levels_arr = llvm_utils->CreateAlloca(*builder, levels_arr_type);
+                    for (size_t l = 0; l < levels.size(); l++) {
+                        llvm::Value* level_ptr = builder->CreateConstGEP2_32(
+                            levels_arr_type, levels_arr, 0, checked_integer_cast<unsigned>(l));
+                        std::vector<llvm::Value*> fields = {
+                            LCompilers::create_global_string_ptr(context, *module, *builder, levels[l].name),
+                            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), levels[l].rank),
+                            levels[l].stride, levels[l].shape, levels[l].lbound};
+                        for (size_t f = 0; f < fields.size(); f++) {
+                            builder->CreateStore(fields[f], builder->CreateStructGEP(
+                                level_type, level_ptr, checked_integer_cast<unsigned>(f)));
+                        }
                     }
-                    llvm::ArrayType* levels_arr_type = llvm::ArrayType::get(level_type, level_vals.size());
-                    llvm::GlobalVariable* levels_global = new llvm::GlobalVariable(
-                        *module, levels_arr_type, true, llvm::GlobalValue::PrivateLinkage,
-                        llvm::ConstantArray::get(levels_arr_type, level_vals), "nml_levels");
                     llvm::Value *nml_item = nml_items.back();
                     builder->CreateStore(llvm::ConstantInt::get(
-                        llvm::Type::getInt32Ty(context), level_vals.size()),
+                        llvm::Type::getInt32Ty(context), levels.size()),
                         builder->CreateStructGEP(item_type, nml_item, 7));
-                    builder->CreateStore(llvm::ConstantExpr::getBitCast(
-                        levels_global, level_type->getPointerTo()),
+                    builder->CreateStore(builder->CreateConstGEP2_32(levels_arr_type, levels_arr, 0, 0),
                         builder->CreateStructGEP(item_type, nml_item, 8));
                 }
 
@@ -21168,9 +21166,11 @@ public:
         };
 
         // The address of the first element of the descriptor array that
-        // `data_ptr` refers to, and a pointer to its extents, read at run time
+        // `data_ptr` refers to, and pointers to its extents and (if
+        // `lbound_ptr` is given) lower bounds, read at run time
         auto descriptor_array_data = [&](ASR::ttype_t* array_type_asr,
-                llvm::Value* data_ptr, llvm::Value*& shape_ptr) -> llvm::Value* {
+                llvm::Value* data_ptr, llvm::Value*& shape_ptr,
+                llvm::Value** lbound_ptr = nullptr) -> llvm::Value* {
             ASR::ttype_t* past_alloc = ASRUtils::type_get_past_allocatable_pointer(array_type_asr);
             ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(past_alloc);
             llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(nullptr, past_alloc, module.get());
@@ -21186,6 +21186,20 @@ public:
                 builder->CreateStore(dim_size, shape_elem_ptr);
             }
             shape_ptr = builder->CreateConstGEP2_32(shape_arr_type, shape_arr, 0, 0);
+            if (lbound_ptr) {
+                llvm::Value* lbound_arr = llvm_utils->CreateAlloca(*builder, shape_arr_type);
+                llvm::Value* dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+                    arr_type, arr_desc_loaded);
+                for (size_t d = 0; d < n_dims; d++) {
+                    llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(dim_des_arr,
+                        llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d));
+                    llvm::Value* lbound = builder->CreateSExtOrTrunc(
+                        arr_descr->get_lower_bound(dim_des), llvm::Type::getInt64Ty(context));
+                    builder->CreateStore(lbound, builder->CreateConstGEP2_32(
+                        shape_arr_type, lbound_arr, 0, checked_integer_cast<unsigned>(d)));
+                }
+                *lbound_ptr = builder->CreateConstGEP2_32(shape_arr_type, lbound_arr, 0, 0);
+            }
             llvm::Value* data_ptr_field = arr_descr->get_pointer_to_data(arr_type, arr_desc_loaded);
             if (ASR::is_a<ASR::String_t>(*elem_type)) {
                 ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
@@ -21244,7 +21258,8 @@ public:
                 llvm::Value* shape_ptr = nullptr;
                 llvm::Value* lbound_ptr = nullptr;
                 if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-                    struct_ptr = descriptor_array_data(item_type_asr, data_ptr, shape_ptr);
+                    struct_ptr = descriptor_array_data(item_type_asr, data_ptr, shape_ptr,
+                                                       &lbound_ptr);
                 } else if (arr_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
                     ASR::dimension_t* dims = nullptr;
                     ASRUtils::extract_dimensions_from_ttype(item_type_asr, dims);
