@@ -4084,4 +4084,7 @@ module cc1_procptr_component_nopass
     type :: t_typed_procptr
         procedure(integer), pointer :: f  ! {Error} procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
     end type
+    type :: t_kinded_procptr
+        procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+    end type
 end module

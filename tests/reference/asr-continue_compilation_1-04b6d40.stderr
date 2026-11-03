@@ -1706,6 +1706,12 @@ semantic error: procedure pointer component 'f' with an implicit interface must 
 4085 |         procedure(integer), pointer :: f  ! {Error} procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
      |                                        ^ 
 
+semantic error: procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4088:40
+     |
+4088 |         procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+     |                                        ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

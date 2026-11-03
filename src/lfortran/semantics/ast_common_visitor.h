@@ -3536,6 +3536,18 @@ public:
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
     }
 
+    // True for `procedure(real)`, `procedure(integer)`, ...: the interface
+    // name of a procedure declaration is an intrinsic type name.
+    static bool procedure_names_intrinsic_type(const AST::AttrType_t &t) {
+        if (!t.m_name) {
+            return false;
+        }
+        std::string name = to_lower(t.m_name);
+        return name == "real" || name == "integer" || name == "logical"
+            || name == "complex" || name == "character"
+            || name == "doubleprecision";
+    }
+
     bool is_procedure_result(const char* name) {
         return current_scope == current_procedure_result_scope
             && name != nullptr && !current_procedure_result.empty()
@@ -10838,12 +10850,8 @@ public:
                     // needs NOPASS.
                     if (is_derived_type && !is_nopass_attr
                             && sym_type->m_type == AST::decl_typeType::TypeProcedure) {
-                        std::string iface_name = sym_type->m_name
-                            ? to_lower(sym_type->m_name) : "";
-                        if (!sym_type->m_name || iface_name == "real"
-                                || iface_name == "integer" || iface_name == "logical"
-                                || iface_name == "complex" || iface_name == "character"
-                                || iface_name == "doubleprecision") {
+                        if (!sym_type->m_name
+                                || procedure_names_intrinsic_type(*sym_type)) {
                             diag.semantic_error_label("procedure pointer component '"
                                 + std::string(s.m_name) + "' with an implicit "
                                 "interface must have the NOPASS attribute",
@@ -14496,12 +14504,7 @@ public:
             // `procedure(real)`, `procedure(logical)`, ... name a type, as
             // `procedure(real(8))` does with its attribute (R1514), not the
             // intrinsic function of that name.
-            std::string proc_iface_name = sym_type->m_name
-                ? to_lower(sym_type->m_name) : "";
-            bool is_type_name = proc_iface_name == "real"
-                || proc_iface_name == "integer" || proc_iface_name == "logical"
-                || proc_iface_name == "complex" || proc_iface_name == "character"
-                || proc_iface_name == "doubleprecision";
+            bool is_type_name = procedure_names_intrinsic_type(*sym_type);
             bool is_type_spec = sym_type->m_attr || is_type_name;
             if ((!sym_type->m_name || is_type_name) && (!is_type_spec
                     || !compiler_options.implicit_interface)) {
