@@ -10833,6 +10833,24 @@ public:
                             throw SemanticAbort();
                         }
                     }
+                    // C757: a procedure component declared with `procedure()`
+                    // or `procedure(type-spec)` has an implicit interface and
+                    // needs NOPASS.
+                    if (is_derived_type && !is_nopass_attr
+                            && sym_type->m_type == AST::decl_typeType::TypeProcedure) {
+                        std::string iface_name = sym_type->m_name
+                            ? to_lower(sym_type->m_name) : "";
+                        if (!sym_type->m_name || iface_name == "real"
+                                || iface_name == "integer" || iface_name == "logical"
+                                || iface_name == "complex" || iface_name == "character"
+                                || iface_name == "doubleprecision") {
+                            diag.semantic_error_label("procedure pointer component '"
+                                + std::string(s.m_name) + "' with an implicit "
+                                "interface must have the NOPASS attribute",
+                                {s.loc}, "");
+                            throw SemanticAbort();
+                        }
+                    }
                 }
                 {
                     HiddenDerivedTypeComponents hidden_components(

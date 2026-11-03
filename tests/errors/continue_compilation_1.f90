@@ -4076,3 +4076,12 @@ subroutine cc1_ept_sub()
     a = cc1_ept_t(cc1_ept_ef)  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
 end subroutine
 end module
+
+module cc1_procptr_component_nopass
+    type :: t_implicit_procptr
+        procedure(), pointer :: s  ! {Error} procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+    end type
+    type :: t_typed_procptr
+        procedure(integer), pointer :: f  ! {Error} procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+    end type
+end module
