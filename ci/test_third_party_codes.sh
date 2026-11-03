@@ -107,6 +107,9 @@ if [[ "$LAPACK_TEST_MODE" != "smoke" && "$LAPACK_TEST_MODE" != "full" ]]; then
   exit 1
 fi
 
+# The checkout, whose pixi.toml provides CMake 3.31 for LAPACK below.
+LFORTRAN_ROOT=$(pwd)
+
 # Setup a temporary workspace
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
@@ -117,8 +120,6 @@ echo "##[endgroup]" # end of Setup
 time_section "🧪 Testing conda-forge fpm" '
   mkdir conda-fpm
   cd conda-fpm
-
-  micromamba install -c conda-forge fpm=0.12.0
 
   # To debug https://github.com/lfortran/lfortran/issues/7732:
   which fpm
@@ -135,8 +136,6 @@ time_section "🧪 Testing conda-forge fpm" '
 time_section "🧪 Testing caffeine" '
   git clone -b main https://github.com/BerkeleyLab/caffeine.git
   cd caffeine
-
-  micromamba install -c conda-forge fpm=0.12.0
 
   fpm --version
 
@@ -175,8 +174,6 @@ time_section "🧪 Testing assert" '
   git clone -b main https://github.com/berkeleylab/assert.git
   cd assert
 
-  micromamba install -c conda-forge fpm=0.12.0
-
   # Release 3.1.2
   git checkout 3.1.2
   assert_git_commit 1eb0cb9ce1421c76b6ab977370b6339918f20918
@@ -198,7 +195,6 @@ time_section "🧪 Testing splpak" '
   git clone https://github.com/Pranavchiku/splpak.git
   cd splpak
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
 
   fpm --version
 
@@ -219,7 +215,6 @@ time_section "🧪 Testing neural-fortran" '
   git clone https://github.com/modern-fortran/neural-fortran
   cd neural-fortran
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
 
   git checkout 5e4940ff2850c9b039f8dd77982715bced8f3ce5
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
@@ -232,7 +227,6 @@ time_section "🧪 Testing Fiats" '
   git clone https://github.com/BerkeleyLab/fiats
   cd fiats
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
 
   git checkout d6f9d93f952acb4b5d5865e6b79369c477d3a291
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
@@ -254,7 +248,6 @@ time_section "🧪 Testing smart-pointers" '
   git clone https://github.com/certik/smart-pointers.git
   cd smart-pointers
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
 
   git checkout -t origin/lf2
   assert_git_commit 95de5105c6a469b64feb39e999567f5e2fcdd033
@@ -270,7 +263,6 @@ time_section "🧪 Testing Formal" '
   git clone https://github.com/berkeleylab/formal.git
   cd formal
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
 
   git checkout 0.4.0
   assert_git_commit d60710a33a0c2a3a0e4e9450000ad1a6782a394a
@@ -292,7 +284,6 @@ time_section "🧪 Testing Formal" '
 time_section "🧪 Testing Julienne" '
   git clone https://github.com/BerkeleyLab/julienne.git
   cd julienne
-  micromamba install -c conda-forge fpm
 
   # Release 4.1.0
   git checkout 4.1.0
@@ -307,7 +298,6 @@ time_section "🧪 Testing fortran-regex" '
   git clone https://github.com/perazz/fortran-regex.git
   cd fortran-regex
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
 
   git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
   fpm --compiler=$FC build
@@ -321,7 +311,6 @@ time_section "🧪 Testing fortran-shlex" '
   git clone https://github.com/perazz/fortran-shlex.git
   cd fortran-shlex
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
 
   git checkout e20b6f86c82e33fae78b54b074bab5369efde6a3
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
@@ -335,7 +324,6 @@ time_section "🧪 Testing toml-f" '
   git clone https://github.com/toml-f/toml-f.git
   cd toml-f
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
 
   git checkout 27abd768e79c7c790ffa58fe5ccfb105ba00883d
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
@@ -350,7 +338,6 @@ time_section "🧪 Testing jonquil" '
   cd jonquil
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout lf-7
-  micromamba install -c conda-forge fpm
 
   git checkout 8aad5a901810bd669e851eead633c0df2bb7b423
   fpm --compiler=$FC test --flag "--cpp --realloc-lhs-arrays"
@@ -364,7 +351,6 @@ time_section "🧪 Testing M_CLI2" '
   cd M_CLI2
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout lf-9
-  micromamba install -c conda-forge fpm
   assert_git_commit 108f0b5598df2bd8ec7a2dffe56017d58520fdfc
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays"
   fpm --compiler=$FC test --flag "--realloc-lhs-arrays"
@@ -378,7 +364,6 @@ time_section "🧪 Testing M_intrinsics" '
   cd M_intrinsics
   export PATH="$(pwd)/../src/bin:$PATH"
   git checkout 6f7a80a2920b9f276069a7c31606f03482afd611
-  micromamba install -c conda-forge fpm
   fpm --compiler=$FC build --flag "--realloc-lhs-arrays --cpp"
 
   print_success "Done with M_intrinsics"
@@ -446,7 +431,6 @@ time_section "🧪 Testing FPM" '
   git clone -b v0.13.0 --depth 1 https://github.com/fortran-lang/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  micromamba install -c conda-forge fpm
   git checkout v0.13.0
   assert_git_commit 90bb83a70e9bcf04d941fb43cca014ae1c0fc5ea
   fpm --compiler=$FC build --flag "--cpp --realloc-lhs-arrays"
@@ -589,7 +573,6 @@ time_section "🧪 Building featom (build-only)" '
   git clone https://github.com/atomic-solvers/featom
   cd featom
   git checkout 87872a3266ceeee61a7244e6ecd134dc3bda790f
-  micromamba install -c conda-forge fpm libblas liblapack
   export LIBRARY_PATH="$CONDA_PREFIX/lib:${LIBRARY_PATH:-}"
   # Build-only smoke test for now; runtime tests can be added later.
   FPM_FFLAGS="--cpp --realloc-lhs-arrays --mangle-underscore-external" LFORTRAN_LINKER=gcc fpm build --compiler=lfortran
@@ -639,7 +622,6 @@ time_section "🧪 Testing stdlib" '
 
     git checkout lf-21
     assert_git_commit 176c7a28bbc7a8a9b63441f7dfa980aeafbddd0f
-    micromamba install -c conda-forge fypp
 
     git clean -fdx
     FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs-arrays"
@@ -664,8 +646,11 @@ time_section "🧪 Testing SNAP" '
 # Section 13: LAPACK
 ##########################
 time_section "🧪 Testing LAPACK" '
-    micromamba install -y -n lf cmake=3.31.2 # bump-up CMAKE
-    export PATH="$(pwd)/../src/bin:$PATH"
+    # LAPACK builds with CMake 3.31; the build environments pin 3.29.1.
+    cmake331_bin=$(pixi run --manifest-path "$LFORTRAN_ROOT/pixi.toml" -e cmake331 \
+        bash -c "dirname \"\$(command -v cmake)\"")
+    export PATH="$cmake331_bin:$(pwd)/../src/bin:$PATH"
+    cmake --version
     git clone https://github.com/gxyd/lapack.git
     cd lapack
     git fetch origin lf_07
@@ -673,7 +658,6 @@ time_section "🧪 Testing LAPACK" '
     assert_git_commit 9d9e48987ca109d46b92d515b59cb591fab9859a
     cd build
     ./build_lf.sh
-    micromamba install -y -n lf cmake=3.29.1 # Restore CMAKE
 '
 
 

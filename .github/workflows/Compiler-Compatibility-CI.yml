@@ -291,6 +291,24 @@ jobs:
                 echo "OMPI_MCA_btl=tcp,sm,self"
             } >> "$GITHUB_ENV"
 
+      # Install only Pixi itself, for the environments that the coarray
+      # reference validation (ci/test_caffeine.sh) and LAPACK's CMake
+      # (ci/test_third_party_codes.sh) select; do not activate Pixi over the
+      # LFortran/Caffeine compiler environment.
+      - uses: prefix-dev/setup-pixi@v0.11.3
+        if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}
+        with:
+          pixi-version: v0.83.0
+          run-install: false
+          cache: false
+
+      # The applications' tools and libraries, as in the apps<N> Pixi
+      # environments.
+      - name: Install the applications' dependencies
+        shell: bash -e -l {0}
+        if: ${{ inputs.scope == 'exhaustive' && !startsWith(github.ref, 'refs/tags/') && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
+        run: micromamba install -y -n lf -c conda-forge fpm=0.12.0 fypp libblas liblapack
+
       - name: Test third party codes
         shell: bash -e -l {0}
         if: ${{ inputs.scope == 'exhaustive' && !startsWith(github.ref, 'refs/tags/') && (matrix.llvm-version == '11' || matrix.llvm-version == '19' || contains(matrix.os, 'macos')) }}
@@ -333,15 +351,6 @@ jobs:
             else
                 bash ci/test_llvm_integration.sh
             fi
-
-      # Provision only when the harness selects reference validation; do not
-      # activate Pixi over the LFortran/Caffeine compiler environment.
-      - uses: prefix-dev/setup-pixi@v0.11.3
-        if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}
-        with:
-          pixi-version: v0.83.0
-          run-install: false
-          cache: false
 
       - name: Test coarray runtime with Caffeine
         if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}
