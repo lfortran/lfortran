@@ -146,6 +146,7 @@
                     )
                   ]
                   :chunk_fixed_iterations 1
+                  :first_chunk_parameter nil
                 )
                 (GpuSync)
               ]

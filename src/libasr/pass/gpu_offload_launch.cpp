@@ -6,6 +6,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
+#include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_overwrite.h>
 #include <libasr/pass/gpu_offload_preflight.h>
@@ -407,9 +408,53 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::make_IntegerConstant_t(al, loc, device_caps.threads_per_block, plan.int_type,
             ASR::integerbozType::Decimal));
 
+    // The dimensions a launch that may run in chunks splits, in the order
+    // the kernel numbers its iterations.
+    std::vector<size_t> split_dims;
+    if (chunked) {
+        for (size_t d : plan.order) {
+            if (plan.start_parameters[d] != nullptr) split_dims.push_back(d);
+        }
+    }
+
     // One accumulator per iteration, sized now that the iteration count
     // is known. The kernel sets each to the identity, so nothing is
-    // copied in.
+    // copied in. A launch of more iterations than the chunk limit runs in
+    // chunks (device_launch_expand.cpp), which number their threads from
+    // zero: it has one per iteration of its largest chunk, the first, the
+    // only one whose threads start them.
+    ASR::expr_t *slots = thread_count;
+    if (plan.first_chunk_parameter != nullptr) {
+        // The iterations are counted in integer(8) where a launch may run
+        // in chunks (gpu_iteration_number_type).
+        LCOMPILERS_ASSERT(chunked);
+        LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(count_type)
+            == 8);
+        auto local = [&](const std::string &name) {
+            return b.Variable(current_scope,
+                current_scope->get_unique_name(name),
+                ASRUtils::duplicate_type(al, count_type),
+                ASR::intentType::Local);
+        };
+        std::vector<ASR::expr_t*> extents, pieces;
+        for (size_t d : split_dims) {
+            extents.push_back(extent(d));
+            pieces.push_back(local("__gpu_chunk_piece"));
+        }
+        ASR::expr_t *largest = local("__gpu_chunk_threads");
+        // What gpu_chunk_pieces adds, then the number of slots.
+        Vec<ASR::stmt_t*> split;
+        split.reserve(al, 4 * extents.size() + 2);
+        gpu_chunk_pieces(al, loc, split, extents,
+            plan.chunk_fixed_iterations, pass_options.gpu_chunk_limit,
+            pieces, largest);
+        slots = local("__gpu_reduction_slots");
+        launch_stmts.push_back(al, b.Assignment(slots, thread_count));
+        split.push_back(al, b.Assignment(slots, largest));
+        launch_stmts.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
+            nullptr, b.Gt(thread_count, b.i_t(pass_options.gpu_chunk_limit,
+                count_type)), split.p, split.n, nullptr, 0)));
+    }
     for (auto &r : plan.reductions) {
         if (!r.host_buf_sym) continue;
         Vec<ASR::alloc_arg_t> alloc_args;
@@ -422,7 +467,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::dimension_t dim;
         dim.loc = loc;
         dim.m_start = b.i_t(1, count_type);
-        dim.m_length = thread_count;
+        dim.m_length = slots;
         alloc_dims.push_back(al, dim);
         arg.m_dims = alloc_dims.p;
         arg.n_dims = alloc_dims.n;
@@ -437,19 +482,14 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 nullptr, nullptr, nullptr)));
     }
 
-    // The dimensions a launch that may run in chunks splits, in the order
-    // the kernel numbers its iterations.
     Vec<ASR::gpu_launch_dimension_t> chunk_dimensions;
-    chunk_dimensions.reserve(al, chunked ? plan.n_dims : 0);
-    if (chunked) {
-        for (size_t d : plan.order) {
-            if (plan.start_parameters[d] == nullptr) continue;
-            ASR::gpu_launch_dimension_t dim;
-            dim.loc = loc;
-            dim.m_start_parameter = plan.start_parameters[d];
-            dim.m_end_parameter = plan.end_parameters[d];
-            chunk_dimensions.push_back(al, dim);
-        }
+    chunk_dimensions.reserve(al, split_dims.size());
+    for (size_t d : split_dims) {
+        ASR::gpu_launch_dimension_t dim;
+        dim.loc = loc;
+        dim.m_start_parameter = plan.start_parameters[d];
+        dim.m_end_parameter = plan.end_parameters[d];
+        chunk_dimensions.push_back(al, dim);
     }
 
     launch_stmts.push_back(al, ASRUtils::STMT(
@@ -459,7 +499,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             plan.call_args.p, plan.call_args.n, component_fit, nullptr,
             0, nullptr, nullptr, 0, overwritten.p, overwritten.n,
             overwritten_if.p, overwritten_if.n, chunk_dimensions.p,
-            chunk_dimensions.n, plan.chunk_fixed_iterations)));
+            chunk_dimensions.n, plan.chunk_fixed_iterations,
+            plan.first_chunk_parameter)));
 
     // The launch does not wait for the kernel. What follows reads what the
     // kernel wrote, so the `gpu_launch_sync` pass puts the GpuSync that
@@ -533,7 +574,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         head.loc = loc;
         head.m_v = index_var;
         head.m_start = b.i_t(1, count_type);
-        head.m_end = thread_count;
+        head.m_end = slots;
         head.m_increment = nullptr;
         launch_stmts.push_back(al, ASRUtils::STMT(
             ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,

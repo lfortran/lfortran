@@ -653,10 +653,10 @@ end program
             expanded.visit_stmt(*program->m_body[i]);
         }
         CHECK(expanded.launches.empty());
-        // On CUDA the two launches without a reduction may run in chunks
+        // On CUDA the three launches may run in chunks
         // (GpuKernelLaunch.chunk_dimensions): each launches its kernel once
         // when it fits in a chunk, and once per chunk in a loop otherwise.
-        CHECK(expanded.runtime_launches == (metal ? 3 : 5));
+        CHECK(expanded.runtime_launches == (metal ? 3 : 6));
         CHECK(expanded.runtime_releases == 3);
         CHECK(expanded.source_allocations == 1);
         CHECK(expanded.empty_lane_guards == (metal ? 1 : 0));
@@ -867,6 +867,66 @@ end program
         // The 4 values of `k` fit beside the 10 of `i`; `j` is split.
         {second, 40},
     });
+}
+
+TEST_CASE("GPU launches with reductions run in chunks") {
+    // A launch with a reduction is split like any other, and its kernel
+    // then takes the flag that tells it whether it runs the first chunk,
+    // the only one whose threads start the accumulators. A launch that is
+    // never split, or that has no accumulators, takes none.
+    const std::string source = R"(
+program p
+    implicit none
+    integer :: n, lo, i, j, s, x(0:10)
+    real :: t
+    n = 10
+    lo = 0
+    s = 0
+    t = 0
+    do concurrent (i = lo:n) reduce(+:s)
+        s = s + i
+    end do
+    do concurrent (i = 1:n) reduce(+:s)
+        s = s + i
+    end do
+    do concurrent (i = 1:4, j = 1:n) reduce(*:t)
+        t = t * real(i + j)
+    end do
+    do concurrent (i = lo:n)
+        x(i) = i
+    end do
+    print *, s, t, x(0)
+end program
+)";
+    std::vector<std::pair<size_t, std::string>> launches;
+    struct Launches : public ASR::BaseWalkVisitor<Launches> {
+        std::vector<std::pair<size_t, std::string>> &launches;
+        Launches(std::vector<std::pair<size_t, std::string>> &launches)
+            : launches(launches) {}
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            launches.push_back({x.n_chunk_dimensions,
+                x.m_first_chunk_parameter == nullptr ? std::string()
+                    : std::string(ASRUtils::symbol_name(
+                        x.m_first_chunk_parameter))});
+        }
+    } visitor(launches);
+    visit_cuda_program(source, "gpu_chunk_reductions.f90", "p",
+        [&](ASR::stmt_t &s) { visitor.visit_stmt(s); });
+    std::vector<std::pair<size_t, std::string>> expected = {
+        // With a run-time start an integer(4) index can take more than
+        // huge(0) values.
+        {1, "__gpu_first_chunk"},
+        // From 1 it takes at most huge(0).
+        {0, ""},
+        {1, "__gpu_first_chunk"},
+        // No reduction.
+        {1, ""},
+    };
+    REQUIRE(launches.size() == expected.size());
+    for (size_t i = 0; i < launches.size(); i++) {
+        INFO("launch " << i);
+        CHECK(launches[i] == expected[i]);
+    }
 }
 
 TEST_CASE("GPU tiled launches pad a nest by at most a quarter") {

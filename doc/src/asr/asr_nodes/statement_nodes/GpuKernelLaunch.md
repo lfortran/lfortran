@@ -11,7 +11,7 @@ GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size,
     call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch,
     expr? stop_status, stmt* stop_replay, expr* overwritten,
     expr* overwritten_if, gpu_launch_dimension* chunk_dimensions,
-    int chunk_fixed_iterations)
+    int chunk_fixed_iterations, symbol? first_chunk_parameter)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 gpu_launch_dimension = (symbol start_parameter, symbol end_parameter)
 ```
@@ -32,6 +32,7 @@ gpu_launch_dimension = (symbol start_parameter, symbol end_parameter)
 | `overwritten_if` | for each of `overwritten`, the host condition under which it does. |
 | `chunk_dimensions` | the dimensions of the iteration space a launch of more iterations than the chunk limit splits into chunks, each run as a launch of the kernel, in the order the kernel numbers its iterations (below); empty when it always runs as one. |
 | `chunk_fixed_iterations` | the product of the constant extents of the dimensions every chunk covers whole: 1 when there are none, and 0 when `chunk_dimensions` is empty. |
+| `first_chunk_parameter` | the kernel parameter a launch with `chunk_dimensions` sets to 1 when it runs as one or for its first chunk, and to 0 for the later chunks, whatever it passes for it in `args`, so that only the threads of the first chunk start the accumulators of its reductions (below), or `nil`. It is not a bound parameter of `chunk_dimensions`. |
 
 ### Return values
 
@@ -154,7 +155,23 @@ launch that may run in tiles runs flat when it would start more threads
 than the chunk limit, and a buffer handed over as
 `LFORTRAN_GPU_WRITE_DISCARD` is handed over again as written after each
 chunk, so the chunks after the first keep what it wrote. Only CUDA launches
-without a reduction have `chunk_dimensions`.
+have `chunk_dimensions`.
+
+A launch with a reduction gives each thread an accumulator of its own, an
+element of a buffer argument, which the kernel sets to the identity of the
+operator before the body combines into it; the host folds the accumulators
+into the scalar after the launch. The threads of each chunk are numbered
+from zero, so a launch that may run in chunks has one accumulator per
+iteration of its largest chunk, the first one, when it has more iterations
+than the chunk limit. Its kernel takes `first_chunk_parameter`, which the
+launch sets to 1 when it runs as one or for its first chunk, and to 0 for
+the later chunks: the threads of the first chunk start their
+accumulators, and those of the later chunks keep combining into what the
+thread of the same number left there. A thread past the end of a partial
+chunk returns before it touches its accumulator, and the host folds only
+the ones the first chunk started, once, after the last chunk. A launch
+without `chunk_dimensions`, or whose kernel has no accumulators, has no
+`first_chunk_parameter`.
 
 Private array storage is placed after shared lowering by `gpu_kernel_storage`,
 before address-space specialization. Fixed-size arrays that fit the device's
@@ -196,6 +213,7 @@ placement never turns an iteration-private value into a shared value.
   :overwritten_if []
   :chunk_dimensions []
   :chunk_fixed_iterations 0
+  :first_chunk_parameter nil
 )
 ```
 

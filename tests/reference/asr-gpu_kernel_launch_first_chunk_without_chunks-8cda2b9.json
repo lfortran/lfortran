@@ -1,0 +1,13 @@
+{
+    "basename": "asr-gpu_kernel_launch_first_chunk_without_chunks-8cda2b9",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/gpu_kernel_launch_first_chunk_without_chunks.asr",
+    "infile_hash": "64bcc6aef929fb060f331223fb6164c62ef38c85bec9f7d6c0f216fa",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-gpu_kernel_launch_first_chunk_without_chunks-8cda2b9.stderr",
+    "stderr_hash": "7fe63394d0bb2d41e0c707d5041aae001ddc3722ccc04fe4fd302d81",
+    "returncode": 2
+}
