@@ -76,6 +76,11 @@ emulation) uses the same symbol-based renaming for C/C++ keywords such as
 `int`, `float` and `class`, without applying Metal-only naming restrictions.
 Ordinary CPU compilation is unchanged.
 
+Host launch expressions retain host component definitions, not aliases
+retargeted to device copies. In particular, workspace extents such as
+`size(records(selected)%component, dim)` are bound to the actual host
+array's derived type before device identifiers are renamed.
+
 ### Scalar logarithms
 
 Real `log` in a kernel or a device-only procedure retains its intrinsic
