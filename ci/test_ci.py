@@ -170,13 +170,6 @@ class SmokeSelectionTests(unittest.TestCase):
                 self.assertTrue(names)
 
 
-
-def pixi_compatibility_job():
-    # test_llvm_pixi takes the LLVM versions over from the micromamba job
-    # (test_llvm), a group at a time; it comes last in the workflow.
-    source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
-    return source.split("\n  test_llvm_pixi:\n", 1)[1]
-
 class MacOSEnvironmentTests(unittest.TestCase):
     def test_platform_environment_is_the_pixi_environment(self):
         source = (ROOT / ".github/actions/build-platform/action.yml").read_text()
@@ -186,9 +179,8 @@ class MacOSEnvironmentTests(unittest.TestCase):
         self.assertIn("environments: llvm${{ inputs.llvm-version }}\n", setup)
         self.assertIn("activate-environment: llvm${{ inputs.llvm-version }}\n", setup)
 
-
-    def test_pixi_compatibility_job_activates_its_llvm_environment(self):
-        source = pixi_compatibility_job()
+    def test_compatibility_jobs_activate_their_llvm_environment(self):
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
         self.assertNotIn("micromamba", source)
         self.assertEqual(source.count("uses: prefix-dev/setup-pixi@"), 1)
         setup = source.split("uses: prefix-dev/setup-pixi@", 1)[1].split("\n\n", 1)[0]
@@ -272,7 +264,7 @@ class MacOSEnvironmentTests(unittest.TestCase):
         check = source.index("python ci/check_macos_environment.py")
         self.assertGreater(check, source.index("uses: prefix-dev/setup-pixi@"))
         self.assertLess(check, source.index("- name: Build (Linux / macOS)"))
-        source = pixi_compatibility_job()
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
         check = source.index("python ci/check_macos_environment.py")
         self.assertGreater(check, source.index("uses: prefix-dev/setup-pixi@"))
         self.assertLess(check, source.index("      - name: Build\n"))
@@ -470,19 +462,15 @@ class MPITransportTests(unittest.TestCase):
     def test_linux_transports_are_shared_by_coarrays_and_applications(self):
         workflows = ROOT / ".github/workflows"
         source = (workflows / "Compiler-Compatibility-CI.yml").read_text()
-        job = source.split("\n  test_llvm:\n", 1)[1]
+        job = source.split("\n  test_llvm_pixi:\n", 1)[1]
         marker = "      - name: Configure Linux MPI transports\n"
         self.assertTrue(marker in job, "Linux MPI transport setup is missing")
         setup = job.split(marker, 1)[1].split("\n      - ", 1)[0]
         condition = re.search(r"^\s*if: (.+)$", setup, re.MULTILINE).group(1)
         self.assertEqual(condition, "runner.os == 'Linux'")
-        # One setup in each job: test_llvm and test_llvm_pixi.
-        self.assertEqual(source.count("UCX_TLS="), 2)
-        pixi = pixi_compatibility_job()
-        self.assertEqual(pixi.split(marker, 1)[1].split("\n\n", 1)[0], setup.split("\n\n", 1)[0])
+        self.assertEqual(source.count("UCX_TLS="), 1)
         for command in ("ci/test_caffeine.sh", "ci/test_third_party_codes.sh"):
             self.assertLess(job.index(marker), job.index(command))
-            self.assertLess(pixi.index(marker), pixi.index(command))
         for scope, caller in (("quick", "Quick-Checks-CI.yml"),
                               ("exhaustive", "Exhaustive-Checks-CI.yml")):
             with self.subTest(scope=scope):
@@ -557,25 +545,8 @@ class WorkflowPolicyTests(unittest.TestCase):
         self.assertIn("fetch-depth: 0", shared)
 
     def test_quick_compatibility_setup_does_not_preinstall_reference_only_mpi(self):
-        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
-        setups = re.split(r"      - uses: mamba-org/setup-micromamba@\S+\n", source)[1:]
-        quick_setups = [step for step in setups if "if: ${{! (" in step]
-        self.assertEqual(len(quick_setups), 1)
-        for index, setup in enumerate(quick_setups):
-            packages = setup.split("          create-args: >-\n", 1)[1].split("\n\n", 1)[0]
-            for scope in ("quick", "exhaustive"):
-                with self.subTest(setup=index, scope=scope):
-                    expression = r"\$\{\{ inputs.scope == 'exhaustive' && '(openmpi=[^']+)' \|\| '' \}\}"
-                    rendered = re.sub(
-                        expression, lambda match: match[1] if scope == "exhaustive" else "",
-                        packages,
-                    )
-                    rendered = re.sub(r"\$\{\{ matrix\.[^}]+ \}\}", "11", rendered)
-                    mpi = [package for package in shlex.split(rendered) if package.startswith("openmpi")]
-                    pin = "openmpi=5.0.6=hb85ec53_102"
-                    self.assertEqual(mpi, [pin] if scope == "exhaustive" else [])
         # OpenMPI belongs to the coarray reference and the MPI applications,
-        # not to the Pixi environments that build and test the compiler.
+        # not to the environments that build and test the compiler.
         try:
             import tomllib
         except ImportError:
@@ -598,13 +569,14 @@ class WorkflowPolicyTests(unittest.TestCase):
         for path in ("ci/environment.yml", "ci/environment_linux_llvm.yml"):
             self.assertNotRegex((ROOT / path).read_text(), r"(?m)^\s*-\s*openmpi\b")
 
-    def test_coarray_pixi_setup_is_lazy_and_does_not_activate_over_caffeine(self):
+    def test_coarray_reference_environment_is_installed_lazily(self):
+        # Only ci/test_caffeine.sh installs coarray-reference, with `pixi run`,
+        # when it selects reference validation; Caffeine itself runs in the
+        # activated LLVM environment.
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
         setup = source.split("      - uses: prefix-dev/setup-pixi@", 1)[1].split("\n\n", 1)[0]
-        self.assertIn("if: ${{ inputs.scope != 'quick' || matrix.llvm-version == '11' }}", setup)
-        self.assertIn("run-install: false", setup)
+        self.assertNotIn("coarray-reference", setup)
         self.assertIn("cache: false", setup)
-        self.assertNotIn("activate-environment: true", setup)
         self.assertLess(source.index("prefix-dev/setup-pixi@"),
                         source.index("      - name: Test coarray runtime with Caffeine"))
 
@@ -636,20 +608,10 @@ class WorkflowPolicyTests(unittest.TestCase):
         matrix = re.search(r"llvm-version: \$\{\{ fromJSON\('([^']+)'\)\[inputs.scope\]", source)
         self.assertIsNotNone(matrix)
         roles = json.loads(matrix.group(1))
-        # test_llvm_pixi runs the versions that have moved to Pixi, in
-        # Exhaustive only, under the same check names.
-        pixi = pixi_compatibility_job()
-        moved = re.search(r"llvm-version: \$\{\{ fromJSON\('([^']+)'\)\[inputs.scope\]", pixi)
-        moved = json.loads(moved.group(1))
-        self.assertEqual(set(moved), {"quick", "exhaustive"})
-        for scope, versions in moved.items():
-            self.assertFalse(set(versions) & set(roles[scope]))
-            roles[scope] = sorted(roles[scope] + versions, key=int)
         self.assertEqual(roles, {
             "quick": ["7", "11", "23"],
             "exhaustive": ["7", "8", "10", "11", "15", "17", "18", "19", "21", "22", "23"],
         })
-        self.assertEqual(source.count("    name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})\n"), 2)
         self.assertIn('"os":"macos-latest","llvm-version":"22"', source)
         self.assertIn("inputs.scope == 'quick' && fromJSON('[]')", source)
 
@@ -976,20 +938,6 @@ class WorkflowPolicyTests(unittest.TestCase):
                       cache)
         self.assertIn("max-size: 1500M", cache)
 
-
-    def test_pixi_compatibility_build_variants_have_separate_caches(self):
-        # Quick builds LLVM 11 as Debug with extra checks; Exhaustive builds it
-        # as Release. A shared cache key made each overwrite the other's cache.
-        source = pixi_compatibility_job()
-        build = source.split("      - name: Build\n", 1)[1].split("\n      - name:", 1)[0]
-        self.assertIn('if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then\n'
-                      "                BUILD_TYPE=Debug", build)
-        cache = source.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
-        self.assertIn("key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}"
-                      "${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') && '-debug' || '' }}\n",
-                      cache)
-        self.assertIn("max-size: 1500M", cache)
-
     def test_exhaustive_coverage_is_event_independent(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         jobs = source.split("\njobs:\n", 1)[1]
@@ -1274,58 +1222,6 @@ class QuickScriptTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
-                cmake = [args for path, args in calls if path == str(self.bin / "cmake")]
-                self.assertEqual(len(cmake), 2)
-                self.assertEqual("-DWITH_RUNTIME_STACKTRACE=yes" in cmake[0], enabled)
-                self.assertEqual([arg for arg in cmake[0] if arg.startswith("-DWITH_RUNTIME_STACKTRACE=")],
-                                 ["-DWITH_RUNTIME_STACKTRACE=yes"])
-                debug = scope == "quick" and llvm == "11"
-                self.assertIn(f"-DCMAKE_BUILD_TYPE={'Debug' if debug else 'Release'}", cmake[0])
-                self.assertEqual("-DWITH_INTERNAL_ALLOC_CHECK=yes" in cmake[0], debug)
-                # Quick's LLVM 11 compiler is optimized but still a Debug build:
-                # assertions and per-pass ASR verification stay on, and no
-                # Debug flag defines NDEBUG.
-                self.assertEqual("-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2 -Wno-mismatched-new-delete"
-                                 in cmake[0], debug)
-                self.assertEqual("-DCMAKE_C_FLAGS_DEBUG=-O2" in cmake[0], debug)
-                self.assertFalse([arg for arg in cmake[0] if "FLAGS_DEBUG" in arg and "NDEBUG" in arg])
-                flags = json.loads(environment_log.read_text().splitlines()[0])
-                expected = ("-Werror -D_GLIBCXX_ASSERTIONS "
-                            "-D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG")
-                self.assertEqual(flags, dict.fromkeys(("CFLAGS", "CXXFLAGS"), expected if debug else ""))
-
-
-    def test_pixi_compatibility_build_configuration(self):
-        source = pixi_compatibility_job()
-        build = source.split("      - name: Build\n", 1)[1].split("\n      - ", 1)[0]
-        script = build.split("        run: |\n", 1)[1]
-        environment_log = self.directory / "build-environment.jsonl"
-        self.env.update(CI_BUILD_ENV_LOG=str(environment_log), CFLAGS="", CXXFLAGS="")
-        cases = (
-            ("quick", "ubuntu-latest", "7", True),
-            ("quick", "ubuntu-latest", "11", True),
-            ("quick", "ubuntu-latest", "23", True),
-            ("exhaustive", "ubuntu-latest", "7", True),
-            ("exhaustive", "ubuntu-latest", "11", True),
-            ("exhaustive", "ubuntu-latest", "19", True),
-            ("exhaustive", "ubuntu-latest", "21", True),
-            ("exhaustive", "ubuntu-latest", "22", True),
-            ("exhaustive", "ubuntu-latest", "23", True),
-            ("exhaustive", "macos-latest", "22", True),
-        )
-        for scope, platform, llvm, enabled in cases:
-            with self.subTest(scope=scope, platform=platform, llvm=llvm):
-                self.calls.write_text("")
-                environment_log.write_text("")
-                rendered = script.replace("${{ matrix.os }}", platform)
-                rendered = rendered.replace("${{ matrix.llvm-version }}", llvm)
-                env = dict(self.env, LFORTRAN_CI_SCOPE=scope, CONDA_PREFIX=str(self.directory))
-                result = subprocess.run(
-                    ["bash", "-e", "-o", "pipefail"], input=rendered,
-                    cwd=self.directory, env=env, capture_output=True, text=True,
-                )
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
                 pixi = [args for path, args in calls if path == str(self.bin / "pixi")]
                 build_dir = f"build/llvm{llvm}"
                 self.assertEqual(len(pixi), 2)
@@ -1355,66 +1251,6 @@ class QuickScriptTests(unittest.TestCase):
 
     def test_application_runtime_stacktrace_probes_and_failures(self):
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
-        step = source.split("      - name: Test application runtime stacktraces\n", 1)[1]
-        step = step.split("\n      - ", 1)[0]
-        self.assertIn("inputs.scope == 'exhaustive'", step)
-        self.assertIn("matrix.llvm-version == '11'", step)
-        self.assertIn("matrix.llvm-version == '19'", step)
-        self.assertIn("contains(matrix.os, 'macos')", step)
-        self.assertNotIn("github.event_name", step)
-        config = self.directory / "src/libasr/config.h"
-        config.parent.mkdir()
-        config.write_text("#define HAVE_RUNTIME_STACKTRACE\n")
-        script = step.split("        run: |\n", 1)[1]
-        for platform in ("ubuntu-latest", "macos-latest"):
-            with self.subTest(platform=platform):
-                self.calls.write_text("")
-                rendered = script.replace("${{ matrix.os }}", platform)
-                result = subprocess.run(["bash", "-e", "-o", "pipefail"], input=rendered,
-                                        cwd=self.directory, env=self.env, capture_output=True, text=True)
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                calls = [(Path(path).name, args)
-                         for path, args in map(json.loads, self.calls.read_text().splitlines())]
-                expected = [("llvm-dwarfdump", ["--version"])]
-                if platform == "macos-latest":
-                    expected.append(("dsymutil", ["--version"]))
-                expected += [
-                    ("lfortran", ["-v", "examples/expr2.f90", "-o", "expr2"]),
-                    ("expr2", []),
-                    ("lfortran", ["-v", "-g", "examples/expr2.f90", "-o", "expr2-debug"]),
-                    ("expr2-debug", []),
-                ]
-                self.assertEqual(calls, expected)
-        for failure in ("llvm-dwarfdump", "dsymutil", "lfortran", "debug-link", "expr2", "expr2-debug"):
-            with self.subTest(failure=failure):
-                result = subprocess.run(
-                    ["bash", "-e", "-o", "pipefail"], input=rendered, cwd=self.directory,
-                    env=dict(self.env, CI_FAIL_TOOL=failure), capture_output=True, text=True,
-                )
-                self.assertEqual(result.returncode, 42, result.stdout + result.stderr)
-        for tool in ("llvm-dwarfdump", "dsymutil"):
-            with self.subTest(missing=tool):
-                result = subprocess.run(
-                    ["bash", "-e", "-o", "pipefail"], input=rendered, cwd=self.directory,
-                    env=dict(self.env, CI_FAIL_TOOL=tool, CI_FAIL_STATUS="127"),
-                    capture_output=True, text=True,
-                )
-                self.assertEqual(result.returncode, 127, result.stdout + result.stderr)
-        result = subprocess.run(
-            ["bash", "-e", "-o", "pipefail"], input=rendered, cwd=self.directory,
-            env=dict(self.env, CI_EXPR_RESULT="24"), capture_output=True, text=True,
-        )
-        self.assertNotEqual(result.returncode, 0)
-        config.write_text("/* runtime support is disabled */\n")
-        self.calls.write_text("")
-        result = subprocess.run(["bash", "-e", "-o", "pipefail"], input=rendered,
-                                cwd=self.directory, env=self.env, capture_output=True, text=True)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(self.calls.read_text(), "")
-
-
-    def test_pixi_application_runtime_stacktrace_probes_and_failures(self):
-        source = pixi_compatibility_job()
         step = source.split("      - name: Test application runtime stacktraces\n", 1)[1]
         step = step.split("\n      - ", 1)[0]
         self.assertIn("inputs.scope == 'exhaustive'", step)
@@ -1755,16 +1591,11 @@ class CaffeineTests(unittest.TestCase):
         self.assertFalse({call["command"] for call in calls} &
                          {"mpifort", "cmake", "caf", "cafrun", "pixi"})
 
-    def test_missing_fpm_installs_the_existing_pin_before_unit_tests(self):
+    def test_missing_fpm_fails_before_unit_tests(self):
         result, calls = self.run_caffeine(CI_FPM_PRESENT="false")
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assert_capability_coverage(calls)
-        installs = [call for call in calls if call["command"] == "micromamba"]
-        self.assertEqual([call["args"] for call in installs],
-                         [["install", "-y", "-c", "conda-forge", "fpm=0.12.0"]])
-        versions = [call for call in calls if call["command"] == "fpm"]
-        self.assertEqual(len(versions), 2)
-        self.assertLess(calls.index(versions[0]), calls.index(installs[0]))
+        self.assertEqual(result.returncode, 127, result.stdout + result.stderr)
+        self.assertFalse({call["key"] for call in calls} & {"install.sh", "unit"})
+        self.assertFalse(any(call["command"] == "micromamba" for call in calls))
 
     def test_reference_uses_owned_pixi_toolchain_not_runner_compilers(self):
         for scope in ("quick", "exhaustive"):
@@ -1798,7 +1629,7 @@ class CaffeineTests(unittest.TestCase):
 
     def test_dependency_and_capability_failures_are_not_successes(self):
         cases = (
-            ("fpm", "quick", "true"), ("micromamba", "quick", "false"),
+            ("fpm", "quick", "true"),
             ("install.sh", "quick", "true"), ("info", "quick", "true"),
             ("make", "quick", "true"), ("lfortran", "quick", "true"),
             ("gasnetrun_smp", "quick", "true"), ("mpifort", "exhaustive", "true"),
