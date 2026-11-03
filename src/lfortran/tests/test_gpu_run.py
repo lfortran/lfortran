@@ -43,11 +43,13 @@ sys.exit(int(sys.argv[2]))
 
         lock.mkdir()
         original_lock = lock.stat()
-        # Exercise the unchanged acquisition deadline, without a command shim.
+        # All 300 attempts include mkdir/sleep process startup as well as 60 s
+        # of sleeps. Let CTest's 120 s timeout bound this case: a shorter
+        # subprocess timeout can expire before macOS reaches the busy exit.
         result = subprocess.run(
             command + ["0", "argument with spaces", "", "*"],
             env=env, text=True, stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT, timeout=75)
+            stderr=subprocess.STDOUT)
         print(f"pre-existing lock: exit {result.returncode}\n"
               f"{result.stdout}", flush=True)
         expected = (f"GPU lock is busy: {lock} "
