@@ -228,16 +228,9 @@ public:
             Vec<ASR::stmt_t*> &out, SymbolTable *var_scope,
             bool scope_has_workspaces);
 
-    bool matmul_operand_aliases_target(ASR::IntrinsicArrayFunction_t *mm,
-            ASR::expr_t *target);
-
-    ASR::expr_t* matmul_temp_section(ASR::expr_t *tmp, ASR::expr_t *target);
-
-    bool declared_constant_dims(ASR::expr_t *e, Vec<ASR::dimension_t> &out);
-
     ASR::expr_t* make_matmul_result_temp(ASR::IntrinsicArrayFunction_t *mm,
             const Location &loc, SymbolTable *var_scope,
-            bool scope_has_workspaces, ASR::expr_t *target = nullptr);
+            bool scope_has_workspaces);
 
     bool intrinsic_array_result_dims(ASR::expr_t *e,
             Vec<ASR::dimension_t> &dims);

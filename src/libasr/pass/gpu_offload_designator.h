@@ -50,21 +50,6 @@ struct GpuDesignatorBase {
 
 GpuDesignatorBase gpu_designator_base(ASR::expr_t *e);
 
-// Whether any designator inside an expression hangs off a given root.
-class GpuDesignatorBaseFinder :
-        public ASR::BaseWalkVisitor<GpuDesignatorBaseFinder> {
-public:
-    GpuDesignatorBase wanted;
-    bool found = false;
-
-    void visit_Var(const ASR::Var_t &x) {
-        if (gpu_designator_base(
-                const_cast<ASR::expr_t*>(&x.base)) == wanted) {
-            found = true;
-        }
-    }
-};
-
 // True when two designators are provably the same storage in the same
 // element order, so an element-by-element copy between them reads only
 // what it has already written to the same element.

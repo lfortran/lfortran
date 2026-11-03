@@ -2,7 +2,9 @@
 ! a temporary of the iteration: MATMUL is not elementwise, so writing the
 ! target while computing it would read elements already overwritten. The
 ! column on either side, run-time and fixed sizes, with and without a
-! BLOCK around the assignment, and many iterations at once.
+! BLOCK around the assignment, extents that change from one iteration to
+! the next, and many iterations at once. An operand that only reads the
+! target's shape does not alias it.
 module gpu_metal_656_m
     implicit none
 contains
@@ -20,8 +22,8 @@ end module
 program gpu_metal_656
     use gpu_metal_656_m
     implicit none
-    integer :: k, m, i, n, pair
-    real :: v(3,2), a(3,3), b(3,3), out(64,3)
+    integer :: k, m, i, n, pair, nn(2)
+    real :: v(3,2), a(3,3), b(3,3), out(64,3), w2(3,2), r(3,2)
 
     ! Fixed sizes, the column on the right and on the left.
     a = 1.0
@@ -69,6 +71,31 @@ program gpu_metal_656
         if (any(abs(vb(:,1) - 6.0) > 1e-5)) error stop
         if (any(abs(vb(:,2) - 15.0) > 1e-5)) error stop
     end block
+
+    ! Only the shape of the target is read.
+    w2(:,1) = [1.0, 2.0, 3.0]
+    w2(:,2) = [4.0, 5.0, 6.0]
+    v = 0.0
+    do concurrent (m = 1:2)
+        v(:,m) = matmul(a, w2(1:size(v,1), m))
+    end do
+    print *, v
+    if (any(abs(v(:,1) - 6.0) > 1e-5)) error stop
+    if (any(abs(v(:,2) - 15.0) > 1e-5)) error stop
+
+    ! The extent of the section changes from one iteration to the next.
+    nn = [2, 3]
+    v(:,1) = [1.0, 2.0, 3.0]
+    v(:,2) = [4.0, 5.0, 6.0]
+    r = v
+    do m = 1, 2
+        r(1:nn(m),m) = matmul(a(1:nn(m),1:nn(m)), r(1:nn(m),m))
+    end do
+    do concurrent (m = 1:2)
+        v(1:nn(m),m) = matmul(a(1:nn(m),1:nn(m)), v(1:nn(m),m))
+    end do
+    print *, v
+    if (any(abs(v - r) > 1e-5)) error stop
 
     ! A run-time section of a local of each iteration: the temporary is
     ! the iteration's own, not one buffer every thread writes.
