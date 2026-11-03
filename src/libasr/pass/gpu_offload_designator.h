@@ -82,17 +82,14 @@ public:
     GpuDesignatorBase base;
     ASR::expr_t *target = nullptr;
     bool aliased = false;
-    // Whether a read in an operand of TRANSPOSE or MATMUL is aliased.
-    bool aliased_in_non_elemental = false;
+    // Whether the expression calls TRANSPOSE or MATMUL anywhere.
+    bool has_non_elemental = false;
     // How many TRANSPOSE or MATMUL calls the walk is inside.
     int in_non_elemental = 0;
 
     void check_designator(ASR::expr_t *e) {
         if (gpu_designator_base(e) != base) return;
-        if (in_non_elemental > 0) {
-            aliased = true;
-            aliased_in_non_elemental = true;
-        } else if (!gpu_same_designator(target, e)) {
+        if (in_non_elemental > 0 || !gpu_same_designator(target, e)) {
             aliased = true;
         }
     }
@@ -100,7 +97,10 @@ public:
     void visit_IntrinsicArrayFunction(
             const ASR::IntrinsicArrayFunction_t &x) {
         bool non_elemental = gpu_reads_other_operand_elements(x);
-        if (non_elemental) in_non_elemental++;
+        if (non_elemental) {
+            has_non_elemental = true;
+            in_non_elemental++;
+        }
         ASR::BaseWalkVisitor<GpuSelfAliasChecker>
             ::visit_IntrinsicArrayFunction(x);
         if (non_elemental) in_non_elemental--;

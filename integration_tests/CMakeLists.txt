@@ -6973,6 +6973,7 @@ RUN(NAME gpu_metal_639 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_655 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_656 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_657 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_658 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_log_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_nested_block_calls_01 LABELS gfortran llvm metal cuda)
 # Launches that run their kernel in chunks of the iteration space

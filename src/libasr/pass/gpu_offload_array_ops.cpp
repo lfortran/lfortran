@@ -200,9 +200,10 @@ ASR::expr_t *GpuOffloadVisitor::declare_temp_array(const Location &loc,
 // The target of `asgn` when its value reads the target's storage
 // through a designator that is not element-for-element identical to
 // it, or through an operand of TRANSPOSE or MATMUL, and nullptr
-// otherwise; `in_non_elemental` tells whether it is the latter. See the
-// comment above gpu_designator_base for why such an assignment needs a
-// temporary.
+// otherwise; `in_non_elemental` tells whether the value calls TRANSPOSE
+// or MATMUL anywhere, the aliased read inside its operand or not. See
+// the comment above gpu_designator_base for why such an assignment
+// needs a temporary.
 ASR::expr_t *GpuOffloadVisitor::self_aliasing_target(ASR::Assignment_t *asgn,
         bool *in_non_elemental) {
     ASR::expr_t *target = asgn->m_target;
@@ -220,7 +221,7 @@ ASR::expr_t *GpuOffloadVisitor::self_aliasing_target(ASR::Assignment_t *asgn,
     checker.target = target;
     checker.visit_expr(*asgn->m_value);
     if (in_non_elemental) {
-        *in_non_elemental = checker.aliased_in_non_elemental;
+        *in_non_elemental = checker.aliased && checker.has_non_elemental;
     }
     return checker.aliased ? target : nullptr;
 }
@@ -599,8 +600,10 @@ void GpuOffloadVisitor::materialize_runtime_alias_in_body(
         ASR::Assignment_t *asgn =
             ASR::down_cast<ASR::Assignment_t>(stmt);
         // A TRANSPOSE or MATMUL is lowered before the fixed-size
-        // temporaries are made (materialize_aliased_assignments), so
-        // one whose operand the target aliases gets its temporary here,
+        // temporaries are made (materialize_aliased_assignments),
+        // together with the rest of its statement, such as the other
+        // operand of `v(:,m) = matmul(a, w(:,m)) + v(3:1:-1,m)`. So an
+        // aliased assignment that calls one gets its temporary here,
         // whatever its size.
         bool in_non_elemental = false;
         ASR::expr_t *target = self_aliasing_target(asgn,
