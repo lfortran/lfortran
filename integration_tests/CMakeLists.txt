@@ -7038,6 +7038,7 @@ RUN(NAME gpu_metal_666_limit_1 FILE gpu_metal_666 LABELS gfortran llvm metal cud
 RUN(NAME gpu_metal_667 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 RUN(NAME gpu_metal_668 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-chunk-limit=7) # metal declines integer(8) loop indices
 RUN(NAME gpu_metal_669 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=50)
+RUN(NAME gpu_metal_670 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4)
 # Existing tests forced to run in chunks: an `error stop` (status buffer),
 # the device heap, a packed launch (more than 31 buffers) and a liveout.
 RUN(NAME gpu_metal_337_chunked FILE gpu_metal_337 FAIL LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=3)

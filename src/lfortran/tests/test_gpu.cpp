@@ -913,7 +913,8 @@ end program
     visit_cuda_program(source, "gpu_chunk_reductions.f90", "p",
         [&](ASR::stmt_t &s) { visitor.visit_stmt(s); });
     std::vector<std::pair<size_t, std::string>> expected = {
-        // From 0 an integer(4) index can take huge(0) + 1 values.
+        // With a run-time start an integer(4) index can take more than
+        // huge(0) values.
         {1, "__gpu_first_chunk"},
         // From 1 it takes at most huge(0).
         {0, ""},

@@ -70,9 +70,10 @@ gpu_chunk_limit) runs its kernel once per chunk, a box of at most that many
 iterations (launch_chunks below): the buffers and workspaces are set once,
 and each chunk sets the bounds of its box in the scalar struct, hands the
 struct over again and launches its own grid. The flag a kernel with
-reductions takes (GpuKernelLaunch.first_chunk_parameter) is cleared after the
-first chunk, so the later ones keep combining into the accumulators it
-started.
+reductions takes (GpuKernelLaunch.first_chunk_parameter) is set before the
+launch, which therefore starts the accumulators whether it runs as one or in
+chunks, and cleared after the first chunk, so the later ones keep combining
+into the accumulators it started.
 
 The logical count is evaluated once and normalized before any launch setup.
 The entire sequence above, including its cleanup, runs only when the effective
@@ -1350,16 +1351,6 @@ class DeviceLaunchExpandVisitor :
                 // chunks of the iterations, numbered flat.
                 LCOMPILERS_ASSERT(layout.m_lanes == nullptr);
                 LCOMPILERS_ASSERT(scalars != nullptr);
-                Vec<ASR::stmt_t*> single;
-                single.reserve(al, 8);
-                single.push_back(al, set_scalars());
-                fill_grid(single, threads);
-                fill_geometry(loc, single, block, x.m_block_size);
-                set_workspaces(single, threads);
-                single.push_back(al, launch());
-                Vec<ASR::stmt_t*> chunks;
-                chunks.reserve(al, 16);
-                fill_geometry(loc, chunks, block, x.m_block_size);
                 // The field of the scalar struct a kernel parameter is
                 // handed over in.
                 auto field = [&](ASR::symbol_t *parameter) {
@@ -1372,6 +1363,24 @@ class DeviceLaunchExpandVisitor :
                         al, loc, scalars, member,
                         ASRUtils::symbol_type(member), nullptr));
                 };
+                // The threads of a launch that runs as one, and those of
+                // the first chunk, start the accumulators of the kernel's
+                // reductions, whatever the launch passes for the flag.
+                if (x.m_first_chunk_parameter != nullptr) {
+                    ASR::expr_t *first = field(x.m_first_chunk_parameter);
+                    out.push_back(al, b.Assignment(first,
+                        b.i_t(1, ASRUtils::expr_type(first))));
+                }
+                Vec<ASR::stmt_t*> single;
+                single.reserve(al, 8);
+                single.push_back(al, set_scalars());
+                fill_grid(single, threads);
+                fill_geometry(loc, single, block, x.m_block_size);
+                set_workspaces(single, threads);
+                single.push_back(al, launch());
+                Vec<ASR::stmt_t*> chunks;
+                chunks.reserve(al, 16);
+                fill_geometry(loc, chunks, block, x.m_block_size);
                 launch_chunks(x, chunks, field, set_workspaces,
                     [&](Vec<ASR::stmt_t*> &body, ASR::expr_t *n_threads) {
                         body.push_back(al, set_scalars());

@@ -408,6 +408,15 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::make_IntegerConstant_t(al, loc, device_caps.threads_per_block, plan.int_type,
             ASR::integerbozType::Decimal));
 
+    // The dimensions a launch that may run in chunks splits, in the order
+    // the kernel numbers its iterations.
+    std::vector<size_t> split_dims;
+    if (chunked) {
+        for (size_t d : plan.order) {
+            if (plan.start_parameters[d] != nullptr) split_dims.push_back(d);
+        }
+    }
+
     // One accumulator per iteration, sized now that the iteration count
     // is known. The kernel sets each to the identity, so nothing is
     // copied in. A launch of more iterations than the chunk limit runs in
@@ -428,14 +437,14 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 ASR::intentType::Local);
         };
         std::vector<ASR::expr_t*> extents, pieces;
-        for (size_t d : plan.order) {
-            if (plan.start_parameters[d] == nullptr) continue;
+        for (size_t d : split_dims) {
             extents.push_back(extent(d));
             pieces.push_back(local("__gpu_chunk_piece"));
         }
         ASR::expr_t *largest = local("__gpu_chunk_threads");
+        // What gpu_chunk_pieces adds, then the number of slots.
         Vec<ASR::stmt_t*> split;
-        split.reserve(al, 4 * extents.size() + 1);
+        split.reserve(al, 4 * extents.size() + 2);
         gpu_chunk_pieces(al, loc, split, extents,
             plan.chunk_fixed_iterations, pass_options.gpu_chunk_limit,
             pieces, largest);
@@ -473,19 +482,14 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 nullptr, nullptr, nullptr)));
     }
 
-    // The dimensions a launch that may run in chunks splits, in the order
-    // the kernel numbers its iterations.
     Vec<ASR::gpu_launch_dimension_t> chunk_dimensions;
-    chunk_dimensions.reserve(al, chunked ? plan.n_dims : 0);
-    if (chunked) {
-        for (size_t d : plan.order) {
-            if (plan.start_parameters[d] == nullptr) continue;
-            ASR::gpu_launch_dimension_t dim;
-            dim.loc = loc;
-            dim.m_start_parameter = plan.start_parameters[d];
-            dim.m_end_parameter = plan.end_parameters[d];
-            chunk_dimensions.push_back(al, dim);
-        }
+    chunk_dimensions.reserve(al, split_dims.size());
+    for (size_t d : split_dims) {
+        ASR::gpu_launch_dimension_t dim;
+        dim.loc = loc;
+        dim.m_start_parameter = plan.start_parameters[d];
+        dim.m_end_parameter = plan.end_parameters[d];
+        chunk_dimensions.push_back(al, dim);
     }
 
     launch_stmts.push_back(al, ASRUtils::STMT(

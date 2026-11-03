@@ -4171,8 +4171,8 @@ public:
     // split. The chunks of a launch count its iterations, so a kernel whose
     // launch runs several threads per iteration (lanes) is not run in
     // chunks. The flag that tells the kernel whether it runs the first
-    // chunk is a scalar integer parameter too, and only a launch that may
-    // run in chunks has one.
+    // chunk is a scalar integer parameter too, distinct from the bound
+    // parameters, and only a launch that may run in chunks has one.
     void verify_gpu_kernel_launch_chunks(const GpuKernelLaunch_t &x,
             const ASR::Function_t &kernel) {
         auto is_integer_parameter = [&](ASR::symbol_t *parameter) {
@@ -4215,6 +4215,18 @@ public:
                 "asr.verify.gpu_kernel_launch.first_chunk_parameter_kind",
                 "the first chunk parameter of a GpuKernelLaunch must be a "
                 "scalar integer parameter of its kernel");
+            bool is_bound = false;
+            for (size_t i = 0; i < x.n_chunk_dimensions; i++) {
+                const ASR::gpu_launch_dimension_t &dim =
+                    x.m_chunk_dimensions[i];
+                is_bound = is_bound
+                    || x.m_first_chunk_parameter == dim.m_start_parameter
+                    || x.m_first_chunk_parameter == dim.m_end_parameter;
+            }
+            require_id(!is_bound,
+                "asr.verify.gpu_kernel_launch.first_chunk_bound_parameter",
+                "the first chunk parameter of a GpuKernelLaunch cannot be a "
+                "bound parameter of one of its chunk dimensions");
         }
     }
 

@@ -2310,6 +2310,17 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
     privatize_liveout_body(loc, kernel_scope, body_copy, liveouts);
 
+    // The kernel parameter that holds the accumulators of a reduction, or
+    // nullptr when it has none (the body never references its variable).
+    auto accumulators_of = [&](const GpuReductionInfo &r) -> ASR::symbol_t* {
+        return r.host_buf_sym ? kernel_scope->get_symbol(r.orig_name)
+            : nullptr;
+    };
+    bool has_accumulators = std::any_of(pending_reductions.begin(),
+        pending_reductions.end(), [&](const GpuReductionInfo &r) {
+            return accumulators_of(r) != nullptr;
+        });
+
     // The accumulator slot this thread owns. Created here because the
     // substitution below has to run before the body is remapped into
     // kernel scope: the name being replaced is still the host's scalar,
@@ -2330,8 +2341,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             ASRUtils::duplicate_type(al, slot_type), nullptr));
         std::map<ASR::symbol_t*, ASR::expr_t*> slot_map;
         for (auto &r : pending_reductions) {
-            if (!r.host_buf_sym) continue;
-            ASR::symbol_t *param = kernel_scope->get_symbol(r.orig_name);
+            ASR::symbol_t *param = accumulators_of(r);
             if (!param) continue;
             slot_map[r.orig_scalar_sym] = gpu_reduction_slot(al, loc,
                 param, slot_index, r.scalar_type);
@@ -2525,14 +2535,11 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     // A kernel whose launch may run in chunks and that has accumulators to
     // start takes a flag the launch sets only for the first chunk
-    // (GpuKernelLaunch.first_chunk_parameter).
+    // (GpuKernelLaunch.first_chunk_parameter). The launch sets it itself
+    // (device_launch_expand.cpp), whatever the argument passed here.
     ASR::expr_t *first_chunk_flag = nullptr;
     ASR::symbol_t *first_chunk_parameter = nullptr;
-    if (chunk_fixed_iterations > 0 && std::any_of(pending_reductions.begin(),
-            pending_reductions.end(), [&](const GpuReductionInfo &r) {
-                return r.host_buf_sym != nullptr
-                    && kernel_scope->get_symbol(r.orig_name) != nullptr;
-            })) {
+    if (chunk_fixed_iterations > 0 && has_accumulators) {
         first_chunk_parameter = gpu_new_variable(al, loc, kernel_scope,
             "__gpu_first_chunk", ASRUtils::duplicate_type(al, int_type),
             ASR::intentType::InOut);
@@ -2763,8 +2770,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         Vec<ASR::stmt_t*> starts;
         starts.reserve(al, pending_reductions.size());
         for (auto &r : pending_reductions) {
-            if (!r.host_buf_sym) continue;
-            ASR::symbol_t *param = kernel_scope->get_symbol(r.orig_name);
+            ASR::symbol_t *param = accumulators_of(r);
             if (!param) continue;
             starts.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
                 loc, gpu_reduction_slot(al, loc, param, slot_index,
