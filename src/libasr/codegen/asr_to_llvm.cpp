@@ -21140,8 +21140,8 @@ public:
                 llvm::Value* shape_ptr = llvm::ConstantPointerNull::get(
                     llvm::Type::getInt64Ty(context)->getPointerTo());
                 llvm::Value* struct_ptr = data_ptr;
-                llvm::Type* struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                    nullptr, elem_type, module.get());
+                // The element size of the actual (possibly extended) type
+                llvm::StructType* struct_llvm_type = name2dertype[get_type_key(struct_sym)];
                 llvm::Value* stride_val = llvm::ConstantInt::get(
                     llvm::Type::getInt64Ty(context), module->getDataLayout().getTypeAllocSize(struct_llvm_type));
 
