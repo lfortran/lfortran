@@ -1076,8 +1076,10 @@ namespace LCompilers {
                             llvm::Value* data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
                                 llvm_utils->create_gep2(type, full_array, 1));
                             llvm::Value* element_ptr = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
-                            // Allocate temp wrapper on stack, fill with vptr + element ptr
-                            llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(*builder, type);
+                            // Allocate temp wrapper in the entry block, so that
+                            // an access in a loop reuses it, fill with vptr +
+                            // element ptr
+                            llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(type);
                             builder->CreateStore(vptr, builder->CreateBitCast(
                                 temp_wrapper, llvm_utils->vptr_type->getPointerTo()));
                             builder->CreateStore(element_ptr,
@@ -1108,8 +1110,9 @@ namespace LCompilers {
                                 llvm::Type* data_field_type = class_type->getStructElementType(1);
                                 llvm::Value* data_ptr = llvm_utils->CreateLoad2(data_field_type, data_field_ptr);
 
-                                // Allocate temp wrapper on stack
-                                llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(*builder, class_type);
+                                // Allocate temp wrapper in the entry block, so that
+                                // an access in a loop reuses it
+                                llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(class_type);
 
                                 // Store vptr in field 0 (same for both cases)
                                 builder->CreateStore(vptr, llvm_utils->create_gep2(class_type, temp_wrapper, 0));
