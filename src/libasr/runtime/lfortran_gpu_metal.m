@@ -72,9 +72,12 @@ typedef struct buffer_use {
 //
 // Each kernel also keeps a scratch buffer per argument slot. The device runs
 // the launches one after another, and what a launch leaves in a scratch
-// buffer is dead once it ends (a part the host reads back is read before the
-// next launch is made), so every launch of the kernel can use the same one,
-// however many of them are still pending.
+// buffer is dead once the launch statement ends (a part the host reads back
+// is read before the next one is made), so every launch of the kernel can
+// use the same one, however many of them are still pending. A launch that
+// runs in chunks encodes each chunk with its one kernel handle, so its
+// chunks share the buffer: what an earlier chunk leaves in it is live for
+// the later chunks and for the host to read back after the last one.
 static struct {
     const char *name;
     const char *source;
