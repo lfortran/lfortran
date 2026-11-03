@@ -2212,6 +2212,29 @@ elements outside each section. `continue_compilation_traits_array_inout`
 checks the diagnostics, also of associate names, through views, and for
 comparison through ordinary calls and static bindings.
 
+An array argument of a message that is not generic may also have the TARGET
+attribute, as a reported module whose `MyType` holds a
+`class(ITargetTrait), allocatable :: obj` component declares it:
+
+```fortran
+abstract interface :: ITargetTrait
+   subroutine method(self,a)
+      type(itself), pass,   intent(inout) :: self
+      real(8),      target, intent(in)    :: a(:)
+   end subroutine method
+end interface
+```
+
+The slot and the witness adapter pass the caller's descriptor on by
+reference, so a pointer that the implementation associates with the dummy
+stays associated with an actual that has the TARGET attribute after the call,
+as in an ordinary call. An implementation declares each argument with
+exactly the TARGET, CONTIGUOUS and VOLATILE attributes of the message, as it
+does its INTENT, OPTIONAL and VALUE attributes. `traits_runtime_target_argument_01`
+keeps pointers to a `real(8)` and a derived-type array through an allocatable
+component view, and `traits_target_mismatch_01` checks the diagnostics of an
+implementation whose attributes differ.
+
 ### Trait arrays
 
 An assumed-shape dummy `class(ITrait) :: arr(:)` is a runtime trait array: a

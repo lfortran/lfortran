@@ -7237,9 +7237,9 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
                         ASR::is_a<ASR::Logical_t>(*element) || runtime_trait_character(element)))) ||
                     (trait_method_template(method) &&
                         (arg->m_intent != ASR::intentType::In ||
-                         is_allocatable(arg->m_type) ||
+                         is_allocatable(arg->m_type) || arg->m_target_attr ||
                          arg->m_presence != ASR::presenceType::Required)) ||
-                    arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
+                    arg->m_value_attr || arg->m_is_volatile ||
                     arg->m_contiguous_attr || arg->n_codims) return false;
             continue;
         }

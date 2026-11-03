@@ -5900,6 +5900,13 @@ public:
                     + std::string(required->m_name) + "' does not match trait method '"
                     + requirement->m_name + "'", loc);
             }
+            if (required->m_target_attr != actual->m_target_attr
+                    || required->m_contiguous_attr != actual->m_contiguous_attr
+                    || required->m_is_volatile != actual->m_is_volatile) {
+                trait_error("target, contiguous or volatile attribute of argument '"
+                    + std::string(required->m_name) + "' does not match trait method '"
+                    + requirement->m_name + "'", loc);
+            }
             j++;
         }
         if (bool(requirement->m_return_var) != bool(procedure->m_return_var)) {

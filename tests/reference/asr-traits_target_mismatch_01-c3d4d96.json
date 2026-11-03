@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_target_mismatch_01-c3d4d96",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_target_mismatch_01.f90",
+    "infile_hash": "74852a69df33a15d43180dadd2c612f6ce0a571bc30a1e647d5602d7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_target_mismatch_01-c3d4d96.stderr",
+    "stderr_hash": "d1515bb407b2613f2a5827fb315157158cfbdd00753eb53999019ca5",
+    "returncode": 1
+}

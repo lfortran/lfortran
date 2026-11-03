@@ -1,0 +1,29 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/traits_target_mismatch_01.f90:5:5 - 11:1
+   |
+ 5 |        abstract interface :: ITargetTrait
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+11 |    
+   | ...^ LFortran extension
+
+semantic error: target, contiguous or volatile attribute of argument 'a' does not match trait method 'method'
+  --> tests/errors/traits_target_mismatch_01.f90:12:5 - 15:20
+   |
+12 |        type, implements(ITargetTrait) :: Keeper  ! {Error} target, contiguous or volatile attribute of argument 'a' does not match trait method 'method'
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+15 |        end type Keeper
+   | ...^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: target, contiguous or volatile attribute of argument 'n' does not match trait method 'method'
+  --> tests/errors/traits_target_mismatch_01.f90:32:5 - 35:20
+   |
+32 |        type, implements(IScalar) :: Holder  ! {Error} target, contiguous or volatile attribute of argument 'n' does not match trait method 'method'
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+35 |        end type Holder
+   | ...^^^^^^^^^^^^^^^^^^^^ 

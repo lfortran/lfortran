@@ -202,6 +202,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-11-02 | Relayed `static_interop_ocp.f90`, the interoperability variant of the paper's `ocp.f90` whose generic `PairwiseSum{V}` overrides `sum{INumeric :: T}` with the open protocol `INumeric`, and a module whose trait message takes `class(ISomeTrait) :: arr(:)`. Chose, from the options offered, dispatch through an open slot that passes the type arguments' dictionaries, and homogeneous trait arrays with the Fortran CLASS semantics of one dynamic type, for dummies only. | TD-44, TD-46 |
 | 2026-11-02 | Relayed two further module MREs: a trait message taking `class(AbsType), intent(inout) :: arr(:)` of an abstract derived type, used by another message's `class(ITrait1), allocatable, intent(out)` argument, and a message taking `class(ITraitOne), allocatable, intent(out) :: arr(:)`. | TD-46 |
 | 2026-11-03 | Relayed a module MRE whose derived type `MyType` declares the component `class(ITrait), allocatable :: arr(:)`. | TD-46 |
+| 2026-11-03 | Relayed three further MREs: passing the section `objs(1:1)` of an allocatable runtime trait array to a `class(ITrait) :: obj(:)` dummy, `associate(obj => objs(2))` with an element of one, and a module whose `MyType` holds a view of a trait whose message takes `real(8), target, intent(in) :: a(:)`. | TD-46 |
 
 ## Entries
 
