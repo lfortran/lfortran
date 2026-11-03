@@ -135,7 +135,7 @@ inline bool loop_control_invariant(ASR::expr_t *e,
 // sign of `step`.
 inline int loop_step_sign(ASR::expr_t *e,
         const std::set<ASR::symbol_t*> &positive) {
-    int64_t value;
+    int64_t value = 0;
     if (ASRUtils::extract_value(ASRUtils::expr_value(e), value)) {
         return value > 0 ? 1 : (value < 0 ? -1 : 0);
     }
