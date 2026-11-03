@@ -566,11 +566,8 @@ class WorkflowPolicyTests(unittest.TestCase):
     def test_quick_compatibility_setup_does_not_preinstall_reference_only_mpi(self):
         source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
         setups = re.split(r"      - uses: mamba-org/setup-micromamba@\S+\n", source)[1:]
-        quick_setups = [step for step in setups if
-                        "if: matrix.llvm-version == '7'\n" in step or
-                        "if: contains(matrix.llvm-version, '23')" in step or
-                        "if: ${{! (" in step]
-        self.assertEqual(len(quick_setups), 3)
+        quick_setups = [step for step in setups if "if: ${{! (" in step]
+        self.assertEqual(len(quick_setups), 1)
         for index, setup in enumerate(quick_setups):
             packages = setup.split("          create-args: >-\n", 1)[1].split("\n\n", 1)[0]
             for scope in ("quick", "exhaustive"):
@@ -582,9 +579,29 @@ class WorkflowPolicyTests(unittest.TestCase):
                     )
                     rendered = re.sub(r"\$\{\{ matrix\.[^}]+ \}\}", "11", rendered)
                     mpi = [package for package in shlex.split(rendered) if package.startswith("openmpi")]
-                    pin = ("openmpi=5.0.6=hb85ec53_102", "openmpi=5.0.10",
-                           "openmpi=5.0.6=hb85ec53_102")[index]
+                    pin = "openmpi=5.0.6=hb85ec53_102"
                     self.assertEqual(mpi, [pin] if scope == "exhaustive" else [])
+        # OpenMPI belongs to the coarray reference and the MPI applications,
+        # not to the Pixi environments that build and test the compiler.
+        try:
+            import tomllib
+        except ImportError:
+            import toml as tomllib
+        manifest = tomllib.loads((ROOT / "pixi.toml").read_text())
+        features = manifest["feature"]
+        def packages(feature):
+            spec = features.get(feature, {})
+            names = set(spec.get("dependencies", {}))
+            for target in spec.get("target", {}).values():
+                names |= set(target.get("dependencies", {}))
+            return names
+        for name, environment in manifest["environments"].items():
+            if not re.fullmatch(r"llvm\d+", name):
+                continue
+            with self.subTest(environment=name):
+                for feature in environment["features"]:
+                    self.assertNotIn("openmpi", packages(feature))
+        self.assertIn("openmpi", packages("coarray-reference"))
         for path in ("ci/environment.yml", "ci/environment_linux_llvm.yml"):
             self.assertNotRegex((ROOT / path).read_text(), r"(?m)^\s*-\s*openmpi\b")
 
@@ -629,11 +646,12 @@ class WorkflowPolicyTests(unittest.TestCase):
         # test_llvm_pixi runs the versions that have moved to Pixi, in
         # Exhaustive only, under the same check names.
         pixi = pixi_compatibility_job()
-        header = pixi.split("    steps:\n", 1)[0]
-        self.assertIn("    if: inputs.scope == 'exhaustive'\n", header)
-        moved = json.loads(re.search(r"llvm-version: (\[[^\]]*\])", header).group(1))
-        self.assertFalse(set(moved) & set(roles["exhaustive"]))
-        roles["exhaustive"] = sorted(roles["exhaustive"] + moved, key=int)
+        moved = re.search(r"llvm-version: \$\{\{ fromJSON\('([^']+)'\)\[inputs.scope\]", pixi)
+        moved = json.loads(moved.group(1))
+        self.assertEqual(set(moved), {"quick", "exhaustive"})
+        for scope, versions in moved.items():
+            self.assertFalse(set(versions) & set(roles[scope]))
+            roles[scope] = sorted(roles[scope] + versions, key=int)
         self.assertEqual(roles, {
             "quick": ["7", "11", "23"],
             "exhaustive": ["7", "8", "10", "11", "15", "17", "18", "19", "21", "22", "23"],
