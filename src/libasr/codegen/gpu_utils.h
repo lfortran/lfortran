@@ -442,15 +442,21 @@ inline std::string gpu_offset_type(int offset_kind) {
 // An integer(4) subscript with 64-bit offsets has its difference reduced
 // modulo 2**32, as an unsigned int, before it is widened. Under
 // --descriptor-index-64 the offload passes count the array expressions
-// they lower inside a kernel in the offset kind (#16571), so the integer(4)
-// subscripts that still get here are user subscripts and the counters the
-// passes still build in integer(4): the inlined `transpose` loops and
-// fusion's affine bounds and run-time checks. These see a lower bound
-// beyond huge(0) truncated, and the truncation cancels only modulo 2**32.
+// they lower inside a kernel in the offset kind (#16571), but integer(4)
+// subscripts still get here: user subscripts, and counters other passes
+// still build in integer(4), for example the inlined `transpose` loops,
+// fusion's affine bounds and run-time checks, and the device heap's copies
+// of allocatable components and its section subscripts (gpu_device_heap;
+// #15929). The list is not exhaustive (tracking: #16572). Such counters see
+// a lower bound beyond huge(0) truncated, and the truncation cancels only
+// modulo 2**32, so this branch must stay until no pass builds integer(4)
+// subscripts under the flag.
 // The reduction is exact whenever the true offset is in [0, 2**32): for
 // every user integer(4) subscript of an array whose lower bound is at
-// least -huge(0)-1 (`a(-n:n)` with n = 1500000000 included), and for such
-// a counter run from a truncated lower bound up to an extent of 2**32. It
+// least -huge(0)-1 and reaches the kernel as integer(8), as a run-time
+// lower bound does (`a(-n:n)` with n = 1500000000 included; an integer(4)
+// lower-bound expression is subtracted in integer(4)), and for such a
+// counter run from a truncated lower bound up to an extent of 2**32. It
 // is still wrong for
 //  - an integer(4) subscript of an array whose lower bound is below
 //    -huge(0)-1, at an offset of 2**32 or more;
