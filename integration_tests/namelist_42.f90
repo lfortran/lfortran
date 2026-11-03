@@ -9,8 +9,16 @@ program namelist_42
     type, extends(base) :: ext
         real :: r = 0
     end type
+    type :: base_a
+        integer :: a(2) = 0
+    end type
+    type, extends(base_a) :: ext_a
+        integer :: k = 0
+    end type
     type(ext) :: x(3)
+    type(ext_a) :: e(2)
     namelist /nx/ x
+    namelist /ne/ e
     character(len=200) :: buf(10)
 
     x%k = [1, 2, 3]
@@ -31,6 +39,17 @@ program namelist_42
     read(buf, nml=nx)
     if (any(x%k /= [4, 5, 6])) error stop 3
     if (any(abs(x%r - [10., 20., 30.]) > 1e-6)) error stop 4
+
+    e(1)%a = [1, 2]
+    e(1)%k = 3
+    e(2)%a = [4, 5]
+    e(2)%k = 6
+    buf = ""
+    write(buf, nml=ne)
+    call squeeze(buf)
+    if (.not. has(buf, "E(1)%A=1,2")) error stop 5
+    if (.not. has(buf, "E(2)%A=4,5")) error stop 6
+    if (.not. has(buf, "E%K=3,6")) error stop 7
     print *, "ok"
 
 contains

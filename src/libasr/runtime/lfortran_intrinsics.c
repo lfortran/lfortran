@@ -17002,6 +17002,57 @@ static int64_t get_element_size(const lfortran_nml_item_t *item) {
     }
 }
 
+static void write_nml_item_values(nml_writer_t *w, const lfortran_nml_item_t *item) {
+    int64_t total = compute_array_size(item);
+    for (int64_t j = 0; j < total; j++) {
+        if (j > 0) write_char(w, ',');
+        write_nml_value(w, item, j);
+    }
+}
+
+// Write an item nested in arrays of a derived type once per element of the
+// enclosing arrays, as `x(i,...)%inner(j,...)%a=...`
+static void write_nml_nested_item(nml_writer_t *w, const lfortran_nml_item_t *item) {
+    int64_t total = 1;
+    for (int32_t l = 0; l < item->n_levels; l++) {
+        for (int32_t d = 0; d < item->levels[l].rank; d++) {
+            total *= item->levels[l].shape[d];
+        }
+    }
+    char buf[32];
+    for (int64_t k = 0; k < total; k++) {
+        // The innermost level varies fastest, and within a level the
+        // first subscript varies fastest (array element order)
+        lfortran_nml_item_t elem = *item;
+        int64_t inner = total;
+        write_str(w, "  ");
+        for (int32_t l = 0; l < item->n_levels; l++) {
+            const lfortran_nml_level_t *level = &item->levels[l];
+            int64_t size = 1;
+            for (int32_t d = 0; d < level->rank; d++) {
+                size *= level->shape[d];
+            }
+            inner /= size;
+            int64_t idx = (k / inner) % size;
+            elem.data = (char*)elem.data + idx * level->stride;
+            write_str_upper(w, level->name);
+            write_char(w, '(');
+            for (int32_t d = 0; d < level->rank; d++) {
+                if (d > 0) write_char(w, ',');
+                snprintf(buf, sizeof(buf), "%" PRId64,
+                    idx % level->shape[d] + level->lbound[d]);
+                write_str(w, buf);
+                idx /= level->shape[d];
+            }
+            write_char(w, ')');
+        }
+        write_str_upper(w, item->name);
+        write_char(w, '=');
+        write_nml_item_values(w, &elem);
+        write_char(w, '\n');
+    }
+}
+
 void namelist_write_impl(nml_writer_t *w,
                          const lfortran_nml_group_t *group)
 {
@@ -17012,20 +17063,15 @@ void namelist_write_impl(nml_writer_t *w,
     for (int32_t i = 0; i < group->n_items; i++) {
         const lfortran_nml_item_t *item = &group->items[i];
 
+        if (item->n_levels > 0) {
+            write_nml_nested_item(w, item);
+            continue;
+        }
+
         write_str(w, "  ");
         write_str_upper(w, item->name);
         write_char(w, '=');
-
-        if (item->rank == 0) {
-            write_nml_value(w, item, 0);
-        } else {
-            int64_t total = compute_array_size(item);
-            for (int64_t j = 0; j < total; j++) {
-                if (j > 0) write_char(w, ',');
-                write_nml_value(w, item, j);
-            }
-        }
-
+        write_nml_item_values(w, item);
         write_char(w, '\n');
     }
 
@@ -17501,7 +17547,8 @@ static int collect_derived_items(const lfortran_nml_group_t *group, const char *
     size_t prefix_len = strlen(prefix);
     int count = 0;
     for (int32_t i = 0; i < group->n_items; i++) {
-        if (strncmp(group->items[i].name, prefix, prefix_len) == 0) {
+        if (group->items[i].n_levels == 0 &&
+                strncmp(group->items[i].name, prefix, prefix_len) == 0) {
             if (count < max_items) {
                 items[count++] = &group->items[i];
             }
@@ -17725,7 +17772,8 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
         lfortran_nml_item_t *derived_items[256];
         int derived_count = 0;
         for (int32_t i = 0; i < group->n_items; i++) {
-            if (strcmp(base_name, group->items[i].name) == 0) {
+            if (group->items[i].n_levels == 0 &&
+                    strcmp(base_name, group->items[i].name) == 0) {
                 item = &group->items[i];
                 break;
             }
