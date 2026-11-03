@@ -38,6 +38,9 @@ recursive subroutine ping(n, total)
 integer, intent(in) :: n
 integer, intent(inout) :: total
 end subroutine
+recursive integer function zig(n) result(r)
+integer, intent(in) :: n
+end function
 end interface
 procedure(ms), pointer :: p
 real :: x, y
@@ -59,6 +62,7 @@ if (fact(5) /= 120) error stop
 total = 0
 call ping(3, total)
 if (total /= 24) error stop
+if (zig(4) /= 6) error stop
 if (i /= 5) error stop
 if (abs(x - 3) > 1e-6) error stop
 print *, 'ok'
@@ -121,3 +125,19 @@ entry pong(n, total)
 total = total + 10*n
 if (n > 0) call ping(n - 1, total)
 end subroutine
+recursive integer function zig(n) result(r)
+implicit none (type, external)
+integer, intent(in) :: n
+if (n <= 0) then
+    r = 0
+else
+    r = 1 + zag(n - 1)
+end if
+return
+entry zag(n) result(r)
+if (n <= 0) then
+    r = 0
+else
+    r = 2 + zig(n - 1)
+end if
+end function

@@ -61,3 +61,13 @@ real function g(x)
 real, intent(in) :: x
 g = x
 end function
+
+! Last, because no error is reported after one in a procedure with ENTRY
+! statements (#16680).
+subroutine with_entry(n)
+implicit none (type, external)
+integer, intent(in) :: n
+call foo()
+return
+entry an_entry(n)
+end subroutine

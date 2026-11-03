@@ -39,3 +39,9 @@ semantic error: procedure 'foo' is not explicitly declared
    |
 49 | call foo()
    | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'foo' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:70:1
+   |
+70 | call foo()
+   | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'

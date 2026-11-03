@@ -2,12 +2,12 @@
     "basename": "asr-implicit_none_external_01-316375d",
     "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
     "infile": "tests/errors/implicit_none_external_01.f90",
-    "infile_hash": "edf6714a8dae1e207c6697f592ae292b3ef90305884c1a925a369d6c",
+    "infile_hash": "6109842e1fee44dec22a3a6e90a9080f7bdf06e54e99cfd122d86d67",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-implicit_none_external_01-316375d.stderr",
-    "stderr_hash": "e0e93bfe629b6662a6ec5598aac18127304748fdc35d97b07cc843ee",
+    "stderr_hash": "244f048c787f2edbd5a30db43054d575ab9af07050fe9a9f9a367d19",
     "returncode": 1
 }
