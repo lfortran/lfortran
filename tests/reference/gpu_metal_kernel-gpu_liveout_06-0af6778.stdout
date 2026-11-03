@@ -21,7 +21,6 @@ inline void maybe_set_gpu_14(thread int& k_gpu, int i_gpu) {
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
-    int __loop_end_0_gpu;
 };
 
 kernel void __lfortran_gpu_kernel_0(
@@ -32,7 +31,6 @@ kernel void __lfortran_gpu_kernel_0(
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_a_0_gpu = __scalar_args.__lb_a_0_gpu;
-    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __flat_idx_gpu;
     int __gpu_before1_gpu;
     int __gpu_before2_gpu;
@@ -40,7 +38,7 @@ kernel void __lfortran_gpu_kernel_0(
     pt_gpu __gpu_private_p_gpu;
     int i__dc_gpu;
     int k_gpu;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+    if ((((0 * 0) + __thread_id) >= 100000)) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
@@ -68,21 +66,15 @@ inline void set_gpu_22(thread int& k_gpu, int i_gpu) {
     k_gpu = (2 * i_gpu);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
-    int __loop_end_0_gpu;
-};
-
 kernel void __lfortran_gpu_kernel_1(
     device int* __gpu_buf_m_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __flat_idx_gpu;
     int i__dc1_gpu;
     int m_gpu;
     const int n_gpu = 100000;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+    if ((((0 * 0) + __thread_id) >= 100000)) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);

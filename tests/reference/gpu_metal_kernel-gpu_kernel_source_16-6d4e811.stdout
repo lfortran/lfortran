@@ -61,22 +61,16 @@ kernel void __lfortran_gpu_kernel_0(
     g_gpu[((int)(j__dc_gpu) - (1))] = t_gpu[((int)(1) - (1))];
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
-    int __loop_end_0_gpu;
-};
-
 kernel void __lfortran_gpu_kernel_1(
     device float* g_gpu [[buffer(0)]],
     device float* u_gpu [[buffer(1)]],
     device float* x_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __flat_idx_gpu;
     int j__dc1_gpu;
     int k_gpu;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+    if ((((0 * 0) + __thread_id) >= 8)) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);

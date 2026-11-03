@@ -2,7 +2,6 @@
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int it;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
@@ -10,12 +9,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int it = __scalar_args.it;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     int j__dc;
     int k;
     const int m = 64;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)10000))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
@@ -31,24 +29,18 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
-    int __loop_end_0;
-};
-
 extern "C" __global__ void __lfortran_gpu_kernel_1(
     float* __restrict__ g,
     float* __restrict__ x,
     float* __restrict__ xr,
-    float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    float* __restrict__ y)
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     int __gpu_elem_i;
     int __gpu_sec_i;
     int j__dc1;
     const int m = 64;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)10000))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
@@ -73,18 +65,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
-    int __loop_end_0;
-};
-
 extern "C" __global__ void __lfortran_gpu_kernel_2(
-    float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    float* __restrict__ y)
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     int j__dc2;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)10000))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));

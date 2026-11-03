@@ -2,7 +2,6 @@
 using namespace metal;
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_end_0_gpu;
     int __gpu_lanes_gpu;
 };
 
@@ -13,7 +12,6 @@ kernel void __lfortran_gpu_kernel_0(
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {
-    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
     uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
     int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
@@ -21,7 +19,7 @@ kernel void __lfortran_gpu_kernel_0(
     int __gpu_elem_i_gpu;
     int __gpu_sec_i_gpu;
     int j__dc_gpu;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+    if ((((0 * 0) + __thread_id) >= 8)) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
@@ -92,7 +90,6 @@ kernel void __lfortran_gpu_kernel_0(
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_1 {
-    int __loop_end_0_gpu;
     int __gpu_lanes_gpu;
 };
 
@@ -103,7 +100,6 @@ kernel void __lfortran_gpu_kernel_1(
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {
-    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
     uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
     int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
@@ -112,7 +108,7 @@ kernel void __lfortran_gpu_kernel_1(
     int __gpu_elem_i1_gpu;
     int __gpu_sec_i1_gpu;
     int j__dc1_gpu;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+    if ((((0 * 0) + __thread_id) >= 8)) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);

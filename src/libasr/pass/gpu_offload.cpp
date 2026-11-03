@@ -2531,19 +2531,33 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     std::vector<ASR::symbol_t*> start_parameters(n_dims, nullptr);
     std::vector<ASR::symbol_t*> end_parameters(n_dims, nullptr);
 
+    // A bound whose value is known at compile time, a literal, a named
+    // constant or a constant expression of them, as gpu_splittable_dimensions
+    // takes it, is that value in the kernel, of the bound's own type: the
+    // device compiler then turns division by a constant extent into a
+    // multiply and shift. nullptr when the value is not known.
+    auto constant_bound = [&](ASR::expr_t *bound) -> ASR::expr_t* {
+        int64_t value = 0;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(bound), value)) {
+            return nullptr;
+        }
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value,
+            ASRUtils::duplicate_type(al, ASRUtils::expr_type(bound)),
+            ASR::integerbozType::Decimal));
+    };
     std::vector<ASR::expr_t*> kernel_starts, kernel_ends;
     for (size_t d = 0; d < n_dims; d++) {
         ASR::expr_t *host_start = dim_info[d].host_start;
         ASR::expr_t *host_end = dim_info[d].host_end;
         // A dimension a launch may split has the bounds of the chunk it
         // runs, which the launch passes, even when they are constants.
-        bool start_is_const = ASR::is_a<ASR::IntegerConstant_t>(*host_start)
-            && !splittable[d];
-        bool end_is_const = ASR::is_a<ASR::IntegerConstant_t>(*host_end)
-            && !splittable[d];
+        ASR::expr_t *start_constant = splittable[d] ? nullptr
+            : constant_bound(host_start);
+        ASR::expr_t *end_constant = splittable[d] ? nullptr
+            : constant_bound(host_end);
 
-        if (start_is_const) {
-            kernel_starts.push_back(dup_expr_to_scope(host_start, kernel_scope));
+        if (start_constant) {
+            kernel_starts.push_back(start_constant);
         } else {
             std::string name = "__loop_start_" + std::to_string(d);
             ASR::symbol_t *param = gpu_new_variable(al, loc, kernel_scope,
@@ -2560,8 +2574,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             if (splittable[d]) start_parameters[d] = param;
         }
 
-        if (end_is_const) {
-            kernel_ends.push_back(dup_expr_to_scope(host_end, kernel_scope));
+        if (end_constant) {
+            kernel_ends.push_back(end_constant);
         } else {
             std::string name = "__loop_end_" + std::to_string(d);
             ASR::symbol_t *param = gpu_new_variable(al, loc, kernel_scope,

@@ -83,3 +83,70 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     s[((int)(((__gpu_slot + ((long)1))) - (__lb_s_0)))] = (s[((int)(((__gpu_slot + ((long)1))) - (__lb_s_0)))] + a[((int)(i__dc3) - (1)) + (8 * ((int)(j__dc3) - (1)))]);
 }
 
+extern "C" __global__ void __lfortran_gpu_kernel_4(
+    int* __restrict__ d)
+{
+    long __flat_idx;
+    int i__dc4;
+    int j__dc4;
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((long)8) * ((long)6)))) {
+        return;
+    }
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    i__dc4 = ((int)((__flat_idx - ((__flat_idx / ((((long)8) - ((long)1)) + ((long)1))) * ((((long)8) - ((long)1)) + ((long)1)))) + ((long)1)));
+    __flat_idx = (__flat_idx / ((((long)8) - ((long)1)) + ((long)1)));
+    j__dc4 = ((int)(__flat_idx + ((long)1)));
+    d[((int)(i__dc4) - (1)) + (8 * ((int)(j__dc4) - (1)))] = ((10 * i__dc4) + j__dc4);
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_5 {
+    int __dim_t_0;
+    int __lb_t_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_5(
+    int* __restrict__ d,
+    int* __restrict__ t,
+    __ScalarArgs___lfortran_gpu_kernel_5 __scalar_args)
+{
+    int __lb_t_0 = __scalar_args.__lb_t_0;
+    long __flat_idx;
+    long __gpu_slot;
+    int i__dc5;
+    int j__dc5;
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((long)8) * ((long)6)))) {
+        return;
+    }
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    __gpu_slot = __flat_idx;
+    t[((int)(((__gpu_slot + ((long)1))) - (__lb_t_0)))] = 0;
+    i__dc5 = ((int)((__flat_idx - ((__flat_idx / ((((long)8) - ((long)1)) + ((long)1))) * ((((long)8) - ((long)1)) + ((long)1)))) + ((long)1)));
+    __flat_idx = (__flat_idx / ((((long)8) - ((long)1)) + ((long)1)));
+    j__dc5 = ((int)(__flat_idx + ((long)1)));
+    t[((int)(((__gpu_slot + ((long)1))) - (__lb_t_0)))] = (t[((int)(((__gpu_slot + ((long)1))) - (__lb_t_0)))] + d[((int)(i__dc5) - (1)) + (8 * ((int)(j__dc5) - (1)))]);
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_6 {
+    int __loop_start_1;
+    int __loop_end_1;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_6(
+    int* __restrict__ f,
+    __ScalarArgs___lfortran_gpu_kernel_6 __scalar_args)
+{
+    int __loop_start_1 = __scalar_args.__loop_start_1;
+    int __loop_end_1 = __scalar_args.__loop_end_1;
+    long __flat_idx;
+    int i__dc6;
+    int j__dc6;
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((long)8) * (((((long)__loop_end_1) >= ((long)__loop_start_1))) ? (((((long)__loop_end_1) - ((long)__loop_start_1)) + ((long)1))) : (((long)0)))))) {
+        return;
+    }
+    __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
+    i__dc6 = ((int)((__flat_idx - ((__flat_idx / ((((long)8) - ((long)1)) + ((long)1))) * ((((long)8) - ((long)1)) + ((long)1)))) + ((long)1)));
+    __flat_idx = (__flat_idx / ((((long)8) - ((long)1)) + ((long)1)));
+    j__dc6 = ((int)(__flat_idx + ((long)__loop_start_1)));
+    f[((int)(i__dc6) - (1)) + (8 * ((int)(j__dc6) - (1)))] = (i__dc6 - j__dc6);
+}
+

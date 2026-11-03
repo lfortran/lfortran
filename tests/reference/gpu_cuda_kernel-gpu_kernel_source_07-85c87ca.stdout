@@ -1,19 +1,13 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_end_0;
-};
-
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     double* __restrict__ x,
-    double* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    double* __restrict__ y)
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     const double c =   2.82094791773878140e-01;
     int i__dc;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)8))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));

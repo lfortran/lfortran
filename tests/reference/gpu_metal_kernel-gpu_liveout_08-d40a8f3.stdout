@@ -10,7 +10,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __size_g_w_gpu;
     int __lb_g_w_dim1_gpu;
     int __1__data_g_w_gpu;
-    int __loop_end_0_gpu;
 };
 
 kernel void __lfortran_gpu_kernel_0(
@@ -24,7 +23,6 @@ kernel void __lfortran_gpu_kernel_0(
     constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(7)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __flat_idx_gpu;
     int __gpu_loop_end1_gpu;
     int __gpu_loop_end_gpu;
@@ -35,7 +33,7 @@ kernel void __lfortran_gpu_kernel_0(
     int j_gpu;
     int m_gpu;
     int s_gpu;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+    if ((((0 * 0) + __thread_id) >= 100)) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
