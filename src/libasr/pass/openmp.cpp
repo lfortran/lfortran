@@ -25,6 +25,12 @@ class ReplaceArrayPhysicalCast: public ASR::BaseExprReplacer<ReplaceArrayPhysica
             al(al_) {}
 
         void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+            if (!ASR::is_a<ASR::Var_t>(*x->m_arg)) {
+                // An array expression, such as `a > 1.0`: keep the cast and
+                // replace the casts nested in its operand.
+                ASR::BaseExprReplacer<ReplaceArrayPhysicalCast>::replace_ArrayPhysicalCast(x);
+                return;
+            }
             ASRUtils::ASRBuilder b(al, x->base.base.loc);
             ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x->m_arg)->m_v;
             std::string sym_name = ASRUtils::symbol_name(sym);

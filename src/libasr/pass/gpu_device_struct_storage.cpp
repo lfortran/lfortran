@@ -1756,10 +1756,23 @@ public:
                     bound = bound ? bound : one;
                     continue;
                 }
-                ASRUtils::ASRBuilder b(al, one->base.loc);
-                bound = ASRUtils::EXPR(ASR::make_IfExp_t(al, one->base.loc,
-                    b.Gt(bound, one), duplicate(al, bound), duplicate(al, one),
-                    ASRUtils::expr_type(one), nullptr));
+                // The allocations may give their extents in different
+                // integer kinds, so the bound takes the wider one.
+                const Location &at = one->base.loc;
+                ASR::ttype_t *type = ASRUtils::expr_type(one);
+                if (ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::expr_type(bound)) >
+                        ASRUtils::extract_kind_from_ttype_t(type)) {
+                    type = ASRUtils::expr_type(bound);
+                }
+                auto as_type = [&](ASR::expr_t *e) {
+                    return CastingUtil::perform_casting(e, type, al, at);
+                };
+                ASRUtils::ASRBuilder b(al, at);
+                bound = ASRUtils::EXPR(ASR::make_IfExp_t(al, at,
+                    b.Gt(as_type(bound), as_type(one)),
+                    as_type(duplicate(al, bound)), as_type(duplicate(al, one)),
+                    type, nullptr));
             }
             if (!ok || bound == nullptr) continue;
             const Location &loc = var->base.base.loc;

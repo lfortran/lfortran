@@ -82,10 +82,10 @@ class DeviceLaunchExpandVisitor :
 
         DeviceLaunchExpandVisitor(Allocator &al_,
                 ASR::TranslationUnit_t &unit_, bool check_element_counts_,
-                int64_t chunk_limit_) :
+                int64_t chunk_limit_, int index_kind_) :
             PassVisitor(al_, nullptr), unit(unit_),
             check_element_counts(check_element_counts_),
-            chunk_limit(chunk_limit_) {}
+            chunk_limit(chunk_limit_), index_kind(index_kind_) {}
 
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
             const auto *kernel = ASR::down_cast<ASR::Function_t>(x.m_kernel);
@@ -166,6 +166,9 @@ class DeviceLaunchExpandVisitor :
         // The most iterations one launch of a kernel runs
         // (PassOptions::gpu_chunk_limit).
         int64_t chunk_limit;
+        // The kind of the bounds and extents of an array descriptor: 8
+        // with --descriptor-index-64, 4 otherwise.
+        int index_kind;
         std::map<ASR::Function_t*, ASR::symbol_t*> scalar_arg_structs;
         // Sizes buffer of a decomposed member, so a workspace can be
         // counted from the same element the device strides by.
@@ -740,17 +743,20 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *tmp, ASR::expr_t *arg, int rank,
                 bool back) {
             ASRUtils::ASRBuilder b(al, loc);
+            // Counted in the descriptor's index kind: a bound or an extent
+            // may be beyond huge(0).
+            ASR::ttype_t *index_type = b.int_type(index_kind);
             std::vector<ASR::expr_t*> idx;
             for (int d = 0; d < rank; d++) {
                 idx.push_back(declare_local(loc,
-                    "gpu_copy_i" + std::to_string(d), int32));
+                    "gpu_copy_i" + std::to_string(d), index_type));
             }
             std::vector<ASR::expr_t*> arg_subs;
             for (int d = 0; d < rank; d++) {
                 // The stand-in is 1-based; the argument keeps its own
                 // lower bound.
-                arg_subs.push_back(b.Add(b.Sub(idx[d], b.i32(1)),
-                    b.ArrayLBound(arg, d + 1)));
+                arg_subs.push_back(b.Add(b.Sub(idx[d], b.i_t(1, index_type)),
+                    b.ArrayLBound(arg, d + 1, index_kind)));
             }
             ASR::expr_t *tmp_el = b.ArrayItem_01(tmp, idx);
             ASR::expr_t *arg_el = b.ArrayItem_01(arg, arg_subs);
@@ -758,8 +764,8 @@ class DeviceLaunchExpandVisitor :
             body.push_back(back ? b.Assignment(arg_el, tmp_el)
                                 : b.Assignment(tmp_el, arg_el));
             for (int d = 0; d < rank; d++) {
-                body = {b.DoLoop(idx[d], b.i32(1),
-                    b.ArraySize(arg, b.i32(d + 1), int32), body)};
+                body = {b.DoLoop(idx[d], b.i_t(1, index_type),
+                    b.ArraySize(arg, b.i32(d + 1), index_type), body)};
             }
             out.push_back(al, body[0]);
         }
@@ -929,8 +935,9 @@ class DeviceLaunchExpandVisitor :
             for (int d = 0; d < rank; d++) {
                 ASR::dimension_t dd;
                 dd.loc = loc;
-                dd.m_start = b.i32(1);
-                dd.m_length = b.ArraySize(arg, b.i32(d + 1), int32);
+                dd.m_start = b.i_t(1, b.int_type(index_kind));
+                dd.m_length = b.ArraySize(arg, b.i32(d + 1),
+                    b.int_type(index_kind));
                 alloc_dims.push_back(al, dd);
             }
             out.push_back(al, b.Allocate(tmp, alloc_dims.p, alloc_dims.n));
@@ -1713,11 +1720,12 @@ void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
     if (!caps.device_selected()) {
         return;
     }
-    // A device without a 64-bit integer (Metal) cannot be given 64-bit
-    // offsets by the flag the message names, so it is not checked.
+    // A device that does not index in 64 bits (Metal) cannot be given
+    // 64-bit offsets by the flag the message names, so it is not checked.
     DeviceLaunchExpandVisitor v(al, unit,
-        caps.offset_kind == 4 && caps.max_integer_kind >= 8,
-        pass_options.gpu_chunk_limit);
+        caps.offset_kind == 4 && caps.max_index_kind >= 8,
+        pass_options.gpu_chunk_limit,
+        pass_options.descriptor_index_64 ? 8 : 4);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);

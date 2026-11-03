@@ -206,8 +206,10 @@ time_section "🧪 Testing splpak" '
   assert_git_commit 460bd22f4ac716e5266412e8ed35ce07aa664f08
 
   git clean -dfx
-  fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math" --verbose
-  fpm test --compiler=$FC --profile release --flag "--cpp -DREAL32 --no-fast-math"
+  # The release profile of fpm 0.12.0 adds only --fast for LFortran; that of
+  # 0.13.0 passes a bogus flag_lfortran_opt instead (fortran-lang/fpm#1341).
+  fpm build --compiler=$FC --flag "--fast --cpp -DREAL32 --no-fast-math" --verbose
+  fpm test --compiler=$FC --flag "--fast --cpp -DREAL32 --no-fast-math"
 
   cd ../
   rm -rf splpak

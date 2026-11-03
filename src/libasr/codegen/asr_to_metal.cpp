@@ -18,15 +18,15 @@ struct MetalDialect {
 
     // Metal has no double precision. This silently narrows real(8), and is
     // only correct because pass_replace_gpu_offload refuses to offload a loop
-    // that touches real(8) or integer(8) and reports it instead. Do not lift
-    // that guard without also giving real(8) a correct lowering here.
+    // that touches real(8) and reports it instead. Do not lift that guard
+    // without also giving real(8) a correct lowering here.
     std::string real_type(int /*kind*/) const {
         return "float";
     }
 
-    // The integer kind an element's offset in an array is computed in. The
-    // offload pass hands Metal no integer(8) (see real_type), so its arrays
-    // are indexed in 32 bits.
+    // The integer kind an element's offset in an array is computed in.
+    // Metal indexes in 32 bits (GpuDeviceCapabilities::max_index_kind); an
+    // integer(8) subscript is narrowed once its lower bound is subtracted.
     int offset_kind() const {
         return 4;
     }

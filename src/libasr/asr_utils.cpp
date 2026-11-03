@@ -5952,8 +5952,12 @@ ASR::asr_t* make_ArraySize_t_util(
             if( a_dim == nullptr ) {
                 ASR::asr_t* size = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
                 for( size_t i = 0; i < n_dims; i++ ) {
+                    // The declared extents keep their own kind, which need
+                    // not be the kind `a_type` of the size asked for.
                     size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
-                        ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr);
+                        ASR::binopType::Mul, CastingUtil::perform_casting(
+                            m_dims[i].m_length, a_type, al, a_loc),
+                        a_type, nullptr);
                 }
                 return size;
             } else if( is_dimension_constant ) {
