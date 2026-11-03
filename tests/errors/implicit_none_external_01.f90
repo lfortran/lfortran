@@ -32,6 +32,18 @@ x = g(2.0)
 x = f(1.0)
 end subroutine
 
+subroutine dummy_function(d)
+implicit none (external)
+real :: d
+x = d(1.0)
+end subroutine
+
+! A unit without the statement is not affected.
+subroutine not_inherited()
+call foo()
+x = g(2.0)
+end subroutine
+
 program implicit_none_external_01
 implicit none (external)
 call foo()

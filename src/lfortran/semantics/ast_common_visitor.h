@@ -2369,7 +2369,8 @@ public:
     // resolves to, null if nothing. A procedure is explicitly declared when it
     // has the EXTERNAL attribute or an explicit interface, i.e. when its name
     // is declared in the unit or a host of it. A procedure defined at the top
-    // level of the file is resolved without such a declaration.
+    // level of the file is resolved without such a declaration, except within
+    // its own definition, where its interface is explicit.
     void check_implicit_none_external(const std::string &name,
             ASR::symbol_t *sym, const Location &loc) {
         if (implicit_none_external_stack.empty()
@@ -2378,6 +2379,11 @@ public:
         }
         if (sym && ASRUtils::symbol_parent_symtab(sym)->parent != nullptr) {
             return;
+        }
+        for (SymbolTable *s = current_scope; sym && s; s = s->parent) {
+            if (s->asr_owner == &sym->base) {
+                return;
+            }
         }
         diag.add(diag::Diagnostic(
             "procedure '" + name + "' is not explicitly declared",

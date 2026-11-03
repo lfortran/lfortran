@@ -28,8 +28,14 @@ semantic error: procedure 'f' is not explicitly declared
 32 | x = f(1.0)
    |     ^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
 
-semantic error: procedure 'foo' is not explicitly declared
-  --> tests/errors/implicit_none_external_01.f90:37:1
+semantic error: procedure 'd' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:38:5
    |
-37 | call foo()
+38 | x = d(1.0)
+   |     ^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'foo' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:49:1
+   |
+49 | call foo()
    | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
