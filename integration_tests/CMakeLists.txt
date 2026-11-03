@@ -7257,6 +7257,7 @@ RUN(NAME gpu_kernel_source_39 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-s
 RUN(NAME gpu_kernel_source_40 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_kernel_source_41 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_kernel_source_42 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=50)
+RUN(NAME gpu_optional_launch_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --verify-all-passes)
 RUN(NAME gpu_liveout_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_liveout_03 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_01 LABELS gfortran llvm metal cuda)

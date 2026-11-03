@@ -629,7 +629,6 @@ public:
         std::vector<LiveoutScalarInfo> liveout_scalars;
         std::vector<GpuReductionInfo> reductions;
         std::vector<DimInfo> dim_info;
-        std::vector<ASR::symbol_t*> optional_syms;
         // A launch that can run in tiles (GpuDeviceCapabilities::
         // tile_width): the call argument that tells the kernel whether it
         // does (-1 when the kernel always numbers the iterations flat), and

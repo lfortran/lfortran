@@ -634,23 +634,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         involved_syms.erase(name);
     }
 
-    // Collect optional variables from involved_syms. When an optional
-    // argument is used inside a loop body guarded by present(),
-    // the kernel launch and all buffer setup must be skipped when the
-    // argument is not present, otherwise the host will segfault trying
-    // to read a null descriptor.
-    std::vector<ASR::symbol_t*> optional_syms;
-    for (auto &[sym_name, sym_info] : involved_syms) {
-        ASR::symbol_t *sym = this->current_scope->resolve_symbol(sym_name);
-        if (!sym) continue;
-        ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(sym);
-        if (!ASR::is_a<ASR::Variable_t>(*resolved)) continue;
-        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(resolved);
-        if (var->m_presence == ASR::presenceType::Optional) {
-            optional_syms.push_back(sym);
-        }
-    }
-
     // What the loop defines and the host reads after it: each thread keeps
     // a private copy of it, and puts what it defines back where the value
     // is shared (gpu_offload_liveout.cpp).
@@ -659,14 +642,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             live_vars, loop_var_set, reduction_names,
             local_scalar_names, involved_syms, liveouts)) {
         return;
-    }
-    // An optional scalar the loop may define reaches the kernel in a
-    // buffer of the launch's own, which is there whether or not the
-    // argument is present: the loop runs either way, and the launch copies
-    // the value in and out only when it is present.
-    for (auto &ls : liveouts.scalars) {
-        optional_syms.erase(std::remove(optional_syms.begin(),
-            optional_syms.end(), ls.orig_scalar_sym), optional_syms.end());
     }
     {
         // One accumulator per iteration. The extent is only known when the
@@ -857,7 +832,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASR::intentType::InOut, nullptr, nullptr,
                 ASR::storage_typeType::Default, dup_type,
                 type_decl, ASR::abiType::Source,
-                ASR::accessType::Public, ASR::presenceType::Required, false));
+                ASR::accessType::Public,
+                ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(orig_sym))->m_presence,
+                false));
         kernel_scope->add_symbol(sym_name, param);
         kernel_args.push_back(al,
             ASRUtils::EXPR(ASR::make_Var_t(al, loc, param)));
@@ -3245,7 +3223,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.liveout_scalars = liveouts.scalars;
     plan.reductions = pending_reductions;
     plan.dim_info = dim_info;
-    plan.optional_syms = optional_syms;
     plan.tiled_arg = tiled_arg;
     plan.order = order;
     plan.start_parameters = start_parameters;

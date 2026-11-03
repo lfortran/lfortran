@@ -197,8 +197,6 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
 
     // 7. Replace the region with its GpuKernelLaunch
     // Collect all launch-related statements into a temporary Vec.
-    // If any involved variable is optional, wrap them in a
-    // present() guard so the host never reads a null descriptor.
     Vec<ASR::stmt_t*> launch_stmts;
     launch_stmts.reserve(al, plan.gather_stmts.n + pre_launch_stmts.n
         + plan.scatter_stmts.n + plan.liveout_scalars.size() + 2
@@ -593,46 +591,9 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         b.Gt(thread_count, b.i_t(0, ASRUtils::expr_type(thread_count))),
         launch_stmts.p, launch_stmts.n, nullptr, 0)));
 
-    // If any involved variable is optional, wrap the whole kernel
-    // launch block in if(present(v1) .and. present(v2) ...) so
-    // the host never tries to read a null descriptor or compute
-    // ArraySize on an absent argument.
-    if (!plan.optional_syms.empty()) {
-        ASR::ttype_t *log_type = ASRUtils::TYPE(
-            ASR::make_Logical_t(al, loc, 4));
-        ASR::expr_t *guard = nullptr;
-        for (ASR::symbol_t *opt_sym : plan.optional_syms) {
-            Vec<ASR::expr_t*> present_args;
-            present_args.reserve(al, 1);
-            present_args.push_back(al, ASRUtils::EXPR(
-                ASR::make_Var_t(al, loc, opt_sym)));
-            ASR::expr_t *present_call = ASRUtils::EXPR(
-                ASR::make_IntrinsicElementalFunction_t(al, loc,
-                    static_cast<int64_t>(
-                        ASRUtils::IntrinsicElementalFunctions::Present),
-                    present_args.p, present_args.n, 0,
-                    log_type, nullptr));
-            if (guard == nullptr) {
-                guard = present_call;
-            } else {
-                guard = ASRUtils::EXPR(
-                    ASR::make_LogicalBinOp_t(al, loc, guard,
-                        ASR::logicalbinopType::And, present_call,
-                        log_type, nullptr));
-            }
-        }
-        Vec<ASR::stmt_t*> empty_else;
-        empty_else.reserve(al, 0);
-        pass_result.reserve(al, 1);
-        pass_result.push_back(al, ASRUtils::STMT(
-            ASR::make_If_t(al, loc, nullptr, guard,
-                prelude.p, prelude.n,
-                empty_else.p, empty_else.n)));
-    } else {
-        pass_result.reserve(al, prelude.n);
-        for (size_t i = 0; i < prelude.n; i++) {
-            pass_result.push_back(al, prelude.p[i]);
-        }
+    pass_result.reserve(al, prelude.n);
+    for (size_t i = 0; i < prelude.n; i++) {
+        pass_result.push_back(al, prelude.p[i]);
     }
 }
 
