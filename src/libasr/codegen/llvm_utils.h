@@ -879,9 +879,18 @@ class ASRToLLVMVisitor;
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
             // Pointer to a function of the opaque procedure type `x`: no
-            // parameters, returning the explicit result type or void.
+            // parameters, returning the explicit result type or void. The
+            // result is lowered as `get_function_type` lowers it, so that a
+            // procedure declared with the opaque type has this type; a
+            // result returned through a pointer (complex(8) on Windows)
+            // becomes the only parameter.
             llvm::PointerType* get_opaque_procedure_ptr_type(const ASR::FunctionType_t &x,
                 llvm::Module* module);
+
+            // The type a procedure returns a complex(a_kind) result as, by
+            // the platform C ABI; null when the result is instead returned
+            // through a leading pointer argument (complex(8) on Windows).
+            llvm::Type* get_complex_return_type(int a_kind);
 
             // Convert complex return value from platform ABI to internal representation
             // (\<2 x float\>, i64 on Windows, etc.) to the internal complex_4 struct.
