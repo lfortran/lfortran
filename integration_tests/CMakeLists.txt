@@ -3739,7 +3739,9 @@ RUN(NAME host_assoc_19 LABELS gfortran llvm)
 RUN(NAME host_assoc_20 LABELS gfortran llvm)
 RUN(NAME host_assoc_21 LABELS gfortran llvm)
 RUN(NAME host_assoc_22 LABELS gfortran llvm EXTRA_ARGS --internal-procedure-thunks=512)
-RUN(NAME host_assoc_23 FAIL LABELS llvm EXTRA_ARGS --internal-procedure-thunks=2)
+# With --fast, `host` passes `get` with its frame instead of a thunk (#16665),
+# so the thunks only run out without it.
+RUN(NAME host_assoc_23 FAIL LABELS llvm NO_FAST EXTRA_ARGS --internal-procedure-thunks=2)
 RUN(NAME host_assoc_26 LABELS gfortran llvm)
 RUN(NAME host_assoc_27 LABELS gfortran llvm)
 RUN(NAME procedure_argument_specialization_01 LABELS gfortran llvm)
@@ -3755,6 +3757,14 @@ RUN(NAME procedure_argument_specialization_06 LABELS gfortran llvm)
 # and ASSOCIATE bodies.
 RUN(NAME procedure_argument_specialization_07 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME procedure_argument_specialization_08 LABELS gfortran llvm EXTRA_ARGS --fast)
+# With --fast, a dummy procedure that is only called or passed on is passed
+# with the frame of its host instead of a thunk: these recursive hosts need
+# more than the default --internal-procedure-thunks without it (#16665).
+RUN(NAME frame_specialization_01 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME frame_specialization_02 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME frame_specialization_03 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME frame_specialization_04 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME frame_specialization_05 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module

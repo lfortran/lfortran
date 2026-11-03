@@ -48,6 +48,7 @@ set(SRC
     pass/nested_vars.cpp
     pass/specialize_procedure_arguments.cpp
     pass/procedure_argument_utils.cpp
+    pass/specialize_frame_arguments.cpp
     pass/array_struct_temporary.cpp
     pass/function_result_scope.cpp
     pass/where.cpp

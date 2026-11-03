@@ -205,7 +205,7 @@ bool same_interface(ASR::Function_t *iface, ASR::Function_t *actual) {
     return true;
 }
 
-bool copyable_scope(SymbolTable *scope) {
+bool copyable_scope(SymbolTable *scope, bool internal_procedures) {
     for (auto &item: scope->get_scope()) {
         ASR::symbol_t *sym = item.second;
         switch (sym->type) {
@@ -219,8 +219,12 @@ bool copyable_scope(SymbolTable *scope) {
                 break;
             }
             case ASR::symbolType::Function: {
-                if (ASRUtils::get_FunctionType(sym)->m_deftype ==
-                        ASR::deftypeType::Implementation) {
+                ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(sym);
+                if (ft->m_deftype == ASR::deftypeType::Implementation &&
+                        (!internal_procedures ||
+                         ft->m_abi != ASR::abiType::Source ||
+                         !copyable_scope(ASR::down_cast<ASR::Function_t>(
+                            sym)->m_symtab, true))) {
                     return false;
                 }
                 break;
@@ -228,13 +232,15 @@ bool copyable_scope(SymbolTable *scope) {
             case ASR::symbolType::ExternalSymbol:
                 break;
             case ASR::symbolType::Block:
-                if (!copyable_scope(ASR::down_cast<ASR::Block_t>(sym)->m_symtab)) {
+                if (!copyable_scope(ASR::down_cast<ASR::Block_t>(sym)->m_symtab,
+                        internal_procedures)) {
                     return false;
                 }
                 break;
             case ASR::symbolType::AssociateBlock:
                 if (!copyable_scope(
-                        ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab)) {
+                        ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab,
+                        internal_procedures)) {
                     return false;
                 }
                 break;
@@ -245,7 +251,7 @@ bool copyable_scope(SymbolTable *scope) {
     return true;
 }
 
-bool copyable_procedure(ASR::Function_t *f) {
+bool copyable_procedure(ASR::Function_t *f, bool internal_procedures) {
     ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(f);
     if (ft->m_deftype != ASR::deftypeType::Implementation ||
             ft->m_abi != ASR::abiType::Source || ft->m_elemental ||
@@ -261,7 +267,7 @@ bool copyable_procedure(ASR::Function_t *f) {
             return false;
         }
     }
-    if (!copyable_scope(f->m_symtab)) {
+    if (!copyable_scope(f->m_symtab, internal_procedures)) {
         return false;
     }
     NodeCounter counter;

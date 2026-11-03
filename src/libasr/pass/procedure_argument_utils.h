@@ -72,11 +72,13 @@ public:
 };
 
 // Only variables without saved storage, interfaces, entities of modules and
-// BLOCK/ASSOCIATE constructs made of those.
-bool copyable_scope(SymbolTable *scope);
+// BLOCK/ASSOCIATE constructs made of those, and with `internal_procedures`
+// also internal procedures made of those.
+bool copyable_scope(SymbolTable *scope, bool internal_procedures = false);
 
-// A procedure that can be copied into a host, apart from its dummies.
-bool copyable_procedure(ASR::Function_t *f);
+// A procedure that can be copied, apart from its dummies: into a host, or
+// with `internal_procedures` next to itself, with its internal procedures.
+bool copyable_procedure(ASR::Function_t *f, bool internal_procedures = false);
 
 // The procedure with a body that a call by its name runs, or nullptr.
 ASR::Function_t *called_procedure(ASR::symbol_t *name, ASR::expr_t *dt);
