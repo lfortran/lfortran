@@ -21086,6 +21086,36 @@ public:
             }
         };
 
+        // The address of the first element of the descriptor array that
+        // `data_ptr` refers to, and a pointer to its extents, read at run time
+        auto descriptor_array_data = [&](ASR::ttype_t* array_type_asr,
+                llvm::Value* data_ptr, llvm::Value*& shape_ptr) -> llvm::Value* {
+            ASR::ttype_t* past_alloc = ASRUtils::type_get_past_allocatable_pointer(array_type_asr);
+            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(past_alloc);
+            llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(nullptr, past_alloc, module.get());
+            llvm::Value* arr_desc_loaded = llvm_utils->get_array_descriptor_ptr(
+                data_ptr, arr_type, ASRUtils::is_character(*array_type_asr));
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(array_type_asr);
+            llvm::ArrayType* shape_arr_type = llvm::ArrayType::get(llvm::Type::getInt64Ty(context), n_dims);
+            llvm::Value* shape_arr = llvm_utils->CreateAlloca(*builder, shape_arr_type);
+            for (size_t d = 0; d < n_dims; d++) {
+                llvm::Value* dim_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d + 1); // 1-based
+                llvm::Value* dim_size = arr_descr->get_array_size(arr_type, arr_desc_loaded, dim_idx, 8, 4);
+                llvm::Value* shape_elem_ptr = builder->CreateConstGEP2_32(shape_arr_type, shape_arr, 0, checked_integer_cast<unsigned>(d));
+                builder->CreateStore(dim_size, shape_elem_ptr);
+            }
+            shape_ptr = builder->CreateConstGEP2_32(shape_arr_type, shape_arr, 0, 0);
+            llvm::Value* data_ptr_field = arr_descr->get_pointer_to_data(arr_type, arr_desc_loaded);
+            if (ASR::is_a<ASR::String_t>(*elem_type)) {
+                ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
+                llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                    llvm_utils->get_StringType(elem_type)->getPointerTo(), data_ptr_field);
+                return llvm_utils->get_string_data(str_type, str_desc);
+            }
+            llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(nullptr, elem_type, module.get());
+            return llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr_field);
+        };
+
         add_namelist_item = [&](const std::string &item_name, ASR::ttype_t* item_type_asr,
                                 llvm::Value* data_ptr, ASR::symbol_t* type_decl_sym) {
             // For allocatable/pointer arrays, the symtab value stores a pointer
@@ -21131,7 +21161,12 @@ public:
                 llvm::Value* stride_val = llvm::ConstantInt::get(
                     llvm::Type::getInt64Ty(context), module->getDataLayout().getTypeAllocSize(struct_llvm_type));
 
-                if (ASRUtils::is_array(item_type_asr)) {
+                if (ASRUtils::is_array(item_type_asr) &&
+                        ASRUtils::extract_physical_type(item_type_asr) ==
+                            ASR::array_physical_typeType::DescriptorArray) {
+                    rank = (int32_t)ASRUtils::extract_n_dims_from_ttype(item_type_asr);
+                    struct_ptr = descriptor_array_data(item_type_asr, data_ptr, shape_ptr);
+                } else if (ASRUtils::is_array(item_type_asr)) {
                     ASR::dimension_t* dims = nullptr;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(item_type_asr, dims);
                     rank = (int32_t)n_dims;
@@ -21309,43 +21344,7 @@ public:
                 if (ASR::is_a<ASR::Array_t>(*past_alloc)) {
                     ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(past_alloc);
                     if (arr_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-                        // Get array type for descriptor operations
-                        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(nullptr, past_alloc, module.get());
-                        // Get element type for loading data pointer
-                        llvm::Type* llvm_elem_type = llvm_utils->get_type_from_ttype_t_util(nullptr, elem_type, module.get());
-                        llvm::Value* arr_desc_loaded = llvm_utils->get_array_descriptor_ptr(
-                            data_ptr, arr_type, ASRUtils::is_character(*item_type_asr));
-
-                        // For descriptor arrays, extract dimensions at runtime if needed
-                        if (rank > 0) {
-                            ASR::dimension_t* dims = nullptr;
-                            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(item_type_asr, dims);
-                            // Allocate array to store runtime dimensions
-                            llvm::ArrayType* shape_arr_type = llvm::ArrayType::get(llvm::Type::getInt64Ty(context), n_dims);
-                            llvm::Value* shape_arr = llvm_utils->CreateAlloca(*builder, shape_arr_type);
-
-                            for (size_t d = 0; d < n_dims; d++) {
-                                llvm::Value* dim_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d + 1); // 1-based
-                                llvm::Value* dim_size = arr_descr->get_array_size(arr_type, arr_desc_loaded, dim_idx, 8, 4);
-                                // Store in shape array
-                                llvm::Value* shape_elem_ptr = builder->CreateConstGEP2_32(shape_arr_type, shape_arr, 0, checked_integer_cast<unsigned>(d));
-                                builder->CreateStore(dim_size, shape_elem_ptr);
-                            }
-                            // Get pointer to first element
-                            shape_ptr = builder->CreateConstGEP2_32(shape_arr_type, shape_arr, 0, 0);
-                        }
-
-                        // Get data pointer from array descriptor
-                        // Get pointer to data field, then load the data pointer
-                        llvm::Value* data_ptr_field = arr_descr->get_pointer_to_data(arr_type, arr_desc_loaded);
-                        if (ASR::is_a<ASR::String_t>(*elem_type)) {
-                            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(elem_type);
-                            llvm::Value* str_desc = llvm_utils->CreateLoad2(
-                                llvm_utils->get_StringType(elem_type)->getPointerTo(), data_ptr_field);
-                            data_ptr = llvm_utils->get_string_data(str_type, str_desc);
-                        } else {
-                            data_ptr = llvm_utils->CreateLoad2(llvm_elem_type->getPointerTo(), data_ptr_field);
-                        }
+                        data_ptr = descriptor_array_data(item_type_asr, data_ptr, shape_ptr);
                     } else if (arr_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray) {
                         // For FixedSizeArray, data_ptr points to [N x Type]*, we need Type*
                         // Use GEP with indices [0, 0] to get pointer to first element

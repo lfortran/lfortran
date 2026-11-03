@@ -1676,6 +1676,42 @@ semantic error: `pos` argument of `ibset` intrinsic must be non-negative
 4046 |     integer(8), parameter :: lowest_pos = ibset(0_8, -9223372036854775807_8 - 1_8)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
      |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4069:59
+     |
+4069 |         procedure(cc1_ept_iface), pointer, nopass :: c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                                                           ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4072:47
+     |
+4072 |     procedure(cc1_ept_iface), pointer :: q => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                                               ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4061:55
+     |
+4061 | procedure(cc1_ept_iface), pointer :: cc1_ept_later => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                                                       ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4082:33
+     |
+4082 |         procedure(), pointer :: s  ! {Error} procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+     |                                 ^ 
+
+semantic error: procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4085:40
+     |
+4085 |         procedure(integer), pointer :: f  ! {Error} procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+     |                                        ^ 
+
+semantic error: procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4088:40
+     |
+4088 |         procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+     |                                        ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -5020,6 +5056,24 @@ semantic error: reduction variable 'k' for operator .neqv. must be of type logic
      |
 4013 |         do concurrent (i = 1:4) reduce(.neqv.: k)  ! {Error} reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
      |                                 ^^^^^^^^^^^^^^^^^ 
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4074:10
+     |
+4074 |     p => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |          ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4075:12
+     |
+4075 |     a%c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |            ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4076:19
+     |
+4076 |     a = cc1_ept_t(cc1_ept_ef)  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                   ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
 
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9

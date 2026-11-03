@@ -1,5 +1,6 @@
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
+#include <libasr/casting_utils.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/codegen/gpu_utils.h>
@@ -165,8 +166,9 @@ ASR::expr_t* gpu_array_size_from_type(Allocator &al,
         begin = (size_t)d - 1;
         end = begin + 1;
     }
-    ASR::ttype_t *int_t = ASRUtils::TYPE(ASR::make_Integer_t(al,
-        sz->base.base.loc, 4));
+    // The extents keep the kinds they were declared with; the replacement
+    // must have the kind of the `size` it replaces.
+    ASR::ttype_t *size_type = sz->m_type;
     ASR::expr_t *acc = nullptr;
     for (size_t d = begin; d < end; d++) {
         ASR::expr_t *len = arr->m_dims[d].m_length;
@@ -175,8 +177,10 @@ ASR::expr_t* gpu_array_size_from_type(Allocator &al,
         dup.success = true;
         ASR::expr_t *one = dup.duplicate_expr(len);
         if (!one || !dup.success) return nullptr;
+        one = CastingUtil::perform_casting(one, size_type, al,
+            sz->base.base.loc);
         acc = acc ? ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
-            sz->base.base.loc, acc, ASR::binopType::Mul, one, int_t,
+            sz->base.base.loc, acc, ASR::binopType::Mul, one, size_type,
             nullptr)) : one;
     }
     return acc;

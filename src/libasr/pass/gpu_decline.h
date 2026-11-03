@@ -57,6 +57,15 @@ struct GpuDeviceCapabilities {
     int max_integer_kind = 8;
     int max_real_kind = 8;
 
+    // The widest integer kind the device indexes in: the kind it numbers
+    // the iterations of a launch in, and so the widest loop index of an
+    // offloaded loop it takes, and the widest offset_kind below. This is
+    // about indexing, not values: a device may compute with integers wider
+    // than it indexes in, and a kernel narrows an integer(8) subscript to
+    // its offset kind only after the lower bound is subtracted
+    // (gpu_offset_term_parts).
+    int max_index_kind = 8;
+
     // Whether a device function may declare a local array whose extent is
     // only known once the kernel runs. Where it may not, such a local
     // becomes an argument that every caller gives the function, up to the
@@ -97,9 +106,9 @@ struct GpuDeviceCapabilities {
 
     // The integer kind a kernel computes the offset of an element in an
     // array in. Like the host's array descriptors, the offsets are 64-bit
-    // only with --descriptor-index-64, and only on a device with a 64-bit
-    // integer; otherwise a launch on such a device stops before it hands a
-    // kernel an array of more than huge(0) elements.
+    // only with --descriptor-index-64, and only on a device that indexes in
+    // 64 bits (max_index_kind); otherwise a launch on such a device stops
+    // before it hands a kernel an array of more than huge(0) elements.
     int offset_kind = 4;
 
     // Whether the device has a scalar type of the same in-memory width as
@@ -148,6 +157,9 @@ enum class GpuDeclineReason {
     ReductionClause,
     LoopWithoutIndex,
     IncompleteLoopHead,
+    // A loop index of an integer kind wider than the device numbers the
+    // iterations of a launch in (GpuDeviceCapabilities::max_index_kind).
+    LoopIndexKind,
     StridedLoop,
 
     // --- what the pass's own lowering cannot yet do to the body ---

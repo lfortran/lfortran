@@ -1362,6 +1362,7 @@ RUN(NAME namelist_39 LABELS llvm) # Test in not compatible with gfortran 13.0 us
 RUN(NAME namelist_40 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME nested_namelist_01 LABELS gfortran llvm)
 RUN(NAME nested_namelist_02 LABELS gfortran llvm)
+RUN(NAME nested_namelist_03 LABELS gfortran llvm)
 
 RUN(NAME format_quotes_01 LABELS gfortran llvm)
 
@@ -2685,6 +2686,7 @@ RUN(NAME implicit_interface_109 LABELS gfortran llvm EXTRA_ARGS --implicit-inter
 RUN(NAME implicit_interface_110 LABELS gfortran llvm EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_110b.f90)
 RUN(NAME implicit_interface_111 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-typing --implicit-interface GFORTRAN_ARGS -ffixed-form EXTRAFILES implicit_interface_111b.f90)
 RUN(NAME implicit_interface_112 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME implicit_interface_113 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -3739,7 +3741,9 @@ RUN(NAME host_assoc_19 LABELS gfortran llvm)
 RUN(NAME host_assoc_20 LABELS gfortran llvm)
 RUN(NAME host_assoc_21 LABELS gfortran llvm)
 RUN(NAME host_assoc_22 LABELS gfortran llvm EXTRA_ARGS --internal-procedure-thunks=512)
-RUN(NAME host_assoc_23 FAIL LABELS llvm EXTRA_ARGS --internal-procedure-thunks=2)
+# With --fast, `host` passes `get` with its frame instead of a thunk (#16665),
+# so the thunks only run out without it.
+RUN(NAME host_assoc_23 FAIL LABELS llvm NO_FAST EXTRA_ARGS --internal-procedure-thunks=2)
 RUN(NAME host_assoc_26 LABELS gfortran llvm)
 RUN(NAME host_assoc_27 LABELS gfortran llvm)
 RUN(NAME procedure_argument_specialization_01 LABELS gfortran llvm)
@@ -3756,6 +3760,15 @@ RUN(NAME procedure_argument_specialization_06 LABELS gfortran llvm)
 RUN(NAME procedure_argument_specialization_07 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME procedure_argument_specialization_08 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME procedure_argument_specialization_09 LABELS gfortran llvm EXTRA_ARGS --fast)
+# With --fast, a dummy procedure that is only called or passed on is passed
+# with the frame of its host instead of a thunk: these recursive hosts need
+# more than the default --internal-procedure-thunks without it (#16665).
+RUN(NAME frame_specialization_01 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME frame_specialization_02 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME frame_specialization_03 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME frame_specialization_04 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME frame_specialization_05 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME frame_specialization_06 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module
@@ -4432,6 +4445,7 @@ RUN(NAME template_procedure_dummy_05 LABELS llvm)
 RUN(NAME template_struct_extends_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_class_procedure_nopass_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_class_procedure_deferred_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_do_concurrent_01 LABELS llvm)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -4683,6 +4697,7 @@ RUN(NAME pass_array_by_data_17 LABELS gfortran llvm
     EXTRAFILES pass_array_by_data_17_module.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fcheck=bounds)
 RUN(NAME pass_array_by_data_18 LABELS gfortran llvm EXTRA_ARGS --separate-compilation)
+RUN(NAME pass_array_by_data_19 LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_value_extents LABELS gfortran llvm)
 RUN(NAME pass_array_by_data_extname_01 LABELS gfortran llvm)
 
@@ -5512,6 +5527,7 @@ RUN(NAME array_size_empty_triplet_01 LABELS gfortran llvm)
 RUN(NAME array_size_section_01 LABELS gfortran llvm)
 RUN(NAME array_size_assumed_size_01 LABELS gfortran llvm)
 RUN(NAME array_size_rank_one_01 LABELS gfortran llvm)
+RUN(NAME array_size_kind_01 LABELS gfortran llvm) # size() kind differs from the extent kind in a result extent (#15394)
 RUN(NAME simd_01 LABELS gfortran c llvm llvm_nopragma c_nopragma)
 RUN(NAME simd_02 LABELS gfortran c llvm llvm_nopragma c_nopragma NO_FAST_MATH)
 RUN(NAME legacy_array_sections_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray EXTRA_ARGS --legacy-array-sections)
@@ -5795,6 +5811,7 @@ RUN(NAME openmp_bindc_04 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_host_assoc_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_host_assoc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp) # #16382's part with orphaned barriers is left out until #16619 is fixed
 RUN(NAME openmp_host_assoc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp EXTRA_ARGS --internal-procedure-thunks=16)
+RUN(NAME frame_specialization_07 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp EXTRA_ARGS --fast)
 
 RUN(NAME openmp_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
@@ -5906,6 +5923,7 @@ RUN(NAME openmp_107 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_108 LABELS llvm_omp)
 RUN(NAME openmp_109 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_110 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_111 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
@@ -6205,6 +6223,7 @@ RUN(NAME proc_ptr_39 LABELS gfortran llvm)
 RUN(NAME proc_ptr_40 LABELS gfortran llvm) # interface result length calls a function use associated only in the interface (#15004)
 RUN(NAME proc_ptr_46 LABELS gfortran llvm) # procedure pointer component whose interface result length calls a function (#15004)
 RUN(NAME proc_ptr_47 LABELS gfortran llvm) # same, with an internal procedure as the interface (#15004)
+RUN(NAME proc_ptr_48 LABELS gfortran llvm) # elemental specific intrinsic and nonelemental procedure targets (#16573)
 RUN(NAME proc_ptr_nopass_02 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_03 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_04 LABELS gfortran llvm)
@@ -6427,7 +6446,7 @@ RUN(NAME gpu_metal_09 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_10 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_11 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_12 LABELS gfortran llvm metal cuda)
-RUN(NAME gpu_metal_13 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_13 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_14 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_15 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_16 LABELS gfortran llvm metal cuda)
@@ -6784,7 +6803,7 @@ RUN(NAME gpu_metal_342 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-
 RUN(NAME gpu_metal_343 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_344 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_345 LABELS gfortran llvm metal cuda EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
-RUN(NAME gpu_metal_346 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_346 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_347 LABELS gfortran llvm metal cuda EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME gpu_metal_348 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_349 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
@@ -6904,7 +6923,7 @@ RUN(NAME gpu_metal_489 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_489_
 RUN(NAME gpu_metal_505 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_506 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_507 LABELS gfortran llvm metal cuda)
-RUN(NAME gpu_discard_guard_extremes LABELS gfortran llvm cuda)
+RUN(NAME gpu_discard_guard_extremes LABELS gfortran llvm metal cuda)
 # GFortran 13 in Quick does not support REDUCE.
 RUN(NAME gpu_metal_482 LABELS llvm metal cuda)
 # GFortran 13 in Quick cannot compile these LOCAL locality fixtures.
@@ -6970,12 +6989,38 @@ RUN(NAME gpu_metal_593 LABELS gfortran llvm metal cuda EXTRA_ARGS --fast)
 RUN(NAME gpu_metal_594 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_595 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_595_fast FILE gpu_metal_595 LABELS gfortran llvm metal cuda EXTRA_ARGS --fast)
-RUN(NAME gpu_metal_596 LABELS gfortran llvm cuda)
+RUN(NAME gpu_metal_596 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_620 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_621 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_622 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_625 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_626 LABELS llvm metal cuda llvm_omp) # gfortran on CI lacks reduce clause
+RUN(NAME gpu_metal_627 LABELS metal cuda llvm_omp EXTRA_ARGS --openmp) # gfortran on CI lacks reduce clause
+RUN(NAME gpu_metal_628 LABELS metal cuda EXTRA_ARGS --openmp --gpu-offload-omp-loops) # gfortran on CI lacks reduce clause
+RUN(NAME gpu_metal_629 LABELS llvm metal cuda) # gfortran on CI lacks reduce clause
 RUN(NAME gpu_metal_630 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_631 LABELS gfortran llvm cuda) # metal declines real(8)
+RUN(NAME gpu_metal_635 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_636 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_637 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_638 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_639 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_640 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_641 LABELS gfortran llvm metal cuda)
+# integer(8) values in kernels; Metal still numbers iterations in 32 bits.
+RUN(NAME gpu_metal_650 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_651 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_652 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_653 LABELS gfortran llvm cuda) # metal declines integer(8) loop indices
+RUN(NAME gpu_metal_654 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_655 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_656 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_657 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_658 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_645 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_646 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_647 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_648 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_log_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_nested_block_calls_01 LABELS gfortran llvm metal cuda)
 # Launches that run their kernel in chunks of the iteration space
@@ -6996,6 +7041,11 @@ RUN(NAME gpu_metal_597 FAIL LABELS cuda) # stops: an array of more than huge(0) 
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
 RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)
+RUN(NAME gpu_metal_614 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_615 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64 --realloc-lhs-arrays)
+RUN(NAME gpu_metal_608 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64) # lower bounds above huge(0); metal declines integer(8) loop indices
+RUN(NAME gpu_metal_616 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_617 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
@@ -7066,11 +7116,11 @@ RUN(NAME gpu_metal_402 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-
 RUN(NAME gpu_metal_403 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_404 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_405 LABELS gfortran llvm metal cuda)
-RUN(NAME gpu_metal_603 LABELS gfortran llvm cuda) # no metal: Metal declines integer(8)
+RUN(NAME gpu_metal_603 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_604 FILE gpu_metal_405 LABELS llvm metal cuda
     EXTRA_ARGS --descriptor-index-64)
 RUN(NAME gpu_metal_605 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64)
-RUN(NAME gpu_metal_606 LABELS gfortran llvm cuda) # no metal: Metal declines integer(8)
+RUN(NAME gpu_metal_606 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_413 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_413_mod.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays)
 RUN(NAME gpu_metal_435 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_435_mod.f90 EXTRA_ARGS --separate-compilation $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)

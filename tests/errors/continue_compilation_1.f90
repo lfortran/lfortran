@@ -4045,3 +4045,46 @@ module cc1_ibset_pos
     integer(1), parameter :: negative = ibset(0_1, -1)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
     integer(8), parameter :: lowest_pos = ibset(0_8, -9223372036854775807_8 - 1_8)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
 end module
+
+! A nonintrinsic elemental procedure cannot be a procedure pointer target
+! (Fortran 2018 C1031), nor an initial procedure target (C1519) (#16573).
+module cc1_elemental_proc_target
+implicit none
+abstract interface
+    integer function cc1_ept_iface(x)
+        integer, intent(in) :: x
+    end function
+end interface
+type cc1_ept_t
+    procedure(cc1_ept_iface), pointer, nopass :: c => null()
+end type
+procedure(cc1_ept_iface), pointer :: cc1_ept_later => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+contains
+elemental integer function cc1_ept_ef(x)
+    integer, intent(in) :: x
+    cc1_ept_ef = x + 1
+end function
+subroutine cc1_ept_sub()
+    type cc1_ept_u
+        procedure(cc1_ept_iface), pointer, nopass :: c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    end type
+    procedure(cc1_ept_iface), pointer :: p
+    procedure(cc1_ept_iface), pointer :: q => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    type(cc1_ept_t) :: a
+    p => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    a%c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    a = cc1_ept_t(cc1_ept_ef)  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+end subroutine
+end module
+
+module cc1_procptr_component_nopass
+    type :: t_implicit_procptr
+        procedure(), pointer :: s  ! {Error} procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+    end type
+    type :: t_typed_procptr
+        procedure(integer), pointer :: f  ! {Error} procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+    end type
+    type :: t_kinded_procptr
+        procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+    end type
+end module

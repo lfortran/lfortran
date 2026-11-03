@@ -1455,10 +1455,42 @@ namespace LCompilers {
 
     llvm::PointerType* LLVMUtils::get_opaque_procedure_ptr_type(const ASR::FunctionType_t &x,
             llvm::Module* module) {
-        llvm::Type* return_type = x.m_return_var_type != nullptr
-            ? get_type_from_ttype_t_util(nullptr, x.m_return_var_type, module)
-            : llvm::Type::getVoidTy(context);
+        if (x.m_return_var_type == nullptr) {
+            return llvm::FunctionType::get(llvm::Type::getVoidTy(context), {},
+                false)->getPointerTo();
+        }
+        if (ASR::is_a<ASR::Complex_t>(*x.m_return_var_type)) {
+            // Lowered as `get_function_type` lowers a complex result.
+            int a_kind = ASR::down_cast<ASR::Complex_t>(x.m_return_var_type)->m_kind;
+            llvm::Type* return_type = get_complex_return_type(a_kind);
+            if (return_type == nullptr) {
+                return llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+                    {getComplexType(a_kind, true)}, false)->getPointerTo();
+            }
+            return llvm::FunctionType::get(return_type, {}, false)->getPointerTo();
+        }
+        llvm::Type* return_type = get_type_from_ttype_t_util(nullptr,
+            x.m_return_var_type, module);
         return llvm::FunctionType::get(return_type, {}, false)->getPointerTo();
+    }
+
+    llvm::Type* LLVMUtils::get_complex_return_type(int a_kind) {
+        if (a_kind == 4) {
+            if (compiler_options.platform == Platform::Windows) {
+                // i64
+                return llvm::Type::getInt64Ty(context);
+            } else if (compiler_options.platform == Platform::macOS_ARM) {
+                // {float, float}
+                return getComplexType(a_kind);
+            }
+            // <2 x float>
+            return FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+        }
+        LCOMPILERS_ASSERT(a_kind == 8)
+        if (compiler_options.platform == Platform::Windows) {
+            return nullptr;
+        }
+        return getComplexType(a_kind);
     }
 
     llvm::FunctionType* LLVMUtils::get_function_type(const ASR::Function_t &x, llvm::Module* module) {
@@ -1486,30 +1518,14 @@ namespace LCompilers {
                     int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind);
                     // Use platform-specific return type for both BindC and Source ABI
                     // to ensure ABI compatibility when calling via implicit interfaces
-                    if (a_kind == 4) {
-                        if (compiler_options.platform == Platform::Windows) {
-                            // i64
-                            return_type = llvm::Type::getInt64Ty(context);
-                        } else if (compiler_options.platform == Platform::macOS_ARM) {
-                            // {float, float}
-                            return_type = getComplexType(a_kind);
-                        } else {
-                            // <2 x float>
-                            return_type = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
-                        }
-                    } else {
-                        LCOMPILERS_ASSERT(a_kind == 8)
-                        if (compiler_options.platform == Platform::Windows) {
-                            // pass as subroutine
-                            return_type = getComplexType(a_kind, true);
-                            std::vector<llvm::Type*> args = convert_args(x, module);
-                            args.insert(args.begin(), return_type);
-                            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                                    llvm::Type::getVoidTy(context), args, false);
-                            return function_type;
-                        } else {
-                            return_type = getComplexType(a_kind);
-                        }
+                    return_type = get_complex_return_type(a_kind);
+                    if (return_type == nullptr) {
+                        // pass as subroutine
+                        std::vector<llvm::Type*> args = convert_args(x, module);
+                        args.insert(args.begin(), getComplexType(a_kind, true));
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context), args, false);
+                        return function_type;
                     }
                     break;
                 }
