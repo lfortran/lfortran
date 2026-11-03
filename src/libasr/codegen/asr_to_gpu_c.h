@@ -3,6 +3,7 @@
 
 #include <libasr/asr.h>
 #include <libasr/containers.h>
+#include <libasr/c_cpp_keywords.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
@@ -733,17 +734,7 @@ public:
     // dialects. Fortran allows them as user-defined names, so we must rename
     // them when emitting device code.
     static std::string sanitize_name(const std::string &name) {
-        static const std::set<std::string> cpp_reserved = {
-            "and", "and_eq", "bitand", "bitor", "compl",
-            "not", "not_eq", "or", "or_eq", "xor", "xor_eq",
-            "true", "false", "bool", "class", "new", "delete",
-            "this", "throw", "try", "catch", "template",
-            "typename", "namespace", "using", "virtual",
-            "private", "protected", "public", "operator",
-            "friend", "inline", "register", "volatile",
-            "mutable", "explicit", "export"
-        };
-        if (cpp_reserved.count(name)) {
+        if (is_cpp_keyword(name)) {
             return "_lfortran_" + name;
         }
         return name;

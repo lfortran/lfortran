@@ -3,7 +3,29 @@ module gpu_identifier_helpers
     type :: half
         integer :: kernel, kernel_gpu, half
     end type
+    type :: class
+        integer :: float, float_gpu, float_gpu1, and
+    end type
 contains
+    pure integer function cpp_keywords(float, float_gpu) result(int)
+        integer, intent(in) :: float, float_gpu
+        integer :: int_gpu, int_gpu1
+        type(class) :: const
+        const%float = float
+        const%float_gpu = float_gpu
+        const%float_gpu1 = 3 * float
+        const%and = 4 * float
+        int_gpu = const%float + const%float_gpu
+        int_gpu1 = const%float_gpu1 + const%and
+        block
+            integer :: and, and_gpu, and_gpu1
+            and = 5 * float
+            and_gpu = 6 * float
+            and_gpu1 = 7 * float
+            int = int_gpu + int_gpu1 + and + and_gpu + and_gpu1
+        end block
+    end function
+
     pure integer function kernel(half, half_gpu) result(device)
         integer, intent(in) :: half, half_gpu
         integer :: thread
@@ -33,7 +55,7 @@ end module
 
 program gpu_identifiers_01
     use iso_fortran_env, only: int8, int16, int64
-    use gpu_identifier_helpers, only: evaluate
+    use gpu_identifier_helpers, only: evaluate, cpp_keywords
     implicit none
     integer :: i, trial, kernel, kernel_gpu, kernel_gpu1
     integer(int8) :: half
@@ -68,6 +90,16 @@ program gpu_identifiers_01
     do i = 1, 4
         if (a(i) /= 27 * i + 3) error stop 2
         if (host(i) /= 27 * i + 3) error stop 3
+    end do
+    do i = 1, 4
+        host(i) = cpp_keywords(input(i), 2 * input(i))
+    end do
+    do concurrent (i = 1:4)
+        a(i) = cpp_keywords(input(i), 2 * input(i))
+    end do
+    do i = 1, 4
+        if (a(i) /= 28 * i) error stop 4
+        if (host(i) /= 28 * i) error stop 5
     end do
     print *, "GPU identifiers passed"
 end program

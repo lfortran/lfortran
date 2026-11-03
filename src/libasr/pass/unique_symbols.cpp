@@ -3,6 +3,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/c_cpp_keywords.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
@@ -64,18 +65,9 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     all_symbols_mangling(am), bindc_mangling(bcm), fortran_mangling(fm), c_mangling(cm), mangle_underscore_external(mue) {}
 
 
-    const std::unordered_set<std::string> reserved_keywords_c = {
-         "_Alignas", "_Alignof", "_Atomic", "_Bool", "_Complex", "_Generic",
-         "_Imaginary", "_Noreturn", "_Static_assert", "_Thread_local", "auto",
-         "break", "case", "char", "_Bool", "const", "continue", "default", "do",
-         "double", "else", "enum", "extern", "float", "for", "goto", "if", "int",
-         "long", "register", "return", "short", "signed", "sizeof", "static",
-         "struct", "switch", "typedef", "union", "unsigned", "void", "volatile", "while"
-    };
-
     //TODO: Implement other backends mangling when refactoring the pass infrastructure
     void mangle_c(ASR::symbol_t* sym, const std::string& name){
-        if (reserved_keywords_c.find(name) != reserved_keywords_c.end()) {
+        if (is_c_keyword(name)) {
             sym_to_renamed[sym] = "_xx_"+std::string(name)+"_xx_";
         }
         return;
@@ -420,10 +412,11 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
 };
 
 
-class MetalSymbolRenameVisitor:
-        public ASR::BaseWalkVisitor<MetalSymbolRenameVisitor> {
+class GpuSymbolRenameVisitor:
+        public ASR::BaseWalkVisitor<GpuSymbolRenameVisitor> {
     std::map<SymbolTable*, std::set<std::string>> allocated;
     std::set<ASR::symbol_t*> collected;
+    bool metal;
 
     void collect(ASR::symbol_t *symbol) {
         symbol = ASRUtils::symbol_get_past_external(symbol);
@@ -440,6 +433,7 @@ class MetalSymbolRenameVisitor:
         } else {
             return;
         }
+        if (!metal && !is_cpp_keyword(ASRUtils::symbol_name(symbol))) return;
         SymbolTable *scope = ASRUtils::symbol_parent_symtab(symbol);
         std::string base = std::string(ASRUtils::symbol_name(symbol)) + "_gpu";
         std::string name = scope->get_unique_name(base, false);
@@ -452,6 +446,8 @@ class MetalSymbolRenameVisitor:
 public:
     std::unordered_map<ASR::symbol_t*, std::string> sym_to_renamed;
 
+    explicit GpuSymbolRenameVisitor(bool metal) : metal(metal) {}
+
     void visit_Function(const ASR::Function_t &x) {
         if (ASRUtils::runs_on_device(x)) {
             std::vector<SymbolTable*> scopes;
@@ -462,7 +458,7 @@ public:
                 }
             }
         }
-        ASR::BaseWalkVisitor<MetalSymbolRenameVisitor>::visit_Function(x);
+        ASR::BaseWalkVisitor<GpuSymbolRenameVisitor>::visit_Function(x);
     }
 };
 
@@ -792,13 +788,14 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
     if (pass_options.mangle_underscore) {
         lcompilers_unique_ID_separate_compilation = "";
     }
-    // Metal data renaming must not enable otherwise ineligible global mangling:
+    // GPU data renaming must not enable otherwise ineligible global mangling:
     // kernel lookup strings have already been lowered before this pass.
     bool mangle_symbols = pass_options.c_mangling || (any_present &&
         (pass_options.mangle_underscore || pass_options.fortran_mangling ||
          pass_options.mangle_underscore_external ||
          !lcompilers_unique_ID_separate_compilation.empty()));
-    if (!mangle_symbols && !pass_options.gpu_offload_metal) {
+    if (!mangle_symbols && !pass_options.gpu_offload_metal
+            && !pass_options.gpu_offload_cuda) {
         return;
     }
     if (mangle_symbols) {
@@ -815,14 +812,14 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
         UniqueSymbolVisitor u(al, v.sym_to_renamed);
         u.visit_TranslationUnit(unit);
     }
-    if (pass_options.gpu_offload_metal) {
+    if (pass_options.gpu_offload_metal || pass_options.gpu_offload_cuda) {
         // Allocate target-safe data names by symbol in its defining scope.
         // Procedure names stay intact: kernel lookup strings are already
         // lowered, and device helpers have their own emission names.
-        MetalSymbolRenameVisitor metal;
-        metal.visit_TranslationUnit(unit);
-        UniqueSymbolVisitor rename_metal(al, metal.sym_to_renamed);
-        rename_metal.visit_TranslationUnit(unit);
+        GpuSymbolRenameVisitor gpu(pass_options.gpu_offload_metal);
+        gpu.visit_TranslationUnit(unit);
+        UniqueSymbolVisitor rename_gpu(al, gpu.sym_to_renamed);
+        rename_gpu.visit_TranslationUnit(unit);
         SymbolReferenceRenameVisitor references(al);
         references.visit_TranslationUnit(unit);
     }

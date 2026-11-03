@@ -71,7 +71,10 @@ and derived types collision-free names in their defining scopes, updating
 component references and binding scalar record component arguments by symbol.
 It preserves types, layout, host ABI and kernel registration names, without
 enabling otherwise ineligible global mangling. Device helper declarations
-and calls use their existing emission names. CPU and CUDA naming is unchanged.
+and calls use their existing emission names. CUDA (including `cuda_cpu`
+emulation) uses the same symbol-based renaming for C/C++ keywords such as
+`int`, `float` and `class`, without applying Metal-only naming restrictions.
+Ordinary CPU compilation is unchanged.
 
 ### Scalar logarithms
 
