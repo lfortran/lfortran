@@ -83,6 +83,28 @@ void GpuOffloadVisitor::find_array_section_all_bounds(ASR::expr_t *e,
             if (ief->m_args[i])
                 find_array_section_all_bounds(ief->m_args[i], dim_bounds);
         }
+    } else if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+        // An elemental call evaluates to an array of the shape of its
+        // array arguments (see elementize_array_expr).
+        ASR::FunctionCall_t *call = ASR::down_cast<ASR::FunctionCall_t>(e);
+        if (!ASRUtils::is_elemental(call->m_name)) return;
+        for (size_t i = 0; i < call->n_args; i++) {
+            if (call->m_args[i].m_value)
+                find_array_section_all_bounds(call->m_args[i].m_value,
+                    dim_bounds);
+        }
+    } else if (ASR::is_a<ASR::Cast_t>(*e)) {
+        find_array_section_all_bounds(
+            ASR::down_cast<ASR::Cast_t>(e)->m_arg, dim_bounds);
+    } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+        find_array_section_all_bounds(
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg, dim_bounds);
+    } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+        find_array_section_all_bounds(
+            ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg, dim_bounds);
+    } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+        find_array_section_all_bounds(
+            ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg, dim_bounds);
     }
 }
 
@@ -1394,15 +1416,21 @@ void GpuOffloadVisitor::inline_intrinsic_matmul(ParallelLoopNest &nest) {
 // to produce a scalar expression. For example:
 //   sum(a + b) with index k  -->  a(k) + b(k)
 // instead of the incorrect (a + b)[k] which would be pointer arithmetic.
+// A broadcast scalar stays the scalar, and every node takes the element
+// type of its own array type: in `a**2` the exponent stays integer.
 ASR::expr_t* GpuOffloadVisitor::index_array_expr(ASR::expr_t *expr,
-        ASR::array_index_t *idx_p, size_t idx_n,
-        ASR::ttype_t *elem_type, const Location &loc) {
+        ASR::array_index_t *idx_p, size_t idx_n, const Location &loc) {
     if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr)) {
         expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg;
     }
     if (!ASRUtils::is_array(ASRUtils::expr_type(expr))) {
         return expr;
     }
+    if (ASR::is_a<ASR::ArrayBroadcast_t>(*expr)) {
+        return ASR::down_cast<ASR::ArrayBroadcast_t>(expr)->m_array;
+    }
+    ASR::ttype_t *elem_type = ASRUtils::extract_type(
+        ASRUtils::expr_type(expr));
     if (ASR::is_a<ASR::Var_t>(*expr)) {
         return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, expr,
             idx_p, idx_n, elem_type,
@@ -1411,9 +1439,9 @@ ASR::expr_t* GpuOffloadVisitor::index_array_expr(ASR::expr_t *expr,
     if (ASR::is_a<ASR::RealBinOp_t>(*expr)) {
         ASR::RealBinOp_t *op = ASR::down_cast<ASR::RealBinOp_t>(expr);
         ASR::expr_t *left = index_array_expr(op->m_left,
-            idx_p, idx_n, elem_type, loc);
+            idx_p, idx_n, loc);
         ASR::expr_t *right = index_array_expr(op->m_right,
-            idx_p, idx_n, elem_type, loc);
+            idx_p, idx_n, loc);
         return ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc,
             left, op->m_op, right, elem_type, nullptr));
     }
@@ -1421,9 +1449,9 @@ ASR::expr_t* GpuOffloadVisitor::index_array_expr(ASR::expr_t *expr,
         ASR::IntegerBinOp_t *op =
             ASR::down_cast<ASR::IntegerBinOp_t>(expr);
         ASR::expr_t *left = index_array_expr(op->m_left,
-            idx_p, idx_n, elem_type, loc);
+            idx_p, idx_n, loc);
         ASR::expr_t *right = index_array_expr(op->m_right,
-            idx_p, idx_n, elem_type, loc);
+            idx_p, idx_n, loc);
         return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
             left, op->m_op, right, elem_type, nullptr));
     }
@@ -1431,7 +1459,7 @@ ASR::expr_t* GpuOffloadVisitor::index_array_expr(ASR::expr_t *expr,
         ASR::RealUnaryMinus_t *u =
             ASR::down_cast<ASR::RealUnaryMinus_t>(expr);
         ASR::expr_t *arg = index_array_expr(u->m_arg,
-            idx_p, idx_n, elem_type, loc);
+            idx_p, idx_n, loc);
         return ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, loc,
             arg, elem_type, nullptr));
     }
@@ -1439,7 +1467,7 @@ ASR::expr_t* GpuOffloadVisitor::index_array_expr(ASR::expr_t *expr,
         ASR::IntegerUnaryMinus_t *u =
             ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr);
         ASR::expr_t *arg = index_array_expr(u->m_arg,
-            idx_p, idx_n, elem_type, loc);
+            idx_p, idx_n, loc);
         return ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc,
             arg, elem_type, nullptr));
     }
@@ -2297,7 +2325,7 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
 
         if (!arr_elem) {
             arr_elem = index_array_expr(base_arr,
-                    idx_args.p, idx_args.n, elem_type, loc);
+                    idx_args.p, idx_args.n, loc);
         }
 
         // res = res + a(k1, k2, ...) or a(k1, i, ...)

@@ -6989,6 +6989,8 @@ RUN(NAME gpu_metal_636 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_637 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_638 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_639 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_640 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_641 LABELS gfortran llvm metal cuda)
 # integer(8) values in kernels; Metal still numbers iterations in 32 bits.
 RUN(NAME gpu_metal_650 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_651 LABELS gfortran llvm metal cuda)

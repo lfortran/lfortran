@@ -255,8 +255,7 @@ public:
     void inline_intrinsic_matmul(ParallelLoopNest &nest);
 
     ASR::expr_t* index_array_expr(ASR::expr_t *expr,
-            ASR::array_index_t *idx_p, size_t idx_n,
-            ASR::ttype_t *elem_type, const Location &loc);
+            ASR::array_index_t *idx_p, size_t idx_n, const Location &loc);
 
     ASR::IntrinsicArrayFunction_t* find_array_intrinsic_in_expr(
             ASR::expr_t *expr, ASRUtils::IntrinsicArrayFunctions which,
