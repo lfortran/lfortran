@@ -1329,6 +1329,53 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
             if (data != nullptr) writes.written.insert(data);
         }
     }
+    // Bind scalar record components to their existing data and bound
+    // arguments by symbol, before late mangling can change their spellings.
+    Vec<ASR::stmt_t*> bindings;
+    bindings.reserve(al, 4);
+    for (size_t i = 0; i < parameters.n; i++) {
+        auto *var = ASR::down_cast<ASR::Variable_t>(
+            ASR::down_cast<ASR::Var_t>(parameters[i])->m_v);
+        if (ASRUtils::is_array(var->m_type)) continue;
+        auto *st = gpu_struct_definition(var->m_type_declaration);
+        if (!st) continue;
+        auto parameter = [&](const std::string &name) {
+            ASR::symbol_t *symbol = kernel.m_symtab->get_symbol(name);
+            LCOMPILERS_ASSERT(symbol != nullptr);
+            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, symbol));
+        };
+        for (auto &component : gpu_decomposed_components(st)) {
+            ASR::expr_t *data = parameter(
+                GpuNames::member_data(var->m_name, component.name()));
+            auto *array = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(data)));
+            LCOMPILERS_ASSERT(array->n_dims == component.rank);
+            for (size_t d = 0; d < component.rank; d++) {
+                array->m_dims[d].m_start = parameter(
+                    GpuNames::member_lower_bound(var->m_name,
+                        component.name(), d));
+                array->m_dims[d].m_length = parameter(component.rank == 1
+                    ? GpuNames::member_size(var->m_name, component.name())
+                    : GpuNames::member_dim_size(var->m_name,
+                        component.name(), d));
+            }
+            ASR::expr_t *member = ASRUtils::EXPR(
+                ASR::make_StructInstanceMember_t(al, loc, parameters[i],
+                    component.component,
+                    ASRUtils::symbol_type(component.component), nullptr));
+            bindings.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+                al, loc, member, data,
+                ASR::pointer_bounds_formType::NoPointerBounds)));
+        }
+    }
+    if (bindings.n) {
+        for (size_t i = 0; i < kernel.n_body; i++) {
+            bindings.push_back(al, kernel.m_body[i]);
+        }
+        kernel.m_body = bindings.p;
+        kernel.n_body = bindings.n;
+    }
     Vec<ASR::gpu_kernel_argument_t> buffers, scalars;
     buffers.reserve(al, parameters.n);
     scalars.reserve(al, parameters.n);

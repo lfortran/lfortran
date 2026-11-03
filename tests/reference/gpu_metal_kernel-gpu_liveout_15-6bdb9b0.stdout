@@ -1,45 +1,45 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct acc_t {
-    float c;
-    int n;
+struct acc_t_gpu {
+    float c_gpu;
+    int n_gpu;
 };
 
-inline void upd_gpu_9(int i, thread acc_t& self, thread float& y) {
-    y = (self.c * ((float)i));
-    if ((i == 3)) {
-        self.n = 7;
+inline void upd_gpu_9(int i_gpu, thread acc_t_gpu& self_gpu, thread float& y_gpu) {
+    y_gpu = (self_gpu.c_gpu * ((float)i_gpu));
+    if ((i_gpu == 3)) {
+        self_gpu.n_gpu = 7;
     }
 }
 
 kernel void __lfortran_gpu_kernel_0(
-    device acc_t& m [[buffer(0)]],
-    device float* y [[buffer(1)]],
+    device acc_t_gpu& m_gpu [[buffer(0)]],
+    device float* y_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __flat_idx;
-    float __gpu_before;
-    int __gpu_before1;
-    acc_t __gpu_private_m;
-    float __gpu_scalar_argument;
-    int i__dc;
+    int __flat_idx_gpu;
+    int __gpu_before1_gpu;
+    float __gpu_before_gpu;
+    acc_t_gpu __gpu_private_m_gpu;
+    float __gpu_scalar_argument_gpu;
+    int i__dc_gpu;
     if ((((0 * 0) + __thread_id) >= 100)) {
         return;
     }
-    __flat_idx = ((0 * 0) + __thread_id);
-    i__dc = (__flat_idx + 1);
-    __gpu_private_m = m;
-    __gpu_before = __gpu_private_m.c;
-    __gpu_before1 = __gpu_private_m.n;
-    __gpu_scalar_argument = y[((int)(i__dc) - (1))];
-    upd_gpu_9(i__dc, __gpu_private_m, __gpu_scalar_argument);
-    y[((int)(i__dc) - (1))] = __gpu_scalar_argument;
-    if (((int)((__gpu_private_m.c != __gpu_before) && ((int)((__gpu_private_m.c == __gpu_private_m.c) || (__gpu_before == __gpu_before)))))) {
-        m.c = __gpu_private_m.c;
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    i__dc_gpu = (__flat_idx_gpu + 1);
+    __gpu_private_m_gpu = m_gpu;
+    __gpu_before_gpu = __gpu_private_m_gpu.c_gpu;
+    __gpu_before1_gpu = __gpu_private_m_gpu.n_gpu;
+    __gpu_scalar_argument_gpu = y_gpu[((int)(i__dc_gpu) - (1))];
+    upd_gpu_9(i__dc_gpu, __gpu_private_m_gpu, __gpu_scalar_argument_gpu);
+    y_gpu[((int)(i__dc_gpu) - (1))] = __gpu_scalar_argument_gpu;
+    if (((int)((__gpu_private_m_gpu.c_gpu != __gpu_before_gpu) && ((int)((__gpu_private_m_gpu.c_gpu == __gpu_private_m_gpu.c_gpu) || (__gpu_before_gpu == __gpu_before_gpu)))))) {
+        m_gpu.c_gpu = __gpu_private_m_gpu.c_gpu;
     }
-    if ((__gpu_private_m.n != __gpu_before1)) {
-        m.n = __gpu_private_m.n;
+    if ((__gpu_private_m_gpu.n_gpu != __gpu_before1_gpu)) {
+        m_gpu.n_gpu = __gpu_private_m_gpu.n_gpu;
     }
 }
 

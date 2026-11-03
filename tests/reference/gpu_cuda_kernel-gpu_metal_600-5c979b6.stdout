@@ -319,7 +319,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_5(
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
     i8__dc3 = (__flat_idx + __loop_start_0);
-    y[((long)(i8__dc3) - (__lb_y_0))] = get_s_gpu_22(s, __data_s_a, __size_s_a, __lb_s_a_dim1, i8__dc3);
+    y[((long)(i8__dc3) - (__lb_y_0))] = get_s_gpu_22(s, __data_s_a, ((__size_s_a)), __lb_s_a_dim1, i8__dc3);
 }
 
 __device__ inline float get_a_gpu_26(float* a, long __1a, long i, long __lb_a_0) {

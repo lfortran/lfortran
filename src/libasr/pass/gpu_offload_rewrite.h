@@ -390,18 +390,16 @@ public:
         : al(al_), orig_scope(orig_scope_), kernel_scope(kernel_scope_),
           arg_names(arg_names_), added(added_) {}
 
-    // The component symbol as the host scope names it.  The kernel body
-    // may reach a component through an ExternalSymbol that only the
-    // kernel scope holds, which the host expression must not reference.
-    ASR::symbol_t* host_member_ref(ASR::symbol_t *m) {
-        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(m);
-        for (auto &item : orig_scope->get_scope()) {
-            if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
-            if (ASRUtils::symbol_get_past_external(item.second) == target) {
-                return item.second;
-            }
-        }
-        return m;
+    // The copied body's component may already belong to the device type.
+    // Resolve against the actual host array's declaration before late naming.
+    ASR::symbol_t* host_member_ref(ASR::symbol_t *host_arr,
+            const std::string &name) {
+        ASR::Variable_t *host = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(host_arr));
+        ASR::symbol_t *member = gpu_struct_lookup_member(
+            host->m_type_declaration, name);
+        LCOMPILERS_ASSERT(member != nullptr);
+        return ASRUtils::symbol_get_past_external(member);
     }
 
     void replace_ArraySize(ASR::ArraySize_t *x) {
@@ -480,7 +478,7 @@ public:
             }
             ASR::expr_t *host_member = ASRUtils::EXPR(
                 ASR::make_StructInstanceMember_t(al, loc, host_item,
-                    host_member_ref(sim->m_m), sim->m_type, nullptr));
+                    host_member_ref(host_arr, mem_name), sim->m_type, nullptr));
             ASR::expr_t *host_dim = ASRUtils::EXPR(
                 ASR::make_IntegerConstant_t(al, loc, d, size_type,
                     ASR::integerbozType::Decimal));
