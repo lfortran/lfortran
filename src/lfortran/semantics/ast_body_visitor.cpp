@@ -610,6 +610,8 @@ public:
     }
 
     void visit_Block(const AST::Block_t &x) {
+        ImplicitNoneExternalScope implicit_none_external_scope(*this,
+            x.m_items, x.n_items, true);
         all_loops_blocks_nesting++;
         from_block = true;
         // A BLOCK is the only construct through which the body visitor adds to
@@ -6693,6 +6695,8 @@ public:
 
     template <typename T>
     void visit_SubmoduleModuleCommon(const T& x) {
+        ImplicitNoneExternalScope implicit_none_external_scope(*this,
+            x.m_items, x.n_items, true);
         SymbolTable *old_scope = current_scope;
         ASR::symbol_t *t = current_scope->get_symbol(to_lower(x.m_name));
         if (t == nullptr) {
@@ -6795,6 +6799,8 @@ public:
         this->import_use_symbols(m, x);
     }
     void visit_Program(const AST::Program_t &x) {
+        ImplicitNoneExternalScope implicit_none_external_scope(*this,
+            x.m_items, x.n_items, true);
         program_count++;
         if (program_count >= 2) {
         return;  // Just skip 
@@ -7476,6 +7482,8 @@ public:
     }
 
     void visit_Procedure(const AST::Procedure_t &x) {
+        ImplicitNoneExternalScope implicit_none_external_scope(*this,
+            x.m_items, x.n_items, true);
         SymbolTable* old_scope = current_scope;
         ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
         if (t == nullptr) {
@@ -7550,6 +7558,8 @@ public:
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
+        ImplicitNoneExternalScope implicit_none_external_scope(*this,
+            x.m_items, x.n_items, true);
     // TODO: add SymbolTable::lookup_symbol(), which will automatically return
     // an error
     // TODO: add SymbolTable::get_symbol(), which will only check in Debug mode
@@ -7663,6 +7673,8 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        ImplicitNoneExternalScope implicit_none_external_scope(*this,
+            x.m_items, x.n_items, true);
         starting_m_body = x.m_items;
         starting_n_body = x.n_items;
         collect_labels();
@@ -9689,6 +9701,7 @@ public:
             // unknown, so infer the concrete interface from this call.
             is_external = true;
         }
+        ASR::symbol_t *declared_sym = original_sym;
         if (!original_sym || (original_sym && is_external)) {
             if (to_lower(sub_name) == "flush") {
                 // assigns 'tmp' to an ASR node
@@ -9727,6 +9740,11 @@ public:
                     }
                 }
             }
+        }
+        if (x.n_member == 0 && !is_external && !(original_sym
+                && ASRUtils::is_intrinsic_symbol(original_sym))) {
+            check_implicit_none_external(sub_name, declared_sym,
+                x.base.base.loc);
         }
         original_sym = external_procedure_reference(original_sym, x.base.base.loc);
         ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(original_sym);

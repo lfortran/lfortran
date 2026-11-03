@@ -7627,3 +7627,10 @@ options = "--fast"
 [[test]]
 filename = "../integration_tests/procedure_argument_specialization_09.f90"
 llvm = true
+
+# A procedure that is not explicitly declared where `implicit none (external)`
+# applies.
+[[test]]
+filename = "errors/implicit_none_external_01.f90"
+semantics_only_cc = true
+options = "--implicit-interface --implicit-typing"
