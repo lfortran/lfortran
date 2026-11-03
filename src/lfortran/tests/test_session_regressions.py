@@ -22,22 +22,15 @@ import time
 import threading
 import uuid
 
-from test_session import busy, check, parent_id
+import test_session
+from test_session import busy, check, parent_id, wait_for_ready
 from jupyter_client import BlockingKernelClient
 from jupyter_client.connect import write_connection_file
 from test_repl import PtyRepl, Screen, CTRL_D, ENTER
 
 
 def connect(connection):
-    client = BlockingKernelClient(connection_file=str(connection))
-    client.load_connection_file()
-    client.start_channels()
-    try:
-        client.wait_for_ready(timeout=20)
-    except BaseException:
-        client.stop_channels()
-        raise
-    return client
+    return test_session.connect(connection, timeout=20)
 
 
 def reply_to(client, msg_id, timeout=20):
@@ -99,10 +92,11 @@ def value(client, code, timeout=20):
 
 
 @contextlib.contextmanager
-def kernel(exe, cwd, ip="127.0.0.1", arguments=()):
+def kernel(exe, cwd, ip="127.0.0.1", arguments=(), environment={}):
     """A kernel started on a connection file, as a Jupyter frontend does, a
     function that connects a client to it, and the connection file's content
-    with its "path". `arguments` are compiler options of the kernel process."""
+    with its "path". `arguments` are compiler options of the kernel process,
+    `environment` its variables besides those of this process."""
     connection = cwd / ("kernel-" + uuid.uuid4().hex + ".json")
     write_connection_file(str(connection), ip=ip, key=uuid.uuid4().hex.encode())
     clients = []
@@ -114,7 +108,8 @@ def kernel(exe, cwd, ip="127.0.0.1", arguments=()):
     with connection.with_suffix(".log").open("wb") as log:
         process = subprocess.Popen(
             [exe, "--no-color", *arguments, "kernel", "-f", str(connection)],
-            cwd=cwd, stdin=subprocess.DEVNULL, stdout=log, stderr=log)
+            cwd=cwd, stdin=subprocess.DEVNULL, stdout=log, stderr=log,
+            env={**os.environ, **environment})
         info = json.loads(connection.read_text())
         info["path"] = str(connection)
         try:
@@ -221,7 +216,10 @@ def large_output(exe, cwd):
     """A stream larger than the most a subscriber that does not read can be
     sent reaches the prompt, followed by the cell's idle status, for which
     the prompt waits. The subscriber that does not read holds nothing back."""
-    with kernel(exe, cwd) as (_, join, ports):
+    # The output kept for a subscriber that does not read, made small
+    limit = 1 << 20
+    with kernel(exe, cwd, environment={"LFORTRAN_KERNEL_OUTPUT_LIMIT": str(limit)}) \
+            as (_, join, ports):
         client = join()
         stalled = zmtp(ports["iopub_port"], b"SUB")
         stalled.sendall(b"\x00\x01\x01")  # subscribes to every message
@@ -241,7 +239,7 @@ def large_output(exe, cwd):
 
         drainer = threading.Thread(target=drain, daemon=True)
         try:
-            size = 70 * 1024 * 1024
+            size = 2 * limit
             drainer.start()
             try:
                 out = prompt(exe, cwd, ["--connect", ports["path"]],
@@ -263,7 +261,11 @@ def stalled_connections(exe, cwd):
     """Connections that stop during their handshake or in a message hold
     nothing back: other clients run cells and READs, and the kernel shuts
     down when asked. A client that connects during a long cell waits."""
-    with kernel(exe, cwd) as (process, join, ports):
+    # The time a handshake may take, made short
+    timeout = 0.25
+    with kernel(exe, cwd, environment={
+            "LFORTRAN_KERNEL_HANDSHAKE_TIMEOUT_MS": str(int(timeout * 1000))}) \
+            as (process, join, ports):
         client = join()
         stalled = []
         for name in ["shell_port", "control_port", "stdin_port", "iopub_port", "hb_port"]:
@@ -285,8 +287,8 @@ def stalled_connections(exe, cwd):
         check(client.is_alive(), "no heartbeat")
         # A client that connects while a cell runs longer than a handshake
         # may take waits for it.
-        msg_id = client.execute(busy(12))
-        time.sleep(1)
+        msg_id = client.execute(busy(2 * timeout))
+        test_session.started(client, msg_id)
         out = prompt(exe, cwd, ["--connect", ports["path"]], b"6*9\r\x04")
         check(re.search(rb"^54\r?$", out, re.M), "the prompt failed:\n" + out.decode(errors="replace"))
         check(reply_to(client, msg_id)["status"] == "ok", "the long cell failed")
@@ -331,7 +333,7 @@ def late_stdin(exe, cwd):
         client.load_connection_file()
         client.start_channels(stdin=False)
         try:
-            client.wait_for_ready(timeout=20)
+            wait_for_ready(client, timeout=20)
             msg_id = client.execute("integer :: n = 1, ios = 0\nread(*,*,iostat=ios) n",
                 allow_stdin=True)
             time.sleep(0.3)
@@ -347,8 +349,7 @@ def late_stdin(exe, cwd):
 def prompt_departure(exe, cwd):
     """The prompt that started the kernel ends it on the way out, including
     while another client is connected, and removes the connection file.
-    The kernel also stops with a prompt that is killed or hung up on, which
-    cannot end it. A prompt that only joined leaves the kernel alone."""
+    A prompt that only joined leaves the kernel alone."""
     process, connection = started_prompt(exe, cwd)
     client = None
     kernel_pids = []
@@ -382,24 +383,35 @@ def prompt_departure(exe, cwd):
         for pid in kernel_pids:
             kill_pid(pid)
 
-    # A prompt that cannot end the kernel itself, as when it is killed or its
-    # terminal closes: the kernel stops with it and removes the connection
-    # file, also while another client is connected. So does a kernel that
-    # ends by itself first, as the built-in one does in a READ whose prompt
-    # has gone.
-    kill = lambda process: process.kill()
-    endings = [("killed", None, None, kill),
-        ("killed during a READ", b"read *, kept\r", None, kill)]
-    if os.name == "posix":
-        endings += [("hung up", None, None,
-                lambda process: process.send_signal(signal.SIGHUP)),
-            ("terminated with its kernel", None, None, terminate_with_kernel),
-            # The kernel inherits what the prompt ignores or blocks.
-            ("killed while ignoring SIGTERM", None,
-                lambda: signal.signal(signal.SIGTERM, signal.SIG_IGN), kill),
-            ("killed while blocking SIGTERM", None,
-                lambda: signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM}), kill)]
-    for how, cell, preexec_fn, end in endings:
+    with kernel(exe, cwd) as (_, join, ports):
+        client = join()
+        check(run(client, "integer :: n = 1")[0]["status"] == "ok", "declaration failed")
+        out = prompt(exe, cwd, ["--connect", ports["path"]], b"6*7\r\x04")
+        check(re.search(rb"^42\r?$", out, re.M),
+            "a joined prompt failed:\n" + out.decode(errors="replace"))
+        check(value(client, "n + 1") == "2", "a joined prompt ended the kernel")
+
+
+def other_cell_started(client, timeout=20):
+    """Waits until the kernel takes a cell of a client other than `client`."""
+    deadline = time.monotonic() + timeout
+    while True:
+        msg = client.get_iopub_msg(timeout=max(0.1, deadline - time.monotonic()))
+        if (msg["msg_type"] == "execute_input"
+                and msg["parent_header"].get("session") != client.session.session):
+            return
+
+
+def prompt_ending(name, end, cell=None, preexec_fn=None, posix=False):
+    """A prompt that cannot end the kernel itself, as when it is killed or its
+    terminal closes: the kernel stops with it and removes the connection
+    file, also while another client is connected. So does a kernel that
+    ends by itself first, as the built-in one does in a READ whose prompt
+    has gone."""
+    def case(exe, cwd):
+        if posix and os.name != "posix":
+            print("skipped: not POSIX")
+            return
         process, connection = started_prompt(exe, cwd, preexec_fn)
         client = None
         kernel_pids = children_of(process.pid)
@@ -411,13 +423,14 @@ def prompt_departure(exe, cwd):
             if cell:
                 process.stdin.write(cell)
                 process.stdin.flush()
-                time.sleep(2)
+                other_cell_started(client)
+                time.sleep(0.2)
                 check(process.poll() is None and connection.exists(), "the cell ended")
             end(process)
             process.wait(timeout=20)
-            check(wait_removed(connection), "the kernel of a prompt %s left the connection file"
-                % how)
-            check(stopped_listening(heartbeat), "the kernel of a prompt %s still listens" % how)
+            check(wait_removed(connection), "the kernel of a %s left the connection file"
+                % name)
+            check(stopped_listening(heartbeat), "the kernel of a %s still listens" % name)
             kernel_pids = []
         finally:
             if client:
@@ -427,48 +440,85 @@ def prompt_departure(exe, cwd):
                 process.wait()
             for pid, _ in kernel_pids:
                 kill_pid(pid)
-
-    with kernel(exe, cwd) as (_, join, ports):
-        client = join()
-        check(run(client, "integer :: n = 1")[0]["status"] == "ok", "declaration failed")
-        out = prompt(exe, cwd, ["--connect", ports["path"]], b"6*7\r\x04")
-        check(re.search(rb"^42\r?$", out, re.M),
-            "a joined prompt failed:\n" + out.decode(errors="replace"))
-        check(value(client, "n + 1") == "2", "a joined prompt ended the kernel")
+    case.__name__ = name
+    return case
 
 
-def prompt_killed_in_cell(exe, cwd):
+def kill(process):
+    process.kill()
+
+
+def ignore_sigterm():
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+
+
+def block_sigterm():
+    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+
+
+def hang_up(process):
+    process.send_signal(signal.SIGHUP)
+
+
+PROMPT_ENDINGS = [prompt_ending("prompt_killed", kill),
+    prompt_ending("prompt_killed_in_read", kill, cell=b"read *, kept\r"),
+    prompt_ending("prompt_hung_up", hang_up, posix=True),
+    prompt_ending("prompt_terminated_with_kernel", terminate_with_kernel, posix=True),
+    # The kernel inherits what the prompt ignores or blocks.
+    prompt_ending("prompt_killed_ignoring_sigterm", kill, preexec_fn=ignore_sigterm,
+        posix=True),
+    prompt_ending("prompt_killed_blocking_sigterm", kill, preexec_fn=block_sigterm,
+        posix=True)]
+
+
+def prompt_killed_in_cell(name, end, status=None, posix=False):
     """The kernel ends during a cell that does not return, and the connection
     file is removed, when the prompt that started it gets Ctrl-C or is
     killed."""
-    endings = [("killed", lambda process: process.kill(), None)]
-    if os.name == "posix":
-        # The prompt ends by SIGINT, as without its handler.
-        endings.insert(0, ("Ctrl-C", lambda process: process.send_signal(signal.SIGINT),
-            -signal.SIGINT))
-    for how, end, status in endings:
+    def case(exe, cwd):
+        if posix and os.name != "posix":
+            print("skipped: not POSIX")
+            return
         process, connection = started_prompt(exe, cwd)
         kernel_pids = children_of(process.pid)
+        client = None
         try:
             heartbeat = json.loads(connection.read_text())["hb_port"]
+            client = connect(connection)
             process.stdin.write(b"do while (.true.); end do\r")
             process.stdin.flush()
-            time.sleep(2)
+            other_cell_started(client)
+            time.sleep(0.2)
             check(process.poll() is None and connection.exists(), "the cell ended")
             end(process)
             process.wait(timeout=20)
             if status is not None:
                 check(process.returncode == status, "%s exited with %s"
-                    % (how, process.returncode))
-            check(wait_removed(connection), "a prompt %s left the connection file" % how)
-            check(stopped_listening(heartbeat), "the kernel of a prompt %s still listens" % how)
+                    % (name, process.returncode))
+            check(wait_removed(connection), "a %s left the connection file" % name)
+            check(stopped_listening(heartbeat), "the kernel of a %s still listens" % name)
             kernel_pids = []
         finally:
+            if client:
+                client.stop_channels()
             if process.poll() is None:
                 process.kill()
                 process.wait()
             for pid, _ in kernel_pids:
                 kill_pid(pid)
+    case.__name__ = name
+    return case
+
+
+def interrupt(process):
+    process.send_signal(signal.SIGINT)
+
+
+# The prompt ends by SIGINT, as without its handler.
+PROMPTS_KILLED_IN_CELL = [
+    prompt_killed_in_cell("prompt_interrupted_in_cell", interrupt,
+        -signal.SIGINT, posix=True),
+    prompt_killed_in_cell("prompt_killed_in_cell", kill)]
 
 
 def kernel_parent(exe, cwd):
@@ -567,7 +617,7 @@ def stop_on_error(exe, cwd):
             check(client.get_stdin_msg(timeout=20)["msg_type"] == "input_request", "no READ")
             failed = client.execute("integer :: broken(", stop_on_error=stop)
             queued = client.execute("qx = 99")
-            time.sleep(0.5)
+            time.sleep(0.1)
             client.input("1")
             check(reply_to(client, gate)["status"] == "ok", "the READ failed")
             check(reply_to(client, failed)["status"] == "error", "the error was not seen")
@@ -617,7 +667,7 @@ def verbose(exe, cwd):
 
 
 @contextlib.contextmanager
-def editing_prompt(exe, cwd, connection, expected_status=0):
+def editing_prompt(exe, cwd, connection, expected_status=0, cols=80):
     try:
         import fcntl
         import pty
@@ -627,7 +677,7 @@ def editing_prompt(exe, cwd, connection, expected_status=0):
         print("skipped: no pseudo-terminals")
         yield None
         return
-    screen = Screen()
+    screen = Screen(cols=cols)
     repl = PtyRepl(pty, termios, exe, cwd, timeout=30,
         args=["--connect", str(connection)], screen=screen)
     fcntl.ioctl(repl.fd, termios.TIOCSWINSZ,
@@ -752,7 +802,7 @@ def display_kernel(cwd):
                 answers.put(connection)
                 try:
                     while True:
-                        if shell.poll(10):
+                        if shell.poll(1):
                             identities, message = session.recv(shell)
                             session.send(shell, "kernel_info_reply",
                                 content={"status": "ok"}, parent=message,
@@ -958,21 +1008,33 @@ def test_idle_disconnect(exe, cwd):
                 "an explicit idle disconnection error"), repl.text())
 
 
-def test_unicode_updates(exe, cwd):
-    cases = [
-        ("界" * 40 + "a" * 40 + "Z\n", ["界 " * 40, "a" * 40 + "Z"]),
-        ("e\u0301" * 40 + "a" * 40 + "Z\n", ["e\u0301" * 40 + "a" * 40, "Z"]),
-        ("x" * 79 + "界Z\n", ["x" * 79, "界 Z"]),
-        ("x" * 79 + "e\u0301Z\n", ["x" * 79 + "e\u0301", "Z"]),
-        ("界" * 40 + "\u0301Z\n", ["界 " * 39 + "界\u0301", "Z"]),
-    ]
+def test_wide_updates(exe, cwd):
+    unicode_updates(exe, cwd, [
+        ("界" * 10 + "a" * 10 + "Z\n", ["界 " * 10, "a" * 10 + "Z"]),
+        ("x" * 19 + "界Z\n", ["x" * 19, "界 Z"]),
+        ("界" * 10 + "\u0301Z\n", ["界 " * 9 + "界\u0301", "Z"]),
+    ])
+
+
+def test_combining_updates(exe, cwd):
+    unicode_updates(exe, cwd, [
+        ("e\u0301" * 10 + "a" * 10 + "Z\n", ["e\u0301" * 10 + "a" * 10, "Z"]),
+        ("x" * 19 + "e\u0301Z\n", ["x" * 19 + "e\u0301", "Z"]),
+    ])
+
+
+def unicode_updates(exe, cwd, cases):
+    """Each payload of `cases` shows as its expected rows, whole and one
+    scalar at a time."""
+    # A narrow terminal, as every scalar is a separate update below
+    cols = 20
     with display_kernel(cwd) as (connection, publish):
-        with editing_prompt(exe, cwd, connection) as repl:
+        with editing_prompt(exe, cwd, connection, cols=cols) as repl:
             if repl is None:
                 return
             screen = repl.screen
             for payload, expected in cases:
-                control = Screen()
+                control = Screen(cols=cols)
                 control.feed(payload.replace("\n", "\r\n").encode())
                 check([line.rstrip() for line in control.lines[:len(expected)]]
                     == [line.rstrip() for line in expected],
@@ -1032,11 +1094,12 @@ def test_output_error_cleanup(exe, cwd):
 
 
 def test_utf8_event_fragments(exe, cwd):
-    with editing_prompt(exe, cwd, cwd / "unused") as repl:
+    # The fixture writes one byte per editor tick, for 10 columns.
+    with editing_prompt(exe, cwd, cwd / "unused", cols=10) as repl:
         if repl is None:
             return
         screen = repl.screen
-        expected = ["界 " * 40, "a" * 40 + "Z", "x" * 79 + "e\u0301"]
+        expected = ["界 " * 5, "a" * 5 + "Z", "x" * 9 + "e\u0301"]
         check(repl.wait(lambda: screen.row >= 3
             and [line.rstrip() for line in screen.lines[screen.row - 3:screen.row]]
                 == [line.rstrip() for line in expected]
@@ -1046,10 +1109,12 @@ def test_utf8_event_fragments(exe, cwd):
 
 
 CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
-    test_fragmented_updates, test_unicode_updates, test_idle_disconnect,
+    test_fragmented_updates, test_wide_updates, test_combining_updates,
+    test_idle_disconnect,
     test_output_error_cleanup,
     large_output, stalled_connections, read_disconnect,
-    late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
+    late_stdin, prompt_departure, *PROMPT_ENDINGS, *PROMPTS_KILLED_IN_CELL,
+    kernel_parent, stop_ends_session,
     stop_on_error, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.
 XEUS_ONLY = {"xeus_connection_files"}
@@ -1058,14 +1123,23 @@ XEUS_ONLY = {"xeus_connection_files"}
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--lfortran", required=True)
-    parser.add_argument("--case", choices=CASES, action="append",
-        help="run only this case (repeatable)")
+    parser.add_argument("--case", choices=[*CASES, "test_utf8_event_fragments"],
+        action="append", help="run only this case (repeatable)")
     parser.add_argument("--builtin", action="store_true",
         help="the kernel is the built-in one, not the Xeus one")
     parser.add_argument("--prompt-events-fixture",
         help="also check bytewise output using the native editor fixture")
+    parser.add_argument("--all-cases", nargs="+", metavar="CASE",
+        help="only check that these are all the cases a run would run")
     args = parser.parse_args()
     exe = str(Path(args.lfortran).resolve())
+    cases = [name for name in args.case or list(CASES) + (["test_utf8_event_fragments"]
+             if args.prompt_events_fixture else [])
+             if not (args.builtin and name in XEUS_ONLY)]
+    if args.all_cases:
+        check(sorted(args.all_cases) == sorted(cases),
+            "the cases are %s, not %s" % (sorted(cases), sorted(args.all_cases)))
+        return
     cwd = Path.cwd() / ("session-regressions-" + uuid.uuid4().hex)
     cwd.mkdir(mode=0o700)
     # The prompt writes its kernel's connection file here.
@@ -1073,11 +1147,14 @@ def main():
         os.environ[name] = str(cwd)
     failed = []
     try:
-        for name in args.case or CASES:
-            if args.builtin and name in XEUS_ONLY:
-                continue
+        for name in cases:
             try:
-                CASES[name](exe, cwd)
+                if name == "test_utf8_event_fragments":
+                    check(args.prompt_events_fixture, "no --prompt-events-fixture")
+                    test_utf8_event_fragments(
+                        str(Path(args.prompt_events_fixture).resolve()), cwd)
+                else:
+                    CASES[name](exe, cwd)
                 print(name + ": passed", flush=True)
             except Exception as error:
                 print("%s: FAILED: %s: %s" % (name, type(error).__name__, error), flush=True)
@@ -1085,14 +1162,6 @@ def main():
                     print(log.read_text(errors="replace"))
                     log.unlink()
                 failed.append(name)
-        if args.prompt_events_fixture:
-            try:
-                test_utf8_event_fragments(
-                    str(Path(args.prompt_events_fixture).resolve()), cwd)
-                print("test_utf8_event_fragments: passed", flush=True)
-            except Exception as error:
-                print("test_utf8_event_fragments: FAILED: %s" % error, flush=True)
-                failed.append("test_utf8_event_fragments")
     finally:
         shutil.rmtree(cwd, ignore_errors=True)
     if failed:

@@ -17,6 +17,8 @@ except ImportError:
     print("jupyter_client is not installed; skipping")
     sys.exit(77)  # SKIP_RETURN_CODE in CMakeLists.txt
 
+from test_session import wait_for_ready
+
 # Descriptors the kernel may have open. It needs about 60; a leak of a
 # descriptor per cell exhausts them within the cells below.
 MAX_OPEN_FILES = 128
@@ -129,7 +131,7 @@ def check_streaming(client, directory, partial=False):
     gate.unlink()
 
 
-def check_transport_progress(client, directory):
+def check_transport_progress(client, directory, process):
     import zmq
 
     gate = directory / "transport-release"
@@ -146,7 +148,15 @@ def check_transport_progress(client, directory):
     session = client.session.clone()
     msg_id = None
     try:
-        time.sleep(0.3)
+        # Once the subscription is in place, the kernel's statuses reach it.
+        probes = []
+        deadline = time.monotonic() + 30
+        while not subscriber.poll(50):
+            assert time.monotonic() < deadline, "the subscriber got no message"
+            probes.append(client.kernel_info())
+        replies = set()
+        while not replies.issuperset(probes):
+            replies.add(client.get_shell_msg(timeout=15)["parent_header"].get("msg_id"))
         command = waiter_command(waiter, gate, waiting)
         argument = " // &\n".join("    '" + command[i:i+60].replace("'", "''") + "'"
             for i in range(0, len(command), 60))
@@ -160,7 +170,7 @@ def check_transport_progress(client, directory):
             time.sleep(0.01)
         assert waiting.exists(), "cell did not reach transport gate"
         # Let capture pumping reach the end while this subscriber is paused.
-        time.sleep(2)
+        time.sleep(0.2)
         text = ""
         deadline = time.monotonic() + 10
         while "TRANSPORT-END\n" not in text and time.monotonic() < deadline:
@@ -190,24 +200,165 @@ def check_transport_progress(client, directory):
                 path.unlink(missing_ok=True)
 
 
+def check_values(client, directory, process):
+    check(client, "integer :: n\nn=41", [])
+    check(client, "n+1", ["42"])
+    check(client, ".true.", ["True"])
+    check(client, "'hello'", ["hello"])
+    check(client, "1.2345678901234567_8", ["1.2345678901234567"])
+    check(client, "1.0", ["1.0"])
+    check(client, "0.1_8", ["0.1"])
+    messages = check(client, "max0(1, 2_8)", ["2"])
+    assert any(m["msg_type"] == "stream" and m["content"]["name"] == "stderr"
+               and "Different kinds of args in max0" in m["content"]["text"]
+               for m in messages), messages
+    for magic in ("ast", "asr", "llvm", "asm", "cpp", "fmt"):
+        for first_line in ("%%show" + magic, "%%show" + magic + " \r"):
+            messages = check(client, first_line + "\ninteger :: x", [])
+            assert any(m["msg_type"] == "stream" and m["content"]["text"]
+                       for m in messages), (magic, messages)
+    messages = check(client, "use lfortran_display; "
+                     "print *, 'before-display'; "
+                     "call display_data('text/html','<b>hello</b>'); "
+                     "call clear_output()", [])
+    assert any(m["msg_type"] == "display_data" and
+               m["content"]["data"]["text/html"] == "<b>hello</b>"
+               for m in messages), messages
+    assert any(m["msg_type"] == "clear_output" for m in messages), messages
+    kinds = [m["msg_type"] for m in messages]
+    assert kinds.index("stream") < kinds.index("display_data") < kinds.index("clear_output")
+    check(client, "program unavailable\ninteger :: i,ios\n"
+          "read(*,*,iostat=ios) i\nif(ios<=0) error stop\nend program", [])
+    for code in ("n+1", "print *, 'silent stream'",
+                 "call display_data('text/html', '<b>silent</b>')"):
+        reply, messages = execute(client, code, silent=True)
+        assert reply["status"] == "ok", reply
+        assert not any(m["msg_type"] in ("execute_result", "stream",
+            "display_data") for m in messages), messages
+
+
+def check_errors(client, directory, process):
+    reply, _ = execute(client, "integer :: broken(")
+    assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
+    # An inspection cell does not add its declarations to the session.
+    check(client, "%%showasr\ninteger :: inspected", [])
+    reply, _ = execute(client, "inspected")
+    assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
+    # An internal compiler error: the message in evalue, the stack
+    # trace in traceback. Array results are not supported yet (#13456).
+    reply, _ = execute(client, "[1, 2, 3]")
+    assert reply["status"] == "error", reply
+    assert reply["evalue"] == "Return type not supported in interactive mode", reply
+    # Text that is not UTF-8 cannot go into a Jupyter message.
+    check(client, "achar(200)", ["\ufffd"])
+    messages = check(client, "print *, 'a', achar(200), 'b'", [])
+    assert any(m["msg_type"] == "stream" and "\ufffd" in m["content"]["text"]
+               for m in messages), messages
+
+
+def check_output(client, directory, process):
+    # All of a cell's stdout, however long, and its stderr.
+    messages = check(client, "program long_output\ninteger :: i\n"
+                     "do i = 1, 3000\nprint '(a)', repeat('x', 39)\nend do\n"
+                     "write(0, '(a)') 'to stderr'\nend program", [])
+    streams = {"stdout": "", "stderr": ""}
+    for m in messages:
+        if m["msg_type"] == "stream":
+            streams[m["content"]["name"]] += m["content"]["text"]
+    assert streams["stdout"] == ("x" * 39 + "\n") * 3000, len(streams["stdout"])
+    assert streams["stderr"] == "to stderr\n", streams["stderr"]
+    messages = check(client,
+        "program utf8_chunks\nuse iso_fortran_env, only: error_unit\n"
+        "print '(a)', repeat('x',4095)//achar(226)//achar(130)//achar(172)\n"
+        "write(error_unit,'(a)') repeat('y',4094)//achar(240)//achar(159)//achar(152)//achar(128)\n"
+        "end program", [])
+    streams = {"stdout": "", "stderr": ""}
+    for msg in messages:
+        if msg["msg_type"] == "stream":
+            streams[msg["content"]["name"]] += msg["content"]["text"]
+    assert streams["stdout"] == "x" * 4095 + "\u20ac\n", streams["stdout"]
+    assert streams["stderr"] == "y" * 4094 + "\U0001f600\n", streams["stderr"]
+
+
+def check_descriptors(client, directory, process):
+    """Cells must not leak file descriptors: where the kernel's descriptors
+    can be listed, 10 cells do not add 5 (a cell may leave one open for a
+    while), else the kernel does not run out of MAX_OPEN_FILES."""
+    descriptors = Path("/proc/%d/fd" % process.pid)
+    if not descriptors.is_dir():
+        for i in range(100):
+            check(client, "%d + 1" % i, [str(i + 1)])
+        return
+    check(client, "0 + 1", ["1"])
+    before = len(list(descriptors.iterdir()))
+    for i in range(10):
+        check(client, "%d + 1" % i, [str(i + 1)])
+    after = len(list(descriptors.iterdir()))
+    assert after < before + 5, "%d descriptors before 10 cells, %d after" % (before, after)
+
+
+def check_streams(client, directory, process):
+    check_streaming(client, directory)
+    check_streaming(client, directory, partial=True)
+
+
+def in_kernel(checks):
+    return lambda lfortran, managed, mode: run_kernel(lfortran, managed, checks, mode)
+
+
+def stopping(stop, status, shown):
+    return lambda lfortran, managed, mode: check_stop_flushes(
+        lfortran, stop, status, shown, managed)
+
+
+CASES = {"streaming": in_kernel(check_streams),
+         "transport": in_kernel(check_transport_progress),
+         "values": in_kernel(check_values), "errors": in_kernel(check_errors),
+         "output": in_kernel(check_output), "descriptors": in_kernel(check_descriptors),
+         "stop": stopping("if (.true.) stop", 0, ""),
+         "stop_code": stopping("stop 3", 3, "STOP 3"),
+         "error_stop": stopping("error stop", 1, "ERROR STOP")}
+# Cases for only `lfortran kernel --managed`
+MANAGED_ONLY = {"transport"}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lfortran", required=True)
-    parser.add_argument("--streaming-only", action="store_true")
+    parser.add_argument("--case", choices=CASES, action="append",
+        help="run only this case (repeatable)")
+    parser.add_argument("--managed", action="store_true",
+        help="only on `lfortran kernel --managed`, else only without it")
+    parser.add_argument("--streaming-only", action="store_true",
+        help="only the streaming cases")
     parser.add_argument("--mode", choices=("normal", "fast", "f23"), default="normal")
+    parser.add_argument("--all-cases", nargs="+", metavar="CASE",
+        help="only check that these are all the cases")
     args = parser.parse_args()
-    assert args.streaming_only or args.mode == "normal", "modes apply to the focused streaming checks"
-    adapters = [False, True] if builtin_stop_kernel(args.lfortran) else [False]
+    cases = (["streaming", "transport"] if args.streaming_only
+             else args.case or list(CASES))
+    if args.all_cases:
+        assert sorted(args.all_cases) == sorted(cases), \
+            "the cases are %s, not %s" % (sorted(cases), sorted(args.all_cases))
+        return
+    assert args.mode == "normal" or set(cases) <= {"streaming", "transport"}, \
+        "modes apply to the focused streaming checks"
+    adapters = [args.managed] if args.case or args.managed else [False, True]
+    if True in adapters and not builtin_stop_kernel(args.lfortran):
+        if adapters == [True]:
+            print("this kernel has no --managed; skipping")
+            sys.exit(77)  # SKIP_RETURN_CODE in CMakeLists.txt
+        adapters.remove(True)
     for managed in adapters:
-        run_kernel(args.lfortran, managed, args.streaming_only, args.mode)
-        if args.streaming_only:
-            continue
-        for code, status, shown in [("if (.true.) stop", 0, ""), ("stop 3", 3, "STOP 3"),
-                ("error stop", 1, "ERROR STOP")]:
-            check_stop_flushes(args.lfortran, code, status, shown, managed)
+        for case in cases:
+            if case in MANAGED_ONLY and not managed:
+                continue
+            CASES[case](args.lfortran, managed, args.mode)
+            print(("built-in " if managed else "default ") + case
+                  + ("" if args.mode == "normal" else " " + args.mode) + ": passed")
 
 
-def run_kernel(lfortran, managed, streaming_only=False, mode="normal"):
+def run_kernel(lfortran, managed, checks, mode="normal"):
     directory = Path.cwd() / ("kernel-evaluation-" + uuid.uuid4().hex)
     directory.mkdir(mode=0o700)
     connection = directory / "connection.json"
@@ -230,95 +381,11 @@ def run_kernel(lfortran, managed, streaming_only=False, mode="normal"):
             client = BlockingKernelClient(connection_file=str(connection))
             client.load_connection_file()
             client.start_channels()
-            client.wait_for_ready(timeout=30)
-            check_streaming(client, directory)
-            check_streaming(client, directory, partial=True)
-            if managed:
-                check_transport_progress(client, directory)
-            if streaming_only:
-                client.shutdown()
-                process.wait(timeout=15)
-                assert process.returncode == 0, process.returncode
-                print(("built-in" if managed else "default") + " streaming " + mode + ": passed")
-                return
-            check(client, "integer :: n\nn=41", [])
-            check(client, "n+1", ["42"])
-            check(client, ".true.", ["True"])
-            check(client, "'hello'", ["hello"])
-            check(client, "1.2345678901234567_8", ["1.2345678901234567"])
-            check(client, "1.0", ["1.0"])
-            check(client, "0.1_8", ["0.1"])
-            messages = check(client, "max0(1, 2_8)", ["2"])
-            assert any(m["msg_type"] == "stream" and m["content"]["name"] == "stderr"
-                       and "Different kinds of args in max0" in m["content"]["text"]
-                       for m in messages), messages
-            for magic in ("ast", "asr", "llvm", "asm", "cpp", "fmt"):
-                for first_line in ("%%show" + magic, "%%show" + magic + " \r"):
-                    messages = check(client, first_line + "\ninteger :: x", [])
-                    assert any(m["msg_type"] == "stream" and m["content"]["text"]
-                               for m in messages), (magic, messages)
-            messages = check(client, "use lfortran_display; "
-                             "print *, 'before-display'; "
-                             "call display_data('text/html','<b>hello</b>'); "
-                             "call clear_output()", [])
-            assert any(m["msg_type"] == "display_data" and
-                       m["content"]["data"]["text/html"] == "<b>hello</b>"
-                       for m in messages), messages
-            assert any(m["msg_type"] == "clear_output" for m in messages), messages
-            kinds = [m["msg_type"] for m in messages]
-            assert kinds.index("stream") < kinds.index("display_data") < kinds.index("clear_output")
-            check(client, "program unavailable\ninteger :: i,ios\n"
-                  "read(*,*,iostat=ios) i\nif(ios<=0) error stop\nend program", [])
-            for code in ("n+1", "print *, 'silent stream'",
-                         "call display_data('text/html', '<b>silent</b>')"):
-                reply, messages = execute(client, code, silent=True)
-                assert reply["status"] == "ok", reply
-                assert not any(m["msg_type"] in ("execute_result", "stream",
-                    "display_data") for m in messages), messages
-            reply, _ = execute(client, "integer :: broken(")
-            assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
-            # An inspection cell does not add its declarations to the session.
-            check(client, "%%showasr\ninteger :: inspected", [])
-            reply, _ = execute(client, "inspected")
-            assert reply["status"] == "error" and reply["ename"] == "CompilerError", reply
-            # An internal compiler error: the message in evalue, the stack
-            # trace in traceback. Array results are not supported yet (#13456).
-            reply, _ = execute(client, "[1, 2, 3]")
-            assert reply["status"] == "error", reply
-            assert reply["evalue"] == "Return type not supported in interactive mode", reply
-            # Text that is not UTF-8 cannot go into a Jupyter message.
-            check(client, "achar(200)", ["\ufffd"])
-            messages = check(client, "print *, 'a', achar(200), 'b'", [])
-            assert any(m["msg_type"] == "stream" and "\ufffd" in m["content"]["text"]
-                       for m in messages), messages
-            # All of a cell's stdout, however long, and its stderr.
-            messages = check(client, "program long_output\ninteger :: i\n"
-                             "do i = 1, 3000\nprint '(a)', repeat('x', 39)\nend do\n"
-                             "write(0, '(a)') 'to stderr'\nend program", [])
-            streams = {"stdout": "", "stderr": ""}
-            for m in messages:
-                if m["msg_type"] == "stream":
-                    streams[m["content"]["name"]] += m["content"]["text"]
-            assert streams["stdout"] == ("x" * 39 + "\n") * 3000, len(streams["stdout"])
-            assert streams["stderr"] == "to stderr\n", streams["stderr"]
-            messages = check(client,
-                "program utf8_chunks\nuse iso_fortran_env, only: error_unit\n"
-                "print '(a)', repeat('x',4095)//achar(226)//achar(130)//achar(172)\n"
-                "write(error_unit,'(a)') repeat('y',4094)//achar(240)//achar(159)//achar(152)//achar(128)\n"
-                "end program", [])
-            streams = {"stdout": "", "stderr": ""}
-            for msg in messages:
-                if msg["msg_type"] == "stream":
-                    streams[msg["content"]["name"]] += msg["content"]["text"]
-            assert streams["stdout"] == "x" * 4095 + "\u20ac\n", streams["stdout"]
-            assert streams["stderr"] == "y" * 4094 + "\U0001f600\n", streams["stderr"]
-            # Cells must not leak file descriptors (MAX_OPEN_FILES).
-            for i in range(100):
-                check(client, "%d + 1" % i, [str(i + 1)])
+            wait_for_ready(client, timeout=30)
+            checks(client, directory, process)
             client.shutdown()
             process.wait(timeout=15)
             assert process.returncode == 0, process.returncode
-            print(("built-in" if managed else "default") + " native kernel: passed")
     except BaseException:
         if log.exists():
             print(log.read_text(errors="replace"))
@@ -378,7 +445,7 @@ def check_stop_flushes(lfortran, stop, status, shown, managed):
             client = BlockingKernelClient(connection_file=str(connection))
             client.load_connection_file()
             client.start_channels()
-            client.wait_for_ready(timeout=30)
+            wait_for_ready(client, timeout=30)
             msg_id = client.execute(
                 "print *, 'before-stop'\n" + stop + "\nprint *, 'after-stop'")
             texts = []
@@ -388,11 +455,13 @@ def check_stop_flushes(lfortran, stop, status, shown, managed):
                 if process.poll() is not None and exited is None:
                     exited = time.monotonic()
                 # The process exiting does not by itself deliver the last
-                # messages, so keep reading briefly after it goes.
-                if exited is not None and time.monotonic() > exited + 1:
+                # messages, so keep reading briefly after it goes, until
+                # what is checked has come.
+                if exited is not None and (time.monotonic() > exited + 1 or not managed
+                        or "before-stop" in "".join(texts) and shown in "".join(texts)):
                     break
                 try:
-                    msg = client.get_iopub_msg(timeout=0.2)
+                    msg = client.get_iopub_msg(timeout=0.02)
                 except queue.Empty:
                     continue
                 except Exception:

@@ -88,9 +88,21 @@ using llvm::json::Object;
 
 // Sockets
 
+// A limit of the kernel, unless the environment variable `name` sets it.
+// Tests make the limits small, to reach them quickly.
+size_t limit(const char *name, size_t value)
+{
+    const char *text = std::getenv(name);
+    return text && *text ? std::strtoull(text, nullptr, 10) : value;
+}
+
 // A kernel's connection whose ZeroMQ handshake has not finished after the
 // kernel has listened that long is closed.
-constexpr auto handshake_timeout = std::chrono::seconds(10);
+const auto handshake_timeout = std::chrono::milliseconds(
+    limit("LFORTRAN_KERNEL_HANDSHAKE_TIMEOUT_MS", 10000));
+// The size of the cells' output that a kernel keeps for a subscriber that
+// does not read
+const size_t droppable_limit = limit("LFORTRAN_KERNEL_OUTPUT_LIMIT", size_t(64) << 20);
 
 #ifdef _WIN32
 using socket_t = SOCKET;
@@ -544,9 +556,9 @@ public:
         // It keeps it, as losing a reply or a status would leave the peer
         // waiting for it, but disconnects a peer that leaves 16 MiB of them.
         reliable,
-        // It drops it once 64 MiB wait, as ZeroMQ does at its high-water
-        // mark: the output of cells, for a subscriber such as a prompt
-        // waiting for keys.
+        // It drops it once 64 MiB (droppable_limit) wait, as ZeroMQ does at
+        // its high-water mark: the output of cells, for a subscriber such as
+        // a prompt waiting for keys.
         droppable
     };
 
@@ -686,7 +698,7 @@ private:
             closed = true;
             return;
         }
-        if (!reliable && queued > (size_t(64) << 20)) return;
+        if (!reliable && queued > droppable_limit) return;
         queued += data.size();
         if (reliable) queued_reliable += data.size();
         outbox.push_back({std::move(data), reliable});
@@ -935,7 +947,7 @@ struct InputChannel::Impl {
                 std::lock_guard<std::mutex> lock(mutex);
                 endpoint.watch(fds, owners);
             }
-            const int n = poll_sockets(fds, 100);
+            const int n = poll_sockets(fds, 20);
             std::lock_guard<std::mutex> lock(mutex);
             for (size_t i = 0; n > 0 && i < fds.size(); i++) {
                 if (fds[i].revents) endpoint.progress(fds[i], owners[i].second);
@@ -1781,7 +1793,7 @@ bool stop_with_parent(long long parent, const std::string &connection_file)
         // As ipykernel does: once the parent has exited, this process has
         // another parent.
         while (getppid() == static_cast<pid_t>(parent)) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(250));
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
 #endif
         std::remove(connection_file.c_str());
@@ -1885,7 +1897,7 @@ public:
 void answer_heartbeats(Endpoint &beats, const std::atomic<bool> &stop)
 {
     while (!stop) {
-        progress({&beats}, 250);
+        progress({&beats}, 20);
         for (auto &peer : beats.peers) {
             std::vector<std::string> frames;
             while (peer->next(frames)) peer->send(frames);
