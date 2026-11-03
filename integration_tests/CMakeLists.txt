@@ -7065,6 +7065,10 @@ RUN(NAME gpu_metal_337_chunked FILE gpu_metal_337 FAIL LABELS gfortran llvm meta
 RUN(NAME gpu_metal_410_chunked FILE gpu_metal_410 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4)
 RUN(NAME gpu_metal_78_chunked FILE gpu_metal_78 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1)
 RUN(NAME gpu_liveout_01_chunked FILE gpu_liveout_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
+# Values made on the device heap by every chunk, copied out after the launch.
+RUN(NAME gpu_metal_358_chunked FILE gpu_metal_358 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays --gpu-chunk-limit=2)
+RUN(NAME gpu_metal_415_chunked FILE gpu_metal_415 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays --gpu-chunk-limit=2)
+RUN(NAME gpu_metal_420_chunked FILE gpu_metal_420 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays --gpu-chunk-limit=2)
 # Metal runs launches in chunks too (lfortran/lfortran#16541): a nest of
 # more than huge(0) iterations, and small loops forced into many chunks.
 RUN(NAME gpu_metal_685 LABELS gfortran metal) # 2**31 + 1 iterations: too slow on the CPU and cuda_cpu

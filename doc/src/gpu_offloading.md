@@ -776,7 +776,10 @@ faster than the device runs waits for the oldest, which also bounds how many
 buffers the pending launches hold. A scratch buffer is kept per kernel and
 argument and used by every launch of the kernel, which writes it, so
 launches of one kernel never overlap, and what a launch leaves in it is dead
-when it ends.
+when it ends. The chunks of a launch that runs in chunks are launches of one
+kernel handle, which they share every scratch buffer of, the device heap's
+arenas included, so that what an earlier chunk leaves there is still there
+for the later ones and for the host to read back.
 
 ### Where the host waits
 
