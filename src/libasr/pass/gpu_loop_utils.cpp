@@ -385,7 +385,19 @@ ASR::asr_t* GpuDuplicator::duplicate_Var(ASR::Var_t *x) {
     auto vm = value_map.find(s);
     if (vm != value_map.end()) {
         ASRUtils::ExprStmtDuplicator d(al);
-        return (ASR::asr_t*)d.duplicate_expr(vm->second);
+        ASR::expr_t *v = d.duplicate_expr(vm->second);
+        // In the kind of the variable it stands for: a subscript shifted
+        // in integer(8) (see duplicate_indices) can stand for an
+        // integer(4) index variable, whose value it is.
+        ASR::ttype_t *t = ASRUtils::symbol_type(s);
+        ASR::ttype_t *vt = ASRUtils::expr_type(v);
+        if (ASRUtils::is_integer(*t) && ASRUtils::is_integer(*vt)
+                && ASRUtils::extract_kind_from_ttype_t(t)
+                    != ASRUtils::extract_kind_from_ttype_t(vt)) {
+            v = ASRUtils::ASRBuilder(al, x->base.base.loc).i2i_t(v,
+                ASRUtils::duplicate_type(al, t));
+        }
+        return (ASR::asr_t*)v;
     }
     if (array_map.count(s)) {
         // A whole array dummy is only replaced as an actual argument.
@@ -413,12 +425,18 @@ ASR::array_index_t* GpuDuplicator::duplicate_indices(ASR::ArrayItem_t *x,
             } else if (map->shift[i]) {
                 ASRUtils::ExprStmtDuplicator d(al);
                 ASR::expr_t *shift = d.duplicate_expr(map->shift[i]);
-                // In the kind of the subscript (integer(8) indices).
+                // In the wider kind of the subscript (integer(8) indices)
+                // and the shift (integer(8) offsets), so that neither is
+                // narrowed.
                 ASR::ttype_t *t = ASRUtils::expr_type(idx.m_right);
-                if (ASRUtils::extract_kind_from_ttype_t(t)
-                        != ASRUtils::extract_kind_from_ttype_t(
-                            ASRUtils::expr_type(shift))) {
-                    ASRUtils::ASRBuilder b(al, idx.loc);
+                ASR::ttype_t *st = ASRUtils::expr_type(shift);
+                int kind = ASRUtils::extract_kind_from_ttype_t(t);
+                int shift_kind = ASRUtils::extract_kind_from_ttype_t(st);
+                ASRUtils::ASRBuilder b(al, idx.loc);
+                if (shift_kind > kind) {
+                    idx.m_right = b.i2i_t(idx.m_right,
+                        ASRUtils::duplicate_type(al, st));
+                } else if (shift_kind != kind) {
                     shift = b.i2i_t(shift, ASRUtils::duplicate_type(al, t));
                 }
                 idx.m_right = gpu_int_add(al, idx.m_right, shift);
@@ -1651,28 +1669,29 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
                 // The lower bound of the actual: stated as a constant by
                 // its type, or read from it.
                 int64_t al_const = 0;
-                ASR::expr_t *alb = nullptr;
+                bool al_known = false;
                 if (!ASRUtils::is_allocatable(at) && !ASRUtils::is_pointer(at)
                         && adims && adims[d].m_length != nullptr) {
                     if (adims[d].m_start == nullptr) {
                         al_const = 1;
-                        alb = gpu_i32(al, loc, 1);
+                        al_known = true;
                     } else if (ASRUtils::extract_value(ASRUtils::expr_value(
                             adims[d].m_start), al_const)) {
-                        alb = gpu_i32(al, loc, al_const);
+                        al_known = true;
                     }
                 }
-                if (alb && al_const == dl) {
+                ASR::ttype_t *shift_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, offset_kind));
+                if (al_known && al_const == dl) {
                     aa.shift.push_back(nullptr);
-                } else if (alb) {
-                    aa.shift.push_back(gpu_i32(al, loc, al_const - dl));
+                } else if (al_known) {
+                    aa.shift.push_back(b.i_t(al_const - dl, shift_type));
                 } else {
                     ASR::expr_t *lb = ASRUtils::EXPR(ASR::make_ArrayBound_t(
-                        al, loc, actual, gpu_i32(al, loc, d + 1),
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                        al, loc, actual, gpu_i32(al, loc, d + 1), shift_type,
                         ASR::arrayboundType::LBound, nullptr));
                     aa.shift.push_back(gpu_int_sub(al, lb,
-                        gpu_i32(al, loc, dl)));
+                        b.i_t(dl, shift_type)));
                 }
             }
             dup.array_map[dummy] = aa;

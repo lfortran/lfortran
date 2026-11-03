@@ -158,12 +158,15 @@ public:
 // variables hold the results and the locals of the inlined bodies, so they
 // are private to an iteration. `select` picks the calls; a picked call that
 // cannot be inlined (see gpu_function_inlinable) makes `run` fail and leave
-// the scope as it was.
+// the scope as it was. The subscripts of an array dummy are shifted by the
+// lower bound of the actual argument in integer(`offset_kind`), the kind
+// the device computes element offsets in
+// (GpuDeviceCapabilities::offset_kind).
 class GpuInliner {
 public:
     GpuInliner(Allocator &al_,
-        std::function<bool(ASR::FunctionCall_t*)> select_)
-        : al(al_), select(select_) {}
+        std::function<bool(ASR::FunctionCall_t*)> select_, int offset_kind_)
+        : al(al_), select(select_), offset_kind(offset_kind_) {}
     // Inlines in place; false when a picked call cannot be inlined.
     bool run(SymbolTable *scope, ASR::stmt_t **&body, size_t &n_body);
     // Removes every symbol `run` added (after a failure).
@@ -173,6 +176,7 @@ public:
 private:
     Allocator &al;
     std::function<bool(ASR::FunctionCall_t*)> select;
+    int offset_kind;
     int depth = 0;
     bool inline_stmts(SymbolTable *scope, ASR::stmt_t **&body,
         size_t &n_body);

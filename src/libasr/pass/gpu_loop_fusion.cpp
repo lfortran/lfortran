@@ -301,6 +301,15 @@ struct BoundHoister : public ASR::BaseExprReplacer<BoundHoister> {
             ASR::expr_t *v = gpu_affine_to_expr(al,
                 x->base.base.loc, it->second, *atoms);
             if (v) {
+                // The producer's first index, an integer(4) value, in the
+                // kind of the bound (integer(8) when the subscripts it
+                // shifts are; see GpuInliner).
+                if (ASRUtils::extract_kind_from_ttype_t(x->m_type)
+                        != ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(v))) {
+                    v = ASRUtils::ASRBuilder(al, x->base.base.loc).i2i_t(v,
+                        ASRUtils::duplicate_type(al, x->m_type));
+                }
                 *current_expr = v;
                 return;
             }
@@ -1965,7 +1974,7 @@ public:
                 if (a && f.xkeys.count(gpu_array_key(a))) return true;
             }
             return false;
-        });
+        }, gpu_device_capabilities(po).offset_kind);
         f.cb = cbody.p;
         f.cn = cbody.n;
         if (!inl.run(scope, f.cb, f.cn)) {

@@ -1,6 +1,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/gpu_affine.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/intrinsic_function_registry.h>
@@ -485,7 +486,7 @@ public:
             ASR::symbol_t *f = ASRUtils::symbol_get_past_external(call->m_name);
             return ASR::is_a<ASR::Function_t>(*f) && gpu_function_inlinable(
                 ASR::down_cast<ASR::Function_t>(f));
-        });
+        }, gpu_device_capabilities(pass_options).offset_kind);
         ASR::stmt_t **bp = body.p;
         size_t bn = body.n;
         if (!dup.ok || !inliners.back().run(scope, bp, bn)) return false;
