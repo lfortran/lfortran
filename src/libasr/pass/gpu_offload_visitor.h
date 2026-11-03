@@ -67,8 +67,6 @@ public:
 
     void lower_loaded_implied_do_loops(ASR::TranslationUnit_t &sub_tu);
 
-    ASR::expr_t* dup_expr_to_scope(ASR::expr_t *expr, SymbolTable *scope);
-
     void fixup_struct_refs_in_scope(SymbolTable *scope,
             SymbolTable *kernel_scope,
             char *kernel_fn_name = nullptr);

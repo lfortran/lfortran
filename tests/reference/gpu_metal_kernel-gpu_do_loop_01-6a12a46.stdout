@@ -51,20 +51,14 @@ inline int triangle_gpu_53(int n_gpu) {
     return s_gpu;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_end_0_gpu;
-};
-
 kernel void __lfortran_gpu_kernel_0(
     device int* lim_gpu [[buffer(0)]],
     device int* r_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __flat_idx_gpu;
     int i__dc_gpu;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+    if ((((0 * 0) + __thread_id) >= 20)) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);

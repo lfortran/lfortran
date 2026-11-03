@@ -11,7 +11,6 @@ inline int _lcompilers_optimization_modulo_i32_gpu_19(int a_gpu, int p_gpu) {
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_end_0_gpu;
     int __gpu_lanes_gpu;
 };
 
@@ -22,13 +21,12 @@ kernel void __lfortran_gpu_kernel_0(
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {
-    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
     uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
     int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
     int __flat_idx_gpu;
     int i__dc_gpu;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+    if ((((0 * 0) + __thread_id) >= 65)) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);

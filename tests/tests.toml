@@ -5446,6 +5446,31 @@ filename = "../integration_tests/gpu_metal_669.f90"
 gpu_cuda_kernel = true
 options = "--gpu-chunk-limit=50"
 
+# Constant extents decided at compile time: a nest that fits the chunk limit,
+# its whole tiles included, has no chunks and keeps its constant bounds.
+[[test]]
+filename = "gpu_cuda_kernel_constant_extents.f90"
+gpu_cuda_kernel = true
+
+# Named-constant bounds are constants too: inlined, no bound arguments.
+[[test]]
+filename = "gpu_cuda_kernel_parameter_extents.f90"
+gpu_cuda_kernel = true
+
+# At, below and above a lowered chunk limit (48): only the 8 by 7 nest, the
+# n by m + 1 one and the nests with a run-time extent of `j` are split, and
+# only `j` takes bound arguments.
+[[test]]
+filename = "../integration_tests/gpu_metal_678.f90"
+gpu_cuda_kernel = true
+options = "--gpu-chunk-limit=48"
+
+# Iterations within the limit (480) but whole tiles beyond it: flat, unsplit.
+[[test]]
+filename = "../integration_tests/gpu_metal_679.f90"
+gpu_cuda_kernel = true
+options = "--gpu-chunk-limit=480"
+
 [[test]]
 filename = "../integration_tests/gpu_liveout_01.f90"
 gpu_metal_kernel = true

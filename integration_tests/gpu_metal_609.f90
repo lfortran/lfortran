@@ -5,9 +5,11 @@ program gpu_metal_609
     ! runs in chunks, the last of them partial. Every element is checked.
     implicit none
     integer, parameter :: m = 100
+    integer(8), parameter :: big = 5000000000_8
     integer :: a(m), b(-5:40), c(m), i, n, lo, hi
     integer(8) :: k
-    integer :: d(21)
+    integer :: d(21), g(2), h(3, 2)
+    integer(8) :: l
 
     ! Constant extent.
     a = 0
@@ -73,6 +75,23 @@ program gpu_metal_609
     end do
     do i = 1, 21
         if (d(i) /= i) error stop 8
+    end do
+
+    ! integer(8) named-constant bounds beyond huge(0): within the limit 7,
+    ! they stay constants in the kernel; with limit 1 they are split.
+    g = 0
+    do concurrent (l = big - 1:big)
+        g(l - big + 2) = int(l - big) + 10
+    end do
+    if (g(1) /= 9 .or. g(2) /= 10) error stop 9
+    h = 0
+    do concurrent (k = 1:3, l = big - 1:big)
+        h(k, l - big + 2) = 10 * int(k) + int(l - big + 2)
+    end do
+    do k = 1, 3
+        do l = 1, 2
+            if (h(k, l) /= 10 * k + l) error stop 10
+        end do
     end do
     print *, "ok"
 end program

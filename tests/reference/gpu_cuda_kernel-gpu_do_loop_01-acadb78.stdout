@@ -10,19 +10,13 @@ __device__ inline int triangle_gpu_53(int n) {
     return s;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_end_0;
-};
-
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     int* __restrict__ lim,
-    int* __restrict__ r,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    int* __restrict__ r)
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     int i__dc;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)20))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));

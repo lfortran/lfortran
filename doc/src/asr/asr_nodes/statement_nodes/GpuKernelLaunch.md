@@ -135,8 +135,10 @@ iteration space of at most that many iterations. The iterations of a `do
 concurrent` may run in any order, so the chunks run one after another, and
 the kernel numbers the iterations of each chunk from the bounds of its box.
 A chunk covers every dimension not in `chunk_dimensions` whole; their
-extents are constants, which the kernel keeps, and their product is
-`chunk_fixed_iterations`, at most the limit. Each dimension in
+extents are constants, and their product is `chunk_fixed_iterations`, at
+most the limit. A bound whose value is known at compile time (a literal, a
+named constant or a constant expression) stays a constant in the kernel
+unless its dimension is in `chunk_dimensions`. Each dimension in
 `chunk_dimensions` names the kernel parameters that hold its bounds,
 `start_parameter` and `end_parameter`, which each chunk sets to the bounds
 of its box, and the launch reads the bounds of the whole dimension from its
@@ -151,8 +153,13 @@ extent: a one-dimensional `do concurrent (i = 1:n)` with an `integer(4)`
 index has at most `huge(0)` iterations. `device_launch_expand` sets the
 buffers, scratch buffers and workspaces once, sized for the largest chunk,
 and then launches each chunk with its own scalar arguments and grid. A
-launch that may run in tiles runs flat when it would start more threads
-than the chunk limit, and a buffer handed over as
+launch with `chunk_dimensions` that may run in tiles runs flat when it would
+start more threads than the chunk limit; a tiled launch without them is not
+yet limited. Where every extent of the nest is a constant, that is decided
+at compile time: a nest whose whole tiles come to more threads than
+the limit gets a kernel that numbers its iterations flat, so a nest of at
+most that many iterations runs as one launch with no `chunk_dimensions`,
+and its constant bounds stay constants in the kernel. A buffer handed over as
 `LFORTRAN_GPU_WRITE_DISCARD` is handed over again as written after each
 chunk, so the chunks after the first keep what it wrote. Only CUDA launches
 have `chunk_dimensions`.

@@ -10,7 +10,6 @@ inline void maybe_set_gpu_9(thread float& x_gpu, int i_gpu) {
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
-    int __loop_end_0_gpu;
 };
 
 kernel void __lfortran_gpu_kernel_0(
@@ -20,12 +19,11 @@ kernel void __lfortran_gpu_kernel_0(
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_a_0_gpu = __scalar_args.__lb_a_0_gpu;
-    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __flat_idx_gpu;
     float __gpu_before_gpu;
     int i__dc_gpu;
     float x_gpu;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+    if ((((0 * 0) + __thread_id) >= 100000)) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);

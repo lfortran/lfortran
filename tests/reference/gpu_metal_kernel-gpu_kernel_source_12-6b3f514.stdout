@@ -1,50 +1,38 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_start_1_gpu;
-};
-
 kernel void __lfortran_gpu_kernel_0(
     device int* a_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __loop_start_1_gpu = __scalar_args.__loop_start_1_gpu;
     int __flat_idx_gpu;
     int i__dc_gpu;
     int j__dc_gpu;
-    if ((((0 * 0) + __thread_id) >= (5 * (((4 >= __loop_start_1_gpu)) ? (((4 - __loop_start_1_gpu) + 1)) : (0))))) {
+    if ((((0 * 0) + __thread_id) >= (5 * 7))) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
-    i__dc_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((4 - __loop_start_1_gpu) + 1)) * ((4 - __loop_start_1_gpu) + 1))) + __loop_start_1_gpu);
-    __flat_idx_gpu = (__flat_idx_gpu / ((4 - __loop_start_1_gpu) + 1));
+    i__dc_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((4 - -2) + 1)) * ((4 - -2) + 1))) + -2);
+    __flat_idx_gpu = (__flat_idx_gpu / ((4 - -2) + 1));
     j__dc_gpu = (__flat_idx_gpu + 3);
     a_gpu[((int)(i__dc_gpu) - (((-(2))))) + (7 * ((int)(j__dc_gpu) - (3)))] = (i__dc_gpu + (10 * j__dc_gpu));
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
-    int __loop_start_1_gpu;
-};
-
 kernel void __lfortran_gpu_kernel_1(
     device int* a_gpu [[buffer(0)]],
     device int* b_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __loop_start_1_gpu = __scalar_args.__loop_start_1_gpu;
     int __flat_idx_gpu;
     int i__dc1_gpu;
     int j__dc1_gpu;
-    if ((((0 * 0) + __thread_id) >= (5 * (((4 >= __loop_start_1_gpu)) ? (((4 - __loop_start_1_gpu) + 1)) : (0))))) {
+    if ((((0 * 0) + __thread_id) >= (5 * 7))) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
     j__dc1_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((7 - 3) + 1)) * ((7 - 3) + 1))) + 3);
     __flat_idx_gpu = (__flat_idx_gpu / ((7 - 3) + 1));
-    i__dc1_gpu = (__flat_idx_gpu + __loop_start_1_gpu);
+    i__dc1_gpu = (__flat_idx_gpu + -2);
     a_gpu[((int)(i__dc1_gpu) - (((-(2))))) + (7 * ((int)(j__dc1_gpu) - (3)))] = (i__dc1_gpu - j__dc1_gpu);
     b_gpu[((int)(j__dc1_gpu) - (3)) + (5 * ((int)(i__dc1_gpu) - (((-(2))))))] = (i__dc1_gpu + j__dc1_gpu);
 }
@@ -69,31 +57,24 @@ kernel void __lfortran_gpu_kernel_2(
     c_gpu[((int)(i__dc2_gpu) - (1)) + (2 * ((int)(j__dc2_gpu) - (1))) + ((2 * 3) * ((int)(k__dc_gpu) - (1)))] = ((i__dc2_gpu + (2 * j__dc2_gpu)) + (3 * k__dc_gpu));
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
-    int __loop_start_1_gpu;
-};
-
 kernel void __lfortran_gpu_kernel_3(
     device int* a_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_3& __scalar_args [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __loop_start_1_gpu = __scalar_args.__loop_start_1_gpu;
     int __flat_idx_gpu;
     int i__dc3_gpu;
     int j__dc3_gpu;
-    if ((((0 * 0) + __thread_id) >= (0 * (((4 >= __loop_start_1_gpu)) ? (((4 - __loop_start_1_gpu) + 1)) : (0))))) {
+    if ((((0 * 0) + __thread_id) >= (0 * 7))) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
-    i__dc3_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((4 - __loop_start_1_gpu) + 1)) * ((4 - __loop_start_1_gpu) + 1))) + __loop_start_1_gpu);
-    __flat_idx_gpu = (__flat_idx_gpu / ((4 - __loop_start_1_gpu) + 1));
+    i__dc3_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((4 - -2) + 1)) * ((4 - -2) + 1))) + -2);
+    __flat_idx_gpu = (__flat_idx_gpu / ((4 - -2) + 1));
     j__dc3_gpu = (__flat_idx_gpu + 7);
     a_gpu[((int)(i__dc3_gpu) - (((-(2))))) + (7 * ((int)(j__dc3_gpu) - (3)))] = 0;
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_4 {
-    int __loop_start_1_gpu;
     int __gpu_lanes_gpu;
 };
 
@@ -103,19 +84,18 @@ kernel void __lfortran_gpu_kernel_4(
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {
-    int __loop_start_1_gpu = __scalar_args.__loop_start_1_gpu;
     int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
     uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
     int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
     int __flat_idx_gpu;
     int i__dc4_gpu;
     int j__dc4_gpu;
-    if ((((0 * 0) + __thread_id) >= (5 * (((4 >= __loop_start_1_gpu)) ? (((4 - __loop_start_1_gpu) + 1)) : (0))))) {
+    if ((((0 * 0) + __thread_id) >= (5 * 7))) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
-    i__dc4_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((4 - __loop_start_1_gpu) + 1)) * ((4 - __loop_start_1_gpu) + 1))) + __loop_start_1_gpu);
-    __flat_idx_gpu = (__flat_idx_gpu / ((4 - __loop_start_1_gpu) + 1));
+    i__dc4_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((4 - -2) + 1)) * ((4 - -2) + 1))) + -2);
+    __flat_idx_gpu = (__flat_idx_gpu / ((4 - -2) + 1));
     j__dc4_gpu = (__flat_idx_gpu + 3);
     {
         int value_gpu;
@@ -127,27 +107,21 @@ kernel void __lfortran_gpu_kernel_4(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_5 {
-    int __loop_start_1_gpu;
-};
-
 kernel void __lfortran_gpu_kernel_5(
     device int* a_gpu [[buffer(0)]],
     device int* b_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_5& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __loop_start_1_gpu = __scalar_args.__loop_start_1_gpu;
     int __flat_idx_gpu;
     int i__dc5_gpu;
     int j__dc5_gpu;
-    if ((((0 * 0) + __thread_id) >= (5 * (((4 >= __loop_start_1_gpu)) ? (((4 - __loop_start_1_gpu) + 1)) : (0))))) {
+    if ((((0 * 0) + __thread_id) >= (5 * 7))) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
     j__dc5_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((7 - 3) + 1)) * ((7 - 3) + 1))) + 3);
     __flat_idx_gpu = (__flat_idx_gpu / ((7 - 3) + 1));
-    i__dc5_gpu = (__flat_idx_gpu + __loop_start_1_gpu);
+    i__dc5_gpu = (__flat_idx_gpu + -2);
     a_gpu[((int)(i__dc5_gpu) - (((-(2))))) + (7 * ((int)(j__dc5_gpu) - (3)))] = (i__dc5_gpu + (2 * j__dc5_gpu));
     b_gpu[((int)((10 - j__dc5_gpu)) - (3)) + (5 * ((int)(i__dc5_gpu) - (((-(2))))))] = (i__dc5_gpu - j__dc5_gpu);
 }

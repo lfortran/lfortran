@@ -19,21 +19,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     g[((int)(j__dc) - (1))] = t[((int)(1) - (1))];
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
-    int __loop_end_0;
-};
-
 extern "C" __global__ void __lfortran_gpu_kernel_1(
     float* __restrict__ g,
     float* __restrict__ u,
-    float* __restrict__ x,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    float* __restrict__ x)
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     int j__dc1;
     int k;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)8))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));

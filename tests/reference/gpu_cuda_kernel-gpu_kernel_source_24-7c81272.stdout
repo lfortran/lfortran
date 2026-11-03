@@ -53,7 +53,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_10 {
     int __lb___gpu_next_q_0;
     int __dim_q_0;
     int __lb_q_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_10(
@@ -63,10 +62,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_10(
 {
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     int i__dc1;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)3))) ? (((((long)__loop_end_0) - ((long)3)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)17))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
@@ -79,7 +77,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_11 {
     int __lb_flux_0;
     int __dim_q_0;
     int __lb_q_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_11(
@@ -89,11 +86,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_11(
 {
     int __lb_flux_0 = __scalar_args.__lb_flux_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     int i__dc;
     const int n = 20;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)20))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
@@ -114,7 +110,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_12 {
     int __lb_flux_0;
     int __dim_q_0;
     int __lb_q_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_12(
@@ -124,10 +119,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_12(
 {
     int __dim_flux_0 = __scalar_args.__dim_flux_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     int i__dc1;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)3))) ? (((((long)__loop_end_0) - ((long)3)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)17))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
@@ -335,7 +329,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_8 {
     int __lb___gpu_next_q_0;
     int __dim_q_0;
     int __lb_q_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_8(
@@ -345,10 +338,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_8(
 {
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     int i__dc1;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)3))) ? (((((long)__loop_end_0) - ((long)3)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)17))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
@@ -365,7 +357,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_9 {
     int __lb___gpu_next_q_0;
     int __dim_q_0;
     int __lb_q_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_9(
@@ -375,10 +366,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_9(
 {
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     int i__dc1;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)3))) ? (((((long)__loop_end_0) - ((long)3)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)17))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));

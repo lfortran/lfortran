@@ -54,7 +54,6 @@ __device__ inline float f_gpu_8(int n, float x, float* __gpu_heap_r4, int __gpu_
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_end_0;
     int __gpu_heap_cap_r4;
 };
 
@@ -66,7 +65,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int* __restrict__ __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __gpu_heap_cap_r4 = __scalar_args.__gpu_heap_cap_r4;
     long __flat_idx;
     int __gpu_stop_code;
@@ -74,7 +72,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int i__dc;
     __gpu_stop_site = 0;
     __gpu_stop_code = 0;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)64))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));

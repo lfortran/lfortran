@@ -16,7 +16,6 @@ __device__ inline void values_gpu_18(tensor_t self, float* __data_self_values_, 
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_end_0;
     int __workspace_extent;
     int __workspace_extent1;
     int __workspace_extent2;
@@ -35,7 +34,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __restrict__ __workspace_9,
     float* __restrict__ __workspace_10)
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __workspace_extent1 = __scalar_args.__workspace_extent1;
     int __workspace_extent2 = __scalar_args.__workspace_extent2;
@@ -45,7 +43,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float __gpu_sum_res;
     const int n = 3;
     int p__dc;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)2))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));

@@ -1,9 +1,5 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_end_0;
-};
-
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __restrict__ b,
     float* __restrict__ c,
@@ -14,10 +10,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __restrict__ x,
     float* __restrict__ x0,
     float* __restrict__ y,
-    float* __restrict__ z,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    float* __restrict__ z)
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     long __flat_idx;
     float __gpu_mm_acc;
     float __gpu_mm_acc1;
@@ -41,7 +35,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     const int m = 4;
     const int n = 3;
     int p__dc;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)2))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));

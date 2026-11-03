@@ -38,7 +38,6 @@ __device__ inline void points_device_t_gpu_62(int p, int n, point_t* r) {
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_end_0;
     int __workspace_extent;
     int __workspace_extent1;
     int __workspace_extent2;
@@ -79,7 +78,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __restrict__ __workspace_22,
     float* __restrict__ __workspace_23)
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __workspace_extent1 = __scalar_args.__workspace_extent1;
     int __workspace_extent2 = __scalar_args.__workspace_extent2;
@@ -101,7 +99,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __gpu_sec_i2;
     const int n = 3;
     int p__dc;
-    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
+    if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= ((long)2))) {
         return;
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));

@@ -65,21 +65,6 @@ void GpuOffloadVisitor::lower_loaded_implied_do_loops(
     implementations.lower_loaded_implied_do_loops(sub_tu);
 }
 
-// Duplicate an expression, remapping all Var references to point to the
-// given scope. Used to create kernel-scope copies of head expressions.
-ASR::expr_t* GpuOffloadVisitor::dup_expr_to_scope(
-        ASR::expr_t *expr, SymbolTable *scope) {
-    if (!expr) return nullptr;
-    ASRUtils::ExprStmtDuplicator duplicator(al);
-    duplicator.success = true;
-    ASR::expr_t *copy = duplicator.duplicate_expr(expr);
-    if (!copy) return expr;
-    GpuReplaceSymbols replacer(*scope);
-    replacer.current_expr = &copy;
-    replacer.replace_expr(copy);
-    return copy;
-}
-
 // Recursively remap ExternalSymbol targets and Variable
 // m_type_declarations inside `scope` (and all nested child scopes)
 // so they reference the kernel-scope struct copies instead of the
