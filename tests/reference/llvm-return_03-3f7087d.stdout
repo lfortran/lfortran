@@ -34,7 +34,7 @@ FINALIZE_SYMTABLE_main:                           ; preds = %return
   ret i32 0
 }
 
-define void @main.main1(i32* %out_var) {
+define internal void @main.main1(i32* %out_var) {
 .entry:
   %i = alloca i32, align 4
   store i32 10, i32* %i, align 4

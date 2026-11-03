@@ -198,7 +198,7 @@ FINALIZE_SYMTABLE_subroutines_02:                 ; preds = %return
   ret i32 0
 }
 
-define void @subroutines_02.f(i32* %a, i32* %b) {
+define internal void @subroutines_02.f(i32* %a, i32* %b) {
 .entry:
   %0 = load i32, i32* %a, align 1
   %1 = add i32 %0, 1
@@ -212,7 +212,7 @@ FINALIZE_SYMTABLE_f:                              ; preds = %return
   ret void
 }
 
-define void @subroutines_02.g(i32* %a, i32* %b) {
+define internal void @subroutines_02.g(i32* %a, i32* %b) {
 .entry:
   %0 = load i32, i32* %a, align 1
   %1 = sub i32 %0, 1
@@ -226,7 +226,7 @@ FINALIZE_SYMTABLE_g:                              ; preds = %return
   ret void
 }
 
-define void @subroutines_02.h(i32* %a, i32* %b) {
+define internal void @subroutines_02.h(i32* %a, i32* %b) {
 .entry:
   call void @subroutines_02.g(i32* %a, i32* %b)
   br label %return

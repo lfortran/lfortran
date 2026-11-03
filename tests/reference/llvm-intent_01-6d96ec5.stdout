@@ -25,7 +25,7 @@ FINALIZE_SYMTABLE_foo:                            ; preds = %return
   ret void
 }
 
-define float @foo.__module_dflt_intent_f(float* %x) {
+define internal float @foo.__module_dflt_intent_f(float* %x) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()

@@ -1061,7 +1061,7 @@ Finalize_Variable___libasr_created_variable_7:    ; preds = %Finalize_Variable__
   ret i32 0
 }
 
-define void @coarrays_52.__lfortran_global_init_coarrays_52(%__lcompilers_frame_coarrays_52.24* %__lcompilers_frame) {
+define internal void @coarrays_52.__lfortran_global_init_coarrays_52(%__lcompilers_frame_coarrays_52.24* %__lcompilers_frame) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %array_descriptor8 = alloca %array.1.0, align 8
@@ -1261,7 +1261,7 @@ Finalize_Variable___libasr_created_variable_5:    ; preds = %Finalize_Variable__
   ret void
 }
 
-define void @coarrays_52.coarrays_52_int_sub(i32* %v) {
+define internal void @coarrays_52.coarrays_52_int_sub(i32* %v) {
 .entry:
   %0 = load i32*, i32** @__cac_m__coarray_ptr, align 8
   %1 = load i32*, i32** @__cac_m__coarray_ptr, align 8

@@ -281,7 +281,7 @@ FINALIZE_SYMTABLE_subroutines_01:                 ; preds = %return
   ret i32 0
 }
 
-define void @subroutines_01.f(i32* %a, i32* %b) {
+define internal void @subroutines_01.f(i32* %a, i32* %b) {
 .entry:
   %0 = load i32, i32* %a, align 1
   %1 = add i32 %0, 1

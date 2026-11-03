@@ -223,7 +223,7 @@ FINALIZE_SYMTABLE_sub1:                           ; preds = %return
   ret i32 %22
 }
 
-define void @sub1.__module_recursion_02___lcompilers_acquire_frame_slot(%recursion_02.__lcompilers_frame_sub1.17* %__lcompilers_frame, i32* %index) {
+define internal void @sub1.__module_recursion_02___lcompilers_acquire_frame_slot(%recursion_02.__lcompilers_frame_sub1.17* %__lcompilers_frame, i32* %index) {
 .entry:
   %is_associated = alloca i1, align 1
   %0 = getelementptr %recursion_02.__lcompilers_frame_sub1.17, %recursion_02.__lcompilers_frame_sub1.17* %__lcompilers_frame, i32 0, i32 0
@@ -348,7 +348,7 @@ FINALIZE_SYMTABLE___lcompilers_acquire_frame_slot: ; preds = %return
   ret void
 }
 
-define void @sub1.__module_recursion_02___lcompilers_release_frame_slot(%recursion_02.__lcompilers_frame_sub1.17* %__lcompilers_frame) {
+define internal void @sub1.__module_recursion_02___lcompilers_release_frame_slot(%recursion_02.__lcompilers_frame_sub1.17* %__lcompilers_frame) {
 .entry:
   %0 = getelementptr %recursion_02.__lcompilers_frame_sub1.17, %recursion_02.__lcompilers_frame_sub1.17* %__lcompilers_frame, i32 0, i32 0
   %1 = load i32*, i32** %0, align 1
@@ -380,7 +380,7 @@ FINALIZE_SYMTABLE___lcompilers_release_frame_slot: ; preds = %return
   ret void
 }
 
-define i32 @sub1.__module_recursion_02_getx(%recursion_02.__lcompilers_frame_sub1.17* %__lcompilers_frame) {
+define internal i32 @sub1.__module_recursion_02_getx(%recursion_02.__lcompilers_frame_sub1.17* %__lcompilers_frame) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()
@@ -420,7 +420,7 @@ FINALIZE_SYMTABLE_getx:                           ; preds = %return
   ret i32 %15
 }
 
-define i32 @sub1.__module_recursion_02_getx__lcompilers_value_1() {
+define internal i32 @sub1.__module_recursion_02_getx__lcompilers_value_1() {
 .entry:
   %getx__lcompilers_value_1 = alloca i32, align 4
   br i1 false, label %then, label %ifcont
@@ -443,7 +443,7 @@ FINALIZE_SYMTABLE_getx__lcompilers_value_1:       ; preds = %return
   ret i32 %2
 }
 
-define i32 @sub1.__module_recursion_02_getx__lcompilers_value_2() {
+define internal i32 @sub1.__module_recursion_02_getx__lcompilers_value_2() {
 .entry:
   %getx__lcompilers_value_2 = alloca i32, align 4
   br i1 false, label %then, label %ifcont
@@ -466,7 +466,7 @@ FINALIZE_SYMTABLE_getx__lcompilers_value_2:       ; preds = %return
   ret i32 %2
 }
 
-define i32 @sub1.__module_recursion_02_getx__lcompilers_value_3() {
+define internal i32 @sub1.__module_recursion_02_getx__lcompilers_value_3() {
 .entry:
   %getx__lcompilers_value_3 = alloca i32, align 4
   br i1 false, label %then, label %ifcont
@@ -489,7 +489,7 @@ FINALIZE_SYMTABLE_getx__lcompilers_value_3:       ; preds = %return
   ret i32 %2
 }
 
-define i32 @sub1.__module_recursion_02_getx__lcompilers_value_4() {
+define internal i32 @sub1.__module_recursion_02_getx__lcompilers_value_4() {
 .entry:
   %getx__lcompilers_value_4 = alloca i32, align 4
   br i1 false, label %then, label %ifcont
@@ -512,7 +512,7 @@ FINALIZE_SYMTABLE_getx__lcompilers_value_4:       ; preds = %return
   ret i32 %2
 }
 
-define i32 @sub1.__module_recursion_02_getx__lcompilers_value_5() {
+define internal i32 @sub1.__module_recursion_02_getx__lcompilers_value_5() {
 .entry:
   %getx__lcompilers_value_5 = alloca i32, align 4
   br i1 false, label %then, label %ifcont
@@ -535,7 +535,7 @@ FINALIZE_SYMTABLE_getx__lcompilers_value_5:       ; preds = %return
   ret i32 %2
 }
 
-define i32 @sub1.__module_recursion_02_getx__lcompilers_value_6() {
+define internal i32 @sub1.__module_recursion_02_getx__lcompilers_value_6() {
 .entry:
   %getx__lcompilers_value_6 = alloca i32, align 4
   br i1 false, label %then, label %ifcont
@@ -558,7 +558,7 @@ FINALIZE_SYMTABLE_getx__lcompilers_value_6:       ; preds = %return
   ret i32 %2
 }
 
-define i32 @sub1.__module_recursion_02_getx__lcompilers_value_7() {
+define internal i32 @sub1.__module_recursion_02_getx__lcompilers_value_7() {
 .entry:
   %getx__lcompilers_value_7 = alloca i32, align 4
   br i1 false, label %then, label %ifcont
@@ -581,7 +581,7 @@ FINALIZE_SYMTABLE_getx__lcompilers_value_7:       ; preds = %return
   ret i32 %2
 }
 
-define i32 @sub1.__module_recursion_02_getx__lcompilers_value_8() {
+define internal i32 @sub1.__module_recursion_02_getx__lcompilers_value_8() {
 .entry:
   %getx__lcompilers_value_8 = alloca i32, align 4
   br i1 false, label %then, label %ifcont
@@ -606,7 +606,7 @@ FINALIZE_SYMTABLE_getx__lcompilers_value_8:       ; preds = %return
 
 declare i32 @__module_recursion_02_getx__lcompilers_value_pointer()
 
-define void @sub1.__module_recursion_02_getx__lcompilers_value_select(i32* %index, i32 ()** %pointer) {
+define internal void @sub1.__module_recursion_02_getx__lcompilers_value_select(i32* %index, i32 ()** %pointer) {
 .entry:
   %0 = load i32, i32* %index, align 1
   %1 = icmp eq i32 %0, 1

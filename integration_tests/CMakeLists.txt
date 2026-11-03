@@ -3755,6 +3755,7 @@ RUN(NAME procedure_argument_specialization_06 LABELS gfortran llvm)
 # and ASSOCIATE bodies.
 RUN(NAME procedure_argument_specialization_07 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME procedure_argument_specialization_08 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME procedure_argument_specialization_09 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module

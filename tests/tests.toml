@@ -7548,3 +7548,9 @@ filename = "../integration_tests/procedure_argument_specialization_02.f90"
 fortran = true
 pass = "specialize_procedure_arguments"
 options = "--fast"
+
+# Internal procedures, including the thunks of one passed as an actual
+# argument, are defined with internal linkage: only their host can name them.
+[[test]]
+filename = "../integration_tests/procedure_argument_specialization_09.f90"
+llvm = true

@@ -79,7 +79,7 @@ declare float @fun()
 
 declare float @__lcompilers_view_fun()
 
-define float @my_wrapper.__module_my_module_wrapper_wrapper(%my_module.__lcompilers_frame_my_wrapper.10* %__lcompilers_frame) {
+define internal float @my_wrapper.__module_my_module_wrapper_wrapper(%my_module.__lcompilers_frame_my_wrapper.10* %__lcompilers_frame) {
 .entry:
   %0 = getelementptr %my_module.__lcompilers_frame_my_wrapper.10, %my_module.__lcompilers_frame_my_wrapper.10* %__lcompilers_frame, i32 0, i32 0
   %1 = load float ()**, float ()*** %0, align 1
@@ -203,7 +203,7 @@ FINALIZE_SYMTABLE_example:                        ; preds = %return
   ret i32 0
 }
 
-define float @example.my_fun(%__lcompilers_frame_example.9* %__lcompilers_frame) {
+define internal float @example.my_fun(%__lcompilers_frame_example.9* %__lcompilers_frame) {
 .entry:
   %0 = getelementptr %__lcompilers_frame_example.9, %__lcompilers_frame_example.9* %__lcompilers_frame, i32 0, i32 0
   %1 = load float*, float** %0, align 1
@@ -220,7 +220,7 @@ FINALIZE_SYMTABLE_my_fun:                         ; preds = %return
   ret float %3
 }
 
-define float @example.my_fun__lcompilers_value() {
+define internal float @example.my_fun__lcompilers_value() {
 .entry:
   %my_fun__lcompilers_value = alloca float, align 4
   %0 = load %__lcompilers_frame_example.9*, %__lcompilers_frame_example.9** @example.__lcompilers_current_frame, align 8
