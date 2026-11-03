@@ -6204,13 +6204,13 @@ end module
 TEST_CASE("Trait array-element bounds preserve positional correspondence") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
-    // TARGET on `a` keeps the traits without runtime contracts, whose slots
-    // the bound changes below would not follow: only the static contracts
-    // are compared.
+    // VOLATILE on `a` keeps the traits without runtime contracts, whose
+    // slots the bound changes below would not follow: only the static
+    // contracts are compared.
     const std::string method = R"(
 function count(n, other, k, a) result(r)
     integer, intent(in) :: n(2, 2), other(2, 2), k(2)
-    integer, intent(in), optional, target :: a(n(k(1), 2), other(1, 1))
+    integer, intent(in), optional, volatile :: a(n(k(1), 2), other(1, 1))
     integer :: r
 end function
 )";
