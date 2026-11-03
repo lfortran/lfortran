@@ -3698,6 +3698,11 @@ RUN(NAME callback_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME callback_06 LABELS gfortran llvm)
+RUN(NAME callback_07 LABELS gfortran llvm EXTRAFILES callback_07c.c
+    EXTRA_ARGS --implicit-interface --mangle-underscore --all-mangling) # C calls a non-bind(c) external with EXTERNAL dummies (#16400)
+RUN(NAME callback_08 LABELS gfortran llvm EXTRAFILES callback_08c.c
+    EXTRA_ARGS --implicit-interface) # module and capturing internal procedures passed to C through implicit interfaces (#16400)
+RUN(NAME callback_09 LABELS gfortran llvm EXTRAFILES callback_09c.c) # c_funloc of a capturing internal procedure in a recursive host, called from C (#16400)
 
 RUN(NAME recursion_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
 RUN(NAME recursion_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3728,6 +3733,8 @@ RUN(NAME host_assoc_14 LABELS gfortran llvm)
 RUN(NAME host_assoc_15 LABELS gfortran llvm)
 RUN(NAME host_assoc_16 LABELS gfortran llvm)
 RUN(NAME host_assoc_17 LABELS gfortran llvm)
+RUN(NAME host_assoc_18 LABELS gfortran llvm llvm_single_invocation
+    EXTRAFILES host_assoc_18_module.f90 EXTRA_ARGS --separate-compilation --implicit-interface)
 RUN(NAME host_assoc_19 LABELS gfortran llvm)
 RUN(NAME host_assoc_20 LABELS gfortran llvm)
 RUN(NAME host_assoc_21 LABELS gfortran llvm)
@@ -5081,6 +5088,8 @@ RUN(NAME procedure_62 LABELS gfortran llvm c cpp)
 RUN(NAME procedure_63 LABELS gfortran llvm c cpp)
 RUN(NAME procedure_64 LABELS gfortran llvm)
 RUN(NAME procedure_65 LABELS gfortran llvm)
+RUN(NAME procedure_bounds_01 FAIL NO_FAST LABELS llvm) # run-time "Array shape mismatch" through a procedure pointer
+RUN(NAME procedure_bounds_02 FAIL NO_FAST LABELS llvm) # run-time "Array shape mismatch" through a dummy procedure
 RUN(NAME procedure_pointer_abstract_02 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_01 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_02 LABELS gfortran llvm)
@@ -5783,6 +5792,7 @@ RUN(NAME openmp_bindc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_bindc_04 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_host_assoc_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_host_assoc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp) # #16382's part with orphaned barriers is left out until #16619 is fixed
 RUN(NAME openmp_host_assoc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp EXTRA_ARGS --internal-procedure-thunks=16)
 
 RUN(NAME openmp_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
