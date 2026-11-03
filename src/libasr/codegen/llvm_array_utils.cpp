@@ -1875,11 +1875,10 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::internal_to_cfi(
                 llvm::Type* internal_type, llvm::Value* internal_desc,
-                llvm::Type* el_type, int n_dims, uint64_t elem_size,
+                llvm::Type* el_type, int n_dims, llvm::Value* elem_size_val,
                 int8_t type_code, int cfi_attr) {
             llvm::StructType* cfi_type = get_cfi_type(el_type, n_dims);
             llvm::Value* cfi = llvm_utils->CreateAlloca(cfi_type);
-            llvm::Value* elem_size_val = llvm::ConstantInt::get(context, llvm::APInt(64, elem_size));
 
             // Copy base_addr, adjusting by offset.
             // Guard: if base_addr is NULL (unallocated/disassociated),
@@ -1906,7 +1905,7 @@ namespace LCompilers {
             // elem_len: use elem_size (the CFI element size), not the
             // internal descriptor's elem_len. For characters, the internal
             // elem_len is sizeof(string_descriptor)=16, but CFI needs the
-            // actual character length (e.g. 1).
+            // character length in bytes (len * kind).
             builder->CreateStore(elem_size_val,
                 llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_ELEM_LEN));
 

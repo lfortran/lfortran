@@ -12020,8 +12020,9 @@ public:
             llvm::Value* internal_ptr = llvm_utils->CreateLoad2(
                 info.desc_array_type->getPointerTo(), info.desc_ptr_ptr);
             llvm::Value* cfi_result = arr_descr->internal_to_cfi(
-                info.desc_array_type, internal_ptr, info.el_type,
-                info.n_dims, info.el_size, info.type_code, info.cfi_attr);
+                info.desc_array_type, internal_ptr, info.el_type, info.n_dims,
+                llvm::ConstantInt::get(context, llvm::APInt(64, info.el_size)),
+                info.type_code, info.cfi_attr);
             // Copy CFI data back to the original CFI descriptor
             llvm::StructType* cfi_type = arr_descr->get_cfi_type(info.el_type, info.n_dims);
             llvm::DataLayout dl(module->getDataLayout());
@@ -27223,10 +27224,13 @@ public:
                     llvm::DataLayout data_layout(module->getDataLayout());
                     // For bind(C) character arrays, elem_size is the
                     // character kind size (e.g. 1 for c_char), not the
-                    // size of the internal string_descriptor struct.
+                    // size of the internal string_descriptor struct; the
+                    // CFI elem_len multiplies it by the character length.
                     uint64_t elem_size = ASRUtils::is_character(*elem_asr_type)
                         ? ASRUtils::extract_kind_from_ttype_t(elem_asr_type)
                         : data_layout.getTypeAllocSize(elem_llvm_type);
+                    llvm::Value* elem_size_val = llvm::ConstantInt::get(
+                        context, llvm::APInt(64, elem_size));
                     // Derive the descriptor type. For scalar arguments
                     // passed to assumed-rank parameters, use the formal
                     // parameter's type (which carries the descriptor struct
@@ -27331,6 +27335,9 @@ public:
                             builder->CreateBitCast(raw_data,
                                 elem_llvm_type->getPointerTo()),
                             base_addr_gep);
+                        llvm::Value* str_len = llvm_utils->get_string_length(
+                            ASRUtils::get_string_type(elem_asr_type), str_desc);
+                        elem_size_val = builder->CreateMul(str_len, elem_size_val);
                     }
                     int n_dims = ASRUtils::extract_n_dims_from_ttype(actual_type);
                     bool is_type_star = ASR::is_a<ASR::StructType_t>(*elem_asr_type)
@@ -27344,7 +27351,7 @@ public:
                     }
                     llvm::Value* internal_desc_ptr = tmp;
                     tmp = arr_descr->internal_to_cfi(
-                        desc_type, tmp, elem_llvm_type, n_dims, elem_size,
+                        desc_type, tmp, elem_llvm_type, n_dims, elem_size_val,
                         cfi_type_code, cfi_attr);
                     if (cfi_attr != 0 && !is_type_star &&
                             ASRUtils::is_array(actual_type) &&
