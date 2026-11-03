@@ -462,6 +462,13 @@ LFORTRAN_API void _lfortran_namelist_write(
     const lfortran_nml_group_t *group
 );
 
+LFORTRAN_API void _lfortran_namelist_write_str(
+    char *data,
+    int64_t data_len,
+    int32_t *iostat,
+    const lfortran_nml_group_t *group
+);
+
 LFORTRAN_API void _lfortran_namelist_write_str_array(
     char *data,
     int64_t elem_len,
