@@ -1249,11 +1249,10 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     std::set<ASR::symbol_t*> source_arguments, address_taken;
     SymbolTable *root = kernel.m_symtab;
     while (root->parent) root = root->parent;
-    LCOMPILERS_ASSERT(root->asr_owner &&
-        ASR::is_a<ASR::TranslationUnit_t>(*root->asr_owner));
+    LCOMPILERS_ASSERT(ASRUtils::is_tu_scope(root));
     if (!workspaces.empty()) {
         gpu_collect_address_taken(
-            *ASR::down_cast<ASR::TranslationUnit_t>(root->asr_owner),
+            *ASR::down_cast2<ASR::TranslationUnit_t>(root->asr_owner),
             address_taken);
     }
     for (size_t i = 0; i < kernel.n_args; i++) {

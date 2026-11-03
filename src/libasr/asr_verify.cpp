@@ -4035,12 +4035,11 @@ public:
         if (guarded_workspace) {
             SymbolTable *root = kernel.m_symtab;
             while (root->parent) root = root->parent;
-            require_id(root->asr_owner &&
-                    ASR::is_a<ASR::TranslationUnit_t>(*root->asr_owner),
+            require_id(ASRUtils::is_tu_scope(root),
                 "asr.verify.gpu_layout.allocation_scope",
                 "a guarded GPU workspace must have its complete program context");
             gpu_collect_address_taken(
-                *ASR::down_cast<ASR::TranslationUnit_t>(root->asr_owner),
+                *ASR::down_cast2<ASR::TranslationUnit_t>(root->asr_owner),
                 address_taken);
         }
         int64_t slot = (layout.m_packed ? 1 : layout.n_buffers) +
@@ -4207,7 +4206,7 @@ public:
                 SymbolTable *root = current_symtab;
                 while (root->parent) root = root->parent;
                 gpu_collect_address_taken(
-                    *ASR::down_cast<ASR::TranslationUnit_t>(root->asr_owner),
+                    *ASR::down_cast2<ASR::TranslationUnit_t>(root->asr_owner),
                     address_taken);
                 Allocator allocator(1024 * 1024);
                 for (size_t w = 0; w < kernel.m_gpu->n_workspaces; w++) {
