@@ -72,8 +72,8 @@ and each chunk sets the bounds of its box in the scalar struct, hands the
 struct over again and launches its own grid. The flag a kernel with
 reductions takes (GpuKernelLaunch.first_chunk_parameter) is set before the
 launch, which therefore starts the accumulators whether it runs as one or in
-chunks, and cleared after the first chunk, so the later ones keep combining
-into the accumulators it started.
+chunks, and cleared after each chunk, so the later ones keep combining into
+the accumulators the first one started.
 
 The logical count is evaluated once and normalized before any launch setup.
 The entire sequence above, including its cleanup, runs only when the effective

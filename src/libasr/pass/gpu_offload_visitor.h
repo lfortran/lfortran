@@ -640,8 +640,9 @@ public:
         std::vector<ASR::symbol_t*> start_parameters;
         std::vector<ASR::symbol_t*> end_parameters;
         int64_t chunk_fixed_iterations = 0;
-        // The kernel parameter a launch that may run in chunks sets only
-        // for the first chunk, or nullptr (see
+        // The kernel parameter a launch that may run in chunks sets to 1
+        // when it runs as one or for its first chunk, and to 0 for the
+        // later chunks, or nullptr (see
         // GpuKernelLaunch.first_chunk_parameter).
         ASR::symbol_t *first_chunk_parameter = nullptr;
     };

@@ -2534,7 +2534,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     // A kernel whose launch may run in chunks and that has accumulators to
-    // start takes a flag the launch sets only for the first chunk
+    // start takes a flag that is 1 when the launch runs as one or for its
+    // first chunk, and 0 for the later chunks
     // (GpuKernelLaunch.first_chunk_parameter). The launch sets it itself
     // (device_launch_expand.cpp), whatever the argument passed here.
     ASR::expr_t *first_chunk_flag = nullptr;
