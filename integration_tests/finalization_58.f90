@@ -101,6 +101,23 @@ contains
         total = sum(m) + lbound(m, 1) + 10*ubound(m, 1)
     end function
 end subroutine
+! A namelist group that names the local keeps the host from being wrapped,
+! so the procedure value is not invoked after the host returns
+subroutine host_namelist(n, r)
+    integer, intent(in) :: n
+    integer, intent(out) :: r
+    type(t) :: x(n)
+    integer :: m(lbound(x, 1):n)
+    namelist /nl/ x
+    m = 4
+    saved => get
+    r = saved()
+    saved => null()
+contains
+    integer function get()
+        get = sum(m) + lbound(m, 1) + 10*ubound(m, 1)
+    end function
+end subroutine
 ! An array of zero extent
 subroutine host_empty(n)
     integer, intent(in) :: n
@@ -121,7 +138,7 @@ end module
 program finalization_58
 use finalization_58_mod
 implicit none
-integer :: y(3)
+integer :: y(3), r
 call host_local(2)
 print *, seen
 if (seen /= 2 + 6 + 2 + 30) error stop
@@ -143,6 +160,9 @@ call host_frame(3)
 print *, seen
 if (seen /= 12 + 1 + 30) error stop
 seen = 0
+call host_namelist(3, r)
+print *, r, seen
+if (r /= 12 + 1 + 30 .or. seen /= 0) error stop
 call host_empty(4)
 print *, seen
 if (seen /= 5) error stop
