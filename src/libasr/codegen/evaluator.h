@@ -95,6 +95,9 @@ public:
     void add_module(const std::string &source);
     void add_module(std::unique_ptr<llvm::Module> mod);
     void add_module(std::unique_ptr<LLVMModule> m);
+    // Makes the symbols of a shared library or static archive callable from
+    // the modules added afterwards.
+    void load_library(const std::string &path);
     intptr_t get_symbol_address(const std::string &name);
     std::string get_asm(llvm::Module &m);
     void save_asm_file(llvm::Module &m, const std::string &filename);
@@ -136,6 +139,9 @@ public:
     ~WasmLFortranExecutor();
 
     void add_module(std::unique_ptr<LLVMModule> m, int eval_count);
+    // No dynamic loading in the browser: the side modules are linked at build
+    // time, so a library cannot be added to a running session.
+    void load_library(const std::string &path);
     std::unique_ptr<LLVMModule> parse_module2(const std::string &source, const std::string &filename);
     intptr_t get_symbol_address(const std::string &name);
     llvm::LLVMContext &get_context();

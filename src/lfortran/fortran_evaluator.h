@@ -113,13 +113,21 @@ public:
     };
 
     // Runs one interactive cell: evaluate() with fresh diagnostics and
-    // passes, or a %%showast/asr/llvm/asm/cpp/fmt cell, which does not add
-    // its declarations to the session. Never throws a compiler exception; it
+    // passes, or a %%show* cell, which does not add its declarations to the
+    // session. Leading single-% lines are line magics that act on the
+    // session before the rest of the cell is compiled (%include_dir DIR
+    // adds a .mod search directory, %load_library PATH loads a library; any
+    // other %word fails the cell). Never throws a compiler exception; it
     // becomes the error. `compiler_options.interactive` must be set. Only one
     // cell may run at a time in a process, as the display hooks are
     // process-wide.
     CellResult execute(const std::string &code, bool verbose = false,
         const CellIO &io = {});
+
+    // Makes the symbols of a shared library or static archive callable from
+    // later cells, and records the path so a JIT created afterwards loads it
+    // too. Throws LCompilersException when the load fails.
+    void load_library(const std::string &path);
 
     // Evaluates `code`.
     // If `verbose=true`, it saves ast, asr and llvm_ir in Result.
