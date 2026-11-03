@@ -632,8 +632,9 @@ std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR::symbol_t* sym
 char *symbol_name(const ASR::symbol_t *f);
 // Includes contained scopes: whole-routine restrictions must also respect
 // regions granting asynchronous/volatile access to the canonical entity.
+// Use include_nested=false when checking each scope enclosing a use site.
 bool has_scoped_variable_attribute(const ASR::Variable_t &variable,
-    const SymbolTable *scope);
+    const SymbolTable *scope, bool include_nested = true);
 
 std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add_symbol_access_specifiers);
 

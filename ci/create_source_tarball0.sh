@@ -22,6 +22,7 @@ cmake -E make_directory $dest/integration_tests
 cmake -E copy integration_tests/gpu_metal_485.f90 \
     integration_tests/gpu_metal_490.f90 integration_tests/gpu_metal_491.f90 \
     integration_tests/gpu_metal_527.f90 \
+    integration_tests/gpu_scalar_reduction_actual_01.f90 \
     integration_tests/gpu_tile_high_bounds_i4.f90 \
     integration_tests/gpu_tile_high_bounds_i8.f90 \
     integration_tests/runtime_input_records.f90 \

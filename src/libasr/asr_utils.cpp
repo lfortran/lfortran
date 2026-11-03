@@ -7899,7 +7899,7 @@ std::string cell_prefix(const SymbolTable *s) {
 }
 
 bool has_scoped_variable_attribute(const ASR::Variable_t &variable,
-        const SymbolTable *scope) {
+        const SymbolTable *scope, bool include_nested) {
     for (const auto &item: scope->get_scope()) {
         ASR::symbol_t *s = item.second;
         if (ASR::is_a<ASR::ScopedVariableAttribute_t>(*s)) {
@@ -7910,7 +7910,7 @@ bool has_scoped_variable_attribute(const ASR::Variable_t &variable,
                     (attribute->m_is_volatile || attribute->m_is_asynchronous)) {
                 return true;
             }
-        } else if (SymbolTable *nested = symbol_symtab(s)) {
+        } else if (SymbolTable *nested = include_nested ? symbol_symtab(s) : nullptr) {
             if (has_scoped_variable_attribute(variable, nested)) return true;
         }
     }
