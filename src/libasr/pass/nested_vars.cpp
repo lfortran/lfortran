@@ -2635,7 +2635,13 @@ public:
                     (ASR::is_a<ASR::Function_t>(*sym) &&
                         ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(
                             sym))->m_deftype == ASR::deftypeType::Interface))) {
+                bool entry_initialized = ASR::is_a<ASR::Variable_t>(*sym) &&
+                    ASRUtils::is_entry_initialized_local(
+                        *ASR::down_cast<ASR::Variable_t>(sym));
                 replace_declared_array_inquiries(al, sym, declared);
+                if (entry_initialized) {
+                    keep_defined_on_entry(*ASR::down_cast<ASR::Variable_t>(sym));
+                }
             }
             if (refers_to(sym, moved_set)) {
                 return false;
@@ -2673,6 +2679,18 @@ public:
         f.m_body = body.p;
         f.n_body = body.size();
         return true;
+    }
+
+    // A local that captures a bound on entry (see
+    // ASRUtils::is_entry_initialized_local) whose initializer has become a
+    // constant, such as `lbound(x, 1)` of an array `x(n)`, is a named
+    // constant: as a local with a constant initializer it would not be
+    // defined on entry for the other bounds that read it.
+    static void keep_defined_on_entry(ASR::Variable_t &v) {
+        if (ASRUtils::is_value_constant(v.m_symbolic_value)) {
+            v.m_value = ASRUtils::expr_value(v.m_symbolic_value);
+            v.m_storage = ASR::storage_typeType::Parameter;
+        }
     }
 
     // The arrays of `moved` declared with bounds that do not refer to

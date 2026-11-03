@@ -69,6 +69,21 @@ contains
         get = k
     end function
 end subroutine
+! Arrays whose lower bound is 1
+subroutine host_unit(n, y)
+    integer, intent(in) :: n
+    type(t) :: x(n)
+    integer, intent(inout) :: y(lbound(x, 1):ubound(x, 1))
+    integer :: m(lbound(x, 1):ubound(x, 1))
+    integer :: k
+    m = 4
+    k = sum(m) + lbound(m, 1) + 10*ubound(m, 1)
+    saved => get
+contains
+    integer function get()
+        get = k
+    end function
+end subroutine
 ! An array of zero extent
 subroutine host_empty(n)
     integer, intent(in) :: n
@@ -102,6 +117,10 @@ seen = 0
 call host_import(3)
 print *, seen
 if (seen /= 6) error stop
+seen = 0
+call host_unit(3, y)
+print *, seen
+if (seen /= 12 + 1 + 30) error stop
 seen = 0
 call host_empty(4)
 print *, seen
