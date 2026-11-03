@@ -29,7 +29,10 @@ default stream ordering every copy and launch:
 * A buffer the kernel only reads is copied in, before the launch on the
   stream, into memory the argument slot of its kernel keeps; the stream
   orders that copy after every earlier launch that read the memory. When it
-  is a dirty range, the kernel reads the resident memory instead.
+  is a dirty range, the kernel reads the resident memory instead. A later
+  launch of the same kernel handle that is not handed the buffer again (the
+  next chunk of a launch that runs in chunks) reads what the first one
+  copied, as long as no other handle has used that memory since.
 * A range that overlaps a dirty one without being the same range makes the
   runtime sync first.
 * A scratch buffer, which only the device holds, is the memory its argument
@@ -86,6 +89,9 @@ static int unified_memory = 0;
 typedef struct slot_cache {
     void *buffers[MAX_ARGS];
     size_t capacities[MAX_ARGS];
+    // The kernel handle whose read-only buffer the memory holds a copy of,
+    // or NULL.
+    const void *filled_by[MAX_ARGS];
 } slot_cache;
 
 // Registry for pre-compiled CUDA kernels, one entry for each kernel a
@@ -153,6 +159,9 @@ struct lfortran_gpu_kernel {
     int access[MAX_ARGS];
     scalar_arg scalar_args[MAX_ARGS];
     int kind[MAX_ARGS];
+    // Whether the read-only buffer argument has been copied into the memory
+    // of its slot since it was set.
+    int copied[MAX_ARGS];
     int n_args;
     slot_cache *cache;
 };
@@ -422,6 +431,7 @@ void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
     k->buffer_host_ptrs[idx] = ptr;
     k->buffer_sizes[idx] = size;
     k->access[idx] = access;
+    k->copied[idx] = 0;
     k->kind[idx] = ARG_BUFFER;
     if (idx >= k->n_args) k->n_args = idx + 1;
 }
@@ -533,10 +543,22 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                     d_ptr = use_in_place(entry_for(host, size));
                     wait_for_kernel = 1;
                 }
-                if (!d_ptr) {
+                if (d_ptr) {
+                    k->copied[i] = 0;
+                } else {
+                    // The chunks of a launch hand the buffer over once: the
+                    // copy the first one made is still there, unless the
+                    // memory was replaced or another handle filled it.
+                    void *previous = k->cache->buffers[i];
                     d_ptr = slot_buffer(k->cache, i, size);
-                    check(cudaMemcpyAsync(d_ptr, host, size,
-                        cudaMemcpyHostToDevice, 0), "cudaMemcpyAsync H2D");
+                    if (!k->copied[i] || d_ptr != previous
+                            || k->cache->filled_by[i] != k) {
+                        check(cudaMemcpyAsync(d_ptr, host, size,
+                            cudaMemcpyHostToDevice, 0),
+                            "cudaMemcpyAsync H2D");
+                        k->copied[i] = 1;
+                        k->cache->filled_by[i] = k;
+                    }
                 }
             }
             k->buffer_device_ptrs[i] = d_ptr;
@@ -545,6 +567,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             if (k->kind[i] != ARG_SCRATCH) continue;
             k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
                 : slot_buffer(k->cache, i, k->buffer_sizes[i]);
+            k->cache->filled_by[i] = NULL;
         }
     } while (syncs != n_syncs);
 
