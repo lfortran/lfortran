@@ -7,6 +7,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/pass_manager.h>
 #include <libasr/pass/gpu_memory_space.h>
+#include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/serialization.h>
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/parser/source_offset.h>
@@ -72,6 +73,49 @@ end subroutine
         checked++;
     }
     CHECK(checked == expected.size());
+}
+
+TEST_CASE("GPU workspace predicates must be total at the capture point") {
+    const std::string source = R"(
+subroutine predicates(active, maybe, control, divisor)
+    logical, intent(in) :: active
+    logical, optional, intent(in) :: maybe
+    real, allocatable, intent(in) :: control(:)
+    integer, intent(in) :: divisor
+    logical :: result
+    result = active
+    result = maybe
+    result = size(control) > 0
+    result = 10 / divisor > 0
+end subroutine
+)";
+    CompilerOptions options;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "predicates.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    REQUIRE(parsed.ok);
+    auto *function = ASR::down_cast<ASR::Function_t>(
+        parsed.result->m_symtab->get_symbol("predicates"));
+    std::set<ASR::symbol_t*> arguments;
+    for (size_t i = 0; i < function->n_args; i++) {
+        arguments.insert(ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v);
+    }
+    REQUIRE(function->n_body == 4);
+    for (size_t i = 0; i < function->n_body; i++) {
+        auto *assignment = ASR::down_cast<ASR::Assignment_t>(function->m_body[i]);
+        CHECK(gpu_uniform_workspace_condition(assignment->m_value, arguments,
+            function->m_symtab) == (i == 0));
+    }
+    auto *active = ASR::down_cast<ASR::Variable_t>(
+        ASR::down_cast<ASR::Var_t>(function->m_args[0])->m_v);
+    active->m_is_volatile = true;
+    CHECK_FALSE(gpu_uniform_workspace_condition(function->m_args[0],
+        arguments, function->m_symtab));
 }
 
 TEST_CASE("Every decline of the GPU offloading pipeline is an error") {
@@ -1159,6 +1203,80 @@ end module
     check("", "out(1)=f(sum(a(:,1)*2))+effect(state)", true);
     check("", "out=f(sum(a*2,dim=1))", true);
     check("", "where(out>0) out=f(sum(a(:,1)*2))", true);
+}
+
+TEST_CASE("GPU workspace guards preserve shapes and reject private predicates") {
+    bool polarity = false;
+    SUBCASE("data, bounds and conservative fallbacks") {}
+    SUBCASE("equivalent predicates with reversed polarity") { polarity = true; }
+    std::string filename = polarity ? "gpu_workspace_guard_02.f90"
+        : "gpu_workspace_guard_01.f90";
+    const std::string source = read_project_file("integration_tests/" + filename);
+    CompilerOptions options;
+    options.gpu_backend = "cuda";
+    options.po.gpu_offload_cuda = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = filename;
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_kernel_finalize", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+    size_t workspaces = 0, guarded = 0, negative = 0;
+    for (const auto &entry : parsed.result->m_symtab->get_scope()) {
+        if (!ASRUtils::is_device_kernel(entry.second)) continue;
+        auto *kernel = ASR::down_cast<ASR::Function_t>(entry.second);
+        REQUIRE(kernel->m_gpu != nullptr);
+        for (size_t w = 0; w < kernel->m_gpu->n_workspaces; w++) {
+            auto &workspace = kernel->m_gpu->m_workspaces[w];
+            workspaces++;
+            REQUIRE(workspace.n_dims == 1);
+            CHECK(ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(workspace.m_dims[0].m_extent)) == 4);
+            if (!workspace.m_allocation_if) continue;
+            guarded++;
+            negative += !workspace.m_allocation_on_true;
+            REQUIRE(workspace.m_allocation_parameter != nullptr);
+            CHECK(ASR::is_a<ASR::Var_t>(*workspace.m_allocation_if));
+            workspace.m_allocation_on_true = !workspace.m_allocation_on_true;
+            diag::Diagnostics invalid;
+            CHECK_FALSE(asr_verify(*parsed.result, true, invalid));
+            REQUIRE_FALSE(invalid.diagnostics.empty());
+            CHECK(invalid.diagnostics.back().code ==
+                "asr.verify.gpu_layout.allocation_dominance");
+            workspace.m_allocation_on_true = !workspace.m_allocation_on_true;
+        }
+    }
+    CHECK(workspaces == (polarity ? 1 : 4));
+    CHECK(guarded == (polarity ? 1 : 3));
+    CHECK(negative == (polarity ? 1 : 0));
+    for (auto form : {ASRTextForm::Named, ASRTextForm::Positional}) {
+        ASRTextOptions text_options;
+        text_options.form = form;
+        std::string text = asr_to_text(*parsed.result, text_options);
+        Allocator restored_allocator(32 * 1024 * 1024);
+        LocationManager restored_lm;
+        diag::Diagnostics restored_diagnostics;
+        auto restored = asr_from_text(restored_allocator, text, "guards.asr",
+            restored_lm, restored_diagnostics);
+        INFO(restored_diagnostics.render2());
+        REQUIRE(restored.ok);
+        CHECK(asr_verify(*restored.result, true, restored_diagnostics));
+        CHECK(asr_to_text(*restored.result, text_options) == text);
+    }
 }
 
 TEST_CASE("GPU tiled launch tests run tiled nests") {

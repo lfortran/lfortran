@@ -1320,8 +1320,16 @@ class DeviceLaunchExpandVisitor :
                     args.push_back(al, call_arg(loc, gpu_kernel));
                     args.push_back(al, call_arg(loc,
                         b.i32(workspace.m_buffer_index)));
-                    args.push_back(al, call_arg(loc, b.Mul(n_elements,
-                        b.i64(workspace.m_element_size))));
+                    ASR::expr_t *bytes = b.Mul(n_elements,
+                        b.i64(workspace.m_element_size));
+                    if (workspace.m_allocation_parameter) {
+                        ASR::expr_t *active = x.m_args[gpu_parameter_index(*kernel,
+                            workspace.m_allocation_parameter)].m_value;
+                        if (!workspace.m_allocation_on_true) active = b.Not(active);
+                        bytes = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, active,
+                            bytes, b.i64(0), int64, nullptr));
+                    }
+                    args.push_back(al, call_arg(loc, bytes));
                     body.push_back(al, b.SubroutineCall(set_scratch_sym,
                         args));
                 }

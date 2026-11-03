@@ -189,6 +189,8 @@ struct GpuVlaWorkspace {
     int buffer_index;
     int elem_size;
     std::vector<GpuVlaDim> dims;
+    ASR::symbol_t *allocation_parameter = nullptr;
+    bool allocation_on_true = true;
 };
 
 // Every name of `names` that an expression reads. Used to order a scope's
