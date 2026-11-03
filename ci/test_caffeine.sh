@@ -85,12 +85,16 @@ export FC=lfortran
 export CC=clang
 export CXX=clang++
 if [[ "${LFORTRAN_LINKER:-}" == gcc ]] ; then
-  # LFortran links with GCC (the LLVM 7 and 8 environments), whose default
-  # PIE links reject the non-PIC objects that Clang 7 and 8 compile. The
-  # trailing space separates -fPIC from the include flag that run-fpm.sh
-  # appends to CFLAGS.
-  export CFLAGS="${CFLAGS:-} -fPIC "
-  export CXXFLAGS="${CXXFLAGS:-} -fPIC "
+  # LFortran links with Pixi's GCC (the LLVM 7 and 8 environments), against
+  # the conda sysroot and with default PIE links. Clang 7 and 8 find neither
+  # that GCC nor its sysroot, so they would compile against the system's
+  # newer glibc headers (__isoc23_strtol) and without -fPIC. The trailing
+  # space separates the flags from the include flag that run-fpm.sh appends
+  # to CFLAGS.
+  toolchain="--target=x86_64-conda-linux-gnu --gcc-toolchain=$CONDA_PREFIX"
+  toolchain+=" --sysroot=$CONDA_PREFIX/x86_64-conda-linux-gnu/sysroot -fPIC "
+  export CFLAGS="${CFLAGS:-} $toolchain"
+  export CXXFLAGS="${CXXFLAGS:-} $toolchain"
 fi
 
 echo "FC=${FC}"
