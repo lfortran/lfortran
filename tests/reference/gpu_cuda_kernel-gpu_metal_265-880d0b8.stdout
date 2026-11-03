@@ -85,9 +85,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         int __1__libasr_index_;
         int __1_t;
         int __1_t1;
-        float* __gpu_matmul_tmp = __workspace_4 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
-        float* r = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent1;
-        float* tail = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent2;
+        float* __gpu_matmul_tmp = ((__workspace_extent) > 0) ? (__workspace_4 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
+        float* r = ((__workspace_extent1) > 0) ? (__workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent1)) : nullptr;
+        float* tail = ((__workspace_extent2) > 0) ? (__workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent2)) : nullptr;
         const int __lfortran_end_0 = __workspace_extent2;
         for (__gpu_bc_i = 1; __gpu_bc_i <= __lfortran_end_0; __gpu_bc_i++) {
             tail[((int)((1 + (__gpu_bc_i - 1))) - (1))] =   5.00000000000000000e+00f;
@@ -147,7 +147,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
         int __gpu_sum_k;
         float __gpu_sum_res;
         int k;
-        float* t = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
+        float* t = ((__workspace_extent) > 0) ? (__workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
         const int __lfortran_end_2 = __workspace_extent;
         for (k = 1; k <= __lfortran_end_2; k++) {
             t[((int)(k) - (1))] = (a[((int)(j__dc) - (__lb_a_0))] * ((float)k));

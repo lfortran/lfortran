@@ -30,7 +30,7 @@ kernel void __lfortran_gpu_kernel_0(
     __flat_idx_gpu = ((0 * 0) + __thread_id);
     pair__dc_gpu = (__flat_idx_gpu + 1);
     {
-        device float* a_gpu = __workspace_2 + __thread_id * __workspace_extent_gpu;
+        device float* a_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + __thread_id * (__workspace_extent_gpu)) : nullptr;
         for (__gpu_bc_i_gpu = (1 + (((int)__gpu_lane) * 1)); __gpu_bc_i_gpu <= __lfortran_gpu_dim__gpu; __gpu_bc_i_gpu += (1 * ((int)__gpu_lanes_gpu))) {
             a_gpu[((int)(__gpu_bc_i_gpu) - (1))] =   0.00000000000000000e+00;
         }

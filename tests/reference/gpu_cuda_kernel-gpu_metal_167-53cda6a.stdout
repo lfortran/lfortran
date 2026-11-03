@@ -64,10 +64,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     i__dc = ((int)(__flat_idx + ((long)1)));
     {
         int __libasr_created__result_metadata_;
-        float* __libasr_created__subroutine_from_function_ = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
+        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent) > 0) ? (__workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
-        float* y = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent1;
+        float* y = ((__workspace_extent1) > 0) ? (__workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent1)) : nullptr;
         __libasr_created__result_metadata_ = __dim_a_0;
         get_vals_gpu_19(a, __dim_a_0, __dim_a_1, i__dc, __libasr_created__subroutine_from_function_);
         __libasr_index_0_1 = 1;

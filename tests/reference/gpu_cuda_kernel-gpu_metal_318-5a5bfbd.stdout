@@ -37,10 +37,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __1__libasr_index_;
         float __gpu_arg[4];
         int __gpu_gather_i;
-        float* __libasr__created__var__0__array_constructor_ = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
-        float* __libasr_created__array_size_v = __workspace_4 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent1;
-        float* __libasr_created__array_size_v1 = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent2;
-        float* __libasr_created__array_size_v2 = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent3;
+        float* __libasr__created__var__0__array_constructor_ = ((__workspace_extent) > 0) ? (__workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
+        float* __libasr_created__array_size_v = ((__workspace_extent1) > 0) ? (__workspace_4 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent1)) : nullptr;
+        float* __libasr_created__array_size_v1 = ((__workspace_extent2) > 0) ? (__workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent2)) : nullptr;
+        float* __libasr_created__array_size_v2 = ((__workspace_extent3) > 0) ? (__workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent3)) : nullptr;
         float* __libasr_created_real_binop_left_;
         float* __libasr_created_real_binop_left_1;
         float* __libasr_created_real_binop_left_2;
@@ -56,7 +56,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __libasr_index_0_6;
         int __libasr_index_0_7;
         int __libasr_index_0_8;
-        float* faces_1 = __workspace_7 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent4;
+        float* faces_1 = ((__workspace_extent4) > 0) ? (__workspace_7 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent4)) : nullptr;
         int n;
         for (__gpu_gather_i = 1; __gpu_gather_i <= ((((int)4) + ((int)1)) - 1); __gpu_gather_i++) {
             __gpu_arg[((int)(__gpu_gather_i) - (1))] = centers[((int)(__gpu_gather_i) - (1)) + (4 * ((int)(k__dc) - (1)))];
