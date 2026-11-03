@@ -236,7 +236,7 @@ public:
             Vec<ASR::dimension_t> &dims);
 
     ASR::dimension_t dim_or_runtime_extent(ASR::expr_t *operand,
-            ASR::dimension_t *dims, size_t d);
+            ASR::dimension_t *dims, size_t d, int size_kind = 4);
 
     // True while rewrite_loop_body_for_kernel lowers the kernel's loop
     // nest, whose BLOCKs are remapped into the kernel in place.
@@ -282,6 +282,14 @@ public:
     ASR::expr_t *int32_const(const Location &loc, int64_t n);
 
     ASR::expr_t *to_int32(const Location &loc, ASR::expr_t *e);
+
+    ASR::ttype_t *index_type(const Location &loc);
+
+    ASR::expr_t *index_const(const Location &loc, int64_t n);
+
+    ASR::expr_t *to_index_kind(const Location &loc, ASR::expr_t *e);
+
+    ASR::expr_t *bound_to_index_kind(const Location &loc, ASR::expr_t *e);
 
     ASR::expr_t *section_extent(const Location &loc,
             const ASR::array_index_t &d);

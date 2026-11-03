@@ -301,6 +301,15 @@ struct BoundHoister : public ASR::BaseExprReplacer<BoundHoister> {
             ASR::expr_t *v = gpu_affine_to_expr(al,
                 x->base.base.loc, it->second, *atoms);
             if (v) {
+                // The producer's first index, an integer(4) value, in the
+                // kind of the bound (integer(8) when the subscripts it
+                // shifts are; see GpuInliner).
+                if (ASRUtils::extract_kind_from_ttype_t(x->m_type)
+                        != ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(v))) {
+                    v = ASRUtils::ASRBuilder(al, x->base.base.loc).i2i_t(v,
+                        ASRUtils::duplicate_type(al, x->m_type));
+                }
                 *current_expr = v;
                 return;
             }
@@ -1684,16 +1693,20 @@ public:
             ASRUtils::ExprStmtDuplicator d(al);
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, rank);
+            // The copy has the bounds of the array, read in the kind the
+            // device computes element offsets in: with 64-bit offsets they
+            // need not fit integer(4).
+            int index_kind = gpu_device_capabilities(po).offset_kind;
             for (size_t r = 0; r < rank; r++) {
                 ASR::dimension_t dim;
                 dim.loc = loc;
                 dim.m_start = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
                     d.duplicate_expr(des), gpu_i32(al, loc, r + 1),
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, index_kind)),
                     ASR::arrayboundType::LBound, nullptr));
                 dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
                     d.duplicate_expr(des), gpu_i32(al, loc, r + 1),
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, index_kind)),
                     nullptr));
                 dims.push_back(al, dim);
             }
@@ -1709,7 +1722,7 @@ public:
                 f.hoisted_before.push_back(b.If(is_alloc,
                     {b.Allocate(b.Var(copy), dims),
                      gpu_device_copy_nest(al, loc, fn_scope, b.Var(copy),
-                        des)}, {}));
+                        des, index_kind)}, {}));
             } else {
                 f.hoisted_before.push_back(b.If(is_alloc,
                     {b.Allocate(b.Var(copy), dims)}, {}));
@@ -1965,7 +1978,7 @@ public:
                 if (a && f.xkeys.count(gpu_array_key(a))) return true;
             }
             return false;
-        });
+        }, gpu_device_capabilities(po).offset_kind);
         f.cb = cbody.p;
         f.cn = cbody.n;
         if (!inl.run(scope, f.cb, f.cn)) {

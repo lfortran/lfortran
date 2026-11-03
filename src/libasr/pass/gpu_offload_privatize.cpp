@@ -1172,13 +1172,14 @@ bool GpuOffloadVisitor::privatize_iteration_arrays(
                 dimension = ASRUtils::EXPR(ASR::make_Var_t(al,
                     v->base.base.loc, ASR::down_cast<ASR::Var_t>(extent)->m_v));
             };
-            ASR::ttype_t *index_type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, 4));
+            // In the kind the device computes element offsets in, so that
+            // the bounds of the local are those of the array.
+            ASR::ttype_t *shape_type = index_type(loc);
             capture(array->m_dims[d].m_length,
-                b.ArraySize(source, b.i32(d + 1), index_type));
+                b.ArraySize(source, b.i32(d + 1), shape_type));
             capture(array->m_dims[d].m_start,
                 ASRUtils::EXPR(ASR::make_ArrayBound_t(al, v->base.base.loc,
-                    source, b.i32(d + 1), index_type, ASR::arrayboundType::LBound,
+                    source, b.i32(d + 1), shape_type, ASR::arrayboundType::LBound,
                     nullptr)));
         }
         ASR::symbol_t *local = gpu_new_variable(al, v->base.base.loc,

@@ -32,9 +32,9 @@ bool gpu_is_whole_array_designator(ASR::expr_t *e) {
 // evaluates to, read off its first array operand: the ranged dimensions
 // of a section, or every dimension of a whole array. The loops that
 // evaluate the expression element by element count each dimension from
-// one to its extent, so operands with different bounds -- `a(2:4) + b`,
-// with `b` counted from zero -- each pick their own element of the same
-// position (see elementize_array_expr).
+// one to its extent, in index_type, so operands with different bounds --
+// `a(2:4) + b`, with `b` counted from zero -- each pick their own element
+// of the same position (see elementize_array_expr).
 void GpuOffloadVisitor::find_array_section_all_bounds(ASR::expr_t *e,
         std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &dim_bounds) {
     if (!dim_bounds.empty()) return;
@@ -43,7 +43,7 @@ void GpuOffloadVisitor::find_array_section_all_bounds(ASR::expr_t *e,
         ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(e);
         for (size_t i = 0; i < as->n_args; i++) {
             if (as->m_args[i].m_left && as->m_args[i].m_right) {
-                dim_bounds.push_back({int32_const(loc, 1),
+                dim_bounds.push_back({index_const(loc, 1),
                     section_extent(loc, as->m_args[i])});
             }
         }
@@ -52,9 +52,10 @@ void GpuOffloadVisitor::find_array_section_all_bounds(ASR::expr_t *e,
         size_t rank = ASRUtils::extract_dimensions_from_ttype(
             ASRUtils::expr_type(e), dims);
         for (size_t d = 0; d < rank; d++) {
-            ASR::dimension_t dim = dim_or_runtime_extent(e, dims, d);
-            dim_bounds.push_back({int32_const(loc, 1),
-                to_int32(loc, dim.m_length)});
+            ASR::dimension_t dim = dim_or_runtime_extent(e, dims, d,
+                device_caps.offset_kind);
+            dim_bounds.push_back({index_const(loc, 1),
+                to_index_kind(loc, dim.m_length)});
         }
     } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
         ASR::RealCompare_t *rc = ASR::down_cast<ASR::RealCompare_t>(e);
@@ -110,7 +111,7 @@ void GpuOffloadVisitor::find_array_section_all_bounds(ASR::expr_t *e,
 
 // Build an element-wise expression by replacing every ArraySection and
 // whole array with the element at the position the loop counters give,
-// one counter per dimension counted from one (see
+// one counter of index_type per dimension counted from one (see
 // find_array_section_all_bounds): the counter-th element of a section
 // dimension, or the counter-th element of an array dimension from its
 // lower bound.
@@ -146,8 +147,7 @@ ASR::expr_t* GpuOffloadVisitor::elementize_array_expr(ASR::expr_t *e,
             as->m_v, new_args.p, new_args.n,
             elem_type, ASR::arraystorageType::ColMajor, nullptr, false));
     } else if (gpu_is_whole_array_designator(e)) {
-        ASR::ttype_t *int_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t *int_type = index_type(loc);
         size_t rank = ASRUtils::extract_n_dims_from_ttype(
             ASRUtils::expr_type(e));
         LCOMPILERS_ASSERT(rank <= loop_vars.size());
@@ -172,7 +172,7 @@ ASR::expr_t* GpuOffloadVisitor::elementize_array_expr(ASR::expr_t *e,
                 ASR::arrayboundType::LBound, nullptr));
             ASR::expr_t *offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
                 al, loc, loop_vars[d], ASR::binopType::Sub,
-                int32_const(loc, 1), int_type, nullptr));
+                index_const(loc, 1), int_type, nullptr));
             idx.m_right = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                 lb, ASR::binopType::Add, offset, int_type, nullptr));
             new_args.push_back(al, idx);
@@ -317,8 +317,6 @@ ASR::expr_t* GpuOffloadVisitor::inline_single_all(
 
     ASR::ttype_t *logical_type = ASRUtils::TYPE(
         ASR::make_Logical_t(al, loc, 4));
-    ASR::ttype_t *int_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
 
     SymbolTable *var_scope = current_scope;
     while (var_scope && var_scope->asr_owner &&
@@ -335,7 +333,7 @@ ASR::expr_t* GpuOffloadVisitor::inline_single_all(
         std::string loop_var_name = var_scope->get_unique_name(
             "__gpu_all_i" + std::to_string(d));
         ASR::symbol_t *loop_var_sym = gpu_new_variable(al, loc, var_scope,
-            loop_var_name, ASRUtils::duplicate_type(al, int_type));
+            loop_var_name, index_type(loc));
         loop_vars.push_back(ASRUtils::EXPR(
             ASR::make_Var_t(al, loc, loop_var_sym)));
     }
@@ -622,9 +620,15 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             continue;
         }
 
+        // The loops count, and the indices of the operands are computed,
+        // in the dialect's kind for element offsets (index_type): with
+        // 64-bit offsets an operand's bounds need not fit integer(4).
         Location loc = stmt->base.loc;
-        ASR::ttype_t *int_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t *int_type = index_type(loc);
+        auto in_index_kind = [&](ASR::expr_t *e) -> ASR::expr_t* {
+            return device_caps.offset_kind == 4 ? to_int32(loc, e)
+                : bound_to_index_kind(loc, e);
+        };
 
         // Strip ArrayPhysicalCast from arguments
         ASR::expr_t *arg_a = iaf->m_args[0];
@@ -743,6 +747,12 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             head.m_end = own_bound(end);
             head.m_increment = step == nullptr || is_int_literal(step, 1)
                 ? nullptr : own_bound(step);
+            if (device_caps.offset_kind != 4) {
+                head.m_start = bound_to_index_kind(loc, head.m_start);
+                head.m_end = bound_to_index_kind(loc, head.m_end);
+                head.m_increment = bound_to_index_kind(loc,
+                    head.m_increment);
+            }
             return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 head, body.p, body.n, nullptr, 0));
         };
@@ -822,21 +832,21 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             ASR::expr_t *offset = ASRUtils::EXPR(
                 ASR::make_IntegerBinOp_t(al, loc, var,
                     ASR::binopType::Sub,
-                    to_int32(loc, own_bound(ref_start)),
+                    in_index_kind(own_bound(ref_start)),
                     int_type, nullptr));
             if (!unit_ref_step) {
                 offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     offset, ASR::binopType::Div,
-                    to_int32(loc, own_bound(ref_step)), int_type,
+                    in_index_kind(own_bound(ref_step)), int_type,
                     nullptr));
             }
             if (!unit_step) {
                 offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     offset, ASR::binopType::Mul,
-                    to_int32(loc, own_bound(step)), int_type, nullptr));
+                    in_index_kind(own_bound(step)), int_type, nullptr));
             }
             return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                to_int32(loc, own_bound(start)),
+                in_index_kind(own_bound(start)),
                 ASR::binopType::Add, offset, int_type, nullptr));
         };
 
@@ -1380,12 +1390,12 @@ ASR::expr_t* GpuOffloadVisitor::bound_origin(ASR::expr_t *e) {
 // available wherever the shape is needed.  A deferred-shape operand
 // -- an allocatable, a pointer or an assumed-shape dummy -- carries no
 // declared length, so its extent is the operand's own run-time
-// `size(operand, d + 1)` instead.  That expression is what the VLA
-// workspace machinery resolves back to the extents the host already
-// passes to the kernel.  A declared dimension is copied (own_bound):
-// its expressions belong to the operand's declaration.
+// `size(operand, d + 1)` instead, of kind `size_kind`.  That expression
+// is what the VLA workspace machinery resolves back to the extents the
+// host already passes to the kernel.  A declared dimension is copied
+// (own_bound): its expressions belong to the operand's declaration.
 ASR::dimension_t GpuOffloadVisitor::dim_or_runtime_extent(ASR::expr_t *operand,
-        ASR::dimension_t *dims, size_t d) {
+        ASR::dimension_t *dims, size_t d, int size_kind) {
     if (dims && dims[d].m_length) {
         ASR::dimension_t dim = dims[d];
         dim.m_start = own_bound(dim.m_start);
@@ -1403,7 +1413,8 @@ ASR::dimension_t GpuOffloadVisitor::dim_or_runtime_extent(ASR::expr_t *operand,
         ASR::make_IntegerConstant_t(al, loc, (int64_t)d + 1, int_type,
             ASR::integerbozType::Decimal));
     res.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
-        operand, dim_expr, int_type, nullptr));
+        operand, dim_expr, ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+            size_kind)), nullptr));
     return res;
 }
 
@@ -1868,32 +1879,13 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
         };
 
-        // A loop that runs over the subscripts of the summed array itself
-        // counts in the dialect's kind for element offsets. With 64-bit
-        // offsets the bounds of such a loop need not fit integer(4): a
-        // lower bound beyond huge(0), or one near it that the last index
-        // carries past it.
-        ASR::ttype_t *counter_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, device_caps.offset_kind));
-        auto in_counter_kind = [&](ASR::expr_t *e) -> ASR::expr_t* {
-            if (e == nullptr || ASRUtils::extract_kind_from_ttype_t(
-                    ASRUtils::expr_type(e)) == device_caps.offset_kind) {
-                return e;
-            }
-            if (ASR::is_a<ASR::ArrayBound_t>(*e)) {
-                ASR::ArrayBound_t *b = ASR::down_cast<ASR::ArrayBound_t>(e);
-                return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
-                    b->m_v, b->m_dim, counter_type, b->m_bound, nullptr));
-            }
-            if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
-                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-                    ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n,
-                    counter_type, ASR::integerbozType::Decimal));
-            }
-            return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, e,
-                ASR::cast_kindType::IntegerToInteger, counter_type,
-                nullptr, nullptr));
-        };
+        // A loop that runs over the subscripts of the summed array itself,
+        // or over the elements of an elemental expression from one to its
+        // extent, counts in the dialect's kind for element offsets
+        // (index_type). With 64-bit offsets the bounds of such a loop need
+        // not fit integer(4): a lower bound beyond huge(0), or one near it
+        // that the last index carries past it.
+        ASR::ttype_t *counter_type = index_type(loc);
 
         // The last index of a dimension that starts at `start` and has
         // `length` elements.
@@ -1903,8 +1895,10 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
             if (device_caps.offset_kind != 4) {
                 return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                     ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                        in_counter_kind(start), ASR::binopType::Add,
-                        in_counter_kind(length), counter_type, nullptr)),
+                        bound_to_index_kind(loc, start),
+                        ASR::binopType::Add,
+                        bound_to_index_kind(loc, length), counter_type,
+                        nullptr)),
                     ASR::binopType::Sub,
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                         counter_type, ASR::integerbozType::Decimal)),
@@ -1987,7 +1981,7 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
             if (!dim_bounds.empty()) {
                 for (auto &bounds : dim_bounds) {
                     loop_vars.push_back(
-                        make_var("__gpu_sum_k", int_type));
+                        make_var("__gpu_sum_k", counter_type));
                     loop_starts.push_back(bounds.first);
                     loop_ends.push_back(bounds.second);
                     loop_steps.push_back(nullptr);
@@ -2364,9 +2358,10 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
                     && ASRUtils::extract_kind_from_ttype_t(
                         ASRUtils::expr_type(loop_vars[d]))
                             == device_caps.offset_kind) {
-                head.m_start = in_counter_kind(head.m_start);
-                head.m_end = in_counter_kind(head.m_end);
-                head.m_increment = in_counter_kind(head.m_increment);
+                head.m_start = bound_to_index_kind(loc, head.m_start);
+                head.m_end = bound_to_index_kind(loc, head.m_end);
+                head.m_increment = bound_to_index_kind(loc,
+                    head.m_increment);
             }
             if (d == n_loops - 1) {
                 loop_nest = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,

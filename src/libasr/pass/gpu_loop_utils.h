@@ -100,9 +100,11 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
 
 // A parallel loop nest assigned to the device that copies every element of
 // the array `src` into the array `dest` of the same bounds, with index
-// variables of its own in `scope`.
+// variables of its own in `scope`, of integer kind `index_kind` (the kind
+// the device computes element offsets in, so that any bound fits).
 ASR::stmt_t *gpu_device_copy_nest(Allocator &al, const Location &loc,
-    SymbolTable *scope, ASR::expr_t *dest, ASR::expr_t *src);
+    SymbolTable *scope, ASR::expr_t *dest, ASR::expr_t *src,
+    int index_kind);
 
 // The designator an array is named by (a variable or a chain of
 // non-pointer components of one), as a key, or "".
@@ -158,12 +160,15 @@ public:
 // variables hold the results and the locals of the inlined bodies, so they
 // are private to an iteration. `select` picks the calls; a picked call that
 // cannot be inlined (see gpu_function_inlinable) makes `run` fail and leave
-// the scope as it was.
+// the scope as it was. The subscripts of an array dummy are shifted by the
+// lower bound of the actual argument in integer(`offset_kind`), the kind
+// the device computes element offsets in
+// (GpuDeviceCapabilities::offset_kind).
 class GpuInliner {
 public:
     GpuInliner(Allocator &al_,
-        std::function<bool(ASR::FunctionCall_t*)> select_)
-        : al(al_), select(select_) {}
+        std::function<bool(ASR::FunctionCall_t*)> select_, int offset_kind_)
+        : al(al_), select(select_), offset_kind(offset_kind_) {}
     // Inlines in place; false when a picked call cannot be inlined.
     bool run(SymbolTable *scope, ASR::stmt_t **&body, size_t &n_body);
     // Removes every symbol `run` added (after a failure).
@@ -173,6 +178,7 @@ public:
 private:
     Allocator &al;
     std::function<bool(ASR::FunctionCall_t*)> select;
+    int offset_kind;
     int depth = 0;
     bool inline_stmts(SymbolTable *scope, ASR::stmt_t **&body,
         size_t &n_body);

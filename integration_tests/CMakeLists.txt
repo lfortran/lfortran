@@ -6970,6 +6970,13 @@ RUN(NAME gpu_metal_565 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_566 LABELS gfortran llvm cuda)
 RUN(NAME gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64)
 RUN(NAME gpu_metal_601 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_690 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64) # metal declines integer(8) loop indices
+RUN(NAME gpu_metal_691 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
+RUN(NAME gpu_metal_692 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64) # metal declines integer(8) loop indices
+RUN(NAME gpu_metal_693 LABELS llvm cuda EXTRA_ARGS --descriptor-index-64) # no gfortran: GFortran 16 crashes on LOCAL of an automatic array
+RUN(NAME gpu_metal_694 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64) # metal declines integer(8) loop indices
+RUN(NAME gpu_metal_695 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
+RUN(NAME gpu_metal_696 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64) # metal declines integer(8) loop indices
 RUN(NAME gpu_metal_602 LABELS llvm cuda EXTRA_ARGS --descriptor-index-64) # no gfortran: the GFortran in CI rejects reduce
 RUN(NAME gpu_metal_599 LABELS gfortran llvm cuda)
 # Procedures copied into a kernel and the entities they name of their

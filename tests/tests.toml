@@ -5293,10 +5293,35 @@ options = "--descriptor-index-64"
 gpu_cuda_kernel = true
 
 # Sections and sum() lowered inside the kernel, of arrays with a lower bound
-# beyond huge(0), with the same flag: the offset of their integer(4)
-# subscripts is taken modulo 2**32 before it is widened to `long`.
+# beyond huge(0), with the same flag: the loops they become count, and
+# compute their subscripts, in `long`.
 [[test]]
 filename = "../integration_tests/gpu_metal_601.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# Section assignments and sums of elemental expressions lowered inside the
+# kernel, with an integer(8) stride and lower bound that do not fit
+# integer(4), with the same flag: their extents, loop counters and
+# subscripts are `long`.
+[[test]]
+filename = "../integration_tests/gpu_metal_690.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# Whole-array assignments to device data, run on the device as a loop over
+# the elements, with lower bounds that do not fit integer(4), with the
+# same flag: the loop indices and the subscripts are `long`.
+[[test]]
+filename = "../integration_tests/gpu_metal_692.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# matmul lowered inside the kernel, of operands with lower bounds that do
+# not fit integer(4), with the same flag: its loops count, and the indices
+# of the other operands are computed, in `long`.
+[[test]]
+filename = "../integration_tests/gpu_metal_694.f90"
 options = "--descriptor-index-64"
 gpu_cuda_kernel = true
 
