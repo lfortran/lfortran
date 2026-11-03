@@ -62,6 +62,13 @@ real, intent(in) :: x
 g = x
 end function
 
+! A duplicate IMPLICIT NONE is reported, and the call is still checked.
+subroutine duplicate_implicit_none()
+implicit none
+implicit none (external)
+call foo()
+end subroutine
+
 ! Last, because no error is reported after one in a procedure with ENTRY
 ! statements (#16680).
 subroutine with_entry(n)

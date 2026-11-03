@@ -1,3 +1,9 @@
+semantic error: duplicate implicit none statement
+  --> tests/errors/implicit_none_external_01.f90:68:1
+   |
+68 | implicit none (external)
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: procedure 'foo' is not explicitly declared
  --> tests/errors/implicit_none_external_01.f90:8:1
   |
@@ -41,7 +47,13 @@ semantic error: procedure 'foo' is not explicitly declared
    | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
 
 semantic error: procedure 'foo' is not explicitly declared
-  --> tests/errors/implicit_none_external_01.f90:70:1
+  --> tests/errors/implicit_none_external_01.f90:69:1
    |
-70 | call foo()
+69 | call foo()
+   | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'foo' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:77:1
+   |
+77 | call foo()
    | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
