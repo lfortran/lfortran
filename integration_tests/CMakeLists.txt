@@ -3765,6 +3765,7 @@ RUN(NAME frame_specialization_02 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME frame_specialization_03 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME frame_specialization_04 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME frame_specialization_05 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME frame_specialization_06 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module
@@ -5805,6 +5806,7 @@ RUN(NAME openmp_bindc_04 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_host_assoc_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_host_assoc_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp) # #16382's part with orphaned barriers is left out until #16619 is fixed
 RUN(NAME openmp_host_assoc_03 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp EXTRA_ARGS --internal-procedure-thunks=16)
+RUN(NAME frame_specialization_07 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp EXTRA_ARGS --fast)
 
 RUN(NAME openmp_01 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_02 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)

@@ -1054,6 +1054,31 @@ static inline bool is_frame_slot(const ASR::Variable_t &v) {
         is_frame_slot_type(v.m_type_declaration);
 }
 
+// Whether `sym` can be a frame entry (see nested_vars), which a FrameAddress
+// names: an internal procedure (with a body, declared in a procedure or main
+// program) whose last dummy argument is a type(c_ptr) value, through which it
+// takes the frame of its host.
+static inline bool is_frame_entry(ASR::symbol_t *sym) {
+    if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) {
+        return false;
+    }
+    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+    ASR::asr_t *owner = f->m_symtab->parent->asr_owner;
+    if (owner == nullptr || !ASR::is_a<ASR::symbol_t>(*owner) ||
+            !(ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner)) ||
+              ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(owner))) ||
+            f->n_args == 0 || ASR::down_cast<ASR::FunctionType_t>(
+                f->m_function_signature)->m_deftype !=
+                    ASR::deftypeType::Implementation ||
+            !ASR::is_a<ASR::Var_t>(*f->m_args[f->n_args - 1])) {
+        return false;
+    }
+    ASR::symbol_t *last = ASR::down_cast<ASR::Var_t>(f->m_args[f->n_args - 1])->m_v;
+    return ASR::is_a<ASR::Variable_t>(*last) &&
+        ASR::down_cast<ASR::Variable_t>(last)->m_value_attr &&
+        ASR::is_a<ASR::CPtr_t>(*ASR::down_cast<ASR::Variable_t>(last)->m_type);
+}
+
 // The common block in whose storage `v` lives, or nullptr when `v` has
 // storage of its own.
 static inline ASR::CommonBlock_t* get_common_block(const ASR::Variable_t *v) {

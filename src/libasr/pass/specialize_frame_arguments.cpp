@@ -443,7 +443,9 @@ public:
     // dummy it was
     std::map<ASR::symbol_t*, ASR::symbol_t*> frames;
     std::map<ASR::symbol_t*, ASR::Function_t*> code_interfaces;
-    // (procedure as named by the call, scope of the entry) -> frame entry
+    // (procedure as named by the call, scope of the entry) -> frame entry:
+    // one per procedure and scope, since the interfaces of the dummies it is
+    // passed to are all the same (see same_interface)
     std::map<std::pair<ASR::symbol_t*, SymbolTable*>, ASR::symbol_t*> entries;
     // ExternalSymbol of a procedure -> the ExternalSymbol of its copy
     std::map<ASR::symbol_t*, ASR::symbol_t*> copy_names;
@@ -924,6 +926,7 @@ public:
             "__lcompilers_frame_entry", false);
         ASR::symbol_t *e = (ASR::symbol_t*) frame_procedure(iface, host, name,
             sym);
+        LCOMPILERS_ASSERT(ASRUtils::is_frame_entry(e));
         entries[{sym, host}] = e;
         return e;
     }
@@ -980,9 +983,26 @@ public:
                 fr->second);
             return;
         }
+        // A code dummy is only passed to a call that becomes a call of a
+        // copy: the analysis pairs a dummy only where it is passed on so
+        bool pair = false;
+        for (size_t i = 0; i < *call.n_args; i++) {
+            ASR::expr_t *a = (*call.args)[i].m_value;
+            pair = pair || (a != nullptr && ASR::is_a<ASR::Var_t>(*a) &&
+                frames.count(ASR::down_cast<ASR::Var_t>(a)->m_v));
+        }
+        auto unpaired = [&]() {
+            if (pair) {
+                throw LCompilersException("specialize_frame_arguments: a "
+                    "dummy procedure passed with its frame reaches a call of '" +
+                    std::string(ASRUtils::symbol_name(*call.name)) +
+                    "' that does not take it");
+            }
+        };
         ASR::Function_t *g = called_procedure(*call.name, call.dt);
         if (g == nullptr || !eligible_of.count(g) || *call.n_args != g->n_args ||
                 !copy_nameable(*call.name, g)) {
+            unpaired();
             return;
         }
         bool forwarded = false, internal = false;
@@ -1001,12 +1021,12 @@ public:
                 }
             }
             if (!ok) {
-                // The analysis passes a pair only where it can be passed on
-                LCOMPILERS_ASSERT(!forwarded);
+                unpaired();
                 return;
             }
         }
         if (!forwarded && !internal && !useful.count(g)) {
+            unpaired();
             return;
         }
         ASR::Function_t *copy = place(g);

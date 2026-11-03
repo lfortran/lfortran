@@ -488,9 +488,6 @@ public:
     std::function<ASR::expr_t*(ASR::symbol_t*, const Location&)> frame_address;
 
     void replace_Var(ASR::Var_t *x) {
-        if (child == nullptr) {
-            return;
-        }
         auto it = child->replacements.find(x->m_v);
         if (it != child->replacements.end()) {
             x->m_v = it->second;
@@ -511,11 +508,24 @@ public:
     }
 };
 
+// Replaces the frame address of a frame entry of a host in an expression
+class FrameAddressReplacer: public ASR::BaseExprReplacer<FrameAddressReplacer> {
+public:
+    std::function<ASR::expr_t*(ASR::symbol_t*, const Location&)> frame_address;
+
+    void replace_FrameAddress(ASR::FrameAddress_t *x) {
+        ASR::expr_t *address = frame_address(x->m_procedure, x->base.base.loc);
+        if (address != nullptr) {
+            *current_expr = address;
+        }
+    }
+};
+
 // Replaces the frame addresses of the frame entries of a host in its body
 // and its BLOCK and ASSOCIATE constructs, but not in its internal procedures
 class HostFrameAddresses: public ASR::CallReplacerOnExpressionsVisitor<HostFrameAddresses> {
 public:
-    HostEntityReplacer replacer;
+    FrameAddressReplacer replacer;
 
     void call_replacer() {
         if (*current_expr != nullptr) {
@@ -2725,6 +2735,7 @@ public:
     FrameEntryCollector(std::set<ASR::symbol_t*> &entries_): entries(entries_) {}
 
     void visit_FrameAddress(const ASR::FrameAddress_t &x) {
+        LCOMPILERS_ASSERT(ASRUtils::is_frame_entry(x.m_procedure));
         entries.insert(x.m_procedure);
     }
 };

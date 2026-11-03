@@ -2226,30 +2226,11 @@ public:
             "asr.verify.frame_address.scope",
             "the procedure '" + std::string(ASRUtils::symbol_name(
                 x.m_procedure)) + "' of a frame address is not visible here");
-        bool entry = false;
-        if (ASR::is_a<ASR::Function_t>(*x.m_procedure)) {
-            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(x.m_procedure);
-            SymbolTable *host = f->m_symtab->parent;
-            ASR::symbol_t *owner = host->asr_owner != nullptr &&
-                ASR::is_a<ASR::symbol_t>(*host->asr_owner)
-                ? ASR::down_cast<ASR::symbol_t>(host->asr_owner) : nullptr;
-            if (owner != nullptr && (ASR::is_a<ASR::Function_t>(*owner) ||
-                    ASR::is_a<ASR::Program_t>(*owner)) && f->n_args > 0 &&
-                    ASRUtils::get_FunctionType(f)->m_deftype ==
-                        ASR::deftypeType::Implementation &&
-                    ASR::is_a<ASR::Var_t>(*f->m_args[f->n_args - 1])) {
-                ASR::symbol_t *last = ASR::down_cast<ASR::Var_t>(
-                    f->m_args[f->n_args - 1])->m_v;
-                entry = ASR::is_a<ASR::Variable_t>(*last) &&
-                    ASR::down_cast<ASR::Variable_t>(last)->m_value_attr &&
-                    ASR::is_a<ASR::CPtr_t>(
-                        *ASR::down_cast<ASR::Variable_t>(last)->m_type);
-            }
-        }
         require_id(x.m_type != nullptr && ASR::is_a<ASR::CPtr_t>(*x.m_type) &&
             x.m_value == nullptr, "asr.verify.frame_address.type",
             "a frame address must be a type(c_ptr) without a value");
-        require_id(entry, "asr.verify.frame_address.procedure",
+        require_id(ASRUtils::is_frame_entry(x.m_procedure),
+            "asr.verify.frame_address.procedure",
             "the procedure '" + std::string(ASRUtils::symbol_name(
                 x.m_procedure)) + "' of a frame address must be an internal "
             "procedure whose last dummy argument is a type(c_ptr) value");
