@@ -21008,7 +21008,9 @@ public:
     }
 
     // Helper to build namelist descriptor and call runtime function
-    llvm::Value* build_namelist_descriptor(ASR::symbol_t* nml_sym) {
+    // `for_write` is false for a READ, which cannot assign to the items that
+    // are written element by element, so those are left out.
+    llvm::Value* build_namelist_descriptor(ASR::symbol_t* nml_sym, bool for_write) {
         // Unwrap external symbol if needed
         nml_sym = ASRUtils::symbol_get_past_external(nml_sym);
         ASR::Namelist_t* nml = ASR::down_cast<ASR::Namelist_t>(nml_sym);
@@ -21096,6 +21098,9 @@ public:
                     llvm::Value* member_ptr = llvm_utils->create_gep2(llvm_struct_type, current_ptr, member_idx);
                     ASR::ttype_t *member_type = member_var->m_type;
                     if (!levels.empty() && ASRUtils::is_allocatable_or_pointer(member_type)) {
+                        if (!for_write) {
+                            continue;
+                        }
                         throw CodeGenError("namelist arrays of derived types with allocatable or pointer components are not supported");
                     }
                     if (levels.empty() || ASR::is_a<ASR::StructType_t>(
@@ -21116,6 +21121,9 @@ public:
                             builder->CreateStructGEP(item_type, nml_item, 4));
                         builder->CreateStore(levels[0].shape,
                             builder->CreateStructGEP(item_type, nml_item, 6));
+                        continue;
+                    }
+                    if (!for_write) {
                         continue;
                     }
                     if (ASRUtils::is_character(*member_type)) {
@@ -22220,7 +22228,7 @@ public:
             }
 
             // Build namelist descriptor and call _lfortran_namelist_read
-            llvm::Value* nml_group = build_namelist_descriptor(x.m_nml);
+            llvm::Value* nml_group = build_namelist_descriptor(x.m_nml, false);
 
             // Get or create _lfortran_namelist_read function
             std::string func_name;
@@ -24822,7 +24830,7 @@ public:
             }
 
             // Build namelist descriptor and call _lfortran_namelist_write
-            llvm::Value* nml_group = build_namelist_descriptor(x.m_nml);
+            llvm::Value* nml_group = build_namelist_descriptor(x.m_nml, true);
 
             std::string func_name;
             if (is_string_array) {

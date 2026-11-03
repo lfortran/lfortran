@@ -20,6 +20,10 @@ program namelist_41
         integer :: k = 0
         type(inner_t) :: arr(2)
     end type
+    type :: c_t
+        integer :: k = 0
+        character(len=2) :: cc(2) = "xy"
+    end type
     type :: v_t
         integer :: k = 0
         integer :: a(2) = 0
@@ -29,12 +33,14 @@ program namelist_41
     type(s_t) :: y(2, 2)
     type(v_t) :: v(2)
     type(m_t) :: m(0:1, 2)
+    type(c_t) :: c(2)
     type(t) :: z(2:3, -1:0)
     namelist /nl/ x
     namelist /nl2/ y
     namelist /nl3/ xl, z
     namelist /nl5/ v
     namelist /nl6/ m
+    namelist /nl7/ c
     character(len=200) :: buf(40)
     integer :: i, j
 
@@ -106,6 +112,15 @@ program namelist_41
     if (any(v%k /= [5, 6])) error stop 16
     if (any(v%in%u /= 0)) error stop 17
     if (any(v(1)%a /= 0) .or. any(v(2)%a /= 0)) error stop 18
+
+    ! Reading is not affected by components that are written element-wise
+    buf = ""
+    buf(1) = "&nl7"
+    buf(2) = " c%k = 3, 4"
+    buf(3) = "/"
+    read(buf, nml=nl7)
+    if (any(c%k /= [3, 4])) error stop 19
+    if (c(2)%cc(2) /= "xy") error stop 20
     print *, "ok"
 
 contains
