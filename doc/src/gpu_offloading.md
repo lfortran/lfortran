@@ -1,7 +1,8 @@
 # GPU Offloading
 
 This document describes how LFortran decides where a parallel loop runs when a
-GPU backend is selected with `--gpu=metal`, `--gpu=cuda` or `--gpu=cuda_cpu`.
+GPU backend is selected with `--gpu=metal`, `--gpu=cuda`, `--gpu=cuda_cpu` or
+`--gpu=hip`.
 It is a design document: where the current implementation differs, the
 differences are listed at the end.
 
@@ -773,6 +774,19 @@ same retry and writable-residency preparation. Same-address writable aliases,
 including discards downgraded by overlap, use one covering extent so that
 preparation cannot alternate between their different byte counts.
 
+`--gpu=hip` runs the same CUDA runtime on AMD GPUs, through ROCm. HIP is
+CUDA C++ for AMD GPUs, so the backend shares everything with `--gpu=cuda` up
+to the toolchain: the ASR passes, the device capabilities and the device code
+generator, whose output only gains `#include <hip/hip_runtime.h>`. The HIP
+driver (`hipcc` by default, `--device-compiler` to choose another) compiles it
+as HIP for `--gpu-arch` (`gfx90a`, `gfx942`, ...; the GPUs of the compiling
+machine by default) and links the program. The GPU runtime is
+`lfortran_gpu_cuda.c` itself, which the host C compiler builds against
+`hip/cuda_runtime.h`, an implementation of the part of the CUDA runtime API
+it calls with HIP, and the headers of the ROCm installation the HIP driver
+belongs to. The program finds the HIP runtime library of that installation
+through its run path.
+
 The Metal runtime encodes the launches one after another into one compute
 encoder and commits its command buffer every 64 launches and at every wait:
 encoding a dispatch costs the host about 2 us, committing a command buffer
@@ -949,11 +963,12 @@ with a `stop` before that.
   the same program runs correctly on the CPU with `--gpu-allow-cpu-fallback`.
 * Every pipeline fix comes with an integration test that runs on the GPU
   backends (`metal`, `cuda` labels) and checks the results.
-* One `cuda` label covers both CUDA modes, and every `cuda` test must pass in
-  both: `integration_tests -b cuda_cpu` runs the `cuda` tests in the CPU
-  emulation (`--gpu=cuda_cpu`, what CI runs), and `integration_tests -b cuda`
-  runs the same tests natively on an NVIDIA GPU (`--gpu=cuda`). There is no
-  `cuda_cpu` label.
+* One `cuda` label covers every mode of the CUDA device code, and every
+  `cuda` test must pass in all of them: `integration_tests -b cuda_cpu` runs
+  the `cuda` tests in the CPU emulation (`--gpu=cuda_cpu`, what CI runs),
+  `integration_tests -b cuda` runs the same tests natively on an NVIDIA GPU
+  (`--gpu=cuda`), and `integration_tests -b hip` on an AMD GPU
+  (`--gpu=hip`). There are no `cuda_cpu` and `hip` labels.
 * Compiling is not enough: an offloaded loop can compile and still compute the
   wrong values. Integration tests therefore check their results in the program,
   and third-party codes whose test suites check values (Formal, Fiats) are run
@@ -1038,6 +1053,13 @@ GFortran, and native CUDA.
   analysis, one procedure at a time, does not see.
 
 ## Differences from the current implementation
+
+* `--gpu=hip` has the device capabilities of `--gpu=cuda` (the CUDA entry of
+  `gpu_device_capabilities`): its 512 KiB of stack per thread, and tiles of
+  32 iterations, the width of a warp rather than of an AMD wavefront (64). A
+  capability entry of its own, with the stack an AMD GPU gives a thread,
+  needs the passes that ask whether `gpu_offload_cuda` is set rather than
+  what the device can do to ask the capabilities instead.
 
 * The pipeline still has its own checks for device limits (the width of the
   data that reaches a kernel, input/output statements), spread over

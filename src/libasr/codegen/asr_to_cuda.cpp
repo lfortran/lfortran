@@ -4,9 +4,11 @@
 
 namespace LCompilers {
 
-// CUDA C++, and the CPU emulation of it that `--gpu=cuda_cpu` compiles as
-// ordinary host code. The spellings the shared device code generator asks a
-// dialect for; everything else it derives from the ASR itself.
+// CUDA C++, the CPU emulation of it that `--gpu=cuda_cpu` compiles as
+// ordinary host code, and HIP (`--gpu=hip`), which spells everything this
+// dialect emits as CUDA C++ does. The spellings the shared device code
+// generator asks a dialect for; everything else it derives from the ASR
+// itself.
 struct CudaDialect {
     // Whether to emit the trailing kernel-registration shim, which is only
     // meaningful to the runtime's lookup-by-name launch path.
@@ -14,13 +16,16 @@ struct CudaDialect {
     // Whether to emit the extra shims the CPU emulation needs. The real CUDA
     // output is left untouched.
     bool emulate_cpu = false;
+    // Whether the source is compiled as HIP for an AMD GPU.
+    bool hip = false;
     // The integer kind element offsets are computed in
     // (GpuDeviceCapabilities::offset_kind).
     int element_offset_kind = 4;
 
-    CudaDialect(bool emit_registrar_, bool emulate_cpu_, int offset_kind_)
+    CudaDialect(bool emit_registrar_, bool emulate_cpu_, bool hip_,
+            int offset_kind_)
         : emit_registrar(emit_registrar_), emulate_cpu(emulate_cpu_),
-          element_offset_kind(offset_kind_) {}
+          hip(hip_), element_offset_kind(offset_kind_) {}
 
     // CUDA has one flat address space for global memory, so a pointer into it
     // needs no qualifier at all; only the two special spaces are named.
@@ -47,6 +52,11 @@ struct CudaDialect {
 
     void emit_prologue(std::stringstream &src) const {
         src << "#include <stdint.h>\n";
+        if (hip) {
+            // nvcc includes the CUDA runtime header itself; the HIP driver
+            // needs the HIP one named.
+            src << "#include <hip/hip_runtime.h>\n";
+        }
         if (emulate_cpu) {
             // Turns the CUDA execution space qualifiers and the built-in
             // thread coordinates into plain host C++.
@@ -236,7 +246,7 @@ Result<std::string> asr_to_cuda(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, CompilerOptions &co, bool emit_registrar)
 {
     ASRToGpuCVisitor<CudaDialect> v(co,
-        CudaDialect(emit_registrar, co.gpu_cpu_emulation,
+        CudaDialect(emit_registrar, co.gpu_cpu_emulation, co.gpu_hip,
             gpu_device_capabilities(co.po).offset_kind));
     try {
         v.visit_TranslationUnit(asr);

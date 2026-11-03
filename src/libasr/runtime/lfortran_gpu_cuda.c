@@ -4,7 +4,10 @@
 #include <string.h>
 
 // We implement the same C API as the Metal runtime
-// (lfortran_gpu_runtime.h), but using CUDA.
+// (lfortran_gpu_runtime.h), but using the CUDA runtime API: NVIDIA's own
+// (`--gpu=cuda`), the CPU emulation of it (`--gpu=cuda_cpu`,
+// cuda_cpu/cuda_runtime.h) or HIP for AMD GPUs (`--gpu=hip`,
+// hip/cuda_runtime.h).
 
 #include "lfortran_gpu_runtime.h"
 

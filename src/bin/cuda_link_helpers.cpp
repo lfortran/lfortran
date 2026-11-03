@@ -22,42 +22,75 @@
 std::string cuda_device_compiler_command(
     const std::string &device_compiler,
     bool emulate_cpu,
+    bool hip,
     const std::string &gpu_arch)
 {
     if (emulate_cpu) {
         return device_compiler;
     }
-    return device_compiler + " -arch="
-        + (gpu_arch.empty() ? "native" : gpu_arch);
+    std::string arch = gpu_arch.empty() ? "native" : gpu_arch;
+    if (hip) {
+        return device_compiler + " --offload-arch=" + arch;
+    }
+    return device_compiler + " -arch=" + arch;
+}
+
+// The executable of the device compiler driver `device_compiler`, the first
+// word of the option: a path, or a bare name looked up in PATH as the shell
+// does. Empty if it is not found.
+static std::filesystem::path find_device_compiler(
+    const std::string &device_compiler)
+{
+    std::string compiler = device_compiler.substr(0,
+        device_compiler.find_first_of(" \t"));
+    if (compiler.empty()) return {};
+    if (compiler.find('/') != std::string::npos) return compiler;
+    std::error_code ec;
+    const char *env_path = std::getenv("PATH");
+    std::string path_list = env_path ? env_path : "";
+    size_t start = 0;
+    while (start <= path_list.size()) {
+        size_t end = path_list.find(':', start);
+        if (end == std::string::npos) end = path_list.size();
+        std::string dir = path_list.substr(start, end - start);
+        std::filesystem::path candidate
+            = std::filesystem::path(dir.empty() ? "." : dir) / compiler;
+        if (std::filesystem::is_regular_file(candidate, ec)) {
+            return candidate;
+        }
+        start = end + 1;
+    }
+    return {};
+}
+
+bool hip_toolkit_dirs(const std::string &device_compiler,
+    std::string &include_dir, std::string &lib_dir)
+{
+    std::filesystem::path hipcc = find_device_compiler(device_compiler);
+    if (hipcc.empty()) return false;
+    // A hipcc on PATH is often a link into the ROCm installation it belongs
+    // to (/usr/bin/hipcc -> /opt/rocm-<version>/bin/hipcc), whose headers
+    // and libraries are next to its real location.
+    std::error_code ec;
+    std::filesystem::path real = std::filesystem::canonical(hipcc, ec);
+    if (ec) real = hipcc;
+    std::filesystem::path root = real.parent_path().parent_path();
+    std::filesystem::path include = root / "include";
+    if (!std::filesystem::is_regular_file(
+            include / "hip" / "hip_runtime_api.h", ec)) {
+        return false;
+    }
+    include_dir = include.string();
+    std::filesystem::path lib = root / "lib";
+    lib_dir = std::filesystem::is_directory(lib, ec) ? lib.string() : "";
+    return true;
 }
 
 std::string cuda_toolkit_include_dir(const std::string &device_compiler)
 {
-    std::string compiler = device_compiler.substr(0,
-        device_compiler.find_first_of(" \t"));
-    if (compiler.empty()) return "";
     std::error_code ec;
-    std::filesystem::path nvcc(compiler);
-    if (compiler.find('/') == std::string::npos) {
-        // A bare name is looked up in PATH, as the shell does.
-        nvcc.clear();
-        const char *env_path = std::getenv("PATH");
-        std::string path_list = env_path ? env_path : "";
-        size_t start = 0;
-        while (start <= path_list.size()) {
-            size_t end = path_list.find(':', start);
-            if (end == std::string::npos) end = path_list.size();
-            std::string dir = path_list.substr(start, end - start);
-            std::filesystem::path candidate
-                = std::filesystem::path(dir.empty() ? "." : dir) / compiler;
-            if (std::filesystem::is_regular_file(candidate, ec)) {
-                nvcc = candidate;
-                break;
-            }
-            start = end + 1;
-        }
-        if (nvcc.empty()) return "";
-    }
+    std::filesystem::path nvcc = find_device_compiler(device_compiler);
+    if (nvcc.empty()) return "";
     // nvcc is <toolkit>/bin/nvcc; the headers are in <toolkit>/include or,
     // in a layout with a target directory, <toolkit>/targets/<target>/include.
     std::filesystem::path toolkit = nvcc.parent_path().parent_path();

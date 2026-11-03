@@ -152,10 +152,15 @@ struct CompilerOptions {
     // Compile the generated device code as ordinary host code and run the
     // kernels on the CPU, so the GPU path is testable without a GPU.
     bool gpu_cpu_emulation = false;
+    // Compile the generated device code as HIP and run it on an AMD GPU
+    // through ROCm (`--gpu=hip`), with the CUDA runtime API of the GPU
+    // runtime implemented with HIP.
+    bool gpu_hip = false;
     // Toolchain driver used to compile and link GPU device code.
     std::string device_compiler = "nvcc";
-    // GPU architecture the device code is compiled for, such as sm_120.
-    // Empty means the GPUs of the machine that compiles.
+    // GPU architecture the device code is compiled for, such as sm_120 or,
+    // with --gpu=hip, gfx942. Empty means the GPUs of the machine that
+    // compiles.
     std::string gpu_arch = "";
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
