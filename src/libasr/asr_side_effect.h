@@ -84,7 +84,9 @@ public:
 
     // A value of a type owning runtime trait objects, other than a designator
     // or a function result, is a temporary whose destruction runs dynamic
-    // lifecycle code, e.g. the result of PACK applied to such an array.
+    // lifecycle code, e.g. the result of PACK applied to such an array. The
+    // receiver an adapter recovers from its view is the borrowed payload
+    // itself, not a temporary.
     void visit_expr(const expr_t &x) {
         if (found) return;
         switch (x.type) {
@@ -95,6 +97,7 @@ public:
             case exprType::ArrayPhysicalCast:
             case exprType::Cast:
             case exprType::FunctionCall:
+            case exprType::TraitReceiver:
                 break;
             default:
                 if (ASRUtils::contains_trait_owner(ASRUtils::expr_type(

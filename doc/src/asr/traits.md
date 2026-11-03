@@ -2951,7 +2951,11 @@ constructor. Every
 procedure whose body performs such an operation is neither side-effect free
 nor deterministic, so a PURE caller rejects it. A defined assignment is judged
 by its procedure instead. Readonly PURE observation remains supported when the
-contract's message is PURE.
+contract's message is PURE. That includes a PURE message of a type that owns
+runtime trait objects, such as one with a `class(IOtherTrait), allocatable`
+component: the witness adapter recovers its receiver from the view with
+`TraitReceiver`, the borrowed payload itself rather than a temporary, so the
+adapter keeps the message's PURE effects (`traits_runtime_pure_owner_01`).
 
 A procedure also has these effects when it calls one that has them, however
 the bodies are ordered. Once every body of the unit exists, including
