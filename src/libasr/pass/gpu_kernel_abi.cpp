@@ -126,6 +126,51 @@ public:
         expand(symbol, size);
     }
 
+    void replace_ArrayBound(ASR::ArrayBound_t *x) {
+        ASR::expr_t *array = ASRUtils::get_past_array_physical_cast(x->m_v);
+        if (!ASR::is_a<ASR::Var_t>(*array)) {
+            ASR::BaseExprReplacer<GpuThreadExpressionWriter>
+                ::replace_ArrayBound(x);
+            return;
+        }
+        ASR::symbol_t *symbol = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(array)->m_v);
+        ASR::ttype_t *type = ASRUtils::symbol_type(symbol);
+        if (parameters.count(symbol)
+                || ASRUtils::is_allocatable_or_pointer(type)) {
+            ASR::BaseExprReplacer<GpuThreadExpressionWriter>
+                ::replace_ArrayBound(x);
+            return;
+        }
+        ASR::dimension_t *dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        int64_t d = 0;
+        if (!x->m_dim || !ASRUtils::extract_value(
+                ASRUtils::expr_value(x->m_dim), d)
+                || d < 1 || (size_t)d > rank
+                || !dims[d - 1].m_start || !dims[d - 1].m_length) {
+            valid = false;
+            return;
+        }
+        // A private explicit-shape array has no host descriptor. Recover
+        // its bound from its own declaration, then expand only the shape,
+        // never the kernel-only array value.
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        ASR::expr_t *lower = dims[d - 1].m_start;
+        ASR::expr_t *length = dims[d - 1].m_length;
+        ASRUtils::cast_to_wider_kind(al, lower, length);
+        ASR::ttype_t *bound_type = ASRUtils::expr_type(length);
+        bool upper = x->m_bound == ASR::arrayboundType::UBound;
+        ASR::expr_t *bound = upper
+            ? b.Add(lower, b.Sub(length, b.i_t(1, bound_type))) : lower;
+        // In a zero-extent dimension Fortran's inquiry bounds are 1:0,
+        // regardless of the declared lower bound.
+        bound = ASRUtils::EXPR(ASR::make_IfExp_t(al, x->base.base.loc,
+            b.Gt(length, b.i_t(0, bound_type)), bound,
+            b.i_t(upper ? 0 : 1, bound_type), bound_type, nullptr));
+        expand(symbol, b.i2i_t(bound, x->m_type));
+    }
+
     void replace_Var(ASR::Var_t *x) {
         ASR::symbol_t *symbol = ASRUtils::symbol_get_past_external(x->m_v);
         if (parameters.count(symbol)) return;
