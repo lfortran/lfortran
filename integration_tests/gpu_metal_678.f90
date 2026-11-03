@@ -6,11 +6,13 @@ program gpu_metal_678
     ! as constants, a reduction included; the 8 by 7 nest, one value of `j`
     ! more, is split into chunks. Named constants as bounds are decided the
     ! same way: the n by m nest and its reduction run as one launch, and the
-    ! n by m + 1 one is split along `j` only.
+    ! n by m + 1 one is split along `j` only. A nest mixing a named-constant
+    ! extent with a run-time one is split along the run-time one only, its
+    ! reduction included.
     implicit none
-    integer, parameter :: n = 8, m = 6
-    integer :: i, j, s, e, t
-    integer :: a(8, 6), b(4, 5), c(8, 7), d(n, m), f(n, m + 1)
+    integer, parameter :: n = 8, m = 6, lo = -2
+    integer :: i, j, s, e, t, k, u, v
+    integer :: a(8, 6), b(4, 5), c(8, 7), d(n, m), f(n, m + 1), g(lo:n, 9)
 
     a = 0
     do concurrent (i = 1:8, j = 1:6)
@@ -40,6 +42,15 @@ program gpu_metal_678
     do concurrent (i = 1:n, j = 1:m + 1)
         f(i, j) = i - j
     end do
+    k = 9
+    g = 0
+    do concurrent (i = lo:n, j = 1:k)
+        g(i, j) = 100 * i + j
+    end do
+    u = 0
+    do concurrent (i = lo + 1:n, j = 1:k) reduce(+:u)
+        u = u + g(i, j)
+    end do
 
     e = 0
     do j = 1, 7
@@ -60,5 +71,13 @@ program gpu_metal_678
     end do
     if (s /= e) error stop 4
     if (t /= e) error stop 7
+    v = 0
+    do j = 1, 9
+        do i = lo, n
+            if (g(i, j) /= 100 * i + j) error stop 8
+            if (i > lo) v = v + g(i, j)
+        end do
+    end do
+    if (u /= v) error stop 9
     print *, "ok"
 end program

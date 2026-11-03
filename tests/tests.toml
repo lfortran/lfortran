@@ -5457,8 +5457,9 @@ gpu_cuda_kernel = true
 filename = "gpu_cuda_kernel_parameter_extents.f90"
 gpu_cuda_kernel = true
 
-# At, below and above a lowered chunk limit (48): only the 8 by 7 nest and
-# the n by m + 1 one are split, and only `j` takes bound arguments.
+# At, below and above a lowered chunk limit (48): only the 8 by 7 nest, the
+# n by m + 1 one and the nests with a run-time extent of `j` are split, and
+# only `j` takes bound arguments.
 [[test]]
 filename = "../integration_tests/gpu_metal_678.f90"
 gpu_cuda_kernel = true
