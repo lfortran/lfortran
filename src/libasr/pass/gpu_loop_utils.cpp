@@ -491,8 +491,16 @@ ASR::asr_t* GpuDuplicator::duplicate_ArrayBound(ASR::ArrayBound_t *x) {
                 ok = false;
                 return (ASR::asr_t*)gpu_i32(al, x->base.base.loc, 1);
             }
+            // In the kind of the inquiry: ubound(a, 1, kind=8) is
+            // integer(8).
+            ASR::ttype_t *t = duplicate_ttype(x->m_type);
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
             ASRUtils::ExprStmtDuplicator d(al);
             ASR::expr_t *lower = d.duplicate_expr(am->second.lower[dim - 1]);
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(lower))
+                    != ASRUtils::extract_kind_from_ttype_t(t)) {
+                lower = b.i2i_t(lower, t);
+            }
             if (x->m_bound == ASR::arrayboundType::LBound) {
                 return (ASR::asr_t*)lower;
             }
@@ -500,10 +508,9 @@ ASR::asr_t* GpuDuplicator::duplicate_ArrayBound(ASR::ArrayBound_t *x) {
             ASR::expr_t *size = ASRUtils::EXPR(ASR::make_ArraySize_t(al,
                 x->base.base.loc, d.duplicate_expr(am->second.actual),
                 gpu_i32(al, x->base.base.loc, dim),
-                ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4)),
-                nullptr));
+                ASRUtils::duplicate_type(al, t), nullptr));
             return (ASR::asr_t*)gpu_int_sub(al, gpu_int_add(al, lower, size),
-                gpu_i32(al, x->base.base.loc, 1));
+                b.i_t(1, t));
         }
     }
     return BaseExprStmtDuplicator<GpuDuplicator>::duplicate_ArrayBound(x);
