@@ -973,6 +973,116 @@ end program
 }
 
 #ifndef HAVE_BUILD_TO_WASM
+TEST_CASE("Scalar call actual reductions do not reserve a product heap") {
+    std::string source = read_project_file(
+        "integration_tests/gpu_scalar_reduction_actual_01.f90");
+    CompilerOptions options;
+    options.gpu_backend = "metal";
+    options.po.gpu_offload_metal = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "gpu_scalar_reduction_actual_01.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    passes.use_default_passes();
+    passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+    struct HeapReservations: ASR::BaseWalkVisitor<HeapReservations> {
+        size_t count = 0;
+        void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t&) { count++; }
+    } reservations;
+    reservations.visit_TranslationUnit(*parsed.result);
+    CHECK(reservations.count == 0);
+    size_t kernels = 0;
+    for (const auto &entry: parsed.result->m_symtab->get_scope()) {
+        if (!ASRUtils::is_device_kernel(entry.second)) continue;
+        auto* kernel = ASR::down_cast<ASR::Function_t>(entry.second);
+        REQUIRE(kernel->m_gpu != nullptr);
+        // Codes, weights, terms and partial_values remain distinct workspaces.
+        CHECK(kernel->m_gpu->n_workspaces == 4);
+        kernels++;
+    }
+    CHECK(kernels == 1);
+}
+
+TEST_CASE("Scalar reduction actual normalization respects evaluation domains") {
+    auto check = [](const std::string& attributes,
+            const std::string& statement, bool materialized) {
+        INFO(attributes << " / " << statement);
+        const std::string source = R"(
+module scalar_actual_domains
+contains
+    pure elemental real function f(x) result(r)
+        real, intent(in) :: x
+        r = x
+    end function
+    real function effect(x) result(r)
+        real, intent(inout) :: x
+        x = x + 1
+        r = x
+    end function
+    subroutine test(n,a,out,state)
+        integer, intent(in) :: n
+        real, intent(in))" + attributes + R"( :: a(n,2)
+        real, intent(inout) :: out(2)
+        real, intent(inout) :: state
+        )" + statement + R"(
+    end subroutine
+end module
+)";
+        CompilerOptions options;
+        FortranEvaluator evaluator(options);
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = "scalar_actual_domains.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LFortran::source_offset(source.size()));
+        diag::Diagnostics diagnostics;
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        Allocator allocator(32 * 1024 * 1024);
+        PassManager passes;
+        std::string pass = "array_struct_temporary", skip;
+        passes.parse_pass_arg(pass, skip);
+        passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+        auto* module = ASR::down_cast<ASR::Module_t>(
+            parsed.result->m_symtab->get_symbol("scalar_actual_domains"));
+        auto* function = ASR::down_cast<ASR::Function_t>(
+            module->m_symtab->get_symbol("test"));
+        struct Allocations: ASRUtils::BlockBodyWalkVisitor<Allocations> {
+            size_t count = 0;
+            void visit_Allocate(const ASR::Allocate_t&) { count++; }
+        } allocations;
+        for (size_t i = 0; i < function->n_body; i++) {
+            allocations.visit_stmt(*function->m_body[i]);
+        }
+        CHECK((allocations.count > 0) == materialized);
+    };
+    check("", "out(1)=f(sum(a(:,1)*2))", false);
+    check("", "out(1)=f(sum(a*2))", false);
+    check("", "out(1)=f(sum(a(:0,1)*2,mask=a(:0,1)>0))", false);
+    check(", volatile", "out(1)=f(sum(a(:,1)*2))", true);
+    check(", asynchronous", "out(1)=f(sum(a(:,1)*2))", true);
+    check("", "block\nvolatile :: a\nout(1)=f(sum(a(:,1)*2))\nend block", true);
+    check("", "block\nvolatile :: a\nend block\nout(1)=f(sum(a(:,1)*2))", false);
+    check("", "out(1)=f(sum(a(:,1)*2))+effect(state)", true);
+    check("", "out=f(sum(a*2,dim=1))", true);
+    check("", "where(out>0) out=f(sum(a(:,1)*2))", true);
+}
+
 TEST_CASE("GPU tiled launch tests run tiled nests") {
     // gpu_metal_485, gpu_metal_490 and gpu_metal_491 check the tiled index
     // computation only if their nests do tile; pin which ones do, so that a

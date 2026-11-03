@@ -588,6 +588,16 @@ Which one is used is decided per array and per derived type:
   about; the host's type of an array argument is the kernel's copy the launch
   passes it for. Two types of one name, from two modules, are two types.
 
+Scalar reductions used as the sole actual of a side-effect-free scalar
+function, such as `rounded(sum(a*b))`, can use the same elementwise
+accumulator as a direct `s = sum(a*b)`: the shared array-temporary pass
+assigns the typed reduction to a scalar at the original evaluation site.
+The product then needs neither a workspace nor a device-heap allocation.
+This normalization excludes array-valued results, calls within the reduction,
+volatile/asynchronous reads, competing function evaluations and `where`
+bodies; sections must already support in-place elementwise reads.
+Other arrays and workspaces are unaffected.
+
 #### The arenas
 
 A launch whose kernel allocates on the heap gets one *arena* per element
