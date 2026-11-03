@@ -1008,13 +1008,6 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
                         current_scope->get_unique_name("__gpu_absent"),
                         empty_type, ASR::intentType::Local, type_decl);
                     auto associate = [&](ASR::expr_t *target) {
-                        // This generated view takes the storage's address even
-                        // when the source dummy has no TARGET attribute.
-                        // Keep its aliases visible to access-path analysis.
-                        ASR::Variable_t *storage = ASRUtils::EXPR2VAR(target);
-                        if (!ASRUtils::is_pointer(storage->m_type)) {
-                            storage->m_target_attr = true;
-                        }
                         return ASRUtils::STMT(ASR::make_Associate_t(al, loc,
                             capture, target,
                             ASR::pointer_bounds_formType::NoPointerBounds));

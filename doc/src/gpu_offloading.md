@@ -99,9 +99,10 @@ view. Scalar ABI placeholders likewise never read absent storage. These
 placeholders are not Fortran default values: guarded device accesses retain
 the original absence semantics.
 
-The ASR backing storage of generated views is explicitly addressable so the
-existing unknown-pointer access-path rules also preserve host read/write and
-scope-exit synchronization for captured non-`TARGET` arguments.
+GPU synchronization recognizes the address-taken backing storage in the
+generated ASR associations, preserving host read/write and scope-exit
+synchronization for captured non-`TARGET` arguments. These body-local aliases
+do not change declared `TARGET` attributes or the separately compiled dummy ABI.
 
 ## The unsupported-construct check
 
