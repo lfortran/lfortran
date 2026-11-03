@@ -324,11 +324,12 @@ bool GpuOffloadVisitor::alias_temp_extents(ASR::expr_t *target,
         // target's bounds. The temporary's declaration takes its own copy
         // of the extent: the target's declaration may be the host's,
         // which remapping the temporary into the kernel must not reach.
+        // The copy records its origin, so that a host-computed extent of
+        // a BLOCK local target replaces it too (copy_bound).
         ASR::expr_t *extent = at->m_dims[i].m_length
             ? at->m_dims[i].m_length : whole_dim_extent(loc, target, i);
         extents.push_back(al, extent);
-        ASRUtils::ExprStmtDuplicator dup(al);
-        sizes.push_back(al, dup.duplicate_expr(extent));
+        sizes.push_back(al, copy_bound(extent));
     }
     return true;
 }

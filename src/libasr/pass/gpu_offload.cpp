@@ -35,6 +35,61 @@ using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
 
+// Replaces each expression that stands for an extent the host computes
+// -- the extent node of a BLOCK local's declaration, or a copy a
+// lowering made of it (copy_bound) -- by the kernel argument holding
+// that value.  The lowerings embed the extent wherever its value is
+// needed: as a loop bound, under a cast, in an IF or in a nested BLOCK,
+// such as the one of an alias temporary.  So the statements are walked
+// through every construct, nested BLOCKs and their declared shapes
+// included.
+class GpuHostExtentReplacer :
+        public ASR::CallReplacerOnExpressionsVisitor<GpuHostExtentReplacer> {
+    const std::function<ASR::expr_t*(ASR::expr_t*)> &origin;
+    const std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &replacements;
+
+public:
+    GpuHostExtentReplacer(
+            const std::function<ASR::expr_t*(ASR::expr_t*)> &origin,
+            const std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>>
+                &replacements)
+        : origin(origin), replacements(replacements) {}
+
+    void call_replacer() {
+        if (*current_expr == nullptr) return;
+        ASR::expr_t *o = origin(*current_expr);
+        for (auto &[old_e, new_e] : replacements) {
+            if (o == origin(old_e)) {
+                *current_expr = new_e;
+                return;
+            }
+        }
+    }
+
+    void replace_in_scope(SymbolTable *symtab) {
+        for (auto &item : symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                visit_ttype(*ASR::down_cast<ASR::Variable_t>(
+                    item.second)->m_type);
+            }
+        }
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        if (!ASR::is_a<ASR::Block_t>(*x.m_m)) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(x.m_m);
+        replace_in_scope(block->m_symtab);
+        transform_stmts(block->m_body, block->n_body);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        if (!ASR::is_a<ASR::AssociateBlock_t>(*x.m_m)) return;
+        ASR::AssociateBlock_t *block =
+            ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
+        transform_stmts(block->m_body, block->n_body);
+    }
+};
+
 class GpuContiguousStoreFinder : public ASR::BaseWalkVisitor<GpuContiguousStoreFinder> {
     const std::set<ASR::symbol_t*> &loop_variables;
     // Which subscript of a store, counted from the contiguous one.
@@ -2810,37 +2865,20 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 }
             }
         }
-        // The ArrayBroadcast lowering (inline_elemental_array_var_
-        // in_body) and the SUM and MATMUL lowerings may have created
-        // DoLoop statements whose bounds are the old VLA dimension
-        // expressions, or copies of them (own_bound), made before the
-        // pre-computation above replaced them. Walk the block body and
-        // patch any DoLoop bounds that still stand for the old
-        // expressions.
+        // The ArrayBroadcast, SUM, MATMUL and alias-temporary lowerings
+        // embedded the old extents, or copies of them (copy_bound), in
+        // the block's statements before the pre-computation above
+        // replaced them in the declarations. Replace them there too, so
+        // that the kernel uses the host's value wherever the extent
+        // appears.
         if (!dim_replacements.empty()) {
-            std::function<void(ASR::stmt_t**, size_t)>
-                patch_do_loop_bounds = [&](ASR::stmt_t **stmts,
-                                           size_t n_stmts) {
-                for (size_t si = 0; si < n_stmts; si++) {
-                    if (ASR::is_a<ASR::DoLoop_t>(*stmts[si])) {
-                        ASR::DoLoop_t *dl =
-                            ASR::down_cast<ASR::DoLoop_t>(
-                                stmts[si]);
-                        for (auto &[old_e, new_e] :
-                                dim_replacements) {
-                            if (bound_origin(dl->m_head.m_start)
-                                    == old_e)
-                                dl->m_head.m_start = new_e;
-                            if (bound_origin(dl->m_head.m_end)
-                                    == old_e)
-                                dl->m_head.m_end = new_e;
-                        }
-                        patch_do_loop_bounds(dl->m_body,
-                            dl->n_body);
-                    }
-                }
-            };
-            patch_do_loop_bounds(block->m_body, block->n_body);
+            std::function<ASR::expr_t*(ASR::expr_t*)> origin =
+                [&](ASR::expr_t *e) { return bound_origin(e); };
+            GpuHostExtentReplacer extent_replacer(origin,
+                dim_replacements);
+            for (size_t j = 0; j < block->n_body; j++) {
+                extent_replacer.visit_stmt(*block->m_body[j]);
+            }
         }
         // Remap Var references inside the block body
         GpuReplaceSymbolsVisitor block_replacer(*kernel_scope);

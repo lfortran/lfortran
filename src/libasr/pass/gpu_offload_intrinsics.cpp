@@ -1362,19 +1362,49 @@ bool GpuOffloadVisitor::intrinsic_array_result_dims(ASR::expr_t *e,
 // that a host declaration also holds would be rewritten to name a
 // kernel symbol.  Each copy records the node it was made from:
 // process_block_for_kernel replaces a function-call extent of a BLOCK
-// local by the value the host computes, and finds the loops built from
-// that extent through their origin (bound_origin).  A device routine's
+// local by the value the host computes, and finds what was built from
+// that extent through its origin (bound_origin).  A device routine's
 // statements are already the kernel's own copy, so outside the nest
 // the bound is returned as it is.
 ASR::expr_t* GpuOffloadVisitor::own_bound(ASR::expr_t *bound) {
-    if (bound == nullptr || !lowering_kernel_nest) return bound;
-    ASRUtils::ExprStmtDuplicator dup(al);
-    ASR::expr_t *copy = dup.duplicate_expr(bound);
-    bound_copies[copy] = bound_origin(bound);
-    return copy;
+    if (!lowering_kernel_nest) return bound;
+    return copy_bound(bound);
 }
 
-// The node `e` was copied from by own_bound, through any number of
+// Duplicates an expression and records, for each node of the copy, the
+// node it stands for: the origin of the node it was copied from.  A bound
+// can hold an extent below its root -- converted to another kind, say --
+// and the copy of that extent must still be found by its origin.
+namespace {
+class GpuBoundDuplicator :
+        public ASR::BaseExprStmtDuplicator<GpuBoundDuplicator> {
+    std::map<ASR::expr_t*, ASR::expr_t*> &copies;
+
+public:
+    GpuBoundDuplicator(Allocator &al,
+            std::map<ASR::expr_t*, ASR::expr_t*> &copies)
+        : BaseExprStmtDuplicator(al), copies(copies) {}
+
+    ASR::expr_t* duplicate_expr(ASR::expr_t *x) {
+        ASR::expr_t *copy = ASR::BaseExprStmtDuplicator<GpuBoundDuplicator>
+            ::duplicate_expr(x);
+        if (copy != nullptr && copy != x) {
+            auto it = copies.find(x);
+            copies[copy] = it == copies.end() ? x : it->second;
+        }
+        return copy;
+    }
+};
+} // namespace
+
+// A copy of `bound` that records its origin, whatever is being lowered.
+ASR::expr_t* GpuOffloadVisitor::copy_bound(ASR::expr_t *bound) {
+    if (bound == nullptr) return bound;
+    GpuBoundDuplicator dup(al, bound_copies);
+    return dup.duplicate_expr(bound);
+}
+
+// The node `e` was copied from by copy_bound, through any number of
 // copies, or `e` itself.
 ASR::expr_t* GpuOffloadVisitor::bound_origin(ASR::expr_t *e) {
     auto it = bound_copies.find(e);
