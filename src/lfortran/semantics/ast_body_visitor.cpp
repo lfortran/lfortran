@@ -4370,6 +4370,7 @@ public:
         }
         is_invalid = check_procedure_component_of_constant(value,
             "a pointer assignment target") || is_invalid;
+        is_invalid = check_elemental_procedure_target(value) || is_invalid;
         // With --continue-compilation, drop the reported statement.
         if (is_invalid) {
             throw SemanticAbort();
