@@ -89,6 +89,26 @@ identity through the intrinsic-function pass and lowers to the device's native
 `log` operation. This includes transitive helper calls. Host procedures retain
 their normal runtime lowering; Metal still requires `real(real32)`.
 
+### Optional captures
+
+Optional captures do not suppress a GPU launch: nonoptional work still runs
+when a captured argument is absent. The optional-argument ASR pass supplies
+the kernel's explicit presence flag, including when forwarding to device
+procedures. Host buffer addresses and shape queries use a safe view associated
+with the actual argument only when it is present; absent arrays use an empty
+view. Decomposed allocatable components use the root argument's presence
+before associating their host views or reading their bounds. Scalar ABI
+placeholders likewise never read absent storage. These
+placeholders are not Fortran default values: guarded device accesses retain
+the original absence semantics. Views preserve proven contiguity without a
+host array copy; potentially strided arguments still use the normal
+copy-in/copy-out path.
+
+GPU synchronization recognizes the address-taken backing storage in the
+generated ASR associations, preserving host read/write and scope-exit
+synchronization for captured non-`TARGET` arguments. These body-local aliases
+do not change declared `TARGET` attributes or the separately compiled dummy ABI.
+
 ## The unsupported-construct check
 
 The check decides from the program as written, before any lowering, whether a

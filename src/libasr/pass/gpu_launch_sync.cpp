@@ -327,6 +327,12 @@ private:
                 && (out_of_reach(a.root) || out_of_reach(b.root))) {
             return false;
         }
+        // Generated associations can take the address of non-TARGET storage.
+        // That is a body-local alias fact, not a change to the dummy's ABI.
+        if ((may_point_anywhere(a.root) && reached.count(b.root) > 0)
+                || (may_point_anywhere(b.root) && reached.count(a.root) > 0)) {
+            return true;
+        }
         return overlap(a, b);
     }
 
@@ -334,7 +340,8 @@ private:
         if (s.written.empty()) return false;
         if (acc.everything) return true;
         for (const Path &w : s.written) {
-            if (acc.globals && reachable_elsewhere(w.root, routine)
+            if (acc.globals && (reachable_elsewhere(w.root, routine)
+                        || reached.count(w.root) > 0)
                     && !out_of_reach(w.root)) {
                 return true;
             }
@@ -353,13 +360,14 @@ private:
         }
     }
 
-    // Whether `scope` has a local, not saved, that a pointer may point to.
+    // Whether `scope` has unsaved storage a pointer may point to, including
+    // storage reached through compiler-generated associations.
     bool has_target_locals(SymbolTable *scope) const {
         for (auto &item : scope->get_scope()) {
             if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
                 item.second);
-            if (v->m_target_attr
+            if ((v->m_target_attr || reached.count(item.second) > 0)
                     && v->m_storage != ASR::storage_typeType::Save
                     && !out_of_reach(item.second)) {
                 return true;
