@@ -18,7 +18,7 @@ module template_intrinsic_op_01_m
     contains
         pure elemental function call_op_func(x) result(res)
             type(V) :: res
-            type(T) :: x
+            type(T), intent(in) :: x
             res = op_func(x, x)
         end function
     end template

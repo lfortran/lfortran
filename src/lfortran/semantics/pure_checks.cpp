@@ -41,7 +41,7 @@ void PureChecks::check_definition(const ASR::Function_t &f,
                 *ASRUtils::type_get_past_pointer(v.m_type))) {
             continue;
         }
-        if (!dummy_intent_given(v, diag)
+        if (!dummy_intent_given(f, v, diag)
                 && !compiler_options.continue_compilation) {
             throw SemanticAbort();
         }
@@ -65,9 +65,11 @@ bool PureChecks::body_has_no_side_effects(const ASR::Function_t &f,
     return false;
 }
 
-bool PureChecks::dummy_intent_given(const ASR::Variable_t &v,
-        diag::Diagnostics &diag) {
-    if (v.m_intent != ASR::intentType::Unspecified || v.m_value_attr) {
+bool PureChecks::dummy_intent_given(const ASR::Function_t &f,
+        const ASR::Variable_t &v, diag::Diagnostics &diag) {
+    // ElementalChecks::dummy_intent_given reports it for an elemental procedure.
+    if (v.m_intent != ASR::intentType::Unspecified || v.m_value_attr
+            || ASRUtils::get_FunctionType(f)->m_elemental) {
         return true;
     }
     diag.add(diag::Diagnostic(
