@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_optional_array_01-2cd7885",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_optional_array_01.f90",
+    "infile_hash": "6dc19c4b187bdb28f97e3c70627af69017ea48cb1447e139ab072432",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_optional_array_01-2cd7885.stderr",
+    "stderr_hash": "e62549dd5a9f841e179485709ea83ffaf8d6296ef80ee3b6ab0bff55",
+    "returncode": 1
+}

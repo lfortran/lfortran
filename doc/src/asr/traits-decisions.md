@@ -204,6 +204,8 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-11-03 | Relayed a module MRE whose derived type `MyType` declares the component `class(ITrait), allocatable :: arr(:)`. | TD-46 |
 | 2026-11-03 | Relayed three further MREs: passing the section `objs(1:1)` of an allocatable runtime trait array to a `class(ITrait) :: obj(:)` dummy, `associate(obj => objs(2))` with an element of one, and a module whose `MyType` holds a view of a trait whose message takes `real(8), target, intent(in) :: a(:)`. | TD-46 |
 | 2026-11-03 | Relayed a module MRE whose `MyType` implements the pure message `method` of `ISomeTrait` and has the component `class(IOtherTrait), allocatable :: obj`, which failed ASR verification. | TD-46 |
+| 2026-11-04 | Relayed a module MRE whose message allocates `class(ISomeTrait), allocatable, intent(out) :: arr(:)` with `allocate(MyType :: arr(1))` and then assigns `arr = MyType()`. | TD-46 |
+| 2026-11-04 | Relayed a module MRE whose function declares `class(ISomeTrait), optional, intent(in) :: obj`. | TD-35 |
 
 ## Entries
 
@@ -1108,8 +1110,9 @@ specification action, that is, what the paper should say.
   requirements support such operands); an ASSOCIATE whose selector is a trait
   array or a trait-object expression (one whose selector is a scalar trait
   object designator is a borrowed view since 2026-11-03); and `intent(out)`,
-  omitted INTENT, OPTIONAL and VALUE trait-object
-  dummies that are neither allocatable nor pointers (TD-35).
+  omitted INTENT and VALUE trait-object dummies that are neither allocatable
+  nor pointers, and OPTIONAL trait arrays (TD-35); a scalar OPTIONAL view
+  dummy is supported since 2026-11-04.
 - **Specification action.** Decide whether messages declare their receivers.
   If they do, specify: the declaration (here a PASS-marked `type(itself)`
   dummy of any name and position) and its constraints; that an unmarked

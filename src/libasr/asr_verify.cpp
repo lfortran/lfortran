@@ -79,6 +79,53 @@ public:
     void visit_TypeInquiry(const TypeInquiry_t & /*x*/) {}
 };
 
+// Whether each reference to the local view `local` is an actual argument of
+// a call, as the placeholder the optional-argument pass passes for an absent
+// optional view argument is.
+class AbsentViewActual : public BaseWalkVisitor<AbsentViewActual>
+{
+public:
+    const Variable_t &local;
+    size_t references = 0;
+    size_t actuals = 0;
+
+    AbsentViewActual(const Variable_t &local_) : local(local_) {}
+
+    void visit_Var(const Var_t &x) {
+        if (ASRUtils::symbol_get_past_external(x.m_v) == &local.base) references++;
+    }
+
+    void count_actuals(const call_arg_t *args, size_t n) {
+        for (size_t i = 0; i < n; i++) {
+            if (args[i].m_value && is_a<Var_t>(*args[i].m_value) &&
+                    ASRUtils::symbol_get_past_external(
+                        down_cast<Var_t>(args[i].m_value)->m_v) == &local.base) {
+                actuals++;
+            }
+        }
+    }
+
+    void visit_FunctionCall(const FunctionCall_t &x) {
+        count_actuals(x.m_args, x.n_args);
+        BaseWalkVisitor::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const SubroutineCall_t &x) {
+        count_actuals(x.m_args, x.n_args);
+        BaseWalkVisitor::visit_SubroutineCall(x);
+    }
+
+    void visit_TraitFunctionCall(const TraitFunctionCall_t &x) {
+        count_actuals(x.m_args, x.n_args);
+        BaseWalkVisitor::visit_TraitFunctionCall(x);
+    }
+
+    void visit_TraitSubroutineCall(const TraitSubroutineCall_t &x) {
+        count_actuals(x.m_args, x.n_args);
+        BaseWalkVisitor::visit_TraitSubroutineCall(x);
+    }
+};
+
 class ConcreteInitializer : public BaseWalkVisitor<ConcreteInitializer>
 {
 public:
@@ -6101,13 +6148,29 @@ public:
                     x.m_parent_symtab->asr_owner));
             bool association = x.m_storage == storage_typeType::Association &&
                 ASR::is_a<TraitObjectType_t>(*x.m_type);
-            require_id((borrowed || owner || slot || result || pointer || association) &&
-                    x.m_presence == presenceType::Required &&
+            // The optional-argument pass passes an uninitialized local view
+            // for an absent optional view argument, with a false presence
+            // flag, so it is never accessed.
+            bool absent = false;
+            if (ASR::is_a<TraitObjectType_t>(*x.m_type) && !dummy &&
+                    x.m_intent == intentType::Local &&
+                    x.m_storage == storage_typeType::Default &&
+                    !x.m_symbolic_value && !x.m_value && x.m_parent_symtab &&
+                    x.m_parent_symtab->asr_owner &&
+                    ASR::is_a<symbol_t>(*x.m_parent_symtab->asr_owner)) {
+                AbsentViewActual uses(x);
+                uses.visit_symbol(*ASR::down_cast<symbol_t>(x.m_parent_symtab->asr_owner));
+                absent = uses.references == uses.actuals;
+            }
+            require_id((borrowed || owner || slot || result || pointer || association ||
+                        absent) &&
+                    (x.m_presence == presenceType::Required ||
+                        (borrowed && ASR::is_a<TraitObjectType_t>(*x.m_type))) &&
                     !x.m_value_attr &&
                     ((!x.m_symbolic_value && !x.m_value) || null_initialized) &&
                     !x.m_type_declaration && !x.n_codims,
                 "asr.verify.trait_view.borrowed_storage",
-                "Trait storage must be a required intent(in) or intent(inout) view or "
+                "Trait storage must be an intent(in) or intent(inout) view, a required "
                 "assumed-shape array of views, a scalar allocatable slot/result, or an "
                 "initially unallocated local owner");
             if (slot || result || (pointer && dummy)) {

@@ -1299,10 +1299,12 @@ public:
                     "' of pure function must have INTENT(IN) or VALUE attribute";
             } else if (!slot && !pointer && ((dummy->m_intent != ASR::intentType::In &&
                         dummy->m_intent != ASR::intentType::InOut) ||
-                    dummy->m_presence != ASR::presenceType::Required ||
                     dummy->m_value_attr)) {
                 message = "runtime trait dummies currently require intent(in) or "
-                    "intent(inout) without optional or value";
+                    "intent(inout) without value";
+            } else if (ASRUtils::is_trait_array(dummy->m_type) &&
+                    dummy->m_presence != ASR::presenceType::Required) {
+                message = "optional runtime trait array dummies are not implemented yet";
             }
             if (!message.empty()) {
                 diag.semantic_error_label(message, {dummy->base.base.loc}, "");

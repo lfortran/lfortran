@@ -1993,7 +1993,15 @@ a trailing explicit `integer(8), value, intent(in)` dummy is never taken for one
 (`traits_associated_06`).
 
 Bare borrowed view dummies require explicit `intent(in)` or `intent(inout)` and
-cannot be pointer, allocatable, optional, or VALUE. A separate INTENT statement
+cannot be pointer, allocatable, or VALUE. A scalar view dummy can be OPTIONAL,
+as a further report declares `class(ISomeTrait), optional, intent(in) :: obj`,
+also in a message that is not generic: the shared optional-argument pass gives
+it a presence flag, and an absent actual is an uninitialized local view that
+is never accessed. The verifier accepts a local view only when every reference
+to it is such an actual argument.
+`traits_runtime_optional_view_01` omits, passes and forwards such views,
+statically and through a runtime view; an optional trait array dummy is
+diagnosed as not implemented (`traits_optional_array_01`). A separate INTENT statement
 is equivalent to an inline INTENT attribute; eligibility is checked on the
 completed procedure interface. Saved or initialized borrowed view storage is not
 supported. A structure constructor or a concrete nonallocatable, nonpointer

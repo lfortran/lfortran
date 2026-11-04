@@ -1,0 +1,15 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+ --> tests/errors/traits_optional_array_01.f90:5:5 - 6:18
+  |
+5 |        abstract interface :: IValue
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+6 |        end interface
+  | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: optional runtime trait array dummies are not implemented yet
+ --> tests/errors/traits_optional_array_01.f90:9:48
+  |
+9 |         class(IValue), optional, intent(in) :: objs(:)
+  |                                                ^^^^^^^ 

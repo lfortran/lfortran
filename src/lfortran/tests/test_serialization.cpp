@@ -4963,8 +4963,9 @@ contains
                 auto result = LCompilers::LFortran::ast_to_asr(
                     al, *parsed.result, diagnostics, nullptr, false, options, lm);
                 INFO(diagnostics.render2());
+                // A view dummy can be optional, also by an OPTIONAL statement.
                 bool valid_slot = attribute == "allocatable :: object" ||
-                    attribute == "pointer :: object";
+                    attribute == "pointer :: object" || attribute == "optional :: object";
                 if (valid_slot) {
                     CHECK(result.ok);
                     CHECK_FALSE(diagnostics.has_error());

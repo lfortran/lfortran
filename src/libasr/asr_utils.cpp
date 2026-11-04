@@ -7163,7 +7163,8 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
             if (trait_method_template(method) ||
                     (arg->m_intent != ASR::intentType::In &&
                      arg->m_intent != ASR::intentType::InOut) ||
-                    arg->m_presence != ASR::presenceType::Required ||
+                    (arg->m_presence != ASR::presenceType::Required &&
+                     !ASR::is_a<ASR::TraitObjectType_t>(*arg->m_type)) ||
                     arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
                     arg->n_codims) return false;
             continue;

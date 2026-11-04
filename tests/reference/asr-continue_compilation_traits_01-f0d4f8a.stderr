@@ -422,19 +422,7 @@ semantic error: Dummy argument 'object' not defined
 2130 |        end subroutine
      | ...^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
-    --> tests/errors/continue_compilation_traits_01.f90:2175:38
-     |
-2175 |         class(IValue), intent(in) :: object
-     |                                      ^^^^^^ 
-
-semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
-    --> tests/errors/continue_compilation_traits_01.f90:2179:38
-     |
-2179 |         class(IValue), intent(in) :: object
-     |                                      ^^^^^^ 
-
-semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
+semantic error: runtime trait dummies currently require intent(in) or intent(inout) without value
     --> tests/errors/continue_compilation_traits_01.f90:2185:26
      |
 2185 |         class(IValue) :: object
@@ -452,7 +440,7 @@ semantic error: Cannot set dimension for variable of non-numerical type
 2202 |         dimension :: object(2)
      |         ^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
+semantic error: runtime trait dummies currently require intent(in) or intent(inout) without value
     --> tests/errors/continue_compilation_traits_01.f90:2205:26
      |
 2205 |         class(IValue) :: object

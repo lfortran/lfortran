@@ -8,13 +8,13 @@ warning: traits are an experimental LFortran extension; use ordinary derived typ
 14 |        end interface
    | ...^^^^^^^^^^^^^^^^^^ LFortran extension
 
-semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
+semantic error: runtime trait dummies currently require intent(in) or intent(inout) without value
    --> tests/errors/continue_compilation_traits_inout.f90:143:39
     |
 143 |         class(IValue), intent(out) :: object
     |                                       ^^^^^^ 
 
-semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
+semantic error: runtime trait dummies currently require intent(in) or intent(inout) without value
    --> tests/errors/continue_compilation_traits_inout.f90:146:26
     |
 146 |         class(IValue) :: object
