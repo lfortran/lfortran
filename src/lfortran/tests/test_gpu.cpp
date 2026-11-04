@@ -1096,6 +1096,106 @@ end program
 }
 
 #ifndef HAVE_BUILD_TO_WASM
+TEST_CASE("A private map feeds an ordered reduction without a workspace") {
+    std::string source = read_project_file(
+        "integration_tests/gpu_private_reduction_01.f90");
+    for (const std::string transforms : {"all", "none"}) {
+        INFO(transforms);
+        CompilerOptions options;
+        options.gpu_backend = "metal";
+        options.po.gpu_offload_metal = true;
+        options.po.gpu_loop_transforms = transforms;
+        options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        FortranEvaluator evaluator(options);
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = "gpu_private_reduction_01.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LFortran::source_offset(source.size()));
+        diag::Diagnostics diagnostics;
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        Allocator allocator(32 * 1024 * 1024);
+        PassManager passes;
+        passes.use_default_passes();
+        passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+        size_t kernels = 0;
+        for (const auto &entry: parsed.result->m_symtab->get_scope()) {
+            if (!ASRUtils::is_device_kernel(entry.second)) continue;
+            auto* kernel = ASR::down_cast<ASR::Function_t>(entry.second);
+            REQUIRE(kernel->m_gpu != nullptr);
+            CHECK(kernel->m_gpu->n_workspaces == (transforms == "all" ? 0 : 1));
+            kernels++;
+        }
+        CHECK(kernels == 1);
+    }
+}
+
+TEST_CASE("Private reduction fusion retains escaping mutated and reused maps") {
+    auto check = [](const std::string &extent, const std::string &consumer,
+            const std::string &attributes = "") {
+        INFO(extent << " / " << consumer << " / " << attributes);
+        std::string source = R"(
+subroutine map(input,x,y,saved)
+    real, contiguous, intent(in) :: input(:,:), x(:)
+    real, contiguous, intent(out) :: y(:,:), saved(:,:)
+    do concurrent (integer :: n = 1:size(y,2))
+        block
+            real)" + attributes + R"( :: codes()" + extent + R"()
+            do concurrent (integer :: d = 1:)" + extent + R"()
+                codes(d) = input(d,n)
+            end do
+            )" + consumer + R"(
+        end block
+    end do
+end subroutine
+)";
+        CompilerOptions options;
+        options.gpu_backend = "metal";
+        options.po.gpu_offload_metal = true;
+        options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        FortranEvaluator evaluator(options);
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = "private_reduction_fallback.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LFortran::source_offset(source.size()));
+        diag::Diagnostics diagnostics;
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        Allocator allocator(32 * 1024 * 1024);
+        PassManager passes;
+        passes.use_default_passes();
+        passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+        size_t kernels = 0;
+        for (const auto &entry: parsed.result->m_symtab->get_scope()) {
+            if (!ASRUtils::is_device_kernel(entry.second)) continue;
+            auto* kernel = ASR::down_cast<ASR::Function_t>(entry.second);
+            REQUIRE(kernel->m_gpu != nullptr);
+            CHECK(kernel->m_gpu->n_workspaces == 1);
+            kernels++;
+        }
+        CHECK(kernels == 1);
+    };
+    check("size(x)", "saved(:,n)=codes\ny(1,n)=sum(codes*x)");
+    check("size(x)", "codes(1)=codes(1)+1\ny(1,n)=sum(codes*x)");
+    check("size(x)", "do concurrent(integer :: m=1:2)\ny(m,n)=sum(codes*x)\nend do");
+    check("size(x)+4", "y(1,n)=sum(codes(:size(x))*x)");
+    check("size(x)", "y(1,n)=sum(codes*x)", ", target");
+    check("size(x)", "y(1,n)=sum(codes*x)", ", volatile");
+    check("size(x)", "y(1,n)=sum(codes*x)+sum(codes*x)");
+    check("size(x)", "y(1,n)=sum(codes*x)\nblock\nreal :: shape_user(size(codes))\n"
+        "shape_user=0\ny(2,n)=sum(shape_user)\nend block");
+}
+
 TEST_CASE("Scalar call actual reductions do not reserve a product heap") {
     std::string source = read_project_file(
         "integration_tests/gpu_scalar_reduction_actual_01.f90");

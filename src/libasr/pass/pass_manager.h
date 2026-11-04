@@ -156,6 +156,7 @@ namespace LCompilers {
             {"gpu_launch_sync", &pass_gpu_launch_sync},
             {"gpu_sequential_unroll", &pass_gpu_sequential_unroll},
             {"gpu_loop_fusion", &pass_gpu_loop_fusion},
+            {"gpu_private_reduction_fusion", &pass_gpu_private_reduction_fusion},
             {"gpu_time_skew", &pass_gpu_time_skew},
             {"gpu_index_set_split", &pass_gpu_index_set_split},
             {"gpu_loop_transforms", &pass_gpu_loop_transforms},
@@ -400,6 +401,9 @@ namespace LCompilers {
                 "pass_list_expr",
                 "where",
                 "array_op",
+                // A block-private map read once by an ordered scalar fold
+                // needs only a scalar, not a per-thread device workspace.
+                "gpu_private_reduction_fusion",
                 "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",

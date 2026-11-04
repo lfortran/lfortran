@@ -54,6 +54,25 @@ evaluated (the second operand of a logical operator, an argument of
 
 ## Producer-consumer fusion (`fuse`, `gpu_loop_fusion.cpp`)
 
+### Private map into an ordered scalar fold
+
+After shared reduction lowering, `gpu_private_reduction_fusion` also runs
+for Metal. A block-local rank-one map used only by one additive scalar fold
+over the identical full unit-stride domain can be replaced by a typed scalar
+assignment before each fold update. This preserves the producer's evaluation
+count, the scalar rounding boundary and the fold's addition order; it does
+not introduce SIMD reduction or reassociation. `--gpu-loop-transforms=none`
+disables it.
+
+The array must not escape, alias other storage, be volatile or have another
+reader or writer. A partial-domain fold, conditional multi-output producer,
+or row loop reusing the map keeps the original storage. In particular this
+does not yet eliminate arrays shared by grouped reductions and conditional
+weight materialization in a projection. No backend-specific pattern or
+application name is involved.
+
+### Time-step fusion
+
 Two adjacent parallel loops, a producer that assigns arrays element by
 element and a consumer that reads them at constant offsets, become one loop
 over the consumer's iterations in which each element the consumer reads is
