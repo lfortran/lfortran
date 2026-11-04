@@ -1,6 +1,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/access_paths.h>
+#include <libasr/pass/intrinsic_functions.h>
 #include <libasr/pass/loop_fusion.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -101,7 +102,10 @@ scalar assignments between them (the statements M), are fused when:
   accesses the same element).
 * The bounds reference nothing that the nests or M assign, and no fused
   loop variable is assigned. M assigns nothing the second nest references,
-  and references nothing the second nest assigns, so it can run after it.
+  and references nothing the second nest assigns, so it can run after it;
+  except for assignments of constants to scalars that only the second nest
+  references (the initializations of its reductions), which run before the
+  fused nest.
 * The fused nest is faster (`profitable`). It loads the arrays both nests
   access once instead of twice, but streams the arrays of both nests at
   once. So the innermost bodies contain no loop and run the same way
@@ -157,6 +161,23 @@ int64_t uses_in(ASR::stmt_t **body, size_t n, ASR::symbol_t *symbol) {
     for (size_t i = 0; i < n; i++) count += uses_in(body[i], symbol);
     return count;
 }
+
+// Whether an expression calls an elemental intrinsic that the vectorizer
+// does not vectorize (one implemented by a library call, such as `exp`).
+class ScalarCalls : public ASR::BaseWalkVisitor<ScalarCalls> {
+public:
+    bool found = false;
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+        switch (static_cast<ASRUtils::IntrinsicElementalFunctions>(x.m_intrinsic_id)) {
+            case ASRUtils::IntrinsicElementalFunctions::Abs:
+            case ASRUtils::IntrinsicElementalFunctions::Max:
+            case ASRUtils::IntrinsicElementalFunctions::Min:
+            case ASRUtils::IntrinsicElementalFunctions::Sign: break;
+            default: found = true;
+        }
+        ASR::BaseWalkVisitor<ScalarCalls>::visit_IntrinsicElementalFunction(x);
+    }
+};
 
 ASR::Variable_t *integer_scalar_variable(ASR::expr_t *e) {
     if (e == nullptr || !ASR::is_a<ASR::Var_t>(*e)) return nullptr;
@@ -837,12 +858,14 @@ private:
         // Accesses an array along a dimension other than the first one in
         // the innermost loop.
         bool strided = false;
+        // Calls an intrinsic that does not vectorize.
+        bool scalar_calls = false;
         // Contains a loop.
         bool inner_loop = false;
         bool operator==(const Profile &o) const {
             return carried == o.carried && conditional == o.conditional
                 && gather == o.gather && strided == o.strided
-                && inner_loop == o.inner_loop;
+                && scalar_calls == o.scalar_calls && inner_loop == o.inner_loop;
         }
     };
 
@@ -940,6 +963,9 @@ private:
         };
         for (size_t i = 0; i < n; i++) {
             ASR::stmt_t *s = body[i];
+            ScalarCalls calls;
+            calls.visit_stmt(*s);
+            p.scalar_calls = p.scalar_calls || calls.found;
             if (ASR::is_a<ASR::DoLoop_t>(*s)) {
                 p.inner_loop = true;
             } else if (ASR::is_a<ASR::If_t>(*s)) {
@@ -975,8 +1001,10 @@ private:
     // a fused loop that streams many arrays is slower than two loops that
     // stream fewer each, and one that does not vectorize while one of the
     // nests would is much slower. So the nests must run the same way
-    // (`Profile`), share at least a quarter of the arrays they reference,
-    // and not be large.
+    // (`Profile`), share at least a quarter of the arrays they reference
+    // (an array the first nest assigns and the second one reads counts
+    // twice: fusion saves both storing and loading it), store an array (two
+    // reductions of an array in cache are faster apart), and not be large.
     bool profitable(ASR::DoLoop_t *a, Collector &c1, ASR::DoLoop_t *b,
             Collector &c2, const SymbolMap &map, size_t n_fused) {
         if (n_fused == 0) return false;
@@ -984,19 +1012,36 @@ private:
         Profile p2 = profile(b, c2, map);
         if (p1.inner_loop || p2.inner_loop || !(p1 == p2)) return false;
         std::set<ASR::symbol_t*> a1, a2, all;
-        for (auto &x: c1.accesses) if (x.second.array) a1.insert(x.first);
-        for (auto &x: c2.accesses) if (x.second.array) a2.insert(x.first);
+        size_t produced = 0;
+        bool stores = false;
+        for (auto &x: c1.accesses) {
+            if (!x.second.array) continue;
+            a1.insert(x.first);
+            stores = stores || x.second.written;
+            auto other = c2.accesses.find(x.first);
+            if (x.second.written && other != c2.accesses.end() && other->second.read) {
+                produced++;
+            }
+        }
+        for (auto &x: c2.accesses) {
+            if (!x.second.array) continue;
+            a2.insert(x.first);
+            stores = stores || x.second.written;
+        }
         all = a1;
         all.insert(a2.begin(), a2.end());
         size_t shared = a1.size() + a2.size() - all.size();
-        return shared > 0 && 4*shared >= a1.size() + a2.size()
+        return stores && shared > 0 && 4*(shared + produced) >= a1.size() + a2.size()
             && all.size() <= 12 && a->n_body + b->n_body <= 16;
     }
 
     // Fuses the nest `second` into the nest `first`, with the statements
     // `between` them, when it is legal (see the top of the file).
+    // `hoist` tells which statements of `between` (initializations of
+    // scalars that only the second nest references, such as the
+    // accumulator of a reduction) run before the fused nest instead.
     bool try_fuse(ASR::DoLoop_t *first, const std::vector<ASR::stmt_t*> &between,
-            ASR::DoLoop_t *second) {
+            ASR::DoLoop_t *second, std::vector<bool> &hoist) {
         SymbolMap map;
         Shifts shifts;
         std::vector<ASR::symbol_t*> fused;
@@ -1055,8 +1100,32 @@ private:
         }
         c1.stmts(a->m_body, a->n_body);
         c2.stmts(b->m_body, b->n_body);
-        for (ASR::stmt_t *s: between) cm.stmt(s);
-        if (!c1.ok || !c2.ok || !cm.ok || !bounds.ok) return false;
+        if (!c1.ok || !c2.ok || !bounds.ok) return false;
+        // An assignment of a constant to a scalar that the second nest
+        // references, and that neither the first nest (its body and its
+        // bounds) nor another statement of M references, runs before the
+        // fused nest: nothing else it moves across sees the scalar.
+        hoist.assign(between.size(), false);
+        for (size_t k = 0; k < between.size(); k++) {
+            ASR::Assignment_t *x = ASR::down_cast<ASR::Assignment_t>(between[k]);
+            ASR::symbol_t *t = var_symbol(x->m_target);
+            if (!ASRUtils::is_value_constant(x->m_value) || x->m_overloaded
+                    || !analyzable_variable(t, current_scope)
+                    || c2.accesses.count(t) == 0 || c1.accesses.count(t)
+                    || bounds.accesses.count(t)
+                    || std::find(fused.begin(), fused.end(), t) != fused.end()) {
+                continue;
+            }
+            bool alone = true;
+            for (size_t j = 0; j < between.size(); j++) {
+                if (j != k && uses_in(between[j], t) > 0) alone = false;
+            }
+            hoist[k] = alone;
+        }
+        for (size_t k = 0; k < between.size(); k++) {
+            if (!hoist[k]) cm.stmt(between[k]);
+        }
+        if (!cm.ok) return false;
 
         auto written = [&](ASR::symbol_t *s) {
             return (c1.accesses.count(s) && c1.accesses[s].written)
@@ -1128,10 +1197,23 @@ private:
                 if (q >= body.size() || !ASR::is_a<ASR::DoLoop_t>(*body[q])) break;
                 std::vector<ASR::stmt_t*> between(body.begin() + p + 1,
                     body.begin() + q);
+                std::vector<bool> hoist;
                 if (try_fuse(ASR::down_cast<ASR::DoLoop_t>(body[p]), between,
-                        ASR::down_cast<ASR::DoLoop_t>(body[q]))) {
-                    // The statements in between now run after the nest.
+                        ASR::down_cast<ASR::DoLoop_t>(body[q]), hoist)) {
+                    // The hoisted statements now run before the nest, the
+                    // other statements in between after it.
+                    std::vector<ASR::stmt_t*> order;
+                    for (size_t k = 0; k < between.size(); k++) {
+                        if (hoist[k]) order.push_back(between[k]);
+                    }
+                    size_t n_hoisted = order.size();
+                    order.push_back(body[p]);
+                    for (size_t k = 0; k < between.size(); k++) {
+                        if (!hoist[k]) order.push_back(between[k]);
+                    }
+                    std::copy(order.begin(), order.end(), body.begin() + p);
                     body.erase(body.begin() + q);
+                    p += n_hoisted;
                     fused = true;
                 }
             }
