@@ -37,6 +37,7 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
             ok = result_not_allocatable(r, proc_name, diag) && ok;
             ok = result_not_pointer(r, proc_name, diag) && ok;
             ok = result_type_params(f, r, proc_name, diag) && ok;
+            ok = result_derived_type_params(f, r, proc_name, diag) && ok;
         }
     }
     if (!ok && !compiler_options.continue_compilation) {
@@ -253,6 +254,12 @@ bool ElementalChecks::result_type_params(const ASR::Function_t &f,
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("", {v.found->base.base.loc})}));
     return false;
+}
+
+bool ElementalChecks::result_derived_type_params(const ASR::Function_t &,
+        const ASR::Variable_t &, const std::string &, diag::Diagnostics &) {
+    // TODO: check the length parameter expressions of a derived-type result
+    return true;
 }
 
 } // namespace LCompilers::LFortran
