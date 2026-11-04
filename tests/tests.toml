@@ -3704,6 +3704,10 @@ filename = "errors/continue_compilation_block_interface.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_elemental_result.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_coarrays.f90"
 semantics_only_cc = true
 

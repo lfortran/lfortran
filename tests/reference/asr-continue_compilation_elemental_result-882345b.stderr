@@ -1,0 +1,23 @@
+semantic error: result of elemental function 'array_result' must be scalar
+ --> tests/errors/continue_compilation_elemental_result.f90:8:20
+  |
+8 |         integer :: r(2)  ! {Error} result of elemental function 'array_result' must be scalar
+  |                    ^^^^ 
+
+semantic error: result of elemental function 'allocatable_result' cannot be allocatable
+  --> tests/errors/continue_compilation_elemental_result.f90:13:33
+   |
+13 |         integer, allocatable :: r  ! {Error} result of elemental function 'allocatable_result' cannot be allocatable
+   |                                 ^ 
+
+semantic error: result of elemental function 'pointer_result' cannot be a pointer
+  --> tests/errors/continue_compilation_elemental_result.f90:18:29
+   |
+18 |         integer, pointer :: r  ! {Error} result of elemental function 'pointer_result' cannot be a pointer
+   |                             ^ 
+
+semantic error: result length of elemental function 'len_trim_result' can use dummy argument 'x' only as the argument of an inquiry function such as len
+  --> tests/errors/continue_compilation_elemental_result.f90:23:32
+   |
+23 |         character(len=len_trim(x)) :: r  ! {Error} result length of elemental function 'len_trim_result' can use dummy argument 'x' only as the argument of an inquiry function such as len
+   |                                ^ 
