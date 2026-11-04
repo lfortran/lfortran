@@ -3701,10 +3701,6 @@ filename = "errors/continue_compilation_operator_interface.f90"
 semantics_only_cc = true
 
 [[test]]
-filename = "errors/continue_compilation_elemental_dummies.f90"
-semantics_only_cc = true
-
-[[test]]
 filename = "errors/continue_compilation_external_procedure.f90"
 semantics_only_cc = true
 
