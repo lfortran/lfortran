@@ -5449,7 +5449,20 @@ public:
             }
             case ASR::exprType::RealBinOp: {
                 ASR::RealBinOp_t *op = ASR::down_cast<ASR::RealBinOp_t>(expr);
-                if (op->m_op == ASR::binopType::Pow) {
+                ASR::expr_t *rsqrt_arg = nullptr;
+                if (co.po.fast && !co.po.no_fast_math
+                        && op->m_op == ASR::binopType::Div
+                        && is_real_one(op->m_left)) {
+                    rsqrt_arg = sqrt_argument(op->m_right);
+                }
+                if (rsqrt_arg != nullptr) {
+                    // 1/sqrt(x), which the device computes in one
+                    // operation, a little less exactly: a fast-math rewrite.
+                    src << "rsqrt(";
+                    visit_expr(rsqrt_arg);
+                    src << ")";
+                } else if (op->m_op == ASR::binopType::Pow) {
+
                     src << "pow(";
                     visit_expr(op->m_left);
                     src << ", ";
@@ -6468,6 +6481,41 @@ public:
             if (f->n_args > 0) visit_expr(f->m_args[0]);
             src << ")";
         }
+    }
+
+    // Whether `e` has the real value 1 (`1.0`, or `1` converted to real).
+    static bool is_real_one(ASR::expr_t *e) {
+        ASR::expr_t *value = ASRUtils::expr_value(e);
+        if (value == nullptr) value = e;
+        return ASR::is_a<ASR::RealConstant_t>(*value)
+            && ASR::down_cast<ASR::RealConstant_t>(value)->m_r == 1.0;
+    }
+
+    // The argument of `e` when it is the square root of one, else nullptr.
+    static ASR::expr_t *sqrt_argument(ASR::expr_t *e) {
+        if (ASR::is_a<ASR::RealSqrt_t>(*e)) {
+            return ASR::down_cast<ASR::RealSqrt_t>(e)->m_arg;
+        }
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
+            ASR::IntrinsicElementalFunction_t *f =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+            if (f->m_intrinsic_id == static_cast<int64_t>(
+                        ASRUtils::IntrinsicElementalFunctions::Sqrt)
+                    && f->n_args == 1 && ASRUtils::is_real(
+                        *ASRUtils::expr_type(f->m_args[0]))) {
+                return f->m_args[0];
+            }
+        }
+        if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+            ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(e);
+            std::string name = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(fc->m_name));
+            if (name.find("_lcompilers_sqrt_") == 0 && fc->n_args == 1
+                    && fc->m_args[0].m_value != nullptr) {
+                return fc->m_args[0].m_value;
+            }
+        }
+        return nullptr;
     }
 
     std::string binop_str(ASR::binopType op) {
