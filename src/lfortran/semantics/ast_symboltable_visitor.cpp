@@ -2776,6 +2776,9 @@ public:
         ElementalChecks::check_procedure(
             *ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp)),
             to_lower(x.m_name), diag, compiler_options);
+        ElementalChecks::check_dummy_procedures(
+            *ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp)),
+            diag, compiler_options);
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
@@ -3630,6 +3633,7 @@ public:
             compiler_options);
         ElementalChecks::check_procedure(*func, to_lower(x.m_name), diag,
             compiler_options);
+        ElementalChecks::check_dummy_procedures(*func, diag, compiler_options);
 
         if (parent_scope->get_symbol(sym_name) != nullptr
                 && !is_forward_instantiation_procedure(parent_scope->get_symbol(sym_name))) {

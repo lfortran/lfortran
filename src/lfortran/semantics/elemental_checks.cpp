@@ -274,6 +274,22 @@ bool ElementalChecks::result_derived_type_params(const ASR::Function_t &,
     return true;
 }
 
+void ElementalChecks::check_dummy_procedures(const ASR::Function_t &f,
+        diag::Diagnostics &diag, const CompilerOptions &compiler_options) {
+    bool ok = true;
+    for (size_t i = 0; i < f.n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*f.m_args[i])) continue;
+        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
+        if (!ASR::is_a<ASR::Function_t>(*sym)) continue;
+        ASR::Function_t *dummy = ASR::down_cast<ASR::Function_t>(sym);
+        ok = not_dummy_interface(dummy->m_name, dummy->m_function_signature,
+            false, sym->base.loc, diag) && ok;
+    }
+    if (!ok && !compiler_options.continue_compilation) {
+        throw SemanticAbort();
+    }
+}
+
 bool ElementalChecks::is_nonintrinsic_elemental(ASR::symbol_t *sym) {
     if (sym == nullptr) return false;
     sym = ASRUtils::symbol_get_past_external(sym);
