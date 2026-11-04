@@ -18,6 +18,7 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
         ok = dummy_scalar(v, proc_name, diag) && ok;
         ok = dummy_not_allocatable(v, proc_name, diag) && ok;
         ok = dummy_not_pointer(v, proc_name, diag) && ok;
+        ok = dummy_not_coarray(v, proc_name, diag) && ok;
     }
     if (!ok && !compiler_options.continue_compilation) {
         throw SemanticAbort();
@@ -52,6 +53,17 @@ bool ElementalChecks::dummy_not_pointer(const ASR::Variable_t &v,
     diag.add(diag::Diagnostic(
         "dummy argument '" + std::string(v.m_name) +
         "' of elemental procedure '" + proc_name + "' cannot be a pointer",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {v.base.base.loc})}));
+    return false;
+}
+
+bool ElementalChecks::dummy_not_coarray(const ASR::Variable_t &v,
+        const std::string &proc_name, diag::Diagnostics &diag) {
+    if (v.n_codims == 0) return true;
+    diag.add(diag::Diagnostic(
+        "dummy argument '" + std::string(v.m_name) +
+        "' of elemental procedure '" + proc_name + "' cannot be a coarray",
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("", {v.base.base.loc})}));
     return false;
