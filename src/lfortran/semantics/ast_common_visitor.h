@@ -17727,6 +17727,7 @@ public:
             }
         }
         validate_function_call_argument_count(loc, args, &explicit_interface);
+        ElementalChecks::check_call_actuals(args, diag, compiler_options);
         ASRUtils::set_absent_optional_arguments_to_null(
             args, &explicit_interface, al);
         ASR::call_arg_t* call_args = args.p;
@@ -18891,6 +18892,7 @@ public:
     ASR::asr_t* create_FunctionCallWithASTNode(const AST::FuncCallOrArray_t& x,
                 ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, bool is_dt_present=false,
                 bool call_site_interface=false) {
+        ElementalChecks::check_call_actuals(args, diag, compiler_options);
         ASR::symbol_t *f2 = ASRUtils::symbol_get_past_external(v);
         Vec<ASR::call_arg_t> new_args;
         new_args.reserve(al, args.size());

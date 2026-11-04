@@ -9762,6 +9762,7 @@ public:
         } else {
             process_call_args_and_kwargs(x, args, original_sym, diag, v_expr, al, nopass);
         }
+        ElementalChecks::check_call_actuals(args, diag, compiler_options);
 
         // checking for intent mismatch   
         if (f) { 

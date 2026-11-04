@@ -20,6 +20,8 @@ public:
     // Uses of nonintrinsic elemental procedures
     static void check_dummy_procedures(const ASR::Function_t &f,
         diag::Diagnostics &diag, const CompilerOptions &compiler_options);
+    static void check_call_actuals(const Vec<ASR::call_arg_t> &args,
+        diag::Diagnostics &diag, const CompilerOptions &compiler_options);
     static bool is_nonintrinsic_elemental(ASR::symbol_t *sym);
     // C1031, C1519
     static bool not_pointer_target(ASR::expr_t *value,
@@ -72,6 +74,9 @@ private:
     // C15104, length parameters of a derived-type result
     static bool result_derived_type_params(const ASR::Function_t &f,
         const ASR::Variable_t &r, const std::string &proc_name,
+        diag::Diagnostics &diag);
+    // C1533
+    static bool not_actual_argument(ASR::expr_t *actual,
         diag::Diagnostics &diag);
 };
 

@@ -290,6 +290,17 @@ void ElementalChecks::check_dummy_procedures(const ASR::Function_t &f,
     }
 }
 
+void ElementalChecks::check_call_actuals(const Vec<ASR::call_arg_t> &args,
+        diag::Diagnostics &diag, const CompilerOptions &compiler_options) {
+    bool ok = true;
+    for (size_t i = 0; i < args.size(); i++) {
+        ok = not_actual_argument(args[i].m_value, diag) && ok;
+    }
+    if (!ok && !compiler_options.continue_compilation) {
+        throw SemanticAbort();
+    }
+}
+
 bool ElementalChecks::is_nonintrinsic_elemental(ASR::symbol_t *sym) {
     if (sym == nullptr) return false;
     sym = ASRUtils::symbol_get_past_external(sym);
@@ -311,6 +322,21 @@ bool ElementalChecks::not_pointer_target(ASR::expr_t *value,
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("a procedure pointer target shall not be a "
                 "nonintrinsic elemental procedure", {value->base.loc})}));
+    return false;
+}
+
+bool ElementalChecks::not_actual_argument(ASR::expr_t *actual,
+        diag::Diagnostics &diag) {
+    if (actual == nullptr || !ASR::is_a<ASR::Var_t>(*actual)) return true;
+    ASR::symbol_t *proc = ASR::down_cast<ASR::Var_t>(actual)->m_v;
+    if (!is_nonintrinsic_elemental(proc)) return true;
+    diag.add(diag::Diagnostic(
+        "nonintrinsic elemental procedure '"
+        + std::string(ASRUtils::symbol_name(proc))
+        + "' cannot be an actual argument",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("a nonintrinsic elemental procedure shall not be "
+                "used as an actual argument", {actual->base.loc})}));
     return false;
 }
 
