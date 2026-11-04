@@ -1,0 +1,5 @@
+C preprocessor error: macro 'F' passed 2 arguments, but takes just 1
+ --> tests/errors/cpp_err9.f90:4:5
+  |
+4 | i = F(1,2)
+  |     ^ 
