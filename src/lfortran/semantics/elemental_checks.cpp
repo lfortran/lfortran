@@ -29,6 +29,13 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
                 "' of elemental procedure '" + proc_name + "'");
         }
     }
+    if (f.m_return_var && ASR::is_a<ASR::Var_t>(*f.m_return_var)) {
+        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_return_var)->m_v;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            const ASR::Variable_t &r = *ASR::down_cast<ASR::Variable_t>(sym);
+            ok = result_scalar(r, proc_name, diag) && ok;
+        }
+    }
     if (!ok && !compiler_options.continue_compilation) {
         throw SemanticAbort();
     }
@@ -103,6 +110,16 @@ bool ElementalChecks::no_alternate_return(const ASR::Variable_t &v,
         "' cannot have an alternate return dummy argument '*'",
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("", {v.base.base.loc})}));
+    return false;
+}
+
+bool ElementalChecks::result_scalar(const ASR::Variable_t &r,
+        const std::string &proc_name, diag::Diagnostics &diag) {
+    if (!ASRUtils::is_array(r.m_type)) return true;
+    diag.add(diag::Diagnostic(
+        "result of elemental function '" + proc_name + "' must be scalar",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {r.base.base.loc})}));
     return false;
 }
 
