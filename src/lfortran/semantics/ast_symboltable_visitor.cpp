@@ -954,7 +954,7 @@ public:
         if( x.class_type == AST::modType::Submodule ) {
             ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
                                                 parent_name, x.base.base.loc, false, loaded_submodules,
-                                                compiler_options.po, true,
+                                                compiler_options.po, !diag.has_error(),
                                                 [&](const std::string &msg, const Location &loc) {
                                                     diag.add(diag::Diagnostic(
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
@@ -6235,7 +6235,7 @@ public:
         bool load_submodules = (!compiler_options.separate_compilation && in_program);
         if (!t) {
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
-                msym, x.base.base.loc, false, loaded_submodules, compiler_options.po, true,
+                msym, x.base.base.loc, false, loaded_submodules, compiler_options.po, !diag.has_error(),
                 [&](const std::string &msg, const Location &loc) {
                     diag.add(diag::Diagnostic(
                         msg, diag::Level::Error, diag::Stage::Semantic, {
@@ -6253,7 +6253,7 @@ public:
             ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(t);
             if (load_submodules) {
                 ASRUtils::load_dependent_submodules(al, tu_symtab, mod, x.base.base.loc,
-                                                    loaded_submodules, compiler_options.po, true,
+                                                    loaded_submodules, compiler_options.po, !diag.has_error(),
                                                     [&](const std::string &msg, const Location &loc) {
                                                         diag.add(diag::Diagnostic(
                                                             msg, diag::Level::Error, diag::Stage::Semantic, {
@@ -6268,7 +6268,7 @@ public:
                         tu_symtab, nullptr, 0, nullptr));
 
                 // Fix all external symbols and update dependencies
-                ASRUtils::fix_translation_unit(al, tu, tu_symtab, true);
+                ASRUtils::fix_translation_unit(al, tu, tu_symtab, !diag.has_error());
                 tu_symtab->asr_owner = orig_asr_owner;
             }
         }
