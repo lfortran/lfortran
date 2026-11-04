@@ -1,0 +1,71 @@
+semantic error: dummy argument 'x' of elemental procedure 'ccep_elem_sub' must have an explicit intent or the value attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:12:16
+   |
+12 |     integer :: x  ! {Error} dummy argument 'x' of elemental procedure 'ccep_elem_sub' must have an explicit intent or the value attribute
+   |                ^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'ccep_impure_elem_sub' must have an explicit intent or the value attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:17:16
+   |
+17 |     integer :: x  ! {Error} dummy argument 'x' of elemental procedure 'ccep_impure_elem_sub' must have an explicit intent or the value attribute
+   |                ^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'ccep_elem_fn' must have an explicit intent or the value attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:22:16
+   |
+22 |     integer :: x  ! {Error} dummy argument 'x' of elemental procedure 'ccep_elem_fn' must have an explicit intent or the value attribute
+   |                ^ 
+
+warning: Assuming implicit save attribute for variable declaration
+  --> tests/errors/continue_compilation_elemental_pure.f90:55:16
+   |
+55 |     integer :: s = 9  ! {Error} local variable 's' of pure procedure 'ccep_init' cannot have an initial value, because it implies the save attribute
+   |                ^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+warning: Assuming implicit save attribute for variable declaration
+  --> tests/errors/continue_compilation_elemental_pure.f90:61:21
+   |
+61 |     type(ccep_t) :: s = ccep_t(9)  ! {Error} local variable 's' of pure procedure 'ccep_init_type' cannot have an initial value, because it implies the save attribute
+   |                     ^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+semantic error: dummy argument 'x' of pure function 'ccep_elem_fn_out' must be intent(in) or have the value attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:28:29
+   |
+28 |     integer, intent(out) :: x  ! {Error} dummy argument 'x' of pure function 'ccep_elem_fn_out' must be intent(in) or have the value attribute
+   |                             ^ 
+
+semantic error: dummy argument 'a' of pure function 'ccep_pure_fn' must be intent(in) or have the value attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:34:29
+   |
+34 |     integer, intent(out) :: a  ! {Error} dummy argument 'a' of pure function 'ccep_pure_fn' must be intent(in) or have the value attribute
+   |                             ^ 
+
+semantic error: dummy argument 'b' of pure function 'ccep_pure_fn' must be intent(in) or have the value attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:35:31
+   |
+35 |     integer, intent(inout) :: b  ! {Error} dummy argument 'b' of pure function 'ccep_pure_fn' must be intent(in) or have the value attribute
+   |                               ^ 
+
+semantic error: dummy argument 'x' of pure subroutine 'ccep_pure_sub' must have an explicit intent or the value attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:48:16
+   |
+48 |     integer :: x  ! {Error} dummy argument 'x' of pure subroutine 'ccep_pure_sub' must have an explicit intent or the value attribute
+   |                ^ 
+
+semantic error: local variable 's' of pure procedure 'ccep_init' cannot have an initial value, because it implies the save attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:55:16
+   |
+55 |     integer :: s = 9  ! {Error} local variable 's' of pure procedure 'ccep_init' cannot have an initial value, because it implies the save attribute
+   |                ^^^^^ 
+
+semantic error: local variable 's' of pure procedure 'ccep_init_type' cannot have an initial value, because it implies the save attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:61:21
+   |
+61 |     type(ccep_t) :: s = ccep_t(9)  ! {Error} local variable 's' of pure procedure 'ccep_init_type' cannot have an initial value, because it implies the save attribute
+   |                     ^^^^^^^^^^^^^ 
+
+semantic error: local variable 's' of pure procedure 'ccep_save' cannot have the save attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:67:22
+   |
+67 |     integer, save :: s  ! {Error} local variable 's' of pure procedure 'ccep_save' cannot have the save attribute
+   |                      ^ 
