@@ -43,7 +43,11 @@ private:
             &implicit_interface_procedures);
 
     // C1583
-    static bool dummy_intent_given(const ASR::Function_t &f,
+    static bool function_dummy_intent_in(const ASR::Function_t &f,
+        const ASR::Variable_t &v, diag::Diagnostics &diag);
+
+    // C1585
+    static bool subroutine_dummy_intent_given(const ASR::Function_t &f,
         const ASR::Variable_t &v, diag::Diagnostics &diag);
 
     // 15.7: no assignment to a variable from the host or a module

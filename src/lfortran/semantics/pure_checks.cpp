@@ -41,8 +41,9 @@ void PureChecks::check_definition(const ASR::Function_t &f,
                 *ASRUtils::type_get_past_pointer(v.m_type))) {
             continue;
         }
-        if (!dummy_intent_given(f, v, diag)
-                && !compiler_options.continue_compilation) {
+        bool ok = f.m_return_var ? function_dummy_intent_in(f, v, diag)
+            : subroutine_dummy_intent_given(f, v, diag);
+        if (!ok && !compiler_options.continue_compilation) {
             throw SemanticAbort();
         }
     }
@@ -65,7 +66,24 @@ bool PureChecks::body_has_no_side_effects(const ASR::Function_t &f,
     return false;
 }
 
-bool PureChecks::dummy_intent_given(const ASR::Function_t &f,
+bool PureChecks::function_dummy_intent_in(const ASR::Function_t &f,
+        const ASR::Variable_t &v, diag::Diagnostics &diag) {
+    if (v.m_intent == ASR::intentType::In || v.m_value_attr) return true;
+    // ElementalChecks::dummy_intent_given reports a missing intent.
+    if (v.m_intent == ASR::intentType::Unspecified
+            && ASRUtils::get_FunctionType(f)->m_elemental) {
+        return true;
+    }
+    diag.add(diag::Diagnostic(
+        "dummy argument '" + std::string(v.m_name) + "' of pure function '" +
+        ASRUtils::strip_genericprocedure_suffix(f.m_name) +
+        "' must be intent(in) or have the value attribute",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {v.base.base.loc})}));
+    return false;
+}
+
+bool PureChecks::subroutine_dummy_intent_given(const ASR::Function_t &f,
         const ASR::Variable_t &v, diag::Diagnostics &diag) {
     // ElementalChecks::dummy_intent_given reports it for an elemental procedure.
     if (v.m_intent != ASR::intentType::Unspecified || v.m_value_attr
@@ -73,8 +91,9 @@ bool PureChecks::dummy_intent_given(const ASR::Function_t &f,
         return true;
     }
     diag.add(diag::Diagnostic(
-        "Dummy argument '" + std::string(v.m_name) +
-        "' of pure function must have INTENT(IN) or VALUE attribute",
+        "dummy argument '" + std::string(v.m_name) + "' of pure subroutine '" +
+        ASRUtils::strip_genericprocedure_suffix(f.m_name) +
+        "' must have an explicit intent or the value attribute",
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("", {v.base.base.loc})}));
     return false;
