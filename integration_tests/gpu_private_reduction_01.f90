@@ -30,10 +30,11 @@ contains
         integer(int32), contiguous, intent(in) :: w(:,:)
         real(real32), contiguous, intent(in) :: x(:)
         integer(int16), contiguous, intent(out) :: y(:)
-        do concurrent (integer :: n = 1:size(y))
+        integer :: n, d
+        do concurrent (n = 1:size(y))
             block
                 real(real32) :: codes(size(x))
-                do concurrent (integer :: d = 1:size(x))
+                do concurrent (d = 1:size(x))
                     codes(d) = real(byte_value(w((d-1)/4+1,n),modulo(d-1,4)),real32)
                 end do
                 y(n) = bf16(sum(codes*x))
