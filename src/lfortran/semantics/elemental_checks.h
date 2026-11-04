@@ -44,6 +44,10 @@ private:
     // C15101
     static bool result_not_allocatable(const ASR::Variable_t &r,
         const std::string &proc_name, diag::Diagnostics &diag);
+
+    // C15101
+    static bool result_not_pointer(const ASR::Variable_t &r,
+        const std::string &proc_name, diag::Diagnostics &diag);
 };
 
 } // namespace LCompilers::LFortran
