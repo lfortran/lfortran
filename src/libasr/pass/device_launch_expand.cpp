@@ -493,8 +493,10 @@ class DeviceLaunchExpandVisitor :
                     ASRUtils::symbol_type(member));
 
                 ASR::expr_t *n = declare_local(loc, "gpu_struct_count", int32);
+                // Counted in integer(8): the components may hold more than
+                // huge(0) elements in all.
                 ASR::expr_t *total = declare_local(loc, "gpu_member_total",
-                    int32);
+                    int64);
                 ASR::expr_t *k = declare_local(loc, "gpu_struct_index", int32);
                 // The extents and lower bounds are in the kind the kernel
                 // reads them in (gpu_create_kernel_layout), the kind it
@@ -506,8 +508,15 @@ class DeviceLaunchExpandVisitor :
                     ASR::make_Integer_t(al, loc, size_kind));
                 ASR::expr_t *sizes = declare_local(loc, "gpu_member_sizes",
                     b.allocatable(b.Array({-1}, size_type)));
+                // Where each element's component starts in the packed data,
+                // in the kind the kernel reads it in, the kind it computes
+                // element offsets in.
+                int offset_kind = component.offsets
+                    ? ASRUtils::extract_kind_from_ttype_t(
+                        component.offsets->m_type) : 4;
+                ASR::ttype_t *offset_type = b.int_type(offset_kind);
                 ASR::expr_t *offsets = declare_local(loc, "gpu_member_offsets",
-                    b.allocatable(b.Array({-1}, int32)));
+                    b.allocatable(b.Array({-1}, offset_type)));
                 ASR::expr_t *data = declare_local(loc, "gpu_member_data",
                     b.allocatable(b.Array({-1}, int8)));
 
@@ -533,10 +542,10 @@ class DeviceLaunchExpandVisitor :
                 size_dims.push_back(al, size_dim);
                 out.push_back(al, b.Allocate(sizes, size_dims.p,
                     size_dims.n));
-                out.push_back(al, b.Assignment(total, b.i32(0)));
+                out.push_back(al, b.Assignment(total, b.i64(0)));
                 std::vector<ASR::stmt_t*> measure;
                 measure.push_back(b.Assignment(b.ArrayItem_01(offsets, {k}),
-                    total));
+                    offset_kind == 8 ? total : b.i2i_t(total, offset_type)));
                 std::vector<ASR::stmt_t*> extents, no_extents;
                 for (size_t d = 0; d < rank; d++) {
                     extents.push_back(b.Assignment(
@@ -555,6 +564,12 @@ class DeviceLaunchExpandVisitor :
                         member_lower_bound(loc, sizes, k, rank, d),
                         b.i_t(1, size_type)));
                 }
+                // The number of elements is taken from the component itself
+                // in integer(8), not from the extents above, which may be
+                // narrower than the host's.
+                extents.push_back(b.Assignment(total, b.Add(total,
+                    b.ArraySize(struct_member(loc, arg, k, member), nullptr,
+                        int64))));
                 if (may_be_unallocated) {
                     measure.push_back(b.If(is_allocated(loc,
                         struct_member(loc, arg, k, member)), extents,
@@ -563,14 +578,14 @@ class DeviceLaunchExpandVisitor :
                     measure.insert(measure.end(), extents.begin(),
                         extents.end());
                 }
-                // The offsets into the packed data are still counted in
-                // 32 bits (#15929).
-                ASR::expr_t *count = member_element_count(loc, sizes, k,
-                    rank);
-                if (size_kind != 4) count = b.i2i_t(count, int32);
-                measure.push_back(b.Assignment(total, b.Add(total, count)));
                 out.push_back(al, b.DoLoop(k, b.i32(1), n, measure));
                 member_sizes_bufs[key] = sizes;
+                // A kernel that addresses the packed data in 32 bits cannot
+                // reach past huge(0) elements of it, so the launch stops
+                // before it allocates and fills it (#15929).
+                if (check_element_counts) {
+                    out.push_back(al, check_element_count(loc, total));
+                }
                 // A member that is allocated but holds no elements in any
                 // of them -- `allocate(x%m(0,3))` -- leaves nothing to hand
                 // over, but the buffer still has to have a byte in it: the
@@ -579,7 +594,7 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *data_bytes = declare_local(loc,
                     "gpu_member_bytes", int64);
                 out.push_back(al, b.Assignment(data_bytes,
-                    b.Mul(b.i2i_t(total, int64), element_bytes)));
+                    b.Mul(total, element_bytes)));
                 out.push_back(al, b.If(b.Lt(data_bytes, b.i64(1)),
                     {b.Assignment(data_bytes, b.i64(1))}, {}));
                 out.push_back(al, allocate_bytes(loc, data, data_bytes));
@@ -596,9 +611,10 @@ class DeviceLaunchExpandVisitor :
                                     element_bytes)))}));
                 }
 
-                ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64), b.i64(4));
-                ASR::expr_t *sizes_bytes = b.Mul(size_kind == 4 ? index_bytes
-                    : b.Mul(b.i2i_t(n, int64), b.i64(size_kind)),
+                ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64),
+                    b.i64(offset_kind));
+                ASR::expr_t *sizes_bytes = b.Mul(
+                    b.Mul(b.i2i_t(n, int64), b.i64(size_kind)),
                     b.i64(2 * (int64_t)rank));
                 buffers.push_back({data, address_of(loc, data), data_bytes});
                 buffers.push_back({offsets, address_of(loc, offsets),
@@ -692,9 +708,13 @@ class DeviceLaunchExpandVisitor :
                 ASR::expr_t *data, ASR::expr_t *offsets, ASR::expr_t *index,
                 ASR::expr_t *element_bytes) {
             ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *offset = b.ArrayItem_01(offsets, {index});
+            if (ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(offset)) != 8) {
+                offset = b.i2i_t(offset, int64);
+            }
             return address_of(loc, b.ArrayItem_01(data, {b.Add(
-                b.Mul(b.i2i_t(b.ArrayItem_01(offsets, {index}), int64),
-                    element_bytes), b.i64(1))}));
+                b.Mul(offset, element_bytes), b.i64(1))}));
         }
 
         // Where the extent of dimension `d` of element `index` sits in the

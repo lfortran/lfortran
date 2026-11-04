@@ -1511,15 +1511,16 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         arg.m_noalias = false;
         arg.m_type = ASRUtils::extract_type(ASRUtils::symbol_type(
             member ? member : arg.m_variable));
-        if (kind == ASR::gpu_argument_kindType::GpuMemberOffsets ||
-                kind == ASR::gpu_argument_kindType::GpuArrayExtent ||
+        if (kind == ASR::gpu_argument_kindType::GpuArrayExtent ||
                 kind == ASR::gpu_argument_kindType::GpuPackedOffset) {
             arg.m_type = int32;
-        } else if (kind == ASR::gpu_argument_kindType::GpuMemberSizes) {
-            // The extents and lower bounds of a decomposed component, which
-            // its subscripts are counted from in the kind the kernel
-            // computes element offsets in. Its offsets in the packed data
-            // are still 32-bit (#15929).
+        } else if (kind == ASR::gpu_argument_kindType::GpuMemberOffsets ||
+                kind == ASR::gpu_argument_kindType::GpuMemberSizes) {
+            // Where each element's decomposed component starts in the
+            // packed data, and its extents and lower bounds, which its
+            // subscripts are counted from: in the kind the kernel computes
+            // element offsets in, as the components may hold more than
+            // huge(0) elements in all (#15929).
             arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
                 offset_kind));
         }
