@@ -43,6 +43,22 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return pass_options.descriptor_index_64 ? 8 : 4;
     }
 
+    // Partial sizes of an array constructor are summed and multiplied
+    // together, so all of them use the index kind.
+    ASR::expr_t* to_index_kind(ASR::expr_t* size) {
+        ASR::ttype_t* size_type = ASRUtils::expr_type(size);
+        if( ASRUtils::extract_kind_from_ttype_t(size_type) == get_index_kind() ) {
+            return size;
+        }
+        ASRUtils::ASRBuilder builder(al, size->base.loc);
+        return builder.i2i_t(size, ASRUtils::TYPE(ASR::make_Integer_t(al,
+            size->base.loc, get_index_kind())));
+    }
+
+    ASR::expr_t* get_index_kind_size(ASR::expr_t* array, bool for_type) {
+        return to_index_kind(ASRUtils::get_size(array, al, for_type));
+    }
+
     ASR::expr_t* get_first_scalar_expr(ASR::expr_t* expr) {
         // Visitor to replace loop variable with its starting value in an expression
         class ReplaceLoopVarWithStart : public ASR::BaseExprReplacer<ReplaceLoopVarWithStart> {
@@ -252,6 +268,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::expr_t* end = implied_doloop->m_end;
         ASR::expr_t* d = implied_doloop->m_increment;
         ASR::expr_t* implied_doloop_size = nullptr;
+        end = to_index_kind(end);
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end));
         start = builder.i2i_t(start, ASRUtils::expr_type(end));
         if( d == nullptr ) {
@@ -297,8 +314,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         const_elements += ASRUtils::get_fixed_size_of_array(element_type);
                     } else {
                         has_runtime_array_size = true;
-                        ASR::expr_t* element_array_size = get_array_expr_size(
-                            implied_doloop->m_values[i]);
+                        ASR::expr_t* element_array_size = to_index_kind(
+                            get_array_expr_size(implied_doloop->m_values[i]));
                         // The size expression may reference the loop variable
                         // (e.g. size(a(i)%values())). Since this expression is
                         // evaluated before the loop starts, replace the loop
@@ -420,7 +437,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_item->m_type);
                         constant_size += ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
                     } else {
-                        ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                        ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                         if( array_size == nullptr ) {
                             array_size = element_array_size;
                         } else {
@@ -440,7 +457,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(element_type, m_dims);
                         constant_size += ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
                     } else {
-                        ASR::expr_t* element_array_size = ASRUtils::get_size(element, al);
+                        ASR::expr_t* element_array_size = get_index_kind_size(element, true);
                         if( array_size == nullptr ) {
                             array_size = element_array_size;
                         } else {
@@ -488,7 +505,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 if( ASRUtils::is_fixed_size_array(intrinsic_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(intrinsic_element_t->m_type);
                 } else {
-                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                    ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                     if( array_size == nullptr ) {
                         array_size = element_array_size;
                     } else {
@@ -502,7 +519,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 if( ASRUtils::is_fixed_size_array(fc_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(fc_element_t->m_type);
                 } else {
-                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                    ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                     if( array_size == nullptr ) {
                         array_size = element_array_size;
                     } else {
@@ -516,7 +533,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 if( ASRUtils::is_fixed_size_array(intrinsic_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(intrinsic_element_t->m_type);
                 } else {
-                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                    ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                     if( array_size == nullptr ) {
                         array_size = element_array_size;
                     } else {
@@ -531,7 +548,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 if( ASRUtils::is_fixed_size_array(arr_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(arr_type);
                 } else {
-                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                    ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                     if( array_size == nullptr ) {
                         array_size = element_array_size;
                     } else {
@@ -554,7 +571,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     if( ASRUtils::is_fixed_size_array(element_type) ) {
                         constant_size += ASRUtils::get_fixed_size_of_array(element_type);
                     } else {
-                        ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                        ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                         if( array_size == nullptr ) {
                             array_size = element_array_size;
                         } else {
