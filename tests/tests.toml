@@ -6724,6 +6724,10 @@ semantics_only_cc = true
 filename = "errors/traits_target_receiver_01.f90"
 semantics_only_cc = true
 
+[[test]]
+filename = "errors/traits_abstract_adopter_01.f90"
+semantics_only_cc = true
+
 # An array passed to a scalar dummy argument.
 [[test]]
 filename = "errors/array_to_scalar_dummy_01.f90"

@@ -476,6 +476,23 @@ diagnostics. Existing ordinary `DEFERRED` bindings remain supported and must
 also be fulfilled. An explicit, retroactive `implements` **block** still cannot
 target an abstract type.
 
+As an abstract Java class that implements an interface, an abstract adopter
+leaves the messages it does not bind to its extensions, and they are still
+messages of the adopter: a further report, a variation of the paper's
+`abstract_new.f90`, calls `c%method2()` with `class(Parent), allocatable :: c`
+holding a `Child`. A call through an object whose declared type adopts the
+trait, or has an ancestor that does, but binds no procedure of that name
+dispatches through a view of the object (`TraitDiscover`), the conformance of
+its dynamic type found in that type's runtime conformance table, which every
+concrete extension has. Such an object is passed to a trait-object dummy the
+same way, while an adopter that binds every message forms its view from its
+own bindings, as before. A message with a defining receiver requires a
+definable object. `traits_abstract_adopter_01` calls messages through two
+levels of abstract types, a component and a type that binds one message
+itself, and passes the objects to trait-object dummies;
+`traits_abstract_adopter_01` in `tests/errors` checks the definability
+diagnostic.
+
 The declaration's nominal obligations and each completed conformance survive
 module serialization, `ONLY`, renaming, and re-export. An unrelated type does
 not acquire a conformance merely by having matching methods or layout. A

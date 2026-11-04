@@ -28352,6 +28352,21 @@ public:
             trait_call_error("runtime trait construction requires a resolved derived type",
                 actual->base.loc);
         }
+        auto *view_reference = make_operator_proc_visible(&contract->base, "trait",
+            current_scope);
+        if (!ASR::down_cast<ASR::Struct_t>(declaration)->m_is_sealed &&
+                discovered_runtime_trait_view(contract,
+                    ASR::down_cast<ASR::Struct_t>(declaration), actual->base.loc)) {
+            // Every concrete extension conforms; the view is the conformance
+            // of the dynamic type, found in its runtime conformance table.
+            ASRUtils::insert_module_dependency(view_reference, al,
+                current_module_dependencies);
+            auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
+                al, actual->base.loc, view_reference));
+            actual = ASRUtils::EXPR(ASR::make_TraitDiscover_t(al, actual->base.loc,
+                actual, view_reference, nullptr, 0, view_type));
+            return;
+        }
         ASR::symbol_t *reference = nullptr;
         if (ASR::down_cast<ASR::Struct_t>(declaration)->m_is_sealed) {
             // A sealed type has no extension: its class object is an exact payload.
@@ -28387,6 +28402,73 @@ public:
             }
             auto *parent = ASRUtils::symbol_get_past_external(declaration->m_parent);
             declaration = parent && ASR::is_a<ASR::Struct_t>(*parent)
+                ? ASR::down_cast<ASR::Struct_t>(parent) : nullptr;
+        }
+        return nullptr;
+    }
+
+    // Whether `declaration` or an ancestor adopts `trait`, directly or
+    // through a trait that extends it, so that every concrete extension of
+    // it conforms to `trait`.
+    bool type_adopts_trait(ASR::Struct_t *declaration, ASR::symbol_t *trait,
+            const Location &loc) {
+        std::set<ASR::Struct_t*> seen;
+        while (declaration && seen.insert(declaration).second) {
+            for (size_t i = 0; i < declaration->n_trait_obligations; i++) {
+                auto *obligation = ASRUtils::symbol_get_past_external(
+                    declaration->m_trait_obligations[i]);
+                if (!obligation || !ASR::is_a<ASR::Trait_t>(*obligation)) continue;
+                for (auto *parent : checked_trait_hierarchy(
+                        *ASR::down_cast<ASR::Trait_t>(obligation), loc).traits) {
+                    if (&parent->base == trait) return true;
+                }
+            }
+            auto *parent = ASRUtils::symbol_get_past_external(declaration->m_parent);
+            declaration = parent && ASR::is_a<ASR::Struct_t>(*parent)
+                ? ASR::down_cast<ASR::Struct_t>(parent) : nullptr;
+        }
+        return false;
+    }
+
+    // Whether class(`declaration`) objects form views of `contract` from the
+    // conformance of their dynamic type: `declaration` adopts the trait but,
+    // being abstract, leaves a message of it to its extensions, which have no
+    // binding to dispatch through in `declaration` itself.
+    bool discovered_runtime_trait_view(ASR::TraitRuntimeContract_t *contract,
+            ASR::Struct_t *declaration, const Location &loc) {
+        if (contract->m_anonymous || !type_adopts_trait(declaration,
+                ASRUtils::symbol_get_past_external(contract->m_trait), loc)) {
+            return false;
+        }
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            auto *member = ASRUtils::trait_method_function(contract->m_slots[i].m_origins[0]);
+            if (!runtime_trait_type_bound(declaration, member->m_name)) return true;
+        }
+        return false;
+    }
+
+    // The runtime contract of a trait that the declared type `declaration`
+    // of a polymorphic object adopts, or an ancestor does, and whose message
+    // `name` the type does not bind; its concrete extensions do.
+    ASR::TraitRuntimeContract_t *adopted_unbound_trait_message(
+            ASR::Struct_t *declaration, const std::string &name, const Location &loc) {
+        if (runtime_trait_type_bound(declaration, name)) return nullptr;
+        std::set<ASR::Struct_t*> seen;
+        for (auto *structure = declaration; structure && seen.insert(structure).second;) {
+            for (size_t i = 0; i < structure->n_trait_obligations; i++) {
+                auto *obligation = ASRUtils::symbol_get_past_external(
+                    structure->m_trait_obligations[i]);
+                if (!obligation || !ASR::is_a<ASR::Trait_t>(*obligation)) continue;
+                auto *contract = ASRUtils::trait_runtime_contract(obligation);
+                if (!contract) continue;
+                for (size_t j = 0; j < contract->n_slots; j++) {
+                    auto *member = ASRUtils::trait_method_function(
+                        contract->m_slots[j].m_origins[0]);
+                    if (name == member->m_name) return contract;
+                }
+            }
+            auto *parent = ASRUtils::symbol_get_past_external(structure->m_parent);
+            structure = parent && ASR::is_a<ASR::Struct_t>(*parent)
                 ? ASR::down_cast<ASR::Struct_t>(parent) : nullptr;
         }
         return nullptr;
@@ -30176,6 +30258,12 @@ public:
         bool member = false;
         if (generic_procedure_binding(declaration, name, member)) return true;
         if (member) return false;
+        auto *adopter = declaration && ASRUtils::is_class_type(type)
+            ? ASRUtils::symbol_get_past_external(declaration) : nullptr;
+        if (adopter && ASR::is_a<ASR::Struct_t>(*adopter) && adopted_unbound_trait_message(
+                ASR::down_cast<ASR::Struct_t>(adopter), name, receiver->base.loc)) {
+            return true;
+        }
         for (auto *implementation : visible_trait_implementations()) {
             if (!ASRUtils::trait_implementation_matches_type(*implementation, declaration, type)) {
                 continue;
@@ -30315,6 +30403,41 @@ public:
                             callee = binding.m_procedure;
                             signature = member;
                         }
+                    }
+                }
+                auto *adopter = declaration && ASRUtils::is_class_type(type)
+                    ? ASRUtils::symbol_get_past_external(declaration) : nullptr;
+                auto *adopted = !callee && adopter && ASR::is_a<ASR::Struct_t>(*adopter)
+                    ? adopted_unbound_trait_message(ASR::down_cast<ASR::Struct_t>(adopter),
+                        name, loc) : nullptr;
+                if (adopted) {
+                    // A message of a trait that an abstract declared type
+                    // adopts but leaves to its extensions dispatches through
+                    // the conformance of the object's dynamic type.
+                    ASR::expr_t *object = resolved_receiver ? resolved_receiver
+                        : ASRUtils::EXPR(resolve_variable(loc, to_lower(members[0].m_name)));
+                    for (size_t i = 0; i < adopted->n_slots; i++) {
+                        auto *member = adopted->m_slots[i].m_origins[0];
+                        if (name == ASRUtils::trait_method_function(member)->m_name &&
+                                ASRUtils::trait_receiver_defines(
+                                    ASRUtils::trait_member_receiver_intent(member))) {
+                            check_association_definable(object);
+                            check_definable_actual(object);
+                        }
+                    }
+                    make_runtime_trait_view(object, ASRUtils::TYPE(ASR::make_TraitObjectType_t(
+                        al, loc, make_operator_proc_visible(&adopted->base, "trait",
+                            current_scope))));
+                    resolved_receiver = object;
+                    auto *contract = ASRUtils::trait_runtime_contract(
+                        ASRUtils::expr_type(object));
+                    for (size_t i = 0; i < contract->n_slots && !callee; i++) {
+                        auto *member = ASRUtils::trait_method_function(
+                            contract->m_slots[i].m_origins[0]);
+                        if (name != member->m_name) continue;
+                        signature = member;
+                        callee = contract->m_slots[i].m_procedure;
+                        runtime_slot = i;
                     }
                 }
                 if (!callee) {

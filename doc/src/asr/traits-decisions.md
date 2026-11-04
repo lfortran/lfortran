@@ -206,6 +206,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-11-03 | Relayed a module MRE whose `MyType` implements the pure message `method` of `ISomeTrait` and has the component `class(IOtherTrait), allocatable :: obj`, which failed ASR verification. | TD-46 |
 | 2026-11-04 | Relayed a module MRE whose message allocates `class(ISomeTrait), allocatable, intent(out) :: arr(:)` with `allocate(MyType :: arr(1))` and then assigns `arr = MyType()`. | TD-46 |
 | 2026-11-04 | Relayed a module MRE whose function declares `class(ISomeTrait), optional, intent(in) :: obj`. | TD-35 |
+| 2026-11-04 | Relayed three further MREs: a message whose receiver is `type(itself), pass, target, intent(in) :: self`; a variation of the paper's `abstract_new.f90` calling `c%method2()` through `class(Parent), allocatable :: c`, where the abstract `Parent` adopts `IDeferred` and leaves `method2` to `Child`, as a Java abstract class does; and a module allocating `MyType :: arr(1)` whose component `class(ISomeTrait), allocatable :: obj` uses a trait of another module, which failed ASR verification. | TD-35, TD-46 |
 
 ## Entries
 
@@ -1181,6 +1182,17 @@ specification action, that is, what the paper should say.
   objects. Temporary limits, diagnosed as not implemented:
   combinations (`class(A + B)`) formed from a polymorphic object, `MOLD=` from
   one, and traits whose runtime contract has generic methods.
+- **Extension (2026-11-04).** A further report, a variation of the paper's
+  `abstract_new.f90`, calls `c%method2()` through `class(Parent), allocatable
+  :: c`, where the abstract `Parent` adopts `IDeferred` and leaves `method2`
+  to its extension `Child`, and expects the result of `Child`'s method, as a
+  Java abstract class that implements an interface does. Such a `T` has no
+  binding to dispatch through, but every concrete extension conforms to the
+  trait. The trait object of a `class(T)` object is then the conformance of
+  its dynamic type, found in that type's runtime conformance table, and a
+  message of the trait called through the object directly, by a name that `T`
+  binds to no procedure, is called through that trait object. A `T` that binds
+  every message still dispatches through its bindings.
 - **Specification action.** State that a trait object can be formed from a
   polymorphic object whose declared type conforms to the trait, that its
   methods use the dynamic type's bindings and that it keeps the dynamic type,

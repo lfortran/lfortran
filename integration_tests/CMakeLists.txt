@@ -4410,6 +4410,8 @@ RUN(NAME traits_runtime_component_allocate_01 LABELS llvm llvm2 NO_STD_F23 ISOLA
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_target_receiver_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_abstract_adopter_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_associate_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_pure_owner_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES

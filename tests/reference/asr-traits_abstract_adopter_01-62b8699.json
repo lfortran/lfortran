@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_abstract_adopter_01-62b8699",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_abstract_adopter_01.f90",
+    "infile_hash": "4289a8168f6626ce642312d8a8f3e075699ba67bd4f87bcfddd2b504",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_abstract_adopter_01-62b8699.stderr",
+    "stderr_hash": "f6dddd1be86e6bcdfc113bc4d6357c1950b4110f84a04e7c0b8ee002",
+    "returncode": 1
+}
