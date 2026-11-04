@@ -22,6 +22,8 @@ public:
         diag::Diagnostics &diag, const CompilerOptions &compiler_options);
     static void check_call_actuals(const Vec<ASR::call_arg_t> &args,
         diag::Diagnostics &diag, const CompilerOptions &compiler_options);
+    static void check_subroutine_call(const ASR::SubroutineCall_t &x,
+        diag::Diagnostics &diag, const CompilerOptions &compiler_options);
     static bool is_nonintrinsic_elemental(ASR::symbol_t *sym);
     // C1031, C1519
     static bool not_pointer_target(ASR::expr_t *value,
@@ -78,6 +80,9 @@ private:
     // C1533
     static bool not_actual_argument(ASR::expr_t *actual,
         diag::Diagnostics &diag);
+    // 9.5.3.3.3 p3
+    static bool output_no_repeated_vector_subscript(ASR::expr_t *actual,
+        const ASR::Variable_t &dummy, diag::Diagnostics &diag);
 };
 
 } // namespace LCompilers::LFortran

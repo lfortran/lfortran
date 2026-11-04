@@ -8442,6 +8442,11 @@ public:
                 throw SemanticAbort();
                 }) ) {
             overloaded_stmt = ASRUtils::STMT(asr);
+            if (ASR::is_a<ASR::SubroutineCall_t>(*overloaded_stmt)) {
+                ElementalChecks::check_subroutine_call(
+                    *ASR::down_cast<ASR::SubroutineCall_t>(overloaded_stmt),
+                    diag, compiler_options);
+            }
         }
         // The value assigned to a complex part (`z%re = y`) is converted to
         // the real type of that part. A deferred type of a template has no
@@ -10271,6 +10276,8 @@ public:
         if (component_procedure != nullptr) {
             ASR::down_cast2<ASR::SubroutineCall_t>(tmp)->m_dt = component_procedure;
         }
+        ElementalChecks::check_subroutine_call(
+            *ASR::down_cast2<ASR::SubroutineCall_t>(tmp), diag, compiler_options);
 
         if (final_sym) {
             ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(final_sym);

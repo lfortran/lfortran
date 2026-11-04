@@ -301,6 +301,33 @@ void ElementalChecks::check_call_actuals(const Vec<ASR::call_arg_t> &args,
     }
 }
 
+void ElementalChecks::check_subroutine_call(const ASR::SubroutineCall_t &x,
+        diag::Diagnostics &diag, const CompilerOptions &compiler_options) {
+    ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_name);
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+        sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
+    }
+    if (!ASR::is_a<ASR::Function_t>(*sym)) return;
+    const ASR::Function_t &f = *ASR::down_cast<ASR::Function_t>(sym);
+    if (!ASRUtils::get_FunctionType(f)->m_elemental) return;
+    bool ok = true;
+    for (size_t i = 0; i < x.n_args && i < f.n_args; i++) {
+        if (x.m_args[i].m_value == nullptr) continue;
+        if (!ASR::is_a<ASR::Var_t>(*f.m_args[i])) continue;
+        ASR::symbol_t *dummy = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*dummy)) continue;
+        const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(dummy);
+        if (v.m_intent != ASR::intentType::Out
+                && v.m_intent != ASR::intentType::InOut) continue;
+        ok = output_no_repeated_vector_subscript(x.m_args[i].m_value, v, diag)
+            && ok;
+    }
+    if (!ok && !compiler_options.continue_compilation) {
+        throw SemanticAbort();
+    }
+}
+
 bool ElementalChecks::is_nonintrinsic_elemental(ASR::symbol_t *sym) {
     if (sym == nullptr) return false;
     sym = ASRUtils::symbol_get_past_external(sym);
@@ -338,6 +365,53 @@ bool ElementalChecks::not_actual_argument(ASR::expr_t *actual,
             diag::Label("a nonintrinsic elemental procedure shall not be "
                 "used as an actual argument", {actual->base.loc})}));
     return false;
+}
+
+bool ElementalChecks::output_no_repeated_vector_subscript(
+        ASR::expr_t *actual, const ASR::Variable_t &dummy,
+        diag::Diagnostics &diag) {
+    ASR::array_index_t *indices = nullptr;
+    size_t n_indices = 0;
+    if (ASR::is_a<ASR::ArrayItem_t>(*actual)) {
+        ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(actual);
+        indices = item->m_args;
+        n_indices = item->n_args;
+    } else if (ASR::is_a<ASR::ArraySection_t>(*actual)) {
+        ASR::ArraySection_t *section = ASR::down_cast<ASR::ArraySection_t>(actual);
+        indices = section->m_args;
+        n_indices = section->n_args;
+    }
+    for (size_t i = 0; i < n_indices; i++) {
+        ASR::expr_t *subscript = indices[i].m_right;
+        if (indices[i].m_left != nullptr || indices[i].m_step != nullptr
+                || subscript == nullptr
+                || !ASRUtils::is_array(ASRUtils::expr_type(subscript))) {
+            continue;
+        }
+        ASR::expr_t *value = ASRUtils::expr_value(subscript);
+        if (value == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            continue;
+        }
+        ASR::ArrayConstant_t *values = ASR::down_cast<ASR::ArrayConstant_t>(value);
+        std::set<std::string> seen;
+        int64_t n = ASRUtils::get_fixed_size_of_array(values->m_type);
+        for (int64_t k = 0; k < n; k++) {
+            if (seen.insert(ASRUtils::fetch_ArrayConstant_value(values, k)).second) {
+                continue;
+            }
+            diag.add(diag::Diagnostic(
+                "array section with a repeated vector subscript value cannot "
+                "be associated with intent(" + std::string(
+                    dummy.m_intent == ASR::intentType::Out ? "out" : "inout")
+                + ") dummy argument '" + std::string(dummy.m_name)
+                + "' of an elemental subroutine",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("a vector subscript with repeated values "
+                        "makes the section not definable", {subscript->base.loc})}));
+            return false;
+        }
+    }
+    return true;
 }
 
 bool ElementalChecks::not_dummy_interface(const std::string &name,
