@@ -94,6 +94,14 @@ jobs:
             > "$RUNNER_TEMP/pixi-config.toml"
           echo "PIXI_CONFIG_FILE=$RUNNER_TEMP/pixi-config.toml" >> "$GITHUB_ENV"
 
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          # The Pixi builds share no cache entries with the micromamba ones.
+          key: ${{ github.job }}-pixi-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
+
+      # After ccache-action, which prepends the runner's /usr/local/bin to PATH.
       - uses: prefix-dev/setup-pixi@v0.11.3
         with:
           pixi-version: v0.83.0
@@ -108,13 +116,6 @@ jobs:
             if command -v shell; then
                 echo "shell is installed" && exit 1
             fi
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          # The Pixi builds share no cache entries with the micromamba ones.
-          key: ${{ github.job }}-pixi-ubuntu-latest
-          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Linux
         shell: bash -e {0}
@@ -193,19 +194,20 @@ jobs:
             > "$RUNNER_TEMP/pixi-config.toml"
           echo "PIXI_CONFIG_FILE=$RUNNER_TEMP/pixi-config.toml" >> "$GITHUB_ENV"
 
-      - uses: prefix-dev/setup-pixi@v0.11.3
-        with:
-          pixi-version: v0.83.0
-          environments: llvm11
-          activate-environment: llvm11
-          cache: false
-
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           # The Pixi builds share no cache entries with the micromamba ones.
           key: ${{ github.job }}-pixi-ubuntu-latest
           save: ${{ github.ref == 'refs/heads/main' }}
+
+      # After ccache-action, which prepends the runner's /usr/local/bin to PATH.
+      - uses: prefix-dev/setup-pixi@v0.11.3
+        with:
+          pixi-version: v0.83.0
+          environments: llvm11
+          activate-environment: llvm11
+          cache: false
 
       - name: Build Linux
         shell: bash -e {0}
@@ -336,20 +338,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      # The docs environment adds Sphinx to the LLVM 11 build environment.
-      - uses: prefix-dev/setup-pixi@v0.11.3
-        with:
-          pixi-version: v0.83.0
-          environments: docs
-          activate-environment: docs
-          cache: false
-
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           # The Pixi builds share no cache entries with the micromamba ones.
           key: ${{ github.job }}-pixi-ubuntu-latest
           save: ${{ github.ref == 'refs/heads/main' }}
+
+      # The docs environment adds Sphinx to the LLVM 11 build environment.
+      # It comes after ccache-action, which prepends /usr/local/bin to PATH.
+      - uses: prefix-dev/setup-pixi@v0.11.3
+        with:
+          pixi-version: v0.83.0
+          environments: docs
+          activate-environment: docs
+          cache: false
 
       # doc/build.py runs the notebooks with the installed Jupyter kernel.
       - name: Build Kernel

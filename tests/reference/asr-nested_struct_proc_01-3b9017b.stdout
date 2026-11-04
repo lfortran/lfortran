@@ -215,6 +215,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 ),
                                             map:
                                                 (Variable
@@ -1045,6 +1046,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 ),
                                             stored_value:
                                                 (Variable

@@ -1307,6 +1307,7 @@ RUN(NAME sum_09 LABELS llvm)
 RUN(NAME sum_10 LABELS gfortran llvm)
 RUN(NAME sum_11 LABELS gfortran llvm NO_FAST_MATH)
 RUN(NAME gpu_scalar_reduction_actual_01 LABELS gfortran llvm metal cuda NO_FAST_MATH)
+RUN(NAME gpu_private_reduction_01 LABELS gfortran llvm metal cuda NO_FAST_MATH)
 RUN(NAME dot_product_01 LABELS gfortran llvm)
 RUN(NAME intrinsic_reduce_01 LABELS llvm GFORTRAN_ARGS -std=f2018)
 RUN(NAME intrinsic_reduce_derived_type_01 LABELS llvm)
@@ -2153,6 +2154,7 @@ RUN(NAME intrinsics_498 LABELS gfortran llvm) # compile-time dot_product/merge_b
 RUN(NAME intrinsics_499 LABELS gfortran llvm fortran) # spread of a scalar source, printed by the Fortran backend
 RUN(NAME intrinsics_502 LABELS gfortran llvm) # pack/count with a negated complex comparison of array sections (#15926)
 RUN(NAME intrinsics_503 LABELS gfortran llvm) # ibset constant folding at signed-kind boundaries
+RUN(NAME intrinsics_504 LABELS gfortran llvm) # ishft/shiftl/shiftr/shifta with |shift| == bit_size (#16451)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)
@@ -3232,6 +3234,9 @@ RUN(NAME type_bound_generic_member_access_01 LABELS gfortran llvm)
 RUN(NAME type_bound_generic_member_access_02 LABELS gfortran llvm)
 RUN(NAME type_bound_generic_member_access_03 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME type_bound_generic_extend_01 LABELS gfortran llvm)
+RUN(NAME type_bound_private_01 LABELS gfortran llvm)
+RUN(NAME type_bound_private_02 LABELS gfortran llvm)
+RUN(NAME type_bound_private_03 LABELS gfortran llvm)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -6600,6 +6605,7 @@ RUN(NAME gpu_cuda_cpu_01 LABELS gfortran llvm cuda EXTRAFILES gpu_cuda_cpu_01_mo
 RUN(NAME gpu_cuda_cpu_archive_01 LABELS gfortran llvm cuda STATIC_LIBRARY_FILES gpu_cuda_cpu_archive_01_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_memory_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_type_inquiry_01 LABELS gfortran llvm cuda)
+RUN(NAME gpu_shift_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_separate_compilation_01 LABELS gfortran llvm metal cuda EXTRAFILES gpu_separate_compilation_01_mod.f90 EXTRA_ARGS --separate-compilation)
 # Only the module's own compilation needs the fallback for its loop that
 # prints: the program that uses it compiles none of the module's loops.
@@ -7060,6 +7066,13 @@ RUN(NAME gpu_metal_610 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-li
 RUN(NAME gpu_metal_611 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 RUN(NAME gpu_metal_612 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1000)
 RUN(NAME gpu_metal_613 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=5)
+# Chunks at the ends of the integer(4) range, which the kernel numbers in 32
+# bits, and of the integer(8) range, and nests of a tiled shape in chunks
+# with scalars the host reads.
+RUN(NAME gpu_metal_680 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
+RUN(NAME gpu_metal_680_limit_1 FILE gpu_metal_680 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1)
+RUN(NAME gpu_metal_681 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1000)
+RUN(NAME gpu_metal_682 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-chunk-limit=7) # metal declines integer(8) loop indices
 # Reductions across the chunks of a launch.
 RUN(NAME gpu_metal_665 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 RUN(NAME gpu_metal_665_limit_1 FILE gpu_metal_665 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1)
@@ -7099,6 +7112,17 @@ RUN(NAME gpu_metal_689 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-li
 RUN(NAME gpu_metal_597 FAIL LABELS cuda) # stops: an array of more than huge(0) elements needs --descriptor-index-64
 RUN(NAME gpu_metal_660 FAIL LABELS metal) # stops: Metal kernels address at most huge(0) elements of an array
 RUN(NAME gpu_metal_661 FILE gpu_metal_660 FAIL LABELS metal EXTRA_ARGS --descriptor-index-64) # stops: --descriptor-index-64 does not widen Metal kernel offsets
+# A launch whose iteration count does not fit in its integer kind stops; the
+# CPU would run these nests for ever, so they run only offloaded.
+RUN(NAME gpu_metal_700 FAIL LABELS metal cuda) # stops: the product of two extents overflows (tiled on CUDA)
+RUN(NAME gpu_metal_701 FAIL LABELS cuda) # stops: one integer(8) extent overflows; metal declines integer(8) loop indices
+RUN(NAME gpu_metal_702 FAIL LABELS metal cuda) # stops: the product overflows at its last factor, with a reduction
+RUN(NAME gpu_metal_703 FAIL LABELS metal cuda) # stops: constant extents whose product overflows
+RUN(NAME gpu_metal_705 FAIL LABELS cuda) # stops: a constant integer(8) extent overflows; metal declines integer(8) loop indices
+RUN(NAME gpu_metal_704 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_704_chunked FILE gpu_metal_704 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
+RUN(NAME gpu_metal_706 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4000)
+RUN(NAME gpu_metal_707 LABELS gfortran llvm metal cuda) # empty tiled nest: no padded thread count
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
 RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)
@@ -7319,11 +7343,13 @@ RUN(NAME gpu_derived_component_18 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_19 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_derived_component_20 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_derived_component_21 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_unroll_runtime_start_01 LABELS gfortran llvm metal cuda)
 # No llvm label yet: the host code generator leaves a DO variable at its last
 # value instead of one step past it (#12294), which Step 3 of #16398 fixes.
 RUN(NAME gpu_do_loop_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_do_loop_02 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_do_loop_03 LABELS gfortran llvm metal cuda EXTRA_ARGS --fast)
+RUN(NAME gpu_reduction_strided_01 LABELS llvm metal cuda) # gfortran on CI lacks the reduce clause
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)

@@ -796,6 +796,28 @@ class WorkflowPolicyTests(unittest.TestCase):
                 self.assertRegex(step.split("\n\n", 1)[0] + "\n", save, path)
         self.assertGreaterEqual(steps, 8)
 
+    def test_activated_pixi_environments_come_after_ccache(self):
+        # ccache-action prepends the runner's /usr/local/bin to PATH. An
+        # environment activated before it loses to the runner's tools, such
+        # as a newer CMake, in every later step.
+        paths = [*(ROOT / ".github/workflows").glob("*.yml"),
+                 *(ROOT / ".github/actions").glob("*/action.yml")]
+        activated = 0
+        for path in paths:
+            source = path.read_text()
+            jobs = ([source] if path.name == "action.yml"
+                    else re.split(r"\n  [A-Za-z0-9_-]+:\n", source))
+            for job in jobs:
+                if "uses: hendrikmuhs/ccache-action@" not in job:
+                    continue
+                for setup in re.finditer(r"uses: prefix-dev/setup-pixi@", job):
+                    if "activate-environment:" not in job[setup.start():].split("\n\n", 1)[0]:
+                        continue
+                    activated += 1
+                    self.assertLess(job.index("uses: hendrikmuhs/ccache-action@"),
+                                    setup.start(), path)
+        self.assertGreaterEqual(activated, 4)
+
     def test_platform_ccache_fits_a_debug_build(self):
         action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
         step = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]

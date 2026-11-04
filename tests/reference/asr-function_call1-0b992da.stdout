@@ -401,6 +401,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 )
                                         })
                                     softmax

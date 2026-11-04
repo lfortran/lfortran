@@ -19,6 +19,7 @@
                     :Source
                     false
                     false
+                    :Public
                   )
                 }
               )

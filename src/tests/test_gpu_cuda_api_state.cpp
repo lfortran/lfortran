@@ -140,6 +140,20 @@ static void discard_fill_entry(void **args)
     out[1] = value + 1;
 }
 
+// out[chunk] = chunk + the sum of the 64 read-only values.
+static void read_once_entry(void **args)
+{
+    unit_launch();
+    int32_t *out = arg<int32_t *>(args, 0);
+    int32_t *in = arg<int32_t *>(args, 1);
+    int32_t chunk = arg<int32_t>(args, 2);
+    live(out, 8 * sizeof(int32_t));
+    live(in, 64 * sizeof(int32_t));
+    int32_t sum = 0;
+    for (int i = 0; i < 64; i++) sum += in[i];
+    out[chunk] = chunk + sum;
+}
+
 static kernel_func_t entry(void (*thunk)(void **))
 {
     return (kernel_func_t)thunk;
@@ -236,6 +250,65 @@ static int discard_fill()
         "one fill per launch");
     require(stats().async_copies[cudaMemcpyHostToDevice] == 0,
         "discarded ranges need no host upload");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    return 0;
+}
+
+// The chunks of a launch that runs in chunks launch one kernel handle once
+// each, handing over only their bounds again (device_launch_expand.cpp): a
+// read-only buffer is copied in at the first chunk only, and again once it
+// is set again, or once another handle of the kernel has filled the memory
+// of its slot in between.
+static int read_once()
+{
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    lfortran_gpu_register_kernel("read_once", entry(read_once_entry));
+    std::array<int32_t, 64> a, b;
+    for (int i = 0; i < 64; i++) {
+        a[i] = i + 1;
+        b[i] = 1000;
+    }
+    const int32_t sum_a = 64 * 65 / 2, sum_b = 64 * 1000;
+    std::array<int32_t, 8> out{}, other{};
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    auto h2d = []() { return stats().async_copies[cudaMemcpyHostToDevice]; };
+    auto *k = lfortran_gpu_load_kernel(ctx, "read_once", 9);
+    lfortran_gpu_set_buffer_arg(k, 0, out.data(), sizeof(out),
+        LFORTRAN_GPU_WRITE);
+    lfortran_gpu_set_buffer_arg(k, 1, a.data(), sizeof(a), LFORTRAN_GPU_READ);
+    for (int32_t chunk = 0; chunk < 3; chunk++) {
+        lfortran_gpu_set_scalar_arg(k, 2, &chunk, sizeof(chunk));
+        lfortran_gpu_launch(ctx, k, grid, block);
+    }
+    printf("read once: %llu uploads for 3 launches\n", h2d());
+    require(h2d() == 2, "the chunks upload each buffer once");
+    lfortran_gpu_set_buffer_arg(k, 1, a.data(), sizeof(a), LFORTRAN_GPU_READ);
+    int32_t chunk = 3;
+    lfortran_gpu_set_scalar_arg(k, 2, &chunk, sizeof(chunk));
+    lfortran_gpu_launch(ctx, k, grid, block);
+    require(h2d() == 3, "a buffer set again is uploaded again");
+    // Another handle of the kernel fills the slot memory with `b`.
+    auto *k2 = lfortran_gpu_load_kernel(ctx, "read_once", 9);
+    lfortran_gpu_set_buffer_arg(k2, 0, other.data(), sizeof(other),
+        LFORTRAN_GPU_WRITE);
+    lfortran_gpu_set_buffer_arg(k2, 1, b.data(), sizeof(b), LFORTRAN_GPU_READ);
+    chunk = 0;
+    lfortran_gpu_set_scalar_arg(k2, 2, &chunk, sizeof(chunk));
+    lfortran_gpu_launch(ctx, k2, grid, block);
+    require(h2d() == 5, "another handle uploads its own buffers");
+    chunk = 4;
+    lfortran_gpu_set_scalar_arg(k, 2, &chunk, sizeof(chunk));
+    lfortran_gpu_launch(ctx, k, grid, block);
+    require(h2d() == 6, "a slot another handle filled is uploaded again");
+    lfortran_gpu_sync(ctx);
+    for (int32_t i = 0; i < 5; i++) {
+        require(out[i] == i + sum_a, "every launch reads its own buffer");
+    }
+    require(other[0] == sum_b, "the other handle reads its own buffer");
+    lfortran_gpu_release_kernel(k);
+    lfortran_gpu_release_kernel(k2);
     lfortran_gpu_shutdown(ctx);
     check_api_use();
     return 0;
@@ -381,6 +454,9 @@ int main(int argc, char **argv)
     }
     if (argc == 2 && strcmp(argv[1], "discard-fill") == 0) {
         return discard_fill();
+    }
+    if (argc == 2 && strcmp(argv[1], "read-once") == 0) {
+        return read_once();
     }
     if (argc == 2 && strcmp(argv[1], "failed-free") == 0) {
         return failed_free();

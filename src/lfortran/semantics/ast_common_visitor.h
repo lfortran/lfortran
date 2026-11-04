@@ -1998,6 +1998,7 @@ public:
         {"hypot", IntrinsicSignature({"x", "y"}, 2, 2)},
         {"shiftr", IntrinsicSignature({"i", "shift"}, 2, 2)},
         {"rshift", IntrinsicSignature({"i", "shift"}, 2, 2)},
+        {"shifta", IntrinsicSignature({"i", "shift"}, 2, 2)},
         {"shiftl", IntrinsicSignature({"i", "shift"}, 2, 2)},
         {"lshift", IntrinsicSignature({"i", "shift"}, 2, 2)},
         {"ishft", IntrinsicSignature({"i", "shift"}, 2, 2)},
@@ -19453,6 +19454,118 @@ public:
         throw SemanticAbort();
     }
 
+    // Whether `scope` is in module `mod_name` or in one of its submodules.
+    bool is_scope_in_module(SymbolTable *scope, const std::string &mod_name) {
+        ASR::Module_t *mod = nullptr;
+        if (scope->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+            mod = ASR::is_a<ASR::Module_t>(*owner) ? ASR::down_cast<ASR::Module_t>(owner)
+                : ASRUtils::get_sym_module0(owner);
+        }
+        while (mod != nullptr) {
+            if (mod_name == mod->m_name) {
+                return true;
+            }
+            if (mod->m_parent_module == nullptr) {
+                break;
+            }
+            if (mod_name == mod->m_parent_module) {
+                return true;
+            }
+            ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                scope->resolve_symbol(mod->m_parent_module));
+            mod = (parent != nullptr && ASR::is_a<ASR::Module_t>(*parent))
+                ? ASR::down_cast<ASR::Module_t>(parent) : nullptr;
+        }
+        return false;
+    }
+
+    // The binding `b` of a derived type as declared: an extension type holds
+    // copies of inherited bindings (for code generation), and a copy is
+    // replaced by the binding of the ancestor type that declares it. A copy
+    // has the access of the inherited binding and, for a specific binding,
+    // the same procedure; a copied generic names only inherited bindings.
+    ASR::symbol_t *declared_binding(ASR::symbol_t *b) {
+        while (true) {
+            ASR::symbol_t *type_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::symbol_parent_symtab(b)->asr_owner);
+            ASR::symbol_t *parent_sym = ASR::down_cast<ASR::Struct_t>(type_sym)->m_parent;
+            ASR::symbol_t *inherited = nullptr;
+            while (parent_sym != nullptr && inherited == nullptr) {
+                ASR::Struct_t *parent = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(parent_sym));
+                inherited = parent->m_symtab->get_symbol(ASRUtils::symbol_name(b));
+                parent_sym = parent->m_parent;
+            }
+            if (inherited == nullptr || inherited->type != b->type) {
+                return b;
+            }
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*b)) {
+                ASR::StructMethodDeclaration_t *d
+                    = ASR::down_cast<ASR::StructMethodDeclaration_t>(b);
+                ASR::StructMethodDeclaration_t *pd
+                    = ASR::down_cast<ASR::StructMethodDeclaration_t>(inherited);
+                if (d->m_access != pd->m_access
+                        || ASRUtils::symbol_get_past_external(d->m_proc)
+                            != ASRUtils::symbol_get_past_external(pd->m_proc)) {
+                    return b;
+                }
+            } else {
+                ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(b);
+                ASR::GenericProcedure_t *pg = ASR::down_cast<ASR::GenericProcedure_t>(inherited);
+                if (g->m_access != pg->m_access) {
+                    return b;
+                }
+                for (size_t i = 0; i < g->n_procs; i++) {
+                    std::string name = ASRUtils::symbol_name(g->m_procs[i]);
+                    bool found = false;
+                    for (size_t j = 0; j < pg->n_procs && !found; j++) {
+                        found = name == ASRUtils::symbol_name(pg->m_procs[j]);
+                    }
+                    if (!found) {
+                        return b;
+                    }
+                }
+            }
+            b = inherited;
+        }
+    }
+
+    // Fortran 2018 7.5.5: a private binding is accessible only within the
+    // module containing the definition of the type that declares it.
+    void check_binding_accessible(ASR::symbol_t *binding, const Location &loc) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(binding);
+        if (b == nullptr) {
+            return;
+        }
+        ASR::accessType access = ASR::accessType::Public;
+        std::string what = "type-bound procedure";
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*b)) {
+            access = ASR::down_cast<ASR::StructMethodDeclaration_t>(b)->m_access;
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*b)
+                && ASRUtils::is_type_bound_generic(b)) {
+            access = ASR::down_cast<ASR::GenericProcedure_t>(b)->m_access;
+            what = "generic type-bound procedure";
+        }
+        if (access != ASR::accessType::Private) {
+            return;
+        }
+        b = declared_binding(b);
+        ASR::Module_t *mod = ASRUtils::get_sym_module(b);
+        if (mod == nullptr || is_scope_in_module(current_scope, mod->m_name)) {
+            return;
+        }
+        ASR::symbol_t *type_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::symbol_parent_symtab(b)->asr_owner);
+        diag.add(Diagnostic(what + " '"
+            + std::string(ASRUtils::symbol_name(b)) + "' of derived type '"
+            + std::string(ASRUtils::symbol_name(type_sym))
+            + "' is private and cannot be accessed outside module '"
+            + std::string(mod->m_name) + "'",
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        if (!compiler_options.continue_compilation) throw SemanticAbort();
+    }
+
     ASR::symbol_t* resolve_deriv_type_proc(const Location &loc, const std::string &var_name,
             const std::string dt_name, ASR::expr_t* dt_expr, ASR::ttype_t* dt_type, SymbolTable*& scope,
             ASR::symbol_t* parent=nullptr) {
@@ -22154,7 +22267,7 @@ public:
                                      bool& is_function,
                                      bool unmatched_generic=false) {
         std::string var_name = to_lower(x.m_func);
-        if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
+        if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat(x, al)) {
             is_function = false;
             tmp = result;
             return nullptr;
@@ -22240,6 +22353,9 @@ public:
                                 }));
                             throw SemanticAbort();
                         }
+                    }
+                    if (var_name == "shifta") {
+                        check_shifta_args(args, x.base.base.loc);
                     }
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
@@ -22623,10 +22739,10 @@ public:
         return nullptr;
     }
 
-    // special handling of 'dble', 'float', 'dfloat', 'shifta' intrinsics
+    // special handling of 'dble', 'float', 'dfloat' intrinsics
     // maybe once those are moved to IntrinsicElementalFunction, this might
     // not be needed
-    ASR::asr_t* handle_intrinsics_dble_float_dfloat_shifta(
+    ASR::asr_t* handle_intrinsics_dble_float_dfloat(
         const AST::FuncCallOrArray_t &x,
         Allocator &al
     ) {
@@ -22642,9 +22758,6 @@ public:
         } else if (var_name == "dfloat" ) {
             visit_expr_list(x.m_args, x.n_args, args);
             asr_node = handle_intrinsic_float_dfloat(al, args, x.base.base.loc, 8);
-        } else if (var_name == "shifta") {
-            visit_expr_list(x.m_args, x.n_args, args);
-            asr_node = create_Shifta(x.base.base.loc, args);
         }
         return asr_node;
     }
@@ -24715,49 +24828,47 @@ public:
         rename_implicit_idl_var();
     }
 
-    ASR::asr_t* create_Shifta(const Location &loc, Vec<ASR::call_arg_t> args) {
-        /*
-            shifta(n, w):
-            This is arithmetic shift right by w bits.
-            Represent using BinOp, with left = n, right = w, op = BitRShift
-        */
-        ASR::expr_t *n = args[0].m_value;
-        ASR::expr_t *w = args[1].m_value;
-
-        ASR::ttype_t* type_n = ASRUtils::expr_type(n);
-        ASR::ttype_t* type_w = ASRUtils::expr_type(w);
-        ASR::ttype_t* base_n = ASRUtils::type_get_past_array(type_n);
-        ASR::ttype_t* base_w = ASRUtils::type_get_past_array(type_w);
-
-        if (!ASRUtils::is_integer(*base_n) || !ASRUtils::is_integer(*base_w)) {
-            this->diag.semantic_error_label(
+    // shifta(i, shift) is lowered as the rshift intrinsic; diagnose invalid
+    // arguments here so that the errors name 'shifta'.
+    void check_shifta_args(Vec<ASR::expr_t*> &args, const Location &loc) {
+        ASR::ttype_t* base_i = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(args[0])));
+        ASR::ttype_t* base_shift = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(args[1])));
+        if (!ASRUtils::is_integer(*base_i) || !ASRUtils::is_integer(*base_shift)) {
+            diag.semantic_error_label(
                 "Arguments to the 'shifta' intrinsic must be of type INTEGER",
                 { loc },
                 "help: check the variable types passed to shifta"
             );
             throw SemanticAbort();
         }
-
-        ASR::ttype_t* cast_target_for_w = base_n;
-
-        if (ASRUtils::is_array(type_w)) {
-            ASR::Array_t* w_arr = ASR::down_cast<ASR::Array_t>(
-                ASRUtils::type_get_past_allocatable_pointer(type_w));
-            cast_target_for_w = ASRUtils::make_Array_t_util(al, loc, base_n, 
-                                                            w_arr->m_dims, w_arr->n_dims);
-        }
-
-        if (!ASRUtils::check_equal_type(base_n, base_w, nullptr, nullptr)) {
-            if (ASRUtils::is_integer(*base_n) && ASRUtils::is_integer(*base_w)) {
-                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, 
-                                 ASR::cast_kindType::IntegerToInteger, 
-                                 cast_target_for_w, nullptr, nullptr));
+        int64_t bit_size = 8 * ASRUtils::extract_kind_from_ttype_t(base_i);
+        auto check_shift = [&](ASR::expr_t* shift_value) {
+            if (!shift_value || !ASR::is_a<ASR::IntegerConstant_t>(*shift_value)) {
+                return;
             }
+            int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(shift_value)->m_n;
+            if (shift < 0 || shift > bit_size) {
+                diag.semantic_error_label(
+                    "the shift argument of 'shifta' intrinsic must be non-negative "
+                    "and less than or equal to the bit size of the integer",
+                    { args[1]->base.loc },
+                    "shift value is " + std::to_string(shift)
+                        + ", but bit size of integer is " + std::to_string(bit_size));
+                throw SemanticAbort();
+            }
+        };
+        ASR::expr_t* shift_value = ASRUtils::expr_value(args[1]);
+        if (shift_value && ASR::is_a<ASR::ArrayConstant_t>(*shift_value)) {
+            ASR::ArrayConstant_t* shifts = ASR::down_cast<ASR::ArrayConstant_t>(shift_value);
+            size_t n = ASRUtils::get_constant_ArrayConstant_size(shifts);
+            for (size_t i = 0; i < n; i++) {
+                check_shift(ASRUtils::fetch_ArrayConstant_value(al, shifts, i));
+            }
+        } else {
+            check_shift(shift_value);
         }
-
-        ASR::ttype_t* out_type = ASRUtils::is_array(type_n) ? type_n : cast_target_for_w;
-
-        return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift, n, w, out_type);
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
@@ -24798,6 +24909,7 @@ public:
             v = resolve_deriv_type_proc(x.base.base.loc, var_name,
                     to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+            check_binding_accessible(v, x.base.base.loc);
             v = ASRUtils::import_class_procedure(al, x.base.base.loc, v, current_scope);
         } else {
             // for a GenericProcedure and a derived type with the same name,
@@ -25009,7 +25121,7 @@ public:
                     ASR::is_a<ASR::Variable_t>(*v) && !ASRUtils::is_symbol_procedure_variable(v)) {
                 bool is_function = true;
                 // NOTE: ideally this shouldn't be needed, this is only to handle
-                // 'dble', 'shifta', 'float', 'dfloat', which aren't currently
+                // 'dble', 'float', 'dfloat', which aren't currently
                 // implemented as intrinsic elemental function
                 if (!user_function_found) {
                     intrinsic_as_node(x, is_function);

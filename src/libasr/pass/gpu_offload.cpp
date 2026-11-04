@@ -2295,8 +2295,19 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     ASR::ttype_t *loop_int_type = ASRUtils::expr_type(work.head(0).m_v);
+    // The iterations are numbered in a type at least as wide as every loop
+    // index, so an integer(8) index keeps 64-bit index arithmetic in a nest
+    // that mixes it with integer(4) ones.
+    ASR::ttype_t *widest_index_type = loop_int_type;
+    for (size_t d = 1; d < n_dims; d++) {
+        ASR::ttype_t *type = ASRUtils::expr_type(work.head(d).m_v);
+        if (ASRUtils::extract_kind_from_ttype_t(type)
+                > ASRUtils::extract_kind_from_ttype_t(widest_index_type)) {
+            widest_index_type = type;
+        }
+    }
     ASR::ttype_t *index_type = gpu_iteration_number_type(al, loc,
-        loop_int_type, device_caps);
+        widest_index_type, device_caps);
     // Unlike the launch's widen (gpu_offload_launch.cpp), this does not copy
     // `value`: it widens kernel-scope expressions built for the kernel.
     auto widen = [&](ASR::expr_t *value) {
@@ -2379,6 +2390,22 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // and what replaces it already names the kernel's buffer, so the
     // replacement contains nothing that would be replaced again.
     ASR::expr_t *slot_index = nullptr;
+    // A launch with a reduction runs a grid-stride loop (see below), unless
+    // a cycle of the offloaded loop ends the thread, which would skip the
+    // thread's later iterations, or a scalar it assigns is live after it.
+    // A thread then accumulates in a local variable, which it combines into
+    // its slot once, after the loop: in the slot itself every iteration
+    // would read and write memory.
+    bool strided = false;
+    if (has_accumulators && liveouts.scalars.empty()) {
+        GpuOffloadedLoopLeaves cycles(nullptr);
+        cycles.transform_stmts(body_copy.p, body_copy.n);
+        strided = cycles.offloaded_cycles == 0;
+    }
+    // The local accumulator of each reduction of a grid-stride loop, in the
+    // order of pending_reductions (nullptr for one the body never uses).
+    std::vector<ASR::expr_t*> local_accumulators(pending_reductions.size(),
+        nullptr);
     if (!pending_reductions.empty()) {
         ASR::ttype_t *slot_type = ASRUtils::duplicate_type(al, index_type);
         gpu_new_variable(al, loc, kernel_scope, "__gpu_slot",
@@ -2392,11 +2419,20 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASR::integerbozType::Decimal)),
             ASRUtils::duplicate_type(al, slot_type), nullptr));
         std::map<ASR::symbol_t*, ASR::expr_t*> slot_map;
-        for (auto &r : pending_reductions) {
+        for (size_t ri = 0; ri < pending_reductions.size(); ri++) {
+            auto &r = pending_reductions[ri];
             ASR::symbol_t *param = accumulators_of(r);
             if (!param) continue;
-            slot_map[r.orig_scalar_sym] = gpu_reduction_slot(al, loc,
-                param, slot_index, r.scalar_type);
+            if (strided) {
+                local_accumulators[ri] = ASRUtils::EXPR(ASR::make_Var_t(al,
+                    loc, gpu_new_variable(al, loc, kernel_scope,
+                        kernel_scope->get_unique_name("__gpu_accumulator"),
+                        ASRUtils::duplicate_type(al, r.scalar_type))));
+                slot_map[r.orig_scalar_sym] = local_accumulators[ri];
+            } else {
+                slot_map[r.orig_scalar_sym] = gpu_reduction_slot(al, loc,
+                    param, slot_index, r.scalar_type);
+            }
         }
         if (!slot_map.empty()) {
             AssociateVarResolverVisitor slot_replacer(al, slot_map);
@@ -2466,7 +2502,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     // flat_idx = block_idx * block_size + thread_idx, in the type that
     // numbers the iterations: the product of the device's (unsigned 32-bit)
-    // built-ins would wrap.
+    // built-ins would wrap. Numbered in integer(4) (gpu_iteration_number_type)
+    // it fits: one launch starts at most the chunk limit's threads, at most
+    // huge(0), rounded up to whole blocks of a power of two, so its largest
+    // thread number is at most huge(0) (gpu_offload_launch.cpp). A launch
+    // that runs an iteration on several lanes starts at most huge(0) threads
+    // as well (pass_gpu_vector_lanes).
     ASR::expr_t *flat_idx = index_binop(index_binop(widen(block_idx),
         ASR::binopType::Mul, widen(block_sz)), ASR::binopType::Add,
         widen(thread_idx));
@@ -2507,6 +2548,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         && is_power_of_two(device_caps.tile_width)
         && is_power_of_two(device_caps.threads_per_block)
         && device_caps.threads_per_block % device_caps.tile_width == 0;
+    LCOMPILERS_ASSERT(!(strided && tiled));
+    // The number of iterations and the stride of the grid-stride loop.
+    ASR::expr_t *stride_total = nullptr, *stride_var = nullptr;
     std::vector<ASR::expr_t*> host_starts, host_ends;
     for (const DimInfo &dim : dim_info) {
         host_starts.push_back(dim.host_start);
@@ -2518,14 +2562,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     size_t flat_second = fastest_dimension == 0 ? 1 : 0;
     size_t tile_down = next_store_dimension != fastest_dimension
         ? next_store_dimension : flat_second;
-    // Where a launch may run in chunks and every extent is a constant, the
-    // number of threads a tiled launch would run is known now, padding
-    // included. When it is more than the chunk limit, the most threads one
-    // launch runs, the kernel numbers the iterations flat, one thread each,
-    // as a launch that runs in chunks would at run time anyway: the
-    // iterations then decide, below, whether the launch is ever split.
-    if (tiled && device_caps.chunked_launches
-            && gpu_constant_tile_threads(host_starts, host_ends,
+    // Where every extent is a constant, the number of threads a tiled
+    // launch would run is known now, padding included. When it is more than
+    // the chunk limit, the most threads one launch runs, the kernel numbers
+    // the iterations flat, one thread each, as the launch would at run time
+    // anyway (gpu_offload_launch.cpp): the iterations then decide, below,
+    // whether the launch is ever split.
+    if (tiled && gpu_constant_tile_threads(host_starts, host_ends,
                 fastest_dimension, tile_down,
                 device_caps.tile_width, device_caps.threads_per_block)
                 > static_cast<uint64_t>(pass_options.gpu_chunk_limit)) {
@@ -2835,6 +2878,36 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)),
             flat_body.p, flat_body.n, tiled_body.p, tiled_body.n)));
         first_flat_position = 2;
+    } else if (strided) {
+        // A reduction runs its iterations in a grid-stride loop: at most
+        // gpu_reduction_threads threads, the first `stride` of the launch,
+        // each run every stride-th iteration from its own number and
+        // accumulate them in one slot. The host then folds `stride` slots
+        // rather than one per iteration (gpu_offload_launch.cpp launches no
+        // more threads than that, and allocates as many slots).
+        stride_total = kernel_local("__gpu_iterations", index_type);
+        ASR::expr_t *total = nullptr;
+        for (size_t d = 0; d < n_dims; d++) {
+            ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
+                widen(kernel_starts[d]), widen(kernel_ends[d]), index_type);
+            total = total == nullptr ? dim_range
+                : index_binop(total, ASR::binopType::Mul, dim_range);
+        }
+        assign(stride_total, total);
+        stride_var = kernel_local("__gpu_stride", index_type);
+        ASR::expr_t *limit = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+            loc, gpu_reduction_threads, index_type,
+            ASR::integerbozType::Decimal));
+        assign(stride_var, ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+            ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, stride_total,
+                ASR::cmpopType::Gt, limit,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)),
+            limit, stride_total, ASRUtils::duplicate_type(al, index_type),
+            nullptr)));
+        return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+            flat_idx, ASR::cmpopType::GtE, stride_var,
+            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
+        assign(remain_var, flat_idx);
     } else {
         return_past_iterations();
         // __flat_idx = flat_idx (the raw thread index)
@@ -2879,6 +2952,20 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    for (size_t ri = 0; ri < pending_reductions.size(); ri++) {
+        if (!local_accumulators[ri]) continue;
+        auto &r = pending_reductions[ri];
+        assign(local_accumulators[ri],
+            gpu_reduction_identity(al, loc, r.op, r.scalar_type));
+    }
+    // In a grid-stride loop, what follows runs once per iteration: from
+    // here on the kernel body is the loop's body (see below).
+    size_t stride_loop_start = kernel_body.n;
+    ASR::expr_t *stride_iteration = nullptr;
+    if (strided) {
+        stride_iteration = kernel_local("__gpu_iteration", index_type);
+        assign(remain_var, stride_iteration);
+    }
     number_flat(first_flat_position, n_dims);
 
     // This helper processes a block and recursively handles any nested
@@ -3209,6 +3296,163 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     for (size_t i = 0; i < body_copy.n; i++) {
         kernel_body.push_back(al, body_copy.p[i]);
     }
+    if (strided) {
+        Vec<ASR::stmt_t*> loop_body;
+        loop_body.reserve(al, kernel_body.n - stride_loop_start);
+        for (size_t i = stride_loop_start; i < kernel_body.n; i++) {
+            loop_body.push_back(al, kernel_body.p[i]);
+        }
+        kernel_body.n = stride_loop_start;
+        ASR::ttype_t *it_type = ASRUtils::duplicate_type(al, index_type);
+        auto it_const = [&](int64_t value) {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value,
+                ASRUtils::duplicate_type(al, it_type),
+                ASR::integerbozType::Decimal));
+        };
+        auto do_loop = [&](ASR::expr_t *v, ASR::expr_t *start,
+                ASR::expr_t *end, ASR::expr_t *step, Vec<ASR::stmt_t*> &b) {
+            ASR::do_loop_head_t head;
+            head.loc = loc;
+            head.m_v = v;
+            head.m_start = start;
+            head.m_end = end;
+            head.m_increment = step;
+            return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,
+                nullptr, head, b.p, b.n, nullptr, 0));
+        };
+        // A thread waits for the loads of an iteration of a body without
+        // loops of its own before the next iteration issues its own, so the
+        // loop runs its iterations `unroll` at a time, the bodies one after
+        // another, which lets the device compiler issue their loads
+        // together. About four loads in flight per thread is best: an MI300A
+        // reads 2.2 TB/s with one and 3.7 TB/s with four, for a sum over one
+        // array unrolled four times and a dot product unrolled twice, and
+        // both get slower with eight. So `unroll` is four divided by the
+        // number of arrays the body reads (one when it reads more than two).
+        // The rest of the iterations run one at a time after it.
+        //
+        //     do __gpu_group = 0, (__gpu_iterations - __flat_idx)
+        //             / (unroll * __gpu_stride) - 1
+        //         __gpu_iteration = __flat_idx + __gpu_group * unroll
+        //             * __gpu_stride
+        //         body
+        //         __gpu_iteration = __gpu_iteration + __gpu_stride
+        //         body ...
+        //     end do
+        //     do __gpu_iteration = __flat_idx + (__gpu_iterations
+        //             - __flat_idx) / (unroll * __gpu_stride) * unroll
+        //             * __gpu_stride, __gpu_iterations - 1, __gpu_stride
+        //         body
+        //     end do
+        bool has_loop = false;
+        std::set<ASR::symbol_t*> arrays_read;
+        {
+            class BodyFinder : public ASR::BaseWalkVisitor<BodyFinder> {
+            public:
+                bool found = false;
+                std::set<ASR::symbol_t*> &arrays;
+                BodyFinder(std::set<ASR::symbol_t*> &arrays_)
+                    : arrays(arrays_) {}
+                void visit_DoLoop(const ASR::DoLoop_t &) { found = true; }
+                void visit_WhileLoop(const ASR::WhileLoop_t &) {
+                    found = true;
+                }
+                void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &) {
+                    found = true;
+                }
+                void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                    if (ASR::is_a<ASR::Var_t>(*x.m_v)) {
+                        arrays.insert(ASR::down_cast<ASR::Var_t>(x.m_v)->m_v);
+                    } else {
+                        arrays.insert(nullptr);
+                    }
+                    ASR::BaseWalkVisitor<BodyFinder>::visit_ArrayItem(x);
+                }
+                void visit_BlockCall(const ASR::BlockCall_t &x) {
+                    ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                        x.m_m);
+                    if (!ASR::is_a<ASR::Block_t>(*b)) return;
+                    ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+                    for (size_t i = 0; i < block->n_body; i++) {
+                        visit_stmt(*block->m_body[i]);
+                    }
+                }
+            } finder(arrays_read);
+            for (size_t i = 0; i < loop_body.n && !finder.found; i++) {
+                finder.visit_stmt(*loop_body.p[i]);
+            }
+            has_loop = finder.found;
+        }
+        const int64_t unroll = arrays_read.size() <= 1 ? 4
+            : arrays_read.size() == 2 ? 2 : 1;
+        Vec<ASR::stmt_t*> unrolled;
+        unrolled.reserve(al, unroll * (loop_body.n + 1));
+        bool copied = !has_loop && unroll > 1;
+        ASR::expr_t *group = kernel_local("__gpu_group", it_type);
+        ASR::expr_t *span = index_binop(it_const(unroll),
+            ASR::binopType::Mul, stride_var);
+        ASR::expr_t *groups = index_binop(index_binop(stride_total,
+            ASR::binopType::Sub, flat_idx), ASR::binopType::Div, span);
+        for (int64_t u = 0; copied && u < unroll; u++) {
+            unrolled.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
+                loc, stride_iteration, u == 0
+                    ? index_binop(flat_idx, ASR::binopType::Add,
+                        index_binop(group, ASR::binopType::Mul, span))
+                    : index_binop(stride_iteration, ASR::binopType::Add,
+                        stride_var),
+                nullptr, false, false, false, false)));
+            for (size_t i = 0; i < loop_body.n && copied; i++) {
+                ASRUtils::ExprStmtDuplicator dup(al);
+                dup.success = true;
+                ASR::stmt_t *copy = dup.duplicate_stmt(loop_body.p[i]);
+                if (!dup.success || !copy) {
+                    copied = false;
+                } else {
+                    unrolled.push_back(al, copy);
+                }
+            }
+        }
+        ASR::expr_t *rest_start = flat_idx;
+        if (copied) {
+            kernel_body.push_back(al, do_loop(group, it_const(0),
+                index_binop(groups, ASR::binopType::Sub, it_const(1)),
+                nullptr, unrolled));
+            rest_start = index_binop(flat_idx, ASR::binopType::Add,
+                index_binop(groups, ASR::binopType::Mul, span));
+        }
+        // do __gpu_iteration = rest_start, __gpu_iterations - 1, __gpu_stride
+        kernel_body.push_back(al, do_loop(stride_iteration, rest_start,
+            index_binop(stride_total, ASR::binopType::Sub, it_const(1)),
+            stride_var, loop_body));
+        // slot = slot op accumulator, as the host folds the slots.
+        for (size_t ri = 0; ri < pending_reductions.size(); ri++) {
+            if (!local_accumulators[ri]) continue;
+            auto &r = pending_reductions[ri];
+            ASR::expr_t *slot = gpu_reduction_slot(al, loc,
+                accumulators_of(r), slot_index, r.scalar_type);
+            ASR::expr_t *acc = local_accumulators[ri];
+            if (gpu_reduction_folds_by_compare(r.op)) {
+                Vec<ASR::stmt_t*> keep;
+                keep.reserve(al, 1);
+                keep.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
+                    loc, slot, acc, nullptr, false, false, false, false)));
+                kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al,
+                    loc, nullptr, ASRUtils::EXPR(ASRUtils::make_Cmpop_util(
+                        al, loc, r.op == ASR::reduction_opType::ReduceMIN
+                            ? ASR::cmpopType::Lt : ASR::cmpopType::Gt,
+                        acc, slot,
+                        ASRUtils::duplicate_type(al, r.scalar_type))),
+                    keep.p, keep.n, nullptr, 0)));
+            } else {
+                kernel_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, slot,
+                        ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc,
+                            gpu_reduction_fold_binop(r.op), slot, acc,
+                            ASRUtils::duplicate_type(al, r.scalar_type))),
+                        nullptr, false, false, false, false)));
+            }
+        }
+    }
 
     // 5. Build function signature
     // FunctionType arg_types must not contain scope-bound expressions.
@@ -3270,6 +3514,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.end_parameters = end_parameters;
     plan.chunk_fixed_iterations = chunk_fixed_iterations;
     plan.first_chunk_parameter = first_chunk_parameter;
+    plan.strided = strided;
     plan.tile_dims[0] = tiled ? order[0] : 0;
     plan.tile_dims[1] = tiled ? order[1] : 0;
     build_kernel_launch(region, work, loc, plan);
