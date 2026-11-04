@@ -13,17 +13,21 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
     for (size_t i = 0; i < f.n_args; i++) {
         if (!ASR::is_a<ASR::Var_t>(*f.m_args[i])) continue;
         ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
-        if (!dummy_not_procedure(*sym, proc_name, diag)) {
-            ok = false;
-            continue;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(sym);
+            ok = dummy_not_procedure(*sym, proc_name, diag) && ok;
+            ok = dummy_scalar(v, proc_name, diag) && ok;
+            ok = dummy_not_allocatable(v, proc_name, diag) && ok;
+            ok = dummy_not_pointer(v, proc_name, diag) && ok;
+            ok = dummy_not_coarray(v, proc_name, diag) && ok;
+            ok = no_alternate_return(v, proc_name, diag) && ok;
+        } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+            ok = dummy_not_procedure(*sym, proc_name, diag) && ok;
+        } else {
+            throw LCompilersException("unexpected kind of dummy argument '" +
+                std::string(ASRUtils::symbol_name(sym)) +
+                "' of elemental procedure '" + proc_name + "'");
         }
-        if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
-        const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(sym);
-        ok = dummy_scalar(v, proc_name, diag) && ok;
-        ok = dummy_not_allocatable(v, proc_name, diag) && ok;
-        ok = dummy_not_pointer(v, proc_name, diag) && ok;
-        ok = dummy_not_coarray(v, proc_name, diag) && ok;
-        ok = no_alternate_return(v, proc_name, diag) && ok;
     }
     if (!ok && !compiler_options.continue_compilation) {
         throw SemanticAbort();

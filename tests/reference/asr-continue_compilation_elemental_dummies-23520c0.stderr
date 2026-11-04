@@ -32,6 +32,12 @@ semantic error: dummy argument 'h' of elemental procedure 'cc_elem_dummies_proce
 29 |         procedure(cc_elem_dummies_iface), pointer, intent(in) :: h  ! {Error} dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
    |                                                                  ^ 
 
+semantic error: dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a pointer
+  --> tests/errors/continue_compilation_elemental_dummies.f90:29:66
+   |
+29 |         procedure(cc_elem_dummies_iface), pointer, intent(in) :: h  ! {Error} dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+   |                                                                  ^ 
+
 semantic error: elemental procedure 'cc_elem_dummies_alt_return' cannot have an alternate return dummy argument '*'
   --> tests/errors/continue_compilation_elemental_dummies.f90:32:5 - 34:18
    |
