@@ -33,7 +33,6 @@
 #include <libasr/pass/replace_symbolic.h>
 #include <libasr/pass/replace_intrinsic_function.h>
 #include <libasr/pass/replace_intrinsic_subroutine.h>
-#include <libasr/pass/replace_fma.h>
 #include <libasr/pass/loop_fusion.h>
 #include <libasr/pass/replace_sign_from_value.h>
 #include <libasr/pass/replace_class_constructor.h>
@@ -123,7 +122,6 @@ namespace LCompilers {
             {"class_constructor", &pass_replace_class_constructor},
             {"unused_functions", &pass_unused_functions},
             {"div_to_mul", &pass_replace_div_to_mul},
-            {"fma", &pass_replace_fma},
             {"loop_fusion", &pass_loop_fusion},
             {"sign_from_value", &pass_replace_sign_from_value},
             {"inline_function_calls", &pass_inline_function_calls},
@@ -483,7 +481,6 @@ namespace LCompilers {
                 "unused_functions",
                 "sign_from_value",
                 "div_to_mul",
-                "fma",
                 "inline_function_calls",
                 "promote_allocatable_to_nonallocatable",
                 "loop_fusion"

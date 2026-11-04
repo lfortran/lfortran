@@ -5,7 +5,7 @@ program loop_fusion_04
     integer, parameter :: n = 8
     real :: a(n), b(n), c(n), d(n), e(n), f(n), g(n), h(n)
     real :: r, t, u(n), v(n), x(n, n), y(n, n), w(n, n)
-    integer :: idx(n), cnt(n), i, k, l, m, p
+    integer :: idx(n), cnt(n), i, k, l, m, p, q
 
     a = [(real(i), i = 1, n)]
     b = 2
@@ -87,6 +87,16 @@ program loop_fusion_04
         v(m) = u(m) + a(m)
     end do
     if (abs(v(n) - (exp(1.0) + n)) > 1e-4) error stop 8
+
+    ! A multiply-add and a loop that reads its result (fused; LLVM forms
+    ! the FMA instructions).
+    do i = 1, n
+        u(i) = a(i) * b(i) + c(i)
+    end do
+    do q = 1, n
+        v(q) = u(q) * 2
+    end do
+    if (any(abs(v - 2*(2*a + c)) > 1e-4)) error stop 9
 
     if (any(c /= a + 2) .or. any(d /= 2*a)) error stop 1
     if (any(f /= 6) .or. any(abs(g - a / 2) > 1e-5)) error stop 2
