@@ -5232,12 +5232,30 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     ASR::expr_t* end = implied_doloop->m_end;
     ASR::expr_t* d = implied_doloop->m_increment;
     ASR::expr_t* implied_doloop_size = nullptr;
-    int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end));
-    start = builder.i2i_t(start, ASRUtils::expr_type(end));
+    // A bound of the loop may be integer(8): the trip count is computed in
+    // the widest kind of the bounds, as in get_triplet_extent, and only then
+    // converted to a default integer, the kind of every size that
+    // get_ArrayConstructor_size adds to it.
+    int kind = 4;
+    for( ASR::expr_t* e: {start, end, d} ) {
+        if( e ) {
+            kind = std::max(kind, ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(e)));
+        }
+    }
+    ASR::ttype_t* bound_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+    ASR::ttype_t* size_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+    auto to_size_type = [&](ASR::expr_t* e) {
+        return kind == 4 ? e : builder.i2i_t(e, size_type);
+    };
+    start = builder.i2i_t(start, bound_type);
+    if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) != kind ) {
+        end = builder.i2i_t(end, bound_type);
+    }
     if( d == nullptr ) {
         implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
     } else {
-        d = builder.i2i_t(d, ASRUtils::expr_type(end));
+        d = builder.i2i_t(d, bound_type);
         implied_doloop_size = builder.Add(builder.Div(
             builder.Sub(end, start), d),
             make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
@@ -5278,26 +5296,27 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     if (inner_depends_on_var) {
         ASR::expr_t* two = make_ConstantWithKind(
             make_IntegerConstant_t, make_Integer_t, 2, kind, loc);
-        ASR::expr_t* arith_sum = builder.Div(
-            builder.Mul(implied_doloop_size, builder.Add(start, end)), two);
+        ASR::expr_t* arith_sum = to_size_type(builder.Div(
+            builder.Mul(implied_doloop_size, builder.Add(start, end)), two));
         if (const_elements > 0) {
             ASR::expr_t* const_total = builder.Mul(
                 make_ConstantWithKind(make_IntegerConstant_t,
-                    make_Integer_t, const_elements, kind, loc),
-                implied_doloop_size);
+                    make_Integer_t, const_elements, 4, loc),
+                to_size_type(implied_doloop_size));
             implied_doloop_size = builder.Add(arith_sum, const_total);
         } else {
             implied_doloop_size = arith_sum;
         }
     } else {
+        implied_doloop_size = to_size_type(implied_doloop_size);
         if( const_elements > 0 ) {
             if( implied_doloop_size_ == nullptr ) {
                 implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
-                    make_Integer_t, const_elements, kind, loc);
+                    make_Integer_t, const_elements, 4, loc);
             } else {
                 implied_doloop_size_ = builder.Add(
                     make_ConstantWithKind(make_IntegerConstant_t,
-                        make_Integer_t, const_elements, kind, loc),
+                        make_Integer_t, const_elements, 4, loc),
                     implied_doloop_size_);
             }
         }
