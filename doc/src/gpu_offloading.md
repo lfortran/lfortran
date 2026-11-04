@@ -848,6 +848,11 @@ otherwise. `unified` on a GPU that cannot access host memory is an error.
 `LFORTRAN_GPU_VERBOSE=1` prints the model selected. The CPU emulation reports
 a separate device that can access host memory, so its default is the copy
 model and `LFORTRAN_GPU_MEMORY=unified` runs the unified model on the CPU.
+In the unified model on AMD the host waits for the GPU by sleeping until the
+driver wakes it (`hipDeviceScheduleBlockingSync`) rather than by spinning:
+the CPU and the GPU of an APU share the power of their socket, and on an
+MI300A a host thread spinning while a kernel streams through memory made the
+kernel 3-5% slower.
 
 The Metal runtime encodes the launches one after another into one compute
 encoder and commits its command buffer every 64 launches and at every wait:
