@@ -6599,6 +6599,7 @@ RUN(NAME gpu_metal_150 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_cuda_cpu_01 LABELS gfortran llvm cuda EXTRAFILES gpu_cuda_cpu_01_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_cuda_cpu_archive_01 LABELS gfortran llvm cuda STATIC_LIBRARY_FILES gpu_cuda_cpu_archive_01_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_memory_01 LABELS gfortran llvm cuda)
+RUN(NAME gpu_shift_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_separate_compilation_01 LABELS gfortran llvm metal cuda EXTRAFILES gpu_separate_compilation_01_mod.f90 EXTRA_ARGS --separate-compilation)
 # Only the module's own compilation needs the fallback for its loop that
 # prints: the program that uses it compiles none of the module's loops.
