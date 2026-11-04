@@ -403,6 +403,7 @@ namespace LCompilers {
                 "array_op",
                 // A block-private map read once by an ordered scalar fold
                 // needs only a scalar, not a per-thread device workspace.
+                // Reused integer-valued real maps can use exact smaller storage.
                 "gpu_private_reduction_fusion",
                 "symbolic",
                 "intrinsic_function",

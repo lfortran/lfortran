@@ -71,6 +71,28 @@ does not yet eliminate arrays shared by grouped reductions and conditional
 weight materialization in a projection. No backend-specific pattern or
 application name is involved.
 
+### Exact storage for integer-valued private maps
+
+The post-`array_op` `gpu_private_reduction_fusion` stage reduces storage of a block-private
+rank-one REAL(4) map whose stores all convert provably small integers to real.
+Constant-length `ibits` and nonnegative constant-mask `iand` give conservative
+integer ranges. A pure self-contained scalar function's final unconditional
+result assignment can supply that proof when no early return bypasses it.
+Signed integer(1) or integer(2) storage is selected only when every store fits
+exactly, including in binary32. All scalar loads explicitly convert back to
+REAL(4); the original producer expression and its real conversion are retained
+and evaluated once per original store.
+
+This is lossless storage compression, not recomputation or reduction
+reassociation. Conditional multi-output producers, multiple readers, reused
+row loops and partial groups keep their original execution and values.
+FP32 arithmetic and BF16 store boundaries are unchanged. Whole-array escape,
+unproved stores, declaration dependencies, aliasing and scoped/volatile
+attributes prevent compression. `--gpu-loop-transforms=none` disables it.
+Workspace planning derives the smaller allocation from the ordinary ASR type;
+there is no backend-specific allocation rule. The conditional lifetime proof
+needed to eliminate such reused maps entirely is still not implemented.
+
 ### Time-step fusion
 
 Two adjacent parallel loops, a producer that assigns arrays element by

@@ -16,7 +16,8 @@ namespace LCompilers {
                               const PassOptions &pass_options);
 
     // Eliminates a single-use private map into its full-domain ordered
-    // scalar fold after shared reduction lowering, before device storage.
+    // scalar fold and losslessly narrows integer-valued real map storage
+    // after shared reduction lowering and before device storage planning.
     void pass_gpu_private_reduction_fusion(Allocator &al,
         ASR::TranslationUnit_t &unit, const PassOptions &pass_options);
 

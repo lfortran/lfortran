@@ -1196,6 +1196,169 @@ end subroutine
         "shape_user=0\ny(2,n)=sum(shape_user)\nend block");
 }
 
+TEST_CASE("Private integer-valued maps retain exact values in smaller storage") {
+    std::string source = read_project_file(
+        "integration_tests/gpu_private_map_storage_01.f90");
+    for (const std::string mode : {"all", "none", "bounds"}) {
+        INFO(mode);
+        CompilerOptions options;
+        options.gpu_backend = "metal";
+        options.po.gpu_offload_metal = true;
+        options.po.gpu_loop_transforms = mode == "bounds" ? "all" : mode;
+        options.separate_compilation = true;
+        options.po.separate_compilation = true;
+        // Match --fast's bounds policy without enabling floating-point changes.
+        options.bounds_checking = mode == "bounds";
+        options.po.bounds_checking = mode == "bounds";
+        options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        FortranEvaluator evaluator(options);
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = "gpu_private_map_storage_01.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LFortran::source_offset(source.size()));
+        diag::Diagnostics diagnostics;
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        Allocator allocator(32 * 1024 * 1024);
+        PassManager passes;
+        passes.use_default_passes();
+        passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+        size_t codes = 0;
+        std::string workspaces;
+        for (const auto &entry : parsed.result->m_symtab->get_scope()) {
+            if (!ASRUtils::is_device_kernel(entry.second)) continue;
+            auto *kernel = ASR::down_cast<ASR::Function_t>(entry.second);
+            REQUIRE(kernel->m_gpu != nullptr);
+            for (size_t i = 0; i < kernel->m_gpu->n_workspaces; i++) {
+                auto &ws = kernel->m_gpu->m_workspaces[i];
+                workspaces += std::string(ASRUtils::symbol_name(ws.m_variable)) + ";";
+                std::string name = ASRUtils::symbol_name(ws.m_variable);
+                if (name != "codes" && name != "codes_gpu") continue;
+                CHECK(ws.m_element_size == (mode == "all" ? 2 : 4));
+                CHECK(ws.m_allocation_if == nullptr);
+                codes++;
+            }
+        }
+        CHECK_MESSAGE(codes == 1, workspaces);
+    }
+}
+
+TEST_CASE("Private map storage requires a lossless nonescaping representation") {
+    auto check = [](const std::string &value, const std::string &extra,
+            int bytes, const std::string &attributes = "",
+            const std::string &function_body = "q=ibits(word,0,8)") {
+        INFO(value << " / " << extra << " / " << attributes << " / " << function_body);
+        std::string source = R"(
+module map_storage
+contains
+    pure integer function f(word) result(q)
+        integer, intent(in) :: word
+        )" + function_body + R"(
+    end function
+    pure real function readback(a) result(r)
+        real, intent(in) :: a(:)
+        r=sum(a)
+    end function
+    pure real function scalar_readback(a) result(r)
+        real, target, intent(in) :: a
+        r=a
+    end function
+    subroutine map(input,x,y,saved)
+        integer, contiguous, intent(in) :: input(:,:)
+        real, contiguous, intent(in) :: x(:)
+        real, contiguous, intent(out) :: y(:,:), saved(:,:)
+        do concurrent (integer :: n=1:size(y,2))
+            block
+                real)" + attributes + R"( :: codes(size(x))
+                do concurrent (integer :: d=1:size(x))
+                    codes(d)=)" + value + R"(
+                end do
+                )" + extra + R"(
+                do concurrent (integer :: m=1:size(y,1))
+                    block
+                        real :: total
+                        integer :: i
+                        total=0
+                        do i=1,max(0,size(x)-1)
+                            total=total+codes(i)*x(i)
+                        end do
+                        y(m,n)=total+codes(size(x))
+                    end block
+                end do
+            end block
+        end do
+    end subroutine
+end module
+)";
+        CompilerOptions options;
+        options.gpu_backend = "metal";
+        options.po.gpu_offload_metal = true;
+        options.separate_compilation = true;
+        options.po.separate_compilation = true;
+        options.bounds_checking = false;
+        options.po.bounds_checking = false;
+        options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        FortranEvaluator evaluator(options);
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = "private_map_storage_proof.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LFortran::source_offset(source.size()));
+        diag::Diagnostics diagnostics;
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        Allocator allocator(32 * 1024 * 1024);
+        PassManager passes;
+        passes.use_default_passes();
+        passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+        size_t codes = 0;
+        std::string workspaces;
+        for (const auto &entry : parsed.result->m_symtab->get_scope()) {
+            if (!ASRUtils::is_device_kernel(entry.second)) continue;
+            auto *kernel = ASR::down_cast<ASR::Function_t>(entry.second);
+            REQUIRE(kernel->m_gpu != nullptr);
+            for (size_t i = 0; i < kernel->m_gpu->n_workspaces; i++) {
+                auto &ws = kernel->m_gpu->m_workspaces[i];
+                workspaces += std::string(ASRUtils::symbol_name(ws.m_variable)) + ";";
+                std::string name = ASRUtils::symbol_name(ws.m_variable);
+                if (name != "codes" && name != "codes_gpu") continue;
+                CHECK(ws.m_element_size == bytes);
+                codes++;
+            }
+        }
+        CHECK_MESSAGE(codes == 1, workspaces);
+    };
+    check("real(f(input(d,n)))", "", 2);
+    check("real(iand(input(d,n),127))", "", 1);
+    check("real(ibits(input(d,n),0,15))", "", 2);
+    check("real(ibits(input(d,n),0,16))", "", 4);
+    check("real(input(d,n))", "", 4);
+    check("real(f(input(d,n)))", "codes(1)=codes(1)+0.5", 4);
+    check("real(f(input(d,n)))", "codes(1)=real(iand(int(codes(1)),255))", 4);
+    check("real(f(input(d,n)))", "saved(1,n)=readback(codes)", 4);
+    check("real(f(input(d,n)))", "saved(1,n)=scalar_readback(codes(1))", 4);
+    check("real(f(input(d,n)))", "", 4, ", target");
+    check("real(f(input(d,n)))", "", 4, ", volatile");
+    // SIZE has already become the unchanged extent, not a data reference.
+    check("real(f(input(d,n)))", R"(
+block
+    real :: shape_user(size(codes))
+    shape_user=0
+    saved(1,n)=sum(shape_user)
+end block)", 2);
+    check("real(f(input(d,n)))", "", 4, "",
+        "if(word<0) then\nq=65536\nreturn\nend if\nq=ibits(word,0,8)");
+}
+
 TEST_CASE("Scalar call actual reductions do not reserve a product heap") {
     std::string source = read_project_file(
         "integration_tests/gpu_scalar_reduction_actual_01.f90");
