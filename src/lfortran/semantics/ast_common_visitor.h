@@ -14,6 +14,7 @@
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
+#include <lfortran/semantics/elemental_checks.h>
 #include <libasr/pass/instantiate_template.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/runtime/lfortran_float128_quadmath.h>
@@ -11674,10 +11675,10 @@ public:
                                 s.m_initializer->base.loc);
                             continue;
                         }
-                        if (is_nonintrinsic_elemental_procedure(init_sym)
-                                && check_elemental_procedure_target(ASRUtils::EXPR(
+                        if (ElementalChecks::is_nonintrinsic_elemental(init_sym)
+                                && !ElementalChecks::not_pointer_target(ASRUtils::EXPR(
                                     ASR::make_Var_t(al, s.m_initializer->base.loc,
-                                        init_sym)))) {
+                                        init_sym)), diag)) {
                             if (!compiler_options.continue_compilation) {
                                 throw SemanticAbort();
                             }
@@ -15417,40 +15418,6 @@ public:
         }
     }
 
-    // Whether `target`, the procedure that a procedure pointer is given, is
-    // a nonintrinsic elemental procedure, which cannot be the target of a
-    // procedure pointer (Fortran 2018 C1031) nor its initial target (C1519).
-    // A specific intrinsic function is allowed even though it is elemental.
-    static bool is_nonintrinsic_elemental_procedure(ASR::symbol_t* target) {
-        if (target == nullptr) {
-            return false;
-        }
-        target = ASRUtils::symbol_get_past_external(target);
-        return ASR::is_a<ASR::Function_t>(*target)
-            && !ASRUtils::is_intrinsic_symbol(target)
-            && ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(
-                target))->m_elemental;
-    }
-
-    // If the procedure designator `value` designates a nonintrinsic
-    // elemental procedure, reports it and returns true.
-    bool check_elemental_procedure_target(ASR::expr_t* value) {
-        if (value == nullptr || !ASR::is_a<ASR::Var_t>(*value)) {
-            return false;
-        }
-        ASR::symbol_t* target = ASR::down_cast<ASR::Var_t>(value)->m_v;
-        if (!is_nonintrinsic_elemental_procedure(target)) {
-            return false;
-        }
-        diag.add(Diagnostic("nonintrinsic elemental procedure '"
-                + std::string(ASRUtils::symbol_name(target))
-                + "' cannot be a procedure pointer target",
-            Level::Error, Stage::Semantic, {
-                Label("a procedure pointer target shall not be a "
-                    "nonintrinsic elemental procedure", {value->base.loc})}));
-        return true;
-    }
-
     // If `value`, the value of the component `member` in a structure
     // constructor of an initialization, names an internal procedure, reports
     // it and returns the `null()` to continue with instead, for the context
@@ -15989,7 +15956,7 @@ public:
                             arg->base.loc});
                     continue;
                 }
-                if (!forward_target && (check_elemental_procedure_target(arg)
+                if (!forward_target && (!ElementalChecks::not_pointer_target(arg, diag)
                         || !procedure_component_value_matches(member_var, arg))) {
                     if (!compiler_options.continue_compilation) {
                         throw SemanticAbort();

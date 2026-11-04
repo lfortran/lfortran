@@ -17,6 +17,12 @@ public:
         const std::string &proc_name, diag::Diagnostics &diag,
         const CompilerOptions &compiler_options);
 
+    // Uses of nonintrinsic elemental procedures
+    static bool is_nonintrinsic_elemental(ASR::symbol_t *sym);
+    // C1031, C1519
+    static bool not_pointer_target(ASR::expr_t *value,
+        diag::Diagnostics &diag);
+
 private:
     // C15100
     static bool dummy_not_allocatable(const ASR::Variable_t &v,

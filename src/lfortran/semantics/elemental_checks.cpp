@@ -274,4 +274,28 @@ bool ElementalChecks::result_derived_type_params(const ASR::Function_t &,
     return true;
 }
 
+bool ElementalChecks::is_nonintrinsic_elemental(ASR::symbol_t *sym) {
+    if (sym == nullptr) return false;
+    sym = ASRUtils::symbol_get_past_external(sym);
+    return ASR::is_a<ASR::Function_t>(*sym)
+        && !ASRUtils::is_intrinsic_symbol(sym)
+        && ASRUtils::get_FunctionType(
+            ASR::down_cast<ASR::Function_t>(sym))->m_elemental;
+}
+
+bool ElementalChecks::not_pointer_target(ASR::expr_t *value,
+        diag::Diagnostics &diag) {
+    if (value == nullptr || !ASR::is_a<ASR::Var_t>(*value)) return true;
+    ASR::symbol_t *target = ASR::down_cast<ASR::Var_t>(value)->m_v;
+    if (!is_nonintrinsic_elemental(target)) return true;
+    diag.add(diag::Diagnostic(
+        "nonintrinsic elemental procedure '"
+        + std::string(ASRUtils::symbol_name(target))
+        + "' cannot be a procedure pointer target",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("a procedure pointer target shall not be a "
+                "nonintrinsic elemental procedure", {value->base.loc})}));
+    return false;
+}
+
 } // namespace LCompilers::LFortran
