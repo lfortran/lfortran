@@ -1,7 +1,8 @@
 # GPU Offloading
 
 This document describes how LFortran decides where a parallel loop runs when a
-GPU backend is selected with `--gpu=metal`, `--gpu=cuda` or `--gpu=cuda_cpu`.
+GPU backend is selected with `--gpu=metal`, `--gpu=cuda`, `--gpu=cuda_cpu` or
+`--gpu=hip`.
 It is a design document: where the current implementation differs, the
 differences are listed at the end.
 
@@ -773,6 +774,61 @@ same retry and writable-residency preparation. Same-address writable aliases,
 including discards downgraded by overlap, use one covering extent so that
 preparation cannot alternate between their different byte counts.
 
+`--gpu=hip` runs the same CUDA runtime on AMD GPUs, through ROCm. HIP is
+CUDA C++ for AMD GPUs, so the backend shares everything with `--gpu=cuda` up
+to the toolchain: the ASR passes, the device capabilities and the device code
+generator, whose output only gains `#include <hip/hip_runtime.h>`. The HIP
+driver (`hipcc` by default, `--device-compiler` to choose another) compiles it
+as HIP for `--gpu-arch` (`gfx90a`, `gfx942`, ...; the GPUs of the compiling
+machine by default) and links the program. The GPU runtime is
+`lfortran_gpu_cuda.c` itself, which the host C compiler builds against
+`hip/cuda_runtime.h`, an implementation of the part of the CUDA runtime API
+it calls with HIP, and the headers of the ROCm installation the HIP driver
+belongs to. The program finds the HIP runtime library of that installation
+through its run path.
+
+### Memory models
+
+A GPU with memory of its own -- every discrete GPU, NVIDIA's and AMD's -- runs
+a kernel on copies of the host's arrays in device memory: the *copy model*
+above. A GPU that shares the host's memory and can access what the host
+allocated, such as the AMD MI300A with `HSA_XNACK=1`, can also run a kernel on
+the host's arrays where they are: the *unified model*. On an MI300A a kernel
+runs at the same speed either way, but the copies cost: a copy between host
+and device memory runs at about 58 GB/s there, while the kernels run at about
+3.5 TB/s, so a launch that copies its arrays spends nearly all its time
+copying.
+
+The unified model is a special case of the copy model rather than a design of
+its own: the compiler emits the same launches, waits and discards for both,
+and the CUDA runtime keeps the same residency table, in which a range used in
+place is an entry whose device memory is the host range itself. Only what the
+runtime does with an entry changes:
+
+* A range a kernel may write is used in place: nothing is allocated, copied
+  in or copied back, and `lfortran_gpu_sync` only waits. The host does not
+  access such a range before the next sync, as in the copy model.
+* The host may change or free a range a kernel only reads as soon as the
+  launch returns (see the next section). One of at most 64 KiB is therefore
+  still copied, which leaves the launch asynchronous; a larger one is used in
+  place, and the launch waits for the kernel before it returns.
+* `lfortran_gpu_discard` of a range that a pending launch writes in place
+  waits for the launch, since the host is about to free memory the kernel
+  uses.
+* On AMD the runtime gives every range it uses in place, once,
+  `hipMemAdvise(hipMemAdviseSetPreferredLocation)` for the GPU: an MI300A
+  kernel reads memory the host allocated at about 127 GB/s without it and at
+  about 3.4 TB/s with it.
+
+The runtime selects the model when it starts. `LFORTRAN_GPU_MEMORY=copy` or
+`unified` selects one; `auto`, the default, selects the unified model on a
+GPU that reports that it is integrated with the host and can access its
+pageable memory (on AMD, an APU run with `HSA_XNACK=1`), and the copy model
+otherwise. `unified` on a GPU that cannot access host memory is an error.
+`LFORTRAN_GPU_VERBOSE=1` prints the model selected. The CPU emulation reports
+a separate device that can access host memory, so its default is the copy
+model and `LFORTRAN_GPU_MEMORY=unified` runs the unified model on the CPU.
+
 The Metal runtime encodes the launches one after another into one compute
 encoder and commits its command buffer every 64 launches and at every wait:
 encoding a dispatch costs the host about 2 us, committing a command buffer
@@ -949,11 +1005,15 @@ with a `stop` before that.
   the same program runs correctly on the CPU with `--gpu-allow-cpu-fallback`.
 * Every pipeline fix comes with an integration test that runs on the GPU
   backends (`metal`, `cuda` labels) and checks the results.
-* One `cuda` label covers both CUDA modes, and every `cuda` test must pass in
-  both: `integration_tests -b cuda_cpu` runs the `cuda` tests in the CPU
-  emulation (`--gpu=cuda_cpu`, what CI runs), and `integration_tests -b cuda`
-  runs the same tests natively on an NVIDIA GPU (`--gpu=cuda`). There is no
-  `cuda_cpu` label.
+* One `cuda` label covers every mode of the CUDA device code, and every
+  `cuda` test must pass in all of them: `integration_tests -b cuda_cpu` runs
+  the `cuda` tests in the CPU emulation (`--gpu=cuda_cpu`, what CI runs),
+  `integration_tests -b cuda` runs the same tests natively on an NVIDIA GPU
+  (`--gpu=cuda`), and `integration_tests -b hip` on an AMD GPU
+  (`--gpu=hip`). There are no `cuda_cpu` and `hip` labels. The memory models
+  are tested by running a backend with `LFORTRAN_GPU_MEMORY=copy` and
+  `unified`: the CPU emulation in either, an AMD APU with `HSA_XNACK=1` in
+  either, and a discrete GPU in the copy model.
 * Compiling is not enough: an offloaded loop can compile and still compute the
   wrong values. Integration tests therefore check their results in the program,
   and third-party codes whose test suites check values (Formal, Fiats) are run
@@ -1038,6 +1098,24 @@ GFortran, and native CUDA.
   analysis, one procedure at a time, does not see.
 
 ## Differences from the current implementation
+
+* `--gpu=hip` has the device capabilities of `--gpu=cuda` (the CUDA entry of
+  `gpu_device_capabilities`): its 512 KiB of stack per thread, and tiles of
+  32 iterations, the width of a warp rather than of an AMD wavefront (64). A
+  capability entry of its own, with the stack an AMD GPU gives a thread,
+  needs the passes that ask whether `gpu_offload_cuda` is set rather than
+  what the device can do to ask the capabilities instead.
+* In the unified memory model a launch that reads more than 64 KiB of host
+  memory in place waits for its kernel, because the host may change what a
+  launch only reads as soon as it returns. With the `gpu_launch_sync` pass
+  also placing a wait before a host statement that writes or frees storage a
+  pending launch reads -- a wait the runtime would skip in the copy model --
+  such a launch would not have to wait.
+* A copy from pageable host memory (`malloc`) to the device waits for the
+  launches before it on the stream, in CUDA and in HIP, except for small
+  copies: the host waits for the device at every launch that copies an
+  array. Copying through pinned staging buffers would leave those launches
+  asynchronous.
 
 * The pipeline still has its own checks for device limits (the width of the
   data that reaches a kernel, input/output statements), spread over

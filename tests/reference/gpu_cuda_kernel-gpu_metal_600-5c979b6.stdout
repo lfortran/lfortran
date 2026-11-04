@@ -284,7 +284,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
 }
 
 __device__ inline float get_s_gpu_22(t s, float* __data_s_a, long __size_s_a, long __lb_s_a_dim1, long i) {
-    float r;
+    float r{};
     r = (__data_s_a[((long)(i) - (__lb_s_a_dim1))] + ((float)s.n));
     return r;
 }
@@ -323,7 +323,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_5(
 }
 
 __device__ inline float get_a_gpu_26(float* a, long __1a, long i, long __lb_a_0) {
-    float r;
+    float r{};
     r = (a[((long)(i) - (__lb_a_0))] + ((float)7));
     return r;
 }
@@ -420,13 +420,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_7(
 }
 
 __device__ inline float get_a_gpu_35(float* a, long __1a, long i, long __lb_a_0) {
-    float r;
+    float r{};
     r = (a[((long)(i) - (__lb_a_0))] + ((float)7));
     return r;
 }
 
 __device__ inline float get_s_gpu_36(t s, float* __data_s_a, long __size_s_a, long __lb_s_a_dim1, long i) {
-    float r;
+    float r{};
     r = (__data_s_a[((long)(i) - (__lb_s_a_dim1))] + ((float)s.n));
     return r;
 }

@@ -24,6 +24,10 @@ add_test(NAME test_gpu_cuda_api_state_failed_free
     COMMAND test_gpu_cuda_api_state failed-free)
 set_tests_properties(test_gpu_cuda_api_state_failed_free PROPERTIES
     PASS_REGULAR_EXPRESSION "lfortran_gpu: cudaFree failed: invalid argument")
+add_test(NAME test_gpu_cuda_api_state_unified
+    COMMAND test_gpu_cuda_api_state unified)
+set_tests_properties(test_gpu_cuda_api_state_unified PROPERTIES
+    ENVIRONMENT "LFORTRAN_GPU_MEMORY=unified")
 add_test(NAME test_gpu_cuda_api_state_no_device
     COMMAND test_gpu_cuda_api_state no-device)
 set_tests_properties(test_gpu_cuda_api_state_no_device PROPERTIES

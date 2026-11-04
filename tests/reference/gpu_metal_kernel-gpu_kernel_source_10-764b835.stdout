@@ -2,7 +2,7 @@
 using namespace metal;
 
 inline float multiply_add_gpu_7(float a_gpu, float b_gpu) {
-    float multiply_add_gpu;
+    float multiply_add_gpu{};
     multiply_add_gpu = ((a_gpu * b_gpu) +   1.00000000000000000e+00);
     return multiply_add_gpu;
 }

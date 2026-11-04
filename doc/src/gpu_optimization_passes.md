@@ -8,20 +8,19 @@ them knows anything about a particular application. Each proves that what it
 does preserves the meaning of the program, and leaves the loops as they are
 when it cannot.
 
-They run for `--gpu=cuda` and `--gpu=cuda_cpu` (on by default), right after
-the dispatch has assigned the loops (the pass `gpu_loop_transforms`, which
-runs `gpu_loop_fusion`, `gpu_time_skew`, then `gpu_index_set_split`, before
-`gpu_offload`; each of the three can also be run on its own with `--pass`),
-so their output is ordinary `do concurrent` nests and host code that the
-rest of the offload pipeline lowers as it lowers any other; Metal keeps its
-loops as written. `--gpu-loop-transforms` selects them: `all` (the
-default), `none`, or a comma separated list of `fuse`, `swap`, `split`,
-`jam` and `skew` (`swap` only applies to loops that are fused); any other
-value is an error. The
-choices that depend on the size of the device's last-level cache ask the
-runtime for it (`lfortran_gpu_cache_bytes`, the L2 size on CUDA) unless
-`--gpu-cache-bytes=N` states it (the tests use a small value to exercise
-the paths for large problems on small ones).
+They run for `--gpu=cuda`, `--gpu=cuda_cpu` and `--gpu=hip` (on by default),
+right after the dispatch has assigned the loops (the pass
+`gpu_loop_transforms`, which runs `gpu_loop_fusion`, `gpu_time_skew`, then
+`gpu_index_set_split`, before `gpu_offload`; each of the three can also be run
+on its own with `--pass`), so their output is ordinary `do concurrent` nests
+and host code that the rest of the offload pipeline lowers as it lowers any
+other; Metal keeps its loops as written. `--gpu-loop-transforms` selects them:
+`all` (the default), `none`, or a comma separated list of `fuse`, `swap`,
+`split`, `jam` and `skew` (`swap` only applies to loops that are fused); any
+other value is an error. The choices that depend on the size of the device's
+last-level cache ask the runtime for it (`lfortran_gpu_cache_bytes`, the L2
+size on CUDA) unless `--gpu-cache-bytes=N` states it (the tests use a small
+value to exercise the paths for large problems on small ones).
 
 The measurements quoted below are of Formal's 2D advection-diffusion
 example (`--solver workspace --order 4`, the `split` kernel: per Runge-Kutta

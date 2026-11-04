@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 __device__ inline float f_gpu_8(int n, float x, float* __gpu_heap_r4, int __gpu_heap_cap_r4, int* __gpu_heap_state, int& __gpu_stop_site, int& __gpu_stop_code) {
-    float r;
+    float r{};
     int __gpu_heap_a_base;
     int __gpu_heap_a_lb1;
     int __gpu_heap_a_n1;

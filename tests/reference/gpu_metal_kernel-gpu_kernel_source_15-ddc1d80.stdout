@@ -2,7 +2,7 @@
 using namespace metal;
 
 inline float twice_gpu_11(float v_gpu) {
-    float twice_gpu;
+    float twice_gpu{};
     twice_gpu = (((float)2) * v_gpu);
     return twice_gpu;
 }

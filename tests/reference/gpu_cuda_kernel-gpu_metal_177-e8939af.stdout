@@ -5,7 +5,7 @@ struct data_t {
 };
 
 __device__ inline float f_gpu_16(float x) {
-    float r;
+    float r{};
     r = (x *   2.00000000000000000e+00f);
     return r;
 }

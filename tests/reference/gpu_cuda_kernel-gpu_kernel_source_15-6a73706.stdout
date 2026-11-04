@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 __device__ inline float twice_gpu_11(float v) {
-    float twice;
+    float twice{};
     twice = (((float)2) * v);
     return twice;
 }

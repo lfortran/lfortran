@@ -1,13 +1,13 @@
 #include <stdint.h>
 
 __device__ inline float f_gpu_9(float x) {
-    float f;
+    float f{};
     f = (x +   3.00000000000000000e+00f);
     return f;
 }
 
 __device__ inline float second_gpu_10(float x) {
-    float f;
+    float f{};
     f = (  1.00000000000000000e+01f * x);
     return f;
 }

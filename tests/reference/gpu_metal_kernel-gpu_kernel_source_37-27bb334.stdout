@@ -2,7 +2,7 @@
 using namespace metal;
 
 inline int f_gpu_10(int m_gpu, device int* work_gpu) {
-    int r_gpu;
+    int r_gpu{};
     {
         {
             int __gpu_loop_end_gpu;

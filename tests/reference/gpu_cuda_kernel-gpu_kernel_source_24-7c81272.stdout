@@ -100,7 +100,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_11(
 }
 
 __device__ inline float dflux_gpu_55(float* f, int __1f, int i) {
-    float r;
+    float r{};
     r = (f[((int)(i) - (1))] - f[((int)((i - 1)) - (1))]);
     return r;
 }
@@ -289,7 +289,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_6(
 }
 
 __device__ inline float dflux_gpu_36(float* f, int __1f, int i) {
-    float r;
+    float r{};
     r = (f[((int)(i) - (1))] - f[((int)((i - 1)) - (1))]);
     return r;
 }

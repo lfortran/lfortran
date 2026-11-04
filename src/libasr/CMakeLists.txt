@@ -236,11 +236,13 @@ install(
 )
 
 # Relative to runtime/. The CPU emulation of the CUDA runtime API (cuda_cpu/)
-# keeps its own directory, which holds its cuda_runtime.h.
+# and its HIP implementation (hip/) keep their own directories, each of which
+# holds its cuda_runtime.h.
 set(LFORTRAN_GPU_RUNTIME_SOURCES
     lfortran_gpu_metal.m
     lfortran_gpu_cuda.c
     lfortran_gpu_runtime.h
+    hip/cuda_runtime.h
     cuda_cpu/cuda_runtime.h
     cuda_cpu/cuda_cpu_runtime.c
     cuda_cpu/cuda_cpu_device.h

@@ -49,7 +49,9 @@ typedef enum cudaDeviceAttr {
     cudaDevAttrMaxGridDimY = 6,
     cudaDevAttrMaxGridDimZ = 7,
     cudaDevAttrWarpSize = 10,
-    cudaDevAttrL2CacheSize = 38
+    cudaDevAttrIntegrated = 18,
+    cudaDevAttrL2CacheSize = 38,
+    cudaDevAttrPageableMemoryAccess = 88
 } cudaDeviceAttr;
 
 // Only the default stream (0) exists.

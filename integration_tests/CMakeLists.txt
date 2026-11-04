@@ -78,13 +78,14 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         message(FATAL_ERROR "Must specify the NAME argument")
     endif()
 
-    # One `cuda` label selects a test for both CUDA modes: the `cuda` backend
-    # runs it natively on an NVIDIA GPU, `cuda_cpu` in the CPU emulation.
-    if ("cuda_cpu" IN_LIST labels)
-        message(FATAL_ERROR "${name}: use the `cuda` label, there is no `cuda_cpu` label")
+    # One `cuda` label selects a test for every mode of the CUDA device code:
+    # the `cuda` backend runs it natively on an NVIDIA GPU, `cuda_cpu` in the
+    # CPU emulation, and `hip` on an AMD GPU.
+    if ("cuda_cpu" IN_LIST labels OR "hip" IN_LIST labels)
+        message(FATAL_ERROR "${name}: use the `cuda` label, there are no `cuda_cpu` and `hip` labels")
     endif()
     set(label_backend ${LFORTRAN_BACKEND})
-    if (LFORTRAN_BACKEND STREQUAL "cuda_cpu")
+    if (LFORTRAN_BACKEND STREQUAL "cuda_cpu" OR LFORTRAN_BACKEND STREQUAL "hip")
         set(label_backend cuda)
     endif()
 
@@ -272,7 +273,8 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:--gpu=metal ${extra_args}>)
             target_link_options(${name} PUBLIC --gpu=metal)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        elseif (LFORTRAN_BACKEND STREQUAL "cuda" OR LFORTRAN_BACKEND STREQUAL "cuda_cpu")
+        elseif (LFORTRAN_BACKEND STREQUAL "cuda" OR LFORTRAN_BACKEND STREQUAL "cuda_cpu"
+                OR LFORTRAN_BACKEND STREQUAL "hip")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:--gpu=${LFORTRAN_BACKEND} ${extra_args}>)
             target_link_options(${name} PUBLIC --gpu=${LFORTRAN_BACKEND})
@@ -332,7 +334,7 @@ macro(RUN)
     list(APPEND LFORTRAN_REGISTERED_TESTS "${RUN_NAME}")
 
     foreach(b ${RUN_LABELS})
-        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|flang|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|llvm_submodule|mlir|llvm_single_invocation|metal|cuda|cuda_cpu)$"))
+        if (NOT (b MATCHES "^(llvm|llvm2|llvm_rtlib|c|cpp|x86|wasm|gfortran|flang|llvmImplicit|llvmStackArray|llvm_integer_8|llvm_infer|fortran|c_nopragma|llvm_nopragma|llvm_wasm|llvm_wasm_emcc|llvm_omp|llvm_submodule|mlir|llvm_single_invocation|metal|cuda|cuda_cpu|hip)$"))
             message(FATAL_ERROR "Unsupported backend: ${b}")
         endif()
     endforeach()
@@ -6596,10 +6598,11 @@ RUN(NAME gpu_metal_149 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_150 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_cuda_cpu_01 LABELS gfortran llvm cuda EXTRAFILES gpu_cuda_cpu_01_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_cuda_cpu_archive_01 LABELS gfortran llvm cuda STATIC_LIBRARY_FILES gpu_cuda_cpu_archive_01_mod.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME gpu_memory_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_separate_compilation_01 LABELS gfortran llvm metal cuda EXTRAFILES gpu_separate_compilation_01_mod.f90 EXTRA_ARGS --separate-compilation)
 # Only the module's own compilation needs the fallback for its loop that
 # prints: the program that uses it compiles none of the module's loops.
-if (LFORTRAN_BACKEND MATCHES "^(metal|cuda|cuda_cpu)$")
+if (LFORTRAN_BACKEND MATCHES "^(metal|cuda|cuda_cpu|hip)$")
     set_source_files_properties(gpu_separate_compilation_01_mod.f90
         PROPERTIES COMPILE_OPTIONS "--gpu-allow-cpu-fallback")
 endif()

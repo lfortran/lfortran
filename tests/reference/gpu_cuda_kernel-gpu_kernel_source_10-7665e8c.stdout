@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 __device__ inline float multiply_add_gpu_7(float a, float b) {
-    float multiply_add;
+    float multiply_add{};
     multiply_add = ((a * b) +   1.00000000000000000e+00f);
     return multiply_add;
 }

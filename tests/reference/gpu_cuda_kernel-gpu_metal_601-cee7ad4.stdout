@@ -96,7 +96,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
 }
 
 __device__ inline float f_gpu_30(float* a, long __size_a_dim1, long __stride_a_dim1) {
-    float f;
+    float f{};
     int i;
     f = ((float)0);
     const int __lfortran_end_0 = ((int)(__size_a_dim1));

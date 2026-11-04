@@ -4,7 +4,10 @@
 #include <string.h>
 
 // We implement the same C API as the Metal runtime
-// (lfortran_gpu_runtime.h), but using CUDA.
+// (lfortran_gpu_runtime.h), but using the CUDA runtime API: NVIDIA's own
+// (`--gpu=cuda`), the CPU emulation of it (`--gpu=cuda_cpu`,
+// cuda_cpu/cuda_runtime.h) or HIP for AMD GPUs (`--gpu=hip`,
+// hip/cuda_runtime.h).
 
 #include "lfortran_gpu_runtime.h"
 
@@ -35,9 +38,35 @@ default stream ordering every copy and launch:
   stream runs the launches one after another, so every launch of the kernel
   uses the same memory, however many of them are still pending.
 * Memory a launch may still use is freed only at the next sync.
+
+That is the copy memory model, which every device has. A device that shares
+the host's memory and can access what the host allocated (an APU such as the
+AMD MI300A with HSA_XNACK=1) has the unified memory model too, where a kernel
+uses host memory in place and nothing is copied. It is a special case of the
+copy model, with the same table and the same contract:
+
+* A written range is a resident entry whose device memory is the host range
+  itself (`in_place`): nothing is allocated, copied in or copied back, and
+  lfortran_gpu_sync only waits. The host does not touch a written range
+  before the sync, as in the copy model, so no other wait is needed.
+* The host may change or free a range a launch only reads as soon as the
+  launch returns. A small one is therefore still copied, which leaves the
+  launch asynchronous; a larger one is used in place, and the launch waits
+  for the kernel before it returns.
+* lfortran_gpu_discard of a range a pending launch uses in place waits for
+  the launch first, since the host frees the memory the kernel uses.
+
+The model is chosen when the runtime starts: LFORTRAN_GPU_MEMORY=copy or
+unified selects one, and auto (the default) selects unified on a device that
+is integrated with the host and can access its pageable memory.
+LFORTRAN_GPU_VERBOSE=1 prints the model chosen.
 */
 
 enum { MAX_RESIDENT = 1024, MAX_DEFERRED = 4096 };
+
+// In the unified memory model, a range a launch only reads is copied when it
+// is at most this many bytes, and used in place otherwise.
+static const size_t UNIFIED_COPY_MAX_BYTES = 64 * 1024;
 
 typedef struct resident {
     void *host;
@@ -46,7 +75,13 @@ typedef struct resident {
     size_t capacity;
     int dirty;
     int used;
+    // `device` is `host` itself: the unified memory model.
+    int in_place;
 } resident;
+
+// Whether kernels use host memory in place (the unified memory model)
+// rather than copies of it in device memory (the copy model).
+static int unified_memory = 0;
 
 typedef struct slot_cache {
     void *buffers[MAX_ARGS];
@@ -158,7 +193,7 @@ static int find_entry(void *host) {
 }
 
 static void remove_entry(int i) {
-    free_later(entries[i].device);
+    if (!entries[i].in_place) free_later(entries[i].device);
     memset(&entries[i], 0, sizeof(resident));
 }
 
@@ -167,8 +202,10 @@ static void sync_all(void) {
     check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
     for (int i = 0; i < n_entries; i++) {
         if (!entries[i].used || !entries[i].dirty) continue;
-        check(cudaMemcpy(entries[i].host, entries[i].device, entries[i].size,
-            cudaMemcpyDeviceToHost), "cudaMemcpy D2H");
+        if (!entries[i].in_place) {
+            check(cudaMemcpy(entries[i].host, entries[i].device,
+                entries[i].size, cudaMemcpyDeviceToHost), "cudaMemcpy D2H");
+        }
         entries[i].dirty = 0;
     }
     for (int i = 0; i < n_deferred; i++) {
@@ -187,9 +224,8 @@ static int overlaps_dirty(void *host, size_t size) {
     return 0;
 }
 
-// `discard`: the kernel writes all of the range before it reads it, so the
-// host bytes are not copied in.
-static void* resident_for_write(void *host, size_t size, int discard) {
+// The entry of the host range `host` of `size` bytes, made if there is none.
+static resident* entry_for(void *host, size_t size) {
     int i = find_entry(host);
     if (i >= 0 && entries[i].size != size) {
         if (entries[i].dirty) sync_all();
@@ -211,7 +247,33 @@ static void* resident_for_write(void *host, size_t size, int discard) {
         entries[i].size = size;
         entries[i].used = 1;
     }
-    resident *e = &entries[i];
+    return &entries[i];
+}
+
+// In the unified memory model: the entry `e` uses its host range in place.
+// The driver is told once per range that the device uses it.
+static void* use_in_place(resident *e) {
+    if (!e->in_place || e->capacity != e->size) {
+#ifdef LFORTRAN_GPU_HIP
+        int device = 0;
+        check(cudaGetDevice(&device), "cudaGetDevice");
+        lfortran_gpu_hip_advise_device_use(e->host, e->size, device);
+#endif
+        e->device = e->host;
+        e->capacity = e->size;
+        e->in_place = 1;
+    }
+    return e->device;
+}
+
+// `discard`: the kernel writes all of the range before it reads it, so the
+// host bytes are not copied in.
+static void* resident_for_write(void *host, size_t size, int discard) {
+    resident *e = entry_for(host, size);
+    if (unified_memory) {
+        e->dirty = 1;
+        return use_in_place(e);
+    }
     if (e->dirty) return e->device;
     if (!e->device || e->capacity < size) {
         free_later(e->device);
@@ -248,6 +310,47 @@ static void* slot_buffer(slot_cache *cache, int idx, size_t size) {
     return cache->buffers[idx];
 }
 
+// The memory model of the device (see the comment at the top of this file),
+// from LFORTRAN_GPU_MEMORY and what the device reports.
+static int choose_unified_memory(int device) {
+    int integrated = 0, pageable = 0;
+    if (cudaDeviceGetAttribute(&integrated, cudaDevAttrIntegrated, device)
+            != cudaSuccess) {
+        integrated = 0;
+    }
+    if (cudaDeviceGetAttribute(&pageable, cudaDevAttrPageableMemoryAccess,
+            device) != cudaSuccess) {
+        pageable = 0;
+    }
+    const char *value = getenv("LFORTRAN_GPU_MEMORY");
+    int unified;
+    if (value == NULL || value[0] == '\0' || strcmp(value, "auto") == 0) {
+        unified = integrated && pageable;
+    } else if (strcmp(value, "copy") == 0) {
+        unified = 0;
+    } else if (strcmp(value, "unified") == 0) {
+        if (!pageable) {
+            fprintf(stderr, "LFORTRAN_GPU_MEMORY=unified: the GPU cannot "
+                "access host memory (on an AMD GPU, set HSA_XNACK=1)\n");
+            exit(1);
+        }
+        unified = 1;
+    } else {
+        fprintf(stderr, "LFORTRAN_GPU_MEMORY=%s is not a memory model "
+            "(copy, unified or auto)\n", value);
+        exit(1);
+    }
+    const char *verbose = getenv("LFORTRAN_GPU_VERBOSE");
+    if (verbose != NULL && strcmp(verbose, "1") == 0) {
+        fprintf(stderr, "lfortran_gpu: %s memory model (the GPU is %s the "
+            "host and %s access its pageable memory)\n",
+            unified ? "unified" : "copy",
+            integrated ? "integrated with" : "separate from",
+            pageable ? "can" : "cannot");
+    }
+    return unified;
+}
+
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
     static lfortran_gpu_ctx *singleton = NULL;
     if (singleton) return singleton;
@@ -256,6 +359,7 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
     // Without a device every launch would be skipped and the program would
     // continue with the values its loops never computed.
     check(cudaSetDevice(0), "cudaSetDevice");
+    unified_memory = choose_unified_memory(0);
     return singleton;
 }
 
@@ -399,8 +503,12 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     // That clears dirty flags and can invalidate earlier bindings: prepare them
     // again before dispatch, as in the Metal runtime.
     uint64_t syncs;
+    // Whether the kernel reads host memory in place that the host may change
+    // as soon as the launch returns, so that the launch has to wait for it.
+    int wait_for_kernel;
     do {
         syncs = n_syncs;
+        wait_for_kernel = 0;
         // Writable ranges first, so a read of the same range uses their memory.
         for (int i = 0; i < k->n_args; i++) {
             if (k->kind[i] != ARG_BUFFER || k->access[i] == LFORTRAN_GPU_READ)
@@ -420,6 +528,11 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             void *d_ptr = NULL;
             if (size > 0) {
                 d_ptr = dirty_resident(host, resident_sizes[i]);
+                if (!d_ptr && unified_memory
+                        && size > UNIFIED_COPY_MAX_BYTES) {
+                    d_ptr = use_in_place(entry_for(host, size));
+                    wait_for_kernel = 1;
+                }
                 if (!d_ptr) {
                     d_ptr = slot_buffer(k->cache, i, size);
                     check(cudaMemcpyAsync(d_ptr, host, size,
@@ -440,13 +553,20 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     // bytes) at every launch, not only in fresh device memory: whatever an
     // earlier launch left in a reused buffer must not let a kernel that reads
     // the range before writing all of it pass. A device keeps the old bytes.
+    // In the unified memory model the range is host memory, which the
+    // emulated stream, running everything when it is issued, lets the host
+    // fill itself.
     for (int i = 0; i < k->n_args; i++) {
         if (k->kind[i] == ARG_BUFFER && k->buffer_sizes[i] > 0
                 && k->access[i] == LFORTRAN_GPU_WRITE_DISCARD
                 && lfortran_gpu_discard_allowed(i, k->buffer_host_ptrs,
                     k->buffer_sizes, is_buffer, k->n_args)) {
-            check(cudaMemsetAsync(k->buffer_device_ptrs[i], 0xff,
-                k->buffer_sizes[i], 0), "cudaMemsetAsync");
+            if (unified_memory) {
+                memset(k->buffer_device_ptrs[i], 0xff, k->buffer_sizes[i]);
+            } else {
+                check(cudaMemsetAsync(k->buffer_device_ptrs[i], 0xff,
+                    k->buffer_sizes[i], 0), "cudaMemsetAsync");
+            }
         }
     }
 #endif
@@ -468,6 +588,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         (unsigned)block[2]};
     check(cudaLaunchKernel((const void*)k->func, grid_dim, block_dim, args, 0,
         0), "cudaLaunchKernel");
+    if (wait_for_kernel) sync_all();
 }
 
 void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
@@ -477,6 +598,15 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
 
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
     if (!ctx || size == 0) return;
+    // In the unified memory model a pending launch may still write the host
+    // memory that is about to be freed.
+    for (int i = 0; unified_memory && i < n_entries; i++) {
+        if (entries[i].used && entries[i].dirty && entries[i].in_place
+                && overlaps(entries[i].host, entries[i].size, ptr, size)) {
+            sync_all();
+            break;
+        }
+    }
     for (int i = 0; i < n_entries; i++) {
         if (entries[i].used
                 && overlaps(entries[i].host, entries[i].size, ptr, size)) {

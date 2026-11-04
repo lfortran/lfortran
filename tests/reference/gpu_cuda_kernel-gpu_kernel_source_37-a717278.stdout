@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 __device__ inline int f_gpu_10(int m, int* work) {
-    int r;
+    int r{};
     {
         {
             int __gpu_sum_k;

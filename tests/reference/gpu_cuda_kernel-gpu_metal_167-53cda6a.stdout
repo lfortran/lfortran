@@ -10,7 +10,7 @@ struct t {
 };
 
 __device__ inline float f_gpu_18(activation_t self, float x) {
-    float r;
+    float r{};
     r = (x * ((float)self.k));
     return r;
 }

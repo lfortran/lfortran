@@ -3722,11 +3722,15 @@ public:
         }
         src << ") {\n";
         indent_level++;
-        // Declare return variable if present
+        // Declare the return variable if present. It is value-initialized:
+        // a path that leaves it unassigned (a `stop` the function records
+        // and returns from) would otherwise return an indeterminate value,
+        // which lets an optimizer drop the path, the record of the stop
+        // included, as the AMD GPU compiler does.
         if (fn->m_return_var) {
             ASR::Variable_t *rv = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
-            src << get_indent() << ret_type << " " << sanitize_name(rv->m_name) << ";\n";
+            src << get_indent() << ret_type << " " << sanitize_name(rv->m_name) << "{};\n";
         }
         // The function writes only the declarations its body refers to.
         std::vector<GpuDeclaration> declarations;

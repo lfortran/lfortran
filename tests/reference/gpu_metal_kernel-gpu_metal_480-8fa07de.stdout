@@ -2,7 +2,7 @@
 using namespace metal;
 
 inline int _lcompilers_optimization_modulo_i32_gpu_19(int a_gpu, int p_gpu) {
-    int _lcompilers_optimization_modulo_i32_gpu;
+    int _lcompilers_optimization_modulo_i32_gpu{};
     _lcompilers_optimization_modulo_i32_gpu = ((a_gpu) % (((int)p_gpu)));
     if (((int)((_lcompilers_optimization_modulo_i32_gpu != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i32_gpu < 0) && (((int)p_gpu) > 0))) || ((int)((_lcompilers_optimization_modulo_i32_gpu > 0) && (((int)p_gpu) < 0)))))))) {
         _lcompilers_optimization_modulo_i32_gpu = (_lcompilers_optimization_modulo_i32_gpu + ((int)p_gpu));
