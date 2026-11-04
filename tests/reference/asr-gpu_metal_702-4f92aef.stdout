@@ -59,6 +59,32 @@
                                     []
                                     ()
                                 ),
+                            __gpu_accumulator:
+                                (Variable
+                                    5
+                                    __gpu_accumulator
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             __gpu_first_chunk:
                                 (Variable
                                     5
@@ -85,10 +111,114 @@
                                     []
                                     ()
                                 ),
+                            __gpu_group:
+                                (Variable
+                                    5
+                                    __gpu_group
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_iteration:
+                                (Variable
+                                    5
+                                    __gpu_iteration
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_iterations:
+                                (Variable
+                                    5
+                                    __gpu_iterations
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             __gpu_slot:
                                 (Variable
                                     5
                                     __gpu_slot
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_stride:
+                                (Variable
+                                    5
+                                    __gpu_stride
                                     []
                                     Local
                                     ()
@@ -534,7 +664,121 @@
                     (Var 5 __loop_start_2)
                     (Var 5 __loop_end_2)
                     (Var 5 __gpu_first_chunk)]
-                    [(If
+                    [(Assignment
+                        (Var 5 __gpu_iterations)
+                        (IntegerBinOp
+                            (IntegerBinOp
+                                (IfExp
+                                    (IntegerCompare
+                                        (Var 5 __loop_end_0)
+                                        GtE
+                                        (Var 5 __loop_start_0)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __loop_end_0)
+                                            Sub
+                                            (Var 5 __loop_start_0)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                Mul
+                                (IfExp
+                                    (IntegerCompare
+                                        (Var 5 __loop_end_1)
+                                        GtE
+                                        (Var 5 __loop_start_1)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __loop_end_1)
+                                            Sub
+                                            (Var 5 __loop_start_1)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            Mul
+                            (IfExp
+                                (IntegerCompare
+                                    (Var 5 __loop_end_2)
+                                    GtE
+                                    (Var 5 __loop_start_2)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __loop_end_2)
+                                        Sub
+                                        (Var 5 __loop_start_2)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 5 __gpu_stride)
+                        (IfExp
+                            (IntegerCompare
+                                (Var 5 __gpu_iterations)
+                                Gt
+                                (IntegerConstant 131072 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            (IntegerConstant 131072 (Integer 4) Decimal)
+                            (Var 5 __gpu_iterations)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
                         ()
                         (IntegerCompare
                             (IntegerBinOp
@@ -563,91 +807,7 @@
                                 ()
                             )
                             GtE
-                            (IntegerBinOp
-                                (IntegerBinOp
-                                    (IfExp
-                                        (IntegerCompare
-                                            (Var 5 __loop_end_0)
-                                            GtE
-                                            (Var 5 __loop_start_0)
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        (IntegerBinOp
-                                            (IntegerBinOp
-                                                (Var 5 __loop_end_0)
-                                                Sub
-                                                (Var 5 __loop_start_0)
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            Add
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        (IntegerConstant 0 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    Mul
-                                    (IfExp
-                                        (IntegerCompare
-                                            (Var 5 __loop_end_1)
-                                            GtE
-                                            (Var 5 __loop_start_1)
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        (IntegerBinOp
-                                            (IntegerBinOp
-                                                (Var 5 __loop_end_1)
-                                                Sub
-                                                (Var 5 __loop_start_1)
-                                                (Integer 4)
-                                                ()
-                                            )
-                                            Add
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        (IntegerConstant 0 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    (Integer 4)
-                                    ()
-                                )
-                                Mul
-                                (IfExp
-                                    (IntegerCompare
-                                        (Var 5 __loop_end_2)
-                                        GtE
-                                        (Var 5 __loop_start_2)
-                                        (Logical 4)
-                                        ()
-                                    )
-                                    (IntegerBinOp
-                                        (IntegerBinOp
-                                            (Var 5 __loop_end_2)
-                                            Sub
-                                            (Var 5 __loop_start_2)
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        Add
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    (IntegerConstant 0 (Integer 4) Decimal)
-                                    (Integer 4)
-                                    ()
-                                )
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 5 __gpu_stride)
                             (Logical 4)
                             ()
                         )
@@ -732,15 +892,155 @@
                         []
                     )
                     (Assignment
-                        (Var 5 i__dc)
+                        (Var 5 __gpu_accumulator)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 5 __gpu_group)
+                        (IntegerConstant 0 (Integer 4) Decimal)
                         (IntegerBinOp
                             (IntegerBinOp
-                                (Var 5 __flat_idx)
-                                Sub
+                                (IntegerBinOp
+                                    (Var 5 __gpu_iterations)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (GpuBlockIndex
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Mul
+                                            (GpuBlockSize
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Add
+                                        (GpuThreadIndex
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Div
+                                (IntegerBinOp
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Mul
+                                    (Var 5 __gpu_stride)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            Sub
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4) Decimal))
+                        [(Assignment
+                            (Var 5 __gpu_iteration)
+                            (IntegerBinOp
                                 (IntegerBinOp
                                     (IntegerBinOp
-                                        (Var 5 __flat_idx)
-                                        Div
+                                        (GpuBlockIndex
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (GpuBlockSize
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (GpuThreadIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (IntegerBinOp
+                                    (Var 5 __gpu_group)
+                                    Mul
+                                    (IntegerBinOp
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        Mul
+                                        (Var 5 __gpu_stride)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (Var 5 __gpu_iteration)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 i__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 5 __flat_idx)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 5 __loop_end_0)
+                                                    Sub
+                                                    (Var 5 __loop_start_0)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
                                         (IntegerBinOp
                                             (IntegerBinOp
                                                 (Var 5 __loop_end_0)
@@ -757,74 +1057,74 @@
                                         (Integer 4)
                                         ()
                                     )
-                                    Mul
-                                    (IntegerBinOp
-                                        (IntegerBinOp
-                                            (Var 5 __loop_end_0)
-                                            Sub
-                                            (Var 5 __loop_start_0)
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        Add
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    (Integer 4)
-                                    ()
-                                )
-                                (Integer 4)
-                                ()
-                            )
-                            Add
-                            (Var 5 __loop_start_0)
-                            (Integer 4)
-                            ()
-                        )
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 5 __flat_idx)
-                        (IntegerBinOp
-                            (Var 5 __flat_idx)
-                            Div
-                            (IntegerBinOp
-                                (IntegerBinOp
-                                    (Var 5 __loop_end_0)
-                                    Sub
-                                    (Var 5 __loop_start_0)
                                     (Integer 4)
                                     ()
                                 )
                                 Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 5 __loop_start_0)
                                 (Integer 4)
                                 ()
                             )
-                            (Integer 4)
                             ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
                         )
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 5 j__dc)
-                        (IntegerBinOp
+                        (Assignment
+                            (Var 5 __flat_idx)
                             (IntegerBinOp
                                 (Var 5 __flat_idx)
-                                Sub
+                                Div
                                 (IntegerBinOp
                                     (IntegerBinOp
-                                        (Var 5 __flat_idx)
-                                        Div
+                                        (Var 5 __loop_end_0)
+                                        Sub
+                                        (Var 5 __loop_start_0)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 j__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 5 __flat_idx)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 5 __loop_end_1)
+                                                    Sub
+                                                    (Var 5 __loop_start_1)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
                                         (IntegerBinOp
                                             (IntegerBinOp
                                                 (Var 5 __loop_end_1)
@@ -841,93 +1141,344 @@
                                         (Integer 4)
                                         ()
                                     )
-                                    Mul
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (Var 5 __loop_start_1)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __loop_end_1)
+                                        Sub
+                                        (Var 5 __loop_start_1)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 k__dc)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Add
+                                (Var 5 __loop_start_2)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (LogicalBinOp
+                                (LogicalBinOp
+                                    (IntegerCompare
+                                        (Var 5 i__dc)
+                                        Eq
+                                        (Var 5 n)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    And
+                                    (IntegerCompare
+                                        (Var 5 j__dc)
+                                        Eq
+                                        (Var 5 n)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (Var 5 k__dc)
+                                    Eq
+                                    (Var 5 n)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Assignment
+                                (Var 5 __gpu_accumulator)
+                                (IntegerBinOp
+                                    (Var 5 __gpu_accumulator)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )]
+                            []
+                        )
+                        (Assignment
+                            (Var 5 __gpu_iteration)
+                            (IntegerBinOp
+                                (Var 5 __gpu_iteration)
+                                Add
+                                (Var 5 __gpu_stride)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (Var 5 __gpu_iteration)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 i__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 5 __flat_idx)
+                                    Sub
                                     (IntegerBinOp
                                         (IntegerBinOp
-                                            (Var 5 __loop_end_1)
-                                            Sub
-                                            (Var 5 __loop_start_1)
+                                            (Var 5 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 5 __loop_end_0)
+                                                    Sub
+                                                    (Var 5 __loop_start_0)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
                                             (Integer 4)
                                             ()
                                         )
-                                        Add
-                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 5 __loop_end_0)
+                                                Sub
+                                                (Var 5 __loop_start_0)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
                                         (Integer 4)
                                         ()
                                     )
                                     (Integer 4)
                                     ()
                                 )
+                                Add
+                                (Var 5 __loop_start_0)
                                 (Integer 4)
                                 ()
                             )
-                            Add
-                            (Var 5 __loop_start_1)
-                            (Integer 4)
                             ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
                         )
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 5 __flat_idx)
-                        (IntegerBinOp
+                        (Assignment
                             (Var 5 __flat_idx)
-                            Div
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __loop_end_0)
+                                        Sub
+                                        (Var 5 __loop_start_0)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 j__dc)
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (Var 5 __loop_end_1)
+                                    (Var 5 __flat_idx)
                                     Sub
-                                    (Var 5 __loop_start_1)
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 5 __loop_end_1)
+                                                    Sub
+                                                    (Var 5 __loop_start_1)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 5 __loop_end_1)
+                                                Sub
+                                                (Var 5 __loop_start_1)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
                                     (Integer 4)
                                     ()
                                 )
                                 Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 5 __loop_start_1)
                                 (Integer 4)
                                 ()
                             )
-                            (Integer 4)
                             ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
                         )
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 5 k__dc)
-                        (IntegerBinOp
+                        (Assignment
                             (Var 5 __flat_idx)
-                            Add
-                            (Var 5 __loop_start_2)
-                            (Integer 4)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __loop_end_1)
+                                        Sub
+                                        (Var 5 __loop_start_1)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
                             ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
                         )
-                        ()
-                        .false.
-                        .false.
-                        .false.
-                        .false.
-                    )
-                    (If
-                        ()
-                        (LogicalBinOp
+                        (Assignment
+                            (Var 5 k__dc)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Add
+                                (Var 5 __loop_start_2)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
                             (LogicalBinOp
-                                (IntegerCompare
-                                    (Var 5 i__dc)
-                                    Eq
-                                    (Var 5 n)
+                                (LogicalBinOp
+                                    (IntegerCompare
+                                        (Var 5 i__dc)
+                                        Eq
+                                        (Var 5 n)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    And
+                                    (IntegerCompare
+                                        (Var 5 j__dc)
+                                        Eq
+                                        (Var 5 n)
+                                        (Logical 4)
+                                        ()
+                                    )
                                     (Logical 4)
                                     ()
                                 )
                                 And
                                 (IntegerCompare
-                                    (Var 5 j__dc)
+                                    (Var 5 k__dc)
                                     Eq
                                     (Var 5 n)
                                     (Logical 4)
@@ -936,18 +1487,897 @@
                                 (Logical 4)
                                 ()
                             )
-                            And
-                            (IntegerCompare
-                                (Var 5 k__dc)
-                                Eq
-                                (Var 5 n)
+                            [(Assignment
+                                (Var 5 __gpu_accumulator)
+                                (IntegerBinOp
+                                    (Var 5 __gpu_accumulator)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )]
+                            []
+                        )
+                        (Assignment
+                            (Var 5 __gpu_iteration)
+                            (IntegerBinOp
+                                (Var 5 __gpu_iteration)
+                                Add
+                                (Var 5 __gpu_stride)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (Var 5 __gpu_iteration)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 i__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 5 __flat_idx)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 5 __loop_end_0)
+                                                    Sub
+                                                    (Var 5 __loop_start_0)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 5 __loop_end_0)
+                                                Sub
+                                                (Var 5 __loop_start_0)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (Var 5 __loop_start_0)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __loop_end_0)
+                                        Sub
+                                        (Var 5 __loop_start_0)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 j__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 5 __flat_idx)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 5 __loop_end_1)
+                                                    Sub
+                                                    (Var 5 __loop_start_1)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 5 __loop_end_1)
+                                                Sub
+                                                (Var 5 __loop_start_1)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (Var 5 __loop_start_1)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __loop_end_1)
+                                        Sub
+                                        (Var 5 __loop_start_1)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 k__dc)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Add
+                                (Var 5 __loop_start_2)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (LogicalBinOp
+                                (LogicalBinOp
+                                    (IntegerCompare
+                                        (Var 5 i__dc)
+                                        Eq
+                                        (Var 5 n)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    And
+                                    (IntegerCompare
+                                        (Var 5 j__dc)
+                                        Eq
+                                        (Var 5 n)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (Var 5 k__dc)
+                                    Eq
+                                    (Var 5 n)
+                                    (Logical 4)
+                                    ()
+                                )
                                 (Logical 4)
                                 ()
                             )
-                            (Logical 4)
+                            [(Assignment
+                                (Var 5 __gpu_accumulator)
+                                (IntegerBinOp
+                                    (Var 5 __gpu_accumulator)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )]
+                            []
+                        )
+                        (Assignment
+                            (Var 5 __gpu_iteration)
+                            (IntegerBinOp
+                                (Var 5 __gpu_iteration)
+                                Add
+                                (Var 5 __gpu_stride)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (Var 5 __gpu_iteration)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 i__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 5 __flat_idx)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 5 __loop_end_0)
+                                                    Sub
+                                                    (Var 5 __loop_start_0)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 5 __loop_end_0)
+                                                Sub
+                                                (Var 5 __loop_start_0)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (Var 5 __loop_start_0)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __loop_end_0)
+                                        Sub
+                                        (Var 5 __loop_start_0)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 j__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 5 __flat_idx)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 5 __loop_end_1)
+                                                    Sub
+                                                    (Var 5 __loop_start_1)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 5 __loop_end_1)
+                                                Sub
+                                                (Var 5 __loop_start_1)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (Var 5 __loop_start_1)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __loop_end_1)
+                                        Sub
+                                        (Var 5 __loop_start_1)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 k__dc)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Add
+                                (Var 5 __loop_start_2)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (LogicalBinOp
+                                (LogicalBinOp
+                                    (IntegerCompare
+                                        (Var 5 i__dc)
+                                        Eq
+                                        (Var 5 n)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    And
+                                    (IntegerCompare
+                                        (Var 5 j__dc)
+                                        Eq
+                                        (Var 5 n)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (Var 5 k__dc)
+                                    Eq
+                                    (Var 5 n)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Assignment
+                                (Var 5 __gpu_accumulator)
+                                (IntegerBinOp
+                                    (Var 5 __gpu_accumulator)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 5 __gpu_iteration)
+                        (IntegerBinOp
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (GpuBlockIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Mul
+                                    (GpuBlockSize
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (GpuThreadIndex
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            Add
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __gpu_iterations)
+                                        Sub
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (GpuBlockIndex
+                                                    0
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Mul
+                                                (GpuBlockSize
+                                                    0
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (GpuThreadIndex
+                                                0
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Div
+                                    (IntegerBinOp
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        Mul
+                                        (Var 5 __gpu_stride)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Mul
+                                (IntegerBinOp
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Mul
+                                    (Var 5 __gpu_stride)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            (Integer 4)
                             ()
                         )
+                        (IntegerBinOp
+                            (Var 5 __gpu_iterations)
+                            Sub
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        (Var 5 __gpu_stride))
                         [(Assignment
+                            (Var 5 __flat_idx)
+                            (Var 5 __gpu_iteration)
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 i__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 5 __flat_idx)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 5 __loop_end_0)
+                                                    Sub
+                                                    (Var 5 __loop_start_0)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 5 __loop_end_0)
+                                                Sub
+                                                (Var 5 __loop_start_0)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (Var 5 __loop_start_0)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __loop_end_0)
+                                        Sub
+                                        (Var 5 __loop_start_0)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 j__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 5 __flat_idx)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 5 __loop_end_1)
+                                                    Sub
+                                                    (Var 5 __loop_start_1)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 5 __loop_end_1)
+                                                Sub
+                                                (Var 5 __loop_start_1)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (Var 5 __loop_start_1)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 __flat_idx)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 5 __loop_end_1)
+                                        Sub
+                                        (Var 5 __loop_start_1)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 5 k__dc)
+                            (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Add
+                                (Var 5 __loop_start_2)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (LogicalBinOp
+                                (LogicalBinOp
+                                    (IntegerCompare
+                                        (Var 5 i__dc)
+                                        Eq
+                                        (Var 5 n)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    And
+                                    (IntegerCompare
+                                        (Var 5 j__dc)
+                                        Eq
+                                        (Var 5 n)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (Var 5 k__dc)
+                                    Eq
+                                    (Var 5 n)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Assignment
+                                (Var 5 __gpu_accumulator)
+                                (IntegerBinOp
+                                    (Var 5 __gpu_accumulator)
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                                .false.
+                                .false.
+                                .false.
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 s)
+                            [(()
+                            (IntegerBinOp
+                                (Var 5 __gpu_slot)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                            .false.
+                        )
+                        (IntegerBinOp
                             (ArrayItem
                                 (Var 5 s)
                                 [(()
@@ -964,35 +2394,16 @@
                                 ()
                                 .false.
                             )
-                            (IntegerBinOp
-                                (ArrayItem
-                                    (Var 5 s)
-                                    [(()
-                                    (IntegerBinOp
-                                        (Var 5 __gpu_slot)
-                                        Add
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    ())]
-                                    (Integer 4)
-                                    ColMajor
-                                    ()
-                                    .false.
-                                )
-                                Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                ()
-                            )
+                            Add
+                            (Var 5 __gpu_accumulator)
+                            (Integer 4)
                             ()
-                            .false.
-                            .false.
-                            .false.
-                            .false.
-                        )]
-                        []
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
                     )]
                     ()
                     Public
@@ -1139,6 +2550,32 @@
                                 (Variable
                                     2
                                     __gpu_iteration_count
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_launch_threads:
+                                (Variable
+                                    2
+                                    __gpu_launch_threads
                                     []
                                     Local
                                     ()
@@ -1969,10 +3406,43 @@
                         .false.
                         .false.
                     )
+                    (Assignment
+                        (Var 2 __gpu_launch_threads)
+                        (IfExp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 __gpu_iteration_count)
+                                    Gt
+                                    (IntegerConstant 131072 (Integer 8) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (Var 2 __gpu_iteration_count)
+                                    LtE
+                                    (IntegerConstant 2147483647 (Integer 8) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (IntegerConstant 131072 (Integer 8) Decimal)
+                            (Var 2 __gpu_iteration_count)
+                            (Integer 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
                     (If
                         ()
                         (IntegerCompare
-                            (Var 2 __gpu_iteration_count)
+                            (Var 2 __gpu_launch_threads)
                             Gt
                             (IntegerConstant 0 (Integer 8) Decimal)
                             (Logical 4)
@@ -1980,7 +3450,7 @@
                         )
                         [(Assignment
                             (Var 2 __gpu_reduction_slots)
-                            (Var 2 __gpu_iteration_count)
+                            (Var 2 __gpu_launch_threads)
                             ()
                             .false.
                             .false.
@@ -1990,7 +3460,7 @@
                         (If
                             ()
                             (IntegerCompare
-                                (Var 2 __gpu_iteration_count)
+                                (Var 2 __gpu_launch_threads)
                                 Gt
                                 (IntegerConstant 2147483647 (Integer 8) Decimal)
                                 (Logical 4)
@@ -2514,6 +3984,27 @@
                             )]
                             []
                         )
+                        (Assignment
+                            (Var 2 __gpu_reduction_slots)
+                            (IfExp
+                                (IntegerCompare
+                                    (Var 2 __gpu_reduction_slots)
+                                    Gt
+                                    (IntegerConstant 131072 (Integer 8) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (IntegerConstant 131072 (Integer 8) Decimal)
+                                (Var 2 __gpu_reduction_slots)
+                                (Integer 8)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
                         (Allocate
                             [((Var 2 __gpu_red_s)
                             [((IntegerConstant 1 (Integer 8) Decimal)
@@ -2528,7 +4019,7 @@
                         )
                         (GpuKernelLaunch
                             1 __lfortran_gpu_kernel_0
-                            (Var 2 __gpu_iteration_count)
+                            (Var 2 __gpu_launch_threads)
                             (IntegerConstant 256 (Integer 4) Decimal)
                             [((Var 2 n))
                             ((Var 2 __gpu_red_s))

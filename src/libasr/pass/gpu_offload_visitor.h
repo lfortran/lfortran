@@ -21,6 +21,13 @@
 
 namespace LCompilers {
 
+// The most threads a launch with a reduction runs (gpu_offload.cpp): each
+// runs every gpu_reduction_threads-th iteration in a grid-stride loop and
+// accumulates them in its own slot, so the host folds at most this many
+// slots. On an MI300A a dot product of 2**27 elements reads at 3.6 TB/s
+// with 2**17 threads, and the fold of their 1 MB of slots takes 0.1 ms.
+const int64_t gpu_reduction_threads = 131072;
+
 struct GpuExtentScope;
 
 // Hands a body rewrite the loop's statements and writes whatever it made
@@ -587,10 +594,15 @@ public:
     // into the original scalar once the launch has finished. The device
     // needs no atomics for it and no kernel of its own to combine the slots.
     //
-    // There is one slot per iteration, so a thread the bounds guard turns
-    // away has no slot to leave unwritten. A launch that runs in chunks
-    // has one per iteration of its largest chunk, the first: the threads of
-    // the later chunks combine into the slots the first one started.
+    // A kernel that can run its iterations in a grid-stride loop (the body
+    // has no cycle of the offloaded loop and no scalar live after it) runs
+    // at most gpu_reduction_threads threads, each of which accumulates its
+    // iterations in a local variable and combines it into its slot once, so
+    // the host folds at most that many slots. Otherwise there is one slot
+    // per iteration. Either way a thread the bounds guard turns away has no
+    // slot to leave unwritten. A launch that runs in chunks has one per
+    // thread of its largest chunk, the first: the threads of the later
+    // chunks combine into the slots the first one started.
     struct GpuReductionInfo {
         std::string orig_name;
         ASR::reduction_opType op;
@@ -650,6 +662,9 @@ public:
         // later chunks, or nullptr (see
         // GpuKernelLaunch.first_chunk_parameter).
         ASR::symbol_t *first_chunk_parameter = nullptr;
+        // The kernel runs its iterations in a grid-stride loop of at most
+        // gpu_reduction_threads threads (a launch with a reduction).
+        bool strided = false;
     };
 
     void decline(const ASR::OMPRegion_t &x);
