@@ -3,6 +3,8 @@
 #include <libasr/asr_utils.h>
 #include <libasr/utils.h>
 
+#include <set>
+
 namespace LCompilers::LFortran {
 
 void ElementalChecks::check_procedure(const ASR::Function_t &f,
@@ -151,86 +153,78 @@ bool ElementalChecks::result_not_pointer(const ASR::Variable_t &r,
 
 namespace {
 
-// Finds a dummy of `f` used other than as the subject of an inquiry.
+// The Var at the bottom of a designator such as x%a(i)(j:k), or nullptr.
+const ASR::Var_t *base_var(const ASR::expr_t *e) {
+    while (true) {
+        switch (e->type) {
+            case ASR::exprType::Var:
+                return ASR::down_cast<ASR::Var_t>(e);
+            case ASR::exprType::StructInstanceMember:
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+                break;
+            case ASR::exprType::ArrayItem:
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                break;
+            case ASR::exprType::ArraySection:
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                break;
+            case ASR::exprType::StringItem:
+                e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg;
+                break;
+            case ASR::exprType::StringSection:
+                e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
+                break;
+            default:
+                return nullptr;
+        }
+    }
+}
+
+// Finds a dummy of `f` used other than as the base object of an inquiry.
 class DummyOutsideInquiry : public ASR::BaseWalkVisitor<DummyOutsideInquiry> {
 public:
     const ASR::Function_t &f;
+    std::set<const ASR::Var_t*> allowed;
     const ASR::Var_t *found = nullptr;
 
     explicit DummyOutsideInquiry(const ASR::Function_t &f) : f(f) {}
 
+    void allow(const ASR::expr_t *subject) {
+        if (const ASR::Var_t *v = base_var(subject)) allowed.insert(v);
+    }
+
     void visit_ttype(const ASR::ttype_t &) {}
 
     void visit_Var(const ASR::Var_t &x) {
-        if (!found && ASRUtils::is_dummy_argument(f, x.m_v)) found = &x;
-    }
-
-    // The base object of the subject may be a dummy; its subscripts may not.
-    void visit_subject(ASR::expr_t *e) {
-        while (true) {
-            switch (e->type) {
-                case ASR::exprType::Var:
-                    return;
-                case ASR::exprType::StructInstanceMember:
-                    e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
-                    break;
-                case ASR::exprType::ArrayItem: {
-                    ASR::ArrayItem_t *a = ASR::down_cast<ASR::ArrayItem_t>(e);
-                    for (size_t i = 0; i < a->n_args; i++) {
-                        visit_array_index(a->m_args[i]);
-                    }
-                    e = a->m_v;
-                    break;
-                }
-                case ASR::exprType::ArraySection: {
-                    ASR::ArraySection_t *a = ASR::down_cast<ASR::ArraySection_t>(e);
-                    for (size_t i = 0; i < a->n_args; i++) {
-                        visit_array_index(a->m_args[i]);
-                    }
-                    e = a->m_v;
-                    break;
-                }
-                case ASR::exprType::StringItem: {
-                    ASR::StringItem_t *s = ASR::down_cast<ASR::StringItem_t>(e);
-                    visit_expr(*s->m_idx);
-                    e = s->m_arg;
-                    break;
-                }
-                case ASR::exprType::StringSection: {
-                    ASR::StringSection_t *s = ASR::down_cast<ASR::StringSection_t>(e);
-                    if (s->m_start) visit_expr(*s->m_start);
-                    if (s->m_end) visit_expr(*s->m_end);
-                    if (s->m_step) visit_expr(*s->m_step);
-                    e = s->m_arg;
-                    break;
-                }
-                default:
-                    visit_expr(*e);
-                    return;
-            }
+        if (!found && allowed.count(&x) == 0
+                && ASRUtils::is_dummy_argument(f, x.m_v)) {
+            found = &x;
         }
     }
 
     void visit_StringLen(const ASR::StringLen_t &x) {
-        visit_subject(x.m_arg);
+        allow(x.m_arg);
+        BaseWalkVisitor<DummyOutsideInquiry>::visit_StringLen(x);
     }
 
     void visit_ArraySize(const ASR::ArraySize_t &x) {
-        visit_subject(x.m_v);
-        if (x.m_dim) visit_expr(*x.m_dim);
+        allow(x.m_v);
+        BaseWalkVisitor<DummyOutsideInquiry>::visit_ArraySize(x);
     }
 
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
-        visit_subject(x.m_v);
-        if (x.m_dim) visit_expr(*x.m_dim);
+        allow(x.m_v);
+        BaseWalkVisitor<DummyOutsideInquiry>::visit_ArrayBound(x);
     }
 
     void visit_ArrayRank(const ASR::ArrayRank_t &x) {
-        visit_subject(x.m_v);
+        allow(x.m_v);
+        BaseWalkVisitor<DummyOutsideInquiry>::visit_ArrayRank(x);
     }
 
     void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {
-        if (x.m_arg) visit_subject(x.m_arg);
+        if (x.m_arg) allow(x.m_arg);
+        BaseWalkVisitor<DummyOutsideInquiry>::visit_TypeInquiry(x);
     }
 };
 
