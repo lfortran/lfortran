@@ -92,7 +92,7 @@ module cc_traits_receiver_bad_r08
     end interface
 end module cc_traits_receiver_bad_r08
 
-! R09: a TARGET receiver is not implemented yet.
+! R09: a TARGET receiver is supported (no diagnostic).
 module cc_traits_receiver_bad_r09
     implicit none
     abstract interface :: IR09

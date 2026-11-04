@@ -4631,7 +4631,7 @@ public:
         // statement can be lost when the receiver is declared later), so
         // they are taken from the source.
         bool storage = false, unsupported = false, asynchronous = false,
-            contiguous = false;
+            contiguous = false, target = false;
         size_t passes = 0, intents = 0;
         ASR::intentType intent = ASR::intentType::Unspecified;
         for (size_t i = 0; i < n_items; i++) {
@@ -4671,8 +4671,9 @@ public:
                             case AST::simple_attributeType::AttrAllocatable:
                             case AST::simple_attributeType::AttrValue:
                                 storage = true; break;
-                            case AST::simple_attributeType::AttrOptional:
                             case AST::simple_attributeType::AttrTarget:
+                                target = true; break;
+                            case AST::simple_attributeType::AttrOptional:
                             case AST::simple_attributeType::AttrVolatile:
                                 unsupported = true; break;
                             case AST::simple_attributeType::AttrAsynchronous:
@@ -4698,8 +4699,8 @@ public:
                 "contiguous attribute", loc);
         }
         if (unsupported || receiver->m_presence == ASR::presenceType::Optional ||
-                receiver->m_target_attr || receiver->m_is_volatile || receiver->n_codims) {
-            trait_error(description + " with the optional, target, volatile or "
+                receiver->m_is_volatile || receiver->n_codims) {
+            trait_error(description + " with the optional, volatile or "
                 "codimension attribute is not implemented yet", loc);
         }
         if (asynchronous) {
@@ -4709,6 +4710,7 @@ public:
         // An INTENT statement before the declaration of the receiver is not
         // retained by its Variable.
         if (intents == 1) receiver->m_intent = intent;
+        if (target) receiver->m_target_attr = true;
         // The receiver is a nonpointer dummy data object, so a PURE message
         // constrains its intent like that of any such dummy, whether or not
         // the trait is ever implemented.
@@ -5853,6 +5855,15 @@ public:
                     requirement->m_name + "' declares its receiver '" +
                     required_receiver->m_name + "' with " +
                     ASRUtils::trait_intent_spelling(required_receiver->m_intent), loc);
+            }
+            // A receiver that the message declares TARGET may be pointed at by
+            // every implementation; an implementation may also add TARGET to
+            // its own receiver.
+            if (required_receiver->m_target_attr && !self->m_target_attr) {
+                trait_error("the passed-object argument '" + std::string(self->m_name) +
+                    "' of '" + procedure->m_name + "' must have the target attribute "
+                    "of the receiver '" + required_receiver->m_name +
+                    "' of trait message '" + requirement->m_name + "'", loc);
             }
         }
         std::vector<size_t> required_args = ASRUtils::trait_compared_arguments(*requirement);

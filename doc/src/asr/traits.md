@@ -71,8 +71,13 @@ A receiver is declared, never inferred (TD-36 of the
 of its dummies is a scalar, nonpointer, nonallocatable, non-VALUE
 `type(itself)` dummy with a bare PASS attribute. That dummy may have any name
 and any position. Two such dummies, PASS on another dummy or on a result, and
-PASS(name) or NOPASS on a dummy are diagnosed; an OPTIONAL, TARGET, VOLATILE,
-ASYNCHRONOUS or coarray receiver is not implemented yet. Elsewhere, PASS,
+PASS(name) or NOPASS on a dummy are diagnosed; an OPTIONAL, VOLATILE,
+ASYNCHRONOUS or coarray receiver is not implemented yet. A TARGET receiver, as
+a further report declares with `type(itself), pass, target, intent(in) ::
+self`, is supported: the receiver of each implementation must then also have it,
+while an implementation may still add TARGET to its own receiver when the
+message's receiver does not (`traits_runtime_target_receiver_01`,
+`traits_target_receiver_01`). Elsewhere, PASS,
 PASS(name) and NOPASS remain attributes of bindings and procedure pointer
 components, and are diagnosed on other declarations. A message without a
 receiver is receiverless.
@@ -1877,7 +1882,7 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 oracle checks the concrete computations through the default compilation pipeline.
 
 The broader proposal is not yet implemented. In particular, pointer trait
-results, OPTIONAL, TARGET, VOLATILE, ASYNCHRONOUS and coarray receivers,
+results, OPTIONAL, VOLATILE, ASYNCHRONOUS and coarray receivers,
 `type(itself)` arguments of messages other than their receivers,
 associated-type projections in generic code, unrestricted intrinsic
 capabilities, generic derived types beyond the boundaries described in their

@@ -50,19 +50,13 @@ semantic error: the receiver 'self' of trait message 'f' must be a scalar withou
 80 |             type(itself), value, pass :: self
    |                                          ^^^^ 
 
-semantic error: the receiver 'self' of trait message 'f' with the optional, target, volatile or codimension attribute is not implemented yet
+semantic error: the receiver 'self' of trait message 'f' with the optional, volatile or codimension attribute is not implemented yet
   --> tests/errors/continue_compilation_traits_receiver_01.f90:90:57
    |
 90 |             type(itself), optional, intent(in), pass :: self
    |                                                         ^^^^ 
 
-semantic error: the receiver 'self' of trait message 'f' with the optional, target, volatile or codimension attribute is not implemented yet
-   --> tests/errors/continue_compilation_traits_receiver_01.f90:100:55
-    |
-100 |             type(itself), target, intent(in), pass :: self
-    |                                                       ^^^^ 
-
-semantic error: the receiver 'self' of trait message 's' with the optional, target, volatile or codimension attribute is not implemented yet
+semantic error: the receiver 'self' of trait message 's' with the optional, volatile or codimension attribute is not implemented yet
    --> tests/errors/continue_compilation_traits_receiver_01.f90:110:60
     |
 110 |             type(itself), volatile, intent(inout), pass :: self
@@ -228,7 +222,7 @@ semantic error: the receiver 'self' of trait message 'f' must be a scalar withou
 443 |             type(itself), intent(in), pass :: self
     |                                               ^^^^ 
 
-semantic error: the receiver 'self' of trait message 's' with the optional, target, volatile or codimension attribute is not implemented yet
+semantic error: the receiver 'self' of trait message 's' with the optional, volatile or codimension attribute is not implemented yet
    --> tests/errors/continue_compilation_traits_receiver_01.f90:453:50
     |
 453 |             type(itself), intent(inout), pass :: self

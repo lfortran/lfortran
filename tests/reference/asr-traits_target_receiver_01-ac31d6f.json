@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_target_receiver_01-ac31d6f",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_target_receiver_01.f90",
+    "infile_hash": "10bf235a0fa1411040a390e9f2662dade6750358c5715058397609fd",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_target_receiver_01-ac31d6f.stderr",
+    "stderr_hash": "ab2e7b9c29e142452c679ed91aabe42b0cc21363d796d70339e23bab",
+    "returncode": 1
+}

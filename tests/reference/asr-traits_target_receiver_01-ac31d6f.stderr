@@ -1,0 +1,19 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/traits_target_receiver_01.f90:5:5 - 10:1
+   |
+ 5 |        abstract interface :: ISomeTrait
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+10 |    
+   | ...^ LFortran extension
+
+semantic error: the passed-object argument 'self' of 'my_method' must have the target attribute of the receiver 'self' of trait message 'method'
+  --> tests/errors/traits_target_receiver_01.f90:11:5 - 14:20
+   |
+11 |        type, implements(ISomeTrait) :: MyType
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+14 |        end type MyType
+   | ...^^^^^^^^^^^^^^^^^^^^ 

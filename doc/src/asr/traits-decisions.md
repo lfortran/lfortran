@@ -1104,8 +1104,9 @@ specification action, that is, what the paper should say.
   implementation called on an object of an extension, whose finalization,
   deallocation and default initialization are those of the dynamic type.
   Separate temporary limits, diagnosed as not implemented yet rather than
-  proposed rules: OPTIONAL, TARGET, VOLATILE, ASYNCHRONOUS and coarray
-  receivers; a `type(itself)` dummy of a message other than its receiver,
+  proposed rules: OPTIONAL, VOLATILE, ASYNCHRONOUS and coarray receivers
+  (a TARGET receiver is supported since 2026-11-04, and requires the
+  receiver of each implementation to be TARGET too); a `type(itself)` dummy of a message other than its receiver,
   which was not implemented before TD-36 either (initializer and operator
   requirements support such operands); an ASSOCIATE whose selector is a trait
   array or a trait-object expression (one whose selector is a scalar trait
