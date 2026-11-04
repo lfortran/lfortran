@@ -7123,7 +7123,7 @@ RUN(NAME gpu_metal_707 LABELS gfortran llvm metal cuda) # empty tiled nest: no p
 # (#15929); without 64-bit offsets a launch whose components hold more than
 # huge(0) elements in all stops before it packs them.
 RUN(NAME gpu_metal_716 LABELS gfortran llvm metal cuda)
-RUN(NAME gpu_metal_717 FILE gpu_metal_716 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64)
+RUN(NAME gpu_metal_717 LABELS gfortran metal cuda EXTRA_ARGS --descriptor-index-64) # no llvm: the host relies on reallocation on assignment (needs --realloc-lhs-arrays)
 RUN(NAME gpu_metal_718 FAIL LABELS metal cuda) # stops: the packed components need --descriptor-index-64 (not supported on Metal)
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
