@@ -19457,13 +19457,10 @@ public:
     // Whether `scope` is in module `mod_name` or in one of its submodules.
     bool is_scope_in_module(SymbolTable *scope, const std::string &mod_name) {
         ASR::Module_t *mod = nullptr;
-        for (SymbolTable *s = scope; s != nullptr && !ASRUtils::is_tu_scope(s);
-                s = s->parent) {
-            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
-            if (ASR::is_a<ASR::Module_t>(*owner)) {
-                mod = ASR::down_cast<ASR::Module_t>(owner);
-                break;
-            }
+        if (scope->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+            mod = ASR::is_a<ASR::Module_t>(*owner) ? ASR::down_cast<ASR::Module_t>(owner)
+                : ASRUtils::get_sym_module0(owner);
         }
         while (mod != nullptr) {
             if (mod_name == mod->m_name) {

@@ -27,6 +27,7 @@ public:
     struct ClassProcInfo {
         std::string name;
         Location loc;
+        ASR::accessType access = ASR::accessType::Public;
     };
     // Type bound procedure bindings are collected while the specification part
     // of a program unit is visited and are turned into symbols once that unit
@@ -4137,11 +4138,7 @@ public:
                     }
                 }
             }
-            if (access == ASR::accessType::Private) {
-                class_procedures[dt_name][use_sym_name]["private"] = remote_sym_str;
-            } else {
-                class_procedures[dt_name][use_sym_name].erase("private");
-            }
+            class_procedures[dt_name][use_sym_name]["procedure"].access = access;
         }
     }
 
@@ -6159,8 +6156,7 @@ public:
                 if (!is_nopass) {
                     ensure_matching_types_for_pass_obj_dum_arg(func, pass_arg_name, clss_sym, loc);
                 }
-                ASR::accessType access = pname.second.count("private")
-                    ? ASR::accessType::Private : ASR::accessType::Public;
+                ASR::accessType access = pname.second["procedure"].access;
                 ASR::asr_t *v = ASR::make_StructMethodDeclaration_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
                     proc_name, proc_sym, ASR::abiType::Source,
