@@ -5105,6 +5105,24 @@ semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a proced
 4076 |     a = cc1_ept_t(cc1_ept_ef)  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
      |                   ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
 
+semantic error: the shift argument of 'shifta' intrinsic must be non-negative and less than or equal to the bit size of the integer
+    --> tests/errors/continue_compilation_1.f90:4122:28
+     |
+4122 |         print *, shifta(n, 33)  ! {Error} shift argument of shifta out of range
+     |                            ^^ shift value is 33, but bit size of integer is 32
+
+semantic error: the shift argument of 'shifta' intrinsic must be non-negative and less than or equal to the bit size of the integer
+    --> tests/errors/continue_compilation_1.f90:4123:28
+     |
+4123 |         print *, shifta(n, -1_8)  ! {Error} shift argument of shifta out of range
+     |                            ^^^^ shift value is -1, but bit size of integer is 32
+
+semantic error: the shift argument of 'shifta' intrinsic must be non-negative and less than or equal to the bit size of the integer
+    --> tests/errors/continue_compilation_1.f90:4124:28
+     |
+4124 |         print *, shifta(n, [1, 40])  ! {Error} shift argument of shifta out of range
+     |                            ^^^^^^^ shift value is 40, but bit size of integer is 32
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

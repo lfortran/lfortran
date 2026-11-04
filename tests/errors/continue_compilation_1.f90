@@ -4114,3 +4114,13 @@ contains
         integer, allocatable, intent(inout) :: y  ! {Error} dummy argument 'y' of elemental procedure 'cc1_ead_s' cannot be allocatable
     end subroutine
 end module
+
+module cc1_shifta_out_of_range
+contains
+    subroutine cc1_shifta_sub(n)
+        integer, intent(in) :: n
+        print *, shifta(n, 33)  ! {Error} shift argument of shifta out of range
+        print *, shifta(n, -1_8)  ! {Error} shift argument of shifta out of range
+        print *, shifta(n, [1, 40])  ! {Error} shift argument of shifta out of range
+    end subroutine
+end module
