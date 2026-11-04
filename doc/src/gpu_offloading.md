@@ -807,6 +807,25 @@ it calls with HIP, and the headers of the ROCm installation the HIP driver
 belongs to. The program finds the HIP runtime library of that installation
 through its run path.
 
+### Reductions
+
+A `reduce` clause, or a reduction the compiler recognizes, gives every
+thread of the launch an accumulator, in an array the host allocates for the
+launch: the kernel starts each at the identity of the operation and combines
+what its thread computes into it, and after the launch the host folds the
+accumulators into the variable, which keeps the value it had before the loop.
+A launch runs at most `--gpu-reduction-threads` threads (65536 by default),
+and each runs every that many-th iteration, consecutive threads consecutive
+iterations: the host then folds 65536 accumulators at most instead of one per
+iteration, and a thread keeps its own in a register across its iterations.
+On an H100 a dot product of two 1 GB arrays runs at 1.6 TB/s that way, and
+at 2-5 GB/s with one accumulator per iteration, whose array alone is as large
+as an input. A launch keeps one thread per iteration where a thread cannot
+run its iterations one after another as they are: one that is tiled or runs
+in chunks, or whose iterations keep values for after the loop (live-out
+variables, private copies), have private arrays, or contain a statement that
+ends an iteration early (`cycle`, a stop).
+
 ### Memory models
 
 A GPU with memory of its own -- every discrete GPU, NVIDIA's and AMD's -- runs

@@ -34,6 +34,45 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
+namespace {
+
+// Whether a statement of a loop body may end an iteration early or leave the
+// loop (`return`, `cycle`, `exit`, `go to`, a stop), in the body or in a
+// block or associate block in it. A `cycle` or `exit` of a loop nested in the
+// body counts too.
+class LeavesEarlyFinder : public ASR::BaseWalkVisitor<LeavesEarlyFinder> {
+public:
+    bool found = false;
+    void visit_Return(const ASR::Return_t &) { found = true; }
+    void visit_Cycle(const ASR::Cycle_t &) { found = true; }
+    void visit_Exit(const ASR::Exit_t &) { found = true; }
+    void visit_GoTo(const ASR::GoTo_t &) { found = true; }
+    void visit_Stop(const ASR::Stop_t &) { found = true; }
+    void visit_ErrorStop(const ASR::ErrorStop_t &) { found = true; }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+            ASRUtils::symbol_get_past_external(x.m_m));
+        for (size_t i = 0; i < block->n_body && !found; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *block = ASR::down_cast<ASR::AssociateBlock_t>(
+            ASRUtils::symbol_get_past_external(x.m_m));
+        for (size_t i = 0; i < block->n_body && !found; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
+bool gpu_body_leaves_early(ASR::stmt_t **body, size_t n_body) {
+    LeavesEarlyFinder f;
+    for (size_t i = 0; i < n_body && !f.found; i++) f.visit_stmt(*body[i]);
+    return f.found;
+}
+
+} // namespace
+
 static int gpu_kernel_counter = 0;
 
 // Replaces each expression that stands for an extent the host computes
@@ -2638,6 +2677,38 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         call_args.push_back(al, carg);
     }
 
+    // A launch with a reduction runs at most gpu_reduction_threads threads,
+    // and each of them every n-th iteration, n the number of threads it runs,
+    // which the kernel takes as __gpu_threads: the host then folds that many
+    // accumulators instead of one per iteration, and a thread keeps its own
+    // in a register across its iterations. Consecutive threads still run
+    // consecutive iterations. Only where a thread can run its iterations one
+    // after another as they are: a launch numbered flat that never runs in
+    // chunks, without values kept from an iteration (live-out variables,
+    // private copies), private arrays, or a statement that ends the
+    // iteration early (`cycle`, a stop), which becomes a return from the
+    // kernel.
+    ASR::expr_t *threads_param = nullptr;
+    int threads_arg = -1;
+    if (has_accumulators && !tiled && first_chunk_flag == nullptr
+            && chunk_fixed_iterations == 0 && liveouts.scalars.empty()
+            && liveouts.copies.empty() && private_shapes.n == 0
+            && !gpu_body_leaves_early(body_copy.p, body_copy.n)) {
+        threads_param = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            gpu_new_variable(al, loc, kernel_scope, "__gpu_threads",
+                ASRUtils::duplicate_type(al, index_type),
+                ASR::intentType::InOut)));
+        kernel_args.push_back(al, threads_param);
+        // The launch replaces this with the number of threads it runs.
+        ASR::call_arg_t carg;
+        carg.loc = loc;
+        carg.m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, ASRUtils::duplicate_type(al, index_type),
+            ASR::integerbozType::Decimal));
+        call_args.push_back(al, carg);
+        threads_arg = static_cast<int>(call_args.n) - 1;
+    }
+
     // Decompose StructInstanceMember references in kernel head
     // expressions. After associate resolution, head bounds may
     // contain e.g. ArraySize(StructInstanceMember(Var(arg), nodes))
@@ -2849,6 +2920,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // largest, set it: a thread of a later chunk keeps combining into what
     // the thread of the same number left in it, and one past the end of a
     // partial chunk has returned above without touching it.
+    // With __gpu_threads the launch runs whole blocks of threads, of which
+    // only the first __gpu_threads have an accumulator.
+    if (threads_param != nullptr) {
+        return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+            flat_idx, ASR::cmpopType::GtE, threads_param,
+            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
+    }
     if (slot_index != nullptr) {
         assign(ASRUtils::EXPR(ASR::make_Var_t(al, loc,
             kernel_scope->get_symbol("__gpu_slot"))), remain_var);
@@ -2879,6 +2957,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    // What a thread does for one iteration starts here: with __gpu_threads,
+    // it is put in a loop over the thread's iterations below.
+    size_t iteration_start = kernel_body.n;
     number_flat(first_flat_position, n_dims);
 
     // This helper processes a block and recursively handles any nested
@@ -3210,6 +3291,39 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         kernel_body.push_back(al, body_copy.p[i]);
     }
 
+    // do __gpu_iteration = flat_idx, total - 1, __gpu_threads
+    //     __flat_idx = __gpu_iteration
+    //     (the loop indices from __flat_idx, then the body)
+    if (threads_param != nullptr) {
+        ASR::expr_t *total = nullptr;
+        for (size_t d = 0; d < n_dims; d++) {
+            ASR::expr_t *range = gpu_loop_extent(al, loc,
+                widen(kernel_starts[d]), widen(kernel_ends[d]), index_type);
+            total = total == nullptr ? range
+                : index_binop(total, ASR::binopType::Mul, range);
+        }
+        ASR::expr_t *iteration = kernel_local("__gpu_iteration", index_type);
+        Vec<ASR::stmt_t*> one_iteration;
+        one_iteration.reserve(al, kernel_body.n - iteration_start + 1);
+        one_iteration.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
+            loc, remain_var, iteration, nullptr, false, false, false,
+            false)));
+        for (size_t i = iteration_start; i < kernel_body.n; i++) {
+            one_iteration.push_back(al, kernel_body.p[i]);
+        }
+        kernel_body.n = iteration_start;
+        ASR::do_loop_head_t head;
+        head.loc = loc;
+        head.m_v = iteration;
+        head.m_start = flat_idx;
+        head.m_end = index_binop(total, ASR::binopType::Sub,
+            widen(one_const));
+        head.m_increment = threads_param;
+        kernel_body.push_back(al, ASRUtils::STMT(
+            ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
+                one_iteration.p, one_iteration.n, nullptr, 0)));
+    }
+
     // 5. Build function signature
     // FunctionType arg_types must not contain scope-bound expressions.
     Vec<ASR::ttype_t*> arg_types;
@@ -3265,6 +3379,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.reductions = pending_reductions;
     plan.dim_info = dim_info;
     plan.tiled_arg = tiled_arg;
+    plan.threads_arg = threads_arg;
+    plan.threads_type = threads_param != nullptr
+        ? ASRUtils::expr_type(threads_param) : nullptr;
     plan.order = order;
     plan.start_parameters = start_parameters;
     plan.end_parameters = end_parameters;

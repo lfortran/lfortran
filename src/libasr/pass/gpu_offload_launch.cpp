@@ -336,6 +336,26 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             current_scope->get_unique_name("__gpu_iteration_count"),
             count_type, ASR::intentType::Local);
         prelude.push_back(al, b.Assignment(thread_count, host_total));
+        if (plan.threads_arg >= 0) {
+            // A launch with a reduction runs at most gpu_reduction_threads
+            // threads, each every n-th iteration (gpu_offload.cpp).
+            ASR::expr_t *limit = b.i_t(pass_options.gpu_reduction_threads,
+                count_type);
+            ASR::expr_t *threads = b.Variable(current_scope,
+                current_scope->get_unique_name("__gpu_launch_threads"),
+                count_type, ASR::intentType::Local);
+            prelude.push_back(al, b.Assignment(threads,
+                ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                    b.Gt(thread_count, limit), limit, thread_count,
+                    count_type, nullptr))));
+            thread_count = threads;
+            ASR::expr_t *arg = threads;
+            if (ASRUtils::extract_kind_from_ttype_t(plan.threads_type)
+                    != ASRUtils::extract_kind_from_ttype_t(count_type)) {
+                arg = b.i2i_t(threads, plan.threads_type);
+            }
+            plan.call_args.p[plan.threads_arg].m_value = arg;
+        }
     }
     for (size_t i = 0; i < plan.private_shapes.n; i++) {
         launch_stmts.push_back(al, plan.private_shapes[i]);

@@ -635,6 +635,12 @@ public:
         // the dimensions the width and the height of a tile run along.
         int tiled_arg = -1;
         size_t tile_dims[2] = {0, 0};
+        // A launch with a reduction whose threads each run every n-th
+        // iteration: the call argument that passes n, the number of threads
+        // the launch runs (-1 when every thread runs one iteration), and its
+        // type.
+        int threads_arg = -1;
+        ASR::ttype_t *threads_type = nullptr;
         // The dimensions in the order the kernel numbers the iterations in,
         // fastest first, and for each dimension the launch may split into
         // chunks the kernel parameters that hold its bounds (nullptr for

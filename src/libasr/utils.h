@@ -104,6 +104,10 @@ struct PassOptions {
     // its kernel once per chunk of at most this many (device_launch_expand).
     // Lowered only by tests, to run many chunks over small loops.
     int64_t gpu_chunk_limit = 2147483647;
+    // The most threads a launch of a loop with a reduction runs: each thread
+    // runs every this many-th iteration, so that the host folds this many
+    // accumulators at most rather than one per iteration (gpu_offload.cpp).
+    int64_t gpu_reduction_threads = 65536;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     // Whether the target can lower descriptor-to-data views in retained entries.

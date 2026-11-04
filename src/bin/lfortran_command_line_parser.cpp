@@ -374,6 +374,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("--gpu-cache-bytes", compiler_options.po.gpu_cache_bytes, "The size in bytes of the device's last-level cache that the device loop transformations assume (default: the size the device reports at run time)")->group(group_backend_codegen_options);
         app.add_option("--gpu-split-min-iterations", compiler_options.po.gpu_split_min_iterations, "The fewest iterations of a device loop that index-set splitting splits when the loop runs; smaller loops run as written (0: split every loop that has an interior)")->capture_default_str()->group(group_backend_codegen_options);
         // For tests only, so it is not listed in --help.
+        app.add_option("--gpu-reduction-threads", compiler_options.po.gpu_reduction_threads, "The most threads a launch of a parallel loop with a reduction runs; each runs every this many-th iteration")->check(CLI::Range(int64_t(1), int64_t(2147483647)))->group("");
         app.add_option("--gpu-chunk-limit", compiler_options.po.gpu_chunk_limit, "The most iterations one launch of a device kernel runs; a larger launch runs in chunks of at most this many")->check(CLI::Range(int64_t(1), int64_t(2147483647)))->group("");
 
         // Symbol and lookup-related flags
