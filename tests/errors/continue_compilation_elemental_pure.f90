@@ -6,6 +6,15 @@ type :: ccep_t
     integer :: h = 0
 end type
 
+interface
+    pure integer function ccep_iface_fn(a)
+        integer :: a  ! {Error} dummy argument 'a' of pure function 'ccep_iface_fn' must be intent(in) or have the value attribute
+    end function
+    pure subroutine ccep_iface_sub(b)
+        integer :: b  ! {Error} dummy argument 'b' of pure subroutine 'ccep_iface_sub' must have an explicit intent or the value attribute
+    end subroutine
+end interface
+
 contains
 
 elemental subroutine ccep_elem_sub(x)
