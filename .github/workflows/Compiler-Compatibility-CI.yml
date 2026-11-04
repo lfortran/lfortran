@@ -36,9 +36,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Quick's LLVM 11 compiler is a Debug build with extra checks, while
+      # Exhaustive builds LLVM 11 in Release; separate keys keep them from
+      # overwriting each other's cache.
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') && '-debug' || '' }}
+          max-size: 1500M
+          save: ${{ github.ref == 'refs/heads/main' }}
+
       # The llvm<N> environment of pixi.toml builds and tests the compiler,
       # as `pixi run -e llvm<N> ...` does locally. Activating it puts its
-      # tools (Clang, fpm, CMake) on PATH for the test scripts.
+      # tools (Clang, fpm, CMake) on PATH for the test scripts. It comes after
+      # ccache-action, which prepends /usr/local/bin (the runner's CMake).
       - uses: prefix-dev/setup-pixi@v0.11.3
         with:
           pixi-version: v0.83.0
@@ -50,16 +61,6 @@ jobs:
         if: contains(matrix.os, 'macos')
         shell: bash -e {0}
         run: python ci/check_macos_environment.py "$CONDA_PREFIX"
-
-      # Quick's LLVM 11 compiler is a Debug build with extra checks, while
-      # Exhaustive builds LLVM 11 in Release; separate keys keep them from
-      # overwriting each other's cache.
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') && '-debug' || '' }}
-          max-size: 1500M
-          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build
         shell: bash -e {0}

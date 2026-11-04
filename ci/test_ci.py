@@ -186,6 +186,10 @@ class MacOSEnvironmentTests(unittest.TestCase):
         setup = source.split("uses: prefix-dev/setup-pixi@", 1)[1].split("\n\n", 1)[0]
         self.assertIn("environments: llvm${{ matrix.llvm-version }}\n", setup)
         self.assertIn("activate-environment: llvm${{ matrix.llvm-version }}\n", setup)
+        # ccache-action prepends /usr/local/bin to PATH; the environment's
+        # tools, such as CMake, must stay ahead of it.
+        self.assertLess(source.index("uses: hendrikmuhs/ccache-action@"),
+                        source.index("uses: prefix-dev/setup-pixi@"))
 
     def checker(self):
         spec = importlib.util.spec_from_file_location(
