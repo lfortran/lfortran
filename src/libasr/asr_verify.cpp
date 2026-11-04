@@ -3037,7 +3037,8 @@ public:
     }
 
     void visit_TraitObjectType(const TraitObjectType_t &x) {
-        require_id(x.m_contract && symtab_in_scope(current_symtab, x.m_contract),
+        require_id(x.m_contract && (struct_signature_depth > 0 ||
+                symtab_in_scope(current_symtab, x.m_contract)),
             "asr.verify.trait_view.contract_in_scope",
             "A trait view must reference a visible runtime contract");
         if (!check_external) return;
@@ -8489,10 +8490,17 @@ public:
         }
     }
 
+    // The member types of a struct signature are those of the struct's
+    // components, whose contracts are visible in the struct's own scope,
+    // where its components are verified, rather than where the type is used.
+    size_t struct_signature_depth = 0;
+
     void visit_StructType(const StructType_t& x) {
+        struct_signature_depth++;
         for (size_t i = 0; i < x.n_data_member_types; i++) {
             visit_ttype(*x.m_data_member_types[i]);
         }
+        struct_signature_depth--;
     }
 
     void visit_ArrayConstructor(const ArrayConstructor_t& x) {

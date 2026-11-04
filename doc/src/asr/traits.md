@@ -2352,6 +2352,13 @@ which has none, and stops the program with an error.
 `traits_runtime_array_assign_01` assigns to local, component and rank-two
 owners, also with `--detect-leaks`.
 
+A derived type whose component is a runtime trait object of a trait of
+another module is allocated with a type specification, as a further report
+does with `allocate(MyType :: arr(1))` for a `class(AbsType)` array: the
+verifier checks the contracts of a struct signature's member types in the
+struct's own scope, where its components are declared, not in the scope
+that uses the type (`traits_runtime_component_allocate_01`).
+
 Trait-array module variables and pointers, a structure constructor value for a
 trait-array component, MOLD allocation, assignment of an array value to and
 MOVE_ALLOC of owners,
