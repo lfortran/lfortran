@@ -1,0 +1,8 @@
+semantic error: Only one PRIVATE or PUBLIC statement without an access-id-list is permitted in a module
+ --> tests/errors/private3.f90:7:5
+  |
+7 |     public
+  |     ^^^^^^ 
+  |
+4 |     private
+  |     ~~~~~~~ first one here
