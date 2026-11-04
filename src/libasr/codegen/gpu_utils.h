@@ -448,8 +448,8 @@ inline std::string gpu_offset_type(int offset_kind) {
 // subscripts still get here: user subscripts, and counters other passes
 // still build in integer(4), for example the inlined `transpose` loops,
 // fusion's affine bounds and run-time checks, and the device heap's copies
-// of allocatable components and its section subscripts (gpu_device_heap;
-// #15929). The list is not exhaustive (tracking: #16572). Such counters see
+// of allocatable components and its section subscripts (gpu_device_heap).
+// The list is not exhaustive (tracking: #16572). Such counters see
 // a lower bound beyond huge(0) truncated, and the truncation cancels only
 // modulo 2**32, so this branch must stay until no pass builds integer(4)
 // subscripts under the flag.

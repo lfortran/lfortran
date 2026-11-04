@@ -2,7 +2,7 @@ program gpu_metal_716
     ! An allocatable component of an array of a derived type reaches the
     ! kernel as the components' data laid end to end, where each element's
     ! component starts in it, and how far each one runs. Components of
-    ! different lengths, one of them empty and one not allocated, so every
+    ! different lengths, one of them allocated with no elements, so every
     ! element starts somewhere else in the packed data; the kernel updates
     ! the last element of each component and the host checks that every
     ! element landed back in its own component.

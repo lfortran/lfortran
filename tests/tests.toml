@@ -5306,6 +5306,16 @@ filename = "../integration_tests/gpu_metal_716.f90"
 options = "--descriptor-index-64"
 gpu_cuda_kernel = true
 
+# The same packed components, a whole one assigned a function's result in
+# the kernel: the offset it is copied from is read into a `long` local.
+# Compile-only: this copy is emitted only without --realloc-lhs-arrays, and
+# a run on the host without that flag stops where the function's result is
+# assigned unallocated.
+[[test]]
+filename = "gpu_cuda_kernel_component_result.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
 # Small run-time-shaped arrays of rank 2 and 3 with lower bounds other than
 # 1, an integer(8) subscript and an assumed-shape dummy, run on the device
 # with the same flag: the kernels take their extents and lower bounds as
