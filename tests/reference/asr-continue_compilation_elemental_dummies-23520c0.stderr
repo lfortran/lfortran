@@ -1,37 +1,43 @@
-semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_pointer' cannot be a pointer
-  --> tests/errors/continue_compilation_elemental_dummies.f90:12:41
+semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_array' must be scalar
+  --> tests/errors/continue_compilation_elemental_dummies.f90:11:32
    |
-12 |         integer, pointer, intent(in) :: x  ! {Error} dummy argument 'x' of elemental procedure 'cc_elem_dummies_pointer' cannot be a pointer
+11 |         integer, intent(in) :: x(3)  ! {Error} dummy argument 'x' of elemental procedure 'cc_elem_dummies_array' must be scalar
+   |                                ^^^^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_pointer' cannot be a pointer
+  --> tests/errors/continue_compilation_elemental_dummies.f90:16:41
+   |
+16 |         integer, pointer, intent(in) :: x  ! {Error} dummy argument 'x' of elemental procedure 'cc_elem_dummies_pointer' cannot be a pointer
    |                                         ^ 
 
 semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_coarray' cannot be a coarray
-  --> tests/errors/continue_compilation_elemental_dummies.f90:16:32
+  --> tests/errors/continue_compilation_elemental_dummies.f90:20:32
    |
-16 |         integer, intent(in) :: x[*]  ! {Error} dummy argument 'x' of elemental procedure 'cc_elem_dummies_coarray' cannot be a coarray
+20 |         integer, intent(in) :: x[*]  ! {Error} dummy argument 'x' of elemental procedure 'cc_elem_dummies_coarray' cannot be a coarray
    |                                ^^^^ 
 
 semantic error: dummy argument 'g' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
-  --> tests/errors/continue_compilation_elemental_dummies.f90:21:13 - 23:24
+  --> tests/errors/continue_compilation_elemental_dummies.f90:25:13 - 27:24
    |
-21 |                pure integer function g(i)  ! {Error} dummy argument 'g' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+25 |                pure integer function g(i)  ! {Error} dummy argument 'g' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-23 |                end function
+27 |                end function
    | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
-  --> tests/errors/continue_compilation_elemental_dummies.f90:25:66
+  --> tests/errors/continue_compilation_elemental_dummies.f90:29:66
    |
-25 |         procedure(cc_elem_dummies_iface), pointer, intent(in) :: h  ! {Error} dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+29 |         procedure(cc_elem_dummies_iface), pointer, intent(in) :: h  ! {Error} dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
    |                                                                  ^ 
 
 semantic error: elemental procedure 'cc_elem_dummies_alt_return' cannot have an alternate return dummy argument '*'
-  --> tests/errors/continue_compilation_elemental_dummies.f90:28:5 - 30:18
+  --> tests/errors/continue_compilation_elemental_dummies.f90:32:5 - 34:18
    |
-28 |        elemental subroutine cc_elem_dummies_alt_return(x, *)  ! {Error} elemental procedure 'cc_elem_dummies_alt_return' cannot have an alternate return dummy argument '*'
+32 |        elemental subroutine cc_elem_dummies_alt_return(x, *)  ! {Error} elemental procedure 'cc_elem_dummies_alt_return' cannot have an alternate return dummy argument '*'
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-30 |        end subroutine
+34 |        end subroutine
    | ...^^^^^^^^^^^^^^^^^^ 
