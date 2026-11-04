@@ -281,9 +281,9 @@ static void unified_entry(void **args)
         + sequence;
 }
 
+// CTest runs this case with LFORTRAN_GPU_MEMORY=unified.
 static int unified_memory_model()
 {
-    setenv("LFORTRAN_GPU_MEMORY", "unified", 1);
     auto *ctx = lfortran_gpu_init();
     require(ctx != nullptr, "runtime initialization");
     require(unified_memory, "LFORTRAN_GPU_MEMORY=unified selects the model");
