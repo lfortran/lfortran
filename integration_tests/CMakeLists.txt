@@ -1261,6 +1261,7 @@ RUN(NAME array_constructor_11 LABELS gfortran llvm) # section elements with inte
 RUN(NAME array_constructor_12 FILE array_constructor_11 LABELS llvm EXTRA_ARGS --descriptor-index-64)
 RUN(NAME array_constructor_13 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64 --realloc-lhs-arrays) # run-time-sized elements next to scalars
 RUN(NAME array_constructor_14 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 --realloc-lhs-arrays GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME array_constructor_15 LABELS gfortran llvm) # implied-do with non-default integer bounds
 RUN(NAME array_constructor_16 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64)
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
