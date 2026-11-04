@@ -565,6 +565,7 @@ namespace LCompilers::CommandLineInterface {
             // with the GPU runtime on HIP.
             compiler_options.gpu_backend = "cuda";
             compiler_options.po.gpu_offload_cuda = true;
+            compiler_options.po.gpu_offload_hip = true;
             compiler_options.gpu_hip = true;
             if (compiler_options.device_compiler == "nvcc") {
                 compiler_options.device_compiler = "hipcc";

@@ -12,7 +12,8 @@ namespace LCompilers {
 /*
 Unrolls the short counted loops of device code (see
 ASRUtils::is_device_only_function) by the device's
-sequential_loop_unroll_factor: 16 for Metal, while CUDA unrolls nothing.
+sequential_loop_unroll_factor: 16 for Metal, 4 for HIP (AMD), while CUDA on
+NVIDIA unrolls nothing.
 
 A loop with a 32-bit index starting at a non-negative constant, a unit step
 and a body of at most 32 assignments, no name and no loop-else,
