@@ -327,6 +327,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 ),
                                             log_io_error:
                                                 (StructMethodDeclaration
@@ -338,6 +339,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 )
                                         })
                                     logger_type

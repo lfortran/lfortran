@@ -37,7 +37,7 @@ symbol
     -- declaration reference, not a runtime access rewritten by expression
     -- lowering; the canonical entity's declaration is not modified.
     | ScopedVariableAttribute(symbol_table parent_symtab, identifier name, symbol variable, bool is_volatile, bool is_asynchronous)
-    | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
+    | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass, access access)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)

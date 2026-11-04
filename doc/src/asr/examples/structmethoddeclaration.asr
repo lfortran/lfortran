@@ -19,6 +19,7 @@
                     :abi :Source
                     :is_deferred false
                     :is_nopass false
+                    :access :Public
                   )
                   "r" (Variable
                     :parent_symtab 2

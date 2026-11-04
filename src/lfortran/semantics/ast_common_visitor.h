@@ -19454,6 +19454,118 @@ public:
         throw SemanticAbort();
     }
 
+    // Whether `scope` is in module `mod_name` or in one of its submodules.
+    bool is_scope_in_module(SymbolTable *scope, const std::string &mod_name) {
+        ASR::Module_t *mod = nullptr;
+        if (scope->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+            mod = ASR::is_a<ASR::Module_t>(*owner) ? ASR::down_cast<ASR::Module_t>(owner)
+                : ASRUtils::get_sym_module0(owner);
+        }
+        while (mod != nullptr) {
+            if (mod_name == mod->m_name) {
+                return true;
+            }
+            if (mod->m_parent_module == nullptr) {
+                break;
+            }
+            if (mod_name == mod->m_parent_module) {
+                return true;
+            }
+            ASR::symbol_t *parent = ASRUtils::symbol_get_past_external(
+                scope->resolve_symbol(mod->m_parent_module));
+            mod = (parent != nullptr && ASR::is_a<ASR::Module_t>(*parent))
+                ? ASR::down_cast<ASR::Module_t>(parent) : nullptr;
+        }
+        return false;
+    }
+
+    // The binding `b` of a derived type as declared: an extension type holds
+    // copies of inherited bindings (for code generation), and a copy is
+    // replaced by the binding of the ancestor type that declares it. A copy
+    // has the access of the inherited binding and, for a specific binding,
+    // the same procedure; a copied generic names only inherited bindings.
+    ASR::symbol_t *declared_binding(ASR::symbol_t *b) {
+        while (true) {
+            ASR::symbol_t *type_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::symbol_parent_symtab(b)->asr_owner);
+            ASR::symbol_t *parent_sym = ASR::down_cast<ASR::Struct_t>(type_sym)->m_parent;
+            ASR::symbol_t *inherited = nullptr;
+            while (parent_sym != nullptr && inherited == nullptr) {
+                ASR::Struct_t *parent = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(parent_sym));
+                inherited = parent->m_symtab->get_symbol(ASRUtils::symbol_name(b));
+                parent_sym = parent->m_parent;
+            }
+            if (inherited == nullptr || inherited->type != b->type) {
+                return b;
+            }
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*b)) {
+                ASR::StructMethodDeclaration_t *d
+                    = ASR::down_cast<ASR::StructMethodDeclaration_t>(b);
+                ASR::StructMethodDeclaration_t *pd
+                    = ASR::down_cast<ASR::StructMethodDeclaration_t>(inherited);
+                if (d->m_access != pd->m_access
+                        || ASRUtils::symbol_get_past_external(d->m_proc)
+                            != ASRUtils::symbol_get_past_external(pd->m_proc)) {
+                    return b;
+                }
+            } else {
+                ASR::GenericProcedure_t *g = ASR::down_cast<ASR::GenericProcedure_t>(b);
+                ASR::GenericProcedure_t *pg = ASR::down_cast<ASR::GenericProcedure_t>(inherited);
+                if (g->m_access != pg->m_access) {
+                    return b;
+                }
+                for (size_t i = 0; i < g->n_procs; i++) {
+                    std::string name = ASRUtils::symbol_name(g->m_procs[i]);
+                    bool found = false;
+                    for (size_t j = 0; j < pg->n_procs && !found; j++) {
+                        found = name == ASRUtils::symbol_name(pg->m_procs[j]);
+                    }
+                    if (!found) {
+                        return b;
+                    }
+                }
+            }
+            b = inherited;
+        }
+    }
+
+    // Fortran 2018 7.5.5: a private binding is accessible only within the
+    // module containing the definition of the type that declares it.
+    void check_binding_accessible(ASR::symbol_t *binding, const Location &loc) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(binding);
+        if (b == nullptr) {
+            return;
+        }
+        ASR::accessType access = ASR::accessType::Public;
+        std::string what = "type-bound procedure";
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*b)) {
+            access = ASR::down_cast<ASR::StructMethodDeclaration_t>(b)->m_access;
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*b)
+                && ASRUtils::is_type_bound_generic(b)) {
+            access = ASR::down_cast<ASR::GenericProcedure_t>(b)->m_access;
+            what = "generic type-bound procedure";
+        }
+        if (access != ASR::accessType::Private) {
+            return;
+        }
+        b = declared_binding(b);
+        ASR::Module_t *mod = ASRUtils::get_sym_module(b);
+        if (mod == nullptr || is_scope_in_module(current_scope, mod->m_name)) {
+            return;
+        }
+        ASR::symbol_t *type_sym = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::symbol_parent_symtab(b)->asr_owner);
+        diag.add(Diagnostic(what + " '"
+            + std::string(ASRUtils::symbol_name(b)) + "' of derived type '"
+            + std::string(ASRUtils::symbol_name(type_sym))
+            + "' is private and cannot be accessed outside module '"
+            + std::string(mod->m_name) + "'",
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        if (!compiler_options.continue_compilation) throw SemanticAbort();
+    }
+
     ASR::symbol_t* resolve_deriv_type_proc(const Location &loc, const std::string &var_name,
             const std::string dt_name, ASR::expr_t* dt_expr, ASR::ttype_t* dt_type, SymbolTable*& scope,
             ASR::symbol_t* parent=nullptr) {
@@ -24797,6 +24909,7 @@ public:
             v = resolve_deriv_type_proc(x.base.base.loc, var_name,
                     to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+            check_binding_accessible(v, x.base.base.loc);
             v = ASRUtils::import_class_procedure(al, x.base.base.loc, v, current_scope);
         } else {
             // for a GenericProcedure and a derived type with the same name,

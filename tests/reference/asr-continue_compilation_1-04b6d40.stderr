@@ -5123,6 +5123,54 @@ semantic error: the shift argument of 'shifta' intrinsic must be non-negative an
 4124 |         print *, shifta(n, [1, 40])  ! {Error} shift argument of shifta out of range
      |                            ^^^^^^^ shift value is 40, but bit size of integer is 32
 
+semantic error: type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+    --> tests/errors/continue_compilation_1.f90:4155:9
+     |
+4155 |         call x%cc1_pb_s()  ! {Error} type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'cc1_pb_f' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+    --> tests/errors/continue_compilation_1.f90:4156:13
+     |
+4156 |         k = x%cc1_pb_f()  ! {Error} type-bound procedure 'cc1_pb_f' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+     |             ^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_default_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+    --> tests/errors/continue_compilation_1.f90:4157:9
+     |
+4157 |         call y%cc1_pb_s()  ! {Error} type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_default_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+    --> tests/errors/continue_compilation_1.f90:4186:9
+     |
+4186 |         call x%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+     |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_default_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+    --> tests/errors/continue_compilation_1.f90:4187:9
+     |
+4187 |         call y%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_default_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+     |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic type-bound procedure 'cc1_pi_g' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    --> tests/errors/continue_compilation_1.f90:4218:13
+     |
+4218 |         k = y%cc1_pi_g()  ! {Error} generic type-bound procedure 'cc1_pi_g' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+     |             ^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    --> tests/errors/continue_compilation_1.f90:4219:13
+     |
+4219 |         k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+     |             ^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    --> tests/errors/continue_compilation_1.f90:4231:13
+     |
+4231 |         k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+     |             ^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

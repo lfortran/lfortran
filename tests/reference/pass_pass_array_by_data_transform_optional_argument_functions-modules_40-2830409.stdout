@@ -545,6 +545,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Private
                                                 )
                                         })
                                     toml_tokenizer

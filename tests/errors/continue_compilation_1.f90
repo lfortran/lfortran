@@ -4124,3 +4124,110 @@ contains
         print *, shifta(n, [1, 40])  ! {Error} shift argument of shifta out of range
     end subroutine
 end module
+
+module cc1_private_binding_def
+    type :: cc1_pb_t
+    contains
+        procedure, private, nopass :: cc1_pb_s
+        procedure, private, nopass :: cc1_pb_f
+    end type
+    type :: cc1_pb_default_t
+    contains
+        private
+        procedure, nopass :: cc1_pb_s
+        procedure, public, nopass :: cc1_pb_f
+    end type
+contains
+    subroutine cc1_pb_s()
+    end subroutine
+    integer function cc1_pb_f()
+        cc1_pb_f = 1
+    end function
+end module
+
+module cc1_private_binding_use
+    use cc1_private_binding_def
+contains
+    subroutine cc1_pb_use()
+        type(cc1_pb_t) :: x
+        type(cc1_pb_default_t) :: y
+        integer :: k
+        call x%cc1_pb_s()  ! {Error} type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+        k = x%cc1_pb_f()  ! {Error} type-bound procedure 'cc1_pb_f' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+        call y%cc1_pb_s()  ! {Error} type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_default_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+        k = y%cc1_pb_f()
+    end subroutine
+end module
+
+module cc1_private_generic_def
+    type :: cc1_pg_t
+    contains
+        procedure, nopass :: cc1_pg_s
+        generic, private :: cc1_pg_gen => cc1_pg_s
+    end type
+    type :: cc1_pg_default_t
+    contains
+        private
+        procedure, public, nopass :: cc1_pg_s
+        generic :: cc1_pg_gen => cc1_pg_s
+        generic, public :: cc1_pg_pub => cc1_pg_s
+    end type
+contains
+    subroutine cc1_pg_s()
+    end subroutine
+end module
+
+module cc1_private_generic_use
+    use cc1_private_generic_def
+contains
+    subroutine cc1_pg_use()
+        type(cc1_pg_t) :: x
+        type(cc1_pg_default_t) :: y
+        call x%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+        call y%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_default_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+        call y%cc1_pg_pub()
+        call x%cc1_pg_s()
+    end subroutine
+end module
+
+module cc1_private_inherited_def
+    type :: cc1_pi_t
+    contains
+        procedure, nopass :: cc1_pi_p
+        generic, private :: cc1_pi_g => cc1_pi_p
+        procedure, private, nopass :: cc1_pi_q
+        generic :: cc1_pi_h => cc1_pi_q
+    end type
+contains
+    integer function cc1_pi_p()
+        cc1_pi_p = 1
+    end function
+    integer function cc1_pi_q()
+        cc1_pi_q = 2
+    end function
+end module
+
+module cc1_private_inherited_ext
+    use cc1_private_inherited_def
+    type, extends(cc1_pi_t) :: cc1_pi_c
+    end type
+contains
+    subroutine cc1_pi_use()
+        type(cc1_pi_c) :: y
+        integer :: k
+        k = y%cc1_pi_g()  ! {Error} generic type-bound procedure 'cc1_pi_g' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+        k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+        k = y%cc1_pi_h()
+        k = y%cc1_pi_p()
+    end subroutine
+end module
+
+module cc1_private_inherited_use
+    use cc1_private_inherited_ext
+contains
+    subroutine cc1_pi_use2()
+        type(cc1_pi_c) :: y
+        integer :: k
+        k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    end subroutine
+end module

@@ -127,6 +127,7 @@
                                                     Source
                                                     .true.
                                                     .false.
+                                                    Public
                                                 ),
                                             num_bits:
                                                 (Variable

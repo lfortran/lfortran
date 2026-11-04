@@ -161,6 +161,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 ),
                                             proc:
                                                 (StructMethodDeclaration
@@ -172,6 +173,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 ),
                                             super:
                                                 (Variable
@@ -214,6 +216,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 ),
                                             x:
                                                 (Variable

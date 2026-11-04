@@ -175,6 +175,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 )
                                         })
                                     toml_character_tokenizer
@@ -601,6 +602,7 @@
                                                     Source
                                                     .true.
                                                     .false.
+                                                    Public
                                                 )
                                         })
                                     toml_tokenizer

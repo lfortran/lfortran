@@ -188,6 +188,7 @@
                                                     Source
                                                     .false.
                                                     .true.
+                                                    Public
                                                 )
                                         })
                                     test_type

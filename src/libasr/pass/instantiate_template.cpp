@@ -459,7 +459,8 @@ public:
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, current_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass,
+            x->m_access));
         current_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
@@ -2282,7 +2283,8 @@ public:
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, target_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass,
+            x->m_access));
         target_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
