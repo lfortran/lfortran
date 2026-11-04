@@ -7654,3 +7654,8 @@ llvm = true
 filename = "errors/implicit_none_external_01.f90"
 semantics_only_cc = true
 options = "--implicit-interface --implicit-typing"
+
+# The accessibility of type-bound procedures is kept by `--show-fortran`.
+[[test]]
+filename = "../integration_tests/type_bound_private_01.f90"
+fortran = true
