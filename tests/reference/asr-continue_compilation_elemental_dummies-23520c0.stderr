@@ -1,0 +1,37 @@
+semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_pointer' cannot be a pointer
+  --> tests/errors/continue_compilation_elemental_dummies.f90:12:41
+   |
+12 |         integer, pointer, intent(in) :: x  ! {Error} dummy argument 'x' of elemental procedure 'cc_elem_dummies_pointer' cannot be a pointer
+   |                                         ^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_coarray' cannot be a coarray
+  --> tests/errors/continue_compilation_elemental_dummies.f90:16:32
+   |
+16 |         integer, intent(in) :: x[*]  ! {Error} dummy argument 'x' of elemental procedure 'cc_elem_dummies_coarray' cannot be a coarray
+   |                                ^^^^ 
+
+semantic error: dummy argument 'g' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+  --> tests/errors/continue_compilation_elemental_dummies.f90:21:13 - 23:24
+   |
+21 |                pure integer function g(i)  ! {Error} dummy argument 'g' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+23 |                end function
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+  --> tests/errors/continue_compilation_elemental_dummies.f90:25:66
+   |
+25 |         procedure(cc_elem_dummies_iface), pointer, intent(in) :: h  ! {Error} dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+   |                                                                  ^ 
+
+semantic error: elemental procedure 'cc_elem_dummies_alt_return' cannot have an alternate return dummy argument '*'
+  --> tests/errors/continue_compilation_elemental_dummies.f90:28:5 - 30:18
+   |
+28 |        elemental subroutine cc_elem_dummies_alt_return(x, *)  ! {Error} elemental procedure 'cc_elem_dummies_alt_return' cannot have an alternate return dummy argument '*'
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+30 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ 

@@ -1,0 +1,5 @@
+semantic error: dummy argument 'x' of elemental procedure 'elemental_dummy_array_f' must be scalar
+ --> tests/errors/elemental_dummy_array.f90:4:32
+  |
+4 |         integer, intent(in) :: x(3)
+  |                                ^^^^ 
