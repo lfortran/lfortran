@@ -31,6 +31,9 @@ private:
     // C15100
     static bool dummy_not_coarray(const ASR::Variable_t &v,
         const std::string &proc_name, diag::Diagnostics &diag);
+    // C15103
+    static bool dummy_not_procedure(const ASR::symbol_t &sym,
+        const std::string &proc_name, diag::Diagnostics &diag);
 };
 
 } // namespace LCompilers::LFortran

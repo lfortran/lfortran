@@ -13,6 +13,10 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
     for (size_t i = 0; i < f.n_args; i++) {
         if (!ASR::is_a<ASR::Var_t>(*f.m_args[i])) continue;
         ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
+        if (!dummy_not_procedure(*sym, proc_name, diag)) {
+            ok = false;
+            continue;
+        }
         if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
         const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(sym);
         ok = dummy_scalar(v, proc_name, diag) && ok;
@@ -66,6 +70,23 @@ bool ElementalChecks::dummy_not_coarray(const ASR::Variable_t &v,
         "' of elemental procedure '" + proc_name + "' cannot be a coarray",
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("", {v.base.base.loc})}));
+    return false;
+}
+
+bool ElementalChecks::dummy_not_procedure(const ASR::symbol_t &sym,
+        const std::string &proc_name, diag::Diagnostics &diag) {
+    bool is_procedure = ASR::is_a<ASR::Function_t>(sym);
+    if (ASR::is_a<ASR::Variable_t>(sym)) {
+        ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(&sym)->m_type;
+        is_procedure = ASR::is_a<ASR::FunctionType_t>(
+            *ASRUtils::type_get_past_pointer(type));
+    }
+    if (!is_procedure) return true;
+    diag.add(diag::Diagnostic(
+        "dummy argument '" + std::string(ASRUtils::symbol_name(&sym)) +
+        "' of elemental procedure '" + proc_name + "' cannot be a procedure",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {sym.base.loc})}));
     return false;
 }
 
