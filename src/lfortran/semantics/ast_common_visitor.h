@@ -24718,8 +24718,8 @@ public:
     ASR::asr_t* create_Shifta(const Location &loc, Vec<ASR::call_arg_t> args) {
         /*
             shifta(n, w):
-            This is arithmetic shift right by w bits.
-            Represent using BinOp, with left = n, right = w, op = BitRShift
+            This is arithmetic shift right by w bits, which is the same
+            operation as the `rshift` intrinsic (including w == bit_size(n)).
         */
         ASR::expr_t *n = args[0].m_value;
         ASR::expr_t *w = args[1].m_value;
@@ -24749,15 +24749,44 @@ public:
 
         if (!ASRUtils::check_equal_type(base_n, base_w, nullptr, nullptr)) {
             if (ASRUtils::is_integer(*base_n) && ASRUtils::is_integer(*base_w)) {
-                w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, 
-                                 ASR::cast_kindType::IntegerToInteger, 
-                                 cast_target_for_w, nullptr, nullptr));
+                if (ASRUtils::is_array(type_w)) {
+                    w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w,
+                                     ASR::cast_kindType::IntegerToInteger,
+                                     cast_target_for_w, nullptr, nullptr));
+                } else {
+                    w = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, loc, w,
+                                     ASR::cast_kindType::IntegerToInteger,
+                                     cast_target_for_w));
+                }
             }
         }
 
-        ASR::ttype_t* out_type = ASRUtils::is_array(type_n) ? type_n : cast_target_for_w;
+        ASR::expr_t* w_value = ASRUtils::expr_value(w);
+        if (w_value && ASR::is_a<ASR::IntegerConstant_t>(*w_value)) {
+            int64_t shift = ASR::down_cast<ASR::IntegerConstant_t>(w_value)->m_n;
+            int64_t bit_size = 8 * ASRUtils::extract_kind_from_ttype_t(base_n);
+            if (shift < 0 || shift > bit_size) {
+                diag.semantic_error_label(
+                    "The shift argument of 'shifta' intrinsic must be non-negative "
+                    "and less than or equal to the bit size of the integer",
+                    { args[1].m_value->base.loc },
+                    "shift value is " + std::to_string(shift)
+                        + ", but bit size of integer is " + std::to_string(bit_size));
+                throw SemanticAbort();
+            }
+        }
 
-        return ASRUtils::make_Binop_util(al, loc, ASR::binopType::BitRShift, n, w, out_type);
+        Vec<ASR::expr_t*> rshift_args;
+        rshift_args.reserve(al, 2);
+        rshift_args.push_back(al, n);
+        rshift_args.push_back(al, w);
+        ASRUtils::create_intrinsic_function create_rshift =
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("rshift");
+        ASR::asr_t* result = create_rshift(al, loc, rshift_args, diag);
+        if (result == nullptr) {
+            throw SemanticAbort();
+        }
+        return result;
     }
 
     void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
