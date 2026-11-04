@@ -26,6 +26,11 @@ public:
         const std::map<const ASR::symbol_t*, ASR::symbol_t*>
             &implicit_interface_procedures);
 
+    // Rules on an assignment in `scope` to a target with base symbol `base`.
+    static void check_assignment_target(ASR::symbol_t *base,
+        SymbolTable *scope, const Location &loc, diag::Diagnostics &diag,
+        const CompilerOptions &compiler_options);
+
 private:
     // 15.7: an intent(out) dummy is not polymorphic
     static bool intent_out_not_polymorphic(const ASR::Variable_t &v,
@@ -39,6 +44,11 @@ private:
 
     // C1583
     static bool dummy_intent_given(const ASR::Variable_t &v,
+        diag::Diagnostics &diag);
+
+    // 15.7: no assignment to a variable from the host or a module
+    static bool assignment_target_is_local(ASR::symbol_t &base,
+        SymbolTable *procedure_scope, SymbolTable *scope, const Location &loc,
         diag::Diagnostics &diag);
 
     static bool has_polymorphic_allocatable_ultimate_component(
