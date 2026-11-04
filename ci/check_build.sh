@@ -2,10 +2,10 @@
 # This is a cross-platform `shell` script.
 
 # `ci/check_build.sh <build_dir>`: install and check the compiler built from
-# the source tarball (ci/source_tarball.sh) in <build_dir>, then
-# copy it into src/ for the test scripts that run the in-tree compiler. Pass
-# the build directory relative to the project root: forward slashes keep the
-# globs below working on Windows.
+# the source tarball (ci/source_tarball.sh) in <build_dir>, then copy it into
+# src/ (ci/stage_build.sh) for the test scripts that run the in-tree compiler.
+# Pass the build directory relative to the project root: forward slashes keep
+# the globs below working on Windows.
 
 set -ex
 
@@ -33,11 +33,4 @@ jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --ou
 jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --output Variables_out.ipynb Variables.ipynb
 cd "$root"
 
-if [[ $WIN == "1" ]]; then # Windows
-    cp "$build_dir/src/bin/lfortran.exe" src/bin
-    cp "$build_dir"/src/runtime/lfortran_runtime* src/runtime/
-else # Linux or macOS
-    cp "$build_dir/src/bin/lfortran" src/bin
-    cp "$build_dir"/src/runtime/liblfortran_runtime* src/runtime/
-fi
-cp "$build_dir"/src/runtime/*.mod src/runtime/
+shell ci/stage_build.sh "$build_dir"
