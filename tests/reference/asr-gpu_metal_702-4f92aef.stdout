@@ -42,7 +42,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8)
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -94,7 +94,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 8)
+                                    (Integer 4)
                                     ()
                                     Source
                                     Public
@@ -539,45 +539,27 @@
                         (IntegerCompare
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (Cast
-                                        (GpuBlockIndex
-                                            0
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        IntegerToInteger
-                                        (Integer 8)
-                                        ()
-                                        ()
-                                    )
-                                    Mul
-                                    (Cast
-                                        (GpuBlockSize
-                                            0
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        IntegerToInteger
-                                        (Integer 8)
-                                        ()
-                                        ()
-                                    )
-                                    (Integer 8)
-                                    ()
-                                )
-                                Add
-                                (Cast
-                                    (GpuThreadIndex
+                                    (GpuBlockIndex
                                         0
                                         (Integer 4)
                                         ()
                                     )
-                                    IntegerToInteger
-                                    (Integer 8)
-                                    ()
+                                    Mul
+                                    (GpuBlockSize
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
                                     ()
                                 )
-                                (Integer 8)
+                                Add
+                                (GpuThreadIndex
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
                                 ()
                             )
                             GtE
@@ -585,157 +567,85 @@
                                 (IntegerBinOp
                                     (IfExp
                                         (IntegerCompare
-                                            (Cast
-                                                (Var 5 __loop_end_0)
-                                                IntegerToInteger
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            )
+                                            (Var 5 __loop_end_0)
                                             GtE
-                                            (Cast
-                                                (Var 5 __loop_start_0)
-                                                IntegerToInteger
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            )
+                                            (Var 5 __loop_start_0)
                                             (Logical 4)
                                             ()
                                         )
                                         (IntegerBinOp
                                             (IntegerBinOp
-                                                (Cast
-                                                    (Var 5 __loop_end_0)
-                                                    IntegerToInteger
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                )
+                                                (Var 5 __loop_end_0)
                                                 Sub
-                                                (Cast
-                                                    (Var 5 __loop_start_0)
-                                                    IntegerToInteger
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                )
-                                                (Integer 8)
+                                                (Var 5 __loop_start_0)
+                                                (Integer 4)
                                                 ()
                                             )
                                             Add
-                                            (IntegerConstant 1 (Integer 8) Decimal)
-                                            (Integer 8)
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
                                             ()
                                         )
-                                        (IntegerConstant 0 (Integer 8) Decimal)
-                                        (Integer 8)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (Integer 4)
                                         ()
                                     )
                                     Mul
                                     (IfExp
                                         (IntegerCompare
-                                            (Cast
-                                                (Var 5 __loop_end_1)
-                                                IntegerToInteger
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            )
+                                            (Var 5 __loop_end_1)
                                             GtE
-                                            (Cast
-                                                (Var 5 __loop_start_1)
-                                                IntegerToInteger
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            )
+                                            (Var 5 __loop_start_1)
                                             (Logical 4)
                                             ()
                                         )
                                         (IntegerBinOp
                                             (IntegerBinOp
-                                                (Cast
-                                                    (Var 5 __loop_end_1)
-                                                    IntegerToInteger
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                )
+                                                (Var 5 __loop_end_1)
                                                 Sub
-                                                (Cast
-                                                    (Var 5 __loop_start_1)
-                                                    IntegerToInteger
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                )
-                                                (Integer 8)
+                                                (Var 5 __loop_start_1)
+                                                (Integer 4)
                                                 ()
                                             )
                                             Add
-                                            (IntegerConstant 1 (Integer 8) Decimal)
-                                            (Integer 8)
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
                                             ()
                                         )
-                                        (IntegerConstant 0 (Integer 8) Decimal)
-                                        (Integer 8)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (Integer 4)
                                         ()
                                     )
-                                    (Integer 8)
+                                    (Integer 4)
                                     ()
                                 )
                                 Mul
                                 (IfExp
                                     (IntegerCompare
-                                        (Cast
-                                            (Var 5 __loop_end_2)
-                                            IntegerToInteger
-                                            (Integer 8)
-                                            ()
-                                            ()
-                                        )
+                                        (Var 5 __loop_end_2)
                                         GtE
-                                        (Cast
-                                            (Var 5 __loop_start_2)
-                                            IntegerToInteger
-                                            (Integer 8)
-                                            ()
-                                            ()
-                                        )
+                                        (Var 5 __loop_start_2)
                                         (Logical 4)
                                         ()
                                     )
                                     (IntegerBinOp
                                         (IntegerBinOp
-                                            (Cast
-                                                (Var 5 __loop_end_2)
-                                                IntegerToInteger
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            )
+                                            (Var 5 __loop_end_2)
                                             Sub
-                                            (Cast
-                                                (Var 5 __loop_start_2)
-                                                IntegerToInteger
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            )
-                                            (Integer 8)
+                                            (Var 5 __loop_start_2)
+                                            (Integer 4)
                                             ()
                                         )
                                         Add
-                                        (IntegerConstant 1 (Integer 8) Decimal)
-                                        (Integer 8)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
                                         ()
                                     )
-                                    (IntegerConstant 0 (Integer 8) Decimal)
-                                    (Integer 8)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (Integer 4)
                                     ()
                                 )
-                                (Integer 8)
+                                (Integer 4)
                                 ()
                             )
                             (Logical 4)
@@ -748,45 +658,27 @@
                         (Var 5 __flat_idx)
                         (IntegerBinOp
                             (IntegerBinOp
-                                (Cast
-                                    (GpuBlockIndex
-                                        0
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    IntegerToInteger
-                                    (Integer 8)
-                                    ()
-                                    ()
-                                )
-                                Mul
-                                (Cast
-                                    (GpuBlockSize
-                                        0
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    IntegerToInteger
-                                    (Integer 8)
-                                    ()
-                                    ()
-                                )
-                                (Integer 8)
-                                ()
-                            )
-                            Add
-                            (Cast
-                                (GpuThreadIndex
+                                (GpuBlockIndex
                                     0
                                     (Integer 4)
                                     ()
                                 )
-                                IntegerToInteger
-                                (Integer 8)
-                                ()
+                                Mul
+                                (GpuBlockSize
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
                                 ()
                             )
-                            (Integer 8)
+                            Add
+                            (GpuThreadIndex
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -820,8 +712,8 @@
                                 (IntegerBinOp
                                     (Var 5 __gpu_slot)
                                     Add
-                                    (IntegerConstant 1 (Integer 8) Decimal)
-                                    (Integer 8)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
                                     ()
                                 )
                                 ())]
@@ -841,89 +733,53 @@
                     )
                     (Assignment
                         (Var 5 i__dc)
-                        (Cast
+                        (IntegerBinOp
                             (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Sub
                                 (IntegerBinOp
-                                    (Var 5 __flat_idx)
-                                    Sub
                                     (IntegerBinOp
-                                        (IntegerBinOp
-                                            (Var 5 __flat_idx)
-                                            Div
-                                            (IntegerBinOp
-                                                (IntegerBinOp
-                                                    (Cast
-                                                        (Var 5 __loop_end_0)
-                                                        IntegerToInteger
-                                                        (Integer 8)
-                                                        ()
-                                                        ()
-                                                    )
-                                                    Sub
-                                                    (Cast
-                                                        (Var 5 __loop_start_0)
-                                                        IntegerToInteger
-                                                        (Integer 8)
-                                                        ()
-                                                        ()
-                                                    )
-                                                    (Integer 8)
-                                                    ()
-                                                )
-                                                Add
-                                                (IntegerConstant 1 (Integer 8) Decimal)
-                                                (Integer 8)
-                                                ()
-                                            )
-                                            (Integer 8)
-                                            ()
-                                        )
-                                        Mul
+                                        (Var 5 __flat_idx)
+                                        Div
                                         (IntegerBinOp
                                             (IntegerBinOp
-                                                (Cast
-                                                    (Var 5 __loop_end_0)
-                                                    IntegerToInteger
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                )
+                                                (Var 5 __loop_end_0)
                                                 Sub
-                                                (Cast
-                                                    (Var 5 __loop_start_0)
-                                                    IntegerToInteger
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                )
-                                                (Integer 8)
+                                                (Var 5 __loop_start_0)
+                                                (Integer 4)
                                                 ()
                                             )
                                             Add
-                                            (IntegerConstant 1 (Integer 8) Decimal)
-                                            (Integer 8)
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
                                             ()
                                         )
-                                        (Integer 8)
+                                        (Integer 4)
                                         ()
                                     )
-                                    (Integer 8)
+                                    Mul
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __loop_end_0)
+                                            Sub
+                                            (Var 5 __loop_start_0)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
                                     ()
                                 )
-                                Add
-                                (Cast
-                                    (Var 5 __loop_start_0)
-                                    IntegerToInteger
-                                    (Integer 8)
-                                    ()
-                                    ()
-                                )
-                                (Integer 8)
+                                (Integer 4)
                                 ()
                             )
-                            IntegerToInteger
+                            Add
+                            (Var 5 __loop_start_0)
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
@@ -939,30 +795,18 @@
                             Div
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (Cast
-                                        (Var 5 __loop_end_0)
-                                        IntegerToInteger
-                                        (Integer 8)
-                                        ()
-                                        ()
-                                    )
+                                    (Var 5 __loop_end_0)
                                     Sub
-                                    (Cast
-                                        (Var 5 __loop_start_0)
-                                        IntegerToInteger
-                                        (Integer 8)
-                                        ()
-                                        ()
-                                    )
-                                    (Integer 8)
+                                    (Var 5 __loop_start_0)
+                                    (Integer 4)
                                     ()
                                 )
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
-                                (Integer 8)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
                                 ()
                             )
-                            (Integer 8)
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -973,89 +817,53 @@
                     )
                     (Assignment
                         (Var 5 j__dc)
-                        (Cast
+                        (IntegerBinOp
                             (IntegerBinOp
+                                (Var 5 __flat_idx)
+                                Sub
                                 (IntegerBinOp
-                                    (Var 5 __flat_idx)
-                                    Sub
                                     (IntegerBinOp
-                                        (IntegerBinOp
-                                            (Var 5 __flat_idx)
-                                            Div
-                                            (IntegerBinOp
-                                                (IntegerBinOp
-                                                    (Cast
-                                                        (Var 5 __loop_end_1)
-                                                        IntegerToInteger
-                                                        (Integer 8)
-                                                        ()
-                                                        ()
-                                                    )
-                                                    Sub
-                                                    (Cast
-                                                        (Var 5 __loop_start_1)
-                                                        IntegerToInteger
-                                                        (Integer 8)
-                                                        ()
-                                                        ()
-                                                    )
-                                                    (Integer 8)
-                                                    ()
-                                                )
-                                                Add
-                                                (IntegerConstant 1 (Integer 8) Decimal)
-                                                (Integer 8)
-                                                ()
-                                            )
-                                            (Integer 8)
-                                            ()
-                                        )
-                                        Mul
+                                        (Var 5 __flat_idx)
+                                        Div
                                         (IntegerBinOp
                                             (IntegerBinOp
-                                                (Cast
-                                                    (Var 5 __loop_end_1)
-                                                    IntegerToInteger
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                )
+                                                (Var 5 __loop_end_1)
                                                 Sub
-                                                (Cast
-                                                    (Var 5 __loop_start_1)
-                                                    IntegerToInteger
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                )
-                                                (Integer 8)
+                                                (Var 5 __loop_start_1)
+                                                (Integer 4)
                                                 ()
                                             )
                                             Add
-                                            (IntegerConstant 1 (Integer 8) Decimal)
-                                            (Integer 8)
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
                                             ()
                                         )
-                                        (Integer 8)
+                                        (Integer 4)
                                         ()
                                     )
-                                    (Integer 8)
+                                    Mul
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 5 __loop_end_1)
+                                            Sub
+                                            (Var 5 __loop_start_1)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
                                     ()
                                 )
-                                Add
-                                (Cast
-                                    (Var 5 __loop_start_1)
-                                    IntegerToInteger
-                                    (Integer 8)
-                                    ()
-                                    ()
-                                )
-                                (Integer 8)
+                                (Integer 4)
                                 ()
                             )
-                            IntegerToInteger
+                            Add
+                            (Var 5 __loop_start_1)
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
@@ -1071,30 +879,18 @@
                             Div
                             (IntegerBinOp
                                 (IntegerBinOp
-                                    (Cast
-                                        (Var 5 __loop_end_1)
-                                        IntegerToInteger
-                                        (Integer 8)
-                                        ()
-                                        ()
-                                    )
+                                    (Var 5 __loop_end_1)
                                     Sub
-                                    (Cast
-                                        (Var 5 __loop_start_1)
-                                        IntegerToInteger
-                                        (Integer 8)
-                                        ()
-                                        ()
-                                    )
-                                    (Integer 8)
+                                    (Var 5 __loop_start_1)
+                                    (Integer 4)
                                     ()
                                 )
                                 Add
-                                (IntegerConstant 1 (Integer 8) Decimal)
-                                (Integer 8)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
                                 ()
                             )
-                            (Integer 8)
+                            (Integer 4)
                             ()
                         )
                         ()
@@ -1105,23 +901,11 @@
                     )
                     (Assignment
                         (Var 5 k__dc)
-                        (Cast
-                            (IntegerBinOp
-                                (Var 5 __flat_idx)
-                                Add
-                                (Cast
-                                    (Var 5 __loop_start_2)
-                                    IntegerToInteger
-                                    (Integer 8)
-                                    ()
-                                    ()
-                                )
-                                (Integer 8)
-                                ()
-                            )
-                            IntegerToInteger
+                        (IntegerBinOp
+                            (Var 5 __flat_idx)
+                            Add
+                            (Var 5 __loop_start_2)
                             (Integer 4)
-                            ()
                             ()
                         )
                         ()
@@ -1170,8 +954,8 @@
                                 (IntegerBinOp
                                     (Var 5 __gpu_slot)
                                     Add
-                                    (IntegerConstant 1 (Integer 8) Decimal)
-                                    (Integer 8)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
                                     ()
                                 )
                                 ())]
@@ -1187,8 +971,8 @@
                                     (IntegerBinOp
                                         (Var 5 __gpu_slot)
                                         Add
-                                        (IntegerConstant 1 (Integer 8) Decimal)
-                                        (Integer 8)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
                                         ()
                                     )
                                     ())]

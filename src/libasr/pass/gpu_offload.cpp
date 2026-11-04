@@ -2295,8 +2295,19 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     ASR::ttype_t *loop_int_type = ASRUtils::expr_type(work.head(0).m_v);
+    // The iterations are numbered in a type at least as wide as every loop
+    // index, so an integer(8) index keeps 64-bit index arithmetic in a nest
+    // that mixes it with integer(4) ones.
+    ASR::ttype_t *widest_index_type = loop_int_type;
+    for (size_t d = 1; d < n_dims; d++) {
+        ASR::ttype_t *type = ASRUtils::expr_type(work.head(d).m_v);
+        if (ASRUtils::extract_kind_from_ttype_t(type)
+                > ASRUtils::extract_kind_from_ttype_t(widest_index_type)) {
+            widest_index_type = type;
+        }
+    }
     ASR::ttype_t *index_type = gpu_iteration_number_type(al, loc,
-        loop_int_type, device_caps);
+        widest_index_type, device_caps);
     // Unlike the launch's widen (gpu_offload_launch.cpp), this does not copy
     // `value`: it widens kernel-scope expressions built for the kernel.
     auto widen = [&](ASR::expr_t *value) {
@@ -2466,7 +2477,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     // flat_idx = block_idx * block_size + thread_idx, in the type that
     // numbers the iterations: the product of the device's (unsigned 32-bit)
-    // built-ins would wrap.
+    // built-ins would wrap. Numbered in integer(4) (gpu_iteration_number_type)
+    // it fits: one launch starts at most the chunk limit's threads, at most
+    // huge(0), rounded up to whole blocks of a power of two, so its largest
+    // thread number is at most huge(0) (gpu_offload_launch.cpp). A launch
+    // that runs an iteration on several lanes starts at most huge(0) threads
+    // as well (pass_gpu_vector_lanes).
     ASR::expr_t *flat_idx = index_binop(index_binop(widen(block_idx),
         ASR::binopType::Mul, widen(block_sz)), ASR::binopType::Add,
         widen(thread_idx));

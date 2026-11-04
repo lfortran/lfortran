@@ -134,7 +134,11 @@ it has more iterations than the chunk limit (`huge(0)`, which the hidden,
 test-only option `--gpu-chunk-limit` lowers): one per chunk, a box of the
 iteration space of at most that many iterations. The iterations of a `do
 concurrent` may run in any order, so the chunks run one after another, and
-the kernel numbers the iterations of each chunk from the bounds of its box.
+the kernel numbers the iterations of each chunk from the bounds of its box,
+from zero. A chunk has at most `huge(0)` iterations, so a kernel whose loop
+indices are all `integer(4)` numbers them in `integer(4)`, while the launch
+counts the iterations of the whole nest in `integer(8)`; an `integer(8)`
+index keeps `integer(8)` numbering.
 A chunk covers every dimension not in `chunk_dimensions` whole; their
 extents are constants, and their product is `chunk_fixed_iterations`, at
 most the limit. A bound whose value is known at compile time (a literal, a
