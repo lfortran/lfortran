@@ -34,6 +34,7 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
         if (ASR::is_a<ASR::Variable_t>(*sym)) {
             const ASR::Variable_t &r = *ASR::down_cast<ASR::Variable_t>(sym);
             ok = result_scalar(r, proc_name, diag) && ok;
+            ok = result_not_allocatable(r, proc_name, diag) && ok;
         }
     }
     if (!ok && !compiler_options.continue_compilation) {
@@ -118,6 +119,17 @@ bool ElementalChecks::result_scalar(const ASR::Variable_t &r,
     if (!ASRUtils::is_array(r.m_type)) return true;
     diag.add(diag::Diagnostic(
         "result of elemental function '" + proc_name + "' must be scalar",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {r.base.base.loc})}));
+    return false;
+}
+
+bool ElementalChecks::result_not_allocatable(const ASR::Variable_t &r,
+        const std::string &proc_name, diag::Diagnostics &diag) {
+    if (!ASRUtils::is_allocatable(r.m_type)) return true;
+    diag.add(diag::Diagnostic(
+        "result of elemental function '" + proc_name +
+        "' cannot be allocatable",
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("", {r.base.base.loc})}));
     return false;
