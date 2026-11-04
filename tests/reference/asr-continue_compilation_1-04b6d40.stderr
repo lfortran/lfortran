@@ -5123,6 +5123,18 @@ semantic error: the shift argument of 'shifta' intrinsic must be non-negative an
 4124 |         print *, shifta(n, [1, 40])  ! {Error} shift argument of shifta out of range
      |                            ^^^^^^^ shift value is 40, but bit size of integer is 32
 
+semantic error: generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+    --> tests/errors/continue_compilation_1.f90:4176:9
+     |
+4176 |         call x%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+     |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_default_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+    --> tests/errors/continue_compilation_1.f90:4177:9
+     |
+4177 |         call y%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_default_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+     |         ^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

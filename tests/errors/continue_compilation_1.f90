@@ -4158,3 +4158,34 @@ contains
         k = y%cc1_pb_f()
     end subroutine
 end module
+
+module cc1_private_generic_def
+    type :: cc1_pg_t
+    contains
+        procedure, nopass :: cc1_pg_s
+        generic, private :: cc1_pg_gen => cc1_pg_s
+    end type
+    type :: cc1_pg_default_t
+    contains
+        private
+        procedure, public, nopass :: cc1_pg_s
+        generic :: cc1_pg_gen => cc1_pg_s
+        generic, public :: cc1_pg_pub => cc1_pg_s
+    end type
+contains
+    subroutine cc1_pg_s()
+    end subroutine
+end module
+
+module cc1_private_generic_use
+    use cc1_private_generic_def
+contains
+    subroutine cc1_pg_use()
+        type(cc1_pg_t) :: x
+        type(cc1_pg_default_t) :: y
+        call x%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+        call y%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_default_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+        call y%cc1_pg_pub()
+        call x%cc1_pg_s()
+    end subroutine
+end module

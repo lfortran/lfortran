@@ -19487,9 +19487,19 @@ public:
     // module containing the definition of the type that declares it.
     void check_binding_accessible(ASR::symbol_t *binding, const Location &loc) {
         ASR::symbol_t *b = ASRUtils::symbol_get_past_external(binding);
-        if (b == nullptr || !ASR::is_a<ASR::StructMethodDeclaration_t>(*b)
-                || ASR::down_cast<ASR::StructMethodDeclaration_t>(b)->m_access
-                    != ASR::accessType::Private) {
+        if (b == nullptr) {
+            return;
+        }
+        ASR::accessType access = ASR::accessType::Public;
+        std::string what = "type-bound procedure";
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*b)) {
+            access = ASR::down_cast<ASR::StructMethodDeclaration_t>(b)->m_access;
+        } else if (ASR::is_a<ASR::GenericProcedure_t>(*b)
+                && ASRUtils::is_type_bound_generic(b)) {
+            access = ASR::down_cast<ASR::GenericProcedure_t>(b)->m_access;
+            what = "generic type-bound procedure";
+        }
+        if (access != ASR::accessType::Private) {
             return;
         }
         ASR::Module_t *mod = ASRUtils::get_sym_module(b);
@@ -19498,7 +19508,7 @@ public:
         }
         ASR::symbol_t *type_sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::symbol_parent_symtab(b)->asr_owner);
-        diag.add(Diagnostic("type-bound procedure '"
+        diag.add(Diagnostic(what + " '"
             + std::string(ASRUtils::symbol_name(b)) + "' of derived type '"
             + std::string(ASRUtils::symbol_name(type_sym))
             + "' is private and cannot be accessed outside module '"
