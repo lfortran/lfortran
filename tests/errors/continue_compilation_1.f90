@@ -4103,3 +4103,14 @@ contains
         cc1_duplicate_implicit_none_fn = 1
     end function
 end module
+
+module cc1_elemental_allocatable_dummy
+contains
+    elemental integer function cc1_ead_f(x)
+        integer, allocatable, intent(in) :: x  ! {Error} dummy argument 'x' of elemental procedure 'cc1_ead_f' cannot be allocatable
+        cc1_ead_f = 1
+    end function
+    elemental subroutine cc1_ead_s(y)
+        integer, allocatable, intent(inout) :: y  ! {Error} dummy argument 'y' of elemental procedure 'cc1_ead_s' cannot be allocatable
+    end subroutine
+end module
