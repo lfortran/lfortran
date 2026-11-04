@@ -7318,6 +7318,7 @@ RUN(NAME gpu_derived_component_18 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_19 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_derived_component_20 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_derived_component_21 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_unroll_runtime_start_01 LABELS gfortran llvm metal cuda)
 # No llvm label yet: the host code generator leaves a DO variable at its last
 # value instead of one step past it (#12294), which Step 3 of #16398 fixes.
 RUN(NAME gpu_do_loop_01 LABELS gfortran llvm metal cuda)
