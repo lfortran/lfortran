@@ -10,15 +10,22 @@ void PureChecks::check_declaration(const ASR::Function_t &f,
         const std::string &proc_name, diag::Diagnostics &diag,
         const CompilerOptions &compiler_options) {
     if (!ASRUtils::get_FunctionType(f)->m_pure) return;
+    bool is_function = f.m_return_var != nullptr;
+    bool ok = true;
     for (size_t i = 0; i < f.n_args; i++) {
         if (!ASR::is_a<ASR::Var_t>(*f.m_args[i])) continue;
         ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
         if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
         const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(sym);
-        if (!intent_out_not_polymorphic(v, proc_name, diag)
-                && !compiler_options.continue_compilation) {
-            throw SemanticAbort();
+        ok = intent_out_not_polymorphic(v, proc_name, diag) && ok;
+        if (is_function) {
+            ok = function_dummy_intent_in(f, v, diag) && ok;
+        } else {
+            ok = subroutine_dummy_intent_given(f, v, diag) && ok;
         }
+    }
+    if (!ok && !compiler_options.continue_compilation) {
+        throw SemanticAbort();
     }
 }
 
@@ -30,22 +37,6 @@ void PureChecks::check_definition(const ASR::Function_t &f,
     if (!body_has_no_side_effects(f, diag, implicit_interface_procedures)
             && !compiler_options.continue_compilation) {
         throw SemanticAbort();
-    }
-    for (size_t i = 0; i < f.n_args; i++) {
-        if (!ASR::is_a<ASR::Var_t>(*f.m_args[i])) continue;
-        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
-        if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
-        const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(sym);
-        // Pointer dummies and dummy procedures are exempt.
-        if (ASRUtils::is_pointer(v.m_type) || ASR::is_a<ASR::FunctionType_t>(
-                *ASRUtils::type_get_past_pointer(v.m_type))) {
-            continue;
-        }
-        bool ok = f.m_return_var ? function_dummy_intent_in(f, v, diag)
-            : subroutine_dummy_intent_given(f, v, diag);
-        if (!ok && !compiler_options.continue_compilation) {
-            throw SemanticAbort();
-        }
     }
     for (auto &item : f.m_symtab->get_scope()) {
         if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
@@ -76,6 +67,11 @@ bool PureChecks::body_has_no_side_effects(const ASR::Function_t &f,
 
 bool PureChecks::function_dummy_intent_in(const ASR::Function_t &f,
         const ASR::Variable_t &v, diag::Diagnostics &diag) {
+    // C1583 is about nonpointer dummy data objects only.
+    if (ASRUtils::is_pointer(v.m_type) || ASR::is_a<ASR::FunctionType_t>(
+            *ASRUtils::type_get_past_pointer(v.m_type))) {
+        return true;
+    }
     if (v.m_intent == ASR::intentType::In || v.m_value_attr) return true;
     // ElementalChecks::dummy_intent_given reports a missing intent.
     if (v.m_intent == ASR::intentType::Unspecified
@@ -93,6 +89,11 @@ bool PureChecks::function_dummy_intent_in(const ASR::Function_t &f,
 
 bool PureChecks::subroutine_dummy_intent_given(const ASR::Function_t &f,
         const ASR::Variable_t &v, diag::Diagnostics &diag) {
+    // C1585 is about nonpointer dummy data objects only.
+    if (ASRUtils::is_pointer(v.m_type) || ASR::is_a<ASR::FunctionType_t>(
+            *ASRUtils::type_get_past_pointer(v.m_type))) {
+        return true;
+    }
     // ElementalChecks::dummy_intent_given reports it for an elemental procedure.
     if (v.m_intent != ASR::intentType::Unspecified || v.m_value_attr
             || ASRUtils::get_FunctionType(f)->m_elemental) {
