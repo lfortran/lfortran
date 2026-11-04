@@ -27326,17 +27326,41 @@ public:
                             desc_type, tmp, 0);
                         llvm::Value* str_desc = llvm_utils->CreateLoad2(
                             elem_llvm_type->getPointerTo(), base_addr_gep);
-                        llvm::Value* data_gep = llvm_utils->create_gep2(
-                            elem_llvm_type, str_desc, 0);
-                        llvm::Value* raw_data = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            data_gep);
-                        builder->CreateStore(
-                            builder->CreateBitCast(raw_data,
-                                elem_llvm_type->getPointerTo()),
-                            base_addr_gep);
-                        llvm::Value* str_len = llvm_utils->get_string_length(
-                            ASRUtils::get_string_type(elem_asr_type), str_desc);
+                        ASR::String_t* str_type = ASRUtils::get_string_type(elem_asr_type);
+                        bool is_const_len = str_type->m_len &&
+                            ASRUtils::is_value_constant(str_type->m_len);
+                        llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+                        // A disassociated pointer (nullify, => null()) has no
+                        // string_descriptor: keep its null base_addr and,
+                        // unless the length is a constant, elem_len = 0.
+                        llvm::Value* str_len_ptr = nullptr;
+                        if (!is_const_len) {
+                            str_len_ptr = llvm_utils->CreateAlloca(i64_type,
+                                nullptr, "cfi_str_len");
+                            builder->CreateStore(
+                                llvm::ConstantInt::get(i64_type, 0), str_len_ptr);
+                        }
+                        llvm::Value* has_str_desc = builder->CreateICmpNE(str_desc,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(str_desc->getType())));
+                        llvm_utils->create_if_else(has_str_desc, [&]() {
+                            llvm::Value* data_gep = llvm_utils->create_gep2(
+                                elem_llvm_type, str_desc, 0);
+                            llvm::Value* raw_data = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                data_gep);
+                            builder->CreateStore(
+                                builder->CreateBitCast(raw_data,
+                                    elem_llvm_type->getPointerTo()),
+                                base_addr_gep);
+                            if (str_len_ptr) {
+                                builder->CreateStore(llvm_utils->get_string_length(
+                                    str_type, str_desc), str_len_ptr);
+                            }
+                        }, [](){});
+                        llvm::Value* str_len = str_len_ptr
+                            ? llvm_utils->CreateLoad2(i64_type, str_len_ptr)
+                            : llvm_utils->get_string_length(str_type, str_desc);
                         elem_size_val = builder->CreateMul(str_len, elem_size_val);
                     }
                     int n_dims = ASRUtils::extract_n_dims_from_ttype(actual_type);
