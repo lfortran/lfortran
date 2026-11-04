@@ -653,6 +653,9 @@ class DeviceLaunchExpandVisitor :
         // one is walked in the same order the device reads it back in
         // rather than declined: subscript d is
         // lbound_d + mod((index - 1) / (e_0 * ... * e_{d-1}), e_d).
+        // It is computed in integer(8), the kind the descriptor keeps the
+        // bounds in: a lower bound may be beyond huge(0), with or without
+        // --descriptor-index-64, and this runs only on the host.
         std::vector<ASR::expr_t*> element_subscripts(const Location &loc,
                 ASR::expr_t *arg, ASR::expr_t *index) {
             ASRUtils::ASRBuilder b(al, loc);
@@ -663,10 +666,10 @@ class DeviceLaunchExpandVisitor :
                 subscripts.push_back(index);
                 return subscripts;
             }
-            ASR::expr_t *flat = b.Sub(index, b.i32(1));
+            ASR::expr_t *flat = b.Sub(b.i2i_t(index, int64), b.i64(1));
             ASR::expr_t *stride = nullptr;
             for (int d = 0; d < rank; d++) {
-                ASR::expr_t *extent = b.ArraySize(arg, b.i32(d + 1), int32);
+                ASR::expr_t *extent = b.ArraySize(arg, b.i32(d + 1), int64);
                 ASR::expr_t *pos = stride == nullptr
                     ? flat : b.Div(flat, stride);
                 if (d + 1 < rank) {
@@ -674,7 +677,7 @@ class DeviceLaunchExpandVisitor :
                     // survive the passes that run after this one.
                     pos = b.Sub(pos, b.Mul(b.Div(pos, extent), extent));
                 }
-                subscripts.push_back(b.Add(b.GetLBound(arg, d + 1), pos));
+                subscripts.push_back(b.Add(b.GetLBound(arg, d + 1, 8), pos));
                 stride = stride == nullptr ? extent : b.Mul(stride, extent);
             }
             return subscripts;
