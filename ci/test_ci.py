@@ -1548,12 +1548,12 @@ class CaffeineTests(unittest.TestCase):
         calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
         return result, calls
 
-    def assert_capability_coverage(self, calls, default_images="2"):
+    def assert_capability_coverage(self, calls, default_images="2", cc="clang", cxx="clang++"):
         unit = [call for call in calls if call["key"] == "unit"]
         self.assertEqual(len(unit), 1)
         self.assertEqual(unit[0]["args"], ["test", "--verbose"])
         self.assertEqual(unit[0]["env"],
-                         dict(FC="lfortran", CC="clang", CXX="clang++", CAF_IMAGES="4"))
+                         dict(FC="lfortran", CC=cc, CXX=cxx, CAF_IMAGES="4"))
         install = next(call for call in calls if call["key"] == "install.sh")
         self.assertNotIn("--disable-fpm", install["args"])
         smoke = next(call for call in calls if call["command"] == "make")
@@ -1611,9 +1611,11 @@ class CaffeineTests(unittest.TestCase):
                 self.assertFalse((self.directory / "OpenCoarrays").exists())
 
     def test_macos_still_runs_unit_and_capability_tests_without_opencoarrays(self):
-        result, calls = self.run_caffeine("exhaustive", CI_OS="Darwin")
+        # The environment's CC and CXX (Xcode's Clang in pixi.toml) are kept.
+        cc, cxx = str(self.bin / "clang"), str(self.bin / "clang++")
+        result, calls = self.run_caffeine("exhaustive", CI_OS="Darwin", CC=cc, CXX=cxx)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assert_capability_coverage(calls)
+        self.assert_capability_coverage(calls, cc=cc, cxx=cxx)
         self.assertFalse({call["command"] for call in calls} &
                          {"mpifort", "cmake", "caf", "cafrun", "pixi"})
 
