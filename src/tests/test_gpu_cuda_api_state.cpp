@@ -257,10 +257,11 @@ static int failed_free()
 // The unified memory model (LFORTRAN_GPU_MEMORY=unified): a kernel uses a
 // range it writes, and a range it only reads that is larger than
 // UNIFIED_COPY_MAX_BYTES, in place; a smaller range it only reads is still
-// copied. A launch that reads host memory in place waits for the kernel,
-// since the host may change that memory as soon as the launch returns, and
-// discarding a range a pending launch writes in place waits for it, since
-// the host frees that memory. Nothing is ever copied back.
+// copied. No launch waits for its kernel: before the host changes a range a
+// launch reads in place, lfortran_gpu_wait waits for it, and returns at
+// once when no pending launch reads host memory in place. Discarding a
+// range a pending launch writes in place waits for it, since the host frees
+// that memory. Nothing is ever copied back.
 static int32_t unified_out[2];
 static int32_t unified_small[4];
 static std::vector<int32_t> unified_large(64 * 1024);
@@ -305,9 +306,14 @@ static int unified_memory_model()
         lfortran_gpu_set_scalar_arg(k, 3, &sequence, sizeof(sequence));
         lfortran_gpu_launch(ctx, k, grid, block);
         lfortran_gpu_release_kernel(k);
+        require(sync_launches.size() == syncs, "a launch does not wait");
+        lfortran_gpu_wait(ctx);
         require(sync_launches.size() == syncs + (sequence == 1 ? 1 : 0),
-            "only a launch that reads host memory in place waits");
-        // The host may change what the launch only reads right away.
+            "only a launch that reads host memory in place is waited for");
+        lfortran_gpu_wait(ctx);
+        require(sync_launches.size() == syncs + (sequence == 1 ? 1 : 0),
+            "a second wait has nothing to wait for");
+        // The host may now change what the launch only reads.
         unified_small[0] = 20;
         unified_large.back() = 200;
         if (sequence == 1) {

@@ -152,8 +152,9 @@ static inline int lfortran_gpu_discard_allowed(int idx, void *const *ptrs,
 // sees what the kernel wrote there, without copying anything, and the host
 // gets it back at the sync. So between a launch and the next sync the host
 // must not read or write a range a kernel may write, nor free it except
-// after lfortran_gpu_discard; a range the kernel only reads it may change
-// or free as soon as the launch returns. This is what the compiler's
+// after lfortran_gpu_discard; a range the kernel only reads it may read,
+// but not change or free before the next lfortran_gpu_wait, since a runtime
+// may hand the kernel the host memory itself. This is what the compiler's
 // `gpu_launch_sync` pass arranges. A range handed over again that overlaps
 // a kept one without being the same range makes the runtime sync first.
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
@@ -182,6 +183,10 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
 // into the host ranges they were handed. A kernel that failed ends the
 // program here.
 void lfortran_gpu_sync(lfortran_gpu_ctx* ctx);
+// Waits for every launch made so far that reads host memory in place,
+// without copying anything back: the host may then change or free what the
+// kernels only read. It returns at once when there is none.
+void lfortran_gpu_wait(lfortran_gpu_ctx* ctx);
 // The host is about to free the `size` bytes at `ptr`, and no longer needs
 // what a launch since the last sync wrote there: the runtime forgets the
 // range without copying anything back.

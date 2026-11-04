@@ -143,6 +143,7 @@
                   :chunk_fixed_iterations 0
                   :first_chunk_parameter nil
                 )
+                (GpuWait)
                 (GpuSync)
               ]
               :return_var nil
