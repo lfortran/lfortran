@@ -1730,6 +1730,18 @@ semantic error: duplicate implicit none statement
 4102 |         implicit none  ! {Error} duplicate implicit none statement
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: dummy argument 'x' of elemental procedure 'cc1_ead_f' cannot be allocatable
+    --> tests/errors/continue_compilation_1.f90:4110:45
+     |
+4110 |         integer, allocatable, intent(in) :: x  ! {Error} dummy argument 'x' of elemental procedure 'cc1_ead_f' cannot be allocatable
+     |                                             ^ 
+
+semantic error: dummy argument 'y' of elemental procedure 'cc1_ead_s' cannot be allocatable
+    --> tests/errors/continue_compilation_1.f90:4114:48
+     |
+4114 |         integer, allocatable, intent(inout) :: y  ! {Error} dummy argument 'y' of elemental procedure 'cc1_ead_s' cannot be allocatable
+     |                                                ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
