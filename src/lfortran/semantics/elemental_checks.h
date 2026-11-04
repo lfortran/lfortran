@@ -21,6 +21,10 @@ private:
     // C15100
     static bool dummy_not_allocatable(const ASR::Variable_t &v,
         const std::string &proc_name, diag::Diagnostics &diag);
+
+    // C15100
+    static bool dummy_scalar(const ASR::Variable_t &v,
+        const std::string &proc_name, diag::Diagnostics &diag);
 };
 
 } // namespace LCompilers::LFortran

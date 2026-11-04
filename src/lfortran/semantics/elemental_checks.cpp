@@ -15,6 +15,7 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
         ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
         if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
         const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(sym);
+        ok = dummy_scalar(v, proc_name, diag) && ok;
         ok = dummy_not_allocatable(v, proc_name, diag) && ok;
     }
     if (!ok && !compiler_options.continue_compilation) {
@@ -28,6 +29,17 @@ bool ElementalChecks::dummy_not_allocatable(const ASR::Variable_t &v,
     diag.add(diag::Diagnostic(
         "dummy argument '" + std::string(v.m_name) +
         "' of elemental procedure '" + proc_name + "' cannot be allocatable",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {v.base.base.loc})}));
+    return false;
+}
+
+bool ElementalChecks::dummy_scalar(const ASR::Variable_t &v,
+        const std::string &proc_name, diag::Diagnostics &diag) {
+    if (!ASRUtils::is_array(v.m_type)) return true;
+    diag.add(diag::Diagnostic(
+        "dummy argument '" + std::string(v.m_name) +
+        "' of elemental procedure '" + proc_name + "' must be scalar",
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("", {v.base.base.loc})}));
     return false;
