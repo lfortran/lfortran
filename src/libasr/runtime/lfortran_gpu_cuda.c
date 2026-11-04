@@ -260,18 +260,13 @@ static resident* entry_for(void *host, size_t size) {
 }
 
 // In the unified memory model: the entry `e` uses its host range in place.
-// The driver is told once per range that the device uses it.
+// No advice is given to the driver: on an MI300A,
+// hipMemAdvise(SetPreferredLocation) made kernels that use host memory in
+// place erratic, from full speed in one run to 1-3 GB/s in the next.
 static void* use_in_place(resident *e) {
-    if (!e->in_place || e->capacity != e->size) {
-#ifdef LFORTRAN_GPU_HIP
-        int device = 0;
-        check(cudaGetDevice(&device), "cudaGetDevice");
-        lfortran_gpu_hip_advise_device_use(e->host, e->size, device);
-#endif
-        e->device = e->host;
-        e->capacity = e->size;
-        e->in_place = 1;
-    }
+    e->device = e->host;
+    e->capacity = e->size;
+    e->in_place = 1;
     return e->device;
 }
 

@@ -835,10 +835,12 @@ runtime does with an entry changes:
 * `lfortran_gpu_discard` of a range that a pending launch writes in place
   waits for the launch, since the host is about to free memory the kernel
   uses.
-* On AMD the runtime gives every range it uses in place, once,
-  `hipMemAdvise(hipMemAdviseSetPreferredLocation)` for the GPU: an MI300A
-  kernel reads memory the host allocated at about 127 GB/s without it and at
-  about 3.4 TB/s with it.
+* The runtime gives the driver no advice about a range it uses in place. On
+  an MI300A, `hipMemAdvise(hipMemAdviseSetPreferredLocation)` for the GPU
+  made such kernels erratic: a STREAM triad ran at 2.7 TB/s in one run and
+  at 3 GB/s in the next, and a matrix-vector product at 1 GB/s in most runs.
+  Without it the triad runs at 3.2 TB/s and the product at 330 GB/s in every
+  run.
 
 The runtime selects the model when it starts. `LFORTRAN_GPU_MEMORY=copy` or
 `unified` selects one; `auto`, the default, selects the unified model on a
