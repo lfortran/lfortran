@@ -2333,8 +2333,20 @@ component of a type of another scope. A section with a vector subscript is
 diagnosed as not implemented; one that is the actual of an `intent(inout)`
 dummy is not definable, as in any call.
 
+A scalar runtime trait object, concrete value or view can be assigned to an
+allocated owner whose elements have its dynamic type, as a further report does
+with `arr = MyType()` after `allocate(MyType :: arr(1))` (F2018 10.2.1.3): the
+array keeps its bounds and each element is assigned an independent copy of the
+value, made once before the elements are assigned, so an element of the array
+itself can be the value. A value of another dynamic type, or an unallocated
+array, would require the array to be allocated with the shape of the scalar,
+which has none, and stops the program with an error.
+`traits_runtime_array_assign_01` assigns to local, component and rank-two
+owners, also with `--detect-leaks`.
+
 Trait-array module variables and pointers, a structure constructor value for a
-trait-array component, MOLD allocation, assignment and MOVE_ALLOC of owners,
+trait-array component, MOLD allocation, assignment of an array value to and
+MOVE_ALLOC of owners,
 explicit-shape and assumed-size trait arrays, polymorphic or
 vector-subscripted actuals, forwarding to a dummy of another contract and
 trait arrays of generic messages are diagnosed as not implemented.

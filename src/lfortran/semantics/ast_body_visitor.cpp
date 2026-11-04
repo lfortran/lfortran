@@ -8191,6 +8191,24 @@ public:
                 }
             }
         }
+        if (ASRUtils::is_trait_array_owner_designator(target)) {
+            // F2018 10.2.1.3: a scalar is assigned to each element of an
+            // allocated array of its dynamic type.
+            if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                trait_call_error("assignment of an array to a runtime trait array is "
+                    "not implemented yet", value->base.loc);
+            }
+            if (!ASRUtils::trait_owner_is_definable(target)) {
+                trait_call_error("cannot assign to a nondefinable runtime trait array",
+                    target->base.loc);
+            }
+            auto *witness = prepare_runtime_trait_value(value, ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target))));
+            tmp = ASR::make_TraitAssignment_t(al, x.base.base.loc, target, value, witness);
+            current_function_deterministic = false;
+            current_function_side_effect_free = false;
+            return;
+        }
         if (ASR::is_a<ASR::TraitObjectType_t>(
                 *ASRUtils::extract_type(ASRUtils::expr_type(target)))) {
             if (!ASRUtils::is_allocatable(ASRUtils::expr_type(target)) ||

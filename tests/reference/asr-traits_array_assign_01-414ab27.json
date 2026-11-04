@@ -1,0 +1,13 @@
+{
+    "basename": "asr-traits_array_assign_01-414ab27",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/traits_array_assign_01.f90",
+    "infile_hash": "43c608f0cde6a325df638ded5684ce6c7c93ddd0259b360410822256",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-traits_array_assign_01-414ab27.stderr",
+    "stderr_hash": "817527fe69baa49ceae38a40f4d3eb15388375c8586c817d607ebc39",
+    "returncode": 1
+}

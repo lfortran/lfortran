@@ -11558,6 +11558,9 @@ inline bool is_trait_array_owner_designator(ASR::expr_t *value) {
 }
 bool association_has_target(ASR::expr_t *value);
 ASR::Variable_t *trait_owner_variable(ASR::expr_t *value);
+// The declared variable or component of the allocatable runtime trait array
+// that `value` designates, or null.
+ASR::Variable_t *trait_array_owner_variable(ASR::expr_t *value);
 bool trait_owner_is_definable(ASR::expr_t *value);
 bool trait_owner_same_slot(ASR::expr_t *left, ASR::expr_t *right);
 // Whether the designator `expr` stands for a compile-time value rather than

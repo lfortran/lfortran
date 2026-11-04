@@ -1428,9 +1428,16 @@ specification action, that is, what the paper should say.
   of a trait array is a trait array of the same elements, as a section of a
   Fortran CLASS array is: it is passed in place, never copied, so a defining
   callee updates the original elements.
+- **Extension (2026-11-04).** A further report assigns `arr = MyType()` to
+  an owner allocated with `allocate(MyType :: arr(1))`. Intrinsic assignment
+  of a scalar to an allocated owner of the scalar's dynamic type assigns it
+  to each element and keeps the bounds (F2018 10.2.1.3). Another dynamic
+  type would deallocate the owner, which then needs the shape of the scalar,
+  so it is a run-time error, as is an unallocated owner.
 - **Implementation status.** Implemented, also through runtime views and
   under separate compilation. Structure constructor values of trait-array
-  components, trait-array module variables, pointers, MOLD allocation, assignment and MOVE_ALLOC of owners,
+  components, trait-array module variables, pointers, MOLD allocation,
+  assignment of an array value to and MOVE_ALLOC of owners,
   explicit-shape and assumed-size trait arrays, sections of trait arrays with
   a vector subscript, polymorphic or vector-subscripted actuals, forwarding
   to a dummy of another contract, trait arrays of generic messages and

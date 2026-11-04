@@ -7479,8 +7479,9 @@ bool association_is_definable(ASR::expr_t *value) {
         (variable->m_intent != ASR::intentType::In || is_pointer(variable->m_type));
 }
 
-ASR::Variable_t *trait_owner_variable(ASR::expr_t *value) {
-    if (!value || !is_trait_owner(typed_expr_type(value))) return nullptr;
+// The declared variable or component that the designator `value` of an
+// owning slot names, or null for any other expression.
+static ASR::Variable_t *owner_designator_variable(ASR::expr_t *value) {
     ASR::symbol_t *symbol = nullptr;
     if (ASR::is_a<ASR::Var_t>(*value)) {
         symbol = ASR::down_cast<ASR::Var_t>(value)->m_v;
@@ -7510,6 +7511,16 @@ ASR::Variable_t *trait_owner_variable(ASR::expr_t *value) {
         symbol = member->m_m;
     }
     return symbol ? get_variable_from_symbol(symbol_get_past_external(symbol)) : nullptr;
+}
+
+ASR::Variable_t *trait_owner_variable(ASR::expr_t *value) {
+    if (!value || !is_trait_owner(typed_expr_type(value))) return nullptr;
+    return owner_designator_variable(value);
+}
+
+ASR::Variable_t *trait_array_owner_variable(ASR::expr_t *value) {
+    if (!value || !is_trait_array_owner(typed_expr_type(value))) return nullptr;
+    return owner_designator_variable(value);
 }
 
 static bool contains_trait_owner_impl(const ASR::ttype_t *type,
@@ -7560,6 +7571,7 @@ bool has_trait_component_cleanup(const SymbolTable *scope) {
 
 bool trait_owner_is_definable(ASR::expr_t *value) {
     auto *variable = trait_owner_variable(value);
+    if (!variable) variable = trait_array_owner_variable(value);
     if (!variable || variable->m_intent == ASR::intentType::In ||
             variable->m_storage == ASR::storage_typeType::Parameter) return false;
     if (ASR::is_a<ASR::StructInstanceMember_t>(*value)) {

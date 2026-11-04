@@ -29839,10 +29839,63 @@ public:
     }
 
     void visit_TraitAssignment(const ASR::TraitAssignment_t &x) {
+        if (ASRUtils::is_trait_array_owner_designator(x.m_target)) {
+            assign_trait_array_scalar(x);
+            return;
+        }
         auto *snapshot = trait_snapshot(x.m_value, true, x.m_witness);
         auto *slot = trait_owner_slot(x.m_target);
         llvm_utils->assign_trait_value(slot, snapshot,
             llvm_utils->getTraitType(ASRUtils::expr_type(x.m_target)));
+    }
+
+    // F2018 10.2.1.3: the allocated array keeps its shape and dynamic type
+    // when a scalar of that type is assigned to each of its elements. A
+    // scalar of another type, or an unallocated array, would require the
+    // array to be allocated with the shape of the scalar, which has none.
+    void assign_trait_array_scalar(const ASR::TraitAssignment_t &x) {
+        auto *snapshot = trait_snapshot(x.m_value, true, x.m_witness);
+        ASR::ttype_t *type = ASRUtils::expr_type(x.m_target);
+        llvm::Type *array_type = llvm_utils->get_type_from_ttype_t_util(x.m_target,
+            ASRUtils::type_get_past_allocatable(type), module.get());
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 0;
+        visit_expr(*x.m_target);
+        ptr_loads = saved_loads;
+        llvm::Value *descriptor = llvm_utils->CreateLoad2(array_type->getPointerTo(), tmp);
+        llvm::Value *allocated = llvm_utils->CreateAlloca(*builder,
+            llvm::Type::getInt1Ty(context));
+        builder->CreateStore(llvm::ConstantInt::getFalse(context), allocated);
+        llvm_utils->create_if_else(builder->CreateIsNotNull(descriptor), [&]() {
+            builder->CreateStore(arr_descr->get_is_allocated_flag(descriptor, x.m_target),
+                allocated);
+        }, [](){});
+        llvm_utils->trait_error_if(builder->CreateNot(llvm_utils->CreateLoad2(
+                llvm::Type::getInt1Ty(context), allocated)),
+            "cannot assign a scalar to an unallocated runtime trait array");
+        llvm::Value *header = llvm_utils->create_gep2(array_type, descriptor, 9);
+        llvm_utils->trait_error_if(builder->CreateICmpNE(llvm_utils->trait_field(header, 0),
+                llvm_utils->trait_field(snapshot, 0)),
+            "cannot assign a scalar of another dynamic type to a runtime trait array");
+        auto *witness = llvm_utils->trait_field(snapshot, 2);
+        auto *vptr = llvm_utils->trait_field(snapshot, 0);
+        auto *source = llvm_utils->trait_field(snapshot, 1);
+        auto *i1 = llvm::Type::getInt1Ty(context);
+        auto *assign = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+            {llvm_utils->i8_ptr, llvm_utils->i8_ptr, i1}, false);
+        llvm_utils->for_trait_array_elements(array_type, descriptor,
+                ASRUtils::extract_n_dims_from_ttype(type),
+                [&](llvm::Value *element, llvm::Value *) {
+            llvm_utils->trait_lifecycle_call(witness, vptr,
+                LLVMUtils::TraitLifecycleEntry::Assign, assign,
+                {element, source, llvm::ConstantInt::get(i1, true)});
+        });
+        auto *release = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+            {llvm_utils->i8_ptr}, false);
+        llvm_utils->trait_lifecycle_call(witness, vptr,
+            LLVMUtils::TraitLifecycleEntry::Discard, release, {source});
+        llvm_utils->lfortran_free(source);
+        llvm_utils->lfortran_free(snapshot);
     }
 
     // Move the allocation of the owner `source` into `target`, leaving

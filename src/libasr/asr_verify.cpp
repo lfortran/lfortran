@@ -4315,6 +4315,15 @@ public:
     }
 
     void visit_TraitAssignment(const TraitAssignment_t &x) {
+        if (ASRUtils::is_trait_array_owner_designator(x.m_target)) {
+            require_id(!check_external || ASRUtils::trait_owner_is_definable(x.m_target),
+                "asr.verify.trait_owner.definable",
+                "An owning operation cannot define an intent(in) allocation slot");
+            visit_expr(*x.m_target);
+            verify_trait_copy_source(x.m_value, ASRUtils::extract_type(
+                typed_expr_type(x.m_target)), x.m_witness, x.base.base.loc);
+            return;
+        }
         auto *type = verify_trait_owner(x.m_target, x.base.base.loc);
         verify_trait_copy_source(x.m_value, type, x.m_witness, x.base.base.loc);
     }
