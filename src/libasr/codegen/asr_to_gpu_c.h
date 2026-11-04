@@ -255,6 +255,19 @@ public:
         return out;
     }
 
+    std::string workspace_pointer_str(const GpuVlaWorkspace &ws) {
+        std::string slice = workspace_slice_str(ws);
+        std::string active = "((" + slice + ") > 0";
+        if (ws.allocation_parameter) {
+            active += " && (";
+            if (!ws.allocation_on_true) active += "!";
+            active += ASRUtils::symbol_name(ws.allocation_parameter);
+            active += ")";
+        }
+        return active + ") ? (" + gpu_workspace_buffer_name(ws.buffer_index) +
+            " + " + dialect.global_thread_id() + " * (" + slice + ")) : nullptr";
+    }
+
     // The element count of one thread's slice of a workspace, which the
     // host sized the buffer by. It is the array's own element count unless
     // an extent changes from thread to thread: every slice then has room
@@ -1037,9 +1050,7 @@ public:
                     std::string extent = workspace_extent_str(*vla_it);
                     src << get_indent() << global_prefix() << elem_type
                         << "* " << vname << " = "
-                        << gpu_workspace_buffer_name(vla_it->buffer_index)
-                        << " + " << dialect.global_thread_id() << " * ("
-                        << workspace_slice_str(*vla_it) << ");\n";
+                        << workspace_pointer_str(*vla_it) << ";\n";
                     local_alloc_arrays.insert(&var->base);
                     int64_t total_const_size = 1;
                     bool all_const = true;
@@ -4991,19 +5002,10 @@ public:
                             // Emit a device pointer into the per-thread slice
                             std::string extent =
                                 workspace_extent_str(*vla_it);
-                            std::string slice = workspace_slice_str(*vla_it);
                             src << get_indent() << global_prefix()
                                 << elem_type_str << "* " << vname
-                                << " = " << gpu_workspace_buffer_name(
-                                    vla_it->buffer_index)
-                                << " + " << dialect.global_thread_id()
-                                << " * ";
-                            if (vla_it->dims.size() == 1) {
-                                src << slice;
-                            } else {
-                                src << "(" << slice << ")";
-                            }
-                            src << ";\n";
+                                << " = " << workspace_pointer_str(*vla_it)
+                                << ";\n";
                             local_alloc_arrays.insert(&v->base);
                             // Record the size expression for alloc-assign
                             // and copy-loop codegen

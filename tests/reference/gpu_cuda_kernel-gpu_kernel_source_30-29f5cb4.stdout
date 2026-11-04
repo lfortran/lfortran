@@ -147,7 +147,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_6(
     int __lb_s_0 = __scalar_args.__lb_s_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
     long __flat_idx;
-    float* __libasr_created__array_section_ = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent);
+    float* __libasr_created__array_section_ = ((__workspace_extent) > 0) ? (__workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
     float* __libasr_created__array_section_pointer_;
     int __libasr_index_0_;
     int __libasr_index_0_1;

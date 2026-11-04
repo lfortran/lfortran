@@ -105,9 +105,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
     p__dc = ((int)(__flat_idx + ((long)1)));
     {
-        float* __gpu_call_result = __workspace_12 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
-        float* __libasr_created__function_call_1_tensor_t_values = __workspace_13 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent1;
-        float* __libasr_created__subroutine_from_function_ = __workspace_14 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent2;
+        float* __gpu_call_result = ((__workspace_extent) > 0) ? (__workspace_12 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
+        float* __libasr_created__function_call_1_tensor_t_values = ((__workspace_extent1) > 0) ? (__workspace_13 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent1)) : nullptr;
+        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent2) > 0) ? (__workspace_14 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent2)) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
         values_gpu_42(x[((int)(p__dc) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p__dc) - (1))], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
@@ -123,9 +123,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         }
     }
     {
-        float* __gpu_call_result = __workspace_15 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent3;
-        float* __libasr_created__function_call_1_tensor_t_values = __workspace_16 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent4;
-        float* __libasr_created__subroutine_from_function_ = __workspace_17 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent5;
+        float* __gpu_call_result = ((__workspace_extent3) > 0) ? (__workspace_15 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent3)) : nullptr;
+        float* __libasr_created__function_call_1_tensor_t_values = ((__workspace_extent4) > 0) ? (__workspace_16 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent4)) : nullptr;
+        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent5) > 0) ? (__workspace_17 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent5)) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
         values_gpu_42(x[((int)(p__dc) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p__dc) - (1))], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
@@ -141,11 +141,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         }
     }
     {
-        float* __gpu_call_result = __workspace_18 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent6;
+        float* __gpu_call_result = ((__workspace_extent6) > 0) ? (__workspace_18 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent6)) : nullptr;
         int __gpu_sum_k;
         float __gpu_sum_res;
-        float* __libasr_created__function_call_1_tensor_t_values = __workspace_19 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent7;
-        float* __libasr_created__subroutine_from_function_ = __workspace_20 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent8;
+        float* __libasr_created__function_call_1_tensor_t_values = ((__workspace_extent7) > 0) ? (__workspace_19 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent7)) : nullptr;
+        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent8) > 0) ? (__workspace_20 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent8)) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
         values_gpu_42(x[((int)(p__dc) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p__dc) - (1))], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
@@ -164,11 +164,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         c[((int)(p__dc) - (1))] = __gpu_sum_res;
     }
     {
-        float* __gpu_call_result = __workspace_21 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent9;
+        float* __gpu_call_result = ((__workspace_extent9) > 0) ? (__workspace_21 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent9)) : nullptr;
         float* __libasr_created__function_call_twice;
-        float* __libasr_created__function_call_twice1 = __workspace_22 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent10;
+        float* __libasr_created__function_call_twice1 = ((__workspace_extent10) > 0) ? (__workspace_22 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent10)) : nullptr;
         int __libasr_created__result_metadata_;
-        float* __libasr_created__subroutine_from_function_ = __workspace_23 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent11;
+        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent11) > 0) ? (__workspace_23 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent11)) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
         int __libasr_index_0_2;

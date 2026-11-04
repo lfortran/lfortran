@@ -378,7 +378,7 @@ gpu_argument_kind = GpuArray | GpuStruct | GpuClass | GpuMemberData | GpuMemberO
 -- this buffer where either of them is written (gpu_kernel_abi.cpp).
 gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension, bool written, bool noalias)
 gpu_workspace_dimension = (expr extent, symbol? parameter)
-gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size)
+gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size, expr? allocation_if, symbol? allocation_parameter, bool allocation_on_true)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 -- A dimension of the iteration space of a GpuKernelLaunch that the launch
 -- may split into chunks, each run as a launch of its kernel over a box of

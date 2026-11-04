@@ -33,7 +33,7 @@ kernel void __lfortran_gpu_kernel_0(
             int __gpu_loop_group_gpu;
             int __gpu_sum_k_gpu;
             int __gpu_sum_res_gpu;
-            device int* work_gpu = __workspace_2 + __thread_id * __workspace_extent_gpu;
+            device int* work_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + __thread_id * (__workspace_extent_gpu)) : nullptr;
             for (__gpu_bc_i_gpu = (1 + (((int)__gpu_lane) * 1)); __gpu_bc_i_gpu <= max(0, n_gpu); __gpu_bc_i_gpu += (1 * ((int)__gpu_lanes_gpu))) {
                 work_gpu[((int)(__gpu_bc_i_gpu) - (1))] = 2;
             }

@@ -35,7 +35,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __workspace_extent = __scalar_args.__workspace_extent;
     long __flat_idx;
     int i__dc;
-    float* tmp = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent);
+    float* tmp = ((__workspace_extent) > 0) ? (__workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
     if ((((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x)) >= (((((long)__loop_end_0) >= ((long)1))) ? (((((long)__loop_end_0) - ((long)1)) + ((long)1))) : (((long)0))))) {
         return;
     }

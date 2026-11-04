@@ -14,7 +14,8 @@ gpu_kernel_argument = (symbol variable, symbol? member, ttype type,
     gpu_argument_kind kind, int argument_index, int dimension, bool written,
     bool noalias)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims,
-    int buffer_index, int element_size)
+    int buffer_index, int element_size, expr? allocation_if,
+    symbol? allocation_parameter, bool allocation_on_true)
 gpu_workspace_dimension = (expr extent, symbol? parameter)
 ```
 
@@ -50,14 +51,26 @@ kernel arguments. A constant has no `parameter`; a runtime extent has a
 distinct appended scalar parameter. The host evaluates the expression once
 and both allocation and device indexing consume that value.
 
+When present, `allocation_if` is a proven uniform, host-evaluable predicate
+captured once at each launch in `allocation_parameter`. `allocation_on_true`
+gives the polarity that requires storage. Inactive workspaces request zero
+bytes without changing array bounds or suppressing unrelated kernel work;
+inactive or empty slices do not form pointers into absent storage. Without
+an allocation predicate, the workspace is allocated unconditionally.
+
+Nested concurrent loops retain enclosing data-use guards and contribute their
+own branches to the same dominance proof. Loop controls are also storage uses;
+iteration-dependent predicates, locality/reduction domains, escaping storage
+and uses outside the guard conservatively retain unconditional allocation.
+
 `source_argument_count` separates original arguments from these appended
 parameters. `device_functions` records the device call graph in callee-first
 order; direct self-recursion is permitted.
 
 `lanes`, when present, is the kernel's last parameter, an integer scalar
-after the extent parameters: each iteration of the kernel runs on that many
-consecutive threads of one SIMD-group, its lanes, which share the loops
-inside it ([GpuLaneIndex](../expression_nodes/GpuLaneIndex.md),
+after the extent and allocation parameters: each iteration of the kernel runs
+on that many consecutive threads of one SIMD-group, its lanes, which share
+the loops inside it ([GpuLaneIndex](../expression_nodes/GpuLaneIndex.md),
 [GpuLaneBarrier](../statement_nodes/GpuLaneBarrier.md),
 [GpuLaneBroadcast](../expression_nodes/GpuLaneBroadcast.md)). The thread
 index the kernel reads then numbers its iterations, the host starts

@@ -293,6 +293,33 @@ void gpu_collect_address_taken(ASR::TranslationUnit_t &unit,
 // or asynchronous one. Named constants never change.
 bool gpu_may_be_aliased(ASR::symbol_t *s,
     const std::set<ASR::symbol_t*> &address_taken);
+
+struct GpuWorkspaceGuardSite {
+    ASR::If_t *branch;
+    SymbolTable *scope;
+    bool negated;
+};
+
+struct GpuWorkspaceGuard {
+    ASR::If_t *branch;
+    bool on_true;
+    SymbolTable *scope;
+    std::vector<SymbolTable*> use_scopes;
+    std::vector<GpuWorkspaceGuardSite> sites;
+};
+
+ASR::expr_t *gpu_workspace_condition(ASR::expr_t *test, bool &negated);
+bool gpu_same_workspace_condition(ASR::expr_t *left, ASR::expr_t *right);
+
+// Typed uniform predicate facts common to every data use. Inquiries of a simple
+// array designator do not access data; address transport and unknown uses fence it.
+std::vector<GpuWorkspaceGuard> gpu_workspace_data_guards(
+    const ASR::Function_t &kernel, ASR::symbol_t *workspace);
+
+// Total, side-effect-free expressions of ordinary scalar arguments only.
+bool gpu_uniform_workspace_condition(ASR::expr_t *condition,
+    const std::set<ASR::symbol_t*> &arguments, const SymbolTable *scope,
+    const std::set<ASR::symbol_t*> &address_taken = {});
 // Every variable whose value an expression reads: as gpu_collect_symbols,
 // but without the arrays of which it takes only bounds or the size
 // (`size(x)`, `ubound(x%a, 1)`), which writes to their elements do not

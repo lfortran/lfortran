@@ -5,6 +5,9 @@
 #include <libasr/utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/pass/gpu_loop_utils.h>
+#include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_offload_rewrite.h>
 
 #include <algorithm>
 #include <set>
@@ -4023,6 +4026,22 @@ public:
                 ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
         }
         std::set<ASR::symbol_t*> workspaces, extent_parameters;
+        std::map<ASR::symbol_t*, ASR::expr_t*> allocation_parameters;
+        std::set<ASR::symbol_t*> address_taken;
+        bool guarded_workspace = false;
+        for (size_t i = 0; i < layout.n_workspaces; i++) {
+            guarded_workspace |= layout.m_workspaces[i].m_allocation_if != nullptr;
+        }
+        if (guarded_workspace) {
+            SymbolTable *root = kernel.m_symtab;
+            while (root->parent) root = root->parent;
+            require_id(ASRUtils::is_tu_scope(root),
+                "asr.verify.gpu_layout.allocation_scope",
+                "a guarded GPU workspace must have its complete program context");
+            gpu_collect_address_taken(
+                *ASR::down_cast2<ASR::TranslationUnit_t>(root->asr_owner),
+                address_taken);
+        }
         int64_t slot = (layout.m_packed ? 1 : layout.n_buffers) +
             (layout.n_scalars > 0);
         for (size_t i = 0; i < layout.n_workspaces; i++) {
@@ -4045,6 +4064,66 @@ public:
                         ASRUtils::symbol_type(workspace.m_variable))),
                 "asr.verify.gpu_layout.workspace_element_size",
                 "GPU workspace element size must match its array element kind");
+            require_id((workspace.m_allocation_if != nullptr) ==
+                    (workspace.m_allocation_parameter != nullptr),
+                "asr.verify.gpu_layout.allocation_pair",
+                "a GPU workspace allocation condition must have a captured parameter");
+            if (workspace.m_allocation_if) {
+                auto *condition = workspace.m_allocation_if;
+                auto *parameter = workspace.m_allocation_parameter;
+                require_id(ASRUtils::is_logical(*ASRUtils::expr_type(condition)) &&
+                        gpu_uniform_workspace_condition(condition,
+                            source_arguments, kernel.m_symtab, address_taken),
+                    "asr.verify.gpu_layout.allocation_uniform",
+                    "a GPU workspace allocation condition must be a stable uniform logical");
+                require_id(bound.count(parameter) && !source_arguments.count(parameter) &&
+                        !extent_parameters.count(parameter) &&
+                        ASRUtils::check_equal_type(ASRUtils::symbol_type(parameter),
+                            ASRUtils::expr_type(condition), nullptr, nullptr),
+                    "asr.verify.gpu_layout.allocation_parameter",
+                    "a GPU allocation condition must have a generated logical parameter");
+                auto inserted = allocation_parameters.emplace(parameter, condition);
+                require_id(inserted.second || gpu_same_workspace_condition(
+                        inserted.first->second, condition),
+                    "asr.verify.gpu_layout.allocation_capture",
+                    "a shared GPU allocation parameter must capture the same condition");
+                auto changed = gpu_symbols_changed_in(kernel.m_body, kernel.n_body);
+                std::set<ASR::symbol_t*> refs;
+                gpu_collect_value_symbols(condition, refs);
+                refs.insert(parameter);
+                for (auto *symbol : refs) {
+                    require_id(!gpu_writes_symbol(*changed, symbol),
+                        "asr.verify.gpu_layout.allocation_stable",
+                        "a GPU allocation condition must not change in the kernel");
+                }
+                auto guards = gpu_workspace_data_guards(kernel, workspace.m_variable);
+                bool dominated = false;
+                for (const auto &guard : guards) {
+                    bool negated;
+                    auto *test = gpu_workspace_condition(guard.branch->m_test, negated);
+                    bool matches = guard.on_true == workspace.m_allocation_on_true &&
+                        ASR::is_a<ASR::Var_t>(*test) &&
+                        ASR::down_cast<ASR::Var_t>(test)->m_v == parameter;
+                    if (!matches) continue;
+                    dominated = true;
+                    for (auto *scope : guard.use_scopes) {
+                        require_id(gpu_uniform_workspace_condition(condition,
+                                source_arguments, scope, address_taken),
+                            "asr.verify.gpu_layout.allocation_uniform",
+                            "GPU allocation condition reads must respect use-site attributes");
+                    }
+                    for (const auto &site : guard.sites) {
+                        require_id(gpu_uniform_workspace_condition(condition,
+                                source_arguments, site.scope, address_taken),
+                            "asr.verify.gpu_layout.allocation_uniform",
+                            "GPU allocation conditions must respect every branch scope");
+                    }
+                }
+                require_id(dominated &&
+                        !gpu_may_be_aliased(workspace.m_variable, address_taken),
+                    "asr.verify.gpu_layout.allocation_dominance",
+                    "every GPU workspace data use must be guarded by its captured condition");
+            }
             for (size_t d = 0; d < workspace.n_dims; d++) {
                 const auto &dim = workspace.m_dims[d];
                 require_id(dim.m_extent && ASRUtils::is_integer(
@@ -4068,6 +4147,7 @@ public:
                 if (dim.m_parameter) {
                     require_id(bound.count(dim.m_parameter) &&
                             !source_arguments.count(dim.m_parameter) &&
+                            !allocation_parameters.count(dim.m_parameter) &&
                             extent_parameters.insert(dim.m_parameter).second,
                         "asr.verify.gpu_layout.extent_parameter",
                         "a runtime GPU extent must have a distinct generated kernel parameter");
@@ -4098,9 +4178,10 @@ public:
                 "integer scalar");
         }
         require_id(extent_parameters.size() + layout.m_source_argument_count
+                + allocation_parameters.size()
                 + (layout.m_lanes ? 1 : 0) == kernel.n_args,
             "asr.verify.gpu_layout.complete_extent_parameters",
-            "every generated GPU parameter must belong to a workspace dimension");
+            "every generated GPU parameter must belong to a workspace dimension or condition");
     }
 
     void visit_GpuKernelLaunch(const GpuKernelLaunch_t &x) {
@@ -4111,6 +4192,35 @@ public:
                 "' must be a function that runs on the device");
         verify_gpu_kernel_launch_signature(x,
             *ASR::down_cast<ASR::Function_t>(x.m_kernel));
+        const auto &kernel = *ASR::down_cast<ASR::Function_t>(x.m_kernel);
+        if (kernel.m_gpu) {
+            std::set<ASR::symbol_t*> actual_arguments, address_taken;
+            for (int64_t i = 0; i < kernel.m_gpu->m_source_argument_count; i++) {
+                gpu_collect_value_symbols(x.m_args[i].m_value, actual_arguments);
+            }
+            bool guarded = false;
+            for (size_t w = 0; w < kernel.m_gpu->n_workspaces; w++) {
+                guarded |= kernel.m_gpu->m_workspaces[w].m_allocation_if != nullptr;
+            }
+            if (guarded) {
+                SymbolTable *root = current_symtab;
+                while (root->parent) root = root->parent;
+                gpu_collect_address_taken(
+                    *ASR::down_cast2<ASR::TranslationUnit_t>(root->asr_owner),
+                    address_taken);
+                Allocator allocator(1024 * 1024);
+                for (size_t w = 0; w < kernel.m_gpu->n_workspaces; w++) {
+                    auto *condition = kernel.m_gpu->m_workspaces[w].m_allocation_if;
+                    if (!condition) continue;
+                    auto *bound = gpu_bind_kernel_expression(allocator, kernel,
+                        x.m_args, kernel.m_gpu->m_source_argument_count, condition);
+                    require_id(bound && gpu_uniform_workspace_condition(bound,
+                            actual_arguments, current_symtab, address_taken),
+                        "asr.verify.gpu_kernel_launch.allocation_binding",
+                        "every GPU launch must bind a safe uniform allocation condition");
+                }
+            }
+        }
         require_id(x.m_component_fit == nullptr ||
                 ASR::is_a<ASR::Block_t>(*x.m_component_fit),
             "asr.verify.gpu_kernel_launch.component_fit_is_block",

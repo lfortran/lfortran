@@ -190,6 +190,17 @@ stack budget have `Thread` memory space. Larger arrays have `Global` memory
 space and the kernel layout records their per-thread workspace slices. This
 placement never turns an iteration-private value into a shared value.
 
+A workspace may record `allocation_if`, its captured `allocation_parameter`,
+and `allocation_on_true`. Shared kernel planning accepts only stable, total
+scalar predicates that are host-evaluable at every launch and dominate every
+data use with the recorded polarity. The host captures the predicate once at
+the launch and the device uses the same value. When inactive, launch expansion
+requests zero scratch bytes without suppressing unrelated kernel work. Array
+shape and bounds are unchanged; inactive or empty slices do not form pointers
+into absent storage. Thread-varying tests, optional or aliased scalars,
+descriptor reads, calls, and other non-total expressions conservatively retain
+normal allocation unless another safe enclosing guard proves it unnecessary.
+
 ## Examples
 
 ```clojure

@@ -33,7 +33,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             t[((int)(k) - (1))] = ((float)(j__dc + k));
         }
         {
-            float* __gpu_gather = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * 120000;
+            float* __gpu_gather = ((120000) > 0) ? (__workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * (120000)) : nullptr;
             int __gpu_gather_i;
             for (__gpu_gather_i = 1; __gpu_gather_i <= ((((int)120000) + ((int)1)) - 1); __gpu_gather_i++) {
                 __gpu_gather[((int)(__gpu_gather_i) - (1))] = xr[((int)(j__dc) - (1)) + (4 * ((int)(__gpu_gather_i) - (1)))];
@@ -149,7 +149,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
             t[((int)(k) - (1))] = ((float)((4 * j__dc3) + k));
         }
         {
-            float* __gpu_alias = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * 120000;
+            float* __gpu_alias = ((120000) > 0) ? (__workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * (120000)) : nullptr;
             for (__gpu_sec_i2 = 1; __gpu_sec_i2 <= ((((int)120000) + ((int)1)) - 1); __gpu_sec_i2++) {
                 __gpu_alias[((int)(__gpu_sec_i2) - (1))] = w2[((int)((120000 + ((__gpu_sec_i2 - 1) * (-(1))))) - (1)) + (120000 * ((int)(j__dc3) - (1)))];
             }

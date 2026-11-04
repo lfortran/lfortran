@@ -24,8 +24,13 @@ void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
 // place of the designators that have them (--fast). `offset_kind` is the
 // kind the kernel computes element offsets in
 // (GpuDeviceCapabilities::offset_kind).
+struct GpuKernelLaunchSite {
+    const ASR::GpuKernelLaunch_t *launch;
+    SymbolTable *scope;
+};
+
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
-    ASR::call_arg_t *args, size_t n_args, GpuDecline &decline,
+    const std::vector<GpuKernelLaunchSite> &sites, GpuDecline &decline,
     bool values_replaced, int offset_kind);
 
 // The extent `dim` of a workspace of `kernel` has, written as the host
@@ -129,6 +134,8 @@ inline std::vector<GpuVlaWorkspace> gpu_kernel_workspaces(
         ws.var_name = ASRUtils::symbol_name(source.m_variable);
         ws.elem_size = checked_integer_cast<int>(source.m_element_size);
         ws.buffer_index = checked_integer_cast<int>(source.m_buffer_index);
+        ws.allocation_parameter = source.m_allocation_parameter;
+        ws.allocation_on_true = source.m_allocation_on_true;
         for (size_t d = 0; d < source.n_dims; d++) {
             GpuVlaDim dim;
             dim.source_extent = source.m_dims[d].m_extent;
