@@ -5525,15 +5525,22 @@ public:
             }
             case ASR::exprType::LogicalBinOp: {
                 ASR::LogicalBinOp_t *op = ASR::down_cast<ASR::LogicalBinOp_t>(expr);
+                if (op->m_op != ASR::logicalbinopType::And
+                        && op->m_op != ASR::logicalbinopType::Or) {
+                    // .eqv., .neqv. and .xor. compare the truth values,
+                    // each brought to 0 or 1 first.
+                    src << "((int)(!(";
+                    visit_expr(op->m_left);
+                    src << (op->m_op == ASR::logicalbinopType::Eqv
+                        ? ") == !(" : ") != !(");
+                    visit_expr(op->m_right);
+                    src << ")))";
+                    break;
+                }
                 src << "((int)(";
                 visit_expr(op->m_left);
-                if (op->m_op == ASR::logicalbinopType::And) {
-                    src << " && ";
-                } else if (op->m_op == ASR::logicalbinopType::Or) {
-                    src << " || ";
-                } else {
-                    src << " /* unsupported logical op */ ";
-                }
+                src << (op->m_op == ASR::logicalbinopType::And
+                    ? " && " : " || ");
                 visit_expr(op->m_right);
                 src << "))";
                 break;
