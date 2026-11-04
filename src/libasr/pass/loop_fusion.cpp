@@ -62,8 +62,9 @@ the loop variable: in
 
 each `k` in the body is `i + (c - s)` (`i` when `c` and `s` are the same
 expression or the same constant), when `k` is a local of the procedure
-referenced nowhere else and the body is one the fusion can analyze (below),
-which then neither assigns `k` nor leaves an iteration early.
+referenced nowhere else (not in a common block, a namelist group or a
+TARGET) and the body is one the fusion can analyze (below), which then
+neither assigns `k` nor leaves an iteration early.
 
 Two DO loops of one statement list, the second after the first and only
 scalar assignments between them (the statements M), are fused when:
@@ -78,12 +79,15 @@ scalar assignments between them (the statements M), are fused when:
   Such a variable of the second nest is either the one of the first (with
   the same bounds) or a local of the procedure referenced nowhere outside
   the second nest, and the second nest does not reference the variable of
-  the first.
+  the first. The bounds of a level reference no fused loop variable of that
+  level or an inner one, which the first nest assigns before the second one
+  evaluates its bounds.
 * The bodies contain only assignments of intrinsic scalars (to variables or
   array elements), IF statements and DO loops, and their expressions only
   variables, array elements, constants, intrinsic operations, IF
   expressions and elemental intrinsic functions: no procedure is called. No
-  variable is a pointer, volatile or asynchronous, or EQUIVALENCE-associated
+  variable is a pointer, volatile or asynchronous, a TARGET dummy argument
+  (which may be associated with other storage) or EQUIVALENCE-associated
   (through a common block): with no pointer and no call in the bodies, two
   different arrays are different storage.
 * Iteration `I` of the second nest runs after iteration `I` of the first one
@@ -98,6 +102,12 @@ scalar assignments between them (the statements M), are fused when:
 * The bounds reference nothing that the nests or M assign, and no fused
   loop variable is assigned. M assigns nothing the second nest references,
   and references nothing the second nest assigns, so it can run after it.
+* The fused nest is faster (`profitable`). It loads the arrays both nests
+  access once instead of twice, but streams the arrays of both nests at
+  once. So the innermost bodies contain no loop and run the same way
+  (`Profile`: both or neither vectorize, gather, use strided accesses or
+  IF statements), at least a quarter of the arrays they reference are
+  shared, and the fused body is small.
 */
 
 namespace {
@@ -119,6 +129,12 @@ public:
     explicit VarUses(UseCounts &uses_) : uses(uses_) {}
     void visit_Var(const ASR::Var_t &x) {
         uses[ASRUtils::symbol_get_past_external(x.m_v)]++;
+    }
+    // A namelist group names its variables without a Var.
+    void visit_Namelist(const ASR::Namelist_t &x) {
+        for (size_t i = 0; i < x.n_var_list; i++) {
+            uses[ASRUtils::symbol_get_past_external(x.m_var_list[i])]++;
+        }
     }
 };
 
@@ -201,6 +217,19 @@ bool same_key(ASR::expr_t *a, ASR::expr_t *b, const SymbolMap &map,
     return !ka.empty() && ka == expr_key(b, map, shifts);
 }
 
+// Whether `v` is a value of an integer of kind `kind`.
+bool fits_kind(int64_t v, int kind) {
+    if (kind >= 8) return true;
+    int64_t limit = int64_t(1) << (8*kind - 1);
+    return v >= -limit && v < limit;
+}
+
+// Whether integer constants are small enough that their differences and
+// sums do not overflow.
+bool small_constant(int64_t v) {
+    return v > -(int64_t(1) << 61) && v < (int64_t(1) << 61);
+}
+
 bool intrinsic_element_type(ASR::ttype_t *t) {
     t = ASRUtils::type_get_past_array(
         ASRUtils::type_get_past_allocatable_pointer(t));
@@ -221,6 +250,12 @@ bool analyzable_variable(ASR::symbol_t *s, SymbolTable *scope) {
         return false;
     }
     if (!ASRUtils::is_array(v->m_type) && ASRUtils::is_allocatable(v->m_type)) {
+        return false;
+    }
+    // TARGET dummy arguments may be associated with the same storage
+    // (F2018 15.5.2.13), and with a TARGET variable of a host or module.
+    if (v->m_target_attr && v->m_intent != ASR::intentType::Local
+            && v->m_intent != ASR::intentType::ReturnVar) {
         return false;
     }
     if (v->m_common_block != nullptr) {
@@ -246,6 +281,9 @@ struct Access {
     // The subscripts of each reference, as a key, with the fused levels
     // whose variable they contain.
     std::map<std::string, uint64_t> subscripts;
+    // A reference whose subscript in a dimension other than the first one
+    // contains the innermost fused loop variable (strided in memory).
+    bool strided = false;
 };
 
 using AccessMap = std::map<ASR::symbol_t*, Access>;
@@ -470,6 +508,7 @@ private:
         std::string key;
         uint64_t levels = 0;
         bool known = true;
+        bool strided = false;
         for (size_t i = 0; i < item->n_args && ok; i++) {
             ASR::array_index_t &index = item->m_args[i];
             if (index.m_left || index.m_step || !index.m_right) {
@@ -477,11 +516,18 @@ private:
                 return;
             }
             expr(index.m_right);
-            std::string k = subscript_key(index.m_right, levels);
+            uint64_t index_levels = 0;
+            std::string k = subscript_key(index.m_right, index_levels);
             if (k.empty()) known = false;
+            if (i > 0 && !fused.empty()
+                    && (index_levels >> (fused.size() - 1)) & 1) {
+                strided = true;
+            }
+            levels |= index_levels;
             key += k + ",";
         }
         Access &a = accesses[s];
+        a.strided = a.strided || strided;
         a.array = true;
         (write ? a.written : a.read) = true;
         if (known) {
@@ -593,6 +639,8 @@ private:
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
         return v->m_intent == ASR::intentType::Local
             && v->m_storage != ASR::storage_typeType::Parameter
+            && v->m_common_block == nullptr && !v->m_target_attr
+            && !v->m_is_volatile && !v->m_is_asynchronous
             && AccessPaths::enclosing_routine(v->m_parent_symtab) == routine;
     }
 
@@ -676,9 +724,15 @@ private:
                 if (same_key(init, start, no_map)) {
                     offset = 0;
                 } else if (ASR::is_a<ASR::IntegerConstant_t>(*init)
-                        && ASR::is_a<ASR::IntegerConstant_t>(*start)) {
+                        && ASR::is_a<ASR::IntegerConstant_t>(*start)
+                        && small_constant(ASR::down_cast<ASR::IntegerConstant_t>(init)->m_n)
+                        && small_constant(ASR::down_cast<ASR::IntegerConstant_t>(start)->m_n)) {
                     offset = ASR::down_cast<ASR::IntegerConstant_t>(init)->m_n
                         - ASR::down_cast<ASR::IntegerConstant_t>(start)->m_n;
+                    if (!fits_kind(offset, ASRUtils::extract_kind_from_ttype_t(
+                            index->m_type))) {
+                        continue;
+                    }
                 } else {
                     continue;
                 }
@@ -748,13 +802,15 @@ private:
         for (size_t i = 0; i < 4; i++) {
             if (!ASR::is_a<ASR::IntegerConstant_t>(*bounds[i])) return false;
             value[i] = ASR::down_cast<ASR::IntegerConstant_t>(bounds[i])->m_n;
+            if (!small_constant(value[i])) return false;
         }
         if (!unit_step(a) || !unit_step(b)
                 || value[1] - value[0] != value[3] - value[2]) {
             return false;
         }
         shift = value[2] - value[0];
-        return true;
+        return fits_kind(shift, ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(a->m_head.m_v)));
     }
 
     // Whether `s` is a scalar assignment that may run after the second
@@ -764,6 +820,177 @@ private:
         ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(s);
         return ASR::is_a<ASR::Var_t>(*a->m_target)
             && !ASRUtils::is_array(ASRUtils::expr_type(a->m_target));
+    }
+
+    // How the innermost body of a nest runs, as far as it decides whether
+    // the loop vectorizes and how much memory traffic it has.
+    struct Profile {
+        // An iteration depends on an earlier one other than through the
+        // reductions the vectorizer knows (an array element written in
+        // one iteration and accessed in another, a scalar carried over).
+        bool carried = false;
+        // Contains IF statements.
+        bool conditional = false;
+        // Reads an array through subscripts that are not a fused loop
+        // variable plus a constant (a gather).
+        bool gather = false;
+        // Accesses an array along a dimension other than the first one in
+        // the innermost loop.
+        bool strided = false;
+        // Contains a loop.
+        bool inner_loop = false;
+        bool operator==(const Profile &o) const {
+            return carried == o.carried && conditional == o.conditional
+                && gather == o.gather && strided == o.strided
+                && inner_loop == o.inner_loop;
+        }
+    };
+
+    static void assigned_scalars(ASR::stmt_t **body, size_t n,
+            std::set<ASR::symbol_t*> &out) {
+        for (size_t i = 0; i < n; i++) {
+            ASR::stmt_t *s = body[i];
+            if (ASR::is_a<ASR::Assignment_t>(*s)) {
+                ASR::expr_t *t = ASR::down_cast<ASR::Assignment_t>(s)->m_target;
+                if (ASR::is_a<ASR::Var_t>(*t)) out.insert(var_symbol(t));
+            } else if (ASR::is_a<ASR::If_t>(*s)) {
+                ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
+                assigned_scalars(x->m_body, x->n_body, out);
+                assigned_scalars(x->m_orelse, x->n_orelse, out);
+            }
+        }
+    }
+
+    // Whether `value`, assigned to `t`, is a reduction the vectorizer knows:
+    // `t op x` (op one of +, -, *, with `t` on the left for -) or `x op t`
+    // with `x` not referencing `t`, or the select `t < x ? t : x` (any
+    // comparison and order of the operands) of a minimum or maximum. Not
+    // `max(t, x)`, whose `llvm.maxnum` LLVM 11 does not vectorize.
+    static bool reduction(ASR::expr_t *value, ASR::symbol_t *t) {
+        auto is_t = [t](ASR::expr_t *e) {
+            return ASR::is_a<ASR::Var_t>(*e) && var_symbol(e) == t;
+        };
+        ASR::expr_t *left = nullptr, *right = nullptr;
+        ASR::binopType op = ASR::binopType::Add;
+        if (ASR::is_a<ASR::RealBinOp_t>(*value)) {
+            auto *b = ASR::down_cast<ASR::RealBinOp_t>(value);
+            left = b->m_left; right = b->m_right; op = b->m_op;
+        } else if (ASR::is_a<ASR::IntegerBinOp_t>(*value)) {
+            auto *b = ASR::down_cast<ASR::IntegerBinOp_t>(value);
+            left = b->m_left; right = b->m_right; op = b->m_op;
+        } else if (ASR::is_a<ASR::IfExp_t>(*value)) {
+            auto *x = ASR::down_cast<ASR::IfExp_t>(value);
+            ASR::expr_t *cl, *cr;
+            if (ASR::is_a<ASR::RealCompare_t>(*x->m_test)) {
+                auto *c = ASR::down_cast<ASR::RealCompare_t>(x->m_test);
+                cl = c->m_left; cr = c->m_right;
+            } else if (ASR::is_a<ASR::IntegerCompare_t>(*x->m_test)) {
+                auto *c = ASR::down_cast<ASR::IntegerCompare_t>(x->m_test);
+                cl = c->m_left; cr = c->m_right;
+            } else {
+                return false;
+            }
+            ASR::expr_t *ops[4] = {cl, cr, x->m_body, x->m_orelse};
+            for (ASR::expr_t *e: ops) {
+                if (!ASR::is_a<ASR::Var_t>(*e)) return false;
+            }
+            ASR::symbol_t *a = var_symbol(cl), *b = var_symbol(cr);
+            ASR::symbol_t *c = var_symbol(x->m_body), *d = var_symbol(x->m_orelse);
+            return a != b && (a == t || b == t)
+                && ((a == c && b == d) || (a == d && b == c));
+        } else {
+            return false;
+        }
+        if (op != ASR::binopType::Add && op != ASR::binopType::Mul
+                && op != ASR::binopType::Sub) {
+            return false;
+        }
+        if (is_t(left) && uses_in(right, t) == 0) return true;
+        return op != ASR::binopType::Sub && is_t(right) && uses_in(left, t) == 0;
+    }
+
+    static Profile profile(ASR::DoLoop_t *innermost, Collector &c,
+            const SymbolMap &map) {
+        Profile p;
+        for (auto &x: c.accesses) {
+            const Access &a = x.second;
+            if (!a.array) continue;
+            p.strided = p.strided || a.strided;
+            if (a.read && a.unknown_subscripts) p.gather = true;
+            if (!a.written) continue;
+            if (a.unknown_subscripts || a.subscripts.size() != 1) {
+                p.carried = true;
+                continue;
+            }
+            // An element written in every iteration of the innermost loop.
+            size_t l = c.fused.size() - 1;
+            if (!((a.subscripts.begin()->second >> l) & 1)) p.carried = true;
+        }
+        // Each scalar the body assigns is a temporary (assigned before it
+        // is referenced in the iteration) or a reduction; anything else
+        // carries a value from one iteration to the next.
+        std::set<ASR::symbol_t*> seen, temporaries;
+        ASR::stmt_t **body = innermost->m_body;
+        size_t n = innermost->n_body;
+        auto see = [&](ASR::stmt_t *s) {
+            UseCounts u;
+            VarUses v(u);
+            v.visit_stmt(*s);
+            for (auto &k: u) seen.insert(mapped(k.first, map));
+        };
+        for (size_t i = 0; i < n; i++) {
+            ASR::stmt_t *s = body[i];
+            if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+                p.inner_loop = true;
+            } else if (ASR::is_a<ASR::If_t>(*s)) {
+                p.conditional = true;
+                std::set<ASR::symbol_t*> assigned;
+                ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
+                assigned_scalars(x->m_body, x->n_body, assigned);
+                assigned_scalars(x->m_orelse, x->n_orelse, assigned);
+                for (ASR::symbol_t *t: assigned) {
+                    if (temporaries.count(t) == 0) p.carried = true;
+                }
+            } else if (ASR::is_a<ASR::Assignment_t>(*s)) {
+                ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(s);
+                if (ASR::is_a<ASR::Var_t>(*a->m_target)) {
+                    ASR::symbol_t *t = var_symbol(a->m_target);
+                    if (temporaries.count(t)) {
+                        // Already assigned in this iteration.
+                    } else if (seen.count(t) == 0 && uses_in(a->m_value, t) == 0) {
+                        temporaries.insert(t);
+                    } else if (!reduction(a->m_value, t)
+                            || uses_in(body, n, t) != uses_in(s, t)) {
+                        p.carried = true;
+                    }
+                }
+            }
+            see(s);
+        }
+        return p;
+    }
+
+    // Whether running the two nests as one is (almost certainly) faster.
+    // Fusion saves loading the arrays both nests access a second time, but
+    // a fused loop that streams many arrays is slower than two loops that
+    // stream fewer each, and one that does not vectorize while one of the
+    // nests would is much slower. So the nests must run the same way
+    // (`Profile`), share at least a quarter of the arrays they reference,
+    // and not be large.
+    bool profitable(ASR::DoLoop_t *a, Collector &c1, ASR::DoLoop_t *b,
+            Collector &c2, const SymbolMap &map, size_t n_fused) {
+        if (n_fused == 0) return false;
+        Profile p1 = profile(a, c1, SymbolMap());
+        Profile p2 = profile(b, c2, map);
+        if (p1.inner_loop || p2.inner_loop || !(p1 == p2)) return false;
+        std::set<ASR::symbol_t*> a1, a2, all;
+        for (auto &x: c1.accesses) if (x.second.array) a1.insert(x.first);
+        for (auto &x: c2.accesses) if (x.second.array) a2.insert(x.first);
+        all = a1;
+        all.insert(a2.begin(), a2.end());
+        size_t shared = a1.size() + a2.size() - all.size();
+        return shared > 0 && 4*shared >= a1.size() + a2.size()
+            && all.size() <= 12 && a->n_body + b->n_body <= 16;
     }
 
     // Fuses the nest `second` into the nest `first`, with the statements
@@ -811,10 +1038,20 @@ private:
         Collector c2(map, shifts, fused, current_scope);
         Collector cm(no_map, no_shifts, fused, current_scope);
         Collector bounds(no_map, no_shifts, fused, current_scope);
-        for (ASR::DoLoop_t *loop: n1) {
-            bounds.expr(loop->m_head.m_start);
-            bounds.expr(loop->m_head.m_end);
-            if (loop->m_head.m_increment) bounds.expr(loop->m_head.m_increment);
+        for (size_t l = 0; l < n1.size(); l++) {
+            ASR::DoLoop_t *loop = n1[l];
+            ASR::expr_t *head[3] = {loop->m_head.m_start, loop->m_head.m_end,
+                loop->m_head.m_increment};
+            for (ASR::expr_t *e: head) {
+                if (!e) continue;
+                bounds.expr(e);
+                // The loop heads of the first nest assign the fused
+                // variables before the bounds of the second nest are
+                // evaluated: a bound may only use those of outer levels.
+                for (size_t f = l; f < fused.size(); f++) {
+                    if (uses_in(e, fused[f]) > 0) return false;
+                }
+            }
         }
         c1.stmts(a->m_body, a->n_body);
         c2.stmts(b->m_body, b->n_body);
@@ -852,6 +1089,7 @@ private:
             if (c2.accesses.count(x.first) == 0) continue;
             if (x.second.written || c2.accesses[x.first].written) return false;
         }
+        if (!profitable(a, c1, b, c2, map, fused.size())) return false;
 
         // Fuse: the body of the second nest, with the variables of the
         // first, after the body of the first.
