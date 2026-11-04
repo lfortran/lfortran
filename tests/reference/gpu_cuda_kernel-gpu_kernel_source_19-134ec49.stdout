@@ -3,8 +3,8 @@
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __gpu_skew_hi;
     int __gpu_skew_lo;
-    int __gpu_window_end;
-    int __gpu_window_start;
+    long __gpu_window_end;
+    long __gpu_window_start;
     int __loop_start_0;
     int __loop_end_0;
 };
@@ -16,8 +16,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 {
     int __gpu_skew_hi = __scalar_args.__gpu_skew_hi;
     int __gpu_skew_lo = __scalar_args.__gpu_skew_lo;
-    int __gpu_window_end = __scalar_args.__gpu_window_end;
-    int __gpu_window_start = __scalar_args.__gpu_window_start;
+    long __gpu_window_end = __scalar_args.__gpu_window_end;
+    long __gpu_window_start = __scalar_args.__gpu_window_start;
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
@@ -29,15 +29,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     k__dc = (__flat_idx + __loop_start_0);
     {
-        int __gpu_frame;
+        long __gpu_frame;
         int __gpu_frame_k__dc;
-        if ((k__dc < __gpu_window_start)) {
-            __gpu_frame = ((k__dc - (__gpu_window_start - ((((__gpu_window_start - __gpu_skew_lo) + (__gpu_skew_hi - __gpu_window_end)) + (1 - 1)) / 1))) * 1);
-            if ((__gpu_frame < ((__gpu_window_start - __gpu_skew_lo) + (__gpu_skew_hi - __gpu_window_end)))) {
-                if ((__gpu_frame < (__gpu_window_start - __gpu_skew_lo))) {
-                    __gpu_frame_k__dc = (__gpu_skew_lo + __gpu_frame);
+        if ((((long)k__dc) < __gpu_window_start)) {
+            __gpu_frame = ((((long)k__dc) - (__gpu_window_start - ((((__gpu_window_start - ((long)__gpu_skew_lo)) + (((long)__gpu_skew_hi) - __gpu_window_end)) + (((long)1) - ((long)1))) / ((long)1)))) * ((long)1));
+            if ((__gpu_frame < ((__gpu_window_start - ((long)__gpu_skew_lo)) + (((long)__gpu_skew_hi) - __gpu_window_end)))) {
+                if ((__gpu_frame < (__gpu_window_start - ((long)__gpu_skew_lo)))) {
+                    __gpu_frame_k__dc = ((int)(((long)__gpu_skew_lo) + __gpu_frame));
                 } else {
-                    __gpu_frame_k__dc = ((__gpu_window_end + 1) + (__gpu_frame - (__gpu_window_start - __gpu_skew_lo)));
+                    __gpu_frame_k__dc = ((int)((__gpu_window_end + ((long)1)) + (__gpu_frame - (__gpu_window_start - ((long)__gpu_skew_lo)))));
                 }
                 if ((__gpu_frame_k__dc == 1)) {
                     d[((int)(__gpu_frame_k__dc) - (1))] = (u[((int)(2) - (1))] - u[((int)(1) - (1))]);
@@ -133,15 +133,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     k__dc = (__flat_idx + __loop_start_0);
     {
-        int __gpu_frame1;
+        long __gpu_frame1;
         int __gpu_frame_k__dc1;
-        if ((k__dc < (1 + 1))) {
-            __gpu_frame1 = ((k__dc - ((1 + 1) - ((2 + (1 - 1)) / 1))) * 1);
-            if ((__gpu_frame1 < 2)) {
-                if ((__gpu_frame1 < 1)) {
-                    __gpu_frame_k__dc1 = (1 + __gpu_frame1);
+        if ((((long)k__dc) < (((long)1) + ((long)1)))) {
+            __gpu_frame1 = ((((long)k__dc) - ((((long)1) + ((long)1)) - ((((long)2) + (((long)1) - ((long)1))) / ((long)1)))) * ((long)1));
+            if ((__gpu_frame1 < ((long)2))) {
+                if ((__gpu_frame1 < ((long)1))) {
+                    __gpu_frame_k__dc1 = ((int)(((long)1) + __gpu_frame1));
                 } else {
-                    __gpu_frame_k__dc1 = (((n + 1) - 1) + (__gpu_frame1 - 1));
+                    __gpu_frame_k__dc1 = ((int)(((((long)n) + ((long)1)) - ((long)1)) + (__gpu_frame1 - ((long)1))));
                 }
                 if ((__gpu_frame_k__dc1 == 1)) {
                     d[((int)(__gpu_frame_k__dc1) - (1))] = (u[((int)(2) - (1))] - u[((int)(1) - (1))]);
