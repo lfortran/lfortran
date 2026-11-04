@@ -48,24 +48,26 @@ contains
         logical, intent(in) :: vector
         integer, intent(in) :: parts
         integer(int16), contiguous, optional, intent(in) :: bias(:)
-        integer :: width, groups, partition
+        integer :: width, groups, partition, n
         width = size(x,1)
         groups = width/8
         partition = width/parts
-        do concurrent (integer :: n=1:size(y,1))
+        do concurrent (n=1:size(y,1))
             block
                 real(real32) :: codes(width), weights(width)
-                do concurrent (integer :: d=1:width)
+                integer :: d, m
+                do concurrent (d=1:width)
                     codes(d) = real(byte_value(w((d-1)/4+1,n),modulo(d-1,4)),real32)
                     if (.not. vector) weights(d) = rounded( &
                         codes(d)*scales((d-1)/8+1,n)+offsets((d-1)/8+1,n))
                 end do
-                do concurrent (integer :: m=1:size(x,2))
+                do concurrent (m=1:size(x,2))
                     block
                         real(real32) :: terms(groups), total
                         integer(int16) :: partial_values(parts)
+                        integer :: g, p
                         if (vector) then
-                            do concurrent (integer :: g=1:groups)
+                            do concurrent (g=1:groups)
                                 terms(g) = scales(g,n)*sum(codes((g-1)*8+1:g*8)*x((g-1)*8+1:g*8,m)) + &
                                     offsets(g,n)*sum(x((g-1)*8+1:g*8,m))
                             end do
@@ -73,7 +75,7 @@ contains
                         else if (parts == 1) then
                             total = sum(weights*x(:,m))
                         else
-                            do concurrent (integer :: p=1:parts)
+                            do concurrent (p=1:parts)
                                 partial_values(p) = bf16(sum( &
                                     weights((p-1)*partition+1:p*partition)*x((p-1)*partition+1:p*partition,m)))
                             end do
