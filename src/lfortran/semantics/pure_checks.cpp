@@ -73,11 +73,6 @@ bool PureChecks::function_dummy_intent_in(const ASR::Function_t &f,
         return true;
     }
     if (v.m_intent == ASR::intentType::In || v.m_value_attr) return true;
-    // ElementalChecks::dummy_intent_given reports a missing intent.
-    if (v.m_intent == ASR::intentType::Unspecified
-            && ASRUtils::get_FunctionType(f)->m_elemental) {
-        return true;
-    }
     diag.add(diag::Diagnostic(
         "dummy argument '" + std::string(v.m_name) + "' of pure function '" +
         ASRUtils::strip_genericprocedure_suffix(f.m_name) +
@@ -94,11 +89,7 @@ bool PureChecks::subroutine_dummy_intent_given(const ASR::Function_t &f,
             *ASRUtils::type_get_past_pointer(v.m_type))) {
         return true;
     }
-    // ElementalChecks::dummy_intent_given reports it for an elemental procedure.
-    if (v.m_intent != ASR::intentType::Unspecified || v.m_value_attr
-            || ASRUtils::get_FunctionType(f)->m_elemental) {
-        return true;
-    }
+    if (v.m_intent != ASR::intentType::Unspecified || v.m_value_attr) return true;
     diag.add(diag::Diagnostic(
         "dummy argument '" + std::string(v.m_name) + "' of pure subroutine '" +
         ASRUtils::strip_genericprocedure_suffix(f.m_name) +

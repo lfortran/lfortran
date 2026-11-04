@@ -1,3 +1,9 @@
+semantic error: dummy argument 'x' of pure subroutine 'ccep_elem_sub' must have an explicit intent or the value attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:12:16
+   |
+12 |     integer :: x  ! {Error} dummy argument 'x' of elemental procedure 'ccep_elem_sub' must have an explicit intent or the value attribute
+   |                ^ 
+
 semantic error: dummy argument 'x' of elemental procedure 'ccep_elem_sub' must have an explicit intent or the value attribute
   --> tests/errors/continue_compilation_elemental_pure.f90:12:16
    |
@@ -8,6 +14,12 @@ semantic error: dummy argument 'x' of elemental procedure 'ccep_impure_elem_sub'
   --> tests/errors/continue_compilation_elemental_pure.f90:17:16
    |
 17 |     integer :: x  ! {Error} dummy argument 'x' of elemental procedure 'ccep_impure_elem_sub' must have an explicit intent or the value attribute
+   |                ^ 
+
+semantic error: dummy argument 'x' of pure function 'ccep_elem_fn' must be intent(in) or have the value attribute
+  --> tests/errors/continue_compilation_elemental_pure.f90:22:16
+   |
+22 |     integer :: x  ! {Error} dummy argument 'x' of elemental procedure 'ccep_elem_fn' must have an explicit intent or the value attribute
    |                ^ 
 
 semantic error: dummy argument 'x' of elemental procedure 'ccep_elem_fn' must have an explicit intent or the value attribute
