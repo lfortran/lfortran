@@ -34,17 +34,16 @@ void PureChecks::check_definition(const ASR::Function_t &f,
         const std::map<const ASR::symbol_t*, ASR::symbol_t*>
             &implicit_interface_procedures) {
     if (!ASRUtils::get_FunctionType(f)->m_pure) return;
-    if (!body_has_no_side_effects(f, diag, implicit_interface_procedures)
-            && !compiler_options.continue_compilation) {
-        throw SemanticAbort();
-    }
+    bool ok = body_has_no_side_effects(f, diag, implicit_interface_procedures);
     for (auto &item : f.m_symtab->get_scope()) {
         if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+        // The dummies are checked by check_declaration.
+        if (ASRUtils::is_dummy_argument(f, item.second)) continue;
         const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(item.second);
-        if (!local_not_saved(f, v, diag)
-                && !compiler_options.continue_compilation) {
-            throw SemanticAbort();
-        }
+        ok = local_not_saved(f, v, diag) && ok;
+    }
+    if (!ok && !compiler_options.continue_compilation) {
+        throw SemanticAbort();
     }
 }
 
