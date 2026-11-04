@@ -153,33 +153,6 @@ bool ElementalChecks::result_not_pointer(const ASR::Variable_t &r,
 
 namespace {
 
-// The Var at the bottom of a designator such as x%a(i)(j:k), or nullptr.
-const ASR::Var_t *base_var(const ASR::expr_t *e) {
-    while (true) {
-        switch (e->type) {
-            case ASR::exprType::Var:
-                return ASR::down_cast<ASR::Var_t>(e);
-            case ASR::exprType::StructInstanceMember:
-                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
-                break;
-            case ASR::exprType::ArrayItem:
-                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
-                break;
-            case ASR::exprType::ArraySection:
-                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
-                break;
-            case ASR::exprType::StringItem:
-                e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg;
-                break;
-            case ASR::exprType::StringSection:
-                e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
-                break;
-            default:
-                return nullptr;
-        }
-    }
-}
-
 // Finds a dummy of `f` used other than as the base object of an inquiry.
 class DummyOutsideInquiry : public ASR::BaseWalkVisitor<DummyOutsideInquiry> {
 public:
@@ -225,6 +198,34 @@ public:
     void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {
         if (x.m_arg) allow(x.m_arg);
         BaseWalkVisitor<DummyOutsideInquiry>::visit_TypeInquiry(x);
+    }
+
+private:
+    // The Var at the bottom of a designator such as x%a(i)(j:k), or nullptr.
+    static const ASR::Var_t *base_var(const ASR::expr_t *e) {
+        while (true) {
+            switch (e->type) {
+                case ASR::exprType::Var:
+                    return ASR::down_cast<ASR::Var_t>(e);
+                case ASR::exprType::StructInstanceMember:
+                    e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+                    break;
+                case ASR::exprType::ArrayItem:
+                    e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                    break;
+                case ASR::exprType::ArraySection:
+                    e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                    break;
+                case ASR::exprType::StringItem:
+                    e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg;
+                    break;
+                case ASR::exprType::StringSection:
+                    e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
+                    break;
+                default:
+                    return nullptr;
+            }
+        }
     }
 };
 
