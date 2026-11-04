@@ -23966,8 +23966,10 @@ public:
                                 llvm::Type::getInt32Ty(context));
             }
         } else {
-            pos_val = llvm_utils->CreateAlloca(*builder,
-                            llvm::Type::getInt32Ty(context));
+            // Without `pos=` the runtime must not compute the position,
+            // which rescans formatted sequential files from the start.
+            pos_val = llvm::ConstantPointerNull::get(
+                llvm::Type::getInt32Ty(context)->getPointerTo());
         }
 
         if (x.m_write) {
