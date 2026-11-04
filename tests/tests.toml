@@ -3760,6 +3760,10 @@ filename = "../integration_tests/rewind_inquire_flush.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/inquire_18.f90"
+llvm = true
+
+[[test]]
 filename = "../integration_tests/derived_types_16_module.f90"
 asr = true
 
