@@ -436,11 +436,15 @@ public:
                 return;
             }
         }
+        offloaded_cycles++;
         if (al != nullptr) {
             replacement = ASRUtils::STMT(ASR::make_Return_t(*al,
                 x.base.base.loc));
         }
     }
+
+    // The cycles of the offloaded loop found, which end the thread.
+    int offloaded_cycles = 0;
 };
 
 // Metal shaders have neither variable-length arrays nor a heap, so a

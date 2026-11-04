@@ -459,6 +459,22 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     } else {
         // One thread per iteration.
         thread_count = iteration_count;
+        if (plan.strided) {
+            // The kernel runs a grid-stride loop of at most
+            // gpu_reduction_threads threads. A launch of more iterations
+            // than the chunk limit keeps one thread per iteration, since it
+            // runs in chunks: in each, the threads past the stride return.
+            ASR::expr_t *limit = b.i_t(gpu_reduction_threads, count_type);
+            thread_count = b.Variable(current_scope,
+                current_scope->get_unique_name("__gpu_launch_threads"),
+                count_type, ASR::intentType::Local);
+            prelude.push_back(al, b.Assignment(thread_count,
+                ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                    b.And(b.Gt(iteration_count, limit),
+                        b.LtE(iteration_count,
+                            b.i_t(pass_options.gpu_chunk_limit, count_type))),
+                    limit, iteration_count, count_type, nullptr))));
+        }
     }
     for (size_t i = 0; i < plan.private_shapes.n; i++) {
         launch_stmts.push_back(al, plan.private_shapes[i]);
@@ -571,6 +587,15 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         launch_stmts.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
             nullptr, b.Gt(thread_count, b.i_t(pass_options.gpu_chunk_limit,
                 count_type)), split.p, split.n, nullptr, 0)));
+        if (plan.strided) {
+            // Only the first gpu_reduction_threads threads of a chunk start
+            // and fill a slot (the rest return).
+            ASR::expr_t *limit = b.i_t(gpu_reduction_threads, count_type);
+            launch_stmts.push_back(al, b.Assignment(slots,
+                ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                    b.Gt(slots, limit), limit, slots, count_type,
+                    nullptr))));
+        }
     }
     for (auto &r : plan.reductions) {
         if (!r.host_buf_sym) continue;
