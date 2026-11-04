@@ -3779,6 +3779,10 @@ RUN(NAME frame_specialization_03 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME frame_specialization_04 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME frame_specialization_05 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME frame_specialization_06 LABELS gfortran llvm EXTRA_ARGS --fast)
+# With --fast, adjacent loop nests over the same iteration space are fused
+# when that is legal (loop_fusion pass), and kept apart otherwise.
+RUN(NAME loop_fusion_01 LABELS gfortran llvm EXTRA_ARGS --fast)
+RUN(NAME loop_fusion_02 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module

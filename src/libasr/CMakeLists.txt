@@ -83,6 +83,7 @@ set(SRC
     pass/intrinsic_function.cpp
     pass/intrinsic_subroutine.cpp
     pass/fma.cpp
+    pass/loop_fusion.cpp
     pass/sign_from_value.cpp
     pass/inline_function_calls.cpp
     pass/scoped_inlining.cpp

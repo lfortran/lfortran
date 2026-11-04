@@ -3512,6 +3512,10 @@ filename = "../integration_tests/functions_04.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/loop_fusion_02.f90"
+pass = "loop_fusion"
+
+[[test]]
 filename = "../integration_tests/functions_05.f90"
 asr = true
 pass_with_llvm = true
