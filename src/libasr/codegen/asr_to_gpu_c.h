@@ -255,6 +255,15 @@ public:
         return out;
     }
 
+    // The thread's slice of the workspace, or nullptr when the array is
+    // empty or not allocated. The slice starts at the thread's index times
+    // the slice size, which is multiplied in 64 bits whatever the dialect's
+    // kind for element offsets: one thread's slice is an array the kernel
+    // indexes in that kind, but the slices of all threads together hold
+    // more than 2**32 elements of a buffer with modest slices and many
+    // threads (#15380). The extents of the slice multiply that 64-bit
+    // product one at a time, so a slice of several extents is counted in
+    // 64 bits too.
     std::string workspace_pointer_str(const GpuVlaWorkspace &ws) {
         std::string slice = workspace_slice_str(ws);
         std::string active = "((" + slice + ") > 0";
@@ -265,7 +274,8 @@ public:
             active += ")";
         }
         return active + ") ? (" + gpu_workspace_buffer_name(ws.buffer_index) +
-            " + " + dialect.global_thread_id() + " * (" + slice + ")) : nullptr";
+            " + ((" + gpu_offset_type(8) + ")" + dialect.global_thread_id() +
+            ") * " + slice + ") : nullptr";
     }
 
     // The element count of one thread's slice of a workspace, which the

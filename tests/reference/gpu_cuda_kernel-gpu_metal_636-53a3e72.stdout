@@ -29,7 +29,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         int __gpu_sum_k;
         float __gpu_sum_res;
-        float* a = ((__workspace_extent) > 0) ? (__workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
+        float* a = ((__workspace_extent) > 0) ? (__workspace_3 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         for (__gpu_bc_i = 1; __gpu_bc_i <= __lfortran_gpu_dim_; __gpu_bc_i++) {
             a[((int)(__gpu_bc_i) - (1))] = ((float)pair__dc);
         }

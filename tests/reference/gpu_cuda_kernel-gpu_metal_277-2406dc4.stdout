@@ -84,11 +84,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc = (__flat_idx + 1);
     {
-        float* __gpu_call_result = ((__workspace_extent) > 0) ? (__workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
-        float* __libasr__created__var__3__array_constructor_ = ((__workspace_extent1) > 0) ? (__workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent1)) : nullptr;
-        float* __libasr_created__function_call_face_values = ((__workspace_extent2) > 0) ? (__workspace_7 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent2)) : nullptr;
+        float* __gpu_call_result = ((__workspace_extent) > 0) ? (__workspace_5 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        float* __libasr__created__var__3__array_constructor_ = ((__workspace_extent1) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent1) : nullptr;
+        float* __libasr_created__function_call_face_values = ((__workspace_extent2) > 0) ? (__workspace_7 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent2) : nullptr;
         int __libasr_created__result_metadata_;
-        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent3) > 0) ? (__workspace_8 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent3)) : nullptr;
+        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent3) > 0) ? (__workspace_8 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent3) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
         int __libasr_index_0_2;
@@ -205,11 +205,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc = (__flat_idx + 1);
     {
-        float* __gpu_call_result = ((__workspace_extent) > 0) ? (__workspace_4 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
-        float* __libasr__created__var__3__array_constructor_ = ((__workspace_extent1) > 0) ? (__workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent1)) : nullptr;
-        float* __libasr_created__function_call_face_values = ((__workspace_extent2) > 0) ? (__workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent2)) : nullptr;
+        float* __gpu_call_result = ((__workspace_extent) > 0) ? (__workspace_4 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        float* __libasr__created__var__3__array_constructor_ = ((__workspace_extent1) > 0) ? (__workspace_5 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent1) : nullptr;
+        float* __libasr_created__function_call_face_values = ((__workspace_extent2) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent2) : nullptr;
         int __libasr_created__result_metadata_;
-        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent3) > 0) ? (__workspace_7 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent3)) : nullptr;
+        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent3) > 0) ? (__workspace_7 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent3) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
         int __libasr_index_0_2;

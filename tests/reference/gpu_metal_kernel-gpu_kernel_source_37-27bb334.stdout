@@ -120,7 +120,7 @@ kernel void __lfortran_gpu_kernel_0(
     int __workspace_extent_gpu = __scalar_args.__workspace_extent_gpu;
     int __flat_idx_gpu;
     int i__dc_gpu;
-    device int* work_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + __thread_id * (__workspace_extent_gpu)) : nullptr;
+    device int* work_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + ((long)__thread_id) * __workspace_extent_gpu) : nullptr;
     if ((((0 * 0) + __thread_id) >= 4)) {
         return;
     }
@@ -160,7 +160,7 @@ kernel void __lfortran_gpu_kernel_1(
         int __gpu_loop_group_gpu;
         int __gpu_sum_k_gpu;
         int __gpu_sum_res_gpu;
-        device int* work_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + __thread_id * (__workspace_extent_gpu)) : nullptr;
+        device int* work_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + ((long)__thread_id) * __workspace_extent_gpu) : nullptr;
         for (__gpu_bc_i_gpu = (1 + (((int)__gpu_lane) * 1)); __gpu_bc_i_gpu <= max(0, n_gpu); __gpu_bc_i_gpu += (1 * ((int)__gpu_lanes_gpu))) {
             work_gpu[((int)(__gpu_bc_i_gpu) - (1))] = 3;
         }

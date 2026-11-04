@@ -40,7 +40,7 @@ kernel void __lfortran_gpu_kernel_0(
         int __gpu_loop_group_gpu;
         int __gpu_sum_k_gpu;
         float __gpu_sum_res_gpu;
-        device float* a_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_3 + __thread_id * (__workspace_extent_gpu)) : nullptr;
+        device float* a_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_3 + ((long)__thread_id) * __workspace_extent_gpu) : nullptr;
         if ((__gpu_lane == 0)) {
             __gpu_loop_end_gpu = __lfortran_gpu_dim__gpu;
             __gpu_bc_i_gpu = 1;

@@ -36,7 +36,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         int __gpu_sum_k;
         float __gpu_sum_res;
-        float* work = ((__workspace_extent) > 0) ? (__workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
+        float* work = ((__workspace_extent) > 0) ? (__workspace_3 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         const int __lfortran_end_0 = self.__parent.n;
         for (k = 1; k <= __lfortran_end_0; k++) {
             work[((int)(k) - (1))] = ((float)(k * i__dc));

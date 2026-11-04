@@ -28,7 +28,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         float acc;
         int k;
-        float* w = ((__workspace_extent) > 0) ? (__workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
+        float* w = ((__workspace_extent) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         const int __lfortran_end_0 = (__sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 1]);
         for (k = 1; k <= __lfortran_end_0; k++) {
             w[((int)(k) - (1))] = ((float)((1000 * i__dc) + k));
