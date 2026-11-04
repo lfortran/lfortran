@@ -8,7 +8,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __lfortran_gpu_dim_;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     int* __restrict__ n,
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
@@ -26,6 +26,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __gpu_sum_k;
         float __gpu_sum_res;
         __gpu_sum_res =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= __lfortran_gpu_dim_; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + ((float)pair__dc));
         }

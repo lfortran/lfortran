@@ -4,13 +4,14 @@ __device__ inline int triangle_gpu_53(int n) {
     int s{};
     int k;
     s = 0;
+    #pragma unroll 16
     for (k = 1; k <= n; k++) {
         s = (s + k);
     }
     return s;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     int* __restrict__ lim,
     int* __restrict__ r)
 {
@@ -28,11 +29,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int s;
         int t;
         t = 0;
+        #pragma unroll 16
         for (j = i__dc; j >= 1; j -= 3) {
             t = (t + j);
         }
         r[((int)(1) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
         t = 0;
+        #pragma unroll 16
         for (j = 1; j <= i__dc; j += 4) {
             t = (t + j);
         }
@@ -40,6 +43,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         t = 0;
         m = i__dc;
         const int __lfortran_end_0 = m;
+        #pragma unroll 16
         for (j = 1; j <= __lfortran_end_0; j++) {
             m = (m - 1);
             t = (t + 1);
@@ -49,6 +53,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         t = 0;
         int __lfortran_leave_0 = 0;
         for (j = 1; j <= 5; j++) {
+            #pragma unroll 16
             for (k = 1; k <= 5; k++) {
                 if ((k > j)) {
                     __lfortran_leave_0 = 2;
@@ -67,9 +72,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             }
         }
         r[((int)(5) - (1)) + (9 * ((int)(i__dc) - (1)))] = (((t * 100) + (j * 10)) + k);
+        #pragma unroll 16
         for (j = (i__dc + 1); j <= i__dc; j++) {
             t = (-(1));
         }
+        #pragma unroll 16
         for (k = 1; k >= 5; k--) {
             t = (-(1));
         }
@@ -77,6 +84,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         s = ((((i__dc) % (2)) == 0) ? 2 : (-(2)));
         t = 0;
         const int __lfortran_end_1 = ((s > 0) ? 10 : 1);
+        #pragma unroll 16
         for (j = ((s > 0) ? 1 : 10); s > 0 ? j <= __lfortran_end_1 : j >= __lfortran_end_1; j += s) {
             t = (t + j);
         }
@@ -84,6 +92,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         s = (1 + ((i__dc) % (3)));
         t = 0;
         const int __lfortran_step_2 = s;
+        #pragma unroll 16
         for (j = 1; __lfortran_step_2 > 0 ? j <= 10 : j >= 10; j += __lfortran_step_2) {
             s = (s + 1);
             t = (t + j);
@@ -91,6 +100,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         r[((int)(8) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
         t = 0;
         const int __lfortran_end_3 = lim[((int)(i__dc) - (1))];
+        #pragma unroll 16
         for (j = 1; j <= __lfortran_end_3; j++) {
             t = (t + j);
         }

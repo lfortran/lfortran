@@ -17,7 +17,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     float* __restrict__ out,
     pair_t* __restrict__ s,
     float* __restrict__ __data_s_a_,
@@ -47,9 +47,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int k;
         float* res = ((__workspace_extent) > 0) ? (__workspace_9 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         const int __lfortran_end_0 = __sizes_s_b_[(((int)(jj__dc) - (__lb_s_0))) * 2 + 0];
+        #pragma unroll 16
         for (k = 1; k <= __lfortran_end_0; k++) {
             res[((int)(k) - (1))] = (  2.00000000000000000e+00f * __data_s_b_[__offsets_s_b_[((int)(jj__dc) - (__lb_s_0))] + ((int)(k) - (__sizes_s_b_[(((int)(jj__dc) - (__lb_s_0))) * 2 + 1]))]);
         }
+        #pragma unroll 16
         for (__gpu_sec_i = 1; __gpu_sec_i <= ((((((int)__dim_out_0) + ((int)__lb_out_0)) - 1) - ((int)__lb_out_0)) + 1); __gpu_sec_i++) {
             out[((int)((((int)__lb_out_0) + (__gpu_sec_i - 1))) - (__lb_out_0)) + (__dim_out_0 * ((int)(jj__dc) - (__lb_out_1)))] = res[((int)((1 + (__gpu_sec_i - 1))) - (1))];
         }

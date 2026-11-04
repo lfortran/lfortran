@@ -4,7 +4,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     int* __restrict__ a,
     int* __restrict__ b,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
@@ -50,7 +50,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1(
     int* __restrict__ a,
     int* __restrict__ b,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
@@ -99,7 +99,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2(
     int* __restrict__ a,
     int* __restrict__ b,
     __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
@@ -151,7 +151,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3(
     int* __restrict__ a,
     int* __restrict__ b,
     int* __restrict__ c,
@@ -201,7 +201,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_4 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4(
     int* __restrict__ a,
     __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args)
 {

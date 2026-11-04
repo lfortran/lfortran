@@ -18,7 +18,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __lb_z_1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     float* __restrict__ x,
     float* __restrict__ y,
     float* __restrict__ z,

@@ -4,7 +4,7 @@ struct t {
     long v;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     int* __restrict__ n,
     t* x,
     int* __data_x_v,

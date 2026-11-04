@@ -40,7 +40,8 @@ struct MetalDialect {
         return "inline ";
     }
 
-    std::string kernel_qualifier() const {
+    std::string kernel_qualifier(int64_t /*threads_per_block*/,
+            bool /*few_blocks*/) const {
         return "kernel void ";
     }
 
@@ -98,6 +99,9 @@ struct MetalDialect {
         src << indent << "if (" << lanes << " > 1) simdgroup_barrier("
             "mem_flags::mem_device | mem_flags::mem_threadgroup);\n";
     }
+
+    // Metal's short loops are unrolled in the ASR (gpu_sequential_unroll).
+    std::string unroll_pragma() const { return ""; }
 
     // Every real is single precision, so a literal needs no suffix to say
     // which precision it is.

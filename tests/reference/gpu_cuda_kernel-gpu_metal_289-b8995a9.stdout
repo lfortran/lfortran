@@ -8,7 +8,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0(
     float* __restrict__ r,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
     float* __restrict__ __workspace_2)
@@ -29,11 +29,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __gpu_sum_k;
         float __gpu_sum_res;
         float* work = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        #pragma unroll 16
         for (k = 1; k <= nn; k++) {
             work[((int)(k) - (1))] = ((float)(k * i__dc));
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
         const int __lfortran_end_0 = __workspace_extent;
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= __lfortran_end_0; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + work[((int)((1 + (__gpu_sum_k - 1))) - (1))]);
         }
@@ -49,7 +51,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1(
     float* __restrict__ r,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
     float* __restrict__ __workspace_2)
@@ -68,6 +70,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     i__dc = (__flat_idx + 1);
     {
         float* work = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        #pragma unroll 16
         for (k = 1; k <= (nn + i__dc); k++) {
             work[((int)(k) - (1))] = ((float)k);
         }

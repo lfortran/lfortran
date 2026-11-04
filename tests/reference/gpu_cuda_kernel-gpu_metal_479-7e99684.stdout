@@ -6,7 +6,7 @@ __device__ inline float first_device_t_gpu_17(float* a, int __1a) {
     return first;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     float* __restrict__ y)
 {
     int __flat_idx;
@@ -19,6 +19,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     j__dc = (__flat_idx + 1);
     {
         float t[16];
+        #pragma unroll 16
         for (__gpu_bc_i = 1; __gpu_bc_i <= 16; __gpu_bc_i++) {
             t[((int)(__gpu_bc_i) - (1))] = ((float)j__dc);
         }
