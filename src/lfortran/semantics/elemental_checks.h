@@ -15,7 +15,7 @@ public:
 
     static void check_procedure(const ASR::Function_t &f,
         const std::string &proc_name, diag::Diagnostics &diag,
-        bool continue_compilation);
+        const CompilerOptions &compiler_options);
 
 private:
     // C15100

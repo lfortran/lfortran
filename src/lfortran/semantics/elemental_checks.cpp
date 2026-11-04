@@ -1,12 +1,13 @@
 #include <lfortran/semantics/elemental_checks.h>
 #include <lfortran/semantics/semantic_exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/utils.h>
 
 namespace LCompilers::LFortran {
 
 void ElementalChecks::check_procedure(const ASR::Function_t &f,
         const std::string &proc_name, diag::Diagnostics &diag,
-        bool continue_compilation) {
+        const CompilerOptions &compiler_options) {
     if (!ASRUtils::get_FunctionType(f)->m_elemental) return;
     bool ok = true;
     for (size_t i = 0; i < f.n_args; i++) {
@@ -16,7 +17,7 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
         const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(sym);
         ok = dummy_not_allocatable(v, proc_name, diag) && ok;
     }
-    if (!ok && !continue_compilation) {
+    if (!ok && !compiler_options.continue_compilation) {
         throw SemanticAbort();
     }
 }
