@@ -298,4 +298,20 @@ bool ElementalChecks::not_pointer_target(ASR::expr_t *value,
     return false;
 }
 
+bool ElementalChecks::not_dummy_interface(const std::string &name,
+        ASR::ttype_t *type, bool is_pointer, const Location &loc,
+        diag::Diagnostics &diag) {
+    ASR::ttype_t *proc_type = ASRUtils::type_get_past_pointer(type);
+    if (!ASR::is_a<ASR::FunctionType_t>(*proc_type)) return true;
+    if (!ASR::down_cast<ASR::FunctionType_t>(proc_type)->m_elemental) {
+        return true;
+    }
+    diag.add(diag::Diagnostic(
+        std::string(is_pointer ? "procedure pointer '" : "dummy procedure '")
+        + name + "' cannot have an elemental interface",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {loc})}));
+    return false;
+}
+
 } // namespace LCompilers::LFortran

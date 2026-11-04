@@ -22,6 +22,10 @@ public:
     // C1031, C1519
     static bool not_pointer_target(ASR::expr_t *value,
         diag::Diagnostics &diag);
+    // C1517
+    static bool not_dummy_interface(const std::string &name,
+        ASR::ttype_t *type, bool is_pointer, const Location &loc,
+        diag::Diagnostics &diag);
 
 private:
     // C15100
