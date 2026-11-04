@@ -5368,6 +5368,18 @@ public:
                     ASRUtils::extract_kind_from_ttype_t(c->m_type));
                 break;
             }
+            case ASR::exprType::TypeInquiry: {
+                // huge, tiny, epsilon, digits, ...: a constant of the type
+                // of the argument, whose value the kernel never reads.
+                ASR::TypeInquiry_t *t = ASR::down_cast<ASR::TypeInquiry_t>(
+                    expr);
+                if (t->m_value == nullptr) {
+                    throw CodeGenError("gpu offload: a type inquiry without "
+                        "a value reached the device code", expr->base.loc);
+                }
+                visit_expr(t->m_value);
+                break;
+            }
             case ASR::exprType::LogicalConstant: {
                 ASR::LogicalConstant_t *c = ASR::down_cast<ASR::LogicalConstant_t>(expr);
                 src << (c->m_value ? "1" : "0");
