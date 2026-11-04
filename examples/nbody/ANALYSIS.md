@@ -47,6 +47,8 @@ Two changes together unblock it:
    pass turns the accumulation into an `llvm.fma` call, which LLVM 11 does
    not recognize as a reduction. Skipping that pass leaves multiply/add
    operations LLVM can vectorize and contract under fast math.
+   (The pass has since been removed; LLVM's fast-math contraction forms the
+   FMA instructions.)
 
 Small-run ablation from an earlier, quieter run during this wrap-up, best of
 3, N=8192 and 5 steps:
