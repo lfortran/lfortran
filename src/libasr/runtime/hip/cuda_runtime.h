@@ -39,6 +39,9 @@ static const cudaDeviceAttr cudaDevAttrIntegrated =
     hipDeviceAttributeIntegrated;
 static const cudaDeviceAttr cudaDevAttrPageableMemoryAccess =
     hipDeviceAttributePageableMemoryAccess;
+static const cudaDeviceAttr cudaDevAttrConcurrentManagedAccess =
+    hipDeviceAttributeConcurrentManagedAccess;
+#define cudaMemAttachGlobal hipMemAttachGlobal
 
 static inline cudaError_t cudaSetDevice(int device) {
     return hipSetDevice(device);
@@ -71,6 +74,15 @@ static inline cudaError_t cudaMalloc(void **ptr, size_t size) {
 }
 static inline cudaError_t cudaFree(void *ptr) {
     return hipFree(ptr);
+}
+static inline cudaError_t cudaMallocManaged(void **ptr, size_t size,
+        unsigned int flags) {
+    return hipMallocManaged(ptr, size, flags);
+}
+#define cudaCpuDeviceId hipCpuDeviceId
+static inline cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count,
+        int device, cudaStream_t stream) {
+    return hipMemPrefetchAsync(ptr, count, device, stream);
 }
 static inline cudaError_t cudaMemcpy(void *dst, const void *src,
         size_t count, cudaMemcpyKind kind) {

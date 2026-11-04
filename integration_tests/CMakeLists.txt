@@ -6616,6 +6616,14 @@ RUN(NAME gpu_rsqrt_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_rsqrt_01_fast FILE gpu_rsqrt_01 LABELS gfortran llvm cuda EXTRA_ARGS --fast)
 RUN(NAME gpu_type_inquiry_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_shift_01 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_memory_02 LABELS gfortran llvm cuda EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_memory_02_managed FILE gpu_memory_02 LABELS llvm cuda EXTRA_ARGS --realloc-lhs-arrays)
+if (TEST gpu_memory_02_managed)
+    # The managed memory model, which the CPU emulation and most devices
+    # only use when asked.
+    set_tests_properties(gpu_memory_02_managed PROPERTIES
+        ENVIRONMENT "LFORTRAN_GPU_MEMORY=managed")
+endif()
 RUN(NAME gpu_separate_compilation_01 LABELS gfortran llvm metal cuda EXTRAFILES gpu_separate_compilation_01_mod.f90 EXTRA_ARGS --separate-compilation)
 # Only the module's own compilation needs the fallback for its loop that
 # prints: the program that uses it compiles none of the module's loops.

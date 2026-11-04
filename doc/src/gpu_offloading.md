@@ -842,10 +842,10 @@ runtime does with an entry changes:
   (`mallopt(M_MMAP_MAX, 0)` and `mallopt(M_TRIM_THRESHOLD, -1)`), so freed
   memory stays mapped, for the host and the GPU, and is reused.
   `LFORTRAN_GPU_KEEP_MEMORY=0` leaves malloc as it is.
-* The host may change or free a range a kernel only reads as soon as the
-  launch returns (see the next section). One of at most 64 KiB is therefore
-  still copied, which leaves the launch asynchronous; a larger one is used in
-  place, and the launch waits for the kernel before it returns.
+* A range a kernel only reads of at most 64 KiB is still copied; a larger
+  one is used in place. The host does not change or free it while the launch
+  is pending: the `gpu_launch_sync` pass puts a `GpuWait` before a host
+  statement that may (see "Where the host waits").
 * `lfortran_gpu_discard` of a range that a pending launch writes in place
   waits for the launch, since the host is about to free memory the kernel
   uses.
@@ -856,14 +856,45 @@ runtime does with an entry changes:
   Without it the triad runs at 3.2 TB/s and the product at 330 GB/s in every
   run.
 
-The runtime selects the model when it starts. `LFORTRAN_GPU_MEMORY=copy` or
-`unified` selects one; `auto`, the default, selects the unified model on a
-GPU that reports that it is integrated with the host and can access its
-pageable memory (on AMD, an APU run with `HSA_XNACK=1`), and the copy model
-otherwise. `unified` on a GPU that cannot access host memory is an error.
+A GPU with memory of its own whose driver can share memory with the host page
+by page -- CUDA managed memory on an NVIDIA GPU with concurrent managed access,
+such as an H100 -- has a third model, the *managed model*, which is what
+nvfortran's `-stdpar=gpu` uses for allocatable arrays. In the copy model every
+launch copies the arrays it only reads to the device again (the host may have
+changed them), and a host access copies back every array a kernel wrote, even
+to read one element: on an H100 over PCIe a STREAM triad of 1 GB arrays runs
+at 13 GB/s that way, against 1.9 TB/s in the kernel. In the managed model:
+
+* The CUDA runtime replaces the program's allocator (the default allocator of
+  `lfortran_intrinsics.c`) when the program starts, so that an allocation of
+  at least 1 MiB -- an allocatable array -- is managed memory. Smaller
+  allocations (strings, temporaries), and memory the allocator does not make
+  (stack and static arrays), stay as they are, in the copy model.
+* A range inside a managed allocation is used in place and has no entry: the
+  driver moves its pages to the device when a kernel touches them and back
+  when the host does, one page at a time. Nothing is copied at a launch,
+  `lfortran_gpu_sync` only waits, and a host read of one element moves one
+  page.
+* The first launch that uses an allocation moves all of it to the device
+  (`cudaMemPrefetchAsync`): 5 times faster than the page faults of the kernel
+  when the host has just filled it. Later launches leave the pages where they
+  are; prefetching ranges that are on the device already costs more than the
+  faults it saves.
+* As in the unified model, the host does not change a range a pending launch
+  reads before a `GpuWait`; freeing managed memory waits for every launch.
+
+The runtime selects the model at the first allocation it could make managed,
+or when it starts. `LFORTRAN_GPU_MEMORY=copy`, `unified` or `managed` selects
+one; `auto`, the default, selects the unified model on a GPU that reports
+that it is integrated with the host and can access its pageable memory (on
+AMD, an APU run with `HSA_XNACK=1`), the managed model on an NVIDIA GPU with
+concurrent managed access, and the copy model otherwise (on a separate AMD
+GPU too, where managed memory moves pages on demand only with `HSA_XNACK=1`).
+`unified` on a GPU that cannot access host memory is an error.
 `LFORTRAN_GPU_VERBOSE=1` prints the model selected. The CPU emulation reports
-a separate device that can access host memory, so its default is the copy
-model and `LFORTRAN_GPU_MEMORY=unified` runs the unified model on the CPU.
+a separate device that can access host memory but not managed memory
+concurrently, so its default is the copy model, and `LFORTRAN_GPU_MEMORY=
+unified` or `managed` runs the other models on the CPU.
 In the unified model on AMD the host waits for the GPU by sleeping until the
 driver wakes it (`hipDeviceScheduleBlockingSync`) rather than by spinning:
 the CPU and the GPU of an APU share the power of their socket, and on an
@@ -1170,12 +1201,6 @@ GFortran, and native CUDA.
   capability entry of its own, with the stack an AMD GPU gives a thread,
   needs the passes that ask whether `gpu_offload_cuda` is set rather than
   what the device can do to ask the capabilities instead.
-* In the unified memory model a launch that reads more than 64 KiB of host
-  memory in place waits for its kernel, because the host may change what a
-  launch only reads as soon as it returns. With the `gpu_launch_sync` pass
-  also placing a wait before a host statement that writes or frees storage a
-  pending launch reads -- a wait the runtime would skip in the copy model --
-  such a launch would not have to wait.
 * A copy from pageable host memory (`malloc`) to the device waits for the
   launches before it on the stream, in CUDA and in HIP, except for small
   copies: the host waits for the device at every launch that copies an
