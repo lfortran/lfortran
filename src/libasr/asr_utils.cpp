@@ -8058,6 +8058,10 @@ bool is_pointer_association_initializer(ASR::expr_t* init) {
             return is_pointer_association_initializer(
                 ASR::down_cast<ASR::StructInstanceMember_t>(init)->m_v);
         }
+        case ASR::exprType::StringSection: {
+            return is_pointer_association_initializer(
+                ASR::down_cast<ASR::StringSection_t>(init)->m_arg);
+        }
         default: {
             return false;
         }
