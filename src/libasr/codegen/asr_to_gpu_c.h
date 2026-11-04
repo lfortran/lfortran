@@ -4178,6 +4178,104 @@ public:
             && current_kernel_layout->m_lanes != nullptr;
     }
 
+    // Whether a sequential loop with this body is unrolled
+    // (dialect.unroll_pragma): one of at most 8 statements with no loop in
+    // it, such as the inner product of a matrix-vector product. Unrolled,
+    // a thread has the loads of several iterations in flight at once,
+    // which a GPU needs to keep its memory busy with few threads.
+    static bool small_innermost_loop(ASR::stmt_t **body, size_t n_body) {
+        class HasLoop : public ASR::BaseWalkVisitor<HasLoop> {
+        public:
+            bool found = false;
+            void visit_DoLoop(const ASR::DoLoop_t &) { found = true; }
+            void visit_WhileLoop(const ASR::WhileLoop_t &) { found = true; }
+            void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &) {
+                found = true;
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &) { found = true; }
+        };
+        if (n_body == 0 || n_body > 8) return false;
+        HasLoop h;
+        for (size_t i = 0; i < n_body && !h.found; i++) h.visit_stmt(*body[i]);
+        return !h.found;
+    }
+
+    // Whether `kernel` has a small innermost loop (small_innermost_loop)
+    // that reads an array through its variable times a stride that is not
+    // a constant: each thread then streams down a row of a matrix that the
+    // threads of the launch read a column of together (`a(i, j)` over `j`,
+    // laid out as `(i - lb1) + n*(j - lb2)`). Such a thread needs the loads
+    // of the unrolled iterations in flight at once, and the registers for
+    // them, rather than many other threads to hide each load.
+    static bool streams_strided_rows(const ASR::Function_t &kernel) {
+        class Rows : public ASR::BaseWalkVisitor<Rows> {
+        public:
+            bool found = false;
+            ASR::symbol_t *v = nullptr;
+            static bool mentions(ASR::expr_t *e, ASR::symbol_t *s) {
+                class M : public ASR::BaseWalkVisitor<M> {
+                public:
+                    ASR::symbol_t *s; bool found = false;
+                    void visit_Var(const ASR::Var_t &x) {
+                        if (ASRUtils::symbol_get_past_external(x.m_v) == s) {
+                            found = true;
+                        }
+                    }
+                } m;
+                m.s = s;
+                m.visit_expr(*e);
+                return m.found;
+            }
+            void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
+                if (v != nullptr && x.m_op == ASR::binopType::Mul) {
+                    bool l = mentions(x.m_left, v), r = mentions(x.m_right, v);
+                    if ((l && !r && !ASRUtils::expr_value(x.m_right))
+                            || (r && !l && !ASRUtils::expr_value(x.m_left))) {
+                        found = true;
+                    }
+                }
+                ASR::BaseWalkVisitor<Rows>::visit_IntegerBinOp(x);
+            }
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                // A later subscript of an array not yet laid out flat.
+                for (size_t i = 1; v != nullptr && i < x.n_args; i++) {
+                    if (x.m_args[i].m_right && mentions(x.m_args[i].m_right, v)
+                            && !(x.m_args[0].m_right
+                                && mentions(x.m_args[0].m_right, v))) {
+                        found = true;
+                    }
+                }
+                ASR::BaseWalkVisitor<Rows>::visit_ArrayItem(x);
+            }
+            void visit_DoLoop(const ASR::DoLoop_t &x) {
+                if (small_innermost_loop(x.m_body, x.n_body)
+                        && x.m_head.m_v != nullptr
+                        && ASR::is_a<ASR::Var_t>(*x.m_head.m_v)) {
+                    ASR::symbol_t *saved = v;
+                    v = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(x.m_head.m_v)->m_v);
+                    for (size_t i = 0; i < x.n_body; i++) {
+                        this->visit_stmt(*x.m_body[i]);
+                    }
+                    v = saved;
+                    return;
+                }
+                ASR::BaseWalkVisitor<Rows>::visit_DoLoop(x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(x.m_m));
+                for (size_t i = 0; i < block->n_body; i++) {
+                    this->visit_stmt(*block->m_body[i]);
+                }
+            }
+        } rows;
+        for (size_t i = 0; i < kernel.n_body && !rows.found; i++) {
+            rows.visit_stmt(*kernel.m_body[i]);
+        }
+        return rows.found;
+    }
+
     // The scalars of the kernel being written that are positive by
     // construction: the lanes of an iteration.
     std::set<ASR::symbol_t*> positive_scalars() const {
@@ -4228,7 +4326,8 @@ public:
     // not evident (see CUtils::loop_step_sign) needs a test that depends
     // on it.
     void emit_counted_for(const ASR::do_loop_head_t &head,
-            const std::set<ASR::symbol_t*> &written, const Location &loc) {
+            const std::set<ASR::symbol_t*> &written, const Location &loc,
+            bool unroll = false) {
         if (head.m_v == nullptr) {
             src << get_indent() << "for (;;) {\n";
             return;
@@ -4247,6 +4346,9 @@ public:
         std::string inc = step_known ? std::string()
             : loop_control(head.m_increment, "step", type, written);
         std::string v = captured_source([&]() { visit_expr(head.m_v); });
+        if (unroll && !dialect.unroll_pragma().empty()) {
+            src << get_indent() << dialect.unroll_pragma() << "\n";
+        }
         src << get_indent() << "for (" << v << " = ";
         visit_expr(head.m_start);
         src << "; ";
@@ -4986,7 +5088,8 @@ public:
                 if (dl->m_head.m_v != nullptr) {
                     written.insert(gpu_designator_base(dl->m_head.m_v).root);
                 }
-                emit_counted_for(dl->m_head, written, stmt->base.loc);
+                emit_counted_for(dl->m_head, written, stmt->base.loc,
+                    small_innermost_loop(dl->m_body, dl->n_body));
                 emit_loop_body(frame, dl->m_body, dl->n_body);
                 break;
             }

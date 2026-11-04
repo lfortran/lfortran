@@ -1275,6 +1275,31 @@ host computes. A power whose base can only be evaluated where it is written
 (in the test of a `do while`, or an operand of `.and.` that need not be
 evaluated) is kept as it is, unless its base is a variable or an element.
 
+### Loads in flight
+
+A GPU hides the latency of memory with many threads, each waiting for a
+load, or with few threads that each have many loads in flight. A loop with
+few iterations -- the rows of a matrix-vector product -- has few threads, so
+each must stream down its row with many loads outstanding. Two things in
+the device code for an NVIDIA GPU (`--gpu=cuda`) give it that; HIP unrolls
+such loops four times in the `gpu_sequential_unroll` pass instead:
+
+* A small innermost sequential loop (at most 8 statements, no loop inside)
+  is unrolled 16 times (`#pragma unroll 16`), as nvfortran does, so a thread
+  issues the loads of 16 iterations before it needs the first.
+* A kernel whose small innermost loop reads an array through its variable
+  times a stride that is not a constant (`a(i, j)` over `j`: each thread
+  streams down a row while the threads read a column together) is declared
+  `__launch_bounds__(threads_per_block, 1)`. Without the second bound ptxas
+  keeps the kernel to the registers that let eight blocks share a
+  multiprocessor, and reuses the register of every load as soon as its
+  value is consumed, which leaves a few loads in flight. With it, the
+  unrolled matrix-vector product keeps all 32 in flight in 80 registers
+  and runs at 86% of the memory bandwidth of an H100 instead of 31%. Other
+  kernels get `__launch_bounds__(threads_per_block)` only: a gather, such
+  as a sparse matrix-vector product, needs the occupancy to hide its loads
+  and lost a quarter of its speed with the second bound.
+
 ### Lanes: an iteration on a SIMD-group
 
 A loop with few iterations -- a training step over a mini-batch of one, a
