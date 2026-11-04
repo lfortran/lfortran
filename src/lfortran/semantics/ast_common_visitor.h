@@ -25585,7 +25585,7 @@ public:
         SymbolTable *tu_symtab = ASRUtils::get_tu_symtab(current_scope);
         std::set<std::string> empty_set;
         ASR::Module_t *m = ASRUtils::load_module(al, tu_symtab, module_name,
-                loc, true, empty_set, compiler_options.po, true,
+                loc, true, empty_set, compiler_options.po, !diag.has_error(),
                 [&](const std::string &msg, const Location &loc) {
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();

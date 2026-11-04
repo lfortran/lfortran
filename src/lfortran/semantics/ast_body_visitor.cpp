@@ -6780,7 +6780,7 @@ public:
             SymbolTable *tu_symtab = current_scope->get_tu_scope();
             std::set<std::string> loaded_submodules;
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
-                msym, x.base.base.loc, false, loaded_submodules, compiler_options.po, true,
+                msym, x.base.base.loc, false, loaded_submodules, compiler_options.po, !diag.has_error(),
                 [&](const std::string &msg, const Location &loc) {
                     diag.add(diag::Diagnostic(
                         msg, diag::Level::Error, diag::Stage::Semantic, {
