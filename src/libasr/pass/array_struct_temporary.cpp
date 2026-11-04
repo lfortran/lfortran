@@ -3206,10 +3206,13 @@ bool reads_target_only_in_place(Allocator& al, ASR::expr_t* target,
         ASR::is_a<ASR::ArrayBroadcast_t>(*v) ) {
         return false;
     }
+    // A value that does not read the target at all, as in `x(1:n,1:m) =
+    // y(1:n,1:m)`, is read in place as well, unless the target may be
+    // reallocated to the shape of the value.
     std::set<ASR::expr_t*> found_operands;
     if( !reads_target_in_place_operands_only(al, value, target, lhs_array_var,
             root, component, found_operands, dummies_sharing_actual) ||
-        found_operands.empty() ) {
+        (found_operands.empty() && ASRUtils::is_allocatable(type)) ) {
         return false;
     }
     operands.insert(found_operands.begin(), found_operands.end());

@@ -1,0 +1,13 @@
+{
+    "basename": "pass_loop_fusion-loop_fusion_04-5093940",
+    "cmd": "lfortran --pass=loop_fusion --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/loop_fusion_04.f90",
+    "infile_hash": "8448188b00159b8dbb3df1390f539e4e520ae864fe29ca5a58589e9d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_loop_fusion-loop_fusion_04-5093940.stdout",
+    "stdout_hash": "b319acf9ed4d79555b9ac367a797930fd5b1cad5283704399f1fc301",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
