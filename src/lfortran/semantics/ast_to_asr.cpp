@@ -109,7 +109,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(*tu);
 #if defined(WITH_LFORTRAN_ASSERT)
-    if (!asr_verify(*tu, true, diagnostics)) {
+    // After a reported error the ASR can hold the bad code, so skip verify.
+    if (!diagnostics.has_error() && !asr_verify(*tu, true, diagnostics)) {
         return Error();
     };
 #endif
@@ -146,7 +147,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             outfile.close();
         }
 #if defined(WITH_LFORTRAN_ASSERT)
-        if (!asr_verify(*tu, true, diagnostics)) {
+        if (!diagnostics.has_error() && !asr_verify(*tu, true, diagnostics)) {
             return Error();
         };
 #endif
