@@ -18,9 +18,11 @@ other; Metal keeps its loops as written. `--gpu-loop-transforms` selects them:
 `all` (the default), `none`, or a comma separated list of `fuse`, `swap`,
 `split`, `jam` and `skew` (`swap` only applies to loops that are fused); any
 other value is an error. The choices that depend on the size of the device's
-last-level cache ask the runtime for it (`lfortran_gpu_cache_bytes`, the L2
-size on CUDA) unless `--gpu-cache-bytes=N` states it (the tests use a small
-value to exercise the paths for large problems on small ones).
+last-level cache ask the runtime for it (`lfortran_gpu_cache_bytes`: the L2
+size on CUDA, and on HIP the largest cache the kernel driver lists for the
+GPU, the 256 MiB Infinity Cache of an MI300) unless `--gpu-cache-bytes=N`
+states it (the tests use a small value to exercise the paths for large
+problems on small ones).
 
 The measurements quoted below are of Formal's 2D advection-diffusion
 example (`--solver workspace --order 4`, the `split` kernel: per Runge-Kutta
@@ -300,7 +302,7 @@ reaches 1.22 TB/s of DRAM bandwidth at 60% occupancy, the plain one 1.36
 TB/s at 70%). Both nests are generated, and the host picks the jammed one
 when the launch's iterations times the bytes an iteration names (one
 element of every array of the body) fit in the last-level cache, which the
-runtime reports (`lfortran_gpu_cache_bytes`, the L2 size on CUDA).
+runtime reports (`lfortran_gpu_cache_bytes`).
 
 Effect (2048²): 0.149 s to 0.133 s. The stage kernel goes from 29 µs to
 24.7 µs, with 37% fewer instructions; it now runs at the L2 bandwidth

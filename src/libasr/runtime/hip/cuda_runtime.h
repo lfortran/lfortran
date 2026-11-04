@@ -11,6 +11,7 @@
 // Only what the runtime calls is here. The header is C and C++.
 
 #include <hip/hip_runtime_api.h>
+#include <stdio.h>
 
 // Set when the CUDA runtime API is this adapter.
 #define LFORTRAN_GPU_HIP 1
@@ -72,6 +73,63 @@ static inline cudaError_t cudaMemcpyAsync(void *dst, const void *src,
 static inline cudaError_t cudaMemsetAsync(void *ptr, int value,
         size_t count, cudaStream_t stream) {
     return hipMemsetAsync(ptr, value, count, stream);
+}
+
+// The size in bytes of the GPU's last-level cache, or `l2_bytes` when no
+// larger one is found. HIP reports only the L2 cache, but an MI300 has an
+// Infinity Cache (MALL) of 256 MB behind its 4 MB L2 caches, one per XCD,
+// and that is the cache a loop transformation has to fit what it reuses in.
+// The kernel driver lists every cache of the GPU in its topology, in
+// /sys/class/kfd/kfd/topology/nodes/<node>/caches/<cache>/properties, as
+// lines "level <n>" and "size <KiB>"; the node of the device is the one
+// whose properties give its PCI location ("location_id", bus << 8 | device
+// << 3 | function, and "domain").
+static inline long long lfortran_gpu_hip_last_level_cache(int device,
+        long long l2_bytes) {
+    long long best = l2_bytes;
+    int bus = 0, dev = 0, domain = 0;
+    if (hipDeviceGetAttribute(&bus, hipDeviceAttributePciBusId, device)
+                != hipSuccess
+            || hipDeviceGetAttribute(&dev, hipDeviceAttributePciDeviceId,
+                device) != hipSuccess
+            || hipDeviceGetAttribute(&domain, hipDeviceAttributePciDomainID,
+                device) != hipSuccess) {
+        (void)hipGetLastError();
+        return best;
+    }
+    long long location = ((long long)bus << 8) | ((long long)dev << 3);
+    const char *topology = "/sys/class/kfd/kfd/topology/nodes";
+    char path[256], line[128];
+    for (int node = 0; node < 256; node++) {
+        snprintf(path, sizeof(path), "%s/%d/properties", topology, node);
+        FILE *f = fopen(path, "r");
+        if (!f) break;
+        long long node_location = -1, node_domain = -1, value;
+        while (fgets(line, sizeof(line), f)) {
+            if (sscanf(line, "location_id %lld", &value) == 1) {
+                node_location = value;
+            } else if (sscanf(line, "domain %lld", &value) == 1) {
+                node_domain = value;
+            }
+        }
+        fclose(f);
+        if (node_location != location || node_domain != domain) continue;
+        for (int cache = 0; cache < 4096; cache++) {
+            snprintf(path, sizeof(path), "%s/%d/caches/%d/properties",
+                topology, node, cache);
+            f = fopen(path, "r");
+            if (!f) break;
+            long long level = 0, size = 0;
+            while (fgets(line, sizeof(line), f)) {
+                if (sscanf(line, "level %lld", &value) == 1) level = value;
+                else if (sscanf(line, "size %lld", &value) == 1) size = value;
+            }
+            fclose(f);
+            if (level >= 2 && size * 1024 > best) best = size * 1024;
+        }
+        break;
+    }
+    return best;
 }
 static inline cudaError_t cudaLaunchKernel(const void *func, dim3 grid,
         dim3 block, void **args, size_t shared_mem, cudaStream_t stream) {
