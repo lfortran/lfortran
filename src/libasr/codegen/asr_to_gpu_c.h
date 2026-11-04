@@ -819,6 +819,22 @@ public:
         return unsupported_gpu_type("integer", kind);
     }
 
+    // The text around an extent or bound of an array that gives it the
+    // integer type `type` of the size, lbound or ubound asking for it. The
+    // value is rendered from what describes the array -- the int extents a
+    // device routine is handed with 32-bit offsets, a literal lower bound
+    // of 1, the declared dimensions -- in their own kind, so a kind wider
+    // than int has to be spelled, or an overloaded call such as
+    // max(1_8, size(v, kind=8)) sees an int beside a long.
+    std::pair<std::string, std::string> widened_extent_parts(
+            ASR::ttype_t *type) {
+        if (ASRUtils::is_integer(*type) &&
+                ASRUtils::extract_kind_from_ttype_t(type) > 4) {
+            return {"((" + gpu_type(type) + ")(", "))"};
+        }
+        return {"", ""};
+    }
+
     std::string gpu_type(ASR::ttype_t *type) {
         switch (type->type) {
             case ASR::ttypeType::Integer: {
@@ -5559,6 +5575,8 @@ public:
                 if (ab->m_value) {
                     visit_expr(ab->m_value);
                 } else {
+                    auto widened = widened_extent_parts(ab->m_type);
+                    src << widened.first;
                     // For fixed-size arrays, compute from type info
                     ASR::ttype_t *arr_type = ASRUtils::type_get_past_allocatable_pointer(
                         ASRUtils::expr_type(ab->m_v));
@@ -5655,6 +5673,7 @@ public:
                     } else {
                         src << "/* non-array bound */";
                     }
+                    src << widened.second;
                 }
                 break;
             }
@@ -6070,7 +6089,11 @@ public:
                 ASR::expr_t *av = gpu_shape_source(as->m_v, as->m_dim);
                 if (as->m_value) {
                     visit_expr(as->m_value);
-                } else if (ASR::is_a<ASR::Var_t>(*av)) {
+                    break;
+                }
+                auto widened = widened_extent_parts(as->m_type);
+                src << widened.first;
+                if (ASR::is_a<ASR::Var_t>(*av)) {
                     std::string arr_name = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(av)->m_v);
                     std::string ws_size;
@@ -6140,6 +6163,7 @@ public:
                 } else {
                     src << "/* unsupported ArraySize */";
                 }
+                src << widened.second;
                 break;
             }
             case ASR::exprType::IntrinsicImpureFunction: {

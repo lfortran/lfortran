@@ -7156,6 +7156,8 @@ RUN(NAME gpu_metal_717 LABELS gfortran metal cuda EXTRA_ARGS --descriptor-index-
 RUN(NAME gpu_metal_718 FAIL LABELS metal cuda) # stops: the packed components need --descriptor-index-64 (not supported on Metal)
 RUN(NAME gpu_metal_710 LABELS gfortran llvm metal cuda) # per-thread workspace slices of block local arrays
 RUN(NAME gpu_metal_711 LABELS gfortran llvm metal cuda) # per-thread workspace slice declared at kernel scope
+RUN(NAME gpu_metal_722 LABELS gfortran llvm metal cuda) # size/lbound/ubound of kind 8 of a dummy under max/min in a device routine (#16609)
+RUN(NAME gpu_metal_723 FILE gpu_metal_722 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64) # CUDA: long extents beside an int lower bound 1; Metal keeps int extents
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
 RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)
