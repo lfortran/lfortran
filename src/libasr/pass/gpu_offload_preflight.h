@@ -770,9 +770,16 @@ inline ASR::expr_t* gpu_loop_extent(Allocator &al, const Location &loc,
     if (ASRUtils::extract_value(ASRUtils::expr_value(start), start_value)
             && ASRUtils::extract_value(ASRUtils::expr_value(end),
                 end_value)) {
-        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-            std::max<int64_t>(0, end_value - start_value + 1), int_type,
-            ASR::integerbozType::Decimal));
+        // An extent that does not fit in integer(8) is left to the run
+        // time, where the launch stops for it first
+        // (gpu_checked_iteration_count).
+        uint64_t span = static_cast<uint64_t>(end_value)
+            - static_cast<uint64_t>(start_value);
+        if (end_value < start_value || span < INT64_MAX) {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                end_value < start_value ? 0 : static_cast<int64_t>(span) + 1,
+                int_type, ASR::integerbozType::Decimal));
+        }
     }
     ASR::expr_t *extent = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
         ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, end,

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -39,6 +40,107 @@ ASR::stmt_t *gpu_if_present(Allocator &al, const Location &loc,
     then.push_back(al, stmt);
     return ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, present, then.p,
         then.n, nullptr, 0));
+}
+
+// Appends to `out` the statements that set `count` to the number of
+// iterations of a nest whose dimensions run from starts[d] to ends[d],
+// expressions of the type of `count` that may be evaluated more than once:
+// the product of their extents, or 0 when one of them is empty. When the
+// product of the extents of a nest without an empty one does not fit in
+// that type, the statements stop the program with an error first, before
+// anything of the launch is done: such a nest could not finish running
+// anyway. The extent of a dimension whose bounds were widened to the type
+// (`widened[d]`) fits in it; that of one whose bounds have the type itself
+// may not, as -huge(0_8):huge(0_8) does not. `count` is assigned once.
+void gpu_checked_iteration_count(Allocator &al, const Location &loc,
+        const std::vector<ASR::expr_t*> &starts,
+        const std::vector<ASR::expr_t*> &ends,
+        const std::vector<bool> &widened, ASR::expr_t *count,
+        Vec<ASR::stmt_t*> &out) {
+    ASRUtils::ASRBuilder b(al, loc);
+    ASR::ttype_t *type = ASRUtils::expr_type(count);
+    int kind = ASRUtils::extract_kind_from_ttype_t(type);
+    int64_t huge = kind >= 8 ? INT64_MAX
+        : (int64_t(1) << (8 * kind - 1)) - 1;
+    auto constant = [&](int64_t value) { return b.i_t(value, type); };
+    auto stop = [&]() {
+        std::string message = "a gpu kernel launch has more than "
+            + std::to_string(huge) + " iterations";
+        return ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc,
+            b.StringConstant(message, b.String(b.i32(message.size()),
+                ASR::ExpressionLength))));
+    };
+    // The checks made when no dimension is empty, and the test that none
+    // is, nullptr when every bound is a constant.
+    std::vector<ASR::stmt_t*> checks;
+    ASR::expr_t *nonempty = nullptr;
+    // The product of the constant extents, and the extents that are not
+    // constants. A constant product that does not fit is `overflow`.
+    int64_t fixed = 1;
+    bool overflow = false;
+    std::vector<ASR::expr_t*> extents;
+    for (size_t d = 0; d < starts.size(); d++) {
+        ASR::expr_t *start = starts[d], *end = ends[d];
+        int64_t start_value = 0, end_value = 0;
+        bool start_known = ASRUtils::extract_value(
+            ASRUtils::expr_value(start), start_value);
+        bool end_known = ASRUtils::extract_value(
+            ASRUtils::expr_value(end), end_value);
+        if (start_known && end_known) {
+            if (end_value < start_value) {
+                // The nest is empty, whatever the other bounds are.
+                out.push_back(al, b.Assignment(count, constant(0)));
+                return;
+            }
+            uint64_t span = static_cast<uint64_t>(end_value)
+                - static_cast<uint64_t>(start_value);
+            if (span >= static_cast<uint64_t>(huge)
+                    || static_cast<int64_t>(span) + 1 > huge / fixed) {
+                overflow = true;
+            } else {
+                fixed *= static_cast<int64_t>(span) + 1;
+            }
+            continue;
+        }
+        ASR::expr_t *test = b.GtE(end, start);
+        nonempty = nonempty ? b.And(nonempty, test) : test;
+        // end - start + 1 > huge exactly when start <= 0 and
+        // end >= huge + start, which does not overflow then; a positive
+        // start leaves fewer than huge values up to huge.
+        if (!widened[d] && !(start_known && start_value > 0)) {
+            ASR::stmt_t *check = b.If(b.GtE(end,
+                b.Add(constant(huge), start)), {stop()}, {});
+            checks.push_back(start_known ? check
+                : b.If(b.LtE(start, constant(0)), {check}, {}));
+        }
+        extents.push_back(b.Add(b.Sub(end, start), constant(1)));
+    }
+    ASR::expr_t *product = nullptr;
+    if (overflow) {
+        checks.push_back(stop());
+    } else {
+        // product * extent > huge exactly when product > huge / extent,
+        // for a positive extent; the product so far fits, as its factors
+        // passed these checks.
+        product = fixed != 1 || extents.empty() ? constant(fixed) : nullptr;
+        for (ASR::expr_t *extent : extents) {
+            if (product != nullptr) {
+                checks.push_back(b.If(b.Gt(product,
+                    b.Div(constant(huge), extent)), {stop()}, {}));
+            }
+            product = product ? b.Mul(product, extent) : extent;
+        }
+    }
+    if (nonempty == nullptr) {
+        for (ASR::stmt_t *check : checks) out.push_back(al, check);
+        out.push_back(al, b.Assignment(count,
+            product ? product : constant(0)));
+        return;
+    }
+    if (!checks.empty()) out.push_back(al, b.If(nonempty, checks, {}));
+    out.push_back(al, b.Assignment(count, ASRUtils::EXPR(ASR::make_IfExp_t(
+        al, loc, nonempty, product ? product : constant(0), constant(0),
+        type, nullptr))));
 }
 
 } // namespace
@@ -262,6 +364,28 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         return gpu_loop_extent(al, loc, widen(starts[d]),
             widen(ends[d]), count_type);
     };
+    // The iteration count, the product of the extents (0 when one of them
+    // is): a launch whose count does not fit in its type stops instead
+    // (gpu_checked_iteration_count).
+    ASR::expr_t *iteration_count = b.Variable(current_scope,
+        current_scope->get_unique_name("__gpu_iteration_count"),
+        count_type, ASR::intentType::Local);
+    {
+        std::vector<ASR::expr_t*> count_starts, count_ends;
+        std::vector<bool> widened;
+        for (size_t d = 0; d < plan.n_dims; d++) {
+            count_starts.push_back(widen(starts[d]));
+            count_ends.push_back(widen(ends[d]));
+            widened.push_back(ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(starts[d]))
+                    < ASRUtils::extract_kind_from_ttype_t(count_type)
+                && ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(ends[d]))
+                    < ASRUtils::extract_kind_from_ttype_t(count_type));
+        }
+        gpu_checked_iteration_count(al, loc, count_starts, count_ends,
+            widened, iteration_count, prelude);
+    }
     if (plan.tiled_arg >= 0) {
         // A launch that can run in tiles (gpu_offload.cpp) runs whole tiles
         // of the device's tile width by the rest of a block, unless that
@@ -270,6 +394,13 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         // take the count past the kind of the loop indices; it is counted
         // in integer(8) as well. A tiled nest has no reduction (that keeps
         // the flat numbering), so nothing below needs the iteration count.
+        // Whole tiles start at most `threads_per_block` threads per
+        // iteration, so the padded count, and the test below that compares
+        // it with the iterations, cannot overflow while the iterations are
+        // at most `few`; a launch of more runs flat, and its padded count is
+        // not used.
+        int64_t few = INT64_MAX
+            / (4 * int64_t(device_caps.threads_per_block));
         auto count = [&](int64_t value) {
             return b.i_t(value, count_type);
         };
@@ -282,9 +413,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::expr_t *tile_count = b.Mul(b.Mul(
             ceil_div(extent(across), width), ceil_div(extent(down), height)),
             count(device_caps.threads_per_block));
-        ASR::expr_t *iterations = extent(0);
         for (size_t d = 0; d < plan.n_dims; d++) {
-            if (d > 0) iterations = b.Mul(iterations, extent(d));
             if (d != across && d != down) {
                 tile_count = b.Mul(tile_count, extent(d));
             }
@@ -295,19 +424,18 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::expr_t *tile_threads = b.Variable(current_scope,
             current_scope->get_unique_name("__gpu_tile_threads"),
             count_type, ASR::intentType::Local);
-        prelude.push_back(al, b.Assignment(tile_threads, tile_count));
-        ASR::expr_t *iteration_count = b.Variable(current_scope,
-            current_scope->get_unique_name("__gpu_iteration_count"),
-            count_type, ASR::intentType::Local);
-        prelude.push_back(al, b.Assignment(iteration_count, iterations));
+        prelude.push_back(al, b.Assignment(tile_threads, ASRUtils::EXPR(
+            ASR::make_IfExp_t(al, loc, b.LtE(iteration_count, count(few)),
+                tile_count, iteration_count, count_type, nullptr))));
         ASR::expr_t *tiled = b.Variable(current_scope,
             current_scope->get_unique_name("__gpu_tiled"),
             ASRUtils::duplicate_type(al, plan.int_type),
             ASR::intentType::Local);
         // A launch of more threads than the chunk limit runs in chunks,
         // which split the nest into boxes the kernel numbers flat.
-        ASR::expr_t *flat = b.Gt(b.Mul(count(4),
-            b.Sub(tile_threads, iteration_count)), iteration_count);
+        ASR::expr_t *flat = b.Or(b.Gt(iteration_count, count(few)),
+            b.Gt(b.Mul(count(4), b.Sub(tile_threads, iteration_count)),
+                iteration_count));
         if (chunked) {
             flat = b.Or(flat, b.Gt(tile_threads,
                 count(pass_options.gpu_chunk_limit)));
@@ -325,17 +453,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 b.Eq(tiled, b.i_t(0, plan.int_type)), iteration_count,
                 tile_threads, count_type, nullptr))));
     } else {
-        // One thread per iteration: normalize each range before taking
-        // the product.
-        ASR::expr_t *host_total = nullptr;
-        for (size_t d = 0; d < plan.n_dims; d++) {
-            host_total = host_total ? b.Mul(host_total, extent(d))
-                : extent(d);
-        }
-        thread_count = b.Variable(current_scope,
-            current_scope->get_unique_name("__gpu_iteration_count"),
-            count_type, ASR::intentType::Local);
-        prelude.push_back(al, b.Assignment(thread_count, host_total));
+        // One thread per iteration.
+        thread_count = iteration_count;
     }
     for (size_t i = 0; i < plan.private_shapes.n; i++) {
         launch_stmts.push_back(al, plan.private_shapes[i]);

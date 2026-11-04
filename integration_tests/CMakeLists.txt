@@ -7098,6 +7098,15 @@ RUN(NAME gpu_metal_689 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-li
 RUN(NAME gpu_metal_597 FAIL LABELS cuda) # stops: an array of more than huge(0) elements needs --descriptor-index-64
 RUN(NAME gpu_metal_660 FAIL LABELS metal) # stops: Metal kernels address at most huge(0) elements of an array
 RUN(NAME gpu_metal_661 FILE gpu_metal_660 FAIL LABELS metal EXTRA_ARGS --descriptor-index-64) # stops: --descriptor-index-64 does not widen Metal kernel offsets
+# A launch whose iteration count does not fit in its integer kind stops; the
+# CPU would run these nests for ever, so they run only offloaded.
+RUN(NAME gpu_metal_700 FAIL LABELS metal cuda) # stops: the product of two extents overflows (tiled on CUDA)
+RUN(NAME gpu_metal_701 FAIL LABELS cuda) # stops: one integer(8) extent overflows; metal declines integer(8) loop indices
+RUN(NAME gpu_metal_702 FAIL LABELS metal cuda) # stops: the product overflows at its last factor, with a reduction
+RUN(NAME gpu_metal_703 FAIL LABELS metal cuda) # stops: constant extents whose product overflows
+RUN(NAME gpu_metal_705 FAIL LABELS cuda) # stops: a constant integer(8) extent overflows; metal declines integer(8) loop indices
+RUN(NAME gpu_metal_704 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_704_chunked FILE gpu_metal_704 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
 RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)

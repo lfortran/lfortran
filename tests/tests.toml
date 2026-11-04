@@ -5224,6 +5224,14 @@ filename = "../integration_tests/gpu_kernel_source_35.f90"
 asr = true
 options = "--gpu=cuda --pass=gpu_offload --cumulative"
 
+# The host counts the iterations of a launch with a check that stops it when
+# the product of the extents does not fit in integer(8) (gpu_metal_702 in
+# CMakeLists.txt runs it).
+[[test]]
+filename = "../integration_tests/gpu_metal_702.f90"
+asr = true
+options = "--gpu=cuda --pass=gpu_offload --cumulative"
+
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_37.f90"
 gpu_metal_kernel = true
