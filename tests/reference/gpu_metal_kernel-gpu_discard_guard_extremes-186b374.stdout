@@ -114,6 +114,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
     long lo_gpu;
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
+    int __loop_start_0_gpu;
     int __loop_end_0_gpu;
 };
 
@@ -125,14 +126,15 @@ kernel void __lfortran_gpu_kernel_3(
     long hi_gpu = __scalar_args.hi_gpu;
     long lo_gpu = __scalar_args.lo_gpu;
     int __lb_a_0_gpu = __scalar_args.__lb_a_0_gpu;
+    int __loop_start_0_gpu = __scalar_args.__loop_start_0_gpu;
     int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __flat_idx_gpu;
     int i__dc_gpu;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 0)) ? (((__loop_end_0_gpu - 0) + 1)) : (0)))) {
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= __loop_start_0_gpu)) ? (((__loop_end_0_gpu - __loop_start_0_gpu) + 1)) : (0)))) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
-    i__dc_gpu = (__flat_idx_gpu + 0);
+    i__dc_gpu = (__flat_idx_gpu + __loop_start_0_gpu);
     if (((int)((lo_gpu < ((long)i__dc_gpu)) && (((long)i__dc_gpu) < hi_gpu)))) {
         a_gpu[((int)(i__dc_gpu) - (__lb_a_0_gpu))] = ((float)5);
     }

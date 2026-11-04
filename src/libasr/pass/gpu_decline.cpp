@@ -58,6 +58,10 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // a macOS virtual machine 64 KiB (65,472 bytes build, 65,520 are
             // rejected with "Compilation failed").
             caps.thread_stack_bytes = 64 * 1024;
+            // A launch of more than huge(0) iterations, which a nest of
+            // integer(4) loops can have, runs in chunks the kernel numbers
+            // in 32 bits.
+            caps.chunked_launches = true;
             break;
         case GpuDevice::Cuda:
             caps.name = "CUDA";

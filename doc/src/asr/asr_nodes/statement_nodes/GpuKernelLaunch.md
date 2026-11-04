@@ -161,8 +161,12 @@ the limit gets a kernel that numbers its iterations flat, so a nest of at
 most that many iterations runs as one launch with no `chunk_dimensions`,
 and its constant bounds stay constants in the kernel. A buffer handed over as
 `LFORTRAN_GPU_WRITE_DISCARD` is handed over again as written after each
-chunk, so the chunks after the first keep what it wrote. Only CUDA launches
-have `chunk_dimensions`.
+chunk, so the chunks after the first keep what it wrote. A launch whose
+kernel runs several threads per iteration (the layout's `lanes`) starts
+that many per iteration of each chunk. CUDA and Metal launches have
+`chunk_dimensions`. The host counts the iterations of a launch in
+`integer(8)`, so a Metal kernel, which numbers them in 32 bits, runs a nest
+of more than `huge(0)` iterations in chunks.
 
 A launch with a reduction gives each thread an accumulator of its own, an
 element of a buffer argument, which the kernel sets to the identity of the

@@ -788,11 +788,13 @@ inline ASR::expr_t* gpu_loop_extent(Allocator &al, const Location &loc,
             ASR::integerbozType::Decimal)), int_type, nullptr));
 }
 
-// The integer type a launch numbers the iterations of a nest in, and counts
-// them in: integer(8) where the device indexes in it, since their number is
-// the product of the extents, which can exceed the largest value of the loop
-// indices' kind even when every index fits in it. It is never narrower than
-// the loop indices.
+// The integer type a kernel numbers the iterations of a nest in: integer(8)
+// where the device indexes in it, since their number is the product of the
+// extents, which can exceed the largest value of the loop indices' kind even
+// when every index fits in it. It is never narrower than the loop indices.
+// Where it is integer(4), a launch of more than huge(0) iterations runs in
+// chunks (GpuDeviceCapabilities::chunked_launches); the host counts the
+// iterations in integer(8) whatever the kernel numbers them in.
 inline ASR::ttype_t* gpu_iteration_number_type(Allocator &al,
         const Location &loc, ASR::ttype_t *loop_int_type,
         const GpuDeviceCapabilities &caps) {

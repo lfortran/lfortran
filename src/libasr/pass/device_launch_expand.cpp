@@ -116,8 +116,8 @@ class DeviceLaunchExpandVisitor :
                 {b.Assignment(threads, b.i64(0))}, {}));
             if (kernel->m_gpu->m_lanes) {
                 pass_result.push_back(al, b.Assignment(started,
-                    b.Mul(threads,
-                        b.i2i_t(x.m_args[x.n_args - 1].m_value, int64))));
+                    b.Mul(threads, b.i2i_t(x.m_args[gpu_parameter_index(
+                        *kernel, kernel->m_gpu->m_lanes)].m_value, int64))));
             }
             pass_result.push_back(al, ASRUtils::STMT(ASR::make_If_t(al,
                 loc, nullptr, b.Gt(started, b.i64(0)), stmts.p, stmts.n,
@@ -1352,9 +1352,23 @@ class DeviceLaunchExpandVisitor :
                 // A launch of at most the chunk limit runs as above; the
                 // threads of a tiled one then number no more than that
                 // either (gpu_offload_launch.cpp). One of more runs in
-                // chunks of the iterations, numbered flat.
-                LCOMPILERS_ASSERT(layout.m_lanes == nullptr);
+                // chunks of the iterations, numbered flat, each on the
+                // lanes the launch gives an iteration (gpu_vector_lanes.cpp).
+                // Those are more than one only for a launch of a few
+                // iterations, which runs in chunks only under a low
+                // --gpu-chunk-limit, so a chunk still starts at most
+                // huge(0) threads (pass_gpu_vector_lanes asserts it).
                 LCOMPILERS_ASSERT(scalars != nullptr);
+                auto with_lanes = [&](ASR::expr_t *n_threads) {
+                    if (layout.m_lanes == nullptr) return n_threads;
+                    ASRUtils::ExprStmtDuplicator dup(al);
+                    dup.success = true;
+                    ASR::expr_t *lanes = dup.duplicate_expr(
+                        x.m_args[gpu_parameter_index(*kernel,
+                            layout.m_lanes)].m_value);
+                    LCOMPILERS_ASSERT(dup.success && lanes);
+                    return b.Mul(n_threads, b.i2i_t(lanes, int64));
+                };
                 // The field of the scalar struct a kernel parameter is
                 // handed over in.
                 auto field = [&](ASR::symbol_t *parameter) {
@@ -1378,7 +1392,7 @@ class DeviceLaunchExpandVisitor :
                 Vec<ASR::stmt_t*> single;
                 single.reserve(al, 8);
                 single.push_back(al, set_scalars());
-                fill_grid(single, threads);
+                fill_grid(single, started);
                 fill_geometry(loc, single, block, x.m_block_size);
                 set_workspaces(single, threads);
                 single.push_back(al, launch());
@@ -1388,7 +1402,7 @@ class DeviceLaunchExpandVisitor :
                 launch_chunks(x, chunks, field, set_workspaces,
                     [&](Vec<ASR::stmt_t*> &body, ASR::expr_t *n_threads) {
                         body.push_back(al, set_scalars());
-                        fill_grid(body, n_threads);
+                        fill_grid(body, with_lanes(n_threads));
                         body.push_back(al, launch());
                         // The threads of the chunks after the first keep
                         // combining into the accumulators it started.

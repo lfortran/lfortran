@@ -622,10 +622,11 @@ end program
         bool has_lanes = false;
         size_t wide_counts = 0;
         for (auto *launch : work.launches) {
-            // CUDA counts the iterations of a nest, and the whole tiles it
-            // launches a two-dimensional one in, in integer(8): the count
-            // can exceed the kind of the loop indices. Metal has no
-            // integer(8).
+            // The host counts the iterations of a nest, and the whole tiles
+            // CUDA launches a two-dimensional one in, in integer(8) on every
+            // device: the count can exceed the kind of the loop indices. A
+            // Metal kernel still numbers its threads in 32 bits, and runs a
+            // launch of more iterations in chunks.
             if (ASRUtils::extract_kind_from_ttype_t(
                     ASRUtils::expr_type(launch->m_thread_count)) == 8) {
                 wide_counts++;
@@ -644,7 +645,7 @@ end program
             }
         }
         CHECK(has_lanes == metal);
-        CHECK(wide_counts == (metal ? 0 : 3));
+        CHECK(wide_counts == 3);
         pass_gpu_launch_sync(allocator, unit, options.po);
         pass_device_launch_expand(allocator, unit, options.po);
         REQUIRE(asr_verify(unit, true, diagnostics));
@@ -653,10 +654,10 @@ end program
             expanded.visit_stmt(*program->m_body[i]);
         }
         CHECK(expanded.launches.empty());
-        // On CUDA the three launches may run in chunks
+        // On both devices the three launches may run in chunks
         // (GpuKernelLaunch.chunk_dimensions): each launches its kernel once
         // when it fits in a chunk, and once per chunk in a loop otherwise.
-        CHECK(expanded.runtime_launches == (metal ? 3 : 6));
+        CHECK(expanded.runtime_launches == 6);
         CHECK(expanded.runtime_releases == 3);
         CHECK(expanded.source_allocations == 1);
         CHECK(expanded.empty_lane_guards == (metal ? 1 : 0));

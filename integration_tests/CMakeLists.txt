@@ -7078,6 +7078,20 @@ RUN(NAME gpu_metal_337_chunked FILE gpu_metal_337 FAIL LABELS gfortran llvm meta
 RUN(NAME gpu_metal_410_chunked FILE gpu_metal_410 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4)
 RUN(NAME gpu_metal_78_chunked FILE gpu_metal_78 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1)
 RUN(NAME gpu_liveout_01_chunked FILE gpu_liveout_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
+# Values made on the device heap by every chunk, copied out after the launch.
+RUN(NAME gpu_metal_358_chunked FILE gpu_metal_358 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays --gpu-chunk-limit=2)
+RUN(NAME gpu_metal_415_chunked FILE gpu_metal_415 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays --gpu-chunk-limit=2)
+RUN(NAME gpu_metal_420_chunked FILE gpu_metal_420 LABELS gfortran llvm metal cuda EXTRA_ARGS --realloc-lhs-arrays --gpu-chunk-limit=2)
+# Metal runs launches in chunks too (lfortran/lfortran#16541): a nest of
+# more than huge(0) iterations, and small loops forced into many chunks.
+# gpu_metal_685 runs 2**31 + 1 iterations: about 1 s on Metal and 2.5 s with
+# GFortran, but about 4 s with LFortran on the CPU (`llvm`) and 6.6 s on
+# cuda_cpu (`cuda`), so it has neither label.
+RUN(NAME gpu_metal_685 LABELS gfortran metal)
+RUN(NAME gpu_metal_686 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=5)
+RUN(NAME gpu_metal_687 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=3)
+RUN(NAME gpu_metal_688 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4)
+RUN(NAME gpu_metal_689 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=1)
 RUN(NAME gpu_metal_597 FAIL LABELS cuda) # stops: an array of more than huge(0) elements needs --descriptor-index-64
 RUN(NAME gpu_metal_660 FAIL LABELS metal) # stops: Metal kernels address at most huge(0) elements of an array
 RUN(NAME gpu_metal_661 FILE gpu_metal_660 FAIL LABELS metal EXTRA_ARGS --descriptor-index-64) # stops: --descriptor-index-64 does not widen Metal kernel offsets

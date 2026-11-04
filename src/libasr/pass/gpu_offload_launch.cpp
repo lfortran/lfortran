@@ -238,12 +238,14 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // The number of threads the launch runs, evaluated once into the
     // variable that guards the launch below. Bounds are still evaluated for
     // a zero-trip loop, but gathers, allocations and readbacks belong only
-    // to actual offload work. The iterations are counted in the type the
-    // kernel numbers them in (gpu_iteration_number_type). The count is
-    // positive exactly when every dimension is non-empty.
+    // to actual offload work. The iterations are counted in integer(8),
+    // whatever the kernel numbers them in (gpu_iteration_number_type): a
+    // nest of integer(4) loops can have more than huge(0) of them, which a
+    // launch then runs in chunks the kernel numbers in 32 bits. The count
+    // is positive exactly when every dimension is non-empty.
     ASR::expr_t *thread_count = nullptr;
-    ASR::ttype_t *count_type = gpu_iteration_number_type(al, loc,
-        plan.int_type, device_caps);
+    ASR::ttype_t *count_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+        8));
     // Whether the launch may run in chunks (GpuKernelLaunch.chunk_dimensions).
     bool chunked = plan.chunk_fixed_iterations > 0;
     auto widen = [&](ASR::expr_t *limit) {
@@ -265,11 +267,9 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         // of the device's tile width by the rest of a block, unless that
         // pads the nest by more than a quarter, as a short dimension does:
         // then it runs one thread per iteration, numbered flat. Padding can
-        // take the count past the kind of the loop indices, so it is
-        // computed in integer(8). A tiled nest has no reduction (that keeps
+        // take the count past the kind of the loop indices; it is counted
+        // in integer(8) as well. A tiled nest has no reduction (that keeps
         // the flat numbering), so nothing below needs the iteration count.
-        LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(count_type)
-            == 8);
         auto count = [&](int64_t value) {
             return b.i_t(value, count_type);
         };
@@ -423,11 +423,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // only one whose threads start them.
     ASR::expr_t *slots = thread_count;
     if (plan.first_chunk_parameter != nullptr) {
-        // The iterations are counted in integer(8) where a launch may run
-        // in chunks (gpu_iteration_number_type).
         LCOMPILERS_ASSERT(chunked);
-        LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(count_type)
-            == 8);
         auto local = [&](const std::string &name) {
             return b.Variable(current_scope,
                 current_scope->get_unique_name(name),

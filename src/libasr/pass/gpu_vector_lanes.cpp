@@ -8,6 +8,7 @@
 #include <libasr/pass/pass_utils.h>
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -1915,6 +1916,12 @@ void pass_gpu_vector_lanes(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &pass_options) {
     GpuDeviceCapabilities caps = gpu_device_capabilities(pass_options);
     if (!caps.device_selected() || caps.lanes_per_iteration <= 1) return;
+    // A launch gets lanes only when it has at most iterations_max
+    // iterations, so it starts at most this many threads, also when it runs
+    // in chunks (device_launch_expand.cpp): few enough to be numbered in
+    // the 32-bit thread index of a Metal kernel.
+    LCOMPILERS_ASSERT(caps.lanes_per_iteration
+        <= std::numeric_limits<int32_t>::max() / iterations_max);
     VectorLanes v(al, caps.lanes_per_iteration);
     v.visit_TranslationUnit(unit);
 }

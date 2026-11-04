@@ -49,7 +49,7 @@ Launches are asynchronous, and the device keeps what a kernel writes.
 // A read-only argument up to this size is copied into the encoder.
 static const size_t INLINE_BYTES_MAX = 4096;
 // Buffers up to this size are kept in the pool for reuse; a larger one, such
-// as the device heap, is released when the launch is done with it.
+// as the device heap, is released with the kernel handle that holds it.
 static const size_t POOLED_BUFFER_MAX = (size_t)16 * 1024 * 1024;
 enum { POOL_MAX = 128, MAX_RESIDENT = 1024, HASH_SIZE = 4096 };
 // Launches encoded into one command buffer before it is committed, and how
@@ -72,9 +72,12 @@ typedef struct buffer_use {
 //
 // Each kernel also keeps a scratch buffer per argument slot. The device runs
 // the launches one after another, and what a launch leaves in a scratch
-// buffer is dead once it ends (a part the host reads back is read before the
-// next launch is made), so every launch of the kernel can use the same one,
-// however many of them are still pending.
+// buffer is dead once the launch statement ends (a part the host reads back
+// is read before the next one is made), so every launch of the kernel can
+// use the same one, however many of them are still pending. A launch that
+// runs in chunks encodes each chunk with its one kernel handle, so its
+// chunks share the buffer: what an earlier chunk leaves in it is live for
+// the later chunks and for the host to read back after the last one.
 static struct {
     const char *name;
     const char *source;
@@ -184,8 +187,10 @@ struct lfortran_gpu_kernel {
     unsigned char scalar_bytes[SCALAR_BYTES];
     size_t scalar_used;
     void *scalar_heap[MAX_ARGS];
-    // A buffer only the device holds, created at the launch and kept until
-    // the kernel is released so that the host can read part of it back.
+    // A buffer only the device holds, kept until the kernel is released so
+    // that the host can read part of it back, and used by every launch of
+    // this handle: the chunks of one launch share it, as they share the
+    // device heap state they are handed.
     id<MTLBuffer> scratch_buffers[MAX_ARGS];
     int n_args;
     uint64_t serial;
@@ -683,21 +688,26 @@ static void order_after_dependences(lfortran_gpu_ctx *ctx,
     }
 }
 
-// The scratch buffer of argument `slot` of the kernel `entry`, with room for
+// The scratch buffer of argument `slot` of the kernel `k`, with room for
 // `size` bytes. One larger than the pool keeps -- the device heap -- is made
-// for the launch.
-static id<MTLBuffer> scratch_buffer(lfortran_gpu_ctx *ctx, int entry,
-    int slot, size_t size)
+// for the handle, and kept by it for its later launches (the chunks of a
+// launch), which see what the earlier ones left there, like the slot buffer
+// of the CUDA runtime; it is released with the handle.
+static id<MTLBuffer> scratch_buffer(lfortran_gpu_kernel *k, int slot,
+    size_t size)
 {
+    lfortran_gpu_ctx *ctx = k->ctx;
     if (size > POOLED_BUFFER_MAX) {
+        id<MTLBuffer> buffer = k->scratch_buffers[slot];
+        if (buffer && [buffer length] >= size) return buffer;
         return tracked_buffer_alloc(ctx, size);
     }
-    id<MTLBuffer> buffer = source_registry[entry].scratch[slot];
+    id<MTLBuffer> buffer = source_registry[k->entry].scratch[slot];
     if (buffer && [buffer length] >= size) return buffer;
     size_t length = 256;
     while (length < size) length *= 2;
     buffer = tracked_buffer_alloc(ctx, length);
-    source_registry[entry].scratch[slot] = buffer;
+    source_registry[k->entry].scratch[slot] = buffer;
     return buffer;
 }
 
@@ -904,7 +914,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                         [encoder setBuffer:nil offset:0 atIndex:i];
                         break;
                     }
-                    id<MTLBuffer> buffer = scratch_buffer(ctx, k->entry, i,
+                    id<MTLBuffer> buffer = scratch_buffer(k, i,
                         k->sizes[i]);
                     k->scratch_buffers[i] = buffer;
                     uses[n_uses].buffer = (__bridge void *)buffer;
@@ -921,7 +931,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             }
         }
 
-        NSUInteger total_threads = (NSUInteger)(grid[0] * block[0]);
+        NSUInteger total_threads = (NSUInteger)grid[0] * (NSUInteger)block[0];
         NSUInteger threads_per_group = (NSUInteger)block[0];
         NSUInteger max_threads = [k->pipeline maxTotalThreadsPerThreadgroup];
         if (threads_per_group > max_threads) {
