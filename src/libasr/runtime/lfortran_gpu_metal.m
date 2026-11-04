@@ -27,7 +27,11 @@ Launches are asynchronous, and the device keeps what a kernel writes.
 * A buffer the kernel only reads (LFORTRAN_GPU_READ) is copied in when the
   launch is made, so the host may change it right after: into the encoder
   itself when it is small, into a pooled buffer otherwise. When it is a dirty
-  range, the kernel reads the resident buffer instead.
+  range, the kernel reads the resident buffer instead. The kernel handle
+  keeps the pooled buffer until the argument is set again or the handle is
+  released, so a later launch of the handle that is not handed the argument
+  again (the next chunk of a launch that runs in chunks) reads it without a
+  copy.
 * A range that overlaps a dirty one without being the same range makes the
   runtime sync first, so that the host bytes it copies are current.
 * A device buffer is never written by the host while a launch that uses it
@@ -192,6 +196,9 @@ struct lfortran_gpu_kernel {
     // this handle: the chunks of one launch share it, as they share the
     // device heap state they are handed.
     id<MTLBuffer> scratch_buffers[MAX_ARGS];
+    // The pooled copy of a read-only buffer argument the last launch read,
+    // kept for the next launch until the argument is set again.
+    id<MTLBuffer> read_buffers[MAX_ARGS];
     int n_args;
     uint64_t serial;
     // The kernel's entry in the registry.
@@ -568,17 +575,27 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     return k;
 }
 
+// Gives the copy of read-only argument `idx` that `k` keeps back to the
+// pool, once the launches that read it are done.
+static void release_read_buffer(lfortran_gpu_kernel *k, int idx) {
+    if (!k->read_buffers[idx]) return;
+    release_buffer(k->read_buffers[idx], k->serial);
+    k->read_buffers[idx] = nil;
+}
+
 void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
     if (!k) return;
     for (int i = 0; i < k->n_args; i++) {
         if (k->scalar_heap[i]) free(k->scalar_heap[i]);
         k->scratch_buffers[i] = nil;
+        release_read_buffer(k, i);
     }
     k->pipeline = nil;
     free(k);
 }
 
 static void set_arg(lfortran_gpu_kernel *k, int idx, int kind) {
+    release_read_buffer(k, idx);
     k->kind[idx] = kind;
     if (idx >= k->n_args) k->n_args = idx + 1;
 }
@@ -891,6 +908,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                     id<MTLBuffer> buffer = dirty_resident(k->ptrs[i],
                         k->sizes[i]);
                     if (buffer) {
+                        release_read_buffer(k, i);
                         entries[find_entry(k->ptrs[i])].last_use = serial;
                         uses[n_uses].buffer = (__bridge void *)buffer;
                         uses[n_uses++].write = 0;
@@ -899,13 +917,20 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                         [encoder setBytes:k->ptrs[i] length:k->sizes[i]
                             atIndex:i];
                     } else {
-                        buffer = acquire_buffer(ctx, k->sizes[i]);
-                        if (ctx->profile_enabled) {
-                            ctx->telemetry.memcpy_h2d_bytes += k->sizes[i];
+                        // The chunks of a launch hand the argument over
+                        // once: the copy the first one made is kept.
+                        buffer = k->read_buffers[i];
+                        if (!buffer) {
+                            buffer = acquire_buffer(ctx, k->sizes[i]);
+                            if (ctx->profile_enabled) {
+                                ctx->telemetry.memcpy_h2d_bytes
+                                    += k->sizes[i];
+                            }
+                            memcpy([buffer contents], k->ptrs[i],
+                                k->sizes[i]);
+                            k->read_buffers[i] = buffer;
                         }
-                        memcpy([buffer contents], k->ptrs[i], k->sizes[i]);
                         [encoder setBuffer:buffer offset:0 atIndex:i];
-                        release_buffer(buffer, serial);
                     }
                     break;
                 }

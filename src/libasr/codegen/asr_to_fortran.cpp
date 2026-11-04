@@ -1396,9 +1396,15 @@ public:
                 r += ")";
             }
             r += ", deferred";
+            if (x.m_access == ASR::accessType::Private) {
+                r += ", private";
+            }
             r += " :: ";
             r += std::string(x.m_name);
         } else {
+            if (x.m_access == ASR::accessType::Private) {
+                r += ", private";
+            }
             r += " :: ";
             r += std::string(x.m_name);
             if (strcmp(x.m_name, x.m_proc_name)) {

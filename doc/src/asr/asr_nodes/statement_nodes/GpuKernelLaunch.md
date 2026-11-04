@@ -54,8 +54,9 @@ block along a second dimension, the one the stores step through next in
 memory (or, if they do not agree on one, the next one in loop order). The
 block index numbers the tiles, and `thread_count` counts whole tiles. Where
 whole tiles would pad the nest by more than a quarter, as a short dimension
-does, the host tells the kernel to number the iterations flat instead, and
-`thread_count` counts iterations. Padding to whole tiles can take
+does, or would start more threads than the chunk limit (below), the host
+tells the kernel to number the iterations flat instead, and `thread_count`
+counts iterations. Padding to whole tiles can take
 `thread_count` past the kind of the loop indices, so it is an `integer(8)`.
 The kernel checks the zero-based tile coordinates against the extents before
 adding the loop lower bounds. A padded thread returns before constructing a
@@ -133,7 +134,11 @@ it has more iterations than the chunk limit (`huge(0)`, which the hidden,
 test-only option `--gpu-chunk-limit` lowers): one per chunk, a box of the
 iteration space of at most that many iterations. The iterations of a `do
 concurrent` may run in any order, so the chunks run one after another, and
-the kernel numbers the iterations of each chunk from the bounds of its box.
+the kernel numbers the iterations of each chunk from the bounds of its box,
+from zero. A chunk has at most `huge(0)` iterations, so a kernel whose loop
+indices are all `integer(4)` numbers them in `integer(4)`, while the launch
+counts the iterations of the whole nest in `integer(8)`; an `integer(8)`
+index keeps `integer(8)` numbering.
 A chunk covers every dimension not in `chunk_dimensions` whole; their
 extents are constants, and their product is `chunk_fixed_iterations`, at
 most the limit. A bound whose value is known at compile time (a literal, a
@@ -153,9 +158,10 @@ extent: a one-dimensional `do concurrent (i = 1:n)` with an `integer(4)`
 index has at most `huge(0)` iterations. `device_launch_expand` sets the
 buffers, scratch buffers and workspaces once, sized for the largest chunk,
 and then launches each chunk with its own scalar arguments and grid. A
-launch with `chunk_dimensions` that may run in tiles runs flat when it would
-start more threads than the chunk limit; a tiled launch without them is not
-yet limited. Where every extent of the nest is a constant, that is decided
+launch that may run in tiles runs flat when its whole tiles would start
+more threads than the chunk limit, with or without `chunk_dimensions`, so no
+launch starts more threads than the limit. Where every extent of the nest is
+a constant, that is decided
 at compile time: a nest whose whole tiles come to more threads than
 the limit gets a kernel that numbers its iterations flat, so a nest of at
 most that many iterations runs as one launch with no `chunk_dimensions`,

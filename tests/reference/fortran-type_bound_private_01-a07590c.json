@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-type_bound_private_01-a07590c",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/type_bound_private_01.f90",
+    "infile_hash": "3f613e3036a9c120f67f35bdbc9043c5a84ff8a466ecf8b4603e4360",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-type_bound_private_01-a07590c.f90",
+    "stdout_hash": "c03899e24aedc2fdc722e476cf3bc3191787bef84cdcacbf0f26e0d5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

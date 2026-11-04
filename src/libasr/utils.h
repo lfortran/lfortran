@@ -77,6 +77,8 @@ struct PassOptions {
     bool openmp = false;
     bool gpu_offload_metal = false;
     bool gpu_offload_cuda = false;
+    // The CUDA offload is compiled for an AMD GPU with HIP (`--gpu=hip`).
+    bool gpu_offload_hip = false;
     // `!$omp parallel do` asks for host threads. Offloading one onto a device
     // is a choice the user has to make, so it is off unless asked for.
     bool gpu_offload_omp_loops = false;

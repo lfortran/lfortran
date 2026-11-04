@@ -797,7 +797,11 @@ preparation cannot alternate between their different byte counts.
 `--gpu=hip` runs the same CUDA runtime on AMD GPUs, through ROCm. HIP is
 CUDA C++ for AMD GPUs, so the backend shares everything with `--gpu=cuda` up
 to the toolchain: the ASR passes, the device capabilities and the device code
-generator, whose output only gains `#include <hip/hip_runtime.h>`. The HIP
+generator, whose output only gains `#include <hip/hip_runtime.h>`. The one
+capability that differs is the unrolling of short sequential loops in device
+code: ROCm's device compiler does not unroll a loop whose trip count it does
+not know, so HIP unrolls them four times (a matrix-vector product with a
+thread per row ran 3x faster on an MI300A), while CUDA unrolls none. The HIP
 driver (`hipcc` by default, `--device-compiler` to choose another) compiles it
 as HIP for `--gpu-arch` (`gfx90a`, `gfx942`, ...; the GPUs of the compiling
 machine by default) and links the program. The GPU runtime is
@@ -828,6 +832,16 @@ runtime does with an entry changes:
 * A range a kernel may write is used in place: nothing is allocated, copied
   in or copied back, and `lfortran_gpu_sync` only waits. The host does not
   access such a range before the next sync, as in the copy model.
+* The first touch of a page by the GPU is a page fault that the driver
+  serves, at about 2 GB/s on an MI300A, while glibc serves a large allocation
+  with a fresh `mmap` and unmaps it when it is freed: a temporary array a
+  loop allocates at every iteration, or the accumulators of a reduction,
+  would be fresh memory at every launch (a kernel writing a fresh 512 MB
+  array took 0.2-0.4 s instead of 0.2 ms). The runtime therefore makes glibc
+  serve every allocation from its heap and never trim it
+  (`mallopt(M_MMAP_MAX, 0)` and `mallopt(M_TRIM_THRESHOLD, -1)`), so freed
+  memory stays mapped, for the host and the GPU, and is reused.
+  `LFORTRAN_GPU_KEEP_MEMORY=0` leaves malloc as it is.
 * The host may change or free a range a kernel only reads as soon as the
   launch returns (see the next section). One of at most 64 KiB is therefore
   still copied, which leaves the launch asynchronous; a larger one is used in
@@ -835,10 +849,12 @@ runtime does with an entry changes:
 * `lfortran_gpu_discard` of a range that a pending launch writes in place
   waits for the launch, since the host is about to free memory the kernel
   uses.
-* On AMD the runtime gives every range it uses in place, once,
-  `hipMemAdvise(hipMemAdviseSetPreferredLocation)` for the GPU: an MI300A
-  kernel reads memory the host allocated at about 127 GB/s without it and at
-  about 3.4 TB/s with it.
+* The runtime gives the driver no advice about a range it uses in place. On
+  an MI300A, `hipMemAdvise(hipMemAdviseSetPreferredLocation)` for the GPU
+  made such kernels erratic: a STREAM triad ran at 2.7 TB/s in one run and
+  at 3 GB/s in the next, and a matrix-vector product at 1 GB/s in most runs.
+  Without it the triad runs at 3.2 TB/s and the product at 330 GB/s in every
+  run.
 
 The runtime selects the model when it starts. `LFORTRAN_GPU_MEMORY=copy` or
 `unified` selects one; `auto`, the default, selects the unified model on a
@@ -848,6 +864,11 @@ otherwise. `unified` on a GPU that cannot access host memory is an error.
 `LFORTRAN_GPU_VERBOSE=1` prints the model selected. The CPU emulation reports
 a separate device that can access host memory, so its default is the copy
 model and `LFORTRAN_GPU_MEMORY=unified` runs the unified model on the CPU.
+In the unified model on AMD the host waits for the GPU by sleeping until the
+driver wakes it (`hipDeviceScheduleBlockingSync`) rather than by spinning:
+the CPU and the GPU of an APU share the power of their socket, and on an
+MI300A a host thread spinning while a kernel streams through memory made the
+kernel 3-5% slower.
 
 The Metal runtime encodes the launches one after another into one compute
 encoder and commits its command buffer every 64 launches and at every wait:
@@ -981,6 +1002,14 @@ read only the shape of the arrays.
 An assignment whose every element is assigned again before anything reads it
 (`dcdw = 0.` followed by `dcdw = sum(reduce_dcdw, dim=4)`) is removed before
 this, by the `dead_array_store` pass, so it costs no launch at all.
+
+### Fast math in device code
+
+With `--fast` (and without `--no-fast-math`) the CUDA and HIP device code
+computes `1/sqrt(x)` as `rsqrt(x)`, one operation where a correctly rounded
+quotient of a correctly rounded root takes two long ones: an n-body
+force loop ran 16% faster on an H100. The result can differ from the exact
+one in the last bit, as host code under `--fast` can.
 
 ### Lanes: an iteration on a SIMD-group
 

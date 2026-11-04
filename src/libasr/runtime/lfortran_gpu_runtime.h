@@ -145,7 +145,11 @@ static inline int lfortran_gpu_discard_allowed(int idx, void *const *ptrs,
 
 // The kernel sees the `size` bytes at `ptr` as they are when the launch is
 // made. A launch does not wait for the kernel: the host sees what the kernel
-// wrote at the next lfortran_gpu_sync.
+// wrote at the next lfortran_gpu_sync. A kernel handle may be launched again
+// without its arguments being set again, as the chunks of a launch that runs
+// in chunks are: a buffer the kernel only reads is then copied to the device
+// at the first of those launches only, so the host must not change it
+// between them; one set again is copied again.
 //
 // A runtime with memory of its own keeps a buffer the kernel may write on
 // the device: until the next sync, a later launch handed the same host range

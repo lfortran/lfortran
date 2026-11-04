@@ -1,7 +1,8 @@
 program gpu_metal_565
-    ! A do concurrent nest of more than huge(0) iterations: the offloaded
-    ! kernel has to number its 2**31 + 1 iterations in integer(8), or the
-    ! last ones get a negative flat index. Both extents are run-time values
+    ! A do concurrent nest of more than huge(0) iterations: the launch runs
+    ! its 2**31 + 1 iterations in chunks of at most huge(0), which the
+    ! kernel numbers in 32 bits; numbered in 32 bits as one launch, the last
+    ! ones would get a negative flat index. Both extents are run-time values
     ! and the test compares with a copy of n so that neither the device
     ! compiler nor index-set splitting hides a wrapped index.
     implicit none

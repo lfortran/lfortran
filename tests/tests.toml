@@ -5224,6 +5224,22 @@ filename = "../integration_tests/gpu_kernel_source_35.f90"
 asr = true
 options = "--gpu=cuda --pass=gpu_offload --cumulative"
 
+# The host counts the iterations of a launch with a check that stops it when
+# the product of the extents does not fit in integer(8) (gpu_metal_702 in
+# CMakeLists.txt runs it).
+[[test]]
+filename = "../integration_tests/gpu_metal_702.f90"
+asr = true
+options = "--gpu=cuda --pass=gpu_offload --cumulative"
+
+# An empty tiled launch takes its iteration count as its thread count: the
+# padded count is formed only for at least one iteration (gpu_metal_707 in
+# CMakeLists.txt runs it).
+[[test]]
+filename = "../integration_tests/gpu_metal_707.f90"
+asr = true
+options = "--gpu=cuda --pass=gpu_offload --cumulative"
+
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_37.f90"
 gpu_metal_kernel = true
@@ -7654,3 +7670,8 @@ llvm = true
 filename = "errors/implicit_none_external_01.f90"
 semantics_only_cc = true
 options = "--implicit-interface --implicit-typing"
+
+# The accessibility of type-bound procedures is kept by `--show-fortran`.
+[[test]]
+filename = "../integration_tests/type_bound_private_01.f90"
+fortran = true

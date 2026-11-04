@@ -371,6 +371,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 ),
                                             sqrt_subtract:
                                                 (StructMethodDeclaration
@@ -382,6 +383,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 )
                                         })
                                     t_1

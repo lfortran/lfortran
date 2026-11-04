@@ -27,6 +27,7 @@ public:
     struct ClassProcInfo {
         std::string name;
         Location loc;
+        ASR::accessType access = ASR::accessType::Public;
     };
     // Type bound procedure bindings are collected while the specification part
     // of a program unit is visited and are turned into symbols once that unit
@@ -56,13 +57,19 @@ public:
         SymbolTableVisitor &v;
         std::map<std::string, std::map<std::string,
             std::vector<std::string>>> generic_class_procedures;
+        std::map<std::string, std::map<std::string,
+            ASR::accessType>> generic_class_procedure_access;
 
         GenericClassProcedureScope(SymbolTableVisitor &v_) : v(v_) {
             generic_class_procedures.swap(v.generic_class_procedures);
+            generic_class_procedure_access.swap(
+                v.generic_class_procedure_access);
         }
 
         ~GenericClassProcedureScope() {
             generic_class_procedures.swap(v.generic_class_procedures);
+            generic_class_procedure_access.swap(
+                v.generic_class_procedure_access);
         }
     };
     // The procedures given to procedure pointer components of a host that
@@ -279,11 +286,16 @@ public:
     };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
+    // The accessibility of the generic bindings named by a generic-name.
+    std::map<std::string, std::map<std::string, ASR::accessType>> generic_class_procedure_access;
     // The specific procedures of the operator interface blocks, by operator,
     // with the scope of each block (see GenericSpecific).
     std::map<std::string, std::vector<GenericSpecific>> overloaded_op_procs;
     std::map<std::string, std::vector<GenericSpecific>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
+    // The default accessibility of the bindings of the derived type being
+    // visited, changed by a `private` statement in its type-bound part.
+    ASR::accessType binding_dflt_access = ASR::accessType::Public;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
     std::vector<std::pair<std::string, Location>> assgn_proc_names_locations;
     std::vector<std::pair<std::string,Location>> simd_variables;
@@ -720,8 +732,10 @@ public:
         tmp = nullptr;
     }
 
+    // A `private` statement in the type-bound procedure part of a derived
+    // type makes its bindings private unless they are declared `public`.
     void visit_Private(const AST::Private_t&) {
-        // To Be Implemented
+        binding_dflt_access = ASR::accessType::Private;
     }
 
     void visit_FinalName(const AST::FinalName_t& x) {
@@ -3947,7 +3961,9 @@ public:
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
         dt_name = to_lower(x.m_name);
+        binding_dflt_access = ASR::accessType::Public;
         visit_DerivedTypeUtil(x);
+        binding_dflt_access = ASR::accessType::Public;
     }
 
     void visit_Union(const AST::Union_t&x) {
@@ -4084,6 +4100,7 @@ public:
                 use_sym_name = to_lower(use_sym->m_remote_sym);
             }
             class_procedures[dt_name][use_sym_name]["procedure"] = remote_sym_str;
+            ASR::accessType access = binding_dflt_access;
             for( size_t i = 0; i < x.n_attr; i++ ) {
                 switch( x.m_attr[i]->type ) {
                     case AST::decl_attributeType::AttrPass: {
@@ -4109,6 +4126,10 @@ public:
                         } else if (attr->m_attr == AST::simple_attributeType::AttrNoPass) {
                             LCOMPILERS_ASSERT(cdf[new_dt_name][use_sym_name].find("nopass") == cdf[new_dt_name][use_sym_name].end());
                             cdf[new_dt_name][use_sym_name]["nopass"] = attr->base.base.loc;
+                        } else if (attr->m_attr == AST::simple_attributeType::AttrPrivate) {
+                            access = ASR::accessType::Private;
+                        } else if (attr->m_attr == AST::simple_attributeType::AttrPublic) {
+                            access = ASR::accessType::Public;
                         }
                         break;
                     }
@@ -4117,6 +4138,7 @@ public:
                     }
                 }
             }
+            class_procedures[dt_name][use_sym_name]["procedure"].access = access;
         }
     }
 
@@ -5059,7 +5081,7 @@ public:
                 parent_decl->m_name, parent_decl->m_self_argument,
                 parent_decl->m_proc_name, proc,
                 parent_decl->m_abi, parent_decl->m_is_deferred,
-                parent_decl->m_is_nopass));
+                parent_decl->m_is_nopass, parent_decl->m_access));
             clss->m_symtab->add_symbol(local_name, local_sym);
         }
         return local_sym;
@@ -5148,9 +5170,15 @@ public:
                         ASR::accessType::Public);
                 } else {
                     LCOMPILERS_ASSERT(strlen(generic_name) > 0);
+                    ASR::accessType access = ASR::accessType::Public;
+                    auto dt_access = generic_class_procedure_access.find(proc.first);
+                    if (dt_access != generic_class_procedure_access.end()
+                            && dt_access->second.count(pname.first)) {
+                        access = dt_access->second[pname.first];
+                    }
                     v = ASR::make_GenericProcedure_t(al, loc,
                         clss->m_symtab, generic_name,
-                        cand_procs.p, cand_procs.size(), ASR::accessType::Public); // Update the access as per the input Fortran code
+                        cand_procs.p, cand_procs.size(), access);
                 }
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
@@ -5158,6 +5186,7 @@ public:
             }
         }
         generic_class_procedures.clear();
+        generic_class_procedure_access.clear();
         std::set<ASR::Struct_t*> done;
         for (auto &item : current_scope->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second)) {
@@ -6127,10 +6156,11 @@ public:
                 if (!is_nopass) {
                     ensure_matching_types_for_pass_obj_dum_arg(func, pass_arg_name, clss_sym, loc);
                 }
+                ASR::accessType access = pname.second["procedure"].access;
                 ASR::asr_t *v = ASR::make_StructMethodDeclaration_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
                     proc_name, proc_sym, ASR::abiType::Source,
-                    is_deferred, is_nopass);
+                    is_deferred, is_nopass, access);
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
                 sync_pdt_specialization_symbols(clss, proc_scope);
@@ -6278,6 +6308,19 @@ public:
 
     void visit_GenericName(const AST::GenericName_t& x) {
         std::string generic_name = to_lower(std::string(x.m_name));
+        ASR::accessType access = binding_dflt_access;
+        for (size_t i = 0; i < x.n_attr; i++) {
+            if (AST::is_a<AST::SimpleAttribute_t>(*x.m_attr[i])) {
+                AST::simple_attributeType attr = AST::down_cast<
+                    AST::SimpleAttribute_t>(x.m_attr[i])->m_attr;
+                if (attr == AST::simple_attributeType::AttrPrivate) {
+                    access = ASR::accessType::Private;
+                } else if (attr == AST::simple_attributeType::AttrPublic) {
+                    access = ASR::accessType::Public;
+                }
+            }
+        }
+        generic_class_procedure_access[dt_name][generic_name] = access;
         for( size_t i = 0; i < x.n_names; i++ ) {
             std::string x_m_name = std::string(x.m_names[i]);
             generic_class_procedures[dt_name][generic_name].push_back(to_lower(x_m_name));

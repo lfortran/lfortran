@@ -61,6 +61,19 @@ static inline int atomicAdd(int *address, int value) {
 }
 #endif
 
+// The reciprocal square root, which a device computes in one operation.
+// A C library may declare an `rsqrt` of its own (C23), so the emulation's
+// has a name of its own, which `rsqrt` in the device code names.
+static inline double lfortran_cuda_cpu_rsqrt(double x) {
+    return 1.0/sqrt(x);
+}
+#ifdef __cplusplus
+static inline float lfortran_cuda_cpu_rsqrt(float x) {
+    return 1.0f/sqrtf(x);
+}
+#endif
+#define rsqrt lfortran_cuda_cpu_rsqrt
+
 // A scalar TRANSFER between an integer and a real of one width reads the
 // bits of one as the other with these intrinsics.
 static inline float __int_as_float(int value) {

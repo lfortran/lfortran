@@ -498,6 +498,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Private
                                                 ),
                                             cache:
                                                 (Variable
@@ -618,6 +619,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Private
                                                 ),
                                             ndep:
                                                 (Variable

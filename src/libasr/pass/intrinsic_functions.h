@@ -2196,7 +2196,9 @@ namespace Shiftr {
             return nullptr;
         }
         int64_t val;
-        if (kind == 1) {                       // For logical shift val1 is treated as unsigned
+        if (val2 == k_val) {
+            val = 0;
+        } else if (kind == 1) {                // For logical shift val1 is treated as unsigned
             val = (uint8_t) val1 >> val2;
         } else if(kind == 2) {
             val = (uint16_t) val1 >> val2;
@@ -2217,9 +2219,15 @@ namespace Shiftr {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = shiftr(x, y)
-        * r = x >> y
+        * r = x >> y, or 0 if y == bit_size(x)
         */
-        body.push_back(al, b.Assignment(result, b.LBitRshift(args[0], b.i2i_t(args[1], arg_types[0]), arg_types[0])));
+        int64_t bit_size = 8 * extract_kind_from_ttype_t(arg_types[0]);
+        ASR::expr_t *shift = b.i2i_t(args[1], arg_types[0]);
+        body.push_back(al, b.If(b.GtE(shift, b.i_t(bit_size, arg_types[0])), {
+            b.Assignment(result, b.i_t(0, return_type))
+        }, {
+            b.Assignment(result, b.LBitRshift(args[0], shift, arg_types[0]))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2238,6 +2246,10 @@ namespace Rshift {
 
     static ASR::expr_t *eval_Rshift(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        if (!ASR::is_a<ASR::IntegerConstant_t>(*args[0]) ||
+                !ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
+            return nullptr;
+        }
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
@@ -2252,7 +2264,9 @@ namespace Rshift {
             ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
             return nullptr;
         }
-        int64_t val = val1 >> val2;
+        // val1 is sign-extended to 64 bits, so shifting by 63 gives all
+        // sign bits for every kind
+        int64_t val = val1 >> std::min<int64_t>(val2, 63);
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
 
@@ -2265,9 +2279,15 @@ namespace Rshift {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = rshift(x, y)
-        * r = x >> y
+        * r = x >> y, or x >> (bit_size(x) - 1) if y == bit_size(x)
         */
-        body.push_back(al, b.Assignment(result, b.BitRshift(args[0], args[1], arg_types[0])));
+        int64_t bit_size = 8 * extract_kind_from_ttype_t(arg_types[0]);
+        ASR::expr_t *shift = b.i2i_t(args[1], arg_types[0]);
+        body.push_back(al, b.If(b.GtE(shift, b.i_t(bit_size, arg_types[0])), {
+            b.Assignment(result, b.BitRshift(args[0], b.i_t(bit_size - 1, arg_types[0]), arg_types[0]))
+        }, {
+            b.Assignment(result, b.BitRshift(args[0], shift, arg_types[0]))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2296,7 +2316,7 @@ namespace Shiftl {
             ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
             return nullptr;
         }
-        int64_t val = val1 << val2;
+        int64_t val = val2 == k_val ? 0 : (int64_t)((uint64_t) val1 << val2);
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
 
@@ -2309,9 +2329,15 @@ namespace Shiftl {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = shiftl(x, y)
-        * r = x << y
+        * r = x << y, or 0 if y == bit_size(x)
         */
-        body.push_back(al, b.Assignment(result, b.BitLshift(args[0], b.i2i_t(args[1], arg_types[0]), arg_types[0])));
+        int64_t bit_size = 8 * extract_kind_from_ttype_t(arg_types[0]);
+        ASR::expr_t *shift = b.i2i_t(args[1], arg_types[0]);
+        body.push_back(al, b.If(b.GtE(shift, b.i_t(bit_size, arg_types[0])), {
+            b.Assignment(result, b.i_t(0, return_type))
+        }, {
+            b.Assignment(result, b.BitLshift(args[0], shift, arg_types[0]))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2509,7 +2535,7 @@ namespace Ishft {
                 val = (uint64_t) val1 >> val2;
             }
         } else {
-            val = val1 << val2;
+            val = (int64_t)((uint64_t) val1 << val2);
         }
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -2523,7 +2549,9 @@ namespace Ishft {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = ishft(x, y)
-        * if ( y <= 0) {
+        * if (y >= bit_size(x) .or. y <= -bit_size(x)) {
+        *   r = 0
+        * } else if ( y <= 0) {
         *   r = x >> ( -1 * y)
         * } else {
         *   r = x << y
@@ -2542,10 +2570,16 @@ namespace Ishft {
             if_shift = b.LBitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]);
             else_shift = b.BitLshift(args[0], arg_2, arg_types[0]);
         }
-        body.push_back(al, b.If(b.LtE(arg_2, b.i_t(0, arg_types[0])), {
-            b.Assignment(result, if_shift)
+        int64_t bit_size = 8 * ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        body.push_back(al, b.If(b.Or(b.GtE(arg_2, b.i_t(bit_size, arg_types[0])),
+                b.LtE(arg_2, b.i_t(-bit_size, arg_types[0]))), {
+            b.Assignment(result, b.i_t(0, return_type))
         }, {
-            b.Assignment(result, else_shift)
+            b.If(b.LtE(arg_2, b.i_t(0, arg_types[0])), {
+                b.Assignment(result, if_shift)
+            }, {
+                b.Assignment(result, else_shift)
+            })
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
