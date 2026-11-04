@@ -7158,6 +7158,9 @@ RUN(NAME gpu_metal_710 LABELS gfortran llvm metal cuda) # per-thread workspace s
 RUN(NAME gpu_metal_711 LABELS gfortran llvm metal cuda) # per-thread workspace slice declared at kernel scope
 # .eqv. and .neqv. in a kernel (lfortran/lfortran#16630).
 RUN(NAME gpu_metal_730 LABELS gfortran llvm metal cuda)
+# Logical reductions (lfortran/lfortran#16725), in one launch and in many.
+RUN(NAME gpu_metal_728 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_729 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
 RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)
