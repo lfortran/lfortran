@@ -5,6 +5,7 @@
 #include <libasr/diagnostics.h>
 
 #include <map>
+#include <set>
 #include <string>
 
 namespace LCompilers::LFortran {
@@ -14,16 +15,23 @@ class PureChecks {
 public:
     PureChecks() = delete;
 
-    // Rules that need the body of `f`. `implicit_interface_procedures`: the
-    // procedure variables that calls through an implicit interface are made
-    // through, mapped to the called procedure.
+    // Rules on the dummies of `f`, run when the procedure is declared.
+    static void check_declaration(const ASR::Function_t &f,
+        const std::string &proc_name, diag::Diagnostics &diag,
+        const CompilerOptions &compiler_options);
+
+    // Rules that need the body; `implicit_interface_procedures` maps call variables to procedures.
     static void check_definition(const ASR::Function_t &f,
         diag::Diagnostics &diag, const CompilerOptions &compiler_options,
         const std::map<const ASR::symbol_t*, ASR::symbol_t*>
             &implicit_interface_procedures);
 
 private:
-    // No statement or call with a side effect
+    // 15.7: an intent(out) dummy is not polymorphic
+    static bool intent_out_not_polymorphic(const ASR::Variable_t &v,
+        const std::string &proc_name, diag::Diagnostics &diag);
+
+    // 15.7: no statement or call with a side effect
     static bool body_has_no_side_effects(const ASR::Function_t &f,
         diag::Diagnostics &diag,
         const std::map<const ASR::symbol_t*, ASR::symbol_t*>
@@ -32,6 +40,9 @@ private:
     // C1583
     static bool dummy_intent_given(const ASR::Variable_t &v,
         diag::Diagnostics &diag);
+
+    static bool has_polymorphic_allocatable_ultimate_component(
+        ASR::symbol_t *struct_sym, std::set<ASR::symbol_t*> &visited);
 };
 
 } // namespace LCompilers::LFortran
