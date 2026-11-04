@@ -41,17 +41,23 @@ endif()
 
 if(WITH_TARGET_WASM)
 
-    if ((NOT (DEFINED ENV{EMSDK_PATH})) AND (NOT (DEFINED ENV{WASI_SDK_PATH})))
-        message(FATAL_ERROR "Atleast one of `EMSDK_PATH` or `WASI_SDK_PATH` must be available to target `WASM`")
+    if (("$ENV{LFORTRAN_EMCC}" STREQUAL "") AND ("$ENV{EMSDK_PATH}" STREQUAL "") AND ("$ENV{WASI_SDK_PATH}" STREQUAL ""))
+        message(FATAL_ERROR "At least one of `LFORTRAN_EMCC`, `EMSDK_PATH` or `WASI_SDK_PATH` must be available to target `WASM`")
     endif()
 
     # Next to the native runtime libraries, where the driver looks for them.
     set(WASM_RUNTIME_DIR ${CMAKE_CURRENT_BINARY_DIR}/..)
 
-    if (DEFINED ENV{EMSDK_PATH})
+    if (NOT "$ENV{LFORTRAN_EMCC}" STREQUAL "")
+        set(WASM_EMCC "$ENV{LFORTRAN_EMCC}")
+    elseif (NOT "$ENV{EMSDK_PATH}" STREQUAL "")
+        set(WASM_EMCC "$ENV{EMSDK_PATH}/upstream/emscripten/emcc")
+    endif()
+
+    if (WASM_EMCC)
         set(WASM_EMCC_OBJ ${WASM_RUNTIME_DIR}/lfortran_runtime_wasm_emcc.o)
         add_custom_command(OUTPUT ${WASM_EMCC_OBJ}
-            COMMAND $ENV{EMSDK_PATH}/upstream/emscripten/emcc -I${libasr_SOURCE_DIR}/.. -I${libasr_BINARY_DIR}/.. -DCOMPILE_TO_WASM
+            COMMAND ${WASM_EMCC} -I${libasr_SOURCE_DIR}/.. -I${libasr_BINARY_DIR}/.. -DCOMPILE_TO_WASM
                 -c --target=wasm32-unknown-emscripten ${SRC} -o ${WASM_EMCC_OBJ}
             COMMENT "Cross compiling the runtime to ${WASM_EMCC_OBJ}"
             DEPENDS ${SRC})
@@ -60,7 +66,7 @@ if(WITH_TARGET_WASM)
             DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
 
-    if (DEFINED ENV{WASI_SDK_PATH})
+    if (NOT "$ENV{WASI_SDK_PATH}" STREQUAL "")
         set(WASM_WASI_OBJ ${WASM_RUNTIME_DIR}/lfortran_runtime_wasm_wasi.o)
         add_custom_command(OUTPUT ${WASM_WASI_OBJ}
             COMMAND $ENV{WASI_SDK_PATH}/bin/clang -I${libasr_SOURCE_DIR}/.. -I${libasr_BINARY_DIR}/.. -DCOMPILE_TO_WASM

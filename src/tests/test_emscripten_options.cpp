@@ -5,6 +5,7 @@
 #include <cstdio>
 
 using LCompilers::CommandLineInterface::LFortranCommandLineParser;
+using LCompilers::CommandLineInterface::emcc_driver;
 using LCompilers::CommandLineInterface::emscripten_link_options;
 
 TEST_CASE("Emscripten settings accept attached and separated arguments")
@@ -68,6 +69,15 @@ TEST_CASE("Emscripten settings keep generic linker flags separate")
     const char *missing[] = {"lfortran", "--target=wasm32-unknown-emscripten", "-s"};
     LFortranCommandLineParser missing_parser(3, missing);
     CHECK_THROWS_AS(missing_parser.parse(), CLI::ArgumentMismatch);
+}
+
+TEST_CASE("Emscripten driver lookup prefers explicit emcc and ignores empty settings")
+{
+    CHECK(emcc_driver("/opt/emcc", "/opt/emsdk") == "/opt/emcc");
+    CHECK(emcc_driver("", "/opt/emsdk") == "/opt/emsdk/upstream/emscripten/emcc");
+    CHECK(emcc_driver(nullptr, "/opt/emsdk") == "/opt/emsdk/upstream/emscripten/emcc");
+    CHECK(emcc_driver(nullptr, "") == "emcc");
+    CHECK(emcc_driver(nullptr, nullptr) == "emcc");
 }
 
 TEST_CASE("Emscripten settings reach the link command in order without shell splitting")
