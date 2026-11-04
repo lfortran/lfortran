@@ -43,6 +43,16 @@ static const cudaDeviceAttr cudaDevAttrPageableMemoryAccess =
 static inline cudaError_t cudaSetDevice(int device) {
     return hipSetDevice(device);
 }
+// The host waits for the GPU by sleeping until it is woken rather than by
+// spinning (hipDeviceScheduleBlockingSync). On an APU such as the MI300A the
+// CPU and the GPU share the power of their socket, and a host thread
+// spinning while a kernel streams through memory made the kernel 3-5%
+// slower. Flags are a hint, so a device that refuses them keeps its own.
+static inline void lfortran_gpu_hip_block_while_waiting(void) {
+    if (hipSetDeviceFlags(hipDeviceScheduleBlockingSync) != hipSuccess) {
+        (void)hipGetLastError();
+    }
+}
 static inline cudaError_t cudaGetDevice(int *device) {
     return hipGetDevice(device);
 }

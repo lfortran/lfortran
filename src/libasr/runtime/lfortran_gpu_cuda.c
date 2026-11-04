@@ -357,6 +357,10 @@ static int choose_unified_memory(int device) {
             integrated ? "integrated with" : "separate from",
             pageable ? "can" : "cannot");
     }
+#ifdef LFORTRAN_GPU_HIP
+    // An APU waits by blocking (lfortran_gpu_hip_block_while_waiting).
+    if (unified) lfortran_gpu_hip_block_while_waiting();
+#endif
     return unified;
 }
 
