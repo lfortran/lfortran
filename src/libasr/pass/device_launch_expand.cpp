@@ -662,10 +662,6 @@ class DeviceLaunchExpandVisitor :
             std::vector<ASR::expr_t*> subscripts;
             int rank = ASRUtils::extract_n_dims_from_ttype(
                 ASRUtils::expr_type(arg));
-            if (rank <= 1) {
-                subscripts.push_back(index);
-                return subscripts;
-            }
             ASR::expr_t *flat = b.Sub(b.i2i_t(index, int64), b.i64(1));
             ASR::expr_t *stride = nullptr;
             for (int d = 0; d < rank; d++) {
