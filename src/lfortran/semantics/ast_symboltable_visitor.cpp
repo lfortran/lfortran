@@ -284,6 +284,9 @@ public:
     std::map<std::string, std::vector<GenericSpecific>> overloaded_op_procs;
     std::map<std::string, std::vector<GenericSpecific>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
+    // The default accessibility of the bindings of the derived type being
+    // visited, changed by a `private` statement in its type-bound part.
+    ASR::accessType binding_dflt_access = ASR::accessType::Public;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
     std::vector<std::pair<std::string, Location>> assgn_proc_names_locations;
     std::vector<std::pair<std::string,Location>> simd_variables;
@@ -720,8 +723,10 @@ public:
         tmp = nullptr;
     }
 
+    // A `private` statement in the type-bound procedure part of a derived
+    // type makes its bindings private unless they are declared `public`.
     void visit_Private(const AST::Private_t&) {
-        // To Be Implemented
+        binding_dflt_access = ASR::accessType::Private;
     }
 
     void visit_FinalName(const AST::FinalName_t& x) {
@@ -3947,7 +3952,9 @@ public:
 
     void visit_DerivedType(const AST::DerivedType_t &x) {
         dt_name = to_lower(x.m_name);
+        binding_dflt_access = ASR::accessType::Public;
         visit_DerivedTypeUtil(x);
+        binding_dflt_access = ASR::accessType::Public;
     }
 
     void visit_Union(const AST::Union_t&x) {
@@ -4084,6 +4091,7 @@ public:
                 use_sym_name = to_lower(use_sym->m_remote_sym);
             }
             class_procedures[dt_name][use_sym_name]["procedure"] = remote_sym_str;
+            ASR::accessType access = binding_dflt_access;
             for( size_t i = 0; i < x.n_attr; i++ ) {
                 switch( x.m_attr[i]->type ) {
                     case AST::decl_attributeType::AttrPass: {
@@ -4109,6 +4117,10 @@ public:
                         } else if (attr->m_attr == AST::simple_attributeType::AttrNoPass) {
                             LCOMPILERS_ASSERT(cdf[new_dt_name][use_sym_name].find("nopass") == cdf[new_dt_name][use_sym_name].end());
                             cdf[new_dt_name][use_sym_name]["nopass"] = attr->base.base.loc;
+                        } else if (attr->m_attr == AST::simple_attributeType::AttrPrivate) {
+                            access = ASR::accessType::Private;
+                        } else if (attr->m_attr == AST::simple_attributeType::AttrPublic) {
+                            access = ASR::accessType::Public;
                         }
                         break;
                     }
@@ -4116,6 +4128,11 @@ public:
                         break ;
                     }
                 }
+            }
+            if (access == ASR::accessType::Private) {
+                class_procedures[dt_name][use_sym_name]["private"] = remote_sym_str;
+            } else {
+                class_procedures[dt_name][use_sym_name].erase("private");
             }
         }
     }
@@ -5059,7 +5076,7 @@ public:
                 parent_decl->m_name, parent_decl->m_self_argument,
                 parent_decl->m_proc_name, proc,
                 parent_decl->m_abi, parent_decl->m_is_deferred,
-                parent_decl->m_is_nopass));
+                parent_decl->m_is_nopass, parent_decl->m_access));
             clss->m_symtab->add_symbol(local_name, local_sym);
         }
         return local_sym;
@@ -6127,10 +6144,12 @@ public:
                 if (!is_nopass) {
                     ensure_matching_types_for_pass_obj_dum_arg(func, pass_arg_name, clss_sym, loc);
                 }
+                ASR::accessType access = pname.second.count("private")
+                    ? ASR::accessType::Private : ASR::accessType::Public;
                 ASR::asr_t *v = ASR::make_StructMethodDeclaration_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
                     proc_name, proc_sym, ASR::abiType::Source,
-                    is_deferred, is_nopass);
+                    is_deferred, is_nopass, access);
                 ASR::symbol_t *cls_proc_sym = ASR::down_cast<ASR::symbol_t>(v);
                 clss->m_symtab->add_symbol(pname.first, cls_proc_sym);
                 sync_pdt_specialization_symbols(clss, proc_scope);

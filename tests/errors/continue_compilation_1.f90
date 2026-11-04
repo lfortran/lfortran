@@ -4124,3 +4124,37 @@ contains
         print *, shifta(n, [1, 40])  ! {Error} shift argument of shifta out of range
     end subroutine
 end module
+
+module cc1_private_binding_def
+    type :: cc1_pb_t
+    contains
+        procedure, private, nopass :: cc1_pb_s
+        procedure, private, nopass :: cc1_pb_f
+    end type
+    type :: cc1_pb_default_t
+    contains
+        private
+        procedure, nopass :: cc1_pb_s
+        procedure, public, nopass :: cc1_pb_f
+    end type
+contains
+    subroutine cc1_pb_s()
+    end subroutine
+    integer function cc1_pb_f()
+        cc1_pb_f = 1
+    end function
+end module
+
+module cc1_private_binding_use
+    use cc1_private_binding_def
+contains
+    subroutine cc1_pb_use()
+        type(cc1_pb_t) :: x
+        type(cc1_pb_default_t) :: y
+        integer :: k
+        call x%cc1_pb_s()  ! {Error} type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+        k = x%cc1_pb_f()  ! {Error} type-bound procedure 'cc1_pb_f' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+        call y%cc1_pb_s()  ! {Error} type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_default_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+        k = y%cc1_pb_f()
+    end subroutine
+end module

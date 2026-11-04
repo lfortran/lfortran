@@ -727,6 +727,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    Public
                                                                 ),
                                                             resize:
                                                                 (StructMethodDeclaration
@@ -738,6 +739,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    Public
                                                                 ),
                                                             sz:
                                                                 (Variable
@@ -1686,6 +1688,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    Public
                                                                 ),
                                                             resize:
                                                                 (StructMethodDeclaration
@@ -1697,6 +1700,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    Public
                                                                 ),
                                                             sz:
                                                                 (Variable

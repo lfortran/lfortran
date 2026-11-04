@@ -3233,6 +3233,7 @@ RUN(NAME type_bound_generic_member_access_01 LABELS gfortran llvm)
 RUN(NAME type_bound_generic_member_access_02 LABELS gfortran llvm)
 RUN(NAME type_bound_generic_member_access_03 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME type_bound_generic_extend_01 LABELS gfortran llvm)
+RUN(NAME type_bound_private_01 LABELS gfortran llvm)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

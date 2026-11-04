@@ -458,7 +458,7 @@ def struct_method(table, name, proc, proc_name=None, deferred=False,
         f":name {string(name)} :self_argument nil "
         f":proc_name {string(proc_name or name)} :proc {proc} "
         f":abi :Source :is_deferred {'true' if deferred else 'false'} "
-        f":is_nopass {'true' if nopass else 'false'})"
+        f":is_nopass {'true' if nopass else 'false'} :access :Public)"
     )
 
 
