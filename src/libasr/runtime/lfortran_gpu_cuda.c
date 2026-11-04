@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
 
 // We implement the same C API as the Metal runtime
 // (lfortran_gpu_runtime.h), but using the CUDA runtime API: NVIDIA's own
@@ -29,7 +32,10 @@ default stream ordering every copy and launch:
 * A buffer the kernel only reads is copied in, before the launch on the
   stream, into memory the argument slot of its kernel keeps; the stream
   orders that copy after every earlier launch that read the memory. When it
-  is a dirty range, the kernel reads the resident memory instead.
+  is a dirty range, the kernel reads the resident memory instead. A later
+  launch of the same kernel handle that is not handed the buffer again (the
+  next chunk of a launch that runs in chunks) reads what the first one
+  copied, as long as no other handle has used that memory since.
 * A range that overlaps a dirty one without being the same range makes the
   runtime sync first.
 * A scratch buffer, which only the device holds, is the memory its argument
@@ -59,7 +65,9 @@ copy model, with the same table and the same contract:
 The model is chosen when the runtime starts: LFORTRAN_GPU_MEMORY=copy or
 unified selects one, and auto (the default) selects unified on a device that
 is integrated with the host and can access its pageable memory.
-LFORTRAN_GPU_VERBOSE=1 prints the model chosen.
+LFORTRAN_GPU_VERBOSE=1 prints the model chosen. In the unified memory model
+the runtime makes glibc keep freed memory mapped (keep_freed_memory_mapped);
+LFORTRAN_GPU_KEEP_MEMORY=0 leaves malloc as it is.
 */
 
 enum { MAX_RESIDENT = 1024, MAX_DEFERRED = 4096 };
@@ -86,6 +94,9 @@ static int unified_memory = 0;
 typedef struct slot_cache {
     void *buffers[MAX_ARGS];
     size_t capacities[MAX_ARGS];
+    // The kernel handle whose read-only buffer the memory holds a copy of,
+    // or NULL.
+    const void *filled_by[MAX_ARGS];
 } slot_cache;
 
 // Registry for pre-compiled CUDA kernels, one entry for each kernel a
@@ -153,6 +164,9 @@ struct lfortran_gpu_kernel {
     int access[MAX_ARGS];
     scalar_arg scalar_args[MAX_ARGS];
     int kind[MAX_ARGS];
+    // Whether the read-only buffer argument has been copied into the memory
+    // of its slot since it was set.
+    int copied[MAX_ARGS];
     int n_args;
     slot_cache *cache;
 };
@@ -251,18 +265,13 @@ static resident* entry_for(void *host, size_t size) {
 }
 
 // In the unified memory model: the entry `e` uses its host range in place.
-// The driver is told once per range that the device uses it.
+// No advice is given to the driver: on an MI300A,
+// hipMemAdvise(SetPreferredLocation) made kernels that use host memory in
+// place erratic, from full speed in one run to 1-3 GB/s in the next.
 static void* use_in_place(resident *e) {
-    if (!e->in_place || e->capacity != e->size) {
-#ifdef LFORTRAN_GPU_HIP
-        int device = 0;
-        check(cudaGetDevice(&device), "cudaGetDevice");
-        lfortran_gpu_hip_advise_device_use(e->host, e->size, device);
-#endif
-        e->device = e->host;
-        e->capacity = e->size;
-        e->in_place = 1;
-    }
+    e->device = e->host;
+    e->capacity = e->size;
+    e->in_place = 1;
     return e->device;
 }
 
@@ -348,7 +357,29 @@ static int choose_unified_memory(int device) {
             integrated ? "integrated with" : "separate from",
             pageable ? "can" : "cannot");
     }
+#ifdef LFORTRAN_GPU_HIP
+    // An APU waits by blocking (lfortran_gpu_hip_block_while_waiting).
+    if (unified) lfortran_gpu_hip_block_while_waiting();
+#endif
     return unified;
+}
+
+// In the unified memory model a kernel touches host memory through the
+// host's page tables, and the first touch of a page by the GPU is a page
+// fault that the driver serves: about 2 GB/s on an MI300A, so a kernel
+// writing a fresh 512 MB array takes 0.2-0.4 s instead of 0.2 ms. glibc
+// serves a large allocation with a fresh mmap and returns it to the system
+// when it is freed, so every temporary array a loop allocates again (and the
+// accumulators of a reduction) is fresh memory at every launch. Serving every
+// allocation from the heap, and not trimming the heap when it shrinks,
+// makes freed memory stay mapped, for the host and the GPU, and be reused.
+static void keep_freed_memory_mapped(void) {
+#ifdef M_MMAP_MAX
+    const char *value = getenv("LFORTRAN_GPU_KEEP_MEMORY");
+    if (value != NULL && strcmp(value, "0") == 0) return;
+    mallopt(M_MMAP_MAX, 0);
+    mallopt(M_TRIM_THRESHOLD, -1);
+#endif
 }
 
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
@@ -360,6 +391,7 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
     // continue with the values its loops never computed.
     check(cudaSetDevice(0), "cudaSetDevice");
     unified_memory = choose_unified_memory(0);
+    if (unified_memory) keep_freed_memory_mapped();
     return singleton;
 }
 
@@ -422,6 +454,7 @@ void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
     k->buffer_host_ptrs[idx] = ptr;
     k->buffer_sizes[idx] = size;
     k->access[idx] = access;
+    k->copied[idx] = 0;
     k->kind[idx] = ARG_BUFFER;
     if (idx >= k->n_args) k->n_args = idx + 1;
 }
@@ -533,10 +566,22 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                     d_ptr = use_in_place(entry_for(host, size));
                     wait_for_kernel = 1;
                 }
-                if (!d_ptr) {
+                if (d_ptr) {
+                    k->copied[i] = 0;
+                } else {
+                    // The chunks of a launch hand the buffer over once: the
+                    // copy the first one made is still there, unless the
+                    // memory was replaced or another handle filled it.
+                    void *previous = k->cache->buffers[i];
                     d_ptr = slot_buffer(k->cache, i, size);
-                    check(cudaMemcpyAsync(d_ptr, host, size,
-                        cudaMemcpyHostToDevice, 0), "cudaMemcpyAsync H2D");
+                    if (!k->copied[i] || d_ptr != previous
+                            || k->cache->filled_by[i] != k) {
+                        check(cudaMemcpyAsync(d_ptr, host, size,
+                            cudaMemcpyHostToDevice, 0),
+                            "cudaMemcpyAsync H2D");
+                        k->copied[i] = 1;
+                        k->cache->filled_by[i] = k;
+                    }
                 }
             }
             k->buffer_device_ptrs[i] = d_ptr;
@@ -545,6 +590,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             if (k->kind[i] != ARG_SCRATCH) continue;
             k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
                 : slot_buffer(k->cache, i, k->buffer_sizes[i]);
+            k->cache->filled_by[i] = NULL;
         }
     } while (syncs != n_syncs);
 
@@ -625,6 +671,9 @@ long long lfortran_gpu_cache_bytes(void) {
             size = 0;
         }
         bytes = size;
+#ifdef LFORTRAN_GPU_HIP
+        bytes = lfortran_gpu_hip_last_level_cache(device, bytes);
+#endif
     }
     return bytes;
 }

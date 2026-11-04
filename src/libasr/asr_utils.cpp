@@ -14976,7 +14976,7 @@ ASR::symbol_t* SymbolDuplicator::duplicate_StructMethodDeclaration(
         structMethod->m_name, structMethod->m_self_argument,
         structMethod->m_proc_name, structMethod->m_proc,
         structMethod->m_abi, structMethod->m_is_deferred,
-        structMethod->m_is_nopass));
+        structMethod->m_is_nopass, structMethod->m_access));
 }
 
 ASR::symbol_t* SymbolDuplicator::duplicate_Namelist(ASR::Namelist_t* namelist,

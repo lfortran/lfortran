@@ -738,6 +738,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Private
                                                 ),
                                             add_project_dependencies:
                                                 (StructMethodDeclaration
@@ -749,6 +750,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Private
                                                 ),
                                             cache:
                                                 (Variable
@@ -921,6 +923,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Private
                                                 ),
                                             verbosity:
                                                 (Variable

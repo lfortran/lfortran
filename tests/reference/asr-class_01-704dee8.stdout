@@ -146,6 +146,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 ),
                                             print:
                                                 (StructMethodDeclaration
@@ -157,6 +158,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    Public
                                                 ),
                                             radius:
                                                 (Variable

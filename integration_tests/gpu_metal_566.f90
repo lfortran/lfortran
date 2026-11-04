@@ -1,8 +1,9 @@
 program gpu_metal_566
     ! A do concurrent nest of more than huge(0) iterations with literal
-    ! bounds: the offloaded kernel's iteration count is then a product of
-    ! integer(8) constants, which the kernel source must not compute in C
-    ! int, or it wraps negative and every iteration is skipped. The test
+    ! bounds: its iteration count is then a product of constants, which must
+    ! not be computed in 32 bits, or it wraps negative and every iteration
+    ! is skipped. The launch runs it in chunks of at most huge(0)
+    ! iterations, which the kernel numbers in 32 bits. The test
     ! compares with a run-time copy of the bound so that index-set splitting
     ! does not take the loop apart.
     implicit none

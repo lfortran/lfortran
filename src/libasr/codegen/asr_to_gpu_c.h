@@ -381,6 +381,13 @@ public:
                     src << "), (float)(";
                     emit_derived_extent(e.children[1]);
                     src << "))";
+                } else if (e.binop == ASR::binopType::LBitRShift) {
+                    // A logical right shift: see visit of IntegerBinOp.
+                    src << "((int)((unsigned int)(";
+                    emit_derived_extent(e.children[0]);
+                    src << ") >> (";
+                    emit_derived_extent(e.children[1]);
+                    src << ")))";
                 } else {
                     src << "(";
                     emit_derived_extent(e.children[0]);
@@ -788,6 +795,18 @@ public:
         src << close << ", " << open;
         if (b) visit_expr(b);
         src << close << ")";
+    }
+
+    // The unsigned integer type of the same width as gpu_type(type), for an
+    // integer type.
+    std::string unsigned_gpu_type(ASR::ttype_t *type) {
+        int kind = checked_integer_cast<int>(
+            ASR::down_cast<ASR::Integer_t>(type)->m_kind);
+        if (kind == 1) return "uint8_t";
+        if (kind == 2) return "uint16_t";
+        if (kind == 4) return "unsigned int";
+        if (kind == 8) return "unsigned long";
+        return unsupported_gpu_type("integer", kind);
     }
 
     std::string gpu_type(ASR::ttype_t *type) {
@@ -2228,6 +2247,21 @@ public:
             total += total.empty() ? len : (" * " + len);
         }
         func_array_size_params[key] = "(" + total + ")";
+    }
+
+    // The element count of an array type whose every extent is given, or
+    // "" when one is not.
+    std::string explicit_array_size_str(ASR::ttype_t *type) {
+        type = ASRUtils::type_get_past_allocatable_pointer(type);
+        if (!ASR::is_a<ASR::Array_t>(*type)) return "";
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+        std::string total;
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            if (arr->m_dims[d].m_length == nullptr) return "";
+            std::string len = "(" + expr_str(arr->m_dims[d].m_length) + ")";
+            total += total.empty() ? len : (" * " + len);
+        }
+        return total.empty() ? "" : "(" + total + ")";
     }
 
     // True when the callee's signature carries a synthesised size parameter
@@ -5244,6 +5278,17 @@ public:
                             if (eit != alloc_array_size_exprs.end()) {
                                 ptr_section_sizes[tgt_name] =
                                     eit->second;
+                            } else if (!func_array_size_params.count(
+                                    val_name)) {
+                                // An array of the kernel with explicit
+                                // extents, such as the gathered copy of a
+                                // section an inlined procedure takes: its
+                                // type has the size.
+                                std::string size = explicit_array_size_str(
+                                    ASRUtils::expr_type(assoc_val));
+                                if (!size.empty()) {
+                                    ptr_section_sizes[tgt_name] = size;
+                                }
                             }
                         }
                         // Propagate func_array_size_params so that
@@ -5349,6 +5394,18 @@ public:
                     ASRUtils::extract_kind_from_ttype_t(c->m_type));
                 break;
             }
+            case ASR::exprType::TypeInquiry: {
+                // huge, tiny, epsilon, digits, ...: a constant of the type
+                // of the argument, whose value the kernel never reads.
+                ASR::TypeInquiry_t *t = ASR::down_cast<ASR::TypeInquiry_t>(
+                    expr);
+                if (t->m_value == nullptr) {
+                    throw CodeGenError("gpu offload: a type inquiry without "
+                        "a value reached the device code", expr->base.loc);
+                }
+                visit_expr(t->m_value);
+                break;
+            }
             case ASR::exprType::LogicalConstant: {
                 ASR::LogicalConstant_t *c = ASR::down_cast<ASR::LogicalConstant_t>(expr);
                 src << (c->m_value ? "1" : "0");
@@ -5369,6 +5426,17 @@ public:
                     src << "), (" << type << ")(";
                     visit_expr(op->m_right);
                     src << "))";
+                } else if (op->m_op == ASR::binopType::LBitRShift) {
+                    // A logical right shift (ishft, shiftr) fills with
+                    // zeros, but `>>` on a signed integer shifts in copies
+                    // of the sign bit: shift the unsigned integer of the
+                    // same width.
+                    src << "((" << gpu_type(op->m_type) << ")(("
+                        << unsigned_gpu_type(op->m_type) << ")(";
+                    visit_expr(op->m_left);
+                    src << ") >> (";
+                    visit_expr(op->m_right);
+                    src << ")))";
                 } else {
                     src << "(";
                     visit_expr(op->m_left);
@@ -6461,7 +6529,6 @@ public:
             case ASR::binopType::BitXor: return "^";
             case ASR::binopType::BitLShift: return "<<";
             case ASR::binopType::BitRShift: return ">>";
-            case ASR::binopType::LBitRShift: return ">>";
             default: throw CodeGenError("binop_str: operator " +
                 std::to_string(op) + " not implemented");
         }
