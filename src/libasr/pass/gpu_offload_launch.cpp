@@ -396,9 +396,11 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         // the flat numbering), so nothing below needs the iteration count.
         // Whole tiles start at most `threads_per_block` threads per
         // iteration, so the padded count, and the test below that compares
-        // it with the iterations, cannot overflow while the iterations are
-        // at most `few`; a launch of more runs flat, and its padded count is
-        // not used.
+        // it with the iterations, cannot overflow while there are at most
+        // `few` iterations and at least one: an empty dimension outside the
+        // tile does not bound the product of the tile dimensions it is
+        // multiplied by. A launch of more or of none does not form the
+        // padded count; one of more runs flat.
         int64_t few = INT64_MAX
             / (4 * int64_t(device_caps.threads_per_block));
         auto count = [&](int64_t value) {
@@ -425,7 +427,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             current_scope->get_unique_name("__gpu_tile_threads"),
             count_type, ASR::intentType::Local);
         prelude.push_back(al, b.Assignment(tile_threads, ASRUtils::EXPR(
-            ASR::make_IfExp_t(al, loc, b.LtE(iteration_count, count(few)),
+            ASR::make_IfExp_t(al, loc, b.And(b.Gt(iteration_count, count(0)),
+                b.LtE(iteration_count, count(few))),
                 tile_count, iteration_count, count_type, nullptr))));
         ASR::expr_t *tiled = b.Variable(current_scope,
             current_scope->get_unique_name("__gpu_tiled"),

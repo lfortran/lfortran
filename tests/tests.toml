@@ -5232,6 +5232,14 @@ filename = "../integration_tests/gpu_metal_702.f90"
 asr = true
 options = "--gpu=cuda --pass=gpu_offload --cumulative"
 
+# An empty tiled launch takes its iteration count as its thread count: the
+# padded count is formed only for at least one iteration (gpu_metal_707 in
+# CMakeLists.txt runs it).
+[[test]]
+filename = "../integration_tests/gpu_metal_707.f90"
+asr = true
+options = "--gpu=cuda --pass=gpu_offload --cumulative"
+
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_37.f90"
 gpu_metal_kernel = true
