@@ -99,6 +99,18 @@ git checkout 0f9ca691cbe6782838266a9bb5005ae187f253a2
 export FC=lfortran
 export CC=clang
 export CXX=clang++
+if [[ "${LFORTRAN_LINKER:-}" == gcc ]] ; then
+  # LFortran links with Pixi's GCC (the LLVM 7 and 8 environments), against
+  # the conda sysroot and with default PIE links. Clang 7 and 8 find neither
+  # that GCC nor its sysroot, so they would compile against the system's
+  # newer glibc headers (__isoc23_strtol) and without -fPIC. The trailing
+  # space separates the flags from the include flag that run-fpm.sh appends
+  # to CFLAGS.
+  toolchain="--target=x86_64-conda-linux-gnu --gcc-toolchain=$CONDA_PREFIX"
+  toolchain+=" --sysroot=$CONDA_PREFIX/x86_64-conda-linux-gnu/sysroot -fPIC "
+  export CFLAGS="${CFLAGS:-} $toolchain"
+  export CXXFLAGS="${CXXFLAGS:-} $toolchain"
+fi
 
 echo "FC=${FC}"
 echo "CC=${CC}"
@@ -165,6 +177,13 @@ echo "Using CAF_IMAGES=$CAF_IMAGES"
 # coarrays_39: gfortran doesn't support coshape intrinsic with version 13.3.
 # coarrays_45, coarrays_46, coarrays_47: gfortran-13/OpenCoarrays lacks support for co_broadcast of PDT/extended/allocatable derived-type arrays (strided section)
 # coarrays_49: gfortran ICEs on the `ptr => co_var` declaration initializer (internal compiler error in record_reference, cgraphbuild.cc:65, with 13.3); per @bonachea 16.2 still does not run this correctly
+gasnet_libs=(-lgasnet-smp-seq)
+if [[ $(uname -s) == Linux ]] ; then
+  # GASNet calls shm_open, which glibc < 2.34 (such as the conda sysroot)
+  # keeps in librt.
+  gasnet_libs+=(-lrt)
+fi
+
 opencoarrays_unsupported="coarrays_06 coarrays_11 coarrays_13 coarrays_21 coarrays_27 coarrays_31 coarrays_32 coarrays_34 coarrays_39 coarrays_45 coarrays_46 coarrays_47 coarrays_49"
 
 # loop over $tests
@@ -193,7 +212,7 @@ lfortran "$@" $extrafiles $testfile \
     -o "${base}_lf.out" \
     -L$PWD/caffeine/inst/lib \
     -lcaffeine \
-    -lgasnet-smp-seq
+    "${gasnet_libs[@]}"
 
 # ----------------------------------------
 # Run LFortran executable
