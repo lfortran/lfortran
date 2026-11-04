@@ -828,6 +828,16 @@ runtime does with an entry changes:
 * A range a kernel may write is used in place: nothing is allocated, copied
   in or copied back, and `lfortran_gpu_sync` only waits. The host does not
   access such a range before the next sync, as in the copy model.
+* The first touch of a page by the GPU is a page fault that the driver
+  serves, at about 2 GB/s on an MI300A, while glibc serves a large allocation
+  with a fresh `mmap` and unmaps it when it is freed: a temporary array a
+  loop allocates at every iteration, or the accumulators of a reduction,
+  would be fresh memory at every launch (a kernel writing a fresh 512 MB
+  array took 0.2-0.4 s instead of 0.2 ms). The runtime therefore makes glibc
+  serve every allocation from its heap and never trim it
+  (`mallopt(M_MMAP_MAX, 0)` and `mallopt(M_TRIM_THRESHOLD, -1)`), so freed
+  memory stays mapped, for the host and the GPU, and is reused.
+  `LFORTRAN_GPU_KEEP_MEMORY=0` leaves malloc as it is.
 * The host may change or free a range a kernel only reads as soon as the
   launch returns (see the next section). One of at most 64 KiB is therefore
   still copied, which leaves the launch asynchronous; a larger one is used in

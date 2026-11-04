@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef __GLIBC__
+#include <malloc.h>
+#endif
 
 // We implement the same C API as the Metal runtime
 // (lfortran_gpu_runtime.h), but using the CUDA runtime API: NVIDIA's own
@@ -62,7 +65,9 @@ copy model, with the same table and the same contract:
 The model is chosen when the runtime starts: LFORTRAN_GPU_MEMORY=copy or
 unified selects one, and auto (the default) selects unified on a device that
 is integrated with the host and can access its pageable memory.
-LFORTRAN_GPU_VERBOSE=1 prints the model chosen.
+LFORTRAN_GPU_VERBOSE=1 prints the model chosen. In the unified memory model
+the runtime makes glibc keep freed memory mapped (keep_freed_memory_mapped);
+LFORTRAN_GPU_KEEP_MEMORY=0 leaves malloc as it is.
 */
 
 enum { MAX_RESIDENT = 1024, MAX_DEFERRED = 4096 };
@@ -355,6 +360,24 @@ static int choose_unified_memory(int device) {
     return unified;
 }
 
+// In the unified memory model a kernel touches host memory through the
+// host's page tables, and the first touch of a page by the GPU is a page
+// fault that the driver serves: about 2 GB/s on an MI300A, so a kernel
+// writing a fresh 512 MB array takes 0.2-0.4 s instead of 0.2 ms. glibc
+// serves a large allocation with a fresh mmap and returns it to the system
+// when it is freed, so every temporary array a loop allocates again (and the
+// accumulators of a reduction) is fresh memory at every launch. Serving every
+// allocation from the heap, and not trimming the heap when it shrinks,
+// makes freed memory stay mapped, for the host and the GPU, and be reused.
+static void keep_freed_memory_mapped(void) {
+#ifdef M_MMAP_MAX
+    const char *value = getenv("LFORTRAN_GPU_KEEP_MEMORY");
+    if (value != NULL && strcmp(value, "0") == 0) return;
+    mallopt(M_MMAP_MAX, 0);
+    mallopt(M_TRIM_THRESHOLD, -1);
+#endif
+}
+
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
     static lfortran_gpu_ctx *singleton = NULL;
     if (singleton) return singleton;
@@ -364,6 +387,7 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
     // continue with the values its loops never computed.
     check(cudaSetDevice(0), "cudaSetDevice");
     unified_memory = choose_unified_memory(0);
+    if (unified_memory) keep_freed_memory_mapped();
     return singleton;
 }
 
