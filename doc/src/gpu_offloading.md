@@ -901,8 +901,7 @@ keeps what pending launches may write and which of them may have recorded a
 stop. It waits:
 
 * before a host statement that may read or write, allocate or reallocate
-  storage a pending launch may write. Storage that a launch only reads needs
-  no wait;
+  storage a pending launch may write;
 * before a statement that acts outside the program -- input/output, `stop`,
   or a call to a procedure that is not pure and whose body may do
   input/output or stop -- while a launch that may have recorded a stop is
@@ -916,6 +915,17 @@ stop. It waits:
 A wait in a loop that launches nothing is placed before the loop instead.
 After every `GpuSync` the pass runs the stop replay of each launch that may
 be pending there (`GpuKernelLaunch.stop_replay`), in launch order.
+
+Storage that a launch only reads the runtime may hand the kernel in place
+(the unified and managed memory models), and the host must not change it
+under the kernel. The pass keeps what pending launches read as well, and
+puts a `GpuWait` -- wait for the launches that read host memory in place,
+copying nothing back -- before a host statement that may change or free
+such storage, and at the end of a `block` whose locals they read. Since an
+access is not known to be a read or a write, any statement that accesses
+the storage counts, except where it only evaluates an expression. A launch
+itself never waits, so launches that only share what they read, such as the
+iterations of a time loop, run back to back.
 
 Storage that a pending launch writes and the host frees is not waited for:
 a local of a `block` at the end of the block, or where `exit` or `cycle`

@@ -158,6 +158,9 @@ stmt
     -- none to start. It is not a bound parameter of a chunk dimension.
     | GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch, expr? stop_status, stmt* stop_replay, expr* overwritten, expr* overwritten_if, gpu_launch_dimension* chunk_dimensions, int chunk_fixed_iterations, symbol? first_chunk_parameter)
     | GpuSync()
+    -- Waits for the launched GPU work to finish, without copying anything
+    -- back: the host may then change what the kernels only read.
+    | GpuWait()
     | GpuLaneBarrier()
     | GpuDiscard(expr* vars)
     -- Makes the Reference member `reference` (a StructInstanceMember of a

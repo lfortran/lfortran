@@ -21,8 +21,8 @@
 namespace LCompilers {
 
 /*
-Expands the high level GpuKernelLaunch, GpuSync and GpuDiscard statements
-into explicit ASR that calls the `lfortran_gpu_*` runtime, so that the host side of a
+Expands the high level GpuKernelLaunch, GpuSync, GpuWait and GpuDiscard
+statements into explicit ASR that calls the `lfortran_gpu_*` runtime, so that the host side of a
 kernel launch is ordinary ASR: it shows up in --show-asr, every backend can
 lower it, and later passes can optimise it.
 
@@ -135,6 +135,20 @@ class DeviceLaunchExpandVisitor :
             args.push_back(al, call_arg(loc, ctx));
             pass_result.push_back(al, b.SubroutineCall(
                 runtime_subroutine(loc, "lfortran_gpu_sync", {b.CPtr()},
+                    {true}), args));
+        }
+
+        void visit_GpuWait(const ASR::GpuWait_t &x) {
+            const Location &loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *ctx = declare_local(loc, "gpu_ctx", b.CPtr());
+            pass_result.reserve(al, 2);
+            pass_result.push_back(al, b.Assignment(ctx, gpu_init_call(loc)));
+            Vec<ASR::call_arg_t> args;
+            args.reserve(al, 1);
+            args.push_back(al, call_arg(loc, ctx));
+            pass_result.push_back(al, b.SubroutineCall(
+                runtime_subroutine(loc, "lfortran_gpu_wait", {b.CPtr()},
                     {true}), args));
         }
 
@@ -1462,6 +1476,15 @@ class DeviceLaunchExpandVisitor :
                 sync_args.push_back(al, call_arg(loc, ctx));
                 out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
                     "lfortran_gpu_sync", {b.CPtr()}, {true}), sync_args));
+            } else if (!packed_buffers.empty() || !cleanups.empty()) {
+                // The host frees below copies the kernel only reads, which
+                // the runtime may hand it in place: wait for the kernel
+                // first (lfortran_gpu_wait).
+                Vec<ASR::call_arg_t> wait_args;
+                wait_args.reserve(al, 1);
+                wait_args.push_back(al, call_arg(loc, ctx));
+                out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
+                    "lfortran_gpu_wait", {b.CPtr()}, {true}), wait_args));
             }
             // The host reads back the leading part of a scratch buffer the
             // launch says it reads, into the array it allocates for it.

@@ -55,10 +55,10 @@ copy model, with the same table and the same contract:
   itself (`in_place`): nothing is allocated, copied in or copied back, and
   lfortran_gpu_sync only waits. The host does not touch a written range
   before the sync, as in the copy model, so no other wait is needed.
-* The host may change or free a range a launch only reads as soon as the
-  launch returns. A small one is therefore still copied, which leaves the
-  launch asynchronous; a larger one is used in place, and the launch waits
-  for the kernel before it returns.
+* A small range a launch only reads is still copied; a larger one is used
+  in place. The host does not change or free a range a pending launch uses
+  in place before lfortran_gpu_wait (or lfortran_gpu_sync), which the
+  compiler places where the host next does (gpu_launch_sync.cpp).
 * lfortran_gpu_discard of a range a pending launch uses in place waits for
   the launch first, since the host frees the memory the kernel uses.
 
@@ -186,6 +186,8 @@ static void* device_alloc(size_t size) {
 }
 
 static void sync_all(void);
+// Whether a launch since the last wait reads host memory in place.
+static int pending_in_place_reads = 0;
 
 // Frees device memory at the next sync, when no launch can use it anymore.
 static void free_later(void *d_ptr) {
@@ -213,6 +215,7 @@ static void remove_entry(int i) {
 
 static void sync_all(void) {
     n_syncs++;
+    pending_in_place_reads = 0;
     check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
     for (int i = 0; i < n_entries; i++) {
         if (!entries[i].used || !entries[i].dirty) continue;
@@ -536,12 +539,12 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     // That clears dirty flags and can invalidate earlier bindings: prepare them
     // again before dispatch, as in the Metal runtime.
     uint64_t syncs;
-    // Whether the kernel reads host memory in place that the host may change
-    // as soon as the launch returns, so that the launch has to wait for it.
-    int wait_for_kernel;
+    // Whether the kernel reads host memory in place, which the host does
+    // not change before lfortran_gpu_wait.
+    int reads_in_place;
     do {
         syncs = n_syncs;
-        wait_for_kernel = 0;
+        reads_in_place = 0;
         // Writable ranges first, so a read of the same range uses their memory.
         for (int i = 0; i < k->n_args; i++) {
             if (k->kind[i] != ARG_BUFFER || k->access[i] == LFORTRAN_GPU_READ)
@@ -564,7 +567,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                 if (!d_ptr && unified_memory
                         && size > UNIFIED_COPY_MAX_BYTES) {
                     d_ptr = use_in_place(entry_for(host, size));
-                    wait_for_kernel = 1;
+                    reads_in_place = 1;
                 }
                 if (d_ptr) {
                     k->copied[i] = 0;
@@ -634,12 +637,18 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         (unsigned)block[2]};
     check(cudaLaunchKernel((const void*)k->func, grid_dim, block_dim, args, 0,
         0), "cudaLaunchKernel");
-    if (wait_for_kernel) sync_all();
+    if (reads_in_place) pending_in_place_reads = 1;
 }
 
 void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
     if (!ctx) return;
     sync_all();
+}
+
+void lfortran_gpu_wait(lfortran_gpu_ctx* ctx) {
+    if (!ctx || !pending_in_place_reads) return;
+    pending_in_place_reads = 0;
+    check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
 }
 
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {

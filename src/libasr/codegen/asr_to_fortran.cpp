@@ -2285,6 +2285,14 @@ public:
         src = r;
     }
 
+    void visit_GpuWait(const ASR::GpuWait_t &/*x*/) {
+        std::string r = indent;
+        r += "gpu wait";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
     void visit_GpuDiscard(const ASR::GpuDiscard_t &x) {
         std::string r = indent;
         r += "gpu discard(";
