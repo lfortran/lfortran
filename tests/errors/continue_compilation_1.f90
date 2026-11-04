@@ -4189,3 +4189,45 @@ contains
         call x%cc1_pg_s()
     end subroutine
 end module
+
+module cc1_private_inherited_def
+    type :: cc1_pi_t
+    contains
+        procedure, nopass :: cc1_pi_p
+        generic, private :: cc1_pi_g => cc1_pi_p
+        procedure, private, nopass :: cc1_pi_q
+        generic :: cc1_pi_h => cc1_pi_q
+    end type
+contains
+    integer function cc1_pi_p()
+        cc1_pi_p = 1
+    end function
+    integer function cc1_pi_q()
+        cc1_pi_q = 2
+    end function
+end module
+
+module cc1_private_inherited_ext
+    use cc1_private_inherited_def
+    type, extends(cc1_pi_t) :: cc1_pi_c
+    end type
+contains
+    subroutine cc1_pi_use()
+        type(cc1_pi_c) :: y
+        integer :: k
+        k = y%cc1_pi_g()  ! {Error} generic type-bound procedure 'cc1_pi_g' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+        k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+        k = y%cc1_pi_h()
+        k = y%cc1_pi_p()
+    end subroutine
+end module
+
+module cc1_private_inherited_use
+    use cc1_private_inherited_ext
+contains
+    subroutine cc1_pi_use2()
+        type(cc1_pi_c) :: y
+        integer :: k
+        k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    end subroutine
+end module

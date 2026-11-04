@@ -5135,6 +5135,24 @@ semantic error: generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_p
 4177 |         call y%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_default_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
      |         ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: generic type-bound procedure 'cc1_pi_g' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    --> tests/errors/continue_compilation_1.f90:4208:13
+     |
+4208 |         k = y%cc1_pi_g()  ! {Error} generic type-bound procedure 'cc1_pi_g' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+     |             ^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    --> tests/errors/continue_compilation_1.f90:4209:13
+     |
+4209 |         k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+     |             ^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    --> tests/errors/continue_compilation_1.f90:4221:13
+     |
+4221 |         k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+     |             ^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
