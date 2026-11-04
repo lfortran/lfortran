@@ -625,6 +625,9 @@ long long lfortran_gpu_cache_bytes(void) {
             size = 0;
         }
         bytes = size;
+#ifdef LFORTRAN_GPU_HIP
+        bytes = lfortran_gpu_hip_last_level_cache(device, bytes);
+#endif
     }
     return bytes;
 }
