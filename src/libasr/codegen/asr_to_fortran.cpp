@@ -3771,6 +3771,14 @@ public:
         src = "gpu_lane_broadcast(" + src + ")";
     }
 
+    void visit_GpuLaneReduce(const ASR::GpuLaneReduce_t &x) {
+        visit_expr(*x.m_arg);
+        const char *op = x.m_op == ASR::reduction_opType::ReduceAdd ? "+"
+            : x.m_op == ASR::reduction_opType::ReduceMul ? "*"
+            : x.m_op == ASR::reduction_opType::ReduceMIN ? "min" : "max";
+        src = std::string("gpu_lane_reduce(") + op + ", " + src + ")";
+    }
+
     void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {
         visit_expr(*x.m_target);
         std::string target = src;

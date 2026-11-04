@@ -26234,6 +26234,10 @@ public:
         throw CodeGenError("GpuLaneBroadcast should not appear in LLVM backend");
     }
 
+    void visit_GpuLaneReduce(const ASR::GpuLaneReduce_t & /* x */) {
+        throw CodeGenError("GpuLaneReduce should not appear in LLVM backend");
+    }
+
     template <typename T>
     inline void set_func_subrout_params(T* func_subrout, ASR::abiType& x_abi,
                                         std::uint64_t& m_h, ASR::Variable_t*& orig_arg,

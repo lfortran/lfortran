@@ -91,6 +91,17 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
     GpuDeviceCapabilities caps = gpu_device_capabilities(
         gpu_device_selected(pass_options));
+    if (caps.device == GpuDevice::Cuda && pass_options.gpu_cuda_warps) {
+        // A warp of 32 threads runs the lanes of an iteration; neither the
+        // CPU emulation (which runs the threads of a block one after
+        // another) nor HIP (64-wide wavefronts) has them yet. An H100 keeps
+        // about 230,000 threads resident, so a launch of up to 65,536
+        // iterations of 32 lanes each still fits it a few times over.
+        caps.lanes_per_iteration = 32;
+        caps.lanes_iterations_max = 65536;
+        caps.lane_reductions = true;
+        caps.lane_independent_loops = false;
+    }
     if (pass_options.descriptor_index_64
             && caps.offsets_follow_descriptor_index_64()) {
         caps.offset_kind = 8;

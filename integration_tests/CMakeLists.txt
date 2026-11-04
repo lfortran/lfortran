@@ -6720,6 +6720,7 @@ if (TEST gpu_memory_03_copy)
         ENVIRONMENT "LFORTRAN_GPU_MEMORY=copy")
 endif()
 RUN(NAME gpu_memory_04 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_lanes_reduce_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_separate_compilation_01 LABELS gfortran llvm metal cuda EXTRAFILES gpu_separate_compilation_01_mod.f90 EXTRA_ARGS --separate-compilation)
 # Only the module's own compilation needs the fallback for its loop that
 # prints: the program that uses it compiles none of the module's loops.

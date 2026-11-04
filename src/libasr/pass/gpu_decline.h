@@ -80,6 +80,17 @@ struct GpuDeviceCapabilities {
     // cheaply and see each other's writes after such a wait. One means an
     // iteration runs on one thread (see gpu_vector_lanes.cpp).
     int lanes_per_iteration = 1;
+    // A launch gets lanes only when it has at most this many iterations;
+    // with more, the iterations alone fill the GPU.
+    int64_t lanes_iterations_max = 1024;
+    // Whether the lanes of an iteration can share a loop that accumulates
+    // into private scalars and combine what each lane accumulated
+    // (GpuLaneReduce).
+    bool lane_reductions = false;
+    // Whether the lanes of an iteration share loops whose iterations are
+    // independent (gpu_vector_lanes.cpp). Off where only reductions are
+    // shared out (NVIDIA GPUs, for now).
+    bool lane_independent_loops = true;
 
     int threads_per_block = 256;
 

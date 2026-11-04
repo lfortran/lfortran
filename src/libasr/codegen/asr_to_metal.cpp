@@ -83,6 +83,17 @@ struct MetalDialect {
     }
 
     std::string lane_index() const { return "__gpu_lane"; }
+    // The prologue renames the grid position, so a kernel with lanes reads
+    // it under its usual name.
+    std::string lane_thread_index() const { return thread_index(); }
+    std::string lane_block_size() const { return block_size(); }
+    // Metal kernels share no reduction between lanes: its capabilities do
+    // not have lane_reductions (gpu_decline.cpp).
+    std::string lane_reduce(const std::string &value, int /*op*/) const {
+        LCOMPILERS_ASSERT(false);
+        return value;
+    }
+    std::string lane_reduce_helper() const { return ""; }
 
     // The value in the first lane of the iteration. With one lane per
     // iteration, that is the thread's own.

@@ -98,29 +98,59 @@ struct CudaDialect {
     void emit_thread_id_param(std::stringstream & /*src*/,
             bool /*has_prev*/) const {}
 
-    // An iteration runs on one thread: the CUDA capabilities give each
-    // iteration one lane (gpu_decline.cpp), so no kernel has lanes here.
+    // A kernel whose iterations each run on several lanes (see
+    // gpu_vector_lanes.cpp; only on an NVIDIA GPU, whose warps run them)
+    // takes no parameters for it: the lanes of an iteration are
+    // consecutive threads of a warp, `lanes` (1 or 32) dividing the block,
+    // and the prologue numbers the iterations by dividing the thread
+    // index and the block size by `lanes`.
     void emit_lane_thread_params(std::stringstream & /*src*/,
-            bool /*has_prev*/) const {
-        LCOMPILERS_ASSERT(false);
+            bool /*has_prev*/) const {}
+    void emit_lane_prologue(std::stringstream &src, const std::string &indent,
+            const std::string &lanes) const {
+        src << indent << "int __gpu_lanes_n = " << lanes << ";\n";
+        src << indent << "int __gpu_lane = (int)(threadIdx.x % "
+            "(unsigned)__gpu_lanes_n);\n";
+        src << indent << "unsigned __gpu_iteration_thread = threadIdx.x / "
+            "(unsigned)__gpu_lanes_n;\n";
+        src << indent << "unsigned __gpu_iteration_block = blockDim.x / "
+            "(unsigned)__gpu_lanes_n;\n";
     }
-    void emit_lane_prologue(std::stringstream & /*src*/,
-            const std::string & /*indent*/,
-            const std::string & /*lanes*/) const {
-        LCOMPILERS_ASSERT(false);
-    }
-    std::string lane_index() const {
-        LCOMPILERS_ASSERT(false);
-        return "0";
-    }
+    std::string lane_index() const { return "__gpu_lane"; }
+    std::string lane_thread_index() const { return "__gpu_iteration_thread"; }
+    std::string lane_block_size() const { return "__gpu_iteration_block"; }
+    // The value in the first lane of the iteration. With one lane per
+    // iteration the threads of a warp run different iterations, which need
+    // not reach the same shuffle, and the value is the thread's own.
     std::string lane_broadcast(const std::string &value) const {
-        LCOMPILERS_ASSERT(false);
-        return value;
+        return "(__gpu_lanes_n > 1 ? __shfl_sync(0xffffffffu, " + value
+            + ", 0, __gpu_lanes_n) : " + value + ")";
     }
-    void emit_lane_barrier(std::stringstream & /*src*/,
-            const std::string & /*indent*/,
+    void emit_lane_barrier(std::stringstream &src, const std::string &indent,
             const std::string & /*lanes*/) const {
-        LCOMPILERS_ASSERT(false);
+        src << indent << "if (__gpu_lanes_n > 1) __syncwarp();\n";
+    }
+    // What the lanes of the iteration hold, combined, in every lane
+    // (__lfortran_lane_reduce in the prologue of the kernel source).
+    std::string lane_reduce(const std::string &value, int op) const {
+        return "__lfortran_lane_reduce<" + std::to_string(op) + ">(" + value
+            + ", __gpu_lanes_n)";
+    }
+    // The definition lane_reduce names, written once ahead of the kernels.
+    std::string lane_reduce_helper() const {
+        return
+            "// The combination of what the `lanes` lanes of an iteration hold,\n"
+            "// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the\n"
+            "// largest. With one lane, the lane's own value.\n"
+            "template <int op, typename T>\n"
+            "__device__ inline T __lfortran_lane_reduce(T v, int lanes) {\n"
+            "    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {\n"
+            "        T w = __shfl_xor_sync(0xffffffffu, v, offset, lanes);\n"
+            "        v = op == 0 ? v + w : op == 1 ? v * w\n"
+            "            : op == 2 ? (w < v ? w : v) : (w > v ? w : v);\n"
+            "    }\n"
+            "    return v;\n"
+            "}\n\n";
     }
 
     // A bare literal is double precision, which would pick the wrong

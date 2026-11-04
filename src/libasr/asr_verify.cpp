@@ -4436,6 +4436,23 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneBroadcast(x);
     }
 
+    void visit_GpuLaneReduce(const GpuLaneReduce_t &x) {
+        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
+            "GpuLaneReduce is only allowed in a GPU kernel with lanes");
+        ASR::ttype_t *t = ASRUtils::expr_type(x.m_arg);
+        require_id(!ASRUtils::is_array(t) && (ASRUtils::is_integer(*t)
+                || ASRUtils::is_real(*t))
+                && ASRUtils::check_equal_type(t, x.m_type, nullptr, nullptr)
+                && (x.m_op == ASR::reduction_opType::ReduceAdd
+                    || x.m_op == ASR::reduction_opType::ReduceMul
+                    || x.m_op == ASR::reduction_opType::ReduceMIN
+                    || x.m_op == ASR::reduction_opType::ReduceMAX)
+                && x.m_value == nullptr,
+            "asr.verify.gpu_lanes.reduce",
+            "GpuLaneReduce must combine an integer or real scalar of its own "
+            "type with +, *, min or max");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneReduce(x);
+    }
     // Records the function and module dependencies that a call to
     // `name` as a subroutine introduces in the current scope.
     void record_subroutine_call_dependencies(ASR::symbol_t *name) {

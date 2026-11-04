@@ -548,6 +548,7 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.po.gpu_offload_metal = true;
         } else if (compiler_options.gpu_backend == "cuda") {
             compiler_options.po.gpu_offload_cuda = true;
+            compiler_options.po.gpu_cuda_warps = true;
         } else if (compiler_options.gpu_backend == "cuda_cpu") {
             // Same ASR pass and same device code generation as cuda; only the
             // toolchain that compiles and runs the device code differs.
