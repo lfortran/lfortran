@@ -32,6 +32,63 @@ static const char telemetry_kernel_source[] =
 "    out[gid] = out[gid] + input[gid] + wide[gid % 2048u];\n"
 "}\n";
 
+static void fail(const char *message);
+static void check_u64(const char *name, uint64_t got, uint64_t want);
+
+// The chunks of a launch that runs in chunks launch one kernel handle once
+// each, handing over only the bounds of the chunk again
+// (device_launch_expand.cpp): the read-only `wide`, too large to go into the
+// encoder, is copied to the device once, at the first chunk, and the
+// written `out` once as well. Handing `wide` over again copies it again.
+static void check_chunks_copy_once(lfortran_gpu_ctx *ctx, float *out,
+    const float *input, const float *wide, int profile_enabled)
+{
+    enum { CHUNKS = 5 };
+    lfortran_gpu_metal_telemetry before, after;
+    lfortran_gpu_metal_telemetry_snapshot_sync(ctx, &before);
+    lfortran_gpu_kernel *kernel = lfortran_gpu_load_kernel(ctx,
+        "telemetry_step", (int)strlen("telemetry_step"));
+    if (!kernel) fail("lfortran_gpu_load_kernel failed");
+    int grid[3] = {1, 1, 1};
+    int block[3] = {PROBE_LEN, 1, 1};
+    uint32_t n = PROBE_LEN;
+    for (size_t i = 0; i < PROBE_LEN; i++) out[i] = 0.0f;
+    lfortran_gpu_set_buffer_arg(kernel, 0, out, PROBE_LEN * sizeof(float),
+        LFORTRAN_GPU_WRITE);
+    lfortran_gpu_set_buffer_arg(kernel, 1, (void *)input,
+        PROBE_LEN * sizeof(float), LFORTRAN_GPU_READ);
+    lfortran_gpu_set_buffer_arg(kernel, 2, (void *)wide,
+        WIDE_LEN * sizeof(float), LFORTRAN_GPU_READ);
+    for (int chunk = 0; chunk < CHUNKS; chunk++) {
+        lfortran_gpu_set_scalar_arg(kernel, 3, &n, sizeof(n));
+        lfortran_gpu_launch(ctx, kernel, grid, block);
+    }
+    lfortran_gpu_metal_telemetry_snapshot_sync(ctx, &after);
+    const uint64_t out_bytes = PROBE_LEN * sizeof(float);
+    const uint64_t wide_bytes = WIDE_LEN * sizeof(float);
+    if (profile_enabled) {
+        check_u64("chunks h2d", after.memcpy_h2d_bytes
+            - before.memcpy_h2d_bytes, out_bytes + wide_bytes);
+    }
+    lfortran_gpu_set_buffer_arg(kernel, 2, (void *)wide,
+        WIDE_LEN * sizeof(float), LFORTRAN_GPU_READ);
+    lfortran_gpu_launch(ctx, kernel, grid, block);
+    lfortran_gpu_metal_telemetry_snapshot_sync(ctx, &before);
+    if (profile_enabled) {
+        check_u64("argument set again h2d", before.memcpy_h2d_bytes
+            - after.memcpy_h2d_bytes, out_bytes + wide_bytes);
+    }
+    lfortran_gpu_release_kernel(kernel);
+    for (size_t i = 0; i < PROBE_LEN; i++) {
+        float expected = (float)(CHUNKS + 1) * (input[i] + wide[i]);
+        if (out[i] != expected) {
+            fprintf(stderr, "chunks out[%zu]=%.9g, want %.9g\n", i,
+                out[i], expected);
+            exit(1);
+        }
+    }
+}
+
 static void fail(const char *message)
 {
     fprintf(stderr, "%s\n", message);
@@ -301,6 +358,7 @@ int main(void)
             end.gpu_busy_seconds, end.jit_seconds);
 
         lfortran_gpu_release_kernel(kernel);
+        check_chunks_copy_once(ctx, out, input, wide, profile_enabled);
         lfortran_gpu_shutdown(ctx);
 
         (void)start;
