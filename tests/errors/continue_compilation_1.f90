@@ -4374,3 +4374,13 @@ contains
         r = s
     end function
 end module
+
+module cc1_section_extent_one_int8
+contains
+    subroutine cc1_seo_sub(k)
+        integer(8), intent(in) :: k
+        integer :: z(10), y(3)
+        z = 1
+        y = z(k+1:k+1)  ! {Error} Different shape for array assignment on dimension 1(3 and 1)
+    end subroutine
+end module

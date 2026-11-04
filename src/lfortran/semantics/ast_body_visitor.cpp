@@ -8187,7 +8187,7 @@ public:
                                                     ASR::is_a<ASR::IntegerConstant_t>(*end) ||
                                                     ASR::is_a<ASR::IntegerBinOp_t>(*end) ||
                                                     ASR::is_a<ASR::Cast_t>(*end)) &&
-                                                   ASRUtils::expr_equal(start, end)) {
+                                                   PassUtils::same_expression(start, end)) {
                                             // Same scalar index expression (e.g., x(i:i), x(i+1:i+1)):
                                             // the resulting section has extent 1.
                                             dim_b_int = 1;
