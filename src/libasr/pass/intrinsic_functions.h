@@ -2535,7 +2535,7 @@ namespace Ishft {
                 val = (uint64_t) val1 >> val2;
             }
         } else {
-            val = val1 << val2;
+            val = (int64_t)((uint64_t) val1 << val2);
         }
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }

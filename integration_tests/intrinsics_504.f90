@@ -6,7 +6,11 @@ integer(4), parameter :: c4(6) = [ishft(1, 32), ishft(-1, -32), shiftl(-1, 32), 
     shiftr(-1, 32), shifta(1, 32), shifta(-1, 32)]
 integer(8), parameter :: c8(6) = [ishft(1_8, 64), ishft(-1_8, -64), &
     shiftl(-1_8, 64), shiftr(-1_8, 64), shifta(1_8, 64), shifta(-1_8, 64)]
-integer :: w(3)
+integer, parameter :: a1(2) = shifta([-8, 8], 2)
+integer, parameter :: a2(2) = shifta(-8, [1, 32])
+integer(1), parameter :: a3(2) = shifta([-8_1, 8_1], [1_8, 8_8])
+integer(8), parameter :: a4(3) = shifta([-16_8, 16_8, -1_8], [2, 4, 64])
+integer :: w(3), v(3)
 
 if (c1 /= -1) error stop 1
 if (any(c4 /= [0, 0, 0, 0, 0, -1])) error stop 2
@@ -22,6 +26,14 @@ if (any(shifta(-8, w) /= [-4, -1, -1])) error stop 4
 if (any(shifta(8, w) /= [4, 0, 0])) error stop 5
 if (any(shiftr(-1, w) /= [huge(0), 1, 0])) error stop 6
 if (any(shiftl(1, w) /= [2, -huge(0) - 1, 0])) error stop 7
+if (any(a1 /= [-2, 2])) error stop 8
+if (any(a2 /= [-4, -1])) error stop 9
+if (any(a3 /= [-4_1, 0_1])) error stop 10
+if (any(a4 /= [-4_8, 1_8, -1_8])) error stop 30
+v = [-8, 8, -1]
+if (any(shifta(v, 2) /= [-2, 2, -1])) error stop 31
+if (any(shifta(v, w) /= [-4, 0, -1])) error stop 32
+if (any(shifta(i=v, shift=32) /= [-1, 0, -1])) error stop 33
 print *, "ok"
 
 contains
