@@ -15,6 +15,7 @@
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <lfortran/semantics/ast_common_visitor.h>
 #include <lfortran/semantics/ast_to_asr.h>
+#include <lfortran/semantics/pure_checks.h>
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
@@ -22,60 +23,6 @@
 #include <libasr/pass/pass_utils.h>
 
 namespace LCompilers::LFortran {
-
-// `implicit_interface_procedures`: the procedure variables that calls through
-// an implicit interface are made through, mapped to the called procedure.
-static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
-        size_t n_stmts, diag::Diagnostics &diag, bool continue_compilation,
-        const std::map<const ASR::symbol_t*, ASR::symbol_t*> &implicit_interface_procedures) {
-    ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(v);
-    if (!fn_type->m_pure) {
-        return;
-    }
-    ASR::SideEffectFinder finder;
-    finder.implicit_interface_procedures = &implicit_interface_procedures;
-    for (size_t i = 0; i < n_stmts && !finder.found; i++) {
-        finder.visit_stmt(*stmts[i]);
-    }
-    if (finder.found) {
-        diag.add(diag::Diagnostic(
-            finder.description + " is not allowed inside a "
-            "PURE procedure",
-            diag::Level::Error, diag::Stage::Semantic, {
-                diag::Label("", {finder.loc})
-            }));
-        if (!continue_compilation) {
-            throw SemanticAbort();
-        }
-    }
-    // C1592: pure function dummy data objects must have INTENT(IN) or VALUE.
-    // Per the standard, this only applies to *nonpointer* dummy data objects,
-    // so pointer dummy arguments (both data pointers and procedure pointers)
-    // are exempt, as are plain (non-pointer) procedure dummy arguments.
-    for (size_t i = 0; i < v->n_args; i++) {
-        ASR::expr_t *arg = v->m_args[i];
-        // A dummy procedure is not a dummy data object.
-        if (ASR::is_a<ASR::Var_t>(*arg) &&
-                ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(arg)->m_v)) {
-            ASR::Var_t *var_expr = ASR::down_cast<ASR::Var_t>(arg);
-            ASR::Variable_t *v_var = ASR::down_cast<ASR::Variable_t>(var_expr->m_v);
-            ASR::ttype_t *v_type_nopointer = ASRUtils::type_get_past_pointer(v_var->m_type);
-            if (v_var->m_intent == ASR::intentType::Unspecified && !v_var->m_value_attr &&
-                    !ASRUtils::is_pointer(v_var->m_type) &&
-                    !ASR::is_a<ASR::FunctionType_t>(*v_type_nopointer)) {
-                diag.add(diag::Diagnostic(
-                    "Dummy argument '" + std::string(v_var->m_name) +
-                    "' of pure function must have INTENT(IN) or VALUE attribute",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {v_var->base.base.loc})
-                    }));
-                if (!continue_compilation) {
-                    throw SemanticAbort();
-                }
-            }
-        }
-    }
-}
 
 class BodyVisitor : public CommonVisitor<BodyVisitor> {
 private:
@@ -7548,8 +7495,8 @@ public:
         v->m_deterministic = current_function_deterministic;
         v->m_side_effect_free = current_function_side_effect_free;
         if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation, implicit_call_procedures);
+            PureChecks::check_definition(*v, diag, compiler_options,
+                implicit_call_procedures);
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
@@ -7658,8 +7605,8 @@ public:
         v->m_deterministic = current_function_deterministic;
         v->m_side_effect_free = current_function_side_effect_free;
         if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation, implicit_call_procedures);
+            PureChecks::check_definition(*v, diag, compiler_options,
+                implicit_call_procedures);
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
@@ -7761,8 +7708,8 @@ public:
         v->m_deterministic = current_function_deterministic;
         v->m_side_effect_free = current_function_side_effect_free;
         if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation, implicit_call_procedures);
+            PureChecks::check_definition(*v, diag, compiler_options,
+                implicit_call_procedures);
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
