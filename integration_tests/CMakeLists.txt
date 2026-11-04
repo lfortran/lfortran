@@ -6824,6 +6824,10 @@ RUN(NAME gpu_metal_350 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_351 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_352 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_353 LABELS llvm metal cuda) # conditional expressions are not accepted by every supported gfortran
+# With --fast the device function is inlined, and its dummy is the gathered
+# copy of the section.
+RUN(NAME gpu_metal_352_fast FILE gpu_metal_352 LABELS gfortran llvm cuda EXTRA_ARGS --fast)
+RUN(NAME gpu_metal_353_fast FILE gpu_metal_353 LABELS llvm cuda EXTRA_ARGS --fast)
 RUN(NAME gpu_metal_354 LABELS llvm metal cuda) # conditional expressions are not accepted by every supported gfortran
 RUN(NAME gpu_metal_355 LABELS llvm metal cuda) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_356 LABELS gfortran llvm metal cuda)

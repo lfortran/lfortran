@@ -2230,6 +2230,21 @@ public:
         func_array_size_params[key] = "(" + total + ")";
     }
 
+    // The element count of an array type whose every extent is given, or
+    // "" when one is not.
+    std::string explicit_array_size_str(ASR::ttype_t *type) {
+        type = ASRUtils::type_get_past_allocatable_pointer(type);
+        if (!ASR::is_a<ASR::Array_t>(*type)) return "";
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
+        std::string total;
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            if (arr->m_dims[d].m_length == nullptr) return "";
+            std::string len = "(" + expr_str(arr->m_dims[d].m_length) + ")";
+            total += total.empty() ? len : (" * " + len);
+        }
+        return total.empty() ? "" : "(" + total + ")";
+    }
+
     // True when the callee's signature carries a synthesised size parameter
     // for this argument.
     bool formal_has_size_param(ASR::Function_t *fn, size_t arg_idx) {
@@ -5244,6 +5259,17 @@ public:
                             if (eit != alloc_array_size_exprs.end()) {
                                 ptr_section_sizes[tgt_name] =
                                     eit->second;
+                            } else if (!func_array_size_params.count(
+                                    val_name)) {
+                                // An array of the kernel with explicit
+                                // extents, such as the gathered copy of a
+                                // section an inlined procedure takes: its
+                                // type has the size.
+                                std::string size = explicit_array_size_str(
+                                    ASRUtils::expr_type(assoc_val));
+                                if (!size.empty()) {
+                                    ptr_section_sizes[tgt_name] = size;
+                                }
                             }
                         }
                         // Propagate func_array_size_params so that
