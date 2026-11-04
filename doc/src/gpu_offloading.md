@@ -797,7 +797,11 @@ preparation cannot alternate between their different byte counts.
 `--gpu=hip` runs the same CUDA runtime on AMD GPUs, through ROCm. HIP is
 CUDA C++ for AMD GPUs, so the backend shares everything with `--gpu=cuda` up
 to the toolchain: the ASR passes, the device capabilities and the device code
-generator, whose output only gains `#include <hip/hip_runtime.h>`. The HIP
+generator, whose output only gains `#include <hip/hip_runtime.h>`. The one
+capability that differs is the unrolling of short sequential loops in device
+code: ROCm's device compiler does not unroll a loop whose trip count it does
+not know, so HIP unrolls them four times (a matrix-vector product with a
+thread per row ran 3x faster on an MI300A), while CUDA unrolls none. The HIP
 driver (`hipcc` by default, `--device-compiler` to choose another) compiles it
 as HIP for `--gpu-arch` (`gfx90a`, `gfx942`, ...; the GPUs of the compiling
 machine by default) and links the program. The GPU runtime is

@@ -95,6 +95,14 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
             && caps.offsets_follow_descriptor_index_64()) {
         caps.offset_kind = 8;
     }
+    if (pass_options.gpu_offload_hip) {
+        // ROCm's device compiler does not unroll a loop whose trip count it
+        // does not know, so a thread waits for each load of such a loop
+        // before it issues the next. Four at a time made a matrix-vector
+        // product (a thread per row, a loop over the columns) 3x faster on
+        // an MI300A, and n-body 18%; eight made other kernels slower.
+        caps.sequential_loop_unroll_factor = 4;
+    }
     return caps;
 }
 

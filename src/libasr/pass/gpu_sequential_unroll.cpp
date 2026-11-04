@@ -12,10 +12,12 @@ namespace LCompilers {
 /*
 Unrolls the short counted loops of device code (see
 ASRUtils::is_device_only_function) by the device's
-sequential_loop_unroll_factor: 16 for Metal, while CUDA unrolls nothing.
+sequential_loop_unroll_factor: 16 for Metal, 4 for HIP (AMD), while CUDA on
+NVIDIA unrolls nothing.
 
-A loop with a 32-bit index starting at a non-negative constant, a unit step
-and a body of at most 32 assignments, no name and no loop-else,
+A loop with a 32-bit index starting at a non-negative constant or at an
+expression (evaluated once), a unit step and a body of at most 32
+assignments, no name and no loop-else,
 
     do i = a, b
         ...
@@ -61,9 +63,14 @@ class SequentialUnrollVisitor
             if (!ASR::is_a<ASR::Integer_t>(*control_type)
                     || ASRUtils::extract_kind_from_ttype_t(control_type) != 4) return false;
         }
+        // A start that is not a constant, `do k = first(i), first(i + 1) - 1`
+        // over the entries of a sparse row, is evaluated once. It is not
+        // known to be non-negative, so `end - (factor - 1)` underflows when
+        // the loop starts within factor - 1 of the most negative integer.
         int64_t start = 0, step = 1;
-        if (!ASRUtils::extract_value(ASRUtils::expr_value(x.m_head.m_start), start)
-                || start < 0
+        bool constant_start = ASRUtils::extract_value(
+            ASRUtils::expr_value(x.m_head.m_start), start);
+        if ((constant_start && start < 0)
                 || (x.m_head.m_increment &&
                     !ASRUtils::extract_value(
                         ASRUtils::expr_value(x.m_head.m_increment), step))
@@ -78,6 +85,14 @@ class SequentialUnrollVisitor
         ASR::expr_t *start_expr = x.m_head.m_start;
         ASR::expr_t *end_expr = x.m_head.m_end;
         ASRUtils::ASRBuilder b(al, x.base.base.loc);
+        if (!constant_start) {
+            ASR::stmt_t *capture_start;
+            std::string start_name = current_scope->get_unique_name(
+                "__gpu_loop_start");
+            start_expr = PassUtils::create_auxiliary_variable_for_expr(
+                start_expr, start_name, al, current_scope, capture_start);
+            pass_result.push_back(al, capture_start);
+        }
         ASR::stmt_t *capture;
         std::string end_name = current_scope->get_unique_name("__gpu_loop_end");
         ASR::expr_t *end = PassUtils::create_auxiliary_variable_for_expr(
