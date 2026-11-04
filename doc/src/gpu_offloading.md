@@ -972,6 +972,14 @@ An assignment whose every element is assigned again before anything reads it
 (`dcdw = 0.` followed by `dcdw = sum(reduce_dcdw, dim=4)`) is removed before
 this, by the `dead_array_store` pass, so it costs no launch at all.
 
+### Fast math in device code
+
+With `--fast` (and without `--no-fast-math`) the CUDA and HIP device code
+computes `1/sqrt(x)` as `rsqrt(x)`, one operation where a correctly rounded
+quotient of a correctly rounded root takes two long ones: an n-body
+force loop ran 16% faster on an H100. The result can differ from the exact
+one in the last bit, as host code under `--fast` can.
+
 ### Lanes: an iteration on a SIMD-group
 
 A loop with few iterations -- a training step over a mini-batch of one, a
