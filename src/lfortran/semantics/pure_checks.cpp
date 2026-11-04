@@ -47,6 +47,14 @@ void PureChecks::check_definition(const ASR::Function_t &f,
             throw SemanticAbort();
         }
     }
+    for (auto &item : f.m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+        const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(item.second);
+        if (!local_not_saved(f, v, diag)
+                && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
+    }
 }
 
 bool PureChecks::body_has_no_side_effects(const ASR::Function_t &f,
@@ -94,6 +102,25 @@ bool PureChecks::subroutine_dummy_intent_given(const ASR::Function_t &f,
         "dummy argument '" + std::string(v.m_name) + "' of pure subroutine '" +
         ASRUtils::strip_genericprocedure_suffix(f.m_name) +
         "' must have an explicit intent or the value attribute",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {v.base.base.loc})}));
+    return false;
+}
+
+bool PureChecks::local_not_saved(const ASR::Function_t &f,
+        const ASR::Variable_t &v, diag::Diagnostics &diag) {
+    if (v.m_intent != ASR::intentType::Local
+            || v.m_storage != ASR::storage_typeType::Save
+            || v.m_common_block != nullptr) {
+        return true;
+    }
+    std::string msg = "local variable '" + std::string(v.m_name) +
+        "' of pure procedure '" +
+        ASRUtils::strip_genericprocedure_suffix(f.m_name) + "' cannot ";
+    msg += v.m_symbolic_value
+        ? "have an initial value, because it implies the save attribute"
+        : "have the save attribute";
+    diag.add(diag::Diagnostic(msg,
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("", {v.base.base.loc})}));
     return false;

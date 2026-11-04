@@ -50,6 +50,10 @@ private:
     static bool subroutine_dummy_intent_given(const ASR::Function_t &f,
         const ASR::Variable_t &v, diag::Diagnostics &diag);
 
+    // C1599: a local variable has no save attribute, also none implied
+    static bool local_not_saved(const ASR::Function_t &f,
+        const ASR::Variable_t &v, diag::Diagnostics &diag);
+
     // 15.7: no assignment to a variable from the host or a module
     static bool assignment_target_is_local(ASR::symbol_t &base,
         SymbolTable *procedure_scope, SymbolTable *scope, const Location &loc,
