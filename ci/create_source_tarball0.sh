@@ -18,6 +18,7 @@ cmake -E copy_directory tests/asr $dest/tests/asr
 # test_lfortran pins the launch geometry, arrays the launches overwrite,
 # and optional-view contiguity of these tests; its interactive stdin cases run
 # runtime_input_records.f90.
+# Keep the C++ backend's real-Kokkos regression and driver probe together.
 cmake -E make_directory $dest/integration_tests
 cmake -E copy integration_tests/gpu_metal_485.f90 \
     integration_tests/gpu_metal_490.f90 integration_tests/gpu_metal_491.f90 \
@@ -30,6 +31,8 @@ cmake -E copy integration_tests/gpu_metal_485.f90 \
     integration_tests/gpu_workspace_guard_02.f90 \
     integration_tests/gpu_workspace_guard_03.f90 \
     integration_tests/runtime_input_records.f90 \
+    integration_tests/kokkos_cpp_standard.f90 \
+    integration_tests/test_kokkos_standard.py \
     $dest/integration_tests
 # test_scoped_attribute_roundtrip regenerates these kernels and links their
 # separately compiled pending operations.
