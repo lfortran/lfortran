@@ -30,6 +30,7 @@
 #else
 #include <unistd.h>
 #ifndef __EMSCRIPTEN__
+#include <limits.h>
 #include <pthread.h>
 #include <sys/resource.h>
 #include <system_error>
