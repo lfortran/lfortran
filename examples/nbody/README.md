@@ -158,11 +158,32 @@ The CPU peak probe uses QoS hints, not hard core pinning. Its P- and E-group
 results are measured separately, so their sum is not simultaneous all-core
 throughput and can exceed the estimated denominator.
 
+## Double precision
+
+`nbody_dp.f90` is the same benchmark with `real(8)` arrays. With `--fast` on
+x86, LFortran writes the reciprocal square root Newton step itself: it emits
+the AVX-512 estimate for `1/sqrt` and refines it with two Newton steps, whose
+constant factor is applied to the sums once after the loop. One Zen 5 core
+(Ryzen 9 9955HX), N=8192, 20 steps, best of six interleaved runs pinned to
+one core on a shared machine:
+
+| Compiler | GFLOP/s |
+|---|---:|
+| LFortran `--fast`, LLVM 11 / 23 | 79.0 |
+| Flang 23.1.4 `-O3 -march=native -ffast-math` | 62.5 |
+| GFortran 16.2 `-O3 -march=native -ffast-math` | 62.0 |
+
+All three agree on the checksum (1.49820696) and on the energy drift
+(1.69e-11). The estimate is refined below double precision. Without AVX-512
+the pass leaves `1/sqrt` to the code generator, and the loop falls back to
+`vsqrtpd` and `vdivpd`.
+
 ## Files and next optimizations
 
 | File | Purpose |
 |---|---|
 | `nbody.f90` | SoA, `do concurrent` force/update loops, explicit iteration-local scalars |
+| `nbody_dp.f90` | Double precision variant of `nbody.f90` |
 | `c/nbody.c`, `c/common.h` | NEON baseline: 12-body register blocking, refined reciprocal square root, optional GCD |
 | `metal/nbody.m`, `metal/nbody.metal` | Objective-C host, tiled Metal force kernel, float4 position/mass, fused update |
 | `peak/` | CPU/GPU FP32 FMA throughput and reciprocal-square-root microbenchmarks |
