@@ -99,7 +99,7 @@ __device__ inline float f_gpu_30(float* a, long __size_a_dim1, long __stride_a_d
     float f{};
     int i;
     f = ((float)0);
-    const int __lfortran_end_0 = ((int)(__size_a_dim1));
+    const int __lfortran_end_0 = ((int)((long)((__size_a_dim1))));
     for (i = 1; i <= __lfortran_end_0; i++) {
         f = (f + a[(__stride_a_dim1 * ((long)((unsigned int)((i) - (1)))))]);
     }

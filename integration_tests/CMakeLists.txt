@@ -7156,6 +7156,8 @@ RUN(NAME gpu_metal_717 LABELS gfortran metal cuda EXTRA_ARGS --descriptor-index-
 RUN(NAME gpu_metal_718 FAIL LABELS metal cuda) # stops: the packed components need --descriptor-index-64 (not supported on Metal)
 RUN(NAME gpu_metal_710 LABELS gfortran llvm metal cuda) # per-thread workspace slices of block local arrays
 RUN(NAME gpu_metal_711 LABELS gfortran llvm metal cuda) # per-thread workspace slice declared at kernel scope
+RUN(NAME gpu_metal_722 LABELS gfortran llvm metal cuda) # size/lbound/ubound of kind 8 of a dummy under max/min in a device routine (#16609)
+RUN(NAME gpu_metal_723 FILE gpu_metal_722 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64) # CUDA: long extents beside an int lower bound 1; Metal keeps int extents
 # .eqv. and .neqv. in a kernel (lfortran/lfortran#16630).
 RUN(NAME gpu_metal_730 LABELS gfortran llvm metal cuda)
 # Logical reductions (lfortran/lfortran#16725), in one launch and in many.
