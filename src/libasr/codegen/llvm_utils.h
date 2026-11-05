@@ -2616,15 +2616,29 @@ class ASRToLLVMVisitor;
             }
             if (v->m_storage == ASR::Parameter) {
                 // Keep most PARAMETER symbols non-finalizable. A narrow
-                // exception is program-scope parameter structs whose runtime
-                // construction can allocate member storage (for example,
-                // fixed-length character members initialized from constructors).
-                // Those need scope-exit finalization to avoid leaks.
+                // exception is a parameter struct whose runtime construction
+                // can allocate member storage (for example, character members
+                // initialized from constructors). Those need scope-exit
+                // finalization to avoid leaks.
                 ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
                     v->m_parent_symtab->asr_owner);
-                if (ASR::is_a<ASR::Program_t>(*owner)) {
-                    ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
-                    if (ASR::is_a<ASR::StructType_t>(*t)) {
+                ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
+                if (ASR::is_a<ASR::StructType_t>(*t)) {
+                    if (ASR::is_a<ASR::Program_t>(*owner)) {
+                        return false;
+                    }
+                    // The nested_vars pass gives a procedure its own copy of
+                    // a parameter it reaches through host association, and
+                    // declare_vars sets up the copy's character members on
+                    // every call, so the procedure owns that storage. A
+                    // module's parameters are globals, which the program
+                    // finalizes at exit.
+                    if (!ASR::is_a<ASR::Module_t>(*owner)
+                            && v->m_type_declaration != nullptr
+                            && ASRUtils::struct_has_character_member(
+                                ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(
+                                        v->m_type_declaration)))) {
                         return false;
                     }
                 }

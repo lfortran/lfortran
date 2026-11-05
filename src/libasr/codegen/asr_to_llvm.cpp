@@ -6715,43 +6715,6 @@ public:
         return false;
     }
 
-    bool struct_has_character_member(ASR::Struct_t* struct_type,
-            std::vector<ASR::Struct_t*> seen = {}) {
-        while (struct_type) {
-            if (std::find(seen.begin(), seen.end(), struct_type) != seen.end()) {
-                return false;
-            }
-            seen.push_back(struct_type);
-            for (size_t i = 0; i < struct_type->n_members; i++) {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-                    struct_type->m_symtab->get_symbol(struct_type->m_members[i]));
-                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
-                    continue;
-                }
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                ASR::ttype_t* member_type = ASRUtils::symbol_type(sym);
-                if (ASRUtils::is_character(*member_type)) {
-                    return true;
-                }
-                ASR::ttype_t* member_base_type = ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable_pointer(member_type));
-                if (ASR::is_a<ASR::StructType_t>(*member_base_type)
-                        && var->m_type_declaration != nullptr) {
-                    ASR::Struct_t* nested = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(var->m_type_declaration));
-                    if (struct_has_character_member(nested, seen)) {
-                        return true;
-                    }
-                }
-            }
-            struct_type = struct_type->m_parent
-                ? ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(struct_type->m_parent))
-                : nullptr;
-        }
-        return false;
-    }
-
     bool needs_common_linkage_for_global(const ASR::Variable_t &x) {
         // bind(C) variables without initializers should use CommonLinkage
         // to allow merging with C definitions of the same symbol
@@ -7480,7 +7443,7 @@ public:
         if (struct_sym == nullptr) {
             return false;
         }
-        return struct_has_character_member(ASR::down_cast<ASR::Struct_t>(
+        return ASRUtils::struct_has_character_member(ASR::down_cast<ASR::Struct_t>(
             ASRUtils::symbol_get_past_external(struct_sym)));
     }
 
@@ -10308,7 +10271,7 @@ public:
                 ASR::Struct_t* parameter_struct = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(v->m_type_declaration));
                 parameter_needs_member_initialization =
-                    struct_has_character_member(parameter_struct);
+                    ASRUtils::struct_has_character_member(parameter_struct);
             }
             if( is_struct_variable &&
                 (v->m_storage != ASR::storage_typeType::Parameter ||
