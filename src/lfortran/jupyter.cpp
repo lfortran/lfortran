@@ -633,6 +633,9 @@ public:
 
     bool pending() const { return !closed && !outbox.empty(); }
 
+    // Whether a message read waits to be taken
+    bool waiting() const { return !received.empty(); }
+
     // Sends what the socket takes now.
     void flush(size_t budget = SIZE_MAX)
     {
@@ -896,12 +899,12 @@ struct Endpoint {
         if (fd.revents & ~POLLOUT) peer->read();
     }
 
-    // Removes the closed connections; only between requests, which refer to
-    // them.
+    // Removes the closed connections, once the messages read from them are
+    // taken; only between requests, which refer to them.
     void prune()
     {
         for (size_t i = peers.size(); i-- > 0;) {
-            if (peers[i]->closed) peers.erase(peers.begin() + i);
+            if (peers[i]->closed && !peers[i]->waiting()) peers.erase(peers.begin() + i);
         }
     }
 
@@ -1976,7 +1979,10 @@ public:
         bool had_client = false;
         auto started = std::chrono::steady_clock::now();
         while (!stopping && !stop_requested) {
-            progress({&shell_, &control_, &iopub_}, 250);
+            // Requests that wait are taken one per connection per pass, so
+            // the next pass only polls for what has arrived meanwhile.
+            progress({&shell_, &control_, &iopub_},
+                waiting(shell_) || waiting(control_) ? 0 : 250);
             // A subscriber sends only its subscriptions; it gets every message.
             for (auto &peer : iopub_.peers) {
                 std::vector<std::string> frames;
@@ -2015,17 +2021,32 @@ public:
     }
 
 private:
-    // Handles the requests read from the connections of `endpoint`.
-    void handle_received(Endpoint &endpoint)
+    static bool waiting(const Endpoint &endpoint)
     {
+        for (auto &peer : endpoint.peers) {
+            if (peer->waiting()) return true;
+        }
+        return false;
+    }
+
+    // Handles at most one request read from each connection of `endpoint`,
+    // in the order the connections were accepted, so that the requests of
+    // one client do not all run ahead of those another client sent
+    // meanwhile, and each client's requests keep their order. True if it
+    // handled any.
+    bool handle_received(Endpoint &endpoint)
+    {
+        bool handled = false;
         for (size_t i = 0; i < endpoint.peers.size() && !stopping; i++) {
             Peer &peer = *endpoint.peers[i];
             std::vector<std::string> frames;
-            while (!stopping && peer.next(frames)) {
+            if (peer.next(frames)) {
+                handled = true;
                 Message request;
                 if (decode(frames, key, request)) handle(peer, request);
             }
         }
+        return handled;
     }
 
     // A cell that fails with stop_on_error aborts the execute_requests that
@@ -2035,7 +2056,7 @@ private:
     {
         aborting = true;
         for (auto &peer : shell_.peers) peer->read();
-        handle_received(shell_);
+        while (!stopping && handle_received(shell_)) {}
         aborting = false;
     }
 

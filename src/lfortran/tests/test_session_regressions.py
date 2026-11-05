@@ -3,9 +3,9 @@ that misbehave: large output, a subscriber that does not read while another
 client prints more than the kernel keeps for it, connections that stall, a
 client that leaves during a READ, a prompt that ends the kernel it started,
 a prompt killed or hung up on, also during a cell that does not return or a
-READ, cells queued behind a failing one, cells that stop the kernel,
-`lfortran -v`, and a kernel told that another process is its parent. Each
-case runs against whichever kernel is built."""
+READ, cells queued behind a failing one, cells that several clients queue,
+cells that stop the kernel, `lfortran -v`, and a kernel told that another
+process is its parent. Each case runs against whichever kernel is built."""
 
 import argparse
 import contextlib
@@ -649,6 +649,31 @@ def stop_on_error(exe, cwd):
             check(value(client, "qx") == expected, "stop_on_error=%s: qx" % stop)
 
 
+def queued_in_turns(exe, cwd):
+    """The requests that wait while a cell runs are taken in turns, one from
+    each client: one client's backlog does not run ahead of a cell that
+    another client sent before it, and each client's cells keep their order."""
+    with kernel(exe, cwd) as (_, join, _ports):
+        first, second = join(), join()
+        check(run(first, "integer :: turn, gate")[0]["status"] == "ok", "declaration failed")
+        # The READ holds the kernel until all the requests have arrived.
+        gate = first.execute("read(*,*) gate", allow_stdin=True)
+        check(first.get_stdin_msg(timeout=20)["msg_type"] == "input_request", "no READ")
+        other = second.execute("turn = 0")
+        time.sleep(0.2)
+        backlog = [first.execute("turn = %d" % k) for k in range(1, 6)]
+        time.sleep(0.5)
+        first.input("1")
+        order, _ = idle_order(first, [gate, other] + backlog)
+        names = {gate: "gate", other: "other"}
+        names.update({msg_id: "first %d" % k for k, msg_id in enumerate(backlog, 1)})
+        ran = [names[msg_id] for msg_id in order]
+        check([msg_id for msg_id in order if msg_id in backlog] == backlog,
+            "the first client's cells ran out of order: %s" % ran)
+        check(order.index(other) <= 2,
+            "the first client's backlog ran ahead of the other client's cell: %s" % ran)
+
+
 def implicit_typing(exe, cwd):
     """Compiler options of the kernel process reach the cells. A name that
     starts with x is real."""
@@ -1112,7 +1137,7 @@ CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
     test_output_error_cleanup,
     large_output, slow_subscriber_output, stalled_connections, read_disconnect,
     late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
-    stop_on_error, implicit_typing, verbose, xeus_connection_files]}
+    stop_on_error, queued_in_turns, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.
 XEUS_ONLY = {"xeus_connection_files"}
 
