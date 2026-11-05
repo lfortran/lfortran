@@ -2690,7 +2690,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                 op_overloading_procs.push_back(al, gen_proc->m_procs[i]);
             }
         }
-        for( size_t i = 0; i < op_overloading_procs.size() && !found; i++ ) {
+        for (size_t i : order_specifics_nonelemental_first(
+                op_overloading_procs.p, op_overloading_procs.size())) {
+            if (found) {
+                break;
+            }
             bool proc_from_right_struct = (i >= n_left_struct_end);
             ASR::Struct_t* proc_op_struct = proc_from_right_struct ? right_struct : left_struct;
             // For the call-site bookkeeping below, treat as found_on_right
@@ -3779,7 +3783,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                 op_overloading_procs.push_back(al, gen_proc->m_procs[i]);
             }
         }
-        for( size_t i = 0; i < op_overloading_procs.size() && !found; i++ ) {
+        for (size_t i : order_specifics_nonelemental_first(
+                op_overloading_procs.p, op_overloading_procs.size())) {
+            if (found) {
+                break;
+            }
             ASR::symbol_t* proc;
             ASR::symbol_t* orig_proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
             if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*op_overloading_procs[i]) ) {
@@ -3955,7 +3963,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
             orig_sym = left_struct->m_symtab->resolve_symbol(intrinsic_op_name);
         }
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-        for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
+        for (size_t i : order_specifics_nonelemental_first(gen_proc->m_procs, gen_proc->n_procs)) {
+            if (found) {
+                break;
+            }
             ASR::symbol_t* proc;
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
                 proc = ASRUtils::symbol_get_past_external(
