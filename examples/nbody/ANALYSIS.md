@@ -154,11 +154,16 @@ instead of once per vector. That removes one of the 13 multiplies and gives
 223.5 GFLOP/s (224.8 at N=16384), 6% above Flang.
 
 The factor appears only when LLVM's code generator expands `1/sqrt` into
-the estimate and the Newton step, after all IR optimizations. So a compiler
-can only factor it out by emitting the estimate itself, which is
-target-specific (`vrsqrt14ps` on AVX-512, `frsqrte` on AArch64). That would
-need a target-aware ASR or LLVM-level lowering of reciprocal square roots in
-reductions, or an improvement in LLVM itself, not a change to this example.
+the estimate and the Newton step, after all IR optimizations. LFortran now
+performs this transformation itself (#16838): with `--fast` on x86, it
+writes the Newton step in LLVM IR at the end of its optimization pipeline,
+tells the code generator to emit the bare estimate, and carries the factor
+through the sums so that it is applied once after the loop. This gives 223.4
+GFLOP/s with LLVM 23 and 223.1 with LLVM 11 (N=8192), 6% above Flang.
+
+AArch64 needs no equivalent: its Newton step instruction `frsqrts` already
+includes the factor `0.5`, so there is no separate multiply to move out of
+the loop.
 
 ## OpenMP: vectorization, then load balance
 
