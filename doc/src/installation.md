@@ -637,27 +637,21 @@ make install
 This will install `lfortran` into `inst/bin`.  It assumes that c++ and cc are available, which on Linux
 are typically the GNU C++/C compilers.
 
-### Build From Git
+### Build From Git Without Pixi
 
-We assume you have C++ compilers installed, as well as `git` and `wget`.
-In Ubuntu, you can also install `binutils-dev` for stacktraces.
+The [Pixi workflow](#pixi-recommended) builds from Git with every dependency
+installed for you. To build from Git with dependencies you provide yourself,
+install the packages that `pixi.toml` lists for the `build` feature and the
+`llvm<N>` feature of the LLVM version you want, at the pinned versions, with
+your package manager. These include Python, CMake, Ninja, `re2c`, `bison`,
+`zlib`, `zstd-static` and `llvmdev`; on Linux also a C/C++ compiler and
+`libunwind` (LLVM 12 and newer). In Ubuntu, you can also install `binutils-dev`
+for stacktraces.
 
-If you do not have Conda installed, you can do so on Linux (and similarly on
-other platforms):
-```bash
-wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-bash miniconda.sh -b -p $HOME/conda_root
-export PATH="$HOME/conda_root/bin:$PATH"
-```
 Clone the LFortran git repository:
 ```
 git clone https://github.com/lfortran/lfortran.git
 cd lfortran
-```
-Then prepare the environment:
-```bash
-conda env create -f environment_linux.yml
-conda activate lf
 ```
 Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`; run
 `PYTHON=python3 ./build0.sh` if your system only provides `python3`):
@@ -696,12 +690,10 @@ See [how to run tests](#tests) to make sure all tests pass
 
 Install Visual Studio (MSVC), for example the version 2022, you can download the
 Community version for free from: https://visualstudio.microsoft.com/downloads/.
+Install [Pixi](https://pixi.sh/) and Git.
 
-Install miniforge using the Windows installer from https://github.com/conda-forge/miniforge.
-
-Launch the Miniforge Prompt from the Desktop.
-
-In the shell, initialize the MSVC compiler using:
+Open the x64 Native Tools Command Prompt, or initialize the MSVC compiler in a
+`cmd.exe` shell using:
 
 ```
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd" -arch=x64
@@ -718,29 +710,20 @@ Now you can download and build LFortran:
 ```
 git clone https://github.com/lfortran/lfortran.git
 cd lfortran
-conda env create -f environment_win.yml
-conda activate lf
-build0.bat
-build1.bat
+pixi run -e llvm11 build > build.log 2>&1
 ```
 
 If everything compiled, then you can use LFortran as follows:
 ```
-inst\bin\lfortran examples/expr2.f90
+pixi run -e llvm11 start examples/expr2.f90
 expr2.exe
-inst\bin\lfortran
+pixi run -e llvm11 start
 ```
-And so on.
+And so on. The executable is `build\llvm11\src\bin\lfortran.exe`.
 
 Note: LFortran currently uses the MSVC's linker program (`link`), which is only
 available when the MSVC bat script above is ran. If you forget to activate it,
 LFortran's linking will fail.
-
-Note: the miniforge shell seems to be running some version of `git-bash`
-(although it is `cmd.exe`), which has some unix-like filesystem mounted in
-`/usr` and several commands available such as `ls`, `which`, `git`, `vim`.  For
-this reason the Conda build `environment_win.yml` contains everything needed,
-including `git`.
 
 ### Build from Git on Windows with WSL
 * In windows search "turn windows features on or off".
@@ -751,15 +734,8 @@ including `git`.
 
 * Go to Microsoft store and download Ubuntu (20.04 or 22.04 or 24.04), and launch it.
 
-* Now setup LFortran by running the following commands.
-
-  ```bash
-  wget  https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniconda.sh
-  bash miniconda.sh -b -p $HOME/conda_root
-  echo "export PATH=$HOME/conda_root/bin:$PATH" >> ~/.bashrc
-  ```
-
-* After that restart the Ubuntu terminal.
+* Install [Pixi](https://pixi.sh/) in the Ubuntu terminal, following its Linux
+  instructions, and restart the terminal.
 
 * Now clone the LFortran git repository (you should clone it inside a linux owned directory like `~` or  any of its sub-directories).
 
@@ -769,43 +745,23 @@ including `git`.
   cd lfortran
   ```
 
-* Run the following
+* Build LFortran. Pixi provides the compilers and every other dependency.
 
   ```bash
-  conda env create -f environment_linux.yml
-  conda init bash
-  ```
-
-* Restart Ubuntu terminal again
-
-  ```bash
-  conda activate lf
-  sudo apt update
-  sudo apt-get install build-essential
-  sudo apt-get install zlib1g-dev libzstd-dev
-  sudo apt install clang
-  ```
-
-* Run the following commands
-
-  ```bash
-  conda activate lf
-  ./build0.sh
-  cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
-  make -j8
+  pixi run -e llvm11 build > build.log 2>&1
   ```
 
 * If everything compiles, you can use LFortran as follows
 
   ```bash
-  ./src/bin/lfortran ./examples/expr2.f90
+  pixi run -e llvm11 start ./examples/expr2.f90
   ./expr2.out
   ```
 
 * Run an interactive prompt
 
   ```bash
-  ./src/bin/lfortran
+  pixi run -e llvm11 start
   ```
 
 See [how to run tests](#tests) to make sure all tests pass
@@ -814,25 +770,16 @@ See [how to run tests](#tests) to make sure all tests pass
 
 A build with LLVM has a Jupyter kernel (`lfortran kernel -f FILE`), LFortran's
 own implementation of the protocol, which needs no other library; its
-kernelspec is installed with LFortran. To use the Xeus kernel instead, install
-the following Conda packages also:
+kernelspec is installed with LFortran. To use the Xeus kernel instead, enable
+it by `-DWITH_XEUS=yes` and install into the environment's prefix. The Pixi
+environments already provide Xeus, `xeus-zmq`, `nlohmann_json` and Jupyter.
+For example, on Linux or macOS:
 ```
-conda install xeus=6.0.0 xeus-zmq=4.0.0 nlohmann_json
+pixi shell -e llvm11
+pixi run -e llvm11 build -DWITH_XEUS=yes -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
+cmake --build build/llvm11 --target install
 ```
-and enable the kernel by `-DWITH_XEUS=yes` and install into `$CONDA_PREFIX`. For
-example:
-```
-cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DWITH_LLVM=yes \
-    -DWITH_XEUS=yes \
-    -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-    -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
-    .
-cmake --build . -j4 --target install
-```
-To use it, install Jupyter (`conda install jupyter`) and test that the LFortran
-kernel was found:
+Test that the LFortran kernel was found:
 ```
 jupyter kernelspec list --json
 ```
@@ -897,10 +844,11 @@ translator (requires Python).
 
 The instructions from git are to be used when developing LFortran itself.
 
-### Note for users who do not use Conda
+### Note for users who do not use Pixi
 
-Following are the dependencies necessary for installing this
-repository in development mode,
+`pixi.toml` lists the exact versions of every dependency. Following are the
+minimum dependencies necessary for installing this repository in development
+mode,
 
 - [Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)
 - [LLVM - 11.0.1](https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)
