@@ -2685,10 +2685,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 // is allocated with that source as its mold.
                 ASR::expr_t* arg_mold = get_polymorphic_mold(
                     xx.m_args[i].m_a, xx.m_source);
+                // Record the source's type at allocation, independently of
+                // the element copy loop, which is empty for a zero-sized array.
+                set_dynamic_type_of_polymorphic_target(xx.m_args[i],
+                    xx.m_args[i].m_a, xx.m_source, arg_mold);
                 if (arg_mold != nullptr) {
                     mold = arg_mold;
-                    xx.m_args[i].m_type = ASRUtils::duplicate_type(al,
-                        ASRUtils::extract_type(ASRUtils::expr_type(mold)));
                 }
             }
             // Clear source when data copy loops were generated, since
