@@ -3771,6 +3771,10 @@ filename = "../integration_tests/inquire_18.f90"
 llvm = true
 
 [[test]]
+filename = "../integration_tests/inquire_21.f90"
+fortran = true
+
+[[test]]
 filename = "../integration_tests/derived_types_16_module.f90"
 asr = true
 
@@ -5910,6 +5914,10 @@ asr = true
 
 [[test]]
 filename = "char1.f90"
+fortran = true
+
+[[test]]
+filename = "inquire_21_extensions.f90"
 fortran = true
 
 [[test]]
