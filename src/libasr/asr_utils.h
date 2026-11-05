@@ -2955,6 +2955,9 @@ inline bool is_unlimited_polymorphic_to_specific_type(ASR::ttype_t* variable_typ
 
 bool is_elemental(ASR::symbol_t* x);
 
+// Indices of the specifics `procs`, non-elemental ones first (F2018 15.5.5.2).
+std::vector<size_t> order_specifics_nonelemental_first(
+    ASR::symbol_t* const* procs, size_t n_procs);
 
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
     Location& loc, const std::function<void (const std::string &, const Location &)> err);
@@ -2983,18 +2986,7 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
             return select_func_subrout(proc_sym, args, loc, err);
         }
     };
-    for (size_t i=0; i < p.n_procs; i++) {
-        if (is_elemental(p.m_procs[i])) {     // Prioritize direct arg matching, then look for elemental
-            continue;
-        }
-        if( matches(p.m_procs[i]) ) {
-            return checked_integer_cast<int>(i);
-        }
-    }
-    for (size_t i=0; i < p.n_procs; i++) {
-        if (!is_elemental(p.m_procs[i])) {
-            continue;
-        }
+    for (size_t i : order_specifics_nonelemental_first(p.m_procs, p.n_procs)) {
         if( matches(p.m_procs[i]) ) {
             return checked_integer_cast<int>(i);
         }
