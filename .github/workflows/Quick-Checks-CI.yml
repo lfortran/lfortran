@@ -254,7 +254,6 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          # The Pixi builds share no cache entries with the micromamba ones.
           key: ${{ github.job }}-pixi-ubuntu-latest-19-o2
           # Both jobs build the same compiler; one copy of the cache is enough.
           save: ${{ github.ref == 'refs/heads/main' && matrix.backend == 'llvm_wasm' }}
@@ -333,7 +332,6 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          # The Pixi builds share no cache entries with the micromamba ones.
           key: ${{ github.job }}-pixi-ubuntu-latest
           save: ${{ github.ref == 'refs/heads/main' }}
 
@@ -369,8 +367,7 @@ jobs:
           cache: false
 
       # ccache wraps both the native compiler and em++ (Emscripten documents
-      # `ccache emcc`). The cache holds both builds. The Pixi builds share no
-      # cache entries with the micromamba ones.
+      # `ccache emcc`). The cache holds both builds.
       - uses: hendrikmuhs/ccache-action@main
         with:
           key: ${{ github.job }}-pixi-ubuntu-latest

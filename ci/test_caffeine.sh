@@ -34,23 +34,8 @@ export PATH="$PWD/src/bin:$PATH"
 which lfortran
 lfortran --version
 
-ensure_tool() {
-  local package="$1" status
-  shift
-  if "$@"; then
-    return 0
-  else
-    status=$?
-  fi
-  # Only a missing command warrants installation; do not mask broken tools.
-  if [[ "$status" != 127 ]]; then
-    return "$status"
-  fi
-  micromamba install -y -c conda-forge "$package"
-  "$@"
-}
-
-ensure_tool fpm=0.12.0 fpm --version
+# The Pixi environment provides fpm (pixi.toml); a missing fpm fails here.
+fpm --version
 
 if [[ "$reference" == true ]] ; then
 
