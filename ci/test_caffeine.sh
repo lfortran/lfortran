@@ -34,23 +34,8 @@ export PATH="$PWD/src/bin:$PATH"
 which lfortran
 lfortran --version
 
-ensure_tool() {
-  local package="$1" status
-  shift
-  if "$@"; then
-    return 0
-  else
-    status=$?
-  fi
-  # Only a missing command warrants installation; do not mask broken tools.
-  if [[ "$status" != 127 ]]; then
-    return "$status"
-  fi
-  micromamba install -y -c conda-forge "$package"
-  "$@"
-}
-
-ensure_tool fpm=0.12.0 fpm --version
+# The Pixi environment provides fpm (pixi.toml); a missing fpm fails here.
+fpm --version
 
 if [[ "$reference" == true ]] ; then
 
@@ -97,8 +82,15 @@ git checkout 0f9ca691cbe6782838266a9bb5005ae187f253a2
 # Toolchain setup
 
 export FC=lfortran
-export CC=clang
-export CXX=clang++
+if [[ $(uname -s) == Darwin ]] ; then
+  # The macOS environments select Xcode's Clang (pixi.toml), which LFortran
+  # also links with; the environment's own clang may be older than the SDK.
+  export CC="${CC:-clang}"
+  export CXX="${CXX:-clang++}"
+else
+  export CC=clang
+  export CXX=clang++
+fi
 if [[ "${LFORTRAN_LINKER:-}" == gcc ]] ; then
   # LFortran links with Pixi's GCC (the LLVM 7 and 8 environments), against
   # the conda sysroot and with default PIE links. Clang 7 and 8 find neither
@@ -115,8 +107,8 @@ fi
 echo "FC=${FC}"
 echo "CC=${CC}"
 echo "CXX=${CXX}"
-which clang
-clang --version
+command -v "$CC"
+"$CC" --version
 
 # Build caffeine
 

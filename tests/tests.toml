@@ -3495,11 +3495,6 @@ pass = "flip_sign"
 [[test]]
 filename = "../integration_tests/fma.f90"
 asr = true
-pass = "fma"
-
-[[test]]
-filename = "../integration_tests/fma_04.f90"
-pass = "fma"
 
 [[test]]
 filename = "../integration_tests/div_to_mul.f90"
@@ -5310,6 +5305,23 @@ gpu_cuda_kernel = true
 # Compile-only: a device run copies 2 GB arrays there and back.
 [[test]]
 filename = "gpu_cuda_kernel_wide_arrays.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# With the same flag the allocatable components of an array of a derived
+# type, packed end to end, are found in that data by 64-bit offsets, so
+# components of more than huge(0) elements in all are addressed unwrapped
+# (#15929).
+[[test]]
+filename = "../integration_tests/gpu_metal_716.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# The same packed components with 64-bit offsets, and a whole one assigned a
+# function's result in the kernel: the offset it is copied from is read into
+# a `long` local.
+[[test]]
+filename = "../integration_tests/gpu_metal_717.f90"
 options = "--descriptor-index-64"
 gpu_cuda_kernel = true
 

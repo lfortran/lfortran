@@ -802,6 +802,27 @@ class WorkflowPolicyTests(unittest.TestCase):
                 self.assertRegex(step.split("\n\n", 1)[0] + "\n", save, path)
         self.assertGreaterEqual(steps, 8)
 
+    def test_ci_installs_nothing_outside_pixi(self):
+        # Pixi (pixi.toml) provides every CI dependency, so CI reproduces with
+        # the same `pixi run` commands locally. The Dockerfile's base system
+        # packages are the only exception.
+        installer = re.compile(
+            r"\b(?:micromamba|mamba|conda)\s+(?:install|create|update|env|activate)\b"
+            r"|setup-micromamba|setup-miniconda|\bpip3?\s+install\b|-m\s+pip\b"
+            r"|\bbrew\s+(?:install|update|upgrade|bundle)\b"
+            r"|\bapt(?:-get)?\s+(?:install|update|upgrade)\b|\bchoco\s+install\b")
+        paths = [*(ROOT / ".github/workflows").glob("*.yml"),
+                 *(ROOT / ".github/actions").glob("*/action.yml"),
+                 *(path for path in (ROOT / "ci").iterdir()
+                   if path.is_file() and path.name != "test_ci.py"),
+                 *ROOT.glob("build*.sh")]
+        self.assertGreater(len(paths), 20)
+        for path in paths:
+            for number, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
+                if line.lstrip().startswith("#"):
+                    continue
+                self.assertIsNone(installer.search(line), f"{path}:{number}: {line.strip()}")
+
     def test_activated_pixi_environments_come_after_ccache(self):
         # ccache-action prepends the runner's /usr/local/bin to PATH. An
         # environment activated before it loses to the runner's tools, such
@@ -1548,12 +1569,12 @@ class CaffeineTests(unittest.TestCase):
         calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
         return result, calls
 
-    def assert_capability_coverage(self, calls, default_images="2"):
+    def assert_capability_coverage(self, calls, default_images="2", cc="clang", cxx="clang++"):
         unit = [call for call in calls if call["key"] == "unit"]
         self.assertEqual(len(unit), 1)
         self.assertEqual(unit[0]["args"], ["test", "--verbose"])
         self.assertEqual(unit[0]["env"],
-                         dict(FC="lfortran", CC="clang", CXX="clang++", CAF_IMAGES="4"))
+                         dict(FC="lfortran", CC=cc, CXX=cxx, CAF_IMAGES="4"))
         install = next(call for call in calls if call["key"] == "install.sh")
         self.assertNotIn("--disable-fpm", install["args"])
         smoke = next(call for call in calls if call["command"] == "make")
@@ -1611,22 +1632,19 @@ class CaffeineTests(unittest.TestCase):
                 self.assertFalse((self.directory / "OpenCoarrays").exists())
 
     def test_macos_still_runs_unit_and_capability_tests_without_opencoarrays(self):
-        result, calls = self.run_caffeine("exhaustive", CI_OS="Darwin")
+        # The environment's CC and CXX (Xcode's Clang in pixi.toml) are kept.
+        cc, cxx = str(self.bin / "clang"), str(self.bin / "clang++")
+        result, calls = self.run_caffeine("exhaustive", CI_OS="Darwin", CC=cc, CXX=cxx)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assert_capability_coverage(calls)
+        self.assert_capability_coverage(calls, cc=cc, cxx=cxx)
         self.assertFalse({call["command"] for call in calls} &
                          {"mpifort", "cmake", "caf", "cafrun", "pixi"})
 
-    def test_missing_fpm_installs_the_existing_pin_before_unit_tests(self):
+    def test_missing_fpm_fails_before_unit_tests(self):
         result, calls = self.run_caffeine(CI_FPM_PRESENT="false")
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assert_capability_coverage(calls)
-        installs = [call for call in calls if call["command"] == "micromamba"]
-        self.assertEqual([call["args"] for call in installs],
-                         [["install", "-y", "-c", "conda-forge", "fpm=0.12.0"]])
-        versions = [call for call in calls if call["command"] == "fpm"]
-        self.assertEqual(len(versions), 2)
-        self.assertLess(calls.index(versions[0]), calls.index(installs[0]))
+        self.assertEqual(result.returncode, 127, result.stdout + result.stderr)
+        self.assertFalse({call["key"] for call in calls} & {"install.sh", "unit"})
+        self.assertFalse(any(call["command"] == "micromamba" for call in calls))
 
     def test_reference_uses_owned_pixi_toolchain_not_runner_compilers(self):
         for scope in ("quick", "exhaustive"):
@@ -1660,7 +1678,7 @@ class CaffeineTests(unittest.TestCase):
 
     def test_dependency_and_capability_failures_are_not_successes(self):
         cases = (
-            ("fpm", "quick", "true"), ("micromamba", "quick", "false"),
+            ("fpm", "quick", "true"),
             ("install.sh", "quick", "true"), ("info", "quick", "true"),
             ("make", "quick", "true"), ("lfortran", "quick", "true"),
             ("gasnetrun_smp", "quick", "true"), ("mpifort", "exhaustive", "true"),

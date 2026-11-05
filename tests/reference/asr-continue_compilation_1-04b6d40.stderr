@@ -1742,6 +1742,56 @@ semantic error: dummy argument 'y' of elemental procedure 'cc1_ead_s' cannot be 
 4114 |         integer, allocatable, intent(inout) :: y  ! {Error} dummy argument 'y' of elemental procedure 'cc1_ead_s' cannot be allocatable
      |                                                ^ 
 
+semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_array' must be scalar
+    --> tests/errors/continue_compilation_1.f90:4244:32
+     |
+4244 |         integer, intent(in) :: x(3)
+     |                                ^^^^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_pointer' cannot be a pointer
+    --> tests/errors/continue_compilation_1.f90:4249:41
+     |
+4249 |         integer, pointer, intent(in) :: x
+     |                                         ^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_coarray' cannot be a coarray
+    --> tests/errors/continue_compilation_1.f90:4253:32
+     |
+4253 |         integer, intent(in) :: x[*]
+     |                                ^^^^ 
+
+semantic error: dummy argument 'g' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+    --> tests/errors/continue_compilation_1.f90:4258:13 - 4260:24
+     |
+4258 |                pure integer function g(i)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4260 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+    --> tests/errors/continue_compilation_1.f90:4262:66
+     |
+4262 |         procedure(cc_elem_dummies_iface), pointer, intent(in) :: h
+     |                                                                  ^ 
+
+semantic error: dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a pointer
+    --> tests/errors/continue_compilation_1.f90:4262:66
+     |
+4262 |         procedure(cc_elem_dummies_iface), pointer, intent(in) :: h
+     |                                                                  ^ 
+
+semantic error: elemental procedure 'cc_elem_dummies_alt_return' cannot have an alternate return dummy argument '*'
+    --> tests/errors/continue_compilation_1.f90:4265:5 - 4267:18
+     |
+4265 |        elemental subroutine cc_elem_dummies_alt_return(x, *)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4267 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

@@ -93,6 +93,14 @@ struct GpuDeviceCapabilities {
     int tile_width = 0;
     int sequential_loop_unroll_factor = 1;
 
+    // The most threads a launch with a reduction runs (gpu_offload.cpp):
+    // each runs every reduction_threads-th iteration in a grid-stride loop
+    // and accumulates them in its own slot, so the host folds at most this
+    // many slots. On an MI300A a dot product of 2**27 elements reads at
+    // 3.6 TB/s with 2**17 threads, and the fold of their 1 MB of slots takes
+    // 0.1 ms.
+    int64_t reduction_threads = 131072;
+
     // Whether a launch of more iterations than the chunk limit
     // (PassOptions::gpu_chunk_limit) runs its kernel once per chunk of the
     // iteration space (device_launch_expand.cpp). Where it does not, one

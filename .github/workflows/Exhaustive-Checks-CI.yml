@@ -97,7 +97,6 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          # The Pixi builds share no cache entries with the micromamba ones.
           key: ${{ github.job }}-pixi-ubuntu-latest
           save: ${{ github.ref == 'refs/heads/main' }}
 
@@ -197,7 +196,6 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          # The Pixi builds share no cache entries with the micromamba ones.
           key: ${{ github.job }}-pixi-ubuntu-latest
           save: ${{ github.ref == 'refs/heads/main' }}
 
@@ -341,7 +339,6 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          # The Pixi builds share no cache entries with the micromamba ones.
           key: ${{ github.job }}-pixi-ubuntu-latest
           save: ${{ github.ref == 'refs/heads/main' }}
 

@@ -1258,6 +1258,8 @@ RUN(NAME array_constructor_09 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arra
 RUN(NAME array_constructor_10 LABELS gfortran llvm EXTRAFILES array_constructor_10_mod.f90)
 RUN(NAME array_constructor_11 LABELS gfortran llvm) # section elements with integer(8) bounds
 RUN(NAME array_constructor_12 FILE array_constructor_11 LABELS llvm EXTRA_ARGS --descriptor-index-64)
+RUN(NAME array_constructor_13 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64 --realloc-lhs-arrays) # run-time-sized elements next to scalars
+RUN(NAME array_constructor_14 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 --realloc-lhs-arrays GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_nested_dealloc_derived_pointer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3917,6 +3919,7 @@ RUN(NAME inquire_15 LABELS gfortran llvm)
 RUN(NAME inquire_16 LABELS gfortran llvm)
 RUN(NAME inquire_17 LABELS gfortran llvm)
 RUN(NAME inquire_18 LABELS gfortran llvm)
+RUN(NAME inquire_19 LABELS gfortran llvm EXTRAFILES inquire_19.c)
 RUN(NAME inquire_20 LABELS gfortran llvm)
 RUN(NAME inquire_unit_exist LABELS gfortran llvm)
 RUN(NAME inquire_iolength_string LABELS gfortran llvm)
@@ -7141,6 +7144,13 @@ RUN(NAME gpu_metal_704 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_704_chunked FILE gpu_metal_704 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 RUN(NAME gpu_metal_706 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4000)
 RUN(NAME gpu_metal_707 LABELS gfortran llvm metal cuda) # empty tiled nest: no padded thread count
+# The allocatable components of an array of a derived type, packed end to end
+# for the kernel, with their offsets and extents in the kernel's offset kind
+# (#15929); without 64-bit offsets a launch whose components hold more than
+# huge(0) elements in all stops before it packs them.
+RUN(NAME gpu_metal_716 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_717 LABELS gfortran metal cuda EXTRA_ARGS --descriptor-index-64) # no llvm: the host relies on reallocation on assignment (needs --realloc-lhs-arrays)
+RUN(NAME gpu_metal_718 FAIL LABELS metal cuda) # stops: the packed components need --descriptor-index-64 (not supported on Metal)
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
 RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)
@@ -7149,6 +7159,9 @@ RUN(NAME gpu_metal_615 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-i
 RUN(NAME gpu_metal_608 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64) # lower bounds above huge(0); metal declines integer(8) loop indices
 RUN(NAME gpu_metal_616 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64)
 RUN(NAME gpu_metal_617 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_719 LABELS gfortran llvm metal cuda) # lower bounds beyond huge(0) without --descriptor-index-64
+RUN(NAME gpu_metal_720 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64) # metal declines integer(8) loop indices
+RUN(NAME gpu_metal_721 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_511 LABELS llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices

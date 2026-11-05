@@ -4,11 +4,10 @@
 # optimization by hand.
 #
 # CPU: LFortran's LLVM IR of nbody.f90 is rebuilt with LLVM 11's opt/llc
-# (the LLVM LFortran uses) with
-#   - `nsw` on the integer increments of the loops, and
-#   - the ASR `fma` pass skipped (--skip-pass=fma),
-# and, for OpenMP, with the force loop written as `!$omp parallel do
-# schedule(dynamic)` instead of `do concurrent` (static schedule).
+# (the LLVM LFortran uses) with `nsw` on the integer increments of the
+# loops, and, for OpenMP, with the force loop written as `!$omp parallel do
+# schedule(dynamic)` instead of `do concurrent` (static schedule). (The
+# ASR `fma` pass these experiments also skipped has since been removed.)
 #
 # GPU: ablation.m runs the force kernel LFortran generates and variants of it
 # (counted loop, unrolling, threadgroup size, rsqrt, threadgroup memory).
@@ -73,16 +72,13 @@ link_ir() {
 }
 
 echo "== single core, N = $N_SINGLE (GFLOP/s, best of 3)"
-"$LFORTRAN" --fast --show-llvm "$here/nbody.f90" > fma.ll
-"$LFORTRAN" --fast --skip-pass=fma --show-llvm "$here/nbody.f90" > nofma.ll
-link_ir fma.ll plain cpu_as_is
-link_ir fma.ll nsw cpu_nsw
-link_ir nofma.ll plain cpu_nofma
-link_ir nofma.ll nsw cpu_nsw_nofma
-for v in cpu_as_is cpu_nsw cpu_nofma cpu_nsw_nofma; do
+"$LFORTRAN" --fast --show-llvm "$here/nbody.f90" > cpu.ll
+link_ir cpu.ll plain cpu_as_is
+link_ir cpu.ll nsw cpu_nsw
+for v in cpu_as_is cpu_nsw; do
     report "$v" "./$v" "$N_SINGLE" "$STEPS"
 done
-for v in cpu_as_is cpu_nsw_nofma; do
+for v in cpu_as_is cpu_nsw; do
     echo "loop-vectorize remarks, $v:"
     "$LLVM_BIN/opt" -O3 -pass-remarks=loop-vectorize -pass-remarks-missed=loop-vectorize \
         -pass-remarks-analysis=loop-vectorize "$v.ll" -o /dev/null 2>&1 | sort | uniq -c
@@ -102,12 +98,11 @@ s = s[:e] + "        !$omp end parallel do\n" + s[e:]
 open(sys.argv[2], "w").write(s)
 EOF
 "$LFORTRAN" --fast --openmp --show-llvm "$here/nbody.f90" > omp.ll
-"$LFORTRAN" --fast --openmp --skip-pass=fma --show-llvm "$here/nbody.f90" > omp_nofma.ll
-"$LFORTRAN" --fast --openmp --skip-pass=fma --show-llvm dynamic.f90 > omp_dynamic.ll
+"$LFORTRAN" --fast --openmp --show-llvm dynamic.f90 > omp_dynamic.ll
 link_ir omp.ll plain omp_as_is
-link_ir omp_nofma.ll nsw omp_nsw_nofma
-link_ir omp_dynamic.ll nsw omp_nsw_nofma_dynamic
-for v in omp_as_is omp_nsw_nofma omp_nsw_nofma_dynamic; do
+link_ir omp.ll nsw omp_nsw
+link_ir omp_dynamic.ll nsw omp_nsw_dynamic
+for v in omp_as_is omp_nsw omp_nsw_dynamic; do
     report "$v" "./$v" "$N_MULTI" "$STEPS"
 done
 
@@ -116,9 +111,7 @@ echo "== GPU, N = $N_GPU (GFLOP/s, best of 3)"
     -DNBODY_ABLATION_SOURCE="\"$here/metal/ablation.metal\"" \
     "$here/metal/ablation.m" -o ablation
 "$LFORTRAN" --fast --gpu=metal "$here/nbody.f90" -o lfortran_metal
-"$LFORTRAN" --fast --skip-pass=fma --gpu=metal "$here/nbody.f90" -o lfortran_metal_nofma
 report "lfortran --fast --gpu=metal" "${gpu_run[@]}" ./lfortran_metal "$N_GPU" "$STEPS_GPU"
-report "  the same, without the fma pass" "${gpu_run[@]}" ./lfortran_metal_nofma "$N_GPU" "$STEPS_GPU"
 while read -r variant group unroll inv_sqrt; do
     report "ablation $variant threadgroup=$group unroll=$unroll $inv_sqrt" \
         "${gpu_run[@]}" ./ablation "$N_GPU" "$STEPS_GPU" "$variant" "$group" "$unroll" "$inv_sqrt"

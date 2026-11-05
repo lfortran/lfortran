@@ -4231,3 +4231,38 @@ contains
         k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
     end subroutine
 end module
+
+module cc_elem_dummies_m
+    implicit none
+    abstract interface
+        pure integer function cc_elem_dummies_iface(i)
+            integer, intent(in) :: i
+        end function
+    end interface
+contains
+    elemental integer function cc_elem_dummies_array(x)
+        integer, intent(in) :: x(3)
+        cc_elem_dummies_array = 1
+    end function
+
+    elemental subroutine cc_elem_dummies_pointer(x)
+        integer, pointer, intent(in) :: x
+    end subroutine
+
+    elemental subroutine cc_elem_dummies_coarray(x)
+        integer, intent(in) :: x[*]
+    end subroutine
+
+    elemental subroutine cc_elem_dummies_procedure(g, h)
+        interface
+            pure integer function g(i)
+                integer, intent(in) :: i
+            end function
+        end interface
+        procedure(cc_elem_dummies_iface), pointer, intent(in) :: h
+    end subroutine
+
+    elemental subroutine cc_elem_dummies_alt_return(x, *)
+        integer, intent(in) :: x
+    end subroutine
+end module
