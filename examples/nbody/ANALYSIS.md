@@ -79,20 +79,23 @@ compilers on the same `nbody.f90`, each with all its optimizations on. The
 C baseline is NEON-only and does not build here.
 
 Setup:
-- AMD Ryzen 9 9955HX (Zen 5, AVX-512, up to 5.06 GHz), Linux.
-- LFortran main `06749efc50`, LLVM 11.1.0 (`--fast` implies
-  `-mcpu=native`); GFortran 16.2.0; Flang 23.1.4.
+- AMD Ryzen 9 9955HX (Zen 5, AVX-512), Linux. A single-core AVX-512 FMA
+  loop measures 353 GFLOP/s on it.
+- LFortran main `06749efc50`, built with LLVM 11.1.0 and with LLVM 23.1.0
+  (`--fast` implies `-mcpu=native`); GFortran 16.2.0; Flang 23.1.4.
 - One process pinned to one core (`taskset -c 4`) on an otherwise idle
   machine (load average below 1 before and after).
-- The variants run interleaved, 5 rounds each. The table gives the median
-  GFLOP/s; within a variant the runs differ by less than 1%.
+- The variants run interleaved, 5 to 7 rounds each, after one warm-up run.
+  The table gives the median GFLOP/s; within a variant the runs differ by
+  less than 1%.
 
 | Compiler and flags | N=8192, 5 steps | N=16384, 10 steps |
 |---|---:|---:|
 | Flang `-O3 -march=native -ffast-math` | 211.0 | 211.7 |
 | Flang `-O3 -ffast-math -fstack-arrays -fno-protect-parens -march=native` (Flang 23's spelling of `-Ofast`) | 211.0 | 211.8 |
 | the same plus `-funroll-loops` | 211.2 | 211.7 |
-| **LFortran `--fast`** | **199.7** | **200.5** |
+| **LFortran `--fast`, LLVM 23** (separate run; Flang `-O3` measured 210.9 and 212.0 there) | **210.7** | **211.6** |
+| LFortran `--fast`, LLVM 11 | 199.7 | 200.5 |
 | GFortran `-O3 -march=native -ffast-math` (as in `run.sh`) | 145.9 | 146.2 |
 | GFortran `-Ofast -march=native` | 146.1 | 146.2 |
 | GFortran `-Ofast -march=native -funroll-loops -flto` | 145.8 | 145.7 |
@@ -101,19 +104,22 @@ Setup:
 All variants agree on the mean-position checksum (1.49831403 and
 1.49675293). The energy drift is 1.4e-10 to 1.8e-10 for all of them.
 
-LFortran is at 95% of Flang and 1.37x GFortran's best. The force loop
-explains the differences. In all three the inner j loop is vectorized 16
-lanes wide in `zmm` registers. `1/sqrt` becomes `vrsqrt14ps` plus a Newton
-step under fast math, and the multiply/add pairs contract into FMA
-instructions:
+LFortran with LLVM 23 matches Flang, which uses the same LLVM. With LLVM 11
+it is at 95% of Flang; GFortran's best reaches 72%. In all of them the inner
+j loop is vectorized 16 lanes wide in `zmm` registers. `1/sqrt` becomes
+`vrsqrt14ps` plus a Newton step under fast math, and the multiply/add pairs
+contract into FMA instructions:
 
 - LFortran and Flang interleave two vectors per iteration (32 bodies, two
   `vrsqrt14ps`, 14 FMAs), so each of the three acceleration sums has two
-  independent accumulators. The loops are nearly identical: LFortran's has
-  47 instructions and Flang's 45.
-- The remaining LFortran difference is that three loop-invariant constants
-  are reloaded with `vbroadcastss` from the constant pool in every
-  iteration, where Flang keeps them in registers.
+  independent accumulators. With LLVM 23 LFortran's loop is
+  instruction-for-instruction Flang's (45 instructions).
+- With LLVM 11 the loop has 47 instructions, and three loop-invariant
+  constants (`eps2` and the Newton step's -3 and -0.5) are reloaded with
+  `vbroadcastss` in every iteration. Hoisting them by hand into free
+  registers does not change the speed (199.9 vs 200.0 GFLOP/s). LLVM 11 does
+  not know Zen 5, so `-mcpu=native` falls back to the `generic` CPU model;
+  LLVM 23 selects `znver5`, like Flang.
 - GFortran does not interleave: one vector per iteration, so the
   accumulator chains are latency bound. `-funroll-loops` alone does not
   change this. `-fvariable-expansion-in-unroller` gives the accumulators
@@ -121,8 +127,38 @@ instructions:
 
 With current main the inner loop vectorizes on this machine, unlike in the
 M4 measurement above. The `fma` pass named there has been removed (#16804).
-That removal alone raised this benchmark from 193 to 200 GFLOP/s (unpinned,
-N=8192).
+That removal alone raised this benchmark from 193 to 200 GFLOP/s (LLVM 11,
+unpinned, N=8192).
+
+### Beyond Flang
+
+211 GFLOP/s is 60% of the measured FMA peak. The loop is bound by the
+throughput of its instruction mix, not by latency or loads: per vector of 16
+bodies it issues 13 multiplies and FMAs, which share the two FMA pipes, plus
+3 subtractions and one `vrsqrt14ps`. Experiments, all with LLVM 23 and the
+same result:
+
+| Experiment (N=8192, 5 steps) | GFLOP/s |
+|---|---:|
+| Flang / LFortran as is (2 vectors per iteration) | 210.9 / 210.7 |
+| LLVM interleave count 1 / 4 / 8 (Flang `-mllvm -force-vector-interleave`) | 200.7 / 196.4 / 191.5 |
+| Unroll-and-jam of the i loop by 2 / 4 (source, LFortran) | 209.4 / 206.2 |
+| The Newton step's `-0.5` factored out of the loop (assembly, LFortran) | 223.5 |
+
+LLVM's default interleave is the best, and reusing the loads of body j for
+several i does not help, since loads are not the bottleneck. Fewer
+instructions do help. The Newton step computes `inv_r = -0.5 * y *
+(r2*y*y - 3)` for the estimate `y`. Then `s` and the three sums carry the
+factor `(-0.5)**3`, which can be applied once to each sum after the j loop
+instead of once per vector. That removes one of the 13 multiplies and gives
+223.5 GFLOP/s (224.8 at N=16384), 6% above Flang.
+
+The factor appears only when LLVM's code generator expands `1/sqrt` into
+the estimate and the Newton step, after all IR optimizations. So a compiler
+can only factor it out by emitting the estimate itself, which is
+target-specific (`vrsqrt14ps` on AVX-512, `frsqrte` on AArch64). That would
+need a target-aware ASR or LLVM-level lowering of reciprocal square roots in
+reductions, or an improvement in LLVM itself, not a change to this example.
 
 ## OpenMP: vectorization, then load balance
 
