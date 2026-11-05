@@ -6615,6 +6615,7 @@ RUN(NAME gpu_cuda_cpu_01 LABELS gfortran llvm cuda EXTRAFILES gpu_cuda_cpu_01_mo
 RUN(NAME gpu_cuda_cpu_archive_01 LABELS gfortran llvm cuda STATIC_LIBRARY_FILES gpu_cuda_cpu_archive_01_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_memory_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_wait_reads_01 LABELS gfortran llvm cuda)
+RUN(NAME gpu_keep_reads_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_rsqrt_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_rsqrt_01_fast FILE gpu_rsqrt_01 LABELS gfortran llvm cuda EXTRA_ARGS --fast)
 RUN(NAME gpu_type_inquiry_01 LABELS gfortran llvm cuda)

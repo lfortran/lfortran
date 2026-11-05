@@ -736,8 +736,17 @@ reference of the kernel to it only reads it -- an operand, a subscript, the
 value of an assignment, an inquiry about its shape, an actual argument of
 an `intent(in)` dummy -- and *written* otherwise.
 
-* The host bytes of a read-only buffer are copied when the launch is made,
-  so the host may change or free them right after the launch.
+* The host bytes of a read-only buffer are copied when the launch is made.
+  The CUDA runtime keeps the copy of a range of at least 64 KiB in device
+  memory until the next `lfortran_gpu_wait` or `lfortran_gpu_sync`, and a
+  later launch that reads the same range uses it without copying again: the
+  host does not change what a launch since the last wait reads before it
+  waits (the `gpu_launch_sync` pass places the waits). The launches of a time
+  loop that only read an array, between which the host touches nothing they
+  use, copy it once. On an MI210, where a copy runs at about 25 GB/s, that
+  makes a matrix-vector product 27 times faster (24 to 634 GB/s) and a
+  sparse one 26 times. A kept copy that no launch used since the wait before
+  the last one is freed.
 * A written buffer is *resident*: the runtime keeps a device buffer for its
   host range in a table. When the device does not hold newer values than the
   host (the entry is not *dirty*), the host bytes are copied in; after the
@@ -783,8 +792,8 @@ blocks one after another, and the threads of a block one after another, so a
 `__syncthreads()` cannot be honoured and stops the program. The emulated
 device reports a 64 MiB L2 cache.
 The CUDA runtime keeps the same table and orders copies and launches
-on one stream. It keeps scratch and read-only upload buffers per kernel and
-argument slot, reusing their capacity and deferring replaced allocations until
+on one stream. It keeps scratch buffers, and upload buffers for read-only
+ranges below 64 KiB, per kernel and argument slot, reusing their capacity and deferring replaced allocations until
 a synchronization. Preparing arguments can itself synchronize when the deferred
 queue or residency table fills. After such a synchronization, CUDA prepares all
 bindings again before dispatch: writable residents must still be present and
@@ -918,7 +927,9 @@ be pending there (`GpuKernelLaunch.stop_replay`), in launch order.
 
 Storage that a launch only reads the runtime may hand the kernel in place
 (the unified and managed memory models), and the host must not change it
-under the kernel. The pass keeps what pending launches read as well, and
+under the kernel; in the copy model the runtime keeps its copy in device
+memory until the next wait, and the host must not change it before that
+either. The pass keeps what pending launches read as well, and
 puts a `GpuWait` -- wait for the launches that read host memory in place,
 copying nothing back -- before a host statement that may change or free
 such storage, and at the end of a `block` whose locals they read. Since an
