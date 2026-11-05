@@ -1092,6 +1092,34 @@ class ParallelRegionVisitor :
             return ASRUtils::get_struct_sym_from_struct_expr(var);
         }
 
+        // A type declared in the procedure that contains the region is not
+        // visible from the outline, which lives in the translation unit, and
+        // it cannot be imported from a program. Give the outline its own copy.
+        ASR::symbol_t* outline_type_declaration(ASR::symbol_t* declaration,
+                SymbolTable* scope) {
+            if (declaration == nullptr ||
+                    ASRUtils::is_visible_from(declaration, scope)) {
+                return declaration;
+            }
+            ASR::symbol_t* definition =
+                ASRUtils::symbol_get_past_external(declaration);
+            if (!ASR::is_a<ASR::Struct_t>(*definition)) {
+                return declaration;
+            }
+            // Every variable of the type must name the same copy, or the
+            // copies replaced in the scope leave earlier ones orphaned.
+            ASR::symbol_t* existing =
+                scope->get_symbol(ASRUtils::symbol_name(definition));
+            if (existing != nullptr && ASR::is_a<ASR::Struct_t>(*existing)) {
+                return existing;
+            }
+            ASRUtils::SymbolDuplicator duplicator(al);
+            ASR::symbol_t* copy = duplicator.duplicate_Struct(
+                ASR::down_cast<ASR::Struct_t>(definition), scope);
+            scope->add_or_overwrite_symbol(ASRUtils::symbol_name(copy), copy);
+            return copy;
+        }
+
         // `target = value` for a variable passed to a region by value. A
         // procedure pointer is copied by pointer association.
         ASR::stmt_t* copy_value(ASR::expr_t* target, ASR::expr_t* value) {
@@ -2259,6 +2287,7 @@ class ParallelRegionVisitor :
                     if (private_array->second == ASR::omp_clauseType::OMPFirstPrivate) {
                         ASR::symbol_t* declaration = involved_type_declaration(it.second.second);
                         if (failed()) return;
+                        declaration = outline_type_declaration(declaration, current_scope);
                         ASR::expr_t* original = b.Variable(current_scope,
                             current_scope->get_unique_name("original_" + it.first), sym_type,
                             ASR::intentType::Local, declaration,
@@ -2642,6 +2671,7 @@ class ParallelRegionVisitor :
                 }
                 ASR::symbol_t* declaration = involved_type_declaration(it.second.second);
                 if (failed()) return nullptr;
+                declaration = outline_type_declaration(declaration, current_scope);
                 ASR::expr_t* var = b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, declaration, ASR::abiType::BindC);
                 LCOMPILERS_ASSERT(var != nullptr);
                 if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
@@ -3598,6 +3628,7 @@ class ParallelRegionVisitor :
                 }
                 ASR::symbol_t* declaration = involved_type_declaration(it.second.second);
                 if (failed()) return nullptr;
+                declaration = outline_type_declaration(declaration, current_scope);
                 ASR::expr_t* var = b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, declaration, ASR::abiType::BindC);
                 LCOMPILERS_ASSERT(var != nullptr);
                 if (ASRUtils::is_array(var_type) && ASRUtils::is_pointer(var_type)
@@ -3996,6 +4027,7 @@ class ParallelRegionVisitor :
                 }
                 ASR::symbol_t* declaration = involved_type_declaration(it.second.second);
                 if (failed()) return nullptr;
+                declaration = outline_type_declaration(declaration, current_scope);
                 ASR::expr_t* var = b.Variable(current_scope, it.first, var_type,
                     ASR::intentType::Local, declaration, ASR::abiType::BindC);
                 LCOMPILERS_ASSERT(var != nullptr);
