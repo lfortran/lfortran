@@ -7450,7 +7450,9 @@ struct UNIT_FILE {
     // pos_nl_offset bytes hold pos_nl_count of them and end with a record
     // terminator (or pos_nl_offset is 0), so the next INQUIRE only scans the
     // bytes from there. Any statement that moves the unit backwards across
-    // records clears it.
+    // records (REWIND, BACKSPACE, ENDFILE, POS=, OPEN) clears it. The cache
+    // assumes the prefix changes only through this unit: if another unit or
+    // FILE* rewrites it, INQUIRE does not see that change.
     bool pos_nl_valid;
     int64_t pos_nl_offset;
     int64_t pos_nl_count;
@@ -14810,6 +14812,7 @@ LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* io
         fprintf(stderr, "Error seeking to position %" PRId64 " in file.\n", pos);
         exit(1);
     }
+    pos_nl_reset(find_unit(unit_num));
 }
 
 LFORTRAN_API void _lfortran_connect_unit_for_read(int32_t unit_num, int32_t unformatted, int32_t* iostat)

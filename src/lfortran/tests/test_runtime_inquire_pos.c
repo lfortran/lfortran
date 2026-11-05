@@ -7,7 +7,8 @@
 // terminators before the current position. It must count them only in the
 // bytes written or read since the previous INQUIRE, not by rereading the
 // whole file each time (lfortran/lfortran#16796), and it must count them
-// from the start again after the unit is repositioned.
+// from the start again after the unit is repositioned (REWIND, BACKSPACE,
+// POS=).
 
 static int failures;
 static void check(bool condition, const char *message) {
@@ -91,6 +92,16 @@ int main(void) {
     check(iostat == 0, "backspace");
     fputs("abcdefgh", fp);
     check(inquire_pos() == bytes + 18, "overwrite the last terminator");
+
+    // After POS= moves back to the start, rewrite the records before the
+    // cached offset and write past it again: the old count must not be used.
+    _lfortran_rewind(unit, &iostat, NULL, 0);
+    fputs("aaaa\nbbbb\n", fp);
+    check(iostat == 0 && inquire_pos() == 8, "records before POS=");
+    _lfortran_file_seek(unit, 1, &iostat);
+    check(iostat == 0, "POS= seek");
+    fputs("a\nb\nc\nzzz\nw\n", fp);
+    check(inquire_pos() == 7, "records rewritten after POS=");
 
     _lfortran_close(unit, "delete", 6, &iostat);
     check(iostat == 0, "close");
