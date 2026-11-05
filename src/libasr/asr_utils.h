@@ -3664,9 +3664,10 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,
                                                 int32_type, nullptr));
 }
 
-static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al, bool for_type=true) {
-    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4));
-    return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr, for_type));
+static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al,
+        bool for_type=true, int kind=4) {
+    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, kind));
+    return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int_type, nullptr, for_type));
 }
 
 ASR::ttype_t* get_union_type(Allocator &al, const Location &loc, ASR::symbol_t* union_sym);
