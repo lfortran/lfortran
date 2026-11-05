@@ -6830,6 +6830,15 @@ bool check_if_ASR_owner_is_struct(ASR::asr_t* &asr_owner) {
     return ASR::is_a<ASR::symbol_t>(*asr_owner) && ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner));
 }
 
+// A global that a statement of an interactive cell declares belongs to that
+// cell's translation unit rather than to a procedure. Its initializer is
+// static data the backend lays out, and this pass has no body of a procedure
+// to put the statements it would otherwise create into.
+bool check_if_ASR_owner_is_translation_unit(ASR::asr_t* &asr_owner) {
+    return !ASR::is_a<ASR::symbol_t>(*asr_owner)
+        && ASR::is_a<ASR::TranslationUnit_t>(*asr_owner);
+}
+
 class ReplaceModuleVarWithValue:
     public ASR::BaseExprReplacer<ReplaceModuleVarWithValue> {
 
@@ -6962,6 +6971,9 @@ class TransformVariableInitialiser:
                 (parameter_struct_has_array_member &&
                     !parameter_struct_has_character_member));
         if ((check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
+            (check_if_ASR_owner_is_translation_unit(x.m_parent_symtab->asr_owner) &&
+                x.m_type->type == ASR::ttypeType::StructType &&
+                value != nullptr && ASRUtils::is_value_constant(value)) ||
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
             skip_parameter_constant || (
@@ -7415,9 +7427,13 @@ class VerifySimplifierASROutput:
     }
 
     void visit_Variable(const ASR::Variable_t& x) {
+        ASR::expr_t* initial = x.m_value ? x.m_value : x.m_symbolic_value;
         if( (ASRUtils::is_array(x.m_type) ||
             ASRUtils::is_aggregate_type(x.m_type)) &&
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
+            !(check_if_ASR_owner_is_translation_unit(x.m_parent_symtab->asr_owner)
+                && x.m_type->type == ASR::ttypeType::StructType
+                && initial != nullptr && ASRUtils::is_value_constant(initial)) &&
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
             // A variable in a common block keeps its static initial value,

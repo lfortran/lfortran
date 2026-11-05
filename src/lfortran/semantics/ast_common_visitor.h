@@ -11247,17 +11247,23 @@ public:
                     }
                     RestrictedExprScope init_expr_scope(*this,
                         RestrictedExprContext::InitExpr);
-                    // Module variables, parameters and derived-type component
-                    // defaults are initialized statically, so their
-                    // initializer must be a StructConstant; other variables
-                    // get a StructConstructor that init_expr lowers to
-                    // assignments.
+                    // Module variables, parameters, derived-type component
+                    // defaults and a global an interactive cell declares are
+                    // initialized statically, so their initializer must be a
+                    // StructConstant; other variables get a StructConstructor
+                    // that init_expr lowers to assignments. A statement of a
+                    // cell belongs to its translation unit rather than to a
+                    // procedure, and nothing would run the assignments such a
+                    // lower would produce (#16859).
                     bool is_struct_const = false;
                     if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
                         ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
                         if (ASR::is_a<ASR::Module_t>(*asr_owner_sym)) {
                             is_struct_const = true;
                         }
+                    } else if (current_scope->asr_owner
+                            && ASR::is_a<ASR::TranslationUnit_t>(*current_scope->asr_owner)) {
+                        is_struct_const = true;
                     }
                     if (is_derived_type || storage_type == ASR::storage_typeType::Parameter) {
                         is_struct_const = true;
