@@ -1430,6 +1430,17 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     ASRBuilder& b = builder;
     int64_t id_array = 0, id_array_dim = 1, id_array_mask = 2, id_array_dim_mask = 3;
 
+    if( overload_id == id_array_dim || overload_id == id_array_dim_mask ) {
+        // The generated function takes `dim` as an integer of the index kind,
+        // so convert an actual `dim` of any other kind
+        ASR::ttype_t* dim_type = ASRUtils::expr_type(new_args[1].m_value);
+        if( ASRUtils::extract_kind_from_ttype_t(dim_type) != index_kind ) {
+            ASR::ttype_t* index_type = b.int_type(index_kind);
+            new_args.p[1].m_value = b.i2i_t(new_args[1].m_value, index_type);
+            arg_types.p[1] = index_type;
+        }
+    }
+
     ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
         ASRUtils::type_get_past_pointer(arg_types[0]));
     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
