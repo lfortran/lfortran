@@ -3814,6 +3814,9 @@ RUN(NAME loop_fusion_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME loop_fusion_02 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME loop_fusion_03 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME loop_fusion_04 LABELS gfortran llvm EXTRA_ARGS --fast)
+# With --fast, single precision 1/sqrt from the hardware estimate and Newton
+# steps written in LLVM IR (llvm_rsqrt.cpp).
+RUN(NAME reciprocal_sqrt_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
 RUN(NAME return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME return_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # contains module

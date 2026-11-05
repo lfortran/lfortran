@@ -162,6 +162,7 @@ if (WITH_LLVM)
         codegen/asr_to_llvm.cpp
         codegen/llvm_array_utils.cpp
         codegen/llvm_utils.cpp
+        codegen/llvm_rsqrt.cpp
     )
     if (WITH_MLIR)
         set(SRC ${SRC} codegen/asr_to_mlir.cpp)
