@@ -376,7 +376,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_7 {
 extern "C" __global__ void __lfortran_gpu_kernel_7(
     t* __restrict__ u,
     float* __restrict__ __data_u_a,
-    int* __restrict__ __offsets_u_a,
+    long* __restrict__ __offsets_u_a,
     long* __restrict__ __sizes_u_a,
     float* __restrict__ w,
     __ScalarArgs___lfortran_gpu_kernel_7 __scalar_args)
@@ -447,7 +447,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_8 {
 extern "C" __global__ void __lfortran_gpu_kernel_8(
     t* __restrict__ u,
     float* __restrict__ __data_u_a,
-    int* __restrict__ __offsets_u_a,
+    long* __restrict__ __offsets_u_a,
     long* __restrict__ __sizes_u_a,
     float* __restrict__ w,
     __ScalarArgs___lfortran_gpu_kernel_8 __scalar_args)

@@ -7140,6 +7140,13 @@ RUN(NAME gpu_metal_704 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_704_chunked FILE gpu_metal_704 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 RUN(NAME gpu_metal_706 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4000)
 RUN(NAME gpu_metal_707 LABELS gfortran llvm metal cuda) # empty tiled nest: no padded thread count
+# The allocatable components of an array of a derived type, packed end to end
+# for the kernel, with their offsets and extents in the kernel's offset kind
+# (#15929); without 64-bit offsets a launch whose components hold more than
+# huge(0) elements in all stops before it packs them.
+RUN(NAME gpu_metal_716 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_717 LABELS gfortran metal cuda EXTRA_ARGS --descriptor-index-64) # no llvm: the host relies on reallocation on assignment (needs --realloc-lhs-arrays)
+RUN(NAME gpu_metal_718 FAIL LABELS metal cuda) # stops: the packed components need --descriptor-index-64 (not supported on Metal)
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
 RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)

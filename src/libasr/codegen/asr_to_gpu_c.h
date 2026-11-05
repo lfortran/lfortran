@@ -4522,7 +4522,8 @@ public:
                                     }
                                     src << "{\n";
                                     indent_level++;
-                                    src << get_indent() << "int __off = "
+                                    src << get_indent() << offset_type()
+                                        << " __off = "
                                         << kernel_parameter(component->offsets)
                                         << "[" << idx_str << "];\n";
                                     if (sit != alloc_array_sizes.end()) {

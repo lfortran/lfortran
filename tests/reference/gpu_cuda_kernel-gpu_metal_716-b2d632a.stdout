@@ -1,0 +1,25 @@
+#include <stdint.h>
+
+struct t {
+    long v;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    int* __restrict__ n,
+    t* x,
+    int* __data_x_v,
+    long* __offsets_x_v,
+    long* __sizes_x_v)
+{
+    int __flat_idx;
+    int i__dc;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    if ((n[((long)((unsigned int)((i__dc) - (1))))] > 0)) {
+        __data_x_v[__offsets_x_v[((long)((unsigned int)((i__dc) - (1))))] + ((long)((unsigned int)((n[((long)((unsigned int)((i__dc) - (1))))]) - (__sizes_x_v[(((long)((unsigned int)((i__dc) - (1))))) * 2 + 1]))))] = (__data_x_v[__offsets_x_v[((long)((unsigned int)((i__dc) - (1))))] + ((long)((unsigned int)((n[((long)((unsigned int)((i__dc) - (1))))]) - (__sizes_x_v[(((long)((unsigned int)((i__dc) - (1))))) * 2 + 1]))))] + (1000 * i__dc));
+    }
+}
+

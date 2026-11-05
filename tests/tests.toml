@@ -5308,6 +5308,23 @@ filename = "gpu_cuda_kernel_wide_arrays.f90"
 options = "--descriptor-index-64"
 gpu_cuda_kernel = true
 
+# With the same flag the allocatable components of an array of a derived
+# type, packed end to end, are found in that data by 64-bit offsets, so
+# components of more than huge(0) elements in all are addressed unwrapped
+# (#15929).
+[[test]]
+filename = "../integration_tests/gpu_metal_716.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
+# The same packed components with 64-bit offsets, and a whole one assigned a
+# function's result in the kernel: the offset it is copied from is read into
+# a `long` local.
+[[test]]
+filename = "../integration_tests/gpu_metal_717.f90"
+options = "--descriptor-index-64"
+gpu_cuda_kernel = true
+
 # Small run-time-shaped arrays of rank 2 and 3 with lower bounds other than
 # 1, an integer(8) subscript and an assumed-shape dummy, run on the device
 # with the same flag: the kernels take their extents and lower bounds as
