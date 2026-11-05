@@ -4514,3 +4514,20 @@ module cc1_allocatable_component_init
     end type
     type(cc1_alloc_component_t) :: cc1_alloc_component_v = cc1_alloc_component_t([1, 2])  ! {Error} an initialization expression cannot specify a value for allocatable component 'a' of a structure constructor
 end module
+
+module cc1_polymorphic_c_ptr_intrinsics
+    use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_f_pointer
+    implicit none
+contains
+    subroutine cc1_polymorphic_c_loc(x)
+        class(*), target, intent(inout) :: x
+        type(c_ptr) :: c
+        c = c_loc(x)  ! {Error} the X argument of c_loc() shall not be polymorphic
+    end subroutine
+
+    subroutine cc1_polymorphic_c_f_pointer(p, q)
+        type(c_ptr), intent(in) :: p
+        class(*), pointer, intent(out) :: q
+        call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
+    end subroutine
+end module

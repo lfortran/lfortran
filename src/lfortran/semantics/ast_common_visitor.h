@@ -22546,6 +22546,20 @@ public:
         std::vector<std::string> kwarg_names = {"X"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_loc"));
         ASR::expr_t *v_Var = args[0];
+        // F2023 18.2.3.7: the X argument of C_LOC (18.2.3.9: the F argument of
+        // C_FUNLOC) shall not be polymorphic. The dynamic type of a polymorphic
+        // object is not known at compile time, so its C address cannot be
+        // formed.
+        if (ASRUtils::is_polymorphic_entity(v_Var)) {
+            const char* arg_name = intrinsic_name == "c_loc" ? "X" : "F";
+            diag.add(Diagnostic(
+                "the " + std::string(arg_name) + " argument of " + intrinsic_name +
+                "() shall not be polymorphic",
+                Level::Error, Stage::Semantic, {
+                    Label("", {v_Var->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         if (struct_has_descriptor_string_member(v_Var)) {
             diag.semantic_warning_label(
                 "c_loc() on a non-bind(C)/non-SEQUENCE derived type containing a "

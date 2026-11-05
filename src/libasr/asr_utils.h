@@ -3797,6 +3797,32 @@ inline bool non_unlimited_polymorphic_class(ASR::ttype_t* const t){
     return is_class_type(extract_type(t)) && !is_unlimited_polymorphic_type(t);
 }
 
+/// Whether the entity `expr` is polymorphic, i.e. declared with CLASS, either
+/// CLASS(t) or CLASS(*). A TYPE(*) assumed-type entity shares the unlimited
+/// polymorphic StructType representation but is not polymorphic (its
+/// declaration symbol is `~assumed_type`), so it is not reported here.
+/// C_LOC's X argument (F2023 18.2.3.7) and C_F_POINTER's FPTR argument
+/// (F2023 18.2.3.3) are required to be nonpolymorphic.
+static inline bool is_polymorphic_entity(ASR::expr_t* const expr) {
+    ASR::ttype_t* type = extract_type(expr_type(expr));
+    if (ASR::is_a<ASR::TypeParameter_t>(*type)) {
+        return ASR::down_cast<ASR::TypeParameter_t>(type)->m_is_class;
+    }
+    if (!is_class_type(type)) {
+        return false;
+    }
+    if (!is_unlimited_polymorphic_type(type)) {
+        return true;
+    }
+    ASR::symbol_t* struct_sym =
+        get_struct_sym_from_struct_expr(expr);
+    if (struct_sym == nullptr) {
+        return true;
+    }
+    struct_sym = symbol_get_past_external(struct_sym);
+    return std::string(symbol_name(struct_sym)) != "~assumed_type";
+}
+
 void set_enum_value_type(ASR::enumtypeType &enum_value_type,
         SymbolTable *scope);
 

@@ -8836,6 +8836,17 @@ public:
                 }));
             throw SemanticAbort();
         }
+        // F2023 18.2.3.3: FPTR shall not be polymorphic. The dynamic type of
+        // the pointer target is not known at compile time, so the address of
+        // the C object cannot be assigned to it.
+        if( ASRUtils::is_polymorphic_entity(fptr) ) {
+            diag.add(Diagnostic(
+                "the fptr argument of c_f_pointer() shall not be polymorphic",
+                Level::Error, Stage::Semantic, {
+                    Label("",{fptr->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         if(!is_fptr_array && shape) {
             diag.add(diag::Diagnostic(
                                 "shape argument specified in c_f_pointer "
