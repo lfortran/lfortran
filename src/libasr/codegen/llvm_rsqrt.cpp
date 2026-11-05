@@ -16,6 +16,9 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IntrinsicInst.h>
+#ifdef HAVE_TARGET_X86
+#include <llvm/IR/IntrinsicsX86.h>
+#endif
 #include <llvm/IR/Operator.h>
 
 #include <libasr/codegen/llvm_rsqrt.h>
@@ -76,6 +79,17 @@ generator may turn into square roots), since the attribute applies to every
 square root of the function. Otherwise the function is left as it is. If the
 code generator computes `1/sqrt(x)` exactly instead of estimating it, the
 Newton step keeps the exact value, so the result is correct either way.
+
+Double precision is handled separately. The x86 code generator never uses an
+estimate for double, because a double estimate needs two Newton steps, so
+the pass emits the AVX-512 estimate instruction itself and refines it twice:
+
+    e = estimate(x),  t = x*e*e - 3,  u = e*t,
+    t = x*(u/2)**2 - 3,  z = u*t,   1/sqrt(x) = z/4,
+
+with the factor 1/4 carried as above. It only does this for fixed vectors of
+2, 4 or 8 doubles when the function has the matching AVX-512 features, and
+leaves other double square roots to the code generator.
 */
 
 namespace LCompilers {
@@ -106,6 +120,87 @@ bool is_float(Type *type) {
 #endif
 }
 
+// Fixed-length vectors of double that the AVX-512 estimate covers.
+bool is_double_vector(Type *type) {
+    if (!type->getScalarType()->isDoubleTy()) {
+        return false;
+    }
+#if LLVM_VERSION_MAJOR >= 11
+    if (!isa<FixedVectorType>(type)) {
+        return false;
+    }
+    unsigned n = cast<FixedVectorType>(type)->getNumElements();
+#else
+    if (!type->isVectorTy()) {
+        return false;
+    }
+    unsigned n = type->getVectorNumElements();
+#endif
+    return n == 2 || n == 4 || n == 8;
+}
+
+unsigned double_vector_size(Type *type) {
+#if LLVM_VERSION_MAJOR >= 11
+    return cast<FixedVectorType>(type)->getNumElements();
+#else
+    return type->getVectorNumElements();
+#endif
+}
+
+// A feature listed in the function's target-features attribute.
+bool has_target_feature(const Function &f, StringRef name) {
+    StringRef features = f.getFnAttribute("target-features").getValueAsString();
+    size_t pos = 0;
+    while (pos < features.size()) {
+        size_t end = features.find(',', pos);
+        if (end == StringRef::npos) {
+            end = features.size();
+        }
+        if (features.slice(pos, end) == name) {
+            return true;
+        }
+        pos = end + 1;
+    }
+    return false;
+}
+
+// The AVX-512 reciprocal square root estimate for a vector of doubles.
+bool has_double_estimate(const Function &f, Type *type) {
+#ifdef HAVE_TARGET_X86
+    if (!has_target_feature(f, "+avx512f")) {
+        return false;
+    }
+    return double_vector_size(type) == 8 || has_target_feature(f, "+avx512vl");
+#else
+    (void)f;
+    (void)type;
+    return false;
+#endif
+}
+
+Value *rsqrt_estimate(IRBuilder<> &b, Type *type, Value *x) {
+#ifdef HAVE_TARGET_X86
+    unsigned n = double_vector_size(type);
+    Intrinsic::ID id = n == 8 ? Intrinsic::x86_avx512_rsqrt14_pd_512
+        : n == 4 ? Intrinsic::x86_avx512_rsqrt14_pd_256
+        : Intrinsic::x86_avx512_rsqrt14_pd_128;
+#if LLVM_VERSION_MAJOR >= 20
+    Function *callee = Intrinsic::getOrInsertDeclaration(
+        b.GetInsertBlock()->getModule(), id);
+#else
+    Function *callee = Intrinsic::getDeclaration(
+        b.GetInsertBlock()->getModule(), id);
+#endif
+    Value *mask = ConstantInt::get(Type::getInt8Ty(type->getContext()), -1);
+    return b.CreateCall(callee, {x, UndefValue::get(type), mask});
+#else
+    (void)b;
+    (void)type;
+    (void)x;
+    return nullptr;
+#endif
+}
+
 bool is_fast(Value *v) {
     return isa<FPMathOperator>(v)
         && cast<Instruction>(v)->getFastMathFlags().isFast();
@@ -127,7 +222,7 @@ bool is_fdiv_by(Value *v, Value *divisor) {
         && is_fast(op);
 }
 
-// The value of a single precision constant (or splat of one).
+// The value of a floating point constant (or splat of one).
 bool constant_value(Value *v, double &value) {
     Constant *c = dyn_cast<Constant>(v);
     if (!c) {
@@ -137,10 +232,16 @@ bool constant_value(Value *v, double &value) {
         c = c->getSplatValue();
     }
     ConstantFP *fp = dyn_cast_or_null<ConstantFP>(c);
-    if (!fp || !fp->getType()->isFloatTy()) {
+    if (!fp) {
         return false;
     }
-    value = fp->getValueAPF().convertToFloat();
+    if (fp->getType()->isFloatTy()) {
+        value = fp->getValueAPF().convertToFloat();
+    } else if (fp->getType()->isDoubleTy()) {
+        value = fp->getValueAPF().convertToDouble();
+    } else {
+        return false;
+    }
     return true;
 }
 
@@ -171,19 +272,31 @@ std::set<Instruction*> square_roots(Function &f) {
     for (BasicBlock &bb: f) {
         for (Instruction &i: bb) {
             CallInst *call = dyn_cast<CallInst>(&i);
-            if (!call || !call->getType()->getScalarType()->isFloatTy()) {
+            if (!call) {
+                continue;
+            }
+            Type *scalar = call->getType()->getScalarType();
+            if (!scalar->isFloatTy() && !scalar->isDoubleTy()) {
                 continue;
             }
             Intrinsic::ID id = intrinsic_id(i);
             Function *callee = call->getCalledFunction();
             if (!callee || id == Intrinsic::pow || callee->getName() == "sqrtf"
-                    || callee->getName() == "powf") {
+                    || callee->getName() == "powf"
+                    || callee->getName() == "sqrt"
+                    || callee->getName() == "pow") {
                 return {};
             }
             if (id != Intrinsic::sqrt) {
                 continue;
             }
-            if (!is_float(call->getType()) || !is_fast(call)) {
+            bool expandable = is_float(call->getType())
+                || (is_double_vector(call->getType())
+                    && has_double_estimate(f, call->getType()));
+            if (!expandable) {
+                continue;
+            }
+            if (!is_fast(call)) {
                 return {};
             }
             for (User *u: call->users()) {
@@ -271,7 +384,7 @@ private:
     bool expanded = false;
     // The replacement of each original value with a factor.
     std::map<Value*, Scaled> scaled;
-    // `1/sqrt(x) = -0.5 * z` for each expanded square root.
+    // `1/sqrt(x) = k * z` for each expanded square root.
     std::map<Value*, Scaled> newton;
     std::vector<Instruction*> replaced;
     std::map<PHINode*, Instruction*> reductions;
@@ -295,11 +408,26 @@ private:
         Type *type = sqrt->getType();
         IRBuilder<> b(sqrt->getNextNode());
         b.setFastMathFlags(fmf);
-        Value *e = b.CreateFDiv(ConstantFP::get(type, 1.0), sqrt);
-        Value *xee = b.CreateFMul(x, b.CreateFMul(e, e));
-        Value *z = b.CreateFMul(e, b.CreateFAdd(xee,
-            ConstantFP::get(type, -3.0)));
-        newton[sqrt] = {z, -0.5};
+        if (type->getScalarType()->isFloatTy()) {
+            Value *e = b.CreateFDiv(ConstantFP::get(type, 1.0), sqrt);
+            Value *xee = b.CreateFMul(x, b.CreateFMul(e, e));
+            Value *z = b.CreateFMul(e, b.CreateFAdd(xee,
+                ConstantFP::get(type, -3.0)));
+            newton[sqrt] = {z, -0.5};
+        } else {
+            // The estimate and two Newton steps, with the 1/4 factor out:
+            // 1/sqrt(x) = z/4.
+            Value *three = ConstantFP::get(type, -3.0);
+            Value *e = rsqrt_estimate(b, type, x);
+            Value *t1 = b.CreateFAdd(b.CreateFMul(x, b.CreateFMul(e, e)),
+                three);
+            Value *u = b.CreateFMul(e, t1);
+            Value *quarter_x = b.CreateFMul(ConstantFP::get(type, 0.25), x);
+            Value *t2 = b.CreateFAdd(b.CreateFMul(quarter_x,
+                b.CreateFMul(u, u)), three);
+            Value *z = b.CreateFMul(u, t2);
+            newton[sqrt] = {z, 0.25};
+        }
         expanded = true;
     }
 
@@ -314,7 +442,7 @@ private:
         BinaryOperator *op = dyn_cast<BinaryOperator>(i);
         if (op && op->getOpcode() == Instruction::FDiv
                 && newton.count(op->getOperand(1))) {
-            // a / sqrt(x) = -0.5 * a * z
+            // a / sqrt(x) = k * a * z
             Scaled n = newton[op->getOperand(1)];
             double a;
             if (constant_value(op->getOperand(0), a)) {
@@ -451,7 +579,13 @@ bool expand_reciprocal_sqrt(llvm::Function &f, const llvm::Triple &triple)
     if (!expansion.run(roots)) {
         return false;
     }
-    f.addFnAttr("reciprocal-estimates", "sqrtf:0,vec-sqrtf:0");
+    bool has_float = false;
+    for (llvm::Instruction *i: roots) {
+        has_float = has_float || i->getType()->getScalarType()->isFloatTy();
+    }
+    if (has_float) {
+        f.addFnAttr("reciprocal-estimates", "sqrtf:0,vec-sqrtf:0");
+    }
     return true;
 }
 
