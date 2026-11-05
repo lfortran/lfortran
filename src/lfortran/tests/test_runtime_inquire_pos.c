@@ -7,8 +7,9 @@
 // terminators before the current position. It must count them only in the
 // bytes written or read since the previous INQUIRE, not by rereading the
 // whole file each time (lfortran/lfortran#16796), and it must count them
-// from the start again after the unit is repositioned (REWIND, BACKSPACE,
-// POS=).
+// from the start again after the unit is repositioned (REWIND, BACKSPACE).
+// POS= in a data transfer statement is allowed only for a stream unit, so a
+// seek on this sequential unit must fail without moving it (#16828).
 
 static int failures;
 static void check(bool condition, const char *message) {
@@ -93,15 +94,21 @@ int main(void) {
     fputs("abcdefgh", fp);
     check(inquire_pos() == bytes + 18, "overwrite the last terminator");
 
-    // After POS= moves back to the start, rewrite the records before the
-    // cached offset and write past it again: the old count must not be used.
+    // POS= moves back to the start, but it is allowed only on a stream unit:
+    // on this sequential unit it must fail without moving the unit.
     _lfortran_rewind(unit, &iostat, NULL, 0);
     fputs("aaaa\nbbbb\n", fp);
-    check(iostat == 0 && inquire_pos() == 8, "records before POS=");
-    _lfortran_file_seek(unit, 1, &iostat);
-    check(iostat == 0, "POS= seek");
-    fputs("a\nb\nc\nzzz\nw\n", fp);
-    check(inquire_pos() == 7, "records rewritten after POS=");
+    check(iostat == 0 && inquire_pos() == 8, "records before failed POS=");
+    long pos_before = ftell(fp);
+    char iomsg[128];
+    const char *seek_msg =
+        "POS= is allowed only for a unit connected for stream access";
+    memset(iomsg, ' ', sizeof(iomsg));
+    _lfortran_file_seek(unit, 1, &iostat, iomsg, (int64_t)sizeof(iomsg));
+    check(iostat == 5002, "POS= on a sequential unit must fail");
+    check(ftell(fp) == pos_before, "failed POS= must not move the unit");
+    check(strncmp(iomsg, seek_msg, strlen(seek_msg)) == 0,
+        "failed POS= must describe the error through IOMSG=");
 
     _lfortran_close(unit, "delete", 6, &iostat);
     check(iostat == 0, "close");

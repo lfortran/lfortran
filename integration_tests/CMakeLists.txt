@@ -3885,6 +3885,8 @@ RUN(NAME file_72 LABELS gfortran llvm)
 RUN(NAME file_73 LABELS gfortran llvm)
 RUN(NAME file_74 LABELS gfortran llvm)
 RUN(NAME file_75 LABELS gfortran llvm)
+RUN(NAME file_76 LABELS gfortran llvm)
+RUN(NAME file_76_fail LABELS gfortran llvm FAIL)
 
 RUN(NAME file_close_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME file_close_02 LABELS gfortran llvm)

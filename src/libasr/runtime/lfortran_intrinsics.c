@@ -14828,18 +14828,42 @@ LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t 
     pad_with_spaces(iomsg, msg_len, iomsg_len);
 }
 
-LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat) {
+LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat, char* iomsg, int64_t iomsg_len) {
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
-        // Cannot seek on stdin
+        // Cannot seek on stdin: it is not connected for stream access.
+        if (iomsg != NULL && iomsg_len > 0) {
+            char *msg = "POS= is allowed only for a unit connected for stream access";
+            _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+        }
         if (iostat) *iostat = 1;
         return;
     }
 
-    FILE* fp = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id = -1;
+    FILE* fp = get_file_pointer_from_unit(unit_num, NULL, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!fp) {
+        if (iomsg != NULL && iomsg_len > 0) {
+            char *msg = "POS= is allowed only for a unit connected for stream access";
+            _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+        }
         if (iostat) { *iostat = 1; return; }
         fprintf(stderr, "No file found with given unit number %d.\n", unit_num);
+        exit(1);
+    }
+
+    if (access_id != 1) {
+        // POS= is allowed only for a unit connected for stream access.
+        if (iomsg != NULL && iomsg_len > 0) {
+            char *msg = "POS= is allowed only for a unit connected for stream access";
+            _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+        }
+        if (iostat) {
+            *iostat = 5002;
+            return;
+        }
+        fprintf(stderr, "Runtime Error: POS= is allowed only for a unit "
+            "connected for stream access (unit %d).\n", unit_num);
         exit(1);
     }
 
@@ -14850,6 +14874,12 @@ LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* io
     int seek_result = fseek(fp, pos - 1, SEEK_SET);
 #endif
     if (seek_result != 0) {
+        if (iomsg != NULL && iomsg_len > 0) {
+            char msg[100];
+            snprintf(msg, sizeof(msg),
+                "Cannot position the unit at POS=%" PRId64, pos);
+            _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+        }
         if (iostat) { *iostat = 1; return; }
         fprintf(stderr, "Error seeking to position %" PRId64 " in file.\n", pos);
         exit(1);
