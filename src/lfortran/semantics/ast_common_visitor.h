@@ -26822,10 +26822,11 @@ public:
                         continue;
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(proc));
                     if (func->n_args != 2) continue;
+                    bool check_dims = !ASRUtils::get_FunctionType(func)->m_elemental;
                     bool args_match = ASRUtils::check_equal_type(
-                        ASRUtils::expr_type(func->m_args[0]), left_type, func->m_args[0], first_operand);
+                        ASRUtils::expr_type(func->m_args[0]), left_type, func->m_args[0], first_operand, check_dims);
                     args_match = args_match && ASRUtils::check_equal_type(
-                        ASRUtils::expr_type(func->m_args[1]), right_type, func->m_args[1], second_operand);
+                        ASRUtils::expr_type(func->m_args[1]), right_type, func->m_args[1], second_operand, check_dims);
                     if (!args_match) continue;
 
                     Vec<ASR::call_arg_t> a_args;
@@ -26844,8 +26845,8 @@ public:
                         return_type = ASRUtils::duplicate_type(
                             al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
                     } else {
-                        return_type = ASRUtils::duplicate_type(
-                            al, ASRUtils::expr_type(func->m_return_var));
+                        return_type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
+                        return_type = handle_return_type(return_type, loc, a_args, func);
                     }
                     std::string func_name = to_lower(func->m_name);
                     ASR::symbol_t* call_sym = ASRUtils::import_type_bound_specific(al,
