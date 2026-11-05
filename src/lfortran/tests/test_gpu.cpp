@@ -1624,4 +1624,101 @@ TEST_CASE("GPU optional views preserve known contiguity without host copies") {
         }
     }
 }
+namespace {
+
+// The GpuSync statements in the body of the `do` loop over `var`.
+class LoopSyncs : public ASR::BaseWalkVisitor<LoopSyncs> {
+public:
+    std::string var;
+    int depth = 0;
+    size_t syncs = 0;
+    size_t launches = 0;
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        bool inner = ASR::is_a<ASR::Var_t>(*x.m_head.m_v)
+            && ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(
+                x.m_head.m_v)->m_v) == var;
+        if (inner) depth++;
+        BaseWalkVisitor::visit_DoLoop(x);
+        if (inner) depth--;
+    }
+    void visit_GpuSync(const ASR::GpuSync_t &/*x*/) {
+        if (depth > 0) syncs++;
+    }
+    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &/*x*/) {
+        if (depth > 0) launches++;
+    }
+};
+
+}
+
+TEST_CASE("GPU launches are not synced for a call handed their arrays") {
+    // `sum(a)` is a call to a procedure whose dummy is neither a pointer nor
+    // a target, which cannot keep a pointer to `a` once it returns. The
+    // later calls of the time loop (the one `mod` is) therefore cannot
+    // reach `a` through a pointer, and the launches of the loop, which
+    // write it, run without a sync between them.
+    const std::string source = R"(
+program sync_call_args
+implicit none
+integer :: n, it, k
+real(8), allocatable :: a(:), b(:)
+real(8) :: chk
+integer :: i
+n = 100000
+allocate(a(n), b(n))
+a = 0
+b = 1
+do k = 1, 2
+    do it = 1, 8
+        if (mod(it, 2) == 1) then
+            do concurrent (i = 1:n)
+                a(i) = b(i) + 1
+            end do
+        else
+            do concurrent (i = 1:n)
+                b(i) = a(n + 1 - i) + 1
+            end do
+        end if
+    end do
+    if (k == 1) chk = sum(a)
+end do
+print *, chk, a(1)
+end program
+)";
+    CompilerOptions options;
+    options.gpu_backend = "cuda";
+    options.po.gpu_offload_cuda = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "sync_call_args.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    ASR::TranslationUnit_t &unit = *parsed.result;
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_vector_lanes", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, &unit, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    pass_gpu_launch_sync(allocator, unit, options.po);
+    REQUIRE(asr_verify(unit, true, diagnostics));
+    auto *program = ASR::down_cast<ASR::Program_t>(
+        unit.m_symtab->get_symbol("sync_call_args"));
+    LoopSyncs loop;
+    loop.var = "it";
+    for (size_t i = 0; i < program->n_body; i++) {
+        loop.visit_stmt(*program->m_body[i]);
+    }
+    CHECK(loop.launches == 2);
+    CHECK(loop.syncs == 0);
+}
+
 #endif

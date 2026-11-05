@@ -161,10 +161,13 @@ bool launches(ASR::stmt_t **body, size_t n_body) {
 // The variables a statement of a procedure may associate a pointer with:
 // whatever the value of a `=>` names (an associate name, and a pointer
 // component of a structure constructor, are bound that way too), the actual
-// arguments of a call, whose dummy may be a target or a pointer, the
+// arguments of a call whose dummy may be a target or a pointer, the
 // arguments of an intrinsic subroutine or function (`move_alloc`), what
 // `c_loc` takes, and the selector of `select type`. Their subscripts are
-// counted too.
+// counted too. A dummy that is neither a pointer nor a target leaves no
+// pointer associated with its actual argument once the procedure returns
+// (every pointer associated with it becomes undefined), unless the procedure
+// is not Fortran (`bind(c)`).
 class PointerReach : public ASR::BaseWalkVisitor<PointerReach> {
 public:
     std::set<ASR::symbol_t*> &vars;
@@ -192,15 +195,40 @@ public:
         reached(x.m_selector);
         BaseWalkVisitor::visit_SelectType(x);
     }
+    // Whether a call of `name` with `n_args` arguments may leave a pointer
+    // associated with its argument `i`.
+    static bool may_keep(ASR::symbol_t *name, size_t n_args, size_t i) {
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
+        if (!ASR::is_a<ASR::Function_t>(*callee)) return true;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(callee);
+        if (ASRUtils::get_FunctionType(fn)->m_abi == ASR::abiType::BindC
+                || fn->n_args != n_args || fn->m_args[i] == nullptr
+                || !ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+            return true;
+        }
+        ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*dummy)) return true;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(dummy);
+        return v->m_target_attr || ASRUtils::is_pointer(v->m_type);
+    }
+    void call(ASR::symbol_t *name, ASR::call_arg_t *args, size_t n_args,
+            ASR::expr_t *dt) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (!args[i].m_value) continue;
+            if (dt != nullptr || may_keep(name, n_args, i)) {
+                reached(args[i].m_value);
+            } else {
+                visit_expr(*args[i].m_value);
+            }
+        }
+        reached(dt);
+    }
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        inside++;
-        BaseWalkVisitor::visit_SubroutineCall(x);
-        inside--;
+        call(x.m_name, x.m_args, x.n_args, x.m_dt);
     }
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        inside++;
-        BaseWalkVisitor::visit_FunctionCall(x);
-        inside--;
+        call(x.m_name, x.m_args, x.n_args, x.m_dt);
     }
     void visit_IntrinsicImpureSubroutine(
             const ASR::IntrinsicImpureSubroutine_t &x) {
