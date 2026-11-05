@@ -156,7 +156,12 @@ $ lfortran kernel -f session.json
 $ lfortran --connect session.json
 ```
 
-The kernel runs one cell at a time, in the order the cells arrive. Clients
+The kernel runs one cell at a time. The requests that wait while a cell runs
+are taken in turns, one from each client in the order the clients connected:
+each client's cells run in the order it sent them, and one client's queued cells
+do not all run ahead of a cell that another client sent. The order between
+cells that different clients sent while the kernel was busy is not otherwise
+defined. Clients
 subscribe to every cell's output, as in Jupyter: at a terminal, the prompt shows
 another client's cell, marked `[other client]`, and its published output even
 while idle or editing, preserving the current input and cursor. Redirected
