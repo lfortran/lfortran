@@ -1,8 +1,8 @@
 # GPU Offloading
 
 This document describes how LFortran decides where a parallel loop runs when a
-GPU backend is selected with `--gpu=metal`, `--gpu=cuda`, `--gpu=cuda_cpu` or
-`--gpu=hip`.
+GPU backend is selected with `--gpu=metal`, `--gpu=cuda`, `--gpu=cuda_cpu`,
+`--gpu=hip` or `--gpu=hip_cpu`.
 It is a design document: where the current implementation differs, the
 differences are listed at the end.
 
@@ -809,6 +809,18 @@ which differ where the runtime prefetches managed memory
 provides the CUDA 13 API, so `--gpu=cuda_cpu` builds the runtime as a CUDA 13
 toolkit does; it provides the CUDA 12 API when `CUDART_VERSION` is defined
 below 13000, which the `test_gpu_cuda_api_state_cuda12*` unit tests do.
+
+The CPU emulation of HIP (`--gpu=hip_cpu`) tests what `--gpu=hip` does
+differently from `--gpu=cuda` without an AMD GPU or ROCm: it generates the
+device code of `--gpu=hip` (with its capabilities, such as the unrolling of
+sequential loops) and compiles it as `--gpu=cuda_cpu` compiles its own, and
+it builds the GPU runtime on its HIP implementation (`hip/cuda_runtime.h`),
+as `--gpu=hip` does. That implementation calls an emulation of the HIP
+runtime API (`src/libasr/runtime/hip_cpu/`), which runs every call on the
+CPU emulation of the CUDA runtime API. Its enumerators have values of their
+own, as ROCm's do, so a wrong mapping in the HIP implementation shows. The
+emulated device has no PCI location, so the HIP implementation finds no
+cache in the kernel driver's topology and keeps the 64 MiB L2 cache.
 The CUDA runtime keeps the same table and orders copies and launches
 on one stream. It keeps scratch buffers, and upload buffers for read-only
 ranges below 64 KiB, per kernel and argument slot, reusing their capacity and deferring replaced allocations until
@@ -1134,8 +1146,9 @@ with a `stop` before that.
   `cuda` test must pass in all of them: `integration_tests -b cuda_cpu` runs
   the `cuda` tests in the CPU emulation (`--gpu=cuda_cpu`, what CI runs),
   `integration_tests -b cuda` runs the same tests natively on an NVIDIA GPU
-  (`--gpu=cuda`), and `integration_tests -b hip` on an AMD GPU
-  (`--gpu=hip`). There are no `cuda_cpu` and `hip` labels. The memory models
+  (`--gpu=cuda`), `integration_tests -b hip` on an AMD GPU (`--gpu=hip`), and
+  `integration_tests -b hip_cpu` in the CPU emulation of HIP (`--gpu=hip_cpu`,
+  which CI runs too). There are no `cuda_cpu`, `hip` and `hip_cpu` labels. The memory models
   are tested by running a backend with `LFORTRAN_GPU_MEMORY=copy` and
   `unified`: the CPU emulation in either, an AMD APU with `HSA_XNACK=1` in
   either, and a discrete GPU in the copy model.

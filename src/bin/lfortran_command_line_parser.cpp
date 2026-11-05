@@ -365,7 +365,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM")->group(group_backend_codegen_options);
         app.add_option("-s", opts.emscripten_settings, "Emscripten setting (SETTING or SETTING=VALUE); repeatable, requires an Emscripten LLVM target")->allow_extra_args(false)->group(group_backend_codegen_options);
-        app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal, cuda, cuda_cpu, hip)")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal, cuda, cuda_cpu, hip, hip_cpu)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--gpu-arch", compiler_options.gpu_arch, "GPU architecture to compile device code for with --gpu=cuda (e.g. sm_120) or --gpu=hip (e.g. gfx942); defaults to the GPUs of the compiling machine")->group(group_backend_codegen_options);
         app.add_flag("--gpu-offload-omp-loops", compiler_options.po.gpu_offload_omp_loops, "Offload an `!$omp parallel do` loop onto the GPU as well")->group(group_backend_codegen_options);
@@ -559,6 +559,19 @@ namespace LCompilers::CommandLineInterface {
                 // toolchains and then has no C++ front end to call at all.
                 compiler_options.device_compiler = "c++";
             }
+        } else if (compiler_options.gpu_backend == "hip_cpu") {
+            // The device code of hip, compiled and run as cuda_cpu runs its
+            // own, and the GPU runtime on HIP, with a CPU emulation of the
+            // HIP runtime API: what hip does differently from cuda, tested
+            // without an AMD GPU.
+            compiler_options.gpu_backend = "cuda";
+            compiler_options.po.gpu_offload_cuda = true;
+            compiler_options.po.gpu_offload_hip = true;
+            compiler_options.gpu_cpu_emulation = true;
+            compiler_options.gpu_hip = true;
+            if (compiler_options.device_compiler == "nvcc") {
+                compiler_options.device_compiler = "c++";
+            }
         } else if (compiler_options.gpu_backend == "hip") {
             // HIP is CUDA C++ for AMD GPUs: the same ASR passes and the same
             // device code generation as cuda, compiled by ROCm's HIP driver,
@@ -574,7 +587,7 @@ namespace LCompilers::CommandLineInterface {
             throw lc::LCompilersException(
                 "The GPU backend `" + compiler_options.gpu_backend
                 + "` is not supported; supported values: metal, cuda, "
-                "cuda_cpu, hip"
+                "cuda_cpu, hip, hip_cpu"
             );
         }
         {
