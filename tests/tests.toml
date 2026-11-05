@@ -1287,6 +1287,11 @@ fortran = true
 pass = "array_struct_temporary,array_op"
 
 [[test]]
+filename = "array_op_same_element_section.f90"
+fortran = true
+pass = "array_struct_temporary,array_op"
+
+[[test]]
 filename = "../integration_tests/elemental_28.f90"
 fortran = true
 pass = "array_struct_temporary,array_op"
