@@ -7445,6 +7445,15 @@ struct UNIT_FILE {
     // Set by a CONVERT= that differs from the host byte order: unformatted
     // transfers reverse the bytes of every element and record marker.
     bool swap_bytes;
+    // INQUIRE(POS=) on a formatted sequential unit counts the record
+    // terminators before the position. When pos_nl_valid, the first
+    // pos_nl_offset bytes hold pos_nl_count of them and end with a record
+    // terminator (or pos_nl_offset is 0), so the next INQUIRE only scans the
+    // bytes from there. Any statement that moves the unit backwards across
+    // records clears it.
+    bool pos_nl_valid;
+    int64_t pos_nl_offset;
+    int64_t pos_nl_count;
 };
 
 int32_t last_index_used = -1;
@@ -7487,6 +7496,10 @@ static size_t unf_fread(void *p, size_t elem_size, size_t n, FILE *filep,
         swap_element_bytes(p, elem_size, got);
     }
     return got;
+}
+
+static inline void pos_nl_reset(struct UNIT_FILE *uf) {
+    if (uf) uf->pos_nl_valid = false;
 }
 
 static inline void seq_unf_state_reset(struct UNIT_FILE *uf) {
@@ -7662,17 +7675,50 @@ LFORTRAN_API void _lfortran_file_write_newline(int32_t unit_num) {
     fprintf(filep, "\n");
 }
 
-static int32_t count_newlines_up_to(FILE *fp, long end_pos) {
-    long saved = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-    int32_t count = 0;
-    for (long i = 0; i < end_pos; i++) {
+// Count the record terminators in [start, end_pos) of fp, adding them to
+// *count and setting *last_end to the offset just after the last one.
+// Returns false if fewer than end_pos - start bytes could be read.
+static bool count_newlines_from(FILE *fp, long start, long end_pos,
+        int64_t *count, int64_t *last_end) {
+    for (long i = start; i < end_pos; i++) {
         int ch = input_getc(fp);
-        if (ch == EOF) break;
-        if (ch == '\n') count++;
+        if (ch == EOF) return false;
+        if (ch == '\n') {
+            (*count)++;
+            *last_end = i + 1;
+        }
+    }
+    return true;
+}
+
+// Number of record terminators before end_pos. uf caches the count up to the
+// last terminator found, so that INQUIRE(POS=) after every WRITE of a loop
+// does not rescan the whole file each time.
+static int32_t count_newlines_up_to(struct UNIT_FILE *uf, FILE *fp, long end_pos) {
+    long saved = ftell(fp);
+    bool cacheable = uf != NULL && !provided_stdin(fp);
+    if (cacheable && uf->pos_nl_valid && end_pos >= uf->pos_nl_offset
+            && fseek(fp, (long)uf->pos_nl_offset, SEEK_SET) == 0) {
+        int64_t count = uf->pos_nl_count, last_end = uf->pos_nl_offset;
+        if (count_newlines_from(fp, (long)uf->pos_nl_offset, end_pos,
+                &count, &last_end)) {
+            uf->pos_nl_offset = last_end;
+            uf->pos_nl_count = count;
+            fseek(fp, saved, SEEK_SET);
+            return (int32_t)count;
+        }
+    }
+    pos_nl_reset(uf);
+    bool seek_ok = fseek(fp, 0, SEEK_SET) == 0;
+    int64_t count = 0, last_end = 0;
+    if (count_newlines_from(fp, 0, end_pos, &count, &last_end)
+            && cacheable && seek_ok && end_pos >= 0) {
+        uf->pos_nl_valid = true;
+        uf->pos_nl_offset = last_end;
+        uf->pos_nl_count = count;
     }
     fseek(fp, saved, SEEK_SET);
-    return count;
+    return (int32_t)count;
 }
 
 void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim, bool blank_zero, int32_t record_length, int sign_mode, int decimal_mode, int encoding, int round_mode, int pad_mode) {
@@ -7700,6 +7746,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
             unit_to_file[i].swap_bytes = false;
             seq_unf_state_reset(&unit_to_file[i]);
             list_dir_state_reset(&unit_to_file[i]);
+            pos_nl_reset(&unit_to_file[i]);
             return;  // Don't add duplicate entry
         }
     }
@@ -7728,6 +7775,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
     unit_to_file[last_index_used].swap_bytes = false;
     seq_unf_state_reset(&unit_to_file[last_index_used]);
     list_dir_state_reset(&unit_to_file[last_index_used]);
+    pos_nl_reset(&unit_to_file[last_index_used]);
 }
 
 // Emscripten's stdin is a character device whose read() keeps filling the
@@ -8872,7 +8920,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         if (pos != NULL && fp != NULL) {
             long p = ftell(fp);
             if (!unit_file_bin && access_id == 0) {
-                int32_t nl = count_newlines_up_to(fp, p);
+                int32_t nl = count_newlines_up_to(find_unit(u_num), fp, p);
                 if (nl > 0) {
                     *pos = (int32_t)(p - nl);
                 } else {
@@ -9186,7 +9234,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         if (pos != NULL && fp != NULL) {
             long p = ftell(fp);
             if (!unit_file_bin && access_id == 0) {
-                int32_t nl = count_newlines_up_to(fp, p);
+                int32_t nl = count_newlines_up_to(find_unit(unit_num), fp, p);
                 if (nl > 0) {
                     *pos = (int32_t)(p - nl);
                 } else {
@@ -9421,6 +9469,7 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* ioms
     rewind(filep);
     seq_unf_state_reset(find_unit(unit_num));
     list_dir_state_reset(find_unit(unit_num));
+    pos_nl_reset(find_unit(unit_num));
 }
 
 LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iomsg, int64_t iomsg_len)
@@ -9463,6 +9512,7 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iom
     }
     struct UNIT_FILE *uf = find_unit(unit_num);
     if (uf) uf->after_endfile = true;
+    pos_nl_reset(uf);
 }
 
 LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *iomsg,  int64_t iomsg_len)
@@ -9489,6 +9539,7 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
     }
+    pos_nl_reset(find_unit(unit_num));
 
     if (unit_file_bin && access_id == 0) {
         struct UNIT_FILE *uf = find_unit(unit_num);
