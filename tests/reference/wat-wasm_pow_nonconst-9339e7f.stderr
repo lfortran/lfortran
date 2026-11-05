@@ -1,0 +1,5 @@
+code generation error: powers other than x**2 are not supported for real(8) in the wasm backend
+ --> tests/errors/wasm_pow_nonconst.f90:5:14
+  |
+5 |     print *, x**y
+  |              ^^^^ 

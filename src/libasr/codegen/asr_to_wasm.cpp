@@ -1746,6 +1746,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 };
                 case ASR::binopType::Pow: {
                     ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    // a non-constant exponent has no compile-time value
+                    if (val == nullptr) {
+                        throw CodeGenError(
+                            "powers other than x**2 are not supported for integer(4) "
+                            "in the wasm backend", x.base.base.loc);
+                    }
                     if (ASR::is_a<ASR::IntegerConstant_t>(*val)) {
                         ASR::IntegerConstant_t *c =
                             ASR::down_cast<ASR::IntegerConstant_t>(val);
@@ -1756,13 +1762,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             m_wa.emit_i32_mul();
                         } else {
                             throw CodeGenError(
-                                "IntegerBinop kind 4: only x**2 implemented so "
-                                "far for powers");
+                                "powers other than x**2 are not supported for integer(4) "
+                                "in the wasm backend", x.base.base.loc);
                         }
                     } else {
                         throw CodeGenError(
-                            "IntegerBinop kind 4: only x**2 implemented so far "
-                            "for powers");
+                            "powers other than x**2 are not supported for integer(4) "
+                            "in the wasm backend", x.base.base.loc);
                     }
                     break;
                 };
@@ -1812,6 +1818,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 };
                 case ASR::binopType::Pow: {
                     ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    // a non-constant exponent has no compile-time value
+                    if (val == nullptr) {
+                        throw CodeGenError(
+                            "powers other than x**2 are not supported for integer(8) "
+                            "in the wasm backend", x.base.base.loc);
+                    }
                     if (ASR::is_a<ASR::IntegerConstant_t>(*val)) {
                         ASR::IntegerConstant_t *c =
                             ASR::down_cast<ASR::IntegerConstant_t>(val);
@@ -1822,13 +1834,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             m_wa.emit_i64_mul();
                         } else {
                             throw CodeGenError(
-                                "IntegerBinop kind 8: only x**2 implemented so "
-                                "far for powers");
+                                "powers other than x**2 are not supported for integer(8) "
+                                "in the wasm backend", x.base.base.loc);
                         }
                     } else {
                         throw CodeGenError(
-                            "IntegerBinop kind 8: only x**2 implemented so far "
-                            "for powers");
+                            "powers other than x**2 are not supported for integer(8) "
+                            "in the wasm backend", x.base.base.loc);
                     }
                     break;
                 };
@@ -1932,6 +1944,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 };
                 case ASR::binopType::Pow: {
                     ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    // a non-constant exponent has no compile-time value
+                    if (val == nullptr) {
+                        throw CodeGenError(
+                            "powers other than x**2 are not supported for real(4) "
+                            "in the wasm backend", x.base.base.loc);
+                    }
                     if (ASR::is_a<ASR::RealConstant_t>(*val)) {
                         ASR::RealConstant_t *c =
                             ASR::down_cast<ASR::RealConstant_t>(val);
@@ -1942,8 +1960,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             m_wa.emit_f32_mul();
                         } else {
                             throw CodeGenError(
-                                "RealBinop: only x**2 implemented so far for "
-                                "powers");
+                                "powers other than x**2 are not supported for real(4) "
+                                "in the wasm backend", x.base.base.loc);
                         }
                     } else if(ASR::is_a<ASR::IntegerConstant_t>(*val)) {
                         ASR::IntegerConstant_t *c =
@@ -1955,13 +1973,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             m_wa.emit_f32_mul();
                         } else {
                             throw CodeGenError(
-                                "RealBinop: only x**2 implemented so far for "
-                                "powers");
+                                "powers other than x**2 are not supported for real(4) "
+                                "in the wasm backend", x.base.base.loc);
                         }
                     } else {
                         throw CodeGenError(
-                            "RealBinop: Only exponent of type [Integer, Real] are supported"
-                            "for ** operator.");
+                            "a power of real(4) needs an integer or real exponent "
+                            "in the wasm backend", x.base.base.loc);
                     }
                     break;
                 };
@@ -1990,6 +2008,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 };
                 case ASR::binopType::Pow: {
                     ASR::expr_t *val = ASRUtils::expr_value(x.m_right);
+                    // a non-constant exponent has no compile-time value
+                    if (val == nullptr) {
+                        throw CodeGenError(
+                            "powers other than x**2 are not supported for real(8) "
+                            "in the wasm backend", x.base.base.loc);
+                    }
                     if (ASR::is_a<ASR::RealConstant_t>(*val)) {
                         ASR::RealConstant_t *c =
                             ASR::down_cast<ASR::RealConstant_t>(val);
@@ -2000,8 +2024,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             m_wa.emit_f64_mul();
                         } else {
                             throw CodeGenError(
-                                "RealBinop: only x**2 implemented so far for "
-                                "powers");
+                                "powers other than x**2 are not supported for real(8) "
+                                "in the wasm backend", x.base.base.loc);
                         }
                     } else if(ASR::is_a<ASR::IntegerConstant_t>(*val)) {
                         ASR::IntegerConstant_t *c =
@@ -2013,13 +2037,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                             m_wa.emit_f64_mul();
                         } else {
                             throw CodeGenError(
-                                "RealBinop: only x**2 implemented so far for "
-                                "powers");
+                                "powers other than x**2 are not supported for real(8) "
+                                "in the wasm backend", x.base.base.loc);
                         }
                     } else {
                         throw CodeGenError(
-                            "RealBinop: Only exponent of type [Integer, Real] are supported"
-                            "for ** operator.");
+                            "a power of real(8) needs an integer or real exponent "
+                            "in the wasm backend", x.base.base.loc);
                     }
                     break;
                 };
