@@ -1,7 +1,8 @@
 program file_75
-    ! An empty non-advancing WRITE still opens a record. REPOSITIONING the
-    ! unit (BACKSPACE, REWIND) terminates that record: the data a preceding
-    ! WRITE had written over is gone, and the empty record can be read back.
+    ! An empty non-advancing WRITE still opens a record. Completing or
+    ! repositioning the record (an advancing WRITE, CLOSE, ENDFILE, BACKSPACE,
+    ! REWIND) terminates it: the data a preceding WRITE had written over is
+    ! gone, and the empty record can be read back.
     implicit none
     integer :: ios, u
     character(len=16) :: s
@@ -49,14 +50,20 @@ program file_75
     if (ios == 0) error stop 'unexpected extra record'
     close(u, status='delete')
 
-    ! CLOSE terminates the record a non-advancing WRITE left open.
+    ! CLOSE terminates the record a non-advancing WRITE left open, so appending
+    ! after reopening starts a new record instead of gluing data onto it.
     open(newunit=u, file='file_75_d.txt', status='replace')
     write(u, '(a)', advance='no') 'ab'
     close(u)
-    open(newunit=u, file='file_75_d.txt', status='old')
+    open(newunit=u, file='file_75_d.txt', status='old', position='append')
+    write(u, '(a)') 'cd'
+    rewind(u)
     read(u, '(a)', iostat=ios) s
     if (ios /= 0) error stop 'CLOSE did not terminate the record'
-    if (trim(s) /= 'ab') error stop 'CLOSE changed the record data'
+    if (trim(s) /= 'ab') error stop 'CLOSE glued data onto the pending record'
+    read(u, '(a)', iostat=ios) s
+    if (ios /= 0) error stop 'record appended after CLOSE is missing'
+    if (trim(s) /= 'cd') error stop 'wrong record appended after CLOSE'
     read(u, '(a)', iostat=ios) s
     if (ios == 0) error stop 'unexpected record after CLOSE'
     close(u, status='delete')
@@ -65,10 +72,16 @@ program file_75
     open(newunit=u, file='file_75_e.txt', status='replace')
     write(u, '(a)', advance='no') 'ab'
     endfile(u)
+    close(u)
+    open(newunit=u, file='file_75_e.txt', status='old', position='append')
+    write(u, '(a)') 'cd'
     rewind(u)
     read(u, '(a)', iostat=ios) s
     if (ios /= 0) error stop 'ENDFILE did not terminate the record'
-    if (trim(s) /= 'ab') error stop 'ENDFILE changed the record data'
+    if (trim(s) /= 'ab') error stop 'ENDFILE glued data onto the pending record'
+    read(u, '(a)', iostat=ios) s
+    if (ios /= 0) error stop 'record appended after ENDFILE is missing'
+    if (trim(s) /= 'cd') error stop 'wrong record appended after ENDFILE'
     read(u, '(a)', iostat=ios) s
     if (ios == 0) error stop 'unexpected record after ENDFILE'
     close(u, status='delete')
@@ -77,9 +90,16 @@ program file_75
     open(newunit=u, file='file_75_f.txt', status='replace')
     write(u, '(a)', advance='no') 'ab'
     backspace(u)
+    close(u)
+    open(newunit=u, file='file_75_f.txt', status='old', position='append')
+    write(u, '(a)') 'cd'
+    rewind(u)
     read(u, '(a)', iostat=ios) s
     if (ios /= 0) error stop 'BACKSPACE did not terminate the record'
-    if (trim(s) /= 'ab') error stop 'BACKSPACE changed the record data'
+    if (trim(s) /= 'ab') error stop 'BACKSPACE glued data onto the pending record'
+    read(u, '(a)', iostat=ios) s
+    if (ios /= 0) error stop 'record appended after BACKSPACE is missing'
+    if (trim(s) /= 'cd') error stop 'wrong record appended after BACKSPACE'
     read(u, '(a)', iostat=ios) s
     if (ios == 0) error stop 'unexpected record after BACKSPACE'
     close(u, status='delete')

@@ -7510,14 +7510,15 @@ static inline void pos_nl_reset(struct UNIT_FILE *uf) {
 
 // Terminate the record a formatted non-advancing WRITE left open. A preceding
 // BACKSPACE can leave the stream in read mode with the old record in its
-// buffer, while the file has been truncated behind that buffer. Flush first:
-// the standard requires an intervening flush between reading and writing an
-// update stream (C11 7.21.5.3p7), and it also drops the stale input buffer, so
-// the terminator cannot be followed by a read of the deleted record.
+// buffer, while the file has been truncated behind that buffer. Position the
+// stream first: C11 7.21.5.3p7 requires a file positioning call between
+// reading and writing an update stream, and the call also drops the stale
+// input buffer and clears the end-of-file indicator, so the terminator cannot
+// be followed by a read of the deleted record.
 static void terminate_pending_record(struct UNIT_FILE *uf, FILE *filep) {
     if (!uf || !uf->pending_record || !filep) return;
     uf->pending_record = false;
-    fflush(filep);
+    fseek(filep, 0, SEEK_CUR);
     fputc('\n', filep);
     fflush(filep);
     long pos = ftell(filep);
