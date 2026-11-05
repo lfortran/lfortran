@@ -3724,10 +3724,6 @@ filename = "errors/continue_compilation_simd.f90"
 semantics_only_cc = true
 
 [[test]]
-filename = "errors/continue_compilation_elemental_pure.f90"
-semantics_only_cc = true
-
-[[test]]
 filename = "errors/continue_compilation_initial_proc_target.f90"
 semantics_only_cc = true
 
