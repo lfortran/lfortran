@@ -49,25 +49,25 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         j__dc = (__ordinal + __loop_start_1);
     }
     {
-        int __gpu_frame;
+        long __gpu_frame;
         int __gpu_frame_i__dc;
         int __gpu_frame_j__dc;
-        if ((i__dc < (1 + 1))) {
-            __gpu_frame = (((i__dc - ((1 + 1) - (((((1 + 1) * ((m - 1) + 1)) + (((((n - 1) + 1) - 1) - 1) * 0)) + ((((m - 0) - (1 + 0)) + 1) - 1)) / (((m - 0) - (1 + 0)) + 1)))) * (((m - 0) - (1 + 0)) + 1)) + (j__dc - (1 + 0)));
-            if ((__gpu_frame < (((1 + 1) * ((m - 1) + 1)) + (((((n - 1) + 1) - 1) - 1) * 0)))) {
-                if ((__gpu_frame < (1 * ((m - 1) + 1)))) {
-                    __gpu_frame_i__dc = (1 + (__gpu_frame / ((m - 1) + 1)));
-                    __gpu_frame_j__dc = (1 + (__gpu_frame - ((__gpu_frame / ((m - 1) + 1)) * ((m - 1) + 1))));
+        if ((((long)i__dc) < (((long)1) + ((long)1)))) {
+            __gpu_frame = (((((long)i__dc) - ((((long)1) + ((long)1)) - (((((((long)1) + ((long)1)) * ((((long)m) - ((long)1)) + ((long)1))) + (((((((long)n) - ((long)1)) + ((long)1)) - ((long)1)) - ((long)1)) * ((long)0))) + ((((((long)m) - ((long)0)) - (((long)1) + ((long)0))) + ((long)1)) - ((long)1))) / (((((long)m) - ((long)0)) - (((long)1) + ((long)0))) + ((long)1))))) * (((((long)m) - ((long)0)) - (((long)1) + ((long)0))) + ((long)1))) + (((long)j__dc) - (((long)1) + ((long)0))));
+            if ((__gpu_frame < (((((long)1) + ((long)1)) * ((((long)m) - ((long)1)) + ((long)1))) + (((((((long)n) - ((long)1)) + ((long)1)) - ((long)1)) - ((long)1)) * ((long)0))))) {
+                if ((__gpu_frame < (((long)1) * ((((long)m) - ((long)1)) + ((long)1))))) {
+                    __gpu_frame_i__dc = ((int)(((long)1) + (__gpu_frame / ((((long)m) - ((long)1)) + ((long)1)))));
+                    __gpu_frame_j__dc = ((int)(((long)1) + (__gpu_frame - ((__gpu_frame / ((((long)m) - ((long)1)) + ((long)1))) * ((((long)m) - ((long)1)) + ((long)1))))));
                 } else {
-                    if ((__gpu_frame < ((1 + 1) * ((m - 1) + 1)))) {
-                        __gpu_frame_i__dc = (((n - 1) + 1) + ((__gpu_frame - (1 * ((m - 1) + 1))) / ((m - 1) + 1)));
-                        __gpu_frame_j__dc = (1 + ((__gpu_frame - (1 * ((m - 1) + 1))) - (((__gpu_frame - (1 * ((m - 1) + 1))) / ((m - 1) + 1)) * ((m - 1) + 1))));
+                    if ((__gpu_frame < ((((long)1) + ((long)1)) * ((((long)m) - ((long)1)) + ((long)1))))) {
+                        __gpu_frame_i__dc = ((int)(((((long)n) - ((long)1)) + ((long)1)) + ((__gpu_frame - (((long)1) * ((((long)m) - ((long)1)) + ((long)1)))) / ((((long)m) - ((long)1)) + ((long)1)))));
+                        __gpu_frame_j__dc = ((int)(((long)1) + ((__gpu_frame - (((long)1) * ((((long)m) - ((long)1)) + ((long)1)))) - (((__gpu_frame - (((long)1) * ((((long)m) - ((long)1)) + ((long)1)))) / ((((long)m) - ((long)1)) + ((long)1))) * ((((long)m) - ((long)1)) + ((long)1))))));
                     } else {
-                        __gpu_frame_i__dc = ((1 + 1) + ((__gpu_frame - ((1 + 1) * ((m - 1) + 1))) - (((__gpu_frame - ((1 + 1) * ((m - 1) + 1))) / ((((n - 1) + 1) - 1) - 1)) * ((((n - 1) + 1) - 1) - 1))));
-                        if ((((__gpu_frame - ((1 + 1) * ((m - 1) + 1))) / ((((n - 1) + 1) - 1) - 1)) < 0)) {
-                            __gpu_frame_j__dc = (1 + ((__gpu_frame - ((1 + 1) * ((m - 1) + 1))) / ((((n - 1) + 1) - 1) - 1)));
+                        __gpu_frame_i__dc = ((int)((((long)1) + ((long)1)) + ((__gpu_frame - ((((long)1) + ((long)1)) * ((((long)m) - ((long)1)) + ((long)1)))) - (((__gpu_frame - ((((long)1) + ((long)1)) * ((((long)m) - ((long)1)) + ((long)1)))) / ((((((long)n) - ((long)1)) + ((long)1)) - ((long)1)) - ((long)1))) * ((((((long)n) - ((long)1)) + ((long)1)) - ((long)1)) - ((long)1))))));
+                        if ((((__gpu_frame - ((((long)1) + ((long)1)) * ((((long)m) - ((long)1)) + ((long)1)))) / ((((((long)n) - ((long)1)) + ((long)1)) - ((long)1)) - ((long)1))) < ((long)0))) {
+                            __gpu_frame_j__dc = ((int)(((long)1) + ((__gpu_frame - ((((long)1) + ((long)1)) * ((((long)m) - ((long)1)) + ((long)1)))) / ((((((long)n) - ((long)1)) + ((long)1)) - ((long)1)) - ((long)1)))));
                         } else {
-                            __gpu_frame_j__dc = (((m - 0) + 1) + (((__gpu_frame - ((1 + 1) * ((m - 1) + 1))) / ((((n - 1) + 1) - 1) - 1)) - 0));
+                            __gpu_frame_j__dc = ((int)(((((long)m) - ((long)0)) + ((long)1)) + (((__gpu_frame - ((((long)1) + ((long)1)) * ((((long)m) - ((long)1)) + ((long)1)))) / ((((((long)n) - ((long)1)) + ((long)1)) - ((long)1)) - ((long)1))) - ((long)0))));
                         }
                     }
                 }

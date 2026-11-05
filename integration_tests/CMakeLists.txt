@@ -7147,6 +7147,8 @@ RUN(NAME gpu_metal_704 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_704_chunked FILE gpu_metal_704 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 RUN(NAME gpu_metal_706 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4000)
 RUN(NAME gpu_metal_707 LABELS gfortran llvm metal cuda) # empty tiled nest: no padded thread count
+RUN(NAME gpu_metal_713 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # split frame rows below -huge(0) - 1 and bounds at huge(0)
+RUN(NAME gpu_metal_714 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=1000000 --gpu-split-min-iterations=0) # jammed split near -huge(0)
 # The allocatable components of an array of a derived type, packed end to end
 # for the kernel, with their offsets and extents in the kernel's offset kind
 # (#15929); without 64-bit offsets a launch whose components hold more than
