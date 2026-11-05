@@ -26811,7 +26811,8 @@ public:
             }
             if (rhs_operator_sym != nullptr && ASR::is_a<ASR::CustomOperator_t>(*rhs_operator_sym)) {
                 ASR::CustomOperator_t* rhs_gen_proc = ASR::down_cast<ASR::CustomOperator_t>(rhs_operator_sym);
-                for (size_t i = 0; i < rhs_gen_proc->n_procs; ++i) {
+                for (size_t i : ASRUtils::order_specifics_nonelemental_first(
+                        rhs_gen_proc->m_procs, rhs_gen_proc->n_procs)) {
                     ASR::symbol_t* proc;
                     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*rhs_gen_proc->m_procs[i])) {
                         proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(rhs_gen_proc->m_procs[i])->m_proc;
