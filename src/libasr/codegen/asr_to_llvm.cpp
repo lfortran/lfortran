@@ -28546,20 +28546,20 @@ public:
         }
     }
 
-    llvm::Value* get_array_size_from_asr_type(ASR::ttype_t* type) {
+    llvm::Value* get_array_size_from_asr_type(ASR::ttype_t* type, int size_kind = 4) {
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(type, m_dims));
         if( ASRUtils::extract_physical_type(type) == ASR::array_physical_typeType::FixedSizeArray ) {
             int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
-            return llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, size));
+            return llvm::ConstantInt::get(llvm_utils->getIntType(size_kind), llvm::APInt(size_kind * 8, size));
         } else {
-            llvm::Value* llvm_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, 1));
+            llvm::Value* llvm_size = llvm::ConstantInt::get(llvm_utils->getIntType(size_kind), llvm::APInt(size_kind * 8, 1));
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 2;
             for( int i = 0; i < n_dims; i++ ) {
                 if (m_dims[i].m_length) {
                     load_array_size_deep_copy(m_dims[i].m_length);
-                    tmp = builder->CreateSExtOrTrunc(tmp, llvm_utils->getIntType(4));
+                    tmp = builder->CreateSExtOrTrunc(tmp, llvm_utils->getIntType(size_kind));
                     llvm_size = builder->CreateMul(tmp, llvm_size);
                 }
             }
@@ -28574,13 +28574,15 @@ public:
     // count must not be smaller than the dummy's; the extents do not have to
     // agree per dimension. An exact per-dimension match is only required for
     // strict bounds checking and for the assignment target of a converted
-    // function call, which do not use this check.
+    // function call, which do not use this check. Both counts are i64: a
+    // 32-bit product wraps once the extent product exceeds 2^31 elements and
+    // the comparison would then accept a too-small actual argument.
     void emit_sequence_assoc_size_check(ASR::symbol_t* m_name,
             ASR::expr_t* arg_expr, llvm::Value* actual_size,
             llvm::Value* dummy_size, size_t arg_index) {
         llvm_utils->generate_runtime_error(
                 builder->CreateICmpSLT(actual_size, dummy_size),
-                "Array size mismatch in subroutine '%s'. Tried to match size %d of argument number %d, but expected size is %d",
+                "Array size mismatch in subroutine '%s'. Tried to match size %lld of argument number %d, but expected size is %lld",
                 {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                 infile,
                 location_manager,
@@ -28790,8 +28792,8 @@ public:
                         start_new_block(mergeBB);
                     } else if (ASRUtils::has_explicit_dimension_bounds(arr_cast->m_type)) {
                         emit_sequence_assoc_size_check(m_name, arg_expr,
-                            arr_descr->get_array_size(arr_type, arg, nullptr, 4),
-                            get_array_size_from_asr_type(arr_cast->m_type), i);
+                            arr_descr->get_array_size(arr_type, arg, nullptr, 8),
+                            get_array_size_from_asr_type(arr_cast->m_type, 8), i);
                     }
                     // Else the dummy is assumed-shape and declares no extent in
                     // its type, so there is no dummy element count to compare
@@ -28850,9 +28852,9 @@ public:
                         }
                     } else if (ASRUtils::has_explicit_dimension_bounds(arr_cast->m_type)) {
                         emit_sequence_assoc_size_check(m_name, arg_expr,
-                            llvm::ConstantInt::get(llvm_utils->getIntType(4),
+                            llvm::ConstantInt::get(llvm_utils->getIntType(8),
                                 ASRUtils::get_fixed_size_of_array(fixed_size_type)),
-                            get_array_size_from_asr_type(arr_cast->m_type), i);
+                            get_array_size_from_asr_type(arr_cast->m_type, 8), i);
                     }
                     // Else the dummy is assumed-shape and declares no extent in
                     // its type, so there is no dummy element count to compare
