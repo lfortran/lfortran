@@ -4436,6 +4436,110 @@ end program
 )").ok);
 }
 
+TEST_CASE("FortranEvaluator generic subroutine called from a cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Issue 16710: a cell that calls a module's generic subroutine, after
+    // another cell used the module, crashed the kernel.
+    CHECK(e.evaluate2(R"(module mgsub
+implicit none
+integer :: last = 0
+interface show
+    module procedure show_int, show_real
+end interface
+contains
+    subroutine show_int(i)
+        integer, intent(in) :: i
+        last = i
+    end subroutine
+    subroutine show_real(x)
+        real(8), intent(in) :: x
+        last = -int(x)
+    end subroutine
+end module
+)").ok);
+    CHECK(e.evaluate2("use mgsub").ok);
+    CHECK(e.evaluate2("call show(3)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("last");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 3);
+    CHECK(e.evaluate2("call show(5.0d0)").ok);
+    r = e.evaluate2("last");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == -5);
+
+    // The use and the call in one cell.
+    FortranEvaluator e2(cu);
+    CHECK(e2.evaluate2(R"(module mgsub2
+implicit none
+integer :: last = 0
+interface show
+    module procedure show_int
+end interface
+contains
+    subroutine show_int(i)
+        integer, intent(in) :: i
+        last = i
+    end subroutine
+end module
+)").ok);
+    CHECK(e2.evaluate2(R"(use mgsub2
+call show(7)
+)").ok);
+    r = e2.evaluate2("last");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 7);
+
+    // Specifics with optional arguments, and a generic function.
+    FortranEvaluator e3(cu);
+    CHECK(e3.evaluate2(R"(module mgsub3
+implicit none
+integer :: last = 0
+interface put
+    module procedure put_int, put_real
+end interface
+interface twice
+    module procedure twice_int, twice_real
+end interface
+contains
+    subroutine put_int(i, scale)
+        integer, intent(in) :: i
+        integer, intent(in), optional :: scale
+        last = i
+        if (present(scale)) last = last * scale
+    end subroutine
+    subroutine put_real(x, scale)
+        real(8), intent(in) :: x
+        integer, intent(in), optional :: scale
+        last = int(x)
+        if (present(scale)) last = last * scale
+    end subroutine
+    integer function twice_int(i)
+        integer, intent(in) :: i
+        twice_int = 2 * i
+    end function
+    real(8) function twice_real(x)
+        real(8), intent(in) :: x
+        twice_real = 2 * x
+    end function
+end module
+)").ok);
+    CHECK(e3.evaluate2("use mgsub3").ok);
+    CHECK(e3.evaluate2("call put(4, scale=3)").ok);
+    r = e3.evaluate2("last");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 12);
+    CHECK(e3.evaluate2("call put(2.0d0)").ok);
+    r = e3.evaluate2("last");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 2);
+    r = e3.evaluate2("twice(21)");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 42);
+}
+
 TEST_CASE("FortranEvaluator a modfile module used by a cell's module") {
     // A module loaded from a modfile is held by the cell that first used it,
     // so a later cell resolves it through the chain and its module calls into
