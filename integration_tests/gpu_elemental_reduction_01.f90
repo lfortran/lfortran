@@ -33,7 +33,7 @@ contains
         if (size(k, 1) /= size(q) .or. size(s) /= size(k, 2) .or. &
                 size(above) /= size(k, 2) .or. size(nested) /= size(k, 2)) &
             error stop "inconsistent shapes"
-        do concurrent (integer :: t = 1:size(k, 2))
+        do concurrent (t = 1:size(k, 2))
             s(t) = sum(q*widen(k(:, t)))
             nested(t) = halve(sum(q*widen(k(:, t))))
             above(t) = count(widen(k(:, t)) > 1.0_real32)
