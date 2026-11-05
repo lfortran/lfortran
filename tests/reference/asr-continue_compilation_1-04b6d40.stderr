@@ -5347,6 +5347,48 @@ semantic error: Different shape for array assignment on dimension 1(3 and 1)
 4384 |         y = z(k+1:k+1)  ! {Error} Different shape for array assignment on dimension 1(3 and 1)
      |         ^^^^^^^^^^^^^^ 
 
+semantic error: size in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4394:31
+     |
+4394 |         inquire(unit=10, size=real_size)  ! {Error} size in inquire must be a scalar integer variable
+     |                               ^^^^^^^^^ 
+
+semantic error: pos in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4395:30
+     |
+4395 |         inquire(unit=10, pos=real_pos)  ! {Error} pos in inquire must be a scalar integer variable
+     |                              ^^^^^^^^ 
+
+semantic error: size in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4396:31
+     |
+4396 |         inquire(unit=10, size=real8_size)  ! {Error} size in inquire must be a scalar integer variable
+     |                               ^^^^^^^^^^ 
+
+semantic error: pos in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4397:30
+     |
+4397 |         inquire(unit=10, pos=pos_array)  ! {Error} pos in inquire must be a scalar integer variable
+     |                              ^^^^^^^^^ 
+
+semantic error: size in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4406:31
+     |
+4406 |         inquire(unit=10, size=input)  ! {Error} size in inquire must be a scalar integer variable
+     |                               ^^^^^ 
+
+semantic error: pos in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4407:30
+     |
+4407 |         inquire(unit=10, pos=input)  ! {Error} pos in inquire must be a scalar integer variable
+     |                              ^^^^^ 
+
+semantic error: size in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4411:31
+     |
+4411 |         inquire(unit=10, size=cc1_inquire_fixed)  ! {Error} size in inquire must be a scalar integer variable
+     |                               ^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
