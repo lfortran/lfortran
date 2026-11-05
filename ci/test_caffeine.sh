@@ -97,8 +97,15 @@ git checkout 0f9ca691cbe6782838266a9bb5005ae187f253a2
 # Toolchain setup
 
 export FC=lfortran
-export CC=clang
-export CXX=clang++
+if [[ $(uname -s) == Darwin ]] ; then
+  # The macOS environments select Xcode's Clang (pixi.toml), which LFortran
+  # also links with; the environment's own clang may be older than the SDK.
+  export CC="${CC:-clang}"
+  export CXX="${CXX:-clang++}"
+else
+  export CC=clang
+  export CXX=clang++
+fi
 if [[ "${LFORTRAN_LINKER:-}" == gcc ]] ; then
   # LFortran links with Pixi's GCC (the LLVM 7 and 8 environments), against
   # the conda sysroot and with default PIE links. Clang 7 and 8 find neither
@@ -115,8 +122,8 @@ fi
 echo "FC=${FC}"
 echo "CC=${CC}"
 echo "CXX=${CXX}"
-which clang
-clang --version
+command -v "$CC"
+"$CC" --version
 
 # Build caffeine
 
