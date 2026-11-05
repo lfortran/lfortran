@@ -321,6 +321,50 @@ def slow_subscriber_output(exe, cwd):
             stalled.close()
 
 
+def oversized_message_output(exe, cwd):
+    """A single output message larger than the most the kernel keeps for a
+    subscriber that does not read, of which it has sent only a part, must not
+    make the kernel drop the output that follows it silently: the subscriber
+    still gets the next cell's output, after the large message (#16846)."""
+    with kernel(exe, cwd) as (_, join, ports):
+        client = join()
+        stalled = zmtp(ports["iopub_port"], b"SUB")
+        try:
+            stalled.sendall(b"\x00\x01\x01")  # subscribes to every message
+            check(value(client, "6*7") == "42", "a cell did not run")
+            size = 70 * 2**20
+            reply, _ = run(client, "character(len=:), allocatable :: huge\n"
+                "huge = repeat('x', %d)\nhuge" % size, timeout=120)
+            check(reply["status"] == "ok", reply)
+            reply, _ = run(client, "print *, 'LATEST_16846'")
+            check(reply["status"] == "ok", reply)
+            # The kernel sends the rest of the large message as this reads it,
+            # and then what the next cell printed.
+            marker = b"LATEST_16846"
+            found, read, window = False, 0, b""
+            stalled.settimeout(20)
+            deadline = time.monotonic() + 120
+            while time.monotonic() < deadline and read < size + 16 * 2**20:
+                try:
+                    chunk = stalled.recv(1 << 20)
+                except socket.timeout:
+                    break
+                if not chunk:
+                    break
+                read += len(chunk)
+                data = window + chunk
+                if marker in data:
+                    found = True
+                    break
+                window = data[-(len(marker) - 1):]
+            check(found, "the output after a message larger than 64 MiB was"
+                " dropped silently")
+        except (EOFError, socket.timeout):
+            raise AssertionError("the output after the large message was lost")
+        finally:
+            stalled.close()
+
+
 def stalled_connections(exe, cwd):
     """Connections that stop during their handshake or in a message hold
     nothing back: other clients run cells and READs, and the kernel shuts
@@ -1164,7 +1208,8 @@ def test_utf8_event_fragments(exe, cwd):
 CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
     test_fragmented_updates, test_unicode_updates, test_idle_disconnect,
     test_output_error_cleanup,
-    large_output, slow_subscriber_output, stalled_connections, read_disconnect,
+    large_output, slow_subscriber_output, oversized_message_output,
+    stalled_connections, read_disconnect,
     late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
     stop_on_error, queued_in_turns, aborted_in_turns, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.
