@@ -2334,6 +2334,50 @@ bool is_scalar_reduction_actual(const ASR::FunctionCall_t& call,
     SymbolTable* scope);
 bool has_only_scalar_reduction_calls(ASR::expr_t* expression,
     SymbolTable* scope);
+bool contains_impure_function_reference(ASR::expr_t* value);
+
+// Whether the operand of the reduction `x` reads only stable storage through
+// sections the loop can index in place, so that it may be evaluated element
+// by element. A volatile or asynchronous variable, or one with a scoped
+// attribute, is not stable.
+bool reduction_operand_is_stable(ASR::IntrinsicArrayFunction_t* x,
+        SymbolTable* scope) {
+    class Reads: public ASR::BaseWalkVisitor<Reads> {
+        SymbolTable* scope;
+        void check_symbol(ASR::symbol_t* symbol) {
+            symbol = ASRUtils::symbol_get_past_external(symbol);
+            if (!ASR::is_a<ASR::Variable_t>(*symbol)) {
+                return;
+            }
+            auto* variable = ASR::down_cast<ASR::Variable_t>(symbol);
+            stable &= !variable->m_is_volatile && !variable->m_is_asynchronous;
+            for (auto* s = scope; s && stable; s = s->parent) {
+                stable &= !ASRUtils::has_scoped_variable_attribute(
+                    *variable, s, false);
+            }
+        }
+    public:
+        bool stable = true;
+        std::set<ASR::expr_t*> sections;
+        Reads(SymbolTable* scope): scope(scope) { visit_compile_time_value = false; }
+        void visit_Var(const ASR::Var_t& x) {
+            check_symbol(x.m_v);
+        }
+        void visit_ArraySection(const ASR::ArraySection_t& x) {
+            sections.insert(const_cast<ASR::expr_t*>(&x.base));
+            ASR::BaseWalkVisitor<Reads>::visit_ArraySection(x);
+        }
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+            check_symbol(x.m_m);
+            ASR::BaseWalkVisitor<Reads>::visit_StructInstanceMember(x);
+        }
+        void visit_ttype(const ASR::ttype_t& /*x*/) {}
+    } reads(scope);
+    reads.visit_expr(x->base);
+    std::set<ASR::expr_t*> sections, operations;
+    get_sections_read_in_place(x, sections, operations, true);
+    return reads.stable && reads.sections == sections;
+}
 
 // Replaces each reduction that array_op lowers into a loop, and that is an
 // operand of an expression evaluated once, using `hoist`. Only operands of
@@ -2347,6 +2391,9 @@ class ReductionOperandReplacer:
     std::function<void(ASR::expr_t**)> hoist;
     SymbolTable* scope;
     bool scalar_actuals_safe;
+    // Whether the expression being replaced references no effectful function,
+    // so that a reduction in a pure call's argument may be evaluated first.
+    bool expression_is_side_effect_free = false;
 
     ReductionOperandReplacer(std::function<void(ASR::expr_t**)> hoist_,
             SymbolTable* scope_, bool scalar_actuals_safe_):
@@ -2361,11 +2408,22 @@ class ReductionOperandReplacer:
                 auto* call = ASR::down_cast<ASR::FunctionCall_t>(x);
                 if (scalar_actuals_safe && is_scalar_reduction_actual(*call, scope)) {
                     hoist(&call->m_args[0].m_value);
+                    return;
+                }
+                // A reduction nested in an argument of a side-effect free
+                // call is evaluated once, like one in an intrinsic operation,
+                // as long as the expression has no other effect that the
+                // earlier evaluation could reorder against.
+                if (expression_is_side_effect_free) {
+                    ASR::BaseExprReplacer<ReductionOperandReplacer>::
+                        replace_FunctionCall(call);
                 }
                 return;
             }
             case ASR::exprType::IntrinsicArrayFunction: {
-                if (ASRUtils::ElementwiseReduction::is_lowered_to_loop(x)) {
+                if (ASRUtils::ElementwiseReduction::is_lowered_to_loop(x) &&
+                        reduction_operand_is_stable(
+                            ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x), scope)) {
                     hoist(current_expr);
                 }
                 return;
@@ -2468,42 +2526,8 @@ bool is_scalar_reduction_actual(const ASR::FunctionCall_t& call,
             contains_impure_function_reference(call.m_args[0].m_value)) {
         return false;
     }
-    class Reads: public ASR::BaseWalkVisitor<Reads> {
-        SymbolTable* scope;
-        void check_symbol(ASR::symbol_t* symbol) {
-            symbol = ASRUtils::symbol_get_past_external(symbol);
-            if (!ASR::is_a<ASR::Variable_t>(*symbol)) {
-                return;
-            }
-            auto* variable = ASR::down_cast<ASR::Variable_t>(symbol);
-            stable &= !variable->m_is_volatile && !variable->m_is_asynchronous;
-            for (auto* s = scope; s && stable; s = s->parent) {
-                stable &= !ASRUtils::has_scoped_variable_attribute(
-                    *variable, s, false);
-            }
-        }
-    public:
-        bool stable = true;
-        std::set<ASR::expr_t*> sections;
-        Reads(SymbolTable* scope): scope(scope) { visit_compile_time_value = false; }
-        void visit_Var(const ASR::Var_t& x) {
-            check_symbol(x.m_v);
-        }
-        void visit_ArraySection(const ASR::ArraySection_t& x) {
-            sections.insert(const_cast<ASR::expr_t*>(&x.base));
-            ASR::BaseWalkVisitor<Reads>::visit_ArraySection(x);
-        }
-        void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
-            check_symbol(x.m_m);
-            ASR::BaseWalkVisitor<Reads>::visit_StructInstanceMember(x);
-        }
-        void visit_ttype(const ASR::ttype_t& /*x*/) {}
-    } reads(scope);
-    reads.visit_expr(*call.m_args[0].m_value);
-    std::set<ASR::expr_t*> sections, operations;
-    get_sections_read_in_place(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
-        call.m_args[0].m_value), sections, operations, true);
-    return reads.stable && reads.sections == sections;
+    return reduction_operand_is_stable(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
+        call.m_args[0].m_value), scope);
 }
 
 bool has_only_scalar_reduction_calls(ASR::expr_t* expression,
@@ -4165,6 +4189,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 al, value->base.loc, temporary, value, nullptr, false, false)));
             *reduction = temporary;
         }, current_scope, has_only_scalar_reduction_calls(*expr, current_scope));
+        replacer.expression_is_side_effect_free =
+            !contains_impure_function_reference(*expr);
         replacer.current_expr = expr;
         replacer.replace_expr(*expr);
     }
