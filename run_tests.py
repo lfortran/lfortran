@@ -123,7 +123,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 run_cmd("lfortran -c {}".format(extrafile_))
         return True
 
-    optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
+    optimization_passes = ["flip_sign", "div_to_mul", "sign_from_value",
                            "inline_function_calls",
                            "dead_code_removal", "loop_fusion"]
 

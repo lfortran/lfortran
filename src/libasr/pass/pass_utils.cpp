@@ -1517,43 +1517,6 @@ namespace LCompilers {
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc, constant));
         }
 
-        ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
-            Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
-            PassOptions& pass_options) {
-            int64_t fma_id = static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::FMA);
-            ASR::ttype_t* type = ASRUtils::expr_type(arg0);
-            if (skip_instantiation(pass_options, fma_id) || ASRUtils::is_simd_array(arg0)) {
-                Vec<ASR::expr_t*> args;
-                args.reserve(al, 3);
-                args.push_back(al, arg0);
-                args.push_back(al, arg1);
-                args.push_back(al, arg2);
-                return ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, fma_id,
-                    args.p, args.n, 0, type, nullptr));
-            }
-            ASRUtils::impl_function instantiate_function =
-            ASRUtils::IntrinsicElementalFunctionRegistry::get_instantiate_function(
-                    static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::FMA));
-            Vec<ASR::ttype_t*> arg_types;
-            arg_types.reserve(al, 3);
-            arg_types.push_back(al, ASRUtils::expr_type(arg0));
-            arg_types.push_back(al, ASRUtils::expr_type(arg1));
-            arg_types.push_back(al, ASRUtils::expr_type(arg2));
-
-            Vec<ASR::call_arg_t> args;
-            args.reserve(al, 3);
-            ASR::call_arg_t arg0_, arg1_, arg2_;
-            arg0_.loc = arg0->base.loc, arg0_.m_value = arg0;
-            args.push_back(al, arg0_);
-            arg1_.loc = arg1->base.loc, arg1_.m_value = arg1;
-            args.push_back(al, arg1_);
-            arg2_.loc = arg2->base.loc, arg2_.m_value = arg2;
-            args.push_back(al, arg2_);
-            int index_kind = pass_options.descriptor_index_64 ? 8 : 4;
-            return instantiate_function(al, loc,
-                unit.m_symtab, arg_types, type, args, 0, index_kind);
-        }
-
         ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,
             Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
             PassOptions& pass_options) {

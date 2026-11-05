@@ -1,7 +1,6 @@
 program fma_04
-! Reductions `acc = acc + a*b` are left as a multiply and an add by the
-! fma pass (`--fast`), so that LLVM can vectorize them; other `a*b + c`
-! expressions are still fused.
+! Reductions `acc = acc + a*b` and other `a*b + c` expressions, which LLVM
+! may fuse into FMA instructions with `--fast`.
 implicit none
 integer, parameter :: n = 100
 real(4) :: x4(n), y4(n), z4(n), s4, t4

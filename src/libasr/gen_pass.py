@@ -8,7 +8,6 @@ passes = [
         "dead_code_removal",
         "replace_div_to_mul",
         "replace_flip_sign",
-        "replace_fma",
         "replace_for_all",
         "while_else",
         "wrap_global_stmts",
