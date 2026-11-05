@@ -7436,6 +7436,10 @@ struct UNIT_FILE {
     int32_t seq_unf_record_len;
     // Set by ENDFILE or a READ that hit end of file: the unit is after the end-of-file record.
     bool after_endfile;
+    // Set by a formatted non-advancing WRITE: its record is still open. The
+    // record is completed by an advancing WRITE, or terminated when the unit
+    // is repositioned (REWIND, BACKSPACE), reaches ENDFILE or is closed.
+    bool pending_record;
     // Pending list-directed null-repeat state.
     int32_t lf_list_dir_null_remaining;
     // Child I/O mode (for DTIO: suppress record terminators in child writes).
@@ -7502,6 +7506,23 @@ static size_t unf_fread(void *p, size_t elem_size, size_t n, FILE *filep,
 
 static inline void pos_nl_reset(struct UNIT_FILE *uf) {
     if (uf) uf->pos_nl_valid = false;
+}
+
+// Terminate the record a formatted non-advancing WRITE left open. The
+// terminator is written through the FILE* so that stdio leaves read mode and
+// drops the buffer a preceding BACKSPACE left behind: the file may have been
+// truncated behind that buffer, and a seek inside the buffered range would
+// otherwise keep serving the deleted record.
+static void terminate_pending_record(struct UNIT_FILE *uf, FILE *filep) {
+    if (!uf || !uf->pending_record || !filep) return;
+    uf->pending_record = false;
+    fputc('\n', filep);
+    fflush(filep);
+    long pos = ftell(filep);
+    if (pos >= 0) {
+        (void)!ftruncate(lfortran_fileno(filep), pos);
+    }
+    pos_nl_reset(uf);
 }
 
 static inline void seq_unf_state_reset(struct UNIT_FILE *uf) {
@@ -7674,6 +7695,8 @@ LFORTRAN_API void _lfortran_file_write_newline(int32_t unit_num) {
     if (!filep) {
         filep = stdout;
     }
+    struct UNIT_FILE *uf = find_unit(unit_num);
+    if (uf) uf->pending_record = false;
     fprintf(filep, "\n");
 }
 
@@ -7746,6 +7769,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
             unit_to_file[i].pad_mode = pad_mode;
             unit_to_file[i].rereadable = file_is_rereadable(filep);
             unit_to_file[i].swap_bytes = false;
+            unit_to_file[i].pending_record = false;
             seq_unf_state_reset(&unit_to_file[i]);
             list_dir_state_reset(&unit_to_file[i]);
             pos_nl_reset(&unit_to_file[i]);
@@ -7775,6 +7799,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
     unit_to_file[last_index_used].pad_mode = pad_mode;
     unit_to_file[last_index_used].rereadable = file_is_rereadable(filep);
     unit_to_file[last_index_used].swap_bytes = false;
+    unit_to_file[last_index_used].pending_record = false;
     seq_unf_state_reset(&unit_to_file[last_index_used]);
     list_dir_state_reset(&unit_to_file[last_index_used]);
     pos_nl_reset(&unit_to_file[last_index_used]);
@@ -9466,6 +9491,7 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* ioms
             exit(1);
         }
     }
+    terminate_pending_record(find_unit(unit_num), filep);
     if (fseek(filep, 0, SEEK_SET) != 0) {
         if (iostat != NULL) {
             *iostat = -1;
@@ -9518,6 +9544,7 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iom
         strcpy(fname, fort_filename);
         store_unit_file(unit_num, fname, filep, false, 0, true, true, 0, false, 0, 0, 0, 0, 0, 1);
     }
+    terminate_pending_record(find_unit(unit_num), filep);
     fflush(filep);
     long pos = ftell(filep);
     if (pos >= 0) {
@@ -9581,6 +9608,7 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         return;
     }
 
+    terminate_pending_record(find_unit(unit_num), fd);
     fflush(fd);
     long pos = ftell(fd);
     if (pos <= 0) {
@@ -15098,6 +15126,11 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             exit(1);
         }
 
+        // A formatted sequential WRITE leaves its record open unless it
+        // wrote an end-of-record terminator. A non-advancing WRITE (and the
+        // `$` edit descriptor) passes an empty terminator, and a write with
+        // no output list passes the terminator as its data.
+        bool record_terminated = true;
         // For direct access formatted writes, handle record boundaries:
         // The '/' edit descriptor produces '\n' in the formatted string.
         // For direct access, each record must be exactly unit_recl bytes,
@@ -15139,6 +15172,14 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
                 struct UNIT_FILE *uf_ = find_unit(unit_num);
                 if (uf_) is_child = uf_->lf_child_io_mode != 0;
             }
+            if (end != NULL) {
+                record_terminated = (end_len > 0 && !is_child);
+            } else {
+                // The "%s" protocol passes a write with no output list: the
+                // data is the record terminator the compiler would have
+                // appended, so a non-empty one ends the record.
+                record_terminated = (str_len > 0 && str[str_len - 1] == '\n');
+            }
             if (end != NULL && !is_child) {
                 if(open_delim != '\0') {
                     fprintf(filep, "%c%.*s%c%.*s",
@@ -15163,6 +15204,10 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
 
 
+        if (access_id == 0) {
+            struct UNIT_FILE *uf_ = find_unit(unit_num);
+            if (uf_) uf_->pending_record = !record_terminated;
+        }
         if(iostat != NULL) *iostat = dtio_iostat;
         internal_free(wide_encoded);
         va_end(args);
@@ -16075,7 +16120,10 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
     if (!filep) {
         return;
     }
-    
+
+    // CLOSE terminates a record a non-advancing WRITE left open.
+    terminate_pending_record(find_unit(unit_num), filep);
+
     // Don't close the process's standard streams, which the pre-connected
     // units 0, 5 and 6 use. A unit opened on a named file, even one of those
     // numbers, has its own stream that must be closed.
