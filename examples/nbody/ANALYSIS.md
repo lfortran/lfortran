@@ -72,6 +72,58 @@ not a prerequisite for vectorizing the original full-precision expression.
 Alignment/alias information and CPU-model selection deserve investigation
 too, but this experiment does not establish their payoff.
 
+## One CPU core on x86-64: LFortran, GFortran and Flang
+
+A later measurement on a different machine compares the three Fortran
+compilers on the same `nbody.f90`, each with all its optimizations on. The
+C baseline is NEON-only and does not build here.
+
+Setup:
+- AMD Ryzen 9 9955HX (Zen 5, AVX-512, up to 5.06 GHz), Linux.
+- LFortran main `06749efc50`, LLVM 11.1.0 (`--fast` implies
+  `-mcpu=native`); GFortran 16.2.0; Flang 23.1.4.
+- One process pinned to one core (`taskset -c 4`) on an otherwise idle
+  machine (load average below 1 before and after).
+- The variants run interleaved, 5 rounds each. The table gives the median
+  GFLOP/s; within a variant the runs differ by less than 1%.
+
+| Compiler and flags | N=8192, 5 steps | N=16384, 10 steps |
+|---|---:|---:|
+| Flang `-O3 -march=native -ffast-math` | 211.0 | 211.7 |
+| Flang `-O3 -ffast-math -fstack-arrays -fno-protect-parens -march=native` (Flang 23's spelling of `-Ofast`) | 211.0 | 211.8 |
+| the same plus `-funroll-loops` | 211.2 | 211.7 |
+| **LFortran `--fast`** | **199.7** | **200.5** |
+| GFortran `-O3 -march=native -ffast-math` (as in `run.sh`) | 145.9 | 146.2 |
+| GFortran `-Ofast -march=native` | 146.1 | 146.2 |
+| GFortran `-Ofast -march=native -funroll-loops -flto` | 145.8 | 145.7 |
+| GFortran `-Ofast -march=native -funroll-loops -fvariable-expansion-in-unroller` | 152.5 | 152.5 |
+
+All variants agree on the mean-position checksum (1.49831403 and
+1.49675293). The energy drift is 1.4e-10 to 1.8e-10 for all of them.
+
+LFortran is at 95% of Flang and 1.37x GFortran's best. The force loop
+explains the differences. In all three the inner j loop is vectorized 16
+lanes wide in `zmm` registers. `1/sqrt` becomes `vrsqrt14ps` plus a Newton
+step under fast math, and the multiply/add pairs contract into FMA
+instructions:
+
+- LFortran and Flang interleave two vectors per iteration (32 bodies, two
+  `vrsqrt14ps`, 14 FMAs), so each of the three acceleration sums has two
+  independent accumulators. The loops are nearly identical: LFortran's has
+  47 instructions and Flang's 45.
+- The remaining LFortran difference is that three loop-invariant constants
+  are reloaded with `vbroadcastss` from the constant pool in every
+  iteration, where Flang keeps them in registers.
+- GFortran does not interleave: one vector per iteration, so the
+  accumulator chains are latency bound. `-funroll-loops` alone does not
+  change this. `-fvariable-expansion-in-unroller` gives the accumulators
+  separate copies and gains 4.5%.
+
+With current main the inner loop vectorizes on this machine, unlike in the
+M4 measurement above. The `fma` pass named there has been removed (#16804).
+That removal alone raised this benchmark from 193 to 200 GFLOP/s (unpinned,
+N=8192).
+
 ## OpenMP: vectorization, then load balance
 
 The outlined force loop has the same scalar reduction as the single-core
