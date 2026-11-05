@@ -215,32 +215,35 @@ jobs:
         run: |
             export CXXFLAGS="-Werror"
             export CFLAGS="-Werror"
-            pixi run -e llvm11 build \
-              -DCMAKE_BUILD_TYPE=Release \
-              -DWITH_LSP=yes \
-              -DWITH_STACKTRACE=no \
-              -DWITH_RUNTIME_STACKTRACE=yes \
-              -DWITH_INTERNAL_ALLOC_CHECK=no \
+            # The release recipe. Unusual install paths test that the
+            # installed tree relocates; they override the script's defaults.
+            pixi run -e llvm11 build-release \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_INSTALL_BINDIR=bin/tastic \
               -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
               -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
               -DCMAKE_INSTALL_MANDIR=man/O/man
-            cmake --build build/llvm11 --target install
 
       - name: Test Linux
         shell: bash -e {0}
         run: |
-            pixi run -e llvm11 ctest
-            pixi run -e llvm11 tests
-            pixi run -e llvm11 tests -vh
+            # The release compiler is in build/release, while the tasks take
+            # build/llvm11 from the environment. ctest and run_tests.py keep
+            # the last value of an option, so these override the defaults.
+            release="$PWD/build/release"
+            compiler=(--compiler-dir "$release/src/bin")
+            reference=(--build-dir "$release/reference_tests")
+            integration=(--build-dir "$release/integration_tests")
+            pixi run -e llvm11 ctest --test-dir "$release"
+            pixi run -e llvm11 tests "${compiler[@]}" "${reference[@]}"
+            pixi run -e llvm11 tests -vh "${compiler[@]}" "${reference[@]}"
             NPROC=$(nproc)
-            pixi run -e llvm11 integration_tests -m
-            pixi run -e llvm11 integration_tests -b llvm -j${NPROC}
-            pixi run -e llvm11 integration_tests -b llvm -f -j${NPROC}
-            pixi run -e llvm11 integration_tests -b llvm_single_invocation -j${NPROC}
-            pixi run -e llvm11 integration_tests -b llvm --std=f23 -j${NPROC}
-            pixi run -e llvm11 integration_tests -b llvm -f --std=f23 -j${NPROC}
+            pixi run -e llvm11 integration_tests -m "${compiler[@]}" "${integration[@]}"
+            pixi run -e llvm11 integration_tests -b llvm -j${NPROC} "${compiler[@]}" "${integration[@]}"
+            pixi run -e llvm11 integration_tests -b llvm -f -j${NPROC} "${compiler[@]}" "${integration[@]}"
+            pixi run -e llvm11 integration_tests -b llvm_single_invocation -j${NPROC} "${compiler[@]}" "${integration[@]}"
+            pixi run -e llvm11 integration_tests -b llvm --std=f23 -j${NPROC} "${compiler[@]}" "${integration[@]}"
+            pixi run -e llvm11 integration_tests -b llvm -f --std=f23 -j${NPROC} "${compiler[@]}" "${integration[@]}"
 
       - name: Test Installation
         shell: bash -e {0}
@@ -255,7 +258,7 @@ jobs:
         shell: bash -e {0}
         run: |
             python3 ci/test_runtime_headers.py \
-              --source-dir . --build-dir build/llvm11 --install-prefix inst \
+              --source-dir . --build-dir build/release --install-prefix inst \
               --install-bindir bin/tastic --kokkos-dir "$CONDA_PREFIX" --relocate
 
 
