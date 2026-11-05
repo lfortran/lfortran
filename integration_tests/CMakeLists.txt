@@ -6290,7 +6290,7 @@ RUN(NAME array_section_assign_14 LABELS llvm)
 RUN(NAME array_item_in_bounds_01 LABELS gfortran llvm)
 RUN(NAME array_in_place_sections_01 LABELS gfortran llvm)
 RUN(NAME array_conditional_window_updates LABELS gfortran llvm)
-RUN(NAME array_item_in_bounds_02 LABELS gfortran)
+RUN(NAME array_item_in_bounds_02 LABELS gfortran llvm)
 
 RUN(NAME intent_out_array_01 LABELS gfortran llvm)
 RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)
