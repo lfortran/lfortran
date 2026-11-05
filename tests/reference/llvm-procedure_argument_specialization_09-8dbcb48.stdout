@@ -654,6 +654,7 @@ define i32 @main(i32 %0, i8** %1) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %2 = call i8* @_lfortran_get_default_allocator()
+  %3 = alloca i64, align 8
   %call_arg_value3 = alloca i32, align 4
   %call_arg_value2 = alloca double, align 8
   %call_arg_value1 = alloca double, align 8
@@ -665,12 +666,12 @@ define i32 @main(i32 %0, i8** %1) {
   store double 5.000000e-01, double* %call_arg_value2, align 8
   store i32 1000, i32* %call_arg_value3, align 4
   call void @__module_procedure_argument_specialization_09_host_host(double* %call_arg_value, double* %call_arg_value1, double* %call_arg_value2, i32* %call_arg_value3, double* %res)
-  %3 = load double, double* %res, align 8
-  %4 = fsub double %3, 0x3FF5555555555555
-  %5 = fsub double %4, 5.000000e-01
-  %6 = call double @llvm.fabs.f64(double %5)
-  %7 = fcmp ogt double %6, 0x3EB0C6F7A0B5ED8D
-  br i1 %7, label %then, label %else
+  %4 = load double, double* %res, align 8
+  %5 = fsub double %4, 0x3FF5555555555555
+  %6 = fsub double %5, 5.000000e-01
+  %7 = call double @llvm.fabs.f64(double %6)
+  %8 = fcmp ogt double %7, 0x3EB0C6F7A0B5ED8D
+  br i1 %8, label %then, label %else
 
 then:                                             ; preds = %.entry
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
@@ -682,9 +683,8 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %8 = alloca i64, align 8
-  %9 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %8, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, double* %res)
-  %10 = load i64, i64* %8, align 8
+  %9 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %3, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i8** null, double* %res)
+  %10 = load i64, i64* %3, align 8
   %11 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   store i8* %9, i8** %11, align 8
   %12 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
