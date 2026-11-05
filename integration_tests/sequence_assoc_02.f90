@@ -21,6 +21,30 @@ contains
     real, intent(in) :: a(:)
     if (size(a) /= 0) error stop "size(a)"
   end subroutine
+
+  subroutine neg_extent(n, m, a)
+    integer, intent(in) :: n, m
+    real, intent(inout) :: a(n, m)
+    if (size(a) /= 0) error stop "size(a)"
+  end subroutine
+
+  subroutine neg_bounds(a)
+    real, intent(inout) :: a(5:1, 5:1)
+    if (size(a) /= 0) error stop "size(a)"
+  end subroutine
+end module
+
+module sequence_assoc_02_bindc_mod
+  use iso_c_binding, only: c_float
+  implicit none
+contains
+  subroutine bindc_assumed_size(n, a) bind(c)
+    integer, intent(in) :: n
+    real(c_float), intent(inout) :: a(n, *)
+    if (size(a, 1) /= n) error stop "size(a, 1)"
+    a(n, 1) = 5.0_c_float
+    a(1, 2) = 6.0_c_float
+  end subroutine
 end module
 
 subroutine fill_ext(n, m, a)
@@ -32,14 +56,19 @@ end subroutine
 
 program sequence_assoc_02
   use sequence_assoc_02_mod
+  use sequence_assoc_02_bindc_mod, only: bindc_assumed_size
+  use iso_c_binding, only: c_float
   implicit none
   real, allocatable :: b(:,:)
   real :: c(4, 2)
+  real :: z(0, 0)
+  real(c_float) :: x(6)
   real, allocatable :: empty(:), empty_2d(:,:)
   integer :: i, j
   allocate(b(4, 2))
   b = 0.0
   c = 0.0
+  z = 0.0
   ! A whole array actual argument associated with an explicit-shape dummy of a
   ! different shape but the same total size is valid sequence association
   ! (F2023 15.5.2.12): only the dummy's total size must not exceed the actual
@@ -57,6 +86,19 @@ program sequence_assoc_02
   allocate(empty(0))
   call count_elements(empty)
   allocate(empty_2d(0, 0))
+  ! A negative runtime extent means a zero-size dimension, so the dummy's
+  ! element count is zero, never a positive product of two negative extents.
+  ! Both argument casts are covered: a fixed-size and a descriptor actual.
+  call neg_extent(-2, -2, z)
+  call neg_extent(-2, -2, empty_2d)
+  ! A negative extent in the dummy's own declaration is likewise zero-size.
+  call neg_bounds(z)
   call empty_extent(2, empty_2d)
+  ! A bind(c) assumed-size dummy that still declares its first extent reaches
+  ! the size check; `a(*)` alone declares no extent and is not checked.
+  x = 0.0_c_float
+  call bindc_assumed_size(3, x)
+  if (abs(x(3) - 5.0_c_float) > 1.0e-5) error stop "bind(c) a(n, 1)"
+  if (abs(x(4) - 6.0_c_float) > 1.0e-5) error stop "bind(c) a(1, 2)"
   print *, "pass"
 end program
