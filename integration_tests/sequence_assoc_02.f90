@@ -8,6 +8,19 @@ contains
     if (size(a, 2) /= 2*m) error stop "size(a, 2)"
     a = 3.0
   end subroutine
+
+  subroutine empty_extent(n, a)
+    integer, intent(in) :: n
+    real, intent(inout) :: a(n, 0)
+    if (size(a) /= 0) error stop "size(a)"
+    if (size(a, 1) /= n) error stop "size(a, 1)"
+    if (size(a, 2) /= 0) error stop "size(a, 2)"
+  end subroutine
+
+  subroutine count_elements(a)
+    real, intent(in) :: a(:)
+    if (size(a) /= 0) error stop "size(a)"
+  end subroutine
 end module
 
 subroutine fill_ext(n, m, a)
@@ -22,6 +35,7 @@ program sequence_assoc_02
   implicit none
   real, allocatable :: b(:,:)
   real :: c(4, 2)
+  real, allocatable :: empty(:), empty_2d(:,:)
   integer :: i, j
   allocate(b(4, 2))
   b = 0.0
@@ -37,5 +51,12 @@ program sequence_assoc_02
   b = 0.0
   call fill_ext(2, 2, b)
   if (abs(b(4, 2) - 7.0) > 1.0e-5) error stop "external procedure actual"
+  ! A zero-size actual argument must not be rejected by the argument size
+  ! check, for an assumed-shape dummy or for an explicit-shape dummy whose
+  ! total size is also zero.
+  allocate(empty(0))
+  call count_elements(empty)
+  allocate(empty_2d(0, 0))
+  call empty_extent(2, empty_2d)
   print *, "pass"
 end program
