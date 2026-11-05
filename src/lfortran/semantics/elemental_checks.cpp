@@ -57,7 +57,9 @@ class ElementalChecks::BodyWalk : public ASR::BaseWalkVisitor<BodyWalk> {
 public:
     bool ok = true;
 
-    explicit BodyWalk(diag::Diagnostics &diag) : diag(diag) {
+    BodyWalk(const SymbolTable &scope, diag::Diagnostics &diag,
+            const CompilerOptions &compiler_options)
+        : scope(scope), diag(diag), compiler_options(compiler_options) {
         visit_compile_time_value = false;
     }
 
@@ -85,17 +87,19 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        check_call(x.m_name, x.m_args, x.n_args);
+        check_call(*x.m_name, x.m_args, x.n_args, x.base.base.loc);
         BaseWalkVisitor<BodyWalk>::visit_FunctionCall(x);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        check_call(x.m_name, x.m_args, x.n_args);
+        check_call(*x.m_name, x.m_args, x.n_args, x.base.base.loc);
         BaseWalkVisitor<BodyWalk>::visit_SubroutineCall(x);
     }
 
 private:
+    const SymbolTable &scope;
     diag::Diagnostics &diag;
+    const CompilerOptions &compiler_options;
 
     void check_component_values(ASR::call_arg_t *args, size_t n_args) {
         for (size_t i = 0; i < n_args; i++) {
@@ -103,10 +107,14 @@ private:
         }
     }
 
-    void check_call(ASR::symbol_t *name, ASR::call_arg_t *args,
-            size_t n_args) {
+    void check_call(ASR::symbol_t &name, ASR::call_arg_t *args,
+            size_t n_args, const Location &loc) {
         for (size_t i = 0; i < n_args; i++) {
             ok = not_actual_argument(args[i].m_value, diag) && ok;
+        }
+        // An interactive cell calls the procedures of earlier cells.
+        if (!compiler_options.interactive) {
+            ok = explicit_interface(name, scope, loc, diag) && ok;
         }
         const ASR::Function_t *f = elemental_procedure(name);
         if (f == nullptr) return;
@@ -124,8 +132,8 @@ private:
     }
 
     // The called procedure if it is elemental, else nullptr.
-    static const ASR::Function_t *elemental_procedure(ASR::symbol_t *name) {
-        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(name);
+    static const ASR::Function_t *elemental_procedure(ASR::symbol_t &name) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(&name);
         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
             sym = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
@@ -154,7 +162,7 @@ void ElementalChecks::check_body(const ASR::Module_t &m,
 void ElementalChecks::check_scope(const SymbolTable &scope,
         ASR::stmt_t **body, size_t n_body, diag::Diagnostics &diag,
         const CompilerOptions &compiler_options) {
-    BodyWalk walk(diag);
+    BodyWalk walk(scope, diag, compiler_options);
     for (auto &a : scope.get_scope()) {
         walk.visit_symbol(*a.second);
     }
@@ -428,6 +436,25 @@ bool ElementalChecks::not_actual_argument(ASR::expr_t *actual,
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("a nonintrinsic elemental procedure shall not be "
                 "used as an actual argument", {actual->base.loc})}));
+    return false;
+}
+
+bool ElementalChecks::explicit_interface(const ASR::symbol_t &proc,
+        const SymbolTable &scope, const Location &loc, diag::Diagnostics &diag) {
+    if (!ASR::is_a<ASR::Function_t>(proc)) return true;
+    const ASR::Function_t &f = *ASR::down_cast<ASR::Function_t>(&proc);
+    if (!ASRUtils::get_FunctionType(f)->m_elemental) return true;
+    // Only a call through an implicit interface names an external procedure.
+    if (!ASRUtils::is_tu_scope(f.m_symtab->parent)) return true;
+    for (const SymbolTable *s = &scope; s != nullptr; s = s->parent) {
+        if (s == f.m_symtab) return true;
+    }
+    diag.add(diag::Diagnostic(
+        "elemental procedure '" + std::string(f.m_name)
+        + "' needs an explicit interface",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("put '" + std::string(f.m_name) + "' in a module or "
+                "declare it in an interface block", {loc})}));
     return false;
 }
 

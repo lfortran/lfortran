@@ -88,6 +88,9 @@ private:
     // C1533
     static bool not_actual_argument(ASR::expr_t *actual,
         diag::Diagnostics &diag);
+    // 15.4.2.2
+    static bool explicit_interface(const ASR::symbol_t &proc,
+        const SymbolTable &scope, const Location &loc, diag::Diagnostics &diag);
     // 9.5.3.3.3 p3
     static bool output_no_repeated_vector_subscript(ASR::expr_t *actual,
         const ASR::Variable_t &dummy, diag::Diagnostics &diag);
