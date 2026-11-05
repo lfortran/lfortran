@@ -325,7 +325,8 @@ def oversized_message_output(exe, cwd):
     """A single output message larger than the most the kernel keeps for a
     subscriber that does not read, of which it has sent only a part, must not
     make the kernel drop the output that follows it silently: the subscriber
-    still gets the next cell's output, after the large message (#16846)."""
+    still gets the large message whole and the latest cell's output after it,
+    and a notice of the earlier output it no longer gets (#16846)."""
     with kernel(exe, cwd) as (_, join, ports):
         client = join()
         stalled = zmtp(ports["iopub_port"], b"SUB")
@@ -336,12 +337,16 @@ def oversized_message_output(exe, cwd):
             reply, _ = run(client, "character(len=:), allocatable :: huge\n"
                 "huge = repeat('x', %d)\nhuge" % size, timeout=120)
             check(reply["status"] == "ok", reply)
-            reply, _ = run(client, "print *, 'LATEST_16846'")
-            check(reply["status"] == "ok", reply)
+            for marker in ["OLDER_16846", "LATEST_16846"]:
+                reply, _ = run(client, "print *, '%s'" % marker)
+                check(reply["status"] == "ok", reply)
             # The kernel sends the rest of the large message as this reads it,
-            # and then what the next cell printed.
-            marker = b"LATEST_16846"
-            found, read, window = False, 0, b""
+            # then a notice that it dropped the older cell's output, then the
+            # latest cell's output.
+            marker, notice = b"LATEST_16846", b"output was dropped"
+            found, noticed, read = False, False, 0
+            keep = max(len(marker), len(notice)) - 1
+            window = b""
             stalled.settimeout(20)
             deadline = time.monotonic() + 120
             while time.monotonic() < deadline and read < size + 16 * 2**20:
@@ -353,12 +358,20 @@ def oversized_message_output(exe, cwd):
                     break
                 read += len(chunk)
                 data = window + chunk
-                if marker in data:
+                at = data.find(marker)
+                if at >= 0:
                     found = True
+                    noticed = noticed or data[:at].rfind(notice) >= 0
                     break
-                window = data[-(len(marker) - 1):]
+                if notice in data:
+                    noticed = True
+                window = data[-keep:]
             check(found, "the output after a message larger than 64 MiB was"
                 " dropped silently")
+            check(read >= size, "the large message was not sent whole:"
+                " %d of %d bytes" % (read, size))
+            check(noticed, "the older output after the large message was"
+                " dropped without a notice")
         except (EOFError, socket.timeout):
             raise AssertionError("the output after the large message was lost")
         finally:
