@@ -1388,6 +1388,11 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         // leaves the later cell's call with no definition to link to.
         pass_manager.skip_pass("unused_functions");
     }
+    // The LLVM backend prints arrays and derived types itself, as the
+    // compiler driver does. `print_arr` would print the elements of an array
+    // section with one format each (#16712).
+    pass_manager.skip_pass("print_arr");
+    pass_manager.skip_pass("print_struct_type");
 
     if (compiler_options.generate_code_for_global_procedures) {
         compiler_options.po.intrinsic_symbols_mangling = true;

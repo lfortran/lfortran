@@ -5112,6 +5112,40 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
         != std::string::npos);
 }
 
+TEST_CASE("FortranEvaluator execute: formatted print of an array section") {
+    // The items of an array section share one format, as in a compiled
+    // program (#16712).
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    auto check_output = [&](const std::string &code,
+            const std::string &expected) {
+        output.clear();
+        auto cell = e.execute(code, false, io);
+        CAPTURE(code);
+        REQUIRE_MESSAGE(cell.ok, cell.error_text());
+        CHECK(output == expected);
+    };
+    REQUIRE(e.execute("real(8) :: a(3, 0:4)").ok);
+    REQUIRE(e.execute("a = 1").ok);
+    check_output("print \"(3f9.3)\", a(:, 4)",
+        "    1.000    1.000    1.000\n");
+    check_output("print \"(a, 3f9.3)\", \"a:\", a(:, 4)",
+        "a:    1.000    1.000    1.000\n");
+    REQUIRE(e.execute("integer, allocatable :: v(:)").ok);
+    REQUIRE(e.execute("allocate(v(4))").ok);
+    REQUIRE(e.execute("v = [1, 2, 3, 4]").ok);
+    check_output("print \"(a, 4i2, a)\", \"v:\", v, \".\"",
+        "v: 1 2 3 4.\n");
+    check_output("print \"(a, 2i2)\", \"v:\", v(2:3)", "v: 2 3\n");
+    REQUIRE(e.execute("type :: point\n    integer :: x, y\nend type").ok);
+    REQUIRE(e.execute("type(point) :: p").ok);
+    REQUIRE(e.execute("p = point(1, 2)").ok);
+    check_output("print \"(a, 2i2)\", \"p:\", p", "p: 1 2\n");
+}
+
 TEST_CASE("FortranEvaluator execute: persistent implicit none") {
     for (int mode = 0; mode < 3; mode++) {
         for (bool implicit_typing : {false, true}) {
