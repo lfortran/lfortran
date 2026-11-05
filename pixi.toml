@@ -207,6 +207,8 @@ nbsphinx = "==0.8.9"
 myst-parser = "==0.18.0"
 sphinx-copybutton = "==0.5.0"
 sphinx-material = "==0.0.35"
+# doc/intl.py updates the translation files with sphinx-intl.
+sphinx-intl = "==2.3.2"
 
 # Dependencies to build the project to be installed for the target architecture.
 # host == target

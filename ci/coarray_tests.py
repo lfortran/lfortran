@@ -160,8 +160,6 @@ def reference_required(base, head):
         git("diff", "--quiet", head, "--")
         changed = set(git("diff", "--name-only", "--no-renames", "-z", base, head, "--").split("\0")) - {""}
         harness = changed & HARNESS_INPUTS
-        harness.update(path for path in changed if path.startswith("ci/environment") and
-                       path.endswith((".yml", ".yaml")))
         if harness:
             return True, "changed coarray harness/dependencies: " + ", ".join(sorted(harness))
         before_source = git("show", f"{base}:{MANIFEST}")

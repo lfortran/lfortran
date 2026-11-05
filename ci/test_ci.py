@@ -570,8 +570,6 @@ class WorkflowPolicyTests(unittest.TestCase):
                 for feature in environment["features"]:
                     self.assertNotIn("openmpi", packages(feature))
         self.assertIn("openmpi", packages("coarray-reference"))
-        for path in ("ci/environment.yml", "ci/environment_linux_llvm.yml"):
-            self.assertNotRegex((ROOT / path).read_text(), r"(?m)^\s*-\s*openmpi\b")
 
     def test_coarray_reference_environment_is_installed_lazily(self):
         # Only ci/test_caffeine.sh installs coarray-reference, with `pixi run`,
@@ -1449,7 +1447,6 @@ class CaffeineTests(unittest.TestCase):
         if helper.exists():
             shutil.copyfile(helper, self.directory / "ci/coarray_tests.py")
         (self.directory / "ci/test_caffeine.sh").write_text("# harness input\n")
-        (self.directory / "ci/environment_linux_llvm.yml").write_text("dependencies: []\n")
         shutil.copyfile(ROOT / "pixi.toml", self.directory / "pixi.toml")
         self.git_run("init", "-q")
         self.git_run("config", "user.email", "ci-tests@example.invalid")
@@ -1694,8 +1691,6 @@ class CaffeineTests(unittest.TestCase):
             ("integration_tests/coarrays_51_m.f90", "! support edit\n"),
             ("ci/test_caffeine.sh", "# harness edit\n"),
             ("ci/coarray_tests.py", "# selector edit\n"),
-            ("ci/environment_linux_llvm.yml", "# dependency edit\n"),
-            ("ci/environment.yml", "dependencies: []\n"),
             ("pixi.toml", "# reference toolchain edit\n"),
             (".github/workflows/Compiler-Compatibility-CI.yml", "# workflow edit\n"),
             (".github/workflows/Quick-Checks-CI.yml", "# caller edit\n"),
