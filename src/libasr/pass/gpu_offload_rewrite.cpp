@@ -79,6 +79,10 @@ void gpu_struct_member_data_arguments(Allocator &al, const Location &loc,
         const std::function<ASR::symbol_t*(ASR::Struct_t*)>
             &element_declaration,
         Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args) {
+    // No kernel argument reaching here hands over a deferred-length string
+    // component: gpu_entity_decline (gpu_offload.cpp) declines those loops
+    // first, at every site that makes a kernel argument of a host entity.
+    LCOMPILERS_ASSERT(!gpu_struct_hands_over_deferred_length_string(st));
     for (auto &component : gpu_decomposed_components(st)) {
         std::string data_name = GpuNames::member_data(name, component.name());
         ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(

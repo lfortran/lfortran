@@ -687,32 +687,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
 
         Vec<ASR::stmt_t*> fold_body;
         fold_body.reserve(al, 1);
-        if (gpu_reduction_folds_by_compare(r.op)) {
-            // MIN and MAX keep whichever of the two they are named for.
-            ASR::expr_t *keep = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(
-                al, loc,
-                r.op == ASR::reduction_opType::ReduceMIN
-                    ? ASR::cmpopType::Lt : ASR::cmpopType::Gt,
-                slot, scalar_var,
-                ASRUtils::duplicate_type(al, r.scalar_type)));
-            Vec<ASR::stmt_t*> keep_body;
-            keep_body.reserve(al, 1);
-            keep_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, scalar_var, slot,
-                    nullptr, false, false, false, false)));
-            Vec<ASR::stmt_t*> keep_else;
-            keep_else.reserve(al, 0);
-            fold_body.push_back(al, ASRUtils::STMT(
-                ASR::make_If_t(al, loc, nullptr, keep,
-                    keep_body.p, keep_body.n, keep_else.p, keep_else.n)));
-        } else {
-            fold_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, scalar_var,
-                    ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc,
-                        gpu_reduction_fold_binop(r.op), scalar_var, slot,
-                        ASRUtils::duplicate_type(al, r.scalar_type))),
-                    nullptr, false, false, false, false)));
-        }
+        fold_body.push_back(al, gpu_reduction_combine(al, loc, r.op,
+            scalar_var, slot, r.scalar_type));
 
         ASR::do_loop_head_t head;
         head.loc = loc;

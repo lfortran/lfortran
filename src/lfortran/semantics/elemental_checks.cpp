@@ -23,6 +23,7 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
             ok = dummy_not_pointer(v, proc_name, diag) && ok;
             ok = dummy_not_coarray(v, proc_name, diag) && ok;
             ok = no_alternate_return(v, proc_name, diag) && ok;
+            ok = dummy_intent_given(v, proc_name, diag) && ok;
         } else if (ASR::is_a<ASR::Function_t>(*sym)) {
             ok = dummy_not_procedure(*sym, proc_name, diag) && ok;
         } else {
@@ -114,6 +115,22 @@ bool ElementalChecks::no_alternate_return(const ASR::Variable_t &v,
     diag.add(diag::Diagnostic(
         "elemental procedure '" + proc_name +
         "' cannot have an alternate return dummy argument '*'",
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {v.base.base.loc})}));
+    return false;
+}
+
+bool ElementalChecks::dummy_intent_given(const ASR::Variable_t &v,
+        const std::string &proc_name, diag::Diagnostics &diag) {
+    if (v.m_intent != ASR::intentType::Unspecified || v.m_value_attr
+            || ASR::is_a<ASR::FunctionType_t>(
+                *ASRUtils::type_get_past_pointer(v.m_type))) {
+        return true;
+    }
+    diag.add(diag::Diagnostic(
+        "dummy argument '" + std::string(v.m_name) +
+        "' of elemental procedure '" + proc_name +
+        "' must have an explicit intent or the value attribute",
         diag::Level::Error, diag::Stage::Semantic, {
             diag::Label("", {v.base.base.loc})}));
     return false;

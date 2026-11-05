@@ -170,6 +170,12 @@ bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym);
 // ones included) is of a type for which this holds.
 bool struct_needs_finalization(ASR::symbol_t* struct_sym);
 
+// Whether the derived type `struct_type`, or a type it extends, has a
+// character member (directly or inside a nested nonpointer component). Such
+// a member's storage is set up at run time when the type is a parameter, so
+// the scope that declares the parameter owns that storage.
+bool struct_has_character_member(ASR::Struct_t* struct_type);
+
 // Whether a function result of type `type`, declared by `struct_sym`, is one
 // that F2018 7.5.6.3 p5 finalizes after the statement that references the
 // function: a nonpointer, nonallocatable, nonpolymorphic scalar of a derived

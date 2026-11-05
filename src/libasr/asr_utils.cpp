@@ -3401,6 +3401,42 @@ bool struct_needs_finalization(ASR::symbol_t* struct_sym) {
         visited);
 }
 
+bool struct_has_character_member(ASR::Struct_t* struct_type) {
+    std::set<ASR::Struct_t*> seen;
+    while (struct_type != nullptr) {
+        if (!seen.insert(struct_type).second) {
+            return false;
+        }
+        for (size_t i = 0; i < struct_type->n_members; i++) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                struct_type->m_symtab->get_symbol(struct_type->m_members[i]));
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::ttype_t* member_type = ASRUtils::symbol_type(sym);
+            if (ASRUtils::is_character(*member_type)) {
+                return true;
+            }
+            ASR::ttype_t* member_base_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(member_type));
+            if (ASR::is_a<ASR::StructType_t>(*member_base_type)
+                    && var->m_type_declaration != nullptr) {
+                ASR::Struct_t* nested = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(var->m_type_declaration));
+                if (struct_has_character_member(nested)) {
+                    return true;
+                }
+            }
+        }
+        struct_type = struct_type->m_parent
+            ? ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_type->m_parent))
+            : nullptr;
+    }
+    return false;
+}
+
 bool is_finalizable_function_result(ASR::ttype_t* type,
         ASR::symbol_t* struct_sym) {
     if (type == nullptr || ASRUtils::is_array(type) ||
