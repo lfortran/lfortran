@@ -105,8 +105,45 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
             ASRUtils::struct_base_lending_shape(x) == nullptr ) {
             return ;
         }
-        ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_StructInstanceMember(
-            ASR::down_cast<ASR::StructInstanceMember_t>(x->m_v));
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(x->m_v);
+        ASR::expr_t** slot = &member->m_v;
+        ASR::expr_t* node = member->m_v;
+        // The subscripts consumed the rank of every component they index,
+        // so the shape comes from the array below them, not from the
+        // component expression itself: `a%x(2)` is shaped like `a`, not
+        // like the rank-two `a%x`, and `a%x(2)%u(2)` likewise. Descend
+        // past an array component selected out of an array base, and past
+        // an element selection that lends the shape of its own base,
+        // until reaching the expression the loops should index.
+        while( true ) {
+            if( ASR::is_a<ASR::Var_t>(*node) ) {
+                break;
+            }
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*node) ) {
+                ASR::StructInstanceMember_t* sim =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(node);
+                if( ASRUtils::is_array(ASRUtils::symbol_type(sim->m_m)) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(sim->m_v)) ) {
+                    slot = &sim->m_v;
+                    node = sim->m_v;
+                    continue;
+                }
+                break;
+            }
+            if( ASR::is_a<ASR::ArrayItem_t>(*node) ) {
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(node);
+                if( ASRUtils::is_array(item->m_type) &&
+                    ASRUtils::struct_base_lending_shape(item) != nullptr ) {
+                    slot = &item->m_v;
+                    node = item->m_v;
+                    continue;
+                }
+            }
+            break;
+        }
+        current_expr = slot;
+        BaseExprReplacer<ArrayVarAddressReplacer>::replace_expr(node);
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {

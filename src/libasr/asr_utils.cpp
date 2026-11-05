@@ -13739,6 +13739,20 @@ ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
         }
         root = section->m_v;
     }
+    if( ASR::is_a<ASR::ArrayItem_t>(*root) ) {
+        // The chain bottoms out in an element selection of its own, as in
+        // `a%x(2)%u(2)`: `a%x(2)` reads one element of the component `x`
+        // out of every element of `a`, and the subscripts of the whole
+        // reference then select out of that array. The reference carries
+        // the shape only if that inner selection itself lends the shape
+        // of its base.
+        ASR::ArrayItem_t* root_item = ASR::down_cast<ASR::ArrayItem_t>(root);
+        if( !ASRUtils::is_array(root_item->m_type) ||
+            struct_base_lending_shape(root_item) == nullptr ) {
+            return nullptr;
+        }
+        return base;
+    }
     if( !ASR::is_a<ASR::Var_t>(*root) &&
         !ASR::is_a<ASR::StructInstanceMember_t>(*root) ) {
         return nullptr;
