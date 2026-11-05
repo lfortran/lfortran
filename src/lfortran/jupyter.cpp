@@ -550,17 +550,18 @@ public:
         // does at its high-water mark: a subscriber that reads too slowly,
         // such as a prompt at a slow terminal or waiting for redirected
         // input, then still gets the latest output, of its own next cell too.
-        // A message larger than 64 MiB is sent whole; its part not yet sent
-        // cannot be dropped, as the peer needs it to read a whole message, so
-        // the output after it is kept beyond the limit until it drains.
+        // A message larger than 64 MiB is sent whole: it cannot be cut short.
+        // While it is still being sent, the latest message published after it
+        // is the one kept, and publishing another replaces it with a notice.
         droppable
     };
 
     // Makes room for a droppable message, if more than the most droppable
     // output waits, by dropping the oldest. Returns the bytes dropped; a
-    // notice of them, given with notify(), then takes their place. The first
-    // message may be partly sent, so it is kept even when it alone is larger
-    // than the limit, and the output after it is kept as well.
+    // notice of them, given with notify(), then takes their place. A first
+    // message that is partly sent is kept even when it alone is larger than
+    // the limit; while it is, every droppable message after it is dropped, so
+    // only the latest output published then waits behind it.
     size_t make_room()
     {
         if (blocking || closed || queued <= droppable_limit) return 0;
