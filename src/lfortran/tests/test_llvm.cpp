@@ -6377,8 +6377,13 @@ std::vector<double> constant_factors(llvm::BasicBlock &bb) {
     for (llvm::Instruction &i: bb) {
         if (i.getOpcode() != llvm::Instruction::FMul) continue;
         for (llvm::Value *op: i.operands()) {
-            if (llvm::ConstantFP *c = llvm::dyn_cast<llvm::ConstantFP>(op)) {
-                factors.push_back(c->getValueAPF().convertToFloat());
+            llvm::Constant *c = llvm::dyn_cast<llvm::Constant>(op);
+            if (!c) continue;
+            if (c->getType()->isVectorTy()) c = c->getSplatValue();
+            if (llvm::ConstantFP *fp = llvm::dyn_cast_or_null<llvm::ConstantFP>(c)) {
+                factors.push_back(fp->getType()->isFloatTy()
+                    ? fp->getValueAPF().convertToFloat()
+                    : fp->getValueAPF().convertToDouble());
             }
         }
     }
@@ -6439,6 +6444,92 @@ TEST_CASE("LLVM reciprocal square roots with Newton steps in IR") {
         for (int i = 1; i <= 1000; i++) expected += std::pow(i, -1.5);
         float sum = e.execfn<float>("rsqrt_sum", 1000);
         CHECK(std::abs(sum - expected) < 1e-5 * expected);
+    }
+}
+
+namespace {
+
+// sum(1/sqrt(i)**3) in double precision, vectorized 8 lanes, with the
+// AVX-512 features the reciprocal square root estimate needs.
+const std::string rsqrt_sum_dp_ir = R"""(
+define <8 x double> @rsqrt_sum_dp(i32 %n) #0 {
+entry:
+  br label %loop
+
+loop:
+  %i = phi i32 [ 1, %entry ], [ %i.next, %loop ]
+  %acc = phi <8 x double> [ zeroinitializer, %entry ], [ %acc.next, %loop ]
+  %x = sitofp i32 %i to double
+  %v0 = insertelement <8 x double> undef, double %x, i64 0
+  %v = shufflevector <8 x double> %v0, <8 x double> undef, <8 x i32> zeroinitializer
+  %s = call fast <8 x double> @llvm.sqrt.v8f64(<8 x double> %v)
+  %r = fdiv fast <8 x double> <double 1.0, double 1.0, double 1.0, double 1.0, double 1.0, double 1.0, double 1.0, double 1.0>, %s
+  %r2 = fmul fast <8 x double> %r, %r
+  %r3 = fmul fast <8 x double> %r2, %r
+  %acc.next = fadd fast <8 x double> %acc, %r3
+  %i.next = add i32 %i, 1
+  %done = icmp sgt i32 %i.next, %n
+  br i1 %done, label %exit, label %loop
+
+exit:
+  ret <8 x double> %acc.next
+}
+
+declare <8 x double> @llvm.sqrt.v8f64(<8 x double>)
+attributes #0 = { "target-features"="+avx512f,+avx512vl" }
+)""";
+
+bool has_factor(llvm::BasicBlock &bb, double factor) {
+    for (double f: constant_factors(bb)) {
+        if (f == factor) return true;
+    }
+    return false;
+}
+
+bool calls_intrinsic(llvm::Function &f, const std::string &name) {
+    for (llvm::BasicBlock &bb: f) {
+        for (llvm::Instruction &i: bb) {
+            llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(&i);
+            if (call && call->getCalledFunction()
+                    && call->getCalledFunction()->getName() == name) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+} // namespace
+
+TEST_CASE("LLVM double precision reciprocal square roots with Newton steps in IR") {
+    // x86 with AVX-512: two Newton steps, 1/sqrt(x) = z/4, so the sum of the
+    // cubes is multiplied by (1/4)**3 once, after the loop.
+    {
+        LCompilers::LLVMEvaluator e;
+        std::unique_ptr<llvm::Module> m = e.parse_module(rsqrt_sum_dp_ir, "");
+        llvm::Function &f = *m->getFunction("rsqrt_sum_dp");
+        CHECK(LCompilers::expand_reciprocal_sqrt(f,
+            llvm::Triple("x86_64-unknown-linux-gnu")));
+        CHECK(!f.hasFnAttribute("reciprocal-estimates"));
+        CHECK(calls_intrinsic(f, "llvm.x86.avx512.rsqrt14.pd.512"));
+        CHECK(!has_factor(*block_named(f, "loop"), 0.015625));
+        CHECK(has_factor(*block_named(f, "exit"), 0.015625));
+        std::string err;
+        llvm::raw_string_ostream os(err);
+        CHECK(!llvm::verifyFunction(f, &os));
+    }
+    // Without the AVX-512 features the estimate is not available, so the
+    // function is left as it is.
+    {
+        LCompilers::LLVMEvaluator e;
+        std::string ir = rsqrt_sum_dp_ir;
+        ir.replace(ir.find("+avx512f,+avx512vl"),
+            std::string("+avx512f,+avx512vl").size(), "+avx2");
+        std::unique_ptr<llvm::Module> m = e.parse_module(ir, "");
+        llvm::Function &f = *m->getFunction("rsqrt_sum_dp");
+        CHECK(!LCompilers::expand_reciprocal_sqrt(f,
+            llvm::Triple("x86_64-unknown-linux-gnu")));
+        CHECK(!calls_intrinsic(f, "llvm.x86.avx512.rsqrt14.pd.512"));
     }
 }
 
