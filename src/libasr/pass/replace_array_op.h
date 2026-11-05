@@ -14,6 +14,11 @@ namespace LCompilers {
     void pass_allocate_on_assignment(Allocator &al, ASR::TranslationUnit_t &unit,
                                      const PassOptions &pass_options);
 
+    // Check at run time the actual arguments of every reference to an
+    // elemental procedure, with array bounds checking.
+    void pass_elemental_runtime_checks(Allocator &al, ASR::TranslationUnit_t &unit,
+                                       const PassOptions &pass_options);
+
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_REPLACE_ARRAY_OP_H

@@ -989,6 +989,23 @@ namespace LCompilers {
                 move_allocation));
         }
 
+        ASR::stmt_t* make_DebugCheckOperandShapes(Allocator &al, const Location &loc,
+                Vec<ASR::expr_t*>& operands) {
+            LCOMPILERS_ASSERT(operands.size() > 1);
+            Vec<ASR::array_extent_check_t> checks;
+            checks.reserve(al, operands.size());
+            for (size_t i = 0; i + 1 < operands.size(); i++) {
+                add_extent_checks(al, checks, i + 1, operands[i], i + 2, operands[i + 1]);
+            }
+            if (checks.size() == 0) {
+                return nullptr;
+            }
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            return ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, loc,
+                duplicator.duplicate_expr(operands[0]), operands.p, operands.size(),
+                checks.p, checks.size(), false));
+        }
+
         ASR::expr_t* make_shape_differs(Allocator &al, const Location &loc,
                 const ASR::alloc_arg_t& alloc_arg, ASR::ttype_t* idx_type) {
             ASRUtils::ASRBuilder b(al, loc);

@@ -450,6 +450,12 @@ namespace LCompilers {
         ASR::stmt_t* make_DebugCheckArrayBounds(Allocator &al, const Location &loc,
             ASR::expr_t* target, Vec<ASR::expr_t*>& components, bool move_allocation);
 
+        // The run-time check that `operands`, arrays of one rank, have the
+        // same shape, which it takes; nullptr when that is known at compile
+        // time. They are the operands of the check, its target is the first.
+        ASR::stmt_t* make_DebugCheckOperandShapes(Allocator &al, const Location &loc,
+            Vec<ASR::expr_t*>& operands);
+
         // Whether the allocated object of `alloc_arg` has a shape other than
         // the one `alloc_arg` gives it (F2018 10.2.1.3), also when both have
         // the same number of elements, e.g. `a = transpose(a)`, as the
