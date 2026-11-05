@@ -668,6 +668,24 @@ namespace LCompilers {
             }
         }
 
+        // The LLVM backend prints arrays and derived types itself, so it
+        // skips the passes that lower these prints into per-item prints. A
+        // pass that --pass names still runs (see parse_pass_arg).
+        void skip_llvm_backend_passes() {
+            for (const std::string pass: {"print_arr", "print_struct_type"}) {
+                if (std::find(passes_to_skip_with_llvm.begin(),
+                        passes_to_skip_with_llvm.end(), pass)
+                        == passes_to_skip_with_llvm.end()) {
+                    passes_to_skip_with_llvm.push_back(pass);
+                }
+                if (std::find(_user_defined_passes.begin(),
+                        _user_defined_passes.end(), pass)
+                        == _user_defined_passes.end()) {
+                    skip_pass(pass);
+                }
+            }
+        }
+
         bool has_user_defined_passes() const {
             return !_user_defined_passes.empty();
         }

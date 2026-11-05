@@ -480,6 +480,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::stri
     LocationManager lm;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
+    // As the compiler driver does for the LLVM backend; `print_arr` would
+    // print the elements of an array section with one format each (#16712).
+    lpm.skip_llvm_backend_passes();
     if (!compiler_options.interactive) {
         LocationManager::FileLocations fl;
         fl.in_filename = "input";
@@ -881,6 +884,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     diag::Diagnostics diagnostics;
     PassManager passes;
     passes.use_default_passes();
+    passes.skip_llvm_backend_passes();
     auto execute_cell = [&]() {
         try {
             const auto newline = code.find('\n');
