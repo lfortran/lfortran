@@ -22464,8 +22464,8 @@ public:
             emit_set_transfer_decimal_mode(emit_decimal_mode_from_specifier(x.m_decimal));
         }
 
-        llvm::Value *iomsg_data = nullptr;
-        llvm::Value *iomsg_len = nullptr;
+        llvm::Value *iomsg_data = llvm::Constant::getNullValue(character_type);
+        llvm::Value *iomsg_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
         if (x.m_iomsg) {
             std::tie(iomsg_data, iomsg_len) = get_string_data_and_length(x.m_iomsg);
         }
@@ -22519,9 +22519,12 @@ public:
                     llvm_utils->void_type, {
                         llvm_utils->i32,                // unit
                         llvm_utils->i64,                // pos
-                        llvm_utils->i32->getPointerTo() // iostat
+                        llvm_utils->i32->getPointerTo(),// iostat
+                        character_type,                 // iomsg
+                        llvm_utils->i64                 // iomsg length
                     });
-            builder->CreateCall(fn, {unit_val, pos_val, iostat});
+            builder->CreateCall(fn, {unit_val, pos_val, iostat,
+                iomsg_data, iomsg_len});
             pos_error_join = enter_pos_error_guard(iostat);
         }
 
@@ -23040,6 +23043,7 @@ public:
             }
             }
         }
+        emit_set_read_iomsg();
         leave_pos_error_guard(pos_error_join);
         // Copy temporary i32 iostat back to user's variable if needed
         if (iostat_user && iostat_kind != 4) {
@@ -23048,7 +23052,6 @@ public:
                 llvm::Type::getIntNTy(context, iostat_kind * 8), true);
             builder->CreateStore(extended, iostat_user);
         }
-        emit_set_read_iomsg();
         if (x.m_decimal) {
             emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true)));
@@ -25091,14 +25094,22 @@ public:
             llvm::Value* pos_val = tmp;
             pos_val = builder->CreateIntCast(pos_val, llvm::Type::getInt64Ty(context), true);
 
+            llvm::Value* iomsg = llvm::Constant::getNullValue(character_type);
+            llvm::Value* iomsg_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+            if (x.m_iomsg) {
+                std::tie(iomsg, iomsg_len) = get_string_data_and_length(x.m_iomsg);
+            }
+
             std::string runtime_func_name = "_lfortran_file_seek";
             llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                     llvm_utils->void_type, {
                         llvm_utils->i32,
                         llvm_utils->i64,
-                        llvm_utils->i32->getPointerTo()
+                        llvm_utils->i32->getPointerTo(),
+                        character_type,
+                        llvm_utils->i64
                     });
-            builder->CreateCall(fn, {unit, pos_val, iostat});
+            builder->CreateCall(fn, {unit, pos_val, iostat, iomsg, iomsg_len});
             pos_error_guard = enter_pos_error_guard(iostat);
         }
 

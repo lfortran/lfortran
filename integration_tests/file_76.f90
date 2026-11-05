@@ -6,6 +6,7 @@ program file_76
     ! must not move the unit (#16828).
     integer :: u, ios, pos_before, pos_after, value
     character(8) :: s
+    character(len=128) :: wmsg, rmsg
 
     open(newunit=u, file='file_76.txt', status='replace', &
          access='sequential', form='formatted')
@@ -14,8 +15,12 @@ program file_76
 
     ! WRITE with POS= on a sequential unit fails and leaves the file alone.
     inquire(unit=u, pos=pos_before)
-    write(u, '(a)', pos=1, iostat=ios) 'qqqq'
+    wmsg = ''
+    write(u, '(a)', pos=1, iostat=ios, iomsg=wmsg) 'qqqq'
     if (ios == 0) error stop 'WRITE with POS= on a sequential unit was accepted'
+    if (len_trim(wmsg) == 0) then
+        error stop 'WRITE with POS= did not describe the error in IOMSG='
+    end if
     inquire(unit=u, pos=pos_after)
     if (pos_after /= pos_before) then
         error stop 'failed WRITE with POS= moved the unit'
@@ -31,8 +36,12 @@ program file_76
     ! READ with POS= on a sequential unit fails without transferring data.
     inquire(unit=u, pos=pos_before)
     s = 'sentinel'
-    read(u, '(a)', pos=1, iostat=ios) s
+    rmsg = ''
+    read(u, '(a)', pos=1, iostat=ios, iomsg=rmsg) s
     if (ios == 0) error stop 'READ with POS= on a sequential unit was accepted'
+    if (len_trim(rmsg) == 0) then
+        error stop 'READ with POS= did not describe the error in IOMSG='
+    end if
     inquire(unit=u, pos=pos_after)
     if (pos_after /= pos_before) then
         error stop 'failed READ with POS= moved the unit'

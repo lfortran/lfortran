@@ -19,7 +19,7 @@ extern int64_t _lfortran_open(int32_t unit_num,
     char* round, int64_t round_len,
     char* pad, int64_t pad_len,
     char* convert, int64_t convert_len);
-extern void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
+extern void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat, char* iomsg, int64_t iomsg_len);
 extern void _lfortran_close(int32_t unit_num, char* status, int64_t status_len,
     int32_t* iostat);
 
@@ -40,7 +40,7 @@ int main(void) {
 
     iostat = -1;
     // POS= is 1-based, so this seeks to byte offset 3000000000.
-    _lfortran_file_seek(unit, INT64_C(3000000001), &iostat);
+    _lfortran_file_seek(unit, INT64_C(3000000001), &iostat, NULL, 0);
     if (iostat != 0) {
         fprintf(stderr, "seek past 2**31 failed: iostat=%d\n", (int)iostat);
         _lfortran_close(unit, NULL, 0, NULL);

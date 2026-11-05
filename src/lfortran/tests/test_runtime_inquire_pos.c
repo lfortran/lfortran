@@ -100,9 +100,15 @@ int main(void) {
     fputs("aaaa\nbbbb\n", fp);
     check(iostat == 0 && inquire_pos() == 8, "records before failed POS=");
     long pos_before = ftell(fp);
-    _lfortran_file_seek(unit, 1, &iostat);
+    char iomsg[128];
+    const char *seek_msg =
+        "POS= is allowed only for a unit connected for stream access";
+    memset(iomsg, ' ', sizeof(iomsg));
+    _lfortran_file_seek(unit, 1, &iostat, iomsg, (int64_t)sizeof(iomsg));
     check(iostat == 5002, "POS= on a sequential unit must fail");
     check(ftell(fp) == pos_before, "failed POS= must not move the unit");
+    check(strncmp(iomsg, seek_msg, strlen(seek_msg)) == 0,
+        "failed POS= must describe the error through IOMSG=");
 
     _lfortran_close(unit, "delete", 6, &iostat);
     check(iostat == 0, "close");
