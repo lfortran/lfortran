@@ -4397,3 +4397,17 @@ contains
         inquire(unit=10, pos=pos_array)  ! {Error} pos in inquire must be a scalar integer variable
     end subroutine
 end module cc1_inquire_size_pos
+
+module cc1_inquire_nondefinable
+    integer, parameter :: cc1_inquire_fixed = 1
+contains
+    subroutine cc1_inquire_nondefinable_sub(input)
+        integer, intent(in) :: input
+        inquire(unit=10, size=input)  ! {Error} size in inquire must be a scalar integer variable
+        inquire(unit=10, pos=input)  ! {Error} pos in inquire must be a scalar integer variable
+    end subroutine
+
+    subroutine cc1_inquire_param_sub()
+        inquire(unit=10, size=cc1_inquire_fixed)  ! {Error} size in inquire must be a scalar integer variable
+    end subroutine
+end module cc1_inquire_nondefinable
