@@ -4411,3 +4411,84 @@ contains
         inquire(unit=10, size=cc1_inquire_fixed)  ! {Error} size in inquire must be a scalar integer variable
     end subroutine
 end module cc1_inquire_nondefinable
+
+module cc_elem_calls_m
+    implicit none
+    abstract interface
+        integer function cc_elem_calls_iface(x)
+            integer, intent(in) :: x
+        end function
+        real function cc_elem_calls_riface(x)
+            real, intent(in) :: x
+        end function
+    end interface
+    type :: cc_elem_calls_t
+        integer :: k = 0
+    contains
+        procedure, nopass :: get => cc_elem_calls_call_f
+    end type
+    interface assignment(=)
+        module procedure cc_elem_calls_copy
+    end interface
+contains
+    elemental integer function cc_elem_calls_ef(x)
+        integer, intent(in) :: x
+        cc_elem_calls_ef = x + 1
+    end function
+
+    elemental subroutine cc_elem_calls_es(x)
+        integer, intent(inout) :: x
+        x = x + 1
+    end subroutine
+
+    elemental subroutine cc_elem_calls_copy(to, from)
+        type(cc_elem_calls_t), intent(out) :: to
+        type(cc_elem_calls_t), intent(in) :: from
+        to%k = from%k
+    end subroutine
+
+    integer function cc_elem_calls_call_f(f)
+        procedure(cc_elem_calls_iface) :: f
+        cc_elem_calls_call_f = f(1)
+    end function
+
+    real function cc_elem_calls_call_r(f)
+        procedure(cc_elem_calls_riface) :: f
+        cc_elem_calls_call_r = f(0.0)
+    end function
+
+    subroutine cc_elem_calls_call_s(s)
+        interface
+            subroutine s(x)
+                integer, intent(inout) :: x
+            end subroutine
+        end interface
+        integer :: i
+        i = 1
+        call s(i)
+    end subroutine
+
+    integer function cc_elem_calls_apply(h, x)
+        interface
+            elemental integer function h(x)
+                integer, intent(in) :: x
+            end function
+        end interface
+        integer, intent(in) :: x
+        cc_elem_calls_apply = h(x)
+    end function
+
+    subroutine cc_elem_calls_use()
+        intrinsic :: sin
+        type(cc_elem_calls_t) :: o, a(2), c(3)
+        integer :: b(3)
+        b = [1, 2, 3]
+        print *, cc_elem_calls_call_r(sin)
+        print *, cc_elem_calls_call_f(cc_elem_calls_ef)
+        print *, o%get(cc_elem_calls_ef)
+        call cc_elem_calls_call_s(cc_elem_calls_es)
+        call cc_elem_calls_es(b([3, 1]))
+        call cc_elem_calls_es(b([1, 1]))
+        c([2, 2]) = a
+    end subroutine
+end module
