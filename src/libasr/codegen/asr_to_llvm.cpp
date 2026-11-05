@@ -28732,13 +28732,6 @@ public:
                                 llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)));
                     }
 
-                    // Throw error if shapes don't match
-                    ASR::dimension_t* m_dims = nullptr;
-                    int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims));
-                    llvm::Value* desc_rank = arr_descr->get_rank(arr_type, arg);
-                    llvm::Value* pointer_rank = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims));
-                    llvm::Function *fn = builder->GetInsertBlock()->getParent();
-
                     // Sequence association (F2023 15.5.2.12): an actual
                     // argument associated with an explicit-shape or assumed-size
                     // dummy is associated by element sequence, so only the
@@ -28748,6 +28741,12 @@ public:
                     // for strict bounds checking and for the assignment target
                     // of a converted function call.
                     if (compiler_options.po.strict_bounds_checking || is_return_value) {
+                        ASR::dimension_t* m_dims = nullptr;
+                        int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims));
+                        llvm::Value* desc_rank = arr_descr->get_rank(arr_type, arg);
+                        llvm::Value* pointer_rank = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims));
+                        llvm::Function *fn = builder->GetInsertBlock()->getParent();
+
                         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
                         llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
                         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
