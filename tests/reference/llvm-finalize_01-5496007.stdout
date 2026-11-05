@@ -222,6 +222,7 @@ Finalize_Variable_str:                            ; preds = %Finalize_Variable_a
 define internal void @finalize_01.internal_sub() {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
+  %arr_in_block = alloca %array.1*, align 8
   %arr_desc1 = alloca %array.1, align 8
   %str = alloca %string_descriptor, align 8
   %arr_desc = alloca %array.2, align 8
@@ -253,7 +254,6 @@ define internal void @finalize_01.internal_sub() {
 
 bl.start:                                         ; preds = %.entry
   %13 = call i8* @llvm.stacksave()
-  %arr_in_block = alloca %array.1*, align 8
   store %array.1* null, %array.1** %arr_in_block, align 8
   %14 = getelementptr %array.1, %array.1* %arr_desc1, i32 0, i32 8
   %15 = getelementptr [1 x %dimension_descriptor], [1 x %dimension_descriptor]* %14, i32 0, i32 0
@@ -295,7 +295,6 @@ FINALIZE_SYMTABLE_bl2:                            ; preds = %bl.end
 Finalize_Variable_arr_in_block3:                  ; preds = %FINALIZE_SYMTABLE_bl2
   %23 = load %array.1*, %array.1** %arr_in_block, align 8
   call void @finalize_allocatable__Array_1_i32(%array.1* %23)
-  call void @llvm.stackrestore(i8* %13)
   br label %loop.head
 
 loop.head:                                        ; preds = %unreachable_after_return4, %Finalize_Variable_arr_in_block3

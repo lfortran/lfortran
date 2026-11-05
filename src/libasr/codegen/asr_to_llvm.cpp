@@ -734,6 +734,10 @@ public:
         size_t end_index;
         // An ASSOCIATE construct has no character data to write back.
         bool writes_back_chars;
+        // Whether the stack pointer must be restored on exit. Fixed-size
+        // block allocas are moved to the function entry, so most blocks do
+        // not need it; keeping it out of loops lets the vectorizer see them.
+        bool restore_stack = true;
     };
     std::vector<BlockCleanup> block_cleanups; /* Enclosing BLOCK and ASSOCIATE
         constructs, innermost last, whose cleanup is emitted by an EXIT, CYCLE,
@@ -16840,6 +16844,50 @@ public:
         visit_ArrayPhysicalCastUtil(tmp, x.m_arg, x.m_type, m_type_for_dims, x.m_old, x.m_new);
     }
 
+    // The allocas currently in the function.
+    std::set<llvm::AllocaInst*> snapshot_allocas() {
+        std::set<llvm::AllocaInst*> allocas;
+        llvm::Function *f = builder->GetInsertBlock()->getParent();
+        for (llvm::BasicBlock &bb: *f) {
+            for (llvm::Instruction &i: bb) {
+                if (llvm::AllocaInst *ai =
+                        llvm::dyn_cast<llvm::AllocaInst>(&i)) {
+                    allocas.insert(ai);
+                }
+            }
+        }
+        return allocas;
+    }
+
+    // Move the fixed-size allocas created since `before` to the function
+    // entry. The stack pointer save and restore of a BLOCK are then
+    // unnecessary, and keeping them out of loops lets the vectorizer see
+    // the loop body. Returns whether a dynamically sized alloca remains,
+    // which still needs the save and restore.
+    bool hoist_allocas(const std::set<llvm::AllocaInst*> &before) {
+        bool dynamic = false;
+        llvm::Function *f = builder->GetInsertBlock()->getParent();
+        std::vector<llvm::AllocaInst*> created;
+        for (llvm::BasicBlock &bb: *f) {
+            for (llvm::Instruction &i: bb) {
+                llvm::AllocaInst *ai = llvm::dyn_cast<llvm::AllocaInst>(&i);
+                if (ai && !before.count(ai)) {
+                    created.push_back(ai);
+                }
+            }
+        }
+        llvm::BasicBlock &entry = f->getEntryBlock();
+        llvm::Instruction *insert = &*entry.getFirstInsertionPt();
+        for (llvm::AllocaInst *ai: created) {
+            if (llvm::isa<llvm::ConstantInt>(ai->getArraySize())) {
+                ai->moveBefore(insert);
+            } else {
+                dynamic = true;
+            }
+        }
+        return dynamic;
+    }
+
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t& x) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::AssociateBlock_t>(*x.m_m));
         ASR::AssociateBlock_t* associate_block = ASR::down_cast<ASR::AssociateBlock_t>(x.m_m);
@@ -16860,6 +16908,7 @@ public:
         llvm::Value *saved_stack = builder->CreateCall(stacksave_fn);
 #endif
 
+        std::set<llvm::AllocaInst*> allocas_before = snapshot_allocas();
         size_t heap_arrays_before = heap_fixed_size_arrays.n;
         in_block_context = true;
         declare_vars(*associate_block);
@@ -16934,10 +16983,16 @@ public:
 
         llvm::BasicBlock* end_BB = llvm::BasicBlock::Create(context, std::string(associate_block->m_name) + "_end");
         start_new_block(end_BB);
+        if (!hoist_allocas(allocas_before)) {
+            block_cleanups.back().restore_stack = false;
+        }
         // Finalize, free associate-block-local heap arrays and restore the
         // stack pointer to reclaim block-scoped alloca space.
         emit_block_cleanup(block_cleanups.back(), heap_fixed_size_arrays.n,
             pending_char_writebacks.size());
+        if (!block_cleanups.back().restore_stack && saved_stack->use_empty()) {
+            llvm::cast<llvm::Instruction>(saved_stack)->eraseFromParent();
+        }
         heap_fixed_size_arrays.n = heap_arrays_before;
         block_cleanups.pop_back();
     }
@@ -16987,6 +17042,7 @@ public:
 
         // BLOCK arrays always use heap allocation (can be in loops)
         // Track allocations separately for cleanup at BLOCK exit
+        std::set<llvm::AllocaInst*> allocas_before = snapshot_allocas();
         size_t heap_arrays_before = heap_fixed_size_arrays.n;
         size_t wb_before = pending_char_writebacks.size();
         in_block_context = true;
@@ -17007,8 +17063,14 @@ public:
         enclosing_constructs.pop_back();
 
         start_new_block(blockend);
+        if (!hoist_allocas(allocas_before)) {
+            block_cleanups.back().restore_stack = false;
+        }
         emit_block_cleanup(block_cleanups.back(), heap_fixed_size_arrays.n,
             pending_char_writebacks.size());
+        if (!block_cleanups.back().restore_stack && saved_stack->use_empty()) {
+            llvm::cast<llvm::Instruction>(saved_stack)->eraseFromParent();
+        }
         heap_fixed_size_arrays.n = heap_arrays_before;
         pending_char_writebacks.resize(wb_before);
 
@@ -17041,14 +17103,17 @@ public:
             llvm_utils->lfortran_free(heap_fixed_size_arrays[i]);
         }
 
-        // Restore stack pointer to reclaim block-scoped alloca space
+        // Restore stack pointer to reclaim block-scoped alloca space,
+        // unless the fixed-size allocas were moved to the function entry.
+        if (b.restore_stack) {
 #if LLVM_VERSION_MAJOR >= 18
-        builder->CreateStackRestore(b.saved_stack);
+            builder->CreateStackRestore(b.saved_stack);
 #else
-        llvm::Function *stackrestore_fn = llvm::Intrinsic::getDeclaration(
-            module.get(), llvm::Intrinsic::stackrestore);
-        builder->CreateCall(stackrestore_fn, {b.saved_stack});
+            llvm::Function *stackrestore_fn = llvm::Intrinsic::getDeclaration(
+                module.get(), llvm::Intrinsic::stackrestore);
+            builder->CreateCall(stackrestore_fn, {b.saved_stack});
 #endif
+        }
     }
 
     inline void visit_expr_wrapper(ASR::expr_t* x, bool load_ref=false, bool is_volatile = false) {
