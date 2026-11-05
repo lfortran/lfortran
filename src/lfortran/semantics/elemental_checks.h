@@ -18,8 +18,6 @@ public:
         const CompilerOptions &compiler_options);
 
     // Uses of nonintrinsic elemental procedures
-    static void check_dummy_procedures(const ASR::Function_t &f,
-        diag::Diagnostics &diag, const CompilerOptions &compiler_options);
     static void check_call_actuals(const Vec<ASR::call_arg_t> &args,
         diag::Diagnostics &diag, const CompilerOptions &compiler_options);
     static void check_subroutine_call(const ASR::SubroutineCall_t &x,

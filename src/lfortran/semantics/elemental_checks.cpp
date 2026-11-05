@@ -10,12 +10,13 @@ namespace LCompilers::LFortran {
 void ElementalChecks::check_procedure(const ASR::Function_t &f,
         const std::string &proc_name, diag::Diagnostics &diag,
         const CompilerOptions &compiler_options) {
-    if (!ASRUtils::get_FunctionType(f)->m_elemental) return;
+    bool elemental = ASRUtils::get_FunctionType(f)->m_elemental;
     bool ok = true;
     for (size_t i = 0; i < f.n_args; i++) {
         if (!ASR::is_a<ASR::Var_t>(*f.m_args[i])) continue;
         ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
         if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            if (!elemental) continue;
             const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(sym);
             ok = dummy_not_procedure(*sym, proc_name, diag) && ok;
             ok = dummy_scalar(v, proc_name, diag) && ok;
@@ -25,14 +26,18 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
             ok = no_alternate_return(v, proc_name, diag) && ok;
             ok = dummy_intent_given(v, proc_name, diag) && ok;
         } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+            const ASR::Function_t &dummy = *ASR::down_cast<ASR::Function_t>(sym);
+            ok = not_dummy_interface(dummy.m_name, dummy.m_function_signature,
+                false, sym->base.loc, diag) && ok;
+            if (!elemental) continue;
             ok = dummy_not_procedure(*sym, proc_name, diag) && ok;
-        } else {
+        } else if (elemental) {
             throw LCompilersException("unexpected kind of dummy argument '" +
                 std::string(ASRUtils::symbol_name(sym)) +
                 "' of elemental procedure '" + proc_name + "'");
         }
     }
-    if (f.m_return_var && ASR::is_a<ASR::Var_t>(*f.m_return_var)) {
+    if (elemental && f.m_return_var && ASR::is_a<ASR::Var_t>(*f.m_return_var)) {
         ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_return_var)->m_v;
         if (ASR::is_a<ASR::Variable_t>(*sym)) {
             const ASR::Variable_t &r = *ASR::down_cast<ASR::Variable_t>(sym);
@@ -272,22 +277,6 @@ bool ElementalChecks::result_derived_type_params(const ASR::Function_t &,
         const ASR::Variable_t &, const std::string &, diag::Diagnostics &) {
     // TODO: check the length parameter expressions of a derived-type result
     return true;
-}
-
-void ElementalChecks::check_dummy_procedures(const ASR::Function_t &f,
-        diag::Diagnostics &diag, const CompilerOptions &compiler_options) {
-    bool ok = true;
-    for (size_t i = 0; i < f.n_args; i++) {
-        if (!ASR::is_a<ASR::Var_t>(*f.m_args[i])) continue;
-        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
-        if (!ASR::is_a<ASR::Function_t>(*sym)) continue;
-        ASR::Function_t *dummy = ASR::down_cast<ASR::Function_t>(sym);
-        ok = not_dummy_interface(dummy->m_name, dummy->m_function_signature,
-            false, sym->base.loc, diag) && ok;
-    }
-    if (!ok && !compiler_options.continue_compilation) {
-        throw SemanticAbort();
-    }
 }
 
 void ElementalChecks::check_call_actuals(const Vec<ASR::call_arg_t> &args,
