@@ -11255,15 +11255,12 @@ public:
                     // cell belongs to its translation unit rather than to a
                     // procedure, and nothing would run the assignments such a
                     // lower would produce (#16859).
-                    bool is_struct_const = false;
+                    bool is_struct_const = ASRUtils::is_tu_scope(current_scope);
                     if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
                         ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
                         if (ASR::is_a<ASR::Module_t>(*asr_owner_sym)) {
                             is_struct_const = true;
                         }
-                    } else if (current_scope->asr_owner
-                            && ASR::is_a<ASR::TranslationUnit_t>(*current_scope->asr_owner)) {
-                        is_struct_const = true;
                     }
                     if (is_derived_type || storage_type == ASR::storage_typeType::Parameter) {
                         is_struct_const = true;

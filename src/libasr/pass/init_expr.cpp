@@ -224,21 +224,6 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
             if( symbolic_value && ASR::is_a<ASR::Cast_t>(*symbolic_value) ) {
                 symbolic_value = ASR::down_cast<ASR::Cast_t>(symbolic_value)->m_arg;
             }
-            // A derived-type global that a statement of an interactive cell
-            // declares belongs to that cell's translation unit, not to a
-            // procedure, so there is no body to put the assignments this pass
-            // creates for its initializer into. A constant initializer is
-            // static data the backend lays out, so leave it on the
-            // declaration, as for a module variable.
-            if (x.m_type->type == ASR::ttypeType::StructType
-                    && x.m_parent_symtab != nullptr
-                    && x.m_parent_symtab->asr_owner != nullptr
-                    && ASR::is_a<ASR::TranslationUnit_t>(
-                        *x.m_parent_symtab->asr_owner)
-                    && (ASRUtils::is_value_constant(symbolic_value)
-                        || ASRUtils::is_value_constant(x.m_value))) {
-                return ;
-            }
             bool is_struct_array_broadcast = symbolic_value &&
                 ASR::is_a<ASR::ArrayBroadcast_t>(*symbolic_value) &&
                 ASRUtils::is_array(ASRUtils::expr_type(symbolic_value)) &&
@@ -251,6 +236,10 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
                 !(asr_owner && ASR::is_a<ASR::Module_t>(*asr_owner));
             // The initial value of a variable in a common block is the
             // initial value of the block's static storage, not code.
+            // A constant initializer, including a derived-type StructConstant
+            // of a translation-unit-owned global (an interactive cell), is
+            // static data too: those node kinds are not lowerable here and
+            // fall through to the return below.
             if( x.m_common_block != nullptr ||
                 !(symbolic_value &&
                   (ASR::is_a<ASR::ArrayConstant_t>(*symbolic_value) ||
