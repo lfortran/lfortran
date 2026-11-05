@@ -161,6 +161,16 @@ tells the code generator to emit the bare estimate, and carries the factor
 through the sums so that it is applied once after the loop. This gives 223.4
 GFLOP/s with LLVM 23 and 223.1 with LLVM 11 (N=8192), 6% above Flang.
 
+The loop is at the floor of its instruction mix. Per vector of 16 bodies it
+issues 12 multiplies and FMAs (3 for `r2`, 3 for the Newton step, 3 for the
+cube and the mass, 3 for the sums) and one `vrsqrt14ps`. Moving the mass
+into the estimate (a precomputed `m**(-2/3)`) or computing
+`1/sqrt(r2*r2*r2)` instead of cubing the refined reciprocal keeps the same
+count; splitting the `eps2` add onto an add pipe is 6% slower, and
+unrolling the j loop is 32% slower. Fewer Newton steps are the only way to
+go faster: the 14-bit estimate without one measured about 30% more, but
+changes the results (energy drift 3e-5 instead of 1e-10).
+
 AArch64 needs no equivalent: its Newton step instruction `frsqrts` already
 includes the factor `0.5`, so there is no separate multiply to move out of
 the loop.
