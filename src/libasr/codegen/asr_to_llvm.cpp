@@ -28707,13 +28707,23 @@ public:
                     llvm::Value* pointer_rank = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims));
                     llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
-                    // A PointerArray/FixedSizeArray dummy is explicit-shape or
-                    // assumed-size, so the actual argument is associated with it by
-                    // element sequence (F2023 15.5.2.12): the dummy's total size
-                    // must not exceed the actual argument's total size; the shapes
-                    // do not have to agree per dimension. An exact per-dimension
-                    // match is only required for strict bounds checking and for the
-                    // assignment target of a converted function call.
+                    // A PointerArray/FixedSizeArray dummy with at least one
+                    // explicit dimension bound is explicit-shape or assumed-size, so
+                    // the actual argument is associated with it by element sequence
+                    // (F2023 15.5.2.12): the dummy's total size must not exceed the
+                    // actual argument's total size; the shapes do not have to agree
+                    // per dimension. An exact per-dimension match is only required
+                    // for strict bounds checking and for the assignment target of a
+                    // converted function call. A dummy without explicit bounds is
+                    // assumed-shape: nothing is checked when the ranks match, and a
+                    // rank mismatch keeps the legacy total-size check.
+                    bool dummy_has_explicit_dims = false;
+                    for (int j = 0; j < n_dims; j++) {
+                        if (m_dims[j].m_length) {
+                            dummy_has_explicit_dims = true;
+                            break;
+                        }
+                    }
                     if (compiler_options.po.strict_bounds_checking || is_return_value) {
                         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
                         llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
@@ -28765,7 +28775,7 @@ public:
                                 pointer_size);
                         builder->CreateBr(mergeBB);
                         start_new_block(mergeBB);
-                    } else {
+                    } else if (dummy_has_explicit_dims) {
                         // Sequence association: only compare the total sizes.
                         llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
                         // Convert user array size to i32 to match descriptor format
@@ -28781,6 +28791,25 @@ public:
                                 desc_size,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);
+                    } else {
+                        // Assumed-shape dummy: only a rank mismatch is checked.
+                        llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else", fn);
+                        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+                        builder->CreateCondBr(builder->CreateICmpNE(desc_rank, pointer_rank), elseBB, mergeBB);
+                        start_new_block(elseBB);
+                        llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
+                        llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size,
+                                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1)),
+                                "Array size mismatch in subroutine '%s'. Tried to match size %d of argument number %d, but expected size is %d",
+                                {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
+                                infile,
+                                location_manager,
+                                llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                desc_size,
+                                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                        builder->CreateBr(mergeBB);
+                        start_new_block(mergeBB);
                     }
                 } else if (arr_cast->m_old == ASR::FixedSizeArray && arr_cast->m_new == ASR::PointerArray) {
                     ASR::ttype_t* fixed_size_type = ASRUtils::expr_type(arr_cast->m_arg);
@@ -28790,11 +28819,21 @@ public:
                     ASR::dimension_t* m_dims_pointer = nullptr;
                     int n_dims_pointer = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims_pointer));
 
-                    // Sequence association (F2023 15.5.2.12): the explicit-shape
-                    // dummy only needs a total size not exceeding the fixed-size
-                    // actual argument's element count. An exact per-dimension match
-                    // is only required for strict bounds checking and for the
-                    // assignment target of a converted function call.
+                    // Sequence association (F2023 15.5.2.12): an explicit-shape or
+                    // assumed-size dummy only needs a total size not exceeding the
+                    // fixed-size actual argument's element count. An exact
+                    // per-dimension match is only required for strict bounds
+                    // checking and for the assignment target of a converted function
+                    // call. A dummy without explicit bounds is assumed-shape:
+                    // nothing is checked when the ranks match, and a rank mismatch
+                    // keeps the legacy total-size check.
+                    bool dummy_has_explicit_dims = false;
+                    for (int j = 0; j < n_dims_pointer; j++) {
+                        if (m_dims_pointer[j].m_length) {
+                            dummy_has_explicit_dims = true;
+                            break;
+                        }
+                    }
                     if (compiler_options.po.strict_bounds_checking || is_return_value) {
                         if (n_dims_fixed == n_dims_pointer) {
                             for (int j = 0; j < n_dims_fixed; j++) {
@@ -28835,7 +28874,7 @@ public:
                                     llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                     pointer_size);
                         }
-                    } else {
+                    } else if (dummy_has_explicit_dims) {
                         // Sequence association: only compare the total sizes.
                         llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), ASRUtils::get_fixed_size_of_array(fixed_size_type));
                         // Convert user array size to i32 to match fixed-size format
@@ -28852,6 +28891,22 @@ public:
                                 fixed_size,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);
+                    } else {
+                        // Assumed-shape dummy: only a rank mismatch is checked.
+                        if (n_dims_fixed != n_dims_pointer) {
+                            llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), ASRUtils::get_fixed_size_of_array(fixed_size_type));
+                            llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_size,
+                                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1)),
+                                    "Runtime error: Array size mismatch in subroutine '%s'\n\n"
+                                    "Tried to match size %d of argument number %d, but expected size is %d\n",
+                                    {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
+                                    infile,
+                                    location_manager,
+                                    llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                    fixed_size,
+                                    llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                        }
                     }
                 }
 
