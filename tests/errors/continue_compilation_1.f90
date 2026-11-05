@@ -4492,3 +4492,14 @@ contains
         c([2, 2]) = a
     end subroutine
 end module
+
+elemental subroutine cc_elem_calls_ext(x)
+    integer, intent(inout) :: x
+    x = x + 1
+end subroutine
+
+subroutine cc_elem_calls_implicit()
+    integer :: b(3)
+    b = [1, 2, 3]
+    call cc_elem_calls_ext(b)
+end subroutine
