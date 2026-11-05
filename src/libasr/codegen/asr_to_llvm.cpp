@@ -28707,68 +28707,81 @@ public:
                     llvm::Value* pointer_rank = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, n_dims));
                     llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
-                    llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
-                    llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
-                    llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-
-                    builder->CreateCondBr(builder->CreateICmpEQ(desc_rank, pointer_rank), thenBB, elseBB);
-                    builder->SetInsertPoint(thenBB);
-                    for (int j = 0; j < n_dims; j++) {
-                        if (m_dims[j].m_length) {
-                            llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
-                            llvm::Value* descriptor_length = arr_descr->get_array_size(arr_type, arg, dim, 4);
-                            load_array_size_deep_copy(m_dims[j].m_length);
-                            // Convert user dimension expression to i32 to match descriptor format
-                            llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
-                                tmp, llvm::Type::getInt32Ty(context));
-                            // Fortran standard: negative extent means zero-size array
-                            llvm::Value* zero_i32 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
-                            pointer_length = builder->CreateSelect(
-                                builder->CreateICmpSLT(pointer_length, zero_i32), zero_i32, pointer_length);
-                            llvm::Value* cond = nullptr;
-                            if (compiler_options.po.strict_bounds_checking || is_return_value) {
-                                cond = builder->CreateICmpNE(descriptor_length, pointer_length);
-                            } else {
-                                cond = builder->CreateICmpSLT(descriptor_length, pointer_length);
-                            }
-                            llvm_utils->generate_runtime_error(cond,
-                                    "Array shape mismatch in subroutine '%s'. Tried to match size %d of dimension %d of argument number %d, but expected size is %d",
-                                    {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc}),
-                                        function->m_start_name ? LLVMUtils::RuntimeLabel("Here", {*function->m_start_name}, {}, false): LLVMUtils::RuntimeLabel("", {}),
-                                        LLVMUtils::RuntimeLabel("Parameter is size %d, argument is size %d", {m_dims[j].loc}, {pointer_length, descriptor_length}, false)},
-                                    infile,
-                                    location_manager,
-                                    llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
-                                    descriptor_length,
-                                    dim,
-                                    llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
-                                    pointer_length);
-                        }
-                    }
-                    builder->CreateBr(mergeBB);
-                    start_new_block(elseBB);
-                    llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
-                    // Convert user array size to i32 to match descriptor format
-                    llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
-                        get_array_size_from_asr_type(arr_cast->m_type),
-                        llvm::Type::getInt32Ty(context));
-                    llvm::Value* cond = nullptr;
+                    // A PointerArray/FixedSizeArray dummy is explicit-shape or
+                    // assumed-size, so the actual argument is associated with it by
+                    // element sequence (F2023 15.5.2.12): the dummy's total size
+                    // must not exceed the actual argument's total size; the shapes
+                    // do not have to agree per dimension. An exact per-dimension
+                    // match is only required for strict bounds checking and for the
+                    // assignment target of a converted function call.
                     if (compiler_options.po.strict_bounds_checking || is_return_value) {
-                        cond = builder->CreateICmpNE(desc_size, pointer_size);
+                        llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                        llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+                        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+
+                        builder->CreateCondBr(builder->CreateICmpEQ(desc_rank, pointer_rank), thenBB, elseBB);
+                        builder->SetInsertPoint(thenBB);
+                        for (int j = 0; j < n_dims; j++) {
+                            if (m_dims[j].m_length) {
+                                llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
+                                llvm::Value* descriptor_length = arr_descr->get_array_size(arr_type, arg, dim, 4);
+                                load_array_size_deep_copy(m_dims[j].m_length);
+                                // Convert user dimension expression to i32 to match descriptor format
+                                llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
+                                    tmp, llvm::Type::getInt32Ty(context));
+                                // Fortran standard: negative extent means zero-size array
+                                llvm::Value* zero_i32 = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+                                pointer_length = builder->CreateSelect(
+                                    builder->CreateICmpSLT(pointer_length, zero_i32), zero_i32, pointer_length);
+                                llvm_utils->generate_runtime_error(builder->CreateICmpNE(descriptor_length, pointer_length),
+                                        "Array shape mismatch in subroutine '%s'. Tried to match size %d of dimension %d of argument number %d, but expected size is %d",
+                                        {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc}),
+                                            function->m_start_name ? LLVMUtils::RuntimeLabel("Here", {*function->m_start_name}, {}, false): LLVMUtils::RuntimeLabel("", {}),
+                                            LLVMUtils::RuntimeLabel("Parameter is size %d, argument is size %d", {m_dims[j].loc}, {pointer_length, descriptor_length}, false)},
+                                        infile,
+                                        location_manager,
+                                        llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                        descriptor_length,
+                                        dim,
+                                        llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                        pointer_length);
+                            }
+                        }
+                        builder->CreateBr(mergeBB);
+                        start_new_block(elseBB);
+                        llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
+                        // Convert user array size to i32 to match descriptor format
+                        llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
+                            get_array_size_from_asr_type(arr_cast->m_type),
+                            llvm::Type::getInt32Ty(context));
+                        llvm_utils->generate_runtime_error(builder->CreateICmpNE(desc_size, pointer_size),
+                                "Array size mismatch in subroutine '%s'. Tried to match size %d of argument number %d, but expected size is %d",
+                                {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
+                                infile,
+                                location_manager,
+                                llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                desc_size,
+                                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                pointer_size);
+                        builder->CreateBr(mergeBB);
+                        start_new_block(mergeBB);
                     } else {
-                        cond = builder->CreateICmpSLT(desc_size, pointer_size);
+                        // Sequence association: only compare the total sizes.
+                        llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
+                        // Convert user array size to i32 to match descriptor format
+                        llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
+                            get_array_size_from_asr_type(arr_cast->m_type),
+                            llvm::Type::getInt32Ty(context));
+                        llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size, pointer_size),
+                                "Array size mismatch in subroutine '%s'. Tried to match size %d of argument number %d, but expected size is %d",
+                                {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
+                                infile,
+                                location_manager,
+                                llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                desc_size,
+                                llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                pointer_size);
                     }
-                    llvm_utils->generate_runtime_error(cond,
-                            "Array size mismatch in subroutine '%s'. Tried to match size %d of argument number %d, but expected size is %d",
-                            {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
-                            infile,
-                            location_manager,
-                            llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
-                            desc_size,
-                            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
-                            pointer_size);
-                    builder->CreateBr(mergeBB);
-                    start_new_block(mergeBB);
                 } else if (arr_cast->m_old == ASR::FixedSizeArray && arr_cast->m_new == ASR::PointerArray) {
                     ASR::ttype_t* fixed_size_type = ASRUtils::expr_type(arr_cast->m_arg);
                     ASR::dimension_t* m_dims_fixed = nullptr;
@@ -28777,47 +28790,59 @@ public:
                     ASR::dimension_t* m_dims_pointer = nullptr;
                     int n_dims_pointer = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims_pointer));
 
-                    if (n_dims_fixed == n_dims_pointer) {
-                        for (int j = 0; j < n_dims_fixed; j++) {
-                            if (m_dims_pointer[j].m_length) {
-                                llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
-                                llvm::Value* fixed_length = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, ASRUtils::extract_dim_value_int(m_dims_fixed[j].m_length), true));
-                                load_array_size_deep_copy(m_dims_pointer[j].m_length);
-                                // Convert user dimension expression to i32 to match fixed-size format
-                                llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
-                                    tmp, llvm::Type::getInt32Ty(context));
-                                llvm::Value* cond = nullptr;
-                                if (compiler_options.po.strict_bounds_checking || is_return_value) {
-                                    cond = builder->CreateICmpNE(fixed_length, pointer_length);
-                                } else {
-                                    cond = builder->CreateICmpSLT(fixed_length, pointer_length);
+                    // Sequence association (F2023 15.5.2.12): the explicit-shape
+                    // dummy only needs a total size not exceeding the fixed-size
+                    // actual argument's element count. An exact per-dimension match
+                    // is only required for strict bounds checking and for the
+                    // assignment target of a converted function call.
+                    if (compiler_options.po.strict_bounds_checking || is_return_value) {
+                        if (n_dims_fixed == n_dims_pointer) {
+                            for (int j = 0; j < n_dims_fixed; j++) {
+                                if (m_dims_pointer[j].m_length) {
+                                    llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
+                                    llvm::Value* fixed_length = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, ASRUtils::extract_dim_value_int(m_dims_fixed[j].m_length), true));
+                                    load_array_size_deep_copy(m_dims_pointer[j].m_length);
+                                    // Convert user dimension expression to i32 to match fixed-size format
+                                    llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
+                                        tmp, llvm::Type::getInt32Ty(context));
+                                    llvm_utils->generate_runtime_error(builder->CreateICmpNE(fixed_length, pointer_length),
+                                            "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
+                                            "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
+                                            {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
+                                            infile,
+                                            location_manager,
+                                            llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                            fixed_length,
+                                            dim,
+                                            llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                            pointer_length);
                                 }
-                                llvm_utils->generate_runtime_error(cond,
-                                        "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
-                                        "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
-                                        {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
-                                        infile,
-                                        location_manager,
-                                        llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
-                                        fixed_length,
-                                        dim,
-                                        llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
-                                        pointer_length);
                             }
+                        } else {
+                            llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), ASRUtils::get_fixed_size_of_array(fixed_size_type));
+                            // Convert user array size to i32 to match fixed-size format
+                            llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
+                                get_array_size_from_asr_type(arr_cast->m_type),
+                                llvm::Type::getInt32Ty(context));
+                            llvm_utils->generate_runtime_error(builder->CreateICmpNE(fixed_size, pointer_size),
+                                    "Runtime error: Array size mismatch in subroutine '%s'\n\n"
+                                    "Tried to match size %d of argument number %d, but expected size is %d\n",
+                                    {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
+                                    infile,
+                                    location_manager,
+                                    llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
+                                    fixed_size,
+                                    llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                    pointer_size);
                         }
                     } else {
+                        // Sequence association: only compare the total sizes.
                         llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), ASRUtils::get_fixed_size_of_array(fixed_size_type));
                         // Convert user array size to i32 to match fixed-size format
                         llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
                             get_array_size_from_asr_type(arr_cast->m_type),
                             llvm::Type::getInt32Ty(context));
-                        llvm::Value* cond = nullptr;
-                        if (compiler_options.po.strict_bounds_checking || is_return_value) {
-                            cond = builder->CreateICmpNE(fixed_size, pointer_size);
-                        } else {
-                            cond = builder->CreateICmpSLT(fixed_size, pointer_size);
-                        }
-                        llvm_utils->generate_runtime_error(cond,
+                        llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_size, pointer_size),
                                 "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                                 "Tried to match size %d of argument number %d, but expected size is %d\n",
                                 {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},

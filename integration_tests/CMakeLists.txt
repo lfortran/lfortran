@@ -5755,6 +5755,7 @@ RUN(NAME pointer_intent_in_03 LABELS gfortran llvm)
 RUN(NAME pointer_intent_in_04 LABELS gfortran llvm)
 RUN(NAME pointer_intent_in_05 LABELS gfortran llvm)
 RUN(NAME sequence_assoc_01 LABELS gfortran llvm)
+RUN(NAME sequence_assoc_02 LABELS gfortran llvm)
 
 RUN(NAME binop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME binop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

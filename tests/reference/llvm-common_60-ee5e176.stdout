@@ -18,9 +18,9 @@ target datalayout = "..."
 @11 = private unnamed_addr constant [29 x i8] c"common_60_bump_all_real____0\00", align 1
 @12 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 @13 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([41 x i8], [41 x i8]* @1, i32 0, i32 0), i32 24, i32 29, i32 24, i32 32 }]
-@14 = private unnamed_addr constant [143 x i8] c"Runtime error: Array shape mismatch in subroutine '%s'\0A\0ATried to match size %d of dimension %d of argument number %d, but expected size is %d\0A\00", align 1
+@14 = private unnamed_addr constant [126 x i8] c"Runtime error: Array size mismatch in subroutine '%s'\0A\0ATried to match size %d of argument number %d, but expected size is %d\0A\00", align 1
 @15 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @12, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @13, i32 0, i32 0), i32 1 }]
-@16 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([143 x i8], [143 x i8]* @14, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @15, i32 0, i32 0), i32 1 }
+@16 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([126 x i8], [126 x i8]* @14, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @15, i32 0, i32 0), i32 1 }
 @17 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @18 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @19 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -181,7 +181,7 @@ ifcont7:                                          ; preds = %else6, %then5
   br i1 false, label %then8, label %ifcont9
 
 then8:                                            ; preds = %ifcont7
-  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @16 to i8*), i8* getelementptr inbounds ([29 x i8], [29 x i8]* @11, i32 0, i32 0), i32 3, i32 1, i32 1, i32 3)
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @16 to i8*), i8* getelementptr inbounds ([29 x i8], [29 x i8]* @11, i32 0, i32 0), i32 3, i32 1, i32 3)
   unreachable
 
 ifcont9:                                          ; preds = %ifcont7
