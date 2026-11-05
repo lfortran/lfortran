@@ -1966,6 +1966,25 @@ inline bool is_assumed_size_array(ASR::ttype_t* x) {
     return true;
 }
 
+// Whether an array type declares an explicit extent for at least one
+// dimension. A dummy argument of such a type is explicit-shape or assumed-size,
+// so an actual argument is associated with it by element sequence
+// (F2023 15.5.2.12) rather than by shape. A deferred-shape (assumed-shape)
+// dummy declares no extent at all.
+inline bool has_explicit_dimension_bounds(ASR::ttype_t* x) {
+    x = type_get_past_allocatable(type_get_past_pointer(x));
+    if (!ASR::is_a<ASR::Array_t>(*x)) {
+        return false;
+    }
+    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x);
+    for (size_t i = 0; i < array_t->n_dims; i++) {
+        if (array_t->m_dims[i].m_length != nullptr) {
+            return true;
+        }
+    }
+    return false;
+}
+
 inline bool is_array_t(ASR::ttype_t* const x){
     return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(x));
 }
