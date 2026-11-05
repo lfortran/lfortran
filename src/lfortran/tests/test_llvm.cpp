@@ -2961,6 +2961,36 @@ TEST_CASE("FortranEvaluator derived type initializer controls") {
     CHECK(r.result.i32 == 10);
 }
 
+// The member setup of an interactive global must also apply a structure
+// constructor's string and nested derived-type component values (#16859).
+TEST_CASE("FortranEvaluator derived type initializer string and nested components") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: init_string_point\ncharacter(len=3) :: s\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(init_string_point) :: init_string_p = init_string_point('abc')");
+    CHECK(r.ok);
+    r = e.evaluate2("init_string_p%s");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::character);
+    CHECK(r.result.str == "abc");
+
+    r = e.evaluate2("type :: init_inner_point\ninteger :: k\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type :: init_nested_point\ntype(init_inner_point) :: inner\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(init_nested_point) :: init_nested_p = init_nested_point(init_inner_point(11))");
+    CHECK(r.ok);
+    r = e.evaluate2("init_nested_p%inner%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 11);
+}
+
 #ifndef __EMSCRIPTEN__
 
 // Tests passing the complex struct by reference
