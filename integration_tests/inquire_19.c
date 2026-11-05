@@ -12,7 +12,7 @@ int create_inquire_19_file(int64_t length)
 {
 #if defined(_WIN32)
     HANDLE file = CreateFileA("inquire_19.dat", GENERIC_WRITE, 0, NULL,
-        CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (file == INVALID_HANDLE_VALUE) return 1;
     DWORD returned;
     LARGE_INTEGER offset;
@@ -22,7 +22,7 @@ int create_inquire_19_file(int64_t length)
         || !SetEndOfFile(file);
     CloseHandle(file);
 #else
-    int file = open("inquire_19.dat", O_WRONLY | O_CREAT | O_EXCL, 0600);
+    int file = open("inquire_19.dat", O_WRONLY | O_CREAT | O_TRUNC, 0600);
     if (file < 0) return 1;
     int failed = ftruncate(file, length) != 0;
     if (close(file) != 0) failed = 1;

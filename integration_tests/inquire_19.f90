@@ -16,7 +16,8 @@ program inquire_19
     integer(8) :: p8, pa(2)
     character :: byte
 
-    ! A sparse file keeps this fast and small on every platform.
+    ! A sparse file keeps this fast and small on every platform. The helper
+    ! replaces a file left behind by an earlier failed run.
     if (create_inquire_19_file(length) /= 0) error stop 1
     open(newunit=u, file=filename, access="stream", form="unformatted", &
         status="old", action="readwrite")
