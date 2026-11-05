@@ -3,6 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/utils.h>
 
+#include <algorithm>
 #include <set>
 
 namespace LCompilers::LFortran {
@@ -128,6 +129,12 @@ private:
                     && v.m_intent != ASR::intentType::InOut) continue;
             ok = output_no_repeated_vector_subscript(args[i].m_value, v, diag)
                 && ok;
+        }
+        if (f->m_return_var != nullptr) {
+            ok = function_actuals_conform(*f, args, n_args, diag) && ok;
+        } else {
+            ok = subroutine_outputs_arrays(*f, args, n_args, diag) && ok;
+            ok = subroutine_inputs_conform(*f, args, n_args, diag) && ok;
         }
     }
 
@@ -503,6 +510,169 @@ bool ElementalChecks::output_no_repeated_vector_subscript(
         }
     }
     return true;
+}
+
+bool ElementalChecks::function_actuals_conform(const ASR::Function_t &f,
+        ASR::call_arg_t *args, size_t n_args, diag::Diagnostics &diag) {
+    ASR::expr_t *ref = nullptr;
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::expr_t *actual = shape_actual(f, args, i);
+        if (actual == nullptr) continue;
+        if (ref == nullptr) {
+            ref = actual;
+            continue;
+        }
+        std::string actual_label, ref_label;
+        if (same_shape(actual, ref, actual_label, ref_label)) continue;
+        add_shape_error("the actual argument for dummy '"
+            + std::string(dummy_variable(f, i)->m_name)
+            + "' of elemental function '" + std::string(f.m_name)
+            + "' must be a scalar or an array of the same shape as the other "
+            "array arguments", actual, actual_label, ref, ref_label, diag);
+        return false;
+    }
+    return true;
+}
+
+bool ElementalChecks::subroutine_outputs_arrays(const ASR::Function_t &f,
+        ASR::call_arg_t *args, size_t n_args, diag::Diagnostics &diag) {
+    ASR::expr_t *array = nullptr;
+    for (size_t i = 0; i < n_args && array == nullptr; i++) {
+        array = shape_actual(f, args, i);
+    }
+    if (array == nullptr) return true;
+    ASR::expr_t *ref = nullptr;
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::expr_t *actual = args[i].m_value;
+        if (actual == nullptr || !is_output(f, i)
+                || may_be_absent(f, i, actual)) {
+            continue;
+        }
+        std::string actual_label = "a scalar", ref_label = "an array";
+        if (ASRUtils::is_array(ASRUtils::expr_type(actual))) {
+            if (ref == nullptr) {
+                ref = actual;
+                continue;
+            }
+            if (same_shape(actual, ref, actual_label, ref_label)) continue;
+        }
+        const ASR::Variable_t &dummy = *dummy_variable(f, i);
+        add_shape_error("the actual argument for intent("
+            + std::string(dummy.m_intent == ASR::intentType::Out ? "out" : "inout")
+            + ") dummy '" + std::string(dummy.m_name) + "' of elemental "
+            "subroutine '" + std::string(f.m_name) + "' must be an array of "
+            "the same shape as the other output arrays, because another "
+            "actual argument is an array", actual, actual_label,
+            ref != nullptr ? ref : array, ref_label, diag);
+        return false;
+    }
+    return true;
+}
+
+bool ElementalChecks::subroutine_inputs_conform(const ASR::Function_t &f,
+        ASR::call_arg_t *args, size_t n_args, diag::Diagnostics &diag) {
+    ASR::expr_t *ref = nullptr;
+    for (size_t i = 0; i < n_args && ref == nullptr; i++) {
+        if (is_output(f, i)) ref = shape_actual(f, args, i);
+    }
+    for (size_t i = 0; i < n_args && ref == nullptr; i++) {
+        ref = shape_actual(f, args, i);
+    }
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::expr_t *actual = shape_actual(f, args, i);
+        if (actual == nullptr || actual == ref || is_output(f, i)) continue;
+        std::string actual_label, ref_label;
+        if (same_shape(actual, ref, actual_label, ref_label)) continue;
+        add_shape_error("the actual argument for dummy '"
+            + std::string(dummy_variable(f, i)->m_name)
+            + "' of elemental subroutine '" + std::string(f.m_name)
+            + "' must be a scalar or an array of the same shape as the other "
+            "array arguments", actual, actual_label, ref, ref_label, diag);
+        return false;
+    }
+    return true;
+}
+
+const ASR::Variable_t *ElementalChecks::dummy_variable(
+        const ASR::Function_t &f, size_t i) {
+    if (i >= f.n_args || !ASR::is_a<ASR::Var_t>(*f.m_args[i])) return nullptr;
+    ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return nullptr;
+    return ASR::down_cast<ASR::Variable_t>(sym);
+}
+
+bool ElementalChecks::is_output(const ASR::Function_t &f, size_t i) {
+    const ASR::Variable_t *v = dummy_variable(f, i);
+    return v != nullptr && (v->m_intent == ASR::intentType::Out
+        || v->m_intent == ASR::intentType::InOut);
+}
+
+// 15.5.2.12
+bool ElementalChecks::may_be_absent(const ASR::Function_t &f, size_t i,
+        ASR::expr_t *actual) {
+    const ASR::Variable_t *dummy = dummy_variable(f, i);
+    if (dummy == nullptr
+            || dummy->m_presence != ASR::presenceType::Optional) {
+        return false;
+    }
+    ASR::Variable_t *v = ASRUtils::expr_to_variable_or_null(
+        ASRUtils::get_past_array_physical_cast(actual));
+    return ASRUtils::is_allocatable_or_pointer(ASRUtils::expr_type(actual))
+        || (v != nullptr && v->m_presence == ASR::presenceType::Optional);
+}
+
+// The actual `i` if it is an array that is present, else nullptr.
+ASR::expr_t *ElementalChecks::shape_actual(const ASR::Function_t &f,
+        ASR::call_arg_t *args, size_t i) {
+    ASR::expr_t *actual = args[i].m_value;
+    if (actual == nullptr || dummy_variable(f, i) == nullptr
+            || !ASRUtils::is_array(ASRUtils::expr_type(actual))
+            || may_be_absent(f, i, actual)) {
+        return nullptr;
+    }
+    return actual;
+}
+
+bool ElementalChecks::same_shape(ASR::expr_t *actual, ASR::expr_t *ref,
+        std::string &actual_label, std::string &ref_label) {
+    ASR::dimension_t *dims = nullptr, *ref_dims = nullptr;
+    size_t rank = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(actual), dims);
+    size_t ref_rank = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(ref), ref_dims);
+    if (rank != ref_rank) {
+        actual_label = "rank " + std::to_string(rank);
+        ref_label = "rank " + std::to_string(ref_rank);
+        return false;
+    }
+    for (size_t d = 0; d < rank; d++) {
+        int64_t n = 0, ref_n = 0;
+        if (dims[d].m_length == nullptr || ref_dims[d].m_length == nullptr
+                || !ASRUtils::extract_value(
+                    ASRUtils::expr_value(dims[d].m_length), n)
+                || !ASRUtils::extract_value(
+                    ASRUtils::expr_value(ref_dims[d].m_length), ref_n)) {
+            continue;
+        }
+        n = std::max<int64_t>(n, 0);
+        ref_n = std::max<int64_t>(ref_n, 0);
+        if (n == ref_n) continue;
+        std::string in_dim = " in dimension " + std::to_string(d + 1);
+        actual_label = "extent " + std::to_string(n) + in_dim;
+        ref_label = "extent " + std::to_string(ref_n) + in_dim;
+        return false;
+    }
+    return true;
+}
+
+void ElementalChecks::add_shape_error(const std::string &message,
+        ASR::expr_t *actual, const std::string &actual_label,
+        ASR::expr_t *ref, const std::string &ref_label,
+        diag::Diagnostics &diag) {
+    diag.add(diag::Diagnostic(message,
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label(actual_label, {actual->base.loc}),
+            diag::Label(ref_label, {ref->base.loc}, false)}));
 }
 
 bool ElementalChecks::not_dummy_interface(const std::string &name,
