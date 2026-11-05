@@ -3530,26 +3530,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             ASR::expr_t *slot = gpu_reduction_slot(al, loc,
                 accumulators_of(r), slot_index, r.scalar_type);
             ASR::expr_t *acc = local_accumulators[ri];
-            if (gpu_reduction_folds_by_compare(r.op)) {
-                Vec<ASR::stmt_t*> keep;
-                keep.reserve(al, 1);
-                keep.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
-                    loc, slot, acc, nullptr, false, false, false, false)));
-                kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al,
-                    loc, nullptr, ASRUtils::EXPR(ASRUtils::make_Cmpop_util(
-                        al, loc, r.op == ASR::reduction_opType::ReduceMIN
-                            ? ASR::cmpopType::Lt : ASR::cmpopType::Gt,
-                        acc, slot,
-                        ASRUtils::duplicate_type(al, r.scalar_type))),
-                    keep.p, keep.n, nullptr, 0)));
-            } else {
-                kernel_body.push_back(al, ASRUtils::STMT(
-                    ASR::make_Assignment_t(al, loc, slot,
-                        ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc,
-                            gpu_reduction_fold_binop(r.op), slot, acc,
-                            ASRUtils::duplicate_type(al, r.scalar_type))),
-                        nullptr, false, false, false, false)));
-            }
+            kernel_body.push_back(al, gpu_reduction_combine(al, loc, r.op,
+                slot, acc, r.scalar_type));
         }
     }
 
