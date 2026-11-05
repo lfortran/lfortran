@@ -27016,66 +27016,90 @@ public:
                         builder->CreateStore(raw_ptr, data_ptr);
                     }
                 } else if (ASRUtils::is_unlimited_polymorphic_type(orig_arg->m_type)) {
-                    // Get the element type of the polymorphic array (unlimited_polymorphic_type)
-                    llvm::Type* poly_elem_type = llvm_utils->get_el_type(
-                        nullptr,
-                        ASRUtils::type_get_past_array(orig_arg_type_past_pointer), module.get(), orig_arg->m_type_declaration);
-                    llvm::Value* poly_wrapper = llvm_utils->CreateAlloca(*builder, poly_elem_type);
-                    
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
                     ASR::ttype_t* arg_type_unwrapped = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(arg_type));
-                    bool dummy_is_assumed_type = false;
-                    if (orig_arg->m_type_declaration) {
-                        ASR::symbol_t* dummy_decl_sym = ASRUtils::symbol_get_past_external(
-                            orig_arg->m_type_declaration);
-                        if (dummy_decl_sym && std::string(ASRUtils::symbol_name(
-                                dummy_decl_sym)) == "~assumed_type") {
-                            dummy_is_assumed_type = true;
+                    if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_type)) &&
+                            (ASRUtils::is_allocatable(arg_type) ||
+                             ASRUtils::is_pointer(arg_type))) {
+                        // The actual is itself a polymorphic scalar. Its class
+                        // wrapper pointer is null exactly when the actual is
+                        // unallocated, so use it as the rank-0 element wrapper
+                        // instead of synthesizing one whose non-null address
+                        // would make allocated() report true.
+                        llvm::Value* wrapper = tmp;
+                        if (LLVM::is_llvm_pointer(*arg_type)) {
+                            llvm::Type* wrapper_type =
+                                llvm_utils->get_type_from_ttype_t_util(
+                                    x.m_args[i].m_value, arg_type_unwrapped,
+                                    module.get());
+                            wrapper = llvm_utils->CreateLoad2(
+                                wrapper_type->getPointerTo(), tmp);
                         }
-                    }
-                    if (!ASR::is_a<ASR::StructType_t>(*arg_type_unwrapped)) {
-                        struct_api->store_intrinsic_type_vptr(arg_type,
-                            ASRUtils::extract_kind_from_ttype_t(arg_type), poly_wrapper, module.get());
-                    } else if (!dummy_is_assumed_type) {
-                        ASR::symbol_t* value_struct_sym =
-                            ASRUtils::get_struct_sym_from_struct_expr(
-                                x.m_args[i].m_value);
-                        if (value_struct_sym) {
-                            struct_api->create_new_vtable_for_struct_type(
-                                value_struct_sym, module.get());
-                            struct_api->store_class_vptr(
-                                value_struct_sym, poly_wrapper, module.get());
-                        }
-                    }
-                    
-                    llvm::Value* poly_data_ptr = llvm_utils->create_gep2(poly_elem_type, poly_wrapper, 1);
-                    ASR::ttype_t* elem_asr_chk = ASRUtils::extract_type(arg_type);
-                    llvm::Type* elem_llvm_chk = llvm_utils->get_el_type(
-                        x.m_args[i].m_value, elem_asr_chk, module.get());
-                    llvm::Value* poly_scalar_ptr = tmp;
-                    if (LLVM::is_llvm_pointer(*arg_type)) {
-                        poly_scalar_ptr = llvm_utils->CreateLoad2(
-                            elem_llvm_chk->getPointerTo(), tmp);
-                    }
-                    std::vector<FlatCopyback::Member> flat_layout;
-                    uint64_t flat_sz = 0;
-                    if (get_struct_flat_layout(elem_asr_chk, elem_llvm_chk,
-                            x.m_args[i].m_value, flat_layout, flat_sz)) {
-                        llvm::Value* flat_buf = create_flat_copy_from_struct(
-                            poly_scalar_ptr, elem_llvm_chk, flat_layout, flat_sz);
+                        llvm::Type* expected_ptr_type =
+                            descriptor_type->getStructElementType(0);
                         builder->CreateStore(
-                            builder->CreateBitCast(flat_buf, llvm_utils->i8_ptr),
-                            poly_data_ptr);
-                        pending_flat_copybacks.push_back({
-                            flat_buf, poly_scalar_ptr, elem_llvm_chk, flat_layout});
+                            builder->CreateBitCast(wrapper, expected_ptr_type),
+                            data_ptr);
                     } else {
-                        builder->CreateStore(
-                            builder->CreateBitCast(poly_scalar_ptr, llvm_utils->i8_ptr),
-                            poly_data_ptr);
-                    }
+                        // Get the element type of the polymorphic array (unlimited_polymorphic_type)
+                        llvm::Type* poly_elem_type = llvm_utils->get_el_type(
+                            nullptr,
+                            ASRUtils::type_get_past_array(orig_arg_type_past_pointer), module.get(), orig_arg->m_type_declaration);
+                        llvm::Value* poly_wrapper = llvm_utils->CreateAlloca(*builder, poly_elem_type);
                     
-                    builder->CreateStore(poly_wrapper, data_ptr);
+                        bool dummy_is_assumed_type = false;
+                        if (orig_arg->m_type_declaration) {
+                            ASR::symbol_t* dummy_decl_sym = ASRUtils::symbol_get_past_external(
+                                orig_arg->m_type_declaration);
+                            if (dummy_decl_sym && std::string(ASRUtils::symbol_name(
+                                    dummy_decl_sym)) == "~assumed_type") {
+                                dummy_is_assumed_type = true;
+                            }
+                        }
+                        if (!ASR::is_a<ASR::StructType_t>(*arg_type_unwrapped)) {
+                            struct_api->store_intrinsic_type_vptr(arg_type,
+                                ASRUtils::extract_kind_from_ttype_t(arg_type), poly_wrapper, module.get());
+                        } else if (!dummy_is_assumed_type) {
+                            ASR::symbol_t* value_struct_sym =
+                                ASRUtils::get_struct_sym_from_struct_expr(
+                                    x.m_args[i].m_value);
+                            if (value_struct_sym) {
+                                struct_api->create_new_vtable_for_struct_type(
+                                    value_struct_sym, module.get());
+                                struct_api->store_class_vptr(
+                                    value_struct_sym, poly_wrapper, module.get());
+                            }
+                        }
+                    
+                        llvm::Value* poly_data_ptr = llvm_utils->create_gep2(poly_elem_type, poly_wrapper, 1);
+                        ASR::ttype_t* elem_asr_chk = ASRUtils::extract_type(arg_type);
+                        llvm::Type* elem_llvm_chk = llvm_utils->get_el_type(
+                            x.m_args[i].m_value, elem_asr_chk, module.get());
+                        llvm::Value* poly_scalar_ptr = tmp;
+                        if (LLVM::is_llvm_pointer(*arg_type)) {
+                            poly_scalar_ptr = llvm_utils->CreateLoad2(
+                                elem_llvm_chk->getPointerTo(), tmp);
+                        }
+                        std::vector<FlatCopyback::Member> flat_layout;
+                        uint64_t flat_sz = 0;
+                        if (get_struct_flat_layout(elem_asr_chk, elem_llvm_chk,
+                                x.m_args[i].m_value, flat_layout, flat_sz)) {
+                            llvm::Value* flat_buf = create_flat_copy_from_struct(
+                                poly_scalar_ptr, elem_llvm_chk, flat_layout, flat_sz);
+                            builder->CreateStore(
+                                builder->CreateBitCast(flat_buf, llvm_utils->i8_ptr),
+                                poly_data_ptr);
+                            pending_flat_copybacks.push_back({
+                                flat_buf, poly_scalar_ptr, elem_llvm_chk, flat_layout});
+                        } else {
+                            builder->CreateStore(
+                                builder->CreateBitCast(poly_scalar_ptr, llvm_utils->i8_ptr),
+                                poly_data_ptr);
+                        }
+                    
+                        builder->CreateStore(poly_wrapper, data_ptr);
+                    }
                 } else {
                     llvm::Value* raw_ptr = tmp;
                     ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i].m_value);
@@ -27144,7 +27168,20 @@ public:
                 llvm::Type* expected_desc_type = llvm_utils->get_type_from_ttype_t_util(
                     orig_arg->m_type, orig_arg->m_type_declaration, module.get());
                 if (tmp->getType() != expected_desc_type->getPointerTo()) {
-                    tmp = builder->CreateBitCast(tmp, expected_desc_type->getPointerTo());
+                    if (tmp->getType() == expected_desc_type) {
+                        // An allocatable or pointer assumed-rank dummy takes a
+                        // pointer to the caller's descriptor pointer. A scalar
+                        // actual is wrapped in a fresh descriptor, so store its
+                        // address in a slot rather than punning the descriptor
+                        // itself as a pointer to a pointer.
+                        llvm::Value* desc_slot = llvm_utils->CreateAlloca(
+                            expected_desc_type, nullptr,
+                            "assumed_rank_desc");
+                        builder->CreateStore(tmp, desc_slot);
+                        tmp = desc_slot;
+                    } else {
+                        tmp = builder->CreateBitCast(tmp, expected_desc_type->getPointerTo());
+                    }
                 }
             }
 
@@ -29285,6 +29322,19 @@ public:
     void handle_allocated(ASR::expr_t* arg) {
         ASR::ttype_t* asr_type = ASRUtils::expr_type(arg);
         int64_t ptr_loads_copy = ptr_loads;
+        if (ASRUtils::is_assumed_rank_array(asr_type) &&
+                (ASRUtils::is_allocatable(asr_type) ||
+                 ASRUtils::is_pointer(asr_type))) {
+            // An allocatable or pointer assumed-rank dummy is a pointer to the
+            // caller's descriptor pointer. Load that pointer once and inspect
+            // the descriptor: the class-specific extra load below would treat
+            // the descriptor's data pointer as another descriptor.
+            ptr_loads = 1;
+            visit_expr_wrapper(arg, false);
+            ptr_loads = ptr_loads_copy;
+            tmp = arr_descr->get_is_allocated_flag(tmp, arg);
+            return;
+        }
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
             bool ref = false;
             ptr_loads = 1;
