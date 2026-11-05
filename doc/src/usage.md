@@ -175,6 +175,9 @@ A cell's output is shown when the cell finishes or reads input. A cell that fail
 aborts the cells waiting behind it, unless it was sent with `stop_on_error`
 false.
 Delivery is not guaranteed if a client cannot consume output fast enough.
+Once more than 64 MiB of output waits for a client, the built-in kernel drops
+the oldest of it, not the newest, and puts a notice in its place, so that a
+prompt that was idle or slow still shows the output of its own next cell.
 
 A READ asks the client that ran the cell. If that client disconnects, the
 READ fails with an I/O error: a READ with `iostat=` gets it and the cell goes

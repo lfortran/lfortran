@@ -1,10 +1,11 @@
 """A shared session (`lfortran kernel -f`, `lfortran --connect`) with clients
-that misbehave: large output, connections that stall, a client that leaves
-during a READ, a prompt that ends the kernel it started, a prompt killed or
-hung up on, also during a cell that does not return or a READ, cells queued
-behind a failing one, cells that stop the kernel, `lfortran -v`, and a kernel
-told that another process is its parent. Each case runs against whichever
-kernel is built."""
+that misbehave: large output, a subscriber that does not read while another
+client prints more than the kernel keeps for it, connections that stall, a
+client that leaves during a READ, a prompt that ends the kernel it started,
+a prompt killed or hung up on, also during a cell that does not return or a
+READ, cells queued behind a failing one, cells that stop the kernel,
+`lfortran -v`, and a kernel told that another process is its parent. Each
+case runs against whichever kernel is built."""
 
 import argparse
 import contextlib
@@ -255,6 +256,67 @@ def large_output(exe, cwd):
             check(out.count(b"x") >= size, "the prompt lost the output")
             check(re.search(rb"^42\r?$", out, re.M), "the prompt did not run its next cell")
             check(value(client, "7*8") == "56", "another client did not run its cell")
+        finally:
+            stalled.close()
+
+
+def zmtp_messages(s):
+    """The messages read from a raw ZeroMQ connection, as lists of frames"""
+    data, message = b"", []
+
+    def take(n):
+        nonlocal data
+        while len(data) < n:
+            chunk = s.recv(1 << 20)
+            if not chunk:
+                raise EOFError
+            data += chunk
+        taken, data = data[:n], data[n:]
+        return taken
+
+    while True:
+        flags = take(1)[0]
+        size = int.from_bytes(take(8 if flags & 2 else 1), "big")
+        body = take(size)
+        if flags & 4:
+            continue  # a command
+        message.append(body)
+        if not flags & 1:
+            yield message
+            message = []
+
+
+def slow_subscriber_output(exe, cwd):
+    """A subscriber that does not read while another client prints more
+    than the kernel keeps for it, such as an idle prompt or one at a slow
+    terminal, still gets the output of the next cell, after a notice that
+    older output was dropped (#16036)."""
+    with kernel(exe, cwd) as (_, join, ports):
+        client = join()
+        stalled = zmtp(ports["iopub_port"], b"SUB")
+        try:
+            stalled.sendall(b"\x00\x01\x01")  # subscribes to every message
+            check(value(client, "6*7") == "42", "a cell did not run")
+            for k in range(3):
+                reply, _ = run(client, "print '(a)', repeat('%d', 40 * 2**20)" % k,
+                    timeout=120)
+                check(reply["status"] == "ok", reply)
+            reply, _ = run(client, "print *, 'LATEST_16036'")
+            check(reply["status"] == "ok", reply)
+            # Then it reads what the kernel kept for it.
+            texts = []
+            for frames in zmtp_messages(stalled):
+                d = frames.index(b"<IDS|MSG>")
+                header, content = json.loads(frames[d + 2]), json.loads(frames[d + 5])
+                if header["msg_type"] == "stream":
+                    texts.append(content["text"][:100])
+                    if "LATEST_16036" in content["text"]:
+                        break
+            notices = [i for i, text in enumerate(texts) if "output was dropped" in text]
+            check(notices and notices[0] < len(texts) - 1,
+                "no notice of dropped output before the latest cell's: %r" % texts[-3:])
+        except (EOFError, socket.timeout):
+            raise AssertionError("the latest cell's output was lost")
         finally:
             stalled.close()
 
@@ -1048,7 +1110,7 @@ def test_utf8_event_fragments(exe, cwd):
 CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
     test_fragmented_updates, test_unicode_updates, test_idle_disconnect,
     test_output_error_cleanup,
-    large_output, stalled_connections, read_disconnect,
+    large_output, slow_subscriber_output, stalled_connections, read_disconnect,
     late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
     stop_on_error, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.
