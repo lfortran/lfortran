@@ -2799,8 +2799,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                     ASR::dimension_t* ret_dims = nullptr;
                                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
                                     if (n_ret_dims > 0) {
-                                       // Keep whichever 'r' initialization is currently there, for example:
-                                       ReplaceFunctionParamWithArg r(al, a_args.p, a_args.n); // OR call_args1, n_call_args1
+                                       ReplaceFunctionParamWithArg r(al, call_args1, n_call_args1);
 
                                        // 1. Initialize the caller's duplicator OUTSIDE the loop
                                        ASRUtils::ExprStmtDuplicator caller_dup(al);
