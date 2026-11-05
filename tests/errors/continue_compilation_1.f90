@@ -4266,3 +4266,31 @@ contains
         integer, intent(in) :: x
     end subroutine
 end module
+
+module cc_elem_result_m
+    implicit none
+contains
+    elemental function cc_elem_result_array(x) result(r)
+        integer, intent(in) :: x
+        integer :: r(2)
+        r = x
+    end function
+
+    elemental function cc_elem_result_allocatable(x) result(r)
+        integer, intent(in) :: x
+        integer, allocatable :: r
+        r = x
+    end function
+
+    elemental function cc_elem_result_pointer(x) result(r)
+        integer, intent(in) :: x
+        integer, pointer :: r
+        r => null()
+    end function
+
+    elemental function cc_elem_result_len_trim(x) result(r)
+        character(len=*), intent(in) :: x
+        character(len=len_trim(x)) :: r
+        r = x
+    end function
+end module

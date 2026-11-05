@@ -1792,6 +1792,30 @@ semantic error: elemental procedure 'cc_elem_dummies_alt_return' cannot have an 
 4267 |        end subroutine
      | ...^^^^^^^^^^^^^^^^^^ 
 
+semantic error: result of elemental function 'cc_elem_result_array' must be scalar
+    --> tests/errors/continue_compilation_1.f90:4275:20
+     |
+4275 |         integer :: r(2)
+     |                    ^^^^ 
+
+semantic error: result of elemental function 'cc_elem_result_allocatable' cannot be allocatable
+    --> tests/errors/continue_compilation_1.f90:4281:33
+     |
+4281 |         integer, allocatable :: r
+     |                                 ^ 
+
+semantic error: result of elemental function 'cc_elem_result_pointer' cannot be a pointer
+    --> tests/errors/continue_compilation_1.f90:4287:29
+     |
+4287 |         integer, pointer :: r
+     |                             ^ 
+
+semantic error: result length of elemental function 'cc_elem_result_len_trim' can use dummy argument 'x' only as the argument of an inquiry function such as len
+    --> tests/errors/continue_compilation_1.f90:4293:32
+     |
+4293 |         character(len=len_trim(x)) :: r
+     |                                ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
