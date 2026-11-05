@@ -10011,7 +10011,7 @@ public:
                     ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(v_expr)) && !ASRUtils::is_class_type(ASRUtils::expr_type(v_expr)) &&
                     (ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(v_expr)))) !=
                         ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(original_sym))) {
-                    for (size_t i = 0; i < p->n_procs; i++) {
+                    for (size_t i : ASRUtils::order_specifics_nonelemental_first(p->m_procs, p->n_procs)) {
                         final_sym = resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(p->m_procs[i]),
                                         to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);

@@ -26719,21 +26719,8 @@ public:
         if (is_binary)
             right_type = ASRUtils::expr_type(second_operand);
         bool matched = false;
-        // Resolve the specific procedure with the same priority as
-        // ASRUtils::select_generic_procedure: try non-elemental procedures
-        // first (matching rank exactly), and only fall back to elemental
-        // procedures (which broadcast over array actuals) if none matched.
-        // Otherwise an elemental scalar overload declared before a rank-1
-        // overload would be wrongly selected for an array actual argument.
-        std::vector<size_t> proc_order;
-        for (size_t i = 0; i < gen_proc->n_procs; ++i) {
-            if (!ASRUtils::is_elemental(gen_proc->m_procs[i])) proc_order.push_back(i);
-        }
-        for (size_t i = 0; i < gen_proc->n_procs; ++i) {
-            if (ASRUtils::is_elemental(gen_proc->m_procs[i])) proc_order.push_back(i);
-        }
-        for (size_t oi = 0; oi < proc_order.size(); ++oi) {
-            size_t i = proc_order[oi];
+        for (size_t i : ASRUtils::order_specifics_nonelemental_first(
+                gen_proc->m_procs, gen_proc->n_procs)) {
             ASR::symbol_t* proc;
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
                 proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(gen_proc->m_procs[i])->m_proc;

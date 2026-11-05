@@ -1,5 +1,6 @@
 #include "libasr/asr.h"
 #include <algorithm>
+#include <numeric>
 #include <limits>
 #include <set>
 #include <unordered_set>
@@ -2845,7 +2846,6 @@ void process_overloaded_unary_function(ASR::symbol_t* proc, ASR::expr_t* operand
     ASR::ttype_t* operand_type, const std::string& op_name, bool& found, Allocator& al, SymbolTable* curr_scope,
     const Location& loc, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies, ASR::asr_t*& asr,
-    bool elemental_pass,
     const std::function<void (const std::string &, const Location &)> /*err*/,
     ASR::symbol_t* specific=nullptr) {
     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
@@ -2856,9 +2856,6 @@ void process_overloaded_unary_function(ASR::symbol_t* proc, ASR::expr_t* operand
         // any other specific needs a dummy of the operand's rank.
         bool is_elemental_call = ASRUtils::get_FunctionType(func)->m_elemental &&
             ASRUtils::is_array(operand_type);
-        if (is_elemental_call != elemental_pass) {
-            return;
-        }
         bool rank_matches = is_elemental_call ||
             ASRUtils::is_assumed_rank_array(operand_arg_type) ||
             ASRUtils::extract_n_dims_from_ttype(operand_arg_type) ==
@@ -3019,61 +3016,41 @@ bool use_overloaded_unary_op(ASR::expr_t* operand, const std::string& op_name,
     }
 
     bool found = false;
-    // A matching nonelemental specific takes priority over an elemental one
-    // (F2018 15.5.5.2), so the elemental specifics are only tried afterwards.
-    for (bool elemental_pass : {false, true}) {
-        for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
-            switch(proc->type) {
-                case ASR::symbolType::Function: {
-                    process_overloaded_unary_function(proc, operand, operand_type, op_name,
-                        found, al, curr_scope, loc, current_function_dependencies,
-                        current_module_dependencies, asr, elemental_pass, err,
-                        is_type_bound_generic(sym) ? nullptr : gen_proc->m_procs[i]);
-                    break;
-                }
-                case ASR::symbolType::StructMethodDeclaration: {
-                    ASR::StructMethodDeclaration_t* class_procedure_t = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    process_overloaded_unary_function(
-                        ASRUtils::symbol_get_past_external(class_procedure_t->m_proc),
-                        operand, operand_type, op_name, found, al, curr_scope, loc,
-                        current_function_dependencies, current_module_dependencies, asr,
-                        elemental_pass, err);
-                    break;
-                }
-                default: {
-                    if (!elemental_pass) {
-                        err("While overloading binary operators only functions can be used",
-                                            proc->base.loc);
-                    }
-                }
-            }
-        }
-        for (size_t i = 0; struct_gen && i < struct_gen->n_procs && !found; i++) {
-            ASR::symbol_t* proc = struct_gen->m_procs[i];
-            switch(proc->type) {
-                case ASR::symbolType::Function: {
-                    process_overloaded_unary_function(proc, operand, operand_type, op_name,
-                        found, al, curr_scope, loc, current_function_dependencies,
-                        current_module_dependencies, asr, elemental_pass, err);
-                    break;
-                }
-                case ASR::symbolType::StructMethodDeclaration: {
-                    ASR::StructMethodDeclaration_t* class_procedure_t =
-                        ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                    process_overloaded_unary_function(
-                        ASRUtils::symbol_get_past_external(class_procedure_t->m_proc),
-                        operand, operand_type, op_name, found, al, curr_scope, loc,
-                        current_function_dependencies, current_module_dependencies, asr,
-                        elemental_pass, err);
-                    break;
-                }
-                default:
-                    break;
-            }
-        }
+    // The interface specifics, then the ones bound to the operand's type.
+    std::vector<ASR::symbol_t*> procs(gen_proc->m_procs, gen_proc->m_procs + gen_proc->n_procs);
+    if (struct_gen) {
+        procs.insert(procs.end(), struct_gen->m_procs, struct_gen->m_procs + struct_gen->n_procs);
+    }
+    for (size_t i : order_specifics_nonelemental_first(procs.data(), procs.size())) {
         if (found) {
             break;
+        }
+        bool from_interface = i < gen_proc->n_procs;
+        ASR::symbol_t* proc = from_interface
+            ? ASRUtils::symbol_get_past_external(procs[i]) : procs[i];
+        switch(proc->type) {
+            case ASR::symbolType::Function: {
+                process_overloaded_unary_function(proc, operand, operand_type, op_name,
+                    found, al, curr_scope, loc, current_function_dependencies,
+                    current_module_dependencies, asr, err,
+                    from_interface && !is_type_bound_generic(sym) ? procs[i] : nullptr);
+                break;
+            }
+            case ASR::symbolType::StructMethodDeclaration: {
+                ASR::StructMethodDeclaration_t* class_procedure_t =
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
+                process_overloaded_unary_function(
+                    ASRUtils::symbol_get_past_external(class_procedure_t->m_proc),
+                    operand, operand_type, op_name, found, al, curr_scope, loc,
+                    current_function_dependencies, current_module_dependencies, asr, err);
+                break;
+            }
+            default: {
+                if (from_interface) {
+                    err("While overloading binary operators only functions can be used",
+                                        proc->base.loc);
+                }
+            }
         }
     }
     return found;
@@ -3507,19 +3484,18 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     if (sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-        // Non-elemental specifics take precedence over elemental ones.
-        std::vector<ASR::symbol_t*> procs(gen_proc->m_procs, gen_proc->m_procs + gen_proc->n_procs);
-        std::stable_partition(procs.begin(), procs.end(),
-            [](ASR::symbol_t* p) { return !ASRUtils::is_elemental(p); });
-        for( size_t i = 0; i < procs.size() && !found; i++ ) {
-            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(procs[i]);
+        for (size_t i : order_specifics_nonelemental_first(gen_proc->m_procs, gen_proc->n_procs)) {
+            if (found) {
+                break;
+            }
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
             switch( proc->type ) {
                 case ASR::symbolType::Function: {
                     process_overloaded_assignment_function(proc, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, sym,
                         loc, expr_dt, err, nullptr,
-                        is_type_bound_generic(sym) ? nullptr : procs[i]);
+                        is_type_bound_generic(sym) ? nullptr : gen_proc->m_procs[i]);
                     break;
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
@@ -11034,6 +11010,15 @@ bool is_elemental(ASR::symbol_t* x) {
     }
     return ASRUtils::get_FunctionType(
         ASR::down_cast<ASR::Function_t>(proc))->m_elemental;
+}
+
+std::vector<size_t> order_specifics_nonelemental_first(
+        ASR::symbol_t* const* procs, size_t n_procs) {
+    std::vector<size_t> order(n_procs);
+    std::iota(order.begin(), order.end(), 0);
+    std::stable_partition(order.begin(), order.end(),
+        [&](size_t i) { return !is_elemental(procs[i]); });
+    return order;
 }
 
 void insert_module_dependency(ASR::symbol_t* a,
