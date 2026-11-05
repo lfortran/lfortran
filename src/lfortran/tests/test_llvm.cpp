@@ -5899,3 +5899,63 @@ allocate(character(n+1) :: s, t)
         CHECK(r.result.i32 == 2);
     }
 }
+
+TEST_CASE("FortranEvaluator assumed-shape procedure called from a later cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    // A procedure with an assumed-shape intent dummy also gets an
+    // array-by-data copy. A later cell can still call the original with
+    // a descriptor, so the cell that defines it has to keep it.
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(subroutine fill_16711(x)
+real(8), intent(out) :: x(:)
+x = 1.0d0
+end subroutine
+)").ok);
+        REQUIRE(e.evaluate2(R"(real(8) :: v(4)
+v = 0.0d0
+call fill_16711(v)
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("sum(v)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+        CHECK(r.result.f64 == 4.0);
+    }
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(real(8) function total_16711(x)
+real(8), intent(in) :: x(:)
+total_16711 = sum(x)
+end function
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("total_16711([1.0d0, 2.0d0, 3.0d0])");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+        CHECK(r.result.f64 == 6.0);
+    }
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(module m_16711
+implicit none
+contains
+real(8) function row_sum_16711(x)
+real(8), intent(in) :: x(:)
+row_sum_16711 = sum(x)
+end function
+end module
+)").ok);
+        REQUIRE(e.evaluate2(R"(use m_16711
+real(8) :: a(2, 3)
+a = reshape([1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0], [2, 3])
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("row_sum_16711(a(2, :))");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+        CHECK(r.result.f64 == 12.0);
+    }
+}
