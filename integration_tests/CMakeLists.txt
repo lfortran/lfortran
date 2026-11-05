@@ -1261,6 +1261,9 @@ RUN(NAME array_constructor_11 LABELS gfortran llvm) # section elements with inte
 RUN(NAME array_constructor_12 FILE array_constructor_11 LABELS llvm EXTRA_ARGS --descriptor-index-64)
 RUN(NAME array_constructor_13 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64 --realloc-lhs-arrays) # run-time-sized elements next to scalars
 RUN(NAME array_constructor_14 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 --realloc-lhs-arrays GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME array_constructor_15 LABELS gfortran llvm) # implied-do with non-default integer bounds
+RUN(NAME array_constructor_16 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64)
+RUN(NAME array_constructor_17 FILE array_constructor_15 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_nested_dealloc_derived_pointer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -3297,6 +3300,7 @@ RUN(NAME allocate_source_ptr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_source_ptr_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_source_stat_01 LABELS gfortran llvm)
 RUN(NAME allocate_source_component_01 LABELS gfortran llvm)
+RUN(NAME allocate_source_empty_polymorphic_01 LABELS gfortran llvm)
 RUN(NAME allocate_array_descriptor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3880,6 +3884,7 @@ RUN(NAME file_71 LABELS gfortran llvm)
 RUN(NAME file_72 LABELS gfortran llvm)
 RUN(NAME file_73 LABELS gfortran llvm)
 RUN(NAME file_74 LABELS gfortran llvm)
+RUN(NAME file_75 LABELS gfortran llvm)
 RUN(NAME file_76 LABELS gfortran llvm)
 RUN(NAME file_76_fail LABELS gfortran llvm FAIL)
 
@@ -4682,6 +4687,7 @@ RUN(NAME array_section_40 LABELS gfortran llvm)
 RUN(NAME array_section_41 LABELS gfortran llvm c)
 RUN(NAME array_section_42 LABELS gfortran llvm)
 RUN(NAME array_section_43 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64) # omitted section bounds beyond huge(0) (#15067)
+RUN(NAME array_section_44 LABELS gfortran llvm) # section bounds that differ in an uncompared operand (#16723)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)
@@ -7149,6 +7155,8 @@ RUN(NAME gpu_metal_704 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_704_chunked FILE gpu_metal_704 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 RUN(NAME gpu_metal_706 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=4000)
 RUN(NAME gpu_metal_707 LABELS gfortran llvm metal cuda) # empty tiled nest: no padded thread count
+RUN(NAME gpu_metal_713 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0) # split frame rows below -huge(0) - 1 and bounds at huge(0)
+RUN(NAME gpu_metal_714 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-cache-bytes=1000000 --gpu-split-min-iterations=0) # jammed split near -huge(0)
 # The allocatable components of an array of a derived type, packed end to end
 # for the kernel, with their offsets and extents in the kernel's offset kind
 # (#15929); without 64-bit offsets a launch whose components hold more than
@@ -7158,6 +7166,13 @@ RUN(NAME gpu_metal_717 LABELS gfortran metal cuda EXTRA_ARGS --descriptor-index-
 RUN(NAME gpu_metal_718 FAIL LABELS metal cuda) # stops: the packed components need --descriptor-index-64 (not supported on Metal)
 RUN(NAME gpu_metal_710 LABELS gfortran llvm metal cuda) # per-thread workspace slices of block local arrays
 RUN(NAME gpu_metal_711 LABELS gfortran llvm metal cuda) # per-thread workspace slice declared at kernel scope
+RUN(NAME gpu_metal_722 LABELS gfortran llvm metal cuda) # size/lbound/ubound of kind 8 of a dummy under max/min in a device routine (#16609)
+RUN(NAME gpu_metal_723 FILE gpu_metal_722 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64) # CUDA: long extents beside an int lower bound 1; Metal keeps int extents
+# .eqv. and .neqv. in a kernel (lfortran/lfortran#16630).
+RUN(NAME gpu_metal_730 LABELS gfortran llvm metal cuda)
+# Logical reductions (lfortran/lfortran#16725), in one launch and in many.
+RUN(NAME gpu_metal_728 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_metal_729 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
 # 64-bit kernel offsets in a launch that runs in chunks: every loop of
 # gpu_metal_600, those over lower bounds beyond huge(0) included.
 RUN(NAME gpu_metal_600_chunked FILE gpu_metal_600 LABELS gfortran llvm cuda EXTRA_ARGS --descriptor-index-64 --gpu-chunk-limit=3)
@@ -7292,6 +7307,9 @@ RUN(NAME gpu_decline_43 LABELS gfortran llvm)
 RUN(NAME gpu_decline_44 LABELS gfortran llvm)
 RUN(NAME gpu_decline_45 LABELS gfortran llvm)
 RUN(NAME gpu_decline_46 LABELS gfortran llvm)
+RUN(NAME gpu_decline_50 LABELS gfortran llvm)
+RUN(NAME gpu_decline_51 LABELS gfortran llvm)
+RUN(NAME gpu_decline_52 LABELS gfortran llvm)
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error

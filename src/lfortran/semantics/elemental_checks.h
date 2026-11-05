@@ -37,6 +37,9 @@ private:
     // C15103
     static bool no_alternate_return(const ASR::Variable_t &v,
         const std::string &proc_name, diag::Diagnostics &diag);
+    // C15102
+    static bool dummy_intent_given(const ASR::Variable_t &v,
+        const std::string &proc_name, diag::Diagnostics &diag);
     // C15101
     static bool result_scalar(const ASR::Variable_t &r,
         const std::string &proc_name, diag::Diagnostics &diag);

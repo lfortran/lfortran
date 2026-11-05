@@ -69,6 +69,40 @@ std::vector<GpuComponentLayout> gpu_decomposed_components(
     return components;
 }
 
+static bool hands_over_deferred_length_string(ASR::Struct_t *st,
+        std::set<ASR::Struct_t*> &seen) {
+    if (!st || !seen.insert(st).second) return false;
+    std::vector<ASR::symbol_t*> members;
+    gpu_collect_data_members(st, members);
+    for (ASR::symbol_t *member : members) {
+        if (!member || !ASR::is_a<ASR::Variable_t>(*member)) continue;
+        ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(member);
+        if (gpu_component_is_decomposed(member)
+                && ASRUtils::is_deferredLength_string(variable->m_type)) {
+            return true;
+        }
+        // The layout keeps the bytes of an opaque component and of a
+        // pointer one without following them.
+        if (gpu_component_is_opaque(member)
+                || ASRUtils::is_pointer(variable->m_type)) {
+            continue;
+        }
+        if (ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(variable->m_type))
+                && hands_over_deferred_length_string(
+                    gpu_struct_definition(variable->m_type_declaration),
+                    seen)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool gpu_struct_hands_over_deferred_length_string(ASR::Struct_t *definition) {
+    std::set<ASR::Struct_t*> seen;
+    return hands_over_deferred_length_string(definition, seen);
+}
+
 std::vector<GpuComponentLayout> gpu_component_layouts(
         const ASR::gpu_kernel_layout_t &layout, ASR::symbol_t *variable,
         ASR::Struct_t *in_struct) {

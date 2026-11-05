@@ -9,6 +9,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
+#include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/diagnostics.h>
 #include <libasr/exception.h>
@@ -325,6 +326,78 @@ static std::vector<bool> gpu_splittable_dimensions(
     }
     fixed_iterations = static_cast<int64_t>(fixed);
     return splittable;
+}
+
+// Why a host entity of type `type`, declared with `type_declaration`,
+// cannot become a kernel parameter, if it cannot. Through
+// gpu_entity_decline, this is the one test for every host entity that
+// reaches device code: a variable or named constant the loop names, an
+// allocatable component handed over as a buffer, and a variable or named
+// constant a procedure the loop calls reaches. Every kernel parameter is
+// declared with the type of its entity without the Allocatable (or
+// Pointer) wrapper, as the kernel receives the data rather than a
+// descriptor, and so is every component of a derived-type parameter that
+// the device layout hands over as a buffer (here and in
+// gpu_struct_component_args). A deferred-length string has a length only
+// while it is allocatable or a pointer, so that parameter could not be
+// declared. No string is a kernel argument the launch takes, and no
+// derived type with an allocatable string array component is one either
+// (GpuLaunchSupport), so the loop is declined with the reason a string of
+// a constant length is declined with. An array of derived type keeps the
+// reasons it is declined with later.
+static GpuDecline gpu_kernel_parameter_decline(ASR::ttype_t *type,
+        ASR::symbol_t *type_declaration) {
+    if (ASRUtils::is_deferredLength_string(type)) {
+        return GpuDecline(ASRUtils::is_array(type)
+            ? GpuDeclineReason::ArrayElementNotNumeric
+            : GpuDeclineReason::ScalarNotNumeric);
+    }
+    if (type_declaration && !ASRUtils::is_array(type)
+            && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+        ASR::symbol_t *definition =
+            ASRUtils::symbol_get_past_external(type_declaration);
+        if (ASR::is_a<ASR::Struct_t>(*definition)
+                && gpu_struct_hands_over_deferred_length_string(
+                    ASR::down_cast<ASR::Struct_t>(definition))) {
+            return GpuDecline(GpuDeclineReason::StructAllocatableArrayMember);
+        }
+    }
+    return GpuDecline();
+}
+
+// Why the host entity `entity`, of type `type`, cannot reach device code,
+// if it cannot (gpu_kernel_parameter_decline). A named constant is copied
+// into device code rather than passed, but a derived-type copy is given
+// arrays of the same stripped types for its allocatable array components
+// there (gpu_device_struct_storage), so it is declined too, with the
+// reason a derived-type constant with such a component of a constant
+// length gets later, which names that component.
+static GpuDecline gpu_entity_decline(ASR::ttype_t *type,
+        ASR::symbol_t *entity) {
+    ASR::Variable_t *var = nullptr;
+    if (entity) {
+        entity = ASRUtils::symbol_get_past_external(entity);
+        if (ASR::is_a<ASR::Variable_t>(*entity)) {
+            var = ASR::down_cast<ASR::Variable_t>(entity);
+        }
+    }
+    GpuDecline decline = gpu_kernel_parameter_decline(type,
+        var ? var->m_type_declaration : nullptr);
+    if (!decline.declined() || !var
+            || var->m_storage != ASR::storage_typeType::Parameter
+            || !var->m_type_declaration || !var->m_value
+            || !ASR::is_a<ASR::StructConstant_t>(*var->m_value)) {
+        return decline;
+    }
+    ASR::symbol_t *definition =
+        ASRUtils::symbol_get_past_external(var->m_type_declaration);
+    if (!ASR::is_a<ASR::Struct_t>(*definition)) return decline;
+    size_t next_arg = 0;
+    std::string component = gpu_struct_constant_unsupported_component(
+        ASR::down_cast<ASR::Struct_t>(definition),
+        ASR::down_cast<ASR::StructConstant_t>(var->m_value), next_arg);
+    if (component.empty()) return decline;
+    return GpuDecline(GpuDeclineReason::StructConstantComponent, component);
 }
 
 // The loop was assigned to the device by the unsupported-construct check,
@@ -782,6 +855,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 orig_scope, kernel_scope, loc);
         }
 
+        // A named constant, which is cloned below, is checked too.
+        GpuDecline param_decline = gpu_entity_decline(type, orig_sym);
+        if (param_decline.declined()) {
+            report_not_offloaded(loc, param_decline);
+            return;
+        }
+
         // Parameter variables are compile-time constants without
         // runtime storage. Clone them into the kernel scope with
         // their values preserved instead of passing as GPU buffers.
@@ -864,6 +944,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // members. Each allocatable array member becomes a separate
     // flat-array buffer parameter.
     for (auto &di : decomp_infos) {
+        GpuDecline param_decline = gpu_entity_decline(di.alloc_type,
+            di.orig_mem_sym);
+        if (param_decline.declined()) {
+            report_not_offloaded(loc, param_decline);
+            return;
+        }
         ASR::ttype_t *flat_type = ASRUtils::duplicate_type(al,
             ASRUtils::type_get_past_allocatable(di.alloc_type));
 
@@ -2009,6 +2095,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // argument names the entity itself from the caller, imported there
     // if the caller cannot name it.
     {
+        // An entity that cannot become a kernel parameter declines the
+        // loop once the search for dangling references stops.
+        GpuDecline param_decline;
         // The entity of the caller that the kernel symbol `name` stands
         // for, if any.
         auto host_entity = [&](const std::string &name) -> ASR::symbol_t* {
@@ -2058,7 +2147,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 std::string name = ASRUtils::symbol_name(orig_sym);
                 if (ASR::symbol_t *ksym = kernel_symbol_of(resolved_sym)) {
                     replacements[orig_sym] = ksym;
-                } else if (orig_var->m_storage ==
+                    continue;
+                }
+                param_decline = gpu_entity_decline(orig_var->m_type,
+                    resolved_sym);
+                if (param_decline.declined()) break;
+                if (orig_var->m_storage ==
                         ASR::storage_typeType::Parameter) {
                     // Its value, rather than the expression it was
                     // declared with, which names other constants of the
@@ -2133,6 +2227,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     replacements[orig_sym] = param;
                 }
             }
+            if (param_decline.declined()) break;
             if (!replacements.empty()) {
                 DanglingVarFixer fixer(replacements);
                 for (size_t bi = 0; bi < func->n_body; bi++) {
@@ -2142,6 +2237,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     fixer.visit_symbol(*v);
                 }
             }
+        }
+        if (param_decline.declined()) {
+            report_not_offloaded(loc, param_decline);
+            return;
         }
     }
 
@@ -3431,26 +3530,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             ASR::expr_t *slot = gpu_reduction_slot(al, loc,
                 accumulators_of(r), slot_index, r.scalar_type);
             ASR::expr_t *acc = local_accumulators[ri];
-            if (gpu_reduction_folds_by_compare(r.op)) {
-                Vec<ASR::stmt_t*> keep;
-                keep.reserve(al, 1);
-                keep.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
-                    loc, slot, acc, nullptr, false, false, false, false)));
-                kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al,
-                    loc, nullptr, ASRUtils::EXPR(ASRUtils::make_Cmpop_util(
-                        al, loc, r.op == ASR::reduction_opType::ReduceMIN
-                            ? ASR::cmpopType::Lt : ASR::cmpopType::Gt,
-                        acc, slot,
-                        ASRUtils::duplicate_type(al, r.scalar_type))),
-                    keep.p, keep.n, nullptr, 0)));
-            } else {
-                kernel_body.push_back(al, ASRUtils::STMT(
-                    ASR::make_Assignment_t(al, loc, slot,
-                        ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc,
-                            gpu_reduction_fold_binop(r.op), slot, acc,
-                            ASRUtils::duplicate_type(al, r.scalar_type))),
-                        nullptr, false, false, false, false)));
-            }
+            kernel_body.push_back(al, gpu_reduction_combine(al, loc, r.op,
+                slot, acc, r.scalar_type));
         }
     }
 

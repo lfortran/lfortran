@@ -1,0 +1,39 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support a derived type with an allocatable array member the gpu backend cannot decompose
+  --> tests/../integration_tests/gpu_decline_52.f90:33:5 - 35:10
+   |
+33 |        do concurrent (i = 1:5)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+35 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support a derived type with an allocatable array member the gpu backend cannot decompose
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support a derived type with an allocatable array member the gpu backend cannot decompose
+  --> tests/../integration_tests/gpu_decline_52.f90:41:5 - 43:10
+   |
+41 |        do concurrent (i = 1:5)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+43 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support a derived type with an allocatable array member the gpu backend cannot decompose
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support a derived-type constant with component 's', which is not an integer, real or logical scalar, an integer or real array, or a derived-type scalar of these
+  --> tests/../integration_tests/gpu_decline_52.f90:47:5 - 49:10
+   |
+47 |        do concurrent (i = 1:5)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+49 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support a derived-type constant with component 's', which is not an integer, real or logical scalar, an integer or real array, or a derived-type scalar of these
+
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the gpu backend does not support a derived-type constant with component 's', which is not an integer, real or logical scalar, an integer or real array, or a derived-type scalar of these
+  --> tests/../integration_tests/gpu_decline_52.f90:53:5 - 55:10
+   |
+53 |        do concurrent (i = 1:5)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+55 |        end do
+   | ...^^^^^^^^^^ the gpu backend does not support a derived-type constant with component 's', which is not an integer, real or logical scalar, an integer or real array, or a derived-type scalar of these

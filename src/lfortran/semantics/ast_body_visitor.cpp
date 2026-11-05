@@ -15,6 +15,7 @@
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <lfortran/semantics/ast_common_visitor.h>
 #include <lfortran/semantics/ast_to_asr.h>
+#include <lfortran/semantics/pure_checks.h>
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
@@ -22,60 +23,6 @@
 #include <libasr/pass/pass_utils.h>
 
 namespace LCompilers::LFortran {
-
-// `implicit_interface_procedures`: the procedure variables that calls through
-// an implicit interface are made through, mapped to the called procedure.
-static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
-        size_t n_stmts, diag::Diagnostics &diag, bool continue_compilation,
-        const std::map<const ASR::symbol_t*, ASR::symbol_t*> &implicit_interface_procedures) {
-    ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(v);
-    if (!fn_type->m_pure) {
-        return;
-    }
-    ASR::SideEffectFinder finder;
-    finder.implicit_interface_procedures = &implicit_interface_procedures;
-    for (size_t i = 0; i < n_stmts && !finder.found; i++) {
-        finder.visit_stmt(*stmts[i]);
-    }
-    if (finder.found) {
-        diag.add(diag::Diagnostic(
-            finder.description + " is not allowed inside a "
-            "PURE procedure",
-            diag::Level::Error, diag::Stage::Semantic, {
-                diag::Label("", {finder.loc})
-            }));
-        if (!continue_compilation) {
-            throw SemanticAbort();
-        }
-    }
-    // C1592: pure function dummy data objects must have INTENT(IN) or VALUE.
-    // Per the standard, this only applies to *nonpointer* dummy data objects,
-    // so pointer dummy arguments (both data pointers and procedure pointers)
-    // are exempt, as are plain (non-pointer) procedure dummy arguments.
-    for (size_t i = 0; i < v->n_args; i++) {
-        ASR::expr_t *arg = v->m_args[i];
-        // A dummy procedure is not a dummy data object.
-        if (ASR::is_a<ASR::Var_t>(*arg) &&
-                ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(arg)->m_v)) {
-            ASR::Var_t *var_expr = ASR::down_cast<ASR::Var_t>(arg);
-            ASR::Variable_t *v_var = ASR::down_cast<ASR::Variable_t>(var_expr->m_v);
-            ASR::ttype_t *v_type_nopointer = ASRUtils::type_get_past_pointer(v_var->m_type);
-            if (v_var->m_intent == ASR::intentType::Unspecified && !v_var->m_value_attr &&
-                    !ASRUtils::is_pointer(v_var->m_type) &&
-                    !ASR::is_a<ASR::FunctionType_t>(*v_type_nopointer)) {
-                diag.add(diag::Diagnostic(
-                    "Dummy argument '" + std::string(v_var->m_name) +
-                    "' of pure function must have INTENT(IN) or VALUE attribute",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {v_var->base.base.loc})
-                    }));
-                if (!continue_compilation) {
-                    throw SemanticAbort();
-                }
-            }
-        }
-    }
-}
 
 class BodyVisitor : public CommonVisitor<BodyVisitor> {
 private:
@@ -420,60 +367,12 @@ public:
         return false;
     }
 
-    void check_pure_assignment_target(ASR::expr_t* target,
-            const Location& assignment_loc) {
-        SymbolTable *procedure_scope = current_scope;
-        while (procedure_scope) {
-            ASR::asr_t *owner = procedure_scope->asr_owner;
-            if (owner && ASR::is_a<ASR::symbol_t>(*owner) &&
-                    ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
-                ASR::Function_t *procedure = ASR::down_cast<ASR::Function_t>(
-                    ASR::down_cast<ASR::symbol_t>(owner));
-                if (!ASRUtils::get_FunctionType(procedure)->m_pure) {
-                    return;
-                }
-                break;
-            }
-            procedure_scope = procedure_scope->parent;
-        }
-        if (!procedure_scope) {
-            return;
-        }
-        ASR::symbol_t *base = extract_assignment_base_symbol(target);
-        if (!base) {
-            return;
-        }
-        ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(base);
-        if (!ASR::is_a<ASR::Variable_t>(*resolved)) {
-            return;
-        }
-        ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(resolved);
-        // BLOCK locals and the procedure's own result are local definitions.
-        for (SymbolTable *scope = current_scope; scope; scope = scope->parent) {
-            if (scope == variable->m_parent_symtab) {
-                return;
-            }
-            if (scope == procedure_scope) {
-                break;
-            }
-        }
-        std::string association = ASR::is_a<ASR::ExternalSymbol_t>(*base)
-            ? "use-associated" : "host-associated";
-        diag.add(diag::Diagnostic(
-            "cannot assign to " + association + " variable '" +
-            std::string(variable->m_name) + "' in a pure procedure",
-            diag::Level::Error, diag::Stage::Semantic, {
-                diag::Label("", {assignment_loc})
-            }));
-        if (!compiler_options.continue_compilation) {
-            throw SemanticAbort();
-        }
-    }
-
     // Checks that depend only on the target of an assignment, not its value.
     void check_assignment_target(ASR::expr_t* target,
             const Location& assignment_loc) {
-        check_pure_assignment_target(target, assignment_loc);
+        PureChecks::check_assignment_target(
+            extract_assignment_base_symbol(target), current_scope,
+            assignment_loc, diag, compiler_options);
         check_assignment_to_constant_variable(
             extract_assignment_base_symbol(target), assignment_loc);
         // A complex part (`z%re = y`) is assigned through its complex base.
@@ -7548,8 +7447,8 @@ public:
         v->m_deterministic = current_function_deterministic;
         v->m_side_effect_free = current_function_side_effect_free;
         if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation, implicit_call_procedures);
+            PureChecks::check_definition(*v, diag, compiler_options,
+                implicit_call_procedures);
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
@@ -7658,8 +7557,8 @@ public:
         v->m_deterministic = current_function_deterministic;
         v->m_side_effect_free = current_function_side_effect_free;
         if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation, implicit_call_procedures);
+            PureChecks::check_definition(*v, diag, compiler_options,
+                implicit_call_procedures);
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
@@ -7761,8 +7660,8 @@ public:
         v->m_deterministic = current_function_deterministic;
         v->m_side_effect_free = current_function_side_effect_free;
         if (!is_template) {
-            check_pure_function(v, v->m_body, v->n_body, diag,
-                compiler_options.continue_compilation, implicit_call_procedures);
+            PureChecks::check_definition(*v, diag, compiler_options,
+                implicit_call_procedures);
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
@@ -8288,7 +8187,7 @@ public:
                                                     ASR::is_a<ASR::IntegerConstant_t>(*end) ||
                                                     ASR::is_a<ASR::IntegerBinOp_t>(*end) ||
                                                     ASR::is_a<ASR::Cast_t>(*end)) &&
-                                                   ASRUtils::expr_equal(start, end)) {
+                                                   PassUtils::same_expression(start, end)) {
                                             // Same scalar index expression (e.g., x(i:i), x(i+1:i+1)):
                                             // the resulting section has extent 1.
                                             dim_b_int = 1;

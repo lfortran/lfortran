@@ -614,25 +614,26 @@ inline bool gpu_reduction_op_supported(ASR::reduction_opType op) {
         case ASR::reduction_opType::ReduceIAND:
         case ASR::reduction_opType::ReduceIOR:
         case ASR::reduction_opType::ReduceIEOR:
-            return true;
         case ASR::reduction_opType::ReduceAND:
         case ASR::reduction_opType::ReduceOR:
         case ASR::reduction_opType::ReduceEQV:
         case ASR::reduction_opType::ReduceNEQV:
-            return false;
+            return true;
     }
     return false;
 }
 
 // Whether the identity of `op` can be written down in `type`. The bitwise
-// operators are only defined on integers, and MIN and MAX need the
-// extreme value of the kind they run over.
+// operators are only defined on integers, the logical ones only on
+// logicals, and MIN and MAX need the extreme value of the kind they run
+// over.
 inline bool gpu_reduction_identity_exists(ASR::reduction_opType op,
         ASR::ttype_t *type) {
     ASR::ttype_t *t = ASRUtils::type_get_past_array(
         ASRUtils::type_get_past_allocatable_pointer(type));
     bool is_int = ASR::is_a<ASR::Integer_t>(*t);
     bool is_real = ASR::is_a<ASR::Real_t>(*t);
+    bool is_logical = ASR::is_a<ASR::Logical_t>(*t);
     switch (op) {
         case ASR::reduction_opType::ReduceAdd:
         case ASR::reduction_opType::ReduceSub:
@@ -649,7 +650,7 @@ inline bool gpu_reduction_identity_exists(ASR::reduction_opType op,
         case ASR::reduction_opType::ReduceOR:
         case ASR::reduction_opType::ReduceEQV:
         case ASR::reduction_opType::ReduceNEQV:
-            return false;
+            return is_logical;
     }
     return false;
 }
@@ -684,6 +685,55 @@ inline ASR::binopType gpu_reduction_fold_binop(ASR::reduction_opType op) {
     return ASR::binopType::Add;
 }
 
+// The statement that combines the accumulator `other` into `target`, both
+// of the reduction's type: the kernel combines each thread's local
+// accumulator into its slot with it, and the host folds each slot into the
+// variable. MIN and MAX keep whichever of the two they are named for; the
+// logical operators and the others combine the two. Each operator is
+// associative, so the runs the threads accumulated combine in any grouping.
+inline ASR::stmt_t* gpu_reduction_combine(Allocator &al, const Location &loc,
+        ASR::reduction_opType op, ASR::expr_t *target, ASR::expr_t *other,
+        ASR::ttype_t *type) {
+    if (gpu_reduction_folds_by_compare(op)) {
+        Vec<ASR::stmt_t*> keep;
+        keep.reserve(al, 1);
+        keep.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+            target, other, nullptr, false, false, false, false)));
+        return ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
+            ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, loc,
+                op == ASR::reduction_opType::ReduceMIN
+                    ? ASR::cmpopType::Lt : ASR::cmpopType::Gt,
+                other, target, ASRUtils::duplicate_type(al, type))),
+            keep.p, keep.n, nullptr, 0));
+    }
+    auto combine_logically = [&](ASR::logicalbinopType lop) {
+        return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc, target, lop,
+            other, ASRUtils::duplicate_type(al, type), nullptr));
+    };
+    ASR::expr_t *value;
+    switch (op) {
+        case ASR::reduction_opType::ReduceAND:
+            value = combine_logically(ASR::logicalbinopType::And);
+            break;
+        case ASR::reduction_opType::ReduceOR:
+            value = combine_logically(ASR::logicalbinopType::Or);
+            break;
+        case ASR::reduction_opType::ReduceEQV:
+            value = combine_logically(ASR::logicalbinopType::Eqv);
+            break;
+        case ASR::reduction_opType::ReduceNEQV:
+            value = combine_logically(ASR::logicalbinopType::NEqv);
+            break;
+        default:
+            value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc,
+                gpu_reduction_fold_binop(op), target, other,
+                ASRUtils::duplicate_type(al, type)));
+            break;
+    }
+    return ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target, value,
+        nullptr, false, false, false, false));
+}
+
 // The value a thread's accumulator starts from: the one that leaves the
 // result unchanged when folded in, so a thread whose body never reached
 // the accumulator contributes nothing.
@@ -700,6 +750,10 @@ inline ASR::expr_t* gpu_reduction_identity(Allocator &al,
     };
     auto fraction = [&](double v) {
         return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, v,
+            ASRUtils::duplicate_type(al, t)));
+    };
+    auto truth = [&](bool v) {
+        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, v,
             ASRUtils::duplicate_type(al, t)));
     };
     // The largest integer of the accumulator's kind; the smallest is one
@@ -734,10 +788,12 @@ inline ASR::expr_t* gpu_reduction_identity(Allocator &al,
             }
             return whole(-int_max() - 1);
         case ASR::reduction_opType::ReduceAND:
-        case ASR::reduction_opType::ReduceOR:
         case ASR::reduction_opType::ReduceEQV:
+            // `x .eqv. .true.` is `x`, as `x .and. .true.` is.
+            return truth(true);
+        case ASR::reduction_opType::ReduceOR:
         case ASR::reduction_opType::ReduceNEQV:
-            break;
+            return truth(false);
     }
     LCOMPILERS_ASSERT(false);
     return nullptr;

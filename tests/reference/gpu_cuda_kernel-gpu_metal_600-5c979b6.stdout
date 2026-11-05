@@ -466,7 +466,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_8(
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
     i8__dc6 = (__flat_idx + __loop_start_0);
     w[((long)((unsigned int)((1) - (__lb_w_0)))) + (__dim_w_0 * ((long)(i8__dc6) - (__lb_w_1)))] = get_s_gpu_36(u[((long)((unsigned int)((1) - (__lb_u_0))))], __data_u_a + __offsets_u_a[((long)((unsigned int)((1) - (__lb_u_0))))], __sizes_u_a[(((long)((unsigned int)((1) - (__lb_u_0))))) * 2 + 0], __sizes_u_a[(((long)((unsigned int)((1) - (__lb_u_0))))) * 2 + 1], i8__dc6);
-    w[((long)((unsigned int)((2) - (__lb_w_0)))) + (__dim_w_0 * ((long)(i8__dc6) - (__lb_w_1)))] = get_a_gpu_35((__data_u_a + __offsets_u_a[((long)((unsigned int)((2) - (__lb_u_0))))]), ((long)__sizes_u_a[(((long)((unsigned int)((2) - (__lb_u_0))))) * 2 + 0]), i8__dc6, __sizes_u_a[(((long)((unsigned int)((2) - (__lb_u_0))))) * 2 + 1]);
+    w[((long)((unsigned int)((2) - (__lb_w_0)))) + (__dim_w_0 * ((long)(i8__dc6) - (__lb_w_1)))] = get_a_gpu_35((__data_u_a + __offsets_u_a[((long)((unsigned int)((2) - (__lb_u_0))))]), ((long)__sizes_u_a[(((long)((unsigned int)((2) - (__lb_u_0))))) * 2 + 0]), i8__dc6, ((long)(__sizes_u_a[(((long)((unsigned int)((2) - (__lb_u_0))))) * 2 + 1])));
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_9 {

@@ -14,6 +14,7 @@
 #include <lfortran/semantics/ast_common_visitor.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/semantics/elemental_checks.h>
+#include <lfortran/semantics/pure_checks.h>
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
@@ -2746,10 +2747,6 @@ public:
             }
         }
 
-        if (is_pure) {
-            check_pure_intent_out_polymorphic_args(args, to_lower(x.m_name));
-        }
-
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
@@ -2773,6 +2770,9 @@ public:
             is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
             is_requirement, init_deterministic, init_side_effect_free);
+        PureChecks::check_declaration(
+            *ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp)),
+            to_lower(x.m_name), diag, compiler_options);
         ElementalChecks::check_procedure(
             *ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp)),
             to_lower(x.m_name), diag, compiler_options);
@@ -3595,10 +3595,6 @@ public:
             is_pure = true;
         }
 
-        if (is_pure) {
-            check_pure_intent_out_polymorphic_args(args, to_lower(x.m_name));
-        }
-
         SetChar func_deps;
         func_deps.reserve(al, current_function_dependencies.size());
         for( auto& itr: current_function_dependencies ) {
@@ -3630,6 +3626,8 @@ public:
 
         ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+        PureChecks::check_declaration(*func, to_lower(x.m_name), diag,
+            compiler_options);
         ElementalChecks::check_procedure(*func, to_lower(x.m_name), diag,
             compiler_options);
 

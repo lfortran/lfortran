@@ -1461,6 +1461,10 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         // later cell still can, so it has to be emitted. Dropping it here
         // leaves the later cell's call with no definition to link to.
         pass_manager.skip_pass("unused_functions");
+        // For the same reason, array_by_data has to keep the descriptor
+        // original of a procedure it specializes: a later cell may call
+        // it with a descriptor, e.g. with an array section.
+        compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
     }
 
     if (compiler_options.generate_code_for_global_procedures) {

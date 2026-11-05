@@ -30,7 +30,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 __device__ inline void shifted_gpu_14(t self, int* __data_self_v, long __size_self_v, long __lb_self_v_dim1, int k, int* w) {
     long __libasr_index_0_;
     long __libasr_index_0_1;
-    __libasr_index_0_1 = __lb_self_v_dim1;
+    __libasr_index_0_1 = ((long)(__lb_self_v_dim1));
     const long __lfortran_end_0 = ((((long)__size_self_v) + ((long)1)) - ((long)1));
     for (__libasr_index_0_ = ((long)1); __libasr_index_0_ <= __lfortran_end_0; __libasr_index_0_++) {
         w[((long)(__libasr_index_0_) - (1))] = (__data_self_v[((long)(__libasr_index_0_1) - (__lb_self_v_dim1))] + k);
