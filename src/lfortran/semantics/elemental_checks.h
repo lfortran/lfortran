@@ -37,6 +37,27 @@ private:
     // C15103
     static bool no_alternate_return(const ASR::Variable_t &v,
         const std::string &proc_name, diag::Diagnostics &diag);
+    // C15101
+    static bool result_scalar(const ASR::Variable_t &r,
+        const std::string &proc_name, diag::Diagnostics &diag);
+
+    // C15101
+    static bool result_not_allocatable(const ASR::Variable_t &r,
+        const std::string &proc_name, diag::Diagnostics &diag);
+
+    // C15101
+    static bool result_not_pointer(const ASR::Variable_t &r,
+        const std::string &proc_name, diag::Diagnostics &diag);
+
+    // C15104
+    static bool result_type_params(const ASR::Function_t &f,
+        const ASR::Variable_t &r, const std::string &proc_name,
+        diag::Diagnostics &diag);
+
+    // C15104, length parameters of a derived-type result
+    static bool result_derived_type_params(const ASR::Function_t &f,
+        const ASR::Variable_t &r, const std::string &proc_name,
+        diag::Diagnostics &diag);
 };
 
 } // namespace LCompilers::LFortran
