@@ -28575,15 +28575,16 @@ public:
         }
     }
 
-    // Emit the runtime check for an actual argument associated with an
-    // explicit-shape or assumed-size dummy. The actual argument is associated
-    // with the dummy by element sequence (F2023 15.5.2.12), so its element
-    // count must not be smaller than the dummy's; the extents do not have to
-    // agree per dimension. An exact per-dimension match is only required for
-    // strict bounds checking and for the assignment target of a converted
-    // function call, which do not use this check. Both counts are i64: a
-    // 32-bit product wraps once the extent product exceeds 2^31 elements and
-    // the comparison would then accept a too-small actual argument.
+    // Emit the runtime check for an actual argument associated with a dummy
+    // that declares an extent for at least one dimension (explicit-shape, or
+    // assumed-size such as `a(n, *)`). The actual argument is associated with
+    // the dummy by element sequence (F2023 15.5.2.12), so its element count
+    // must not be smaller than the dummy's; the extents do not have to agree
+    // per dimension. An exact per-dimension match is only required for strict
+    // bounds checking and for the assignment target of a converted function
+    // call, which do not use this check. Both counts are i64: a 32-bit product
+    // wraps once the extent product exceeds 2^31 elements and the comparison
+    // would then accept a too-small actual argument.
     void emit_sequence_assoc_size_check(ASR::symbol_t* m_name,
             ASR::expr_t* arg_expr, llvm::Value* actual_size,
             llvm::Value* dummy_size, size_t arg_index) {
@@ -28799,11 +28800,12 @@ public:
                             arr_descr->get_array_size(arr_type, arg, nullptr, 8),
                             get_array_size_from_asr_type(arr_cast->m_type), i);
                     }
-                    // Else the dummy is assumed-shape and declares no extent in
-                    // its type, so there is no dummy element count to compare
-                    // against and sequence association does not apply. Whether
-                    // the ranks match is not a size property and is not checked
-                    // here.
+                    // Else the dummy declares no extent in its type: it is
+                    // assumed-shape, or an assumed-size dummy that declares no
+                    // extent (`a(*)`, passed as a data pointer). There is no
+                    // dummy element count to compare against, so no size check
+                    // is emitted. Whether the ranks match is not a size property
+                    // and is not checked here.
                 } else if (arr_cast->m_old == ASR::FixedSizeArray && arr_cast->m_new == ASR::PointerArray) {
                     ASR::ttype_t* fixed_size_type = ASRUtils::expr_type(arr_cast->m_arg);
                     ASR::dimension_t* m_dims_fixed = nullptr;
@@ -28858,10 +28860,10 @@ public:
                                 ASRUtils::get_fixed_size_of_array(fixed_size_type)),
                             get_array_size_from_asr_type(arr_cast->m_type), i);
                     }
-                    // Else the dummy is assumed-shape and declares no extent in
-                    // its type, so there is no dummy element count to compare
-                    // against and sequence association does not apply, exactly
-                    // as for a descriptor actual argument above.
+                    // Else, as for a descriptor actual argument above, the
+                    // dummy declares no extent in its type (assumed-shape, or an
+                    // assumed-size dummy such as `a(*)`), so no size check is
+                    // emitted.
                 }
 
                 if (optional_check_mergeBB != nullptr) {
