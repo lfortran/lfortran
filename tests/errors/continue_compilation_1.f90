@@ -4294,3 +4294,83 @@ contains
         r = x
     end function
 end module
+
+module cc_elem_pure_m
+    implicit none
+
+    type :: ccep_t
+        integer :: h = 0
+    end type
+
+    interface
+        pure integer function ccep_iface_fn(a)
+            integer :: a
+        end function
+        pure subroutine ccep_iface_sub(b)
+            integer :: b
+        end subroutine
+    end interface
+
+contains
+
+    elemental subroutine ccep_elem_sub(x)
+        integer :: x
+        x = 1
+    end subroutine
+
+    impure elemental subroutine ccep_impure_elem_sub(x)
+        integer :: x
+        x = 1
+    end subroutine
+
+    elemental integer function ccep_elem_fn(x, y)
+        integer :: x
+        integer, value :: y
+        ccep_elem_fn = x + y
+    end function
+
+    elemental integer function ccep_elem_fn_out(x)
+        integer, intent(out) :: x
+        x = 1
+        ccep_elem_fn_out = 1
+    end function
+
+    pure integer function ccep_pure_fn(a, b, p, v, g)
+        integer, intent(out) :: a
+        integer, intent(inout) :: b
+        integer, pointer :: p
+        integer, value :: v
+        interface
+            pure integer function g(y)
+                integer, intent(in) :: y
+            end function
+        end interface
+        a = 1
+        ccep_pure_fn = b + p + v + g(1)
+    end function
+
+    pure subroutine ccep_pure_sub(x, p)
+        integer :: x
+        integer, pointer :: p
+        x = p
+    end subroutine
+
+    pure integer function ccep_init() result(r)
+        integer, parameter :: k = 3
+        integer :: s = 9
+        r = s + k
+    end function
+
+    elemental integer function ccep_init_type(x) result(r)
+        integer, intent(in) :: x
+        type(ccep_t) :: s = ccep_t(9)
+        type(ccep_t) :: u
+        r = s%h + u%h + x
+    end function
+
+    pure integer function ccep_save() result(r)
+        integer, save :: s
+        s = 1
+        r = s
+    end function
+end module

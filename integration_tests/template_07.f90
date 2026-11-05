@@ -51,8 +51,8 @@ module template_apply_m_template_07
         public :: apply_lt
     contains
         pure function apply_lt(lhs, rhs) result(res)
-            type(T), intent(inout) :: lhs(:)
-            type(T), intent(inout) :: rhs(:)
+            type(T), intent(in) :: lhs(:)
+            type(T), intent(in) :: rhs(:)
             logical :: res
             res = all ( lt(lhs,rhs) )
         end function

@@ -13,6 +13,7 @@ set(SRC
     semantics/ast_body_visitor.cpp
     semantics/ast_to_asr.cpp
     semantics/elemental_checks.cpp
+    semantics/pure_checks.cpp
 
     fortran_evaluator.cpp
     pipeline.cpp
