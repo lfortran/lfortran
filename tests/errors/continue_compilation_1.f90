@@ -4518,6 +4518,10 @@ end module
 module cc1_polymorphic_c_ptr_intrinsics
     use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_f_pointer
     implicit none
+
+    type :: cc1_poly_t
+        integer :: i
+    end type
 contains
     subroutine cc1_polymorphic_c_loc(x)
         class(*), target, intent(inout) :: x
@@ -4525,9 +4529,21 @@ contains
         c = c_loc(x)  ! {Error} the X argument of c_loc() shall not be polymorphic
     end subroutine
 
+    subroutine cc1_polymorphic_c_loc_class_t(x)
+        class(cc1_poly_t), target, intent(inout) :: x
+        type(c_ptr) :: c
+        c = c_loc(x)  ! {Error} the X argument of c_loc() shall not be polymorphic
+    end subroutine
+
     subroutine cc1_polymorphic_c_f_pointer(p, q)
         type(c_ptr), intent(in) :: p
         class(*), pointer, intent(out) :: q
+        call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
+    end subroutine
+
+    subroutine cc1_polymorphic_c_f_pointer_class_t(p, q)
+        type(c_ptr), intent(in) :: p
+        class(cc1_poly_t), pointer, intent(out) :: q
         call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
     end subroutine
 end module
