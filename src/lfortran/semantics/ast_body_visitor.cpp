@@ -3988,16 +3988,26 @@ public:
             }
         }
 
-        ASR::expr_t *size_target = nullptr;
-        SymbolTable *size_scope = nullptr;
-        if (size && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(size)) != 8) {
-            size_target = size;
-            size_scope = al.make_new<SymbolTable>(current_scope);
-            ASR::ttype_t *size_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));
+        // SIZE= and POS= are queried as integer(8); a variable of another
+        // kind is assigned from a statement-local integer(8) temporary.
+        SymbolTable *int64_scope = nullptr;
+        std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> int64_targets;
+        auto query_as_int64 = [&](ASR::expr_t *&arg, const char *temp_name) {
+            if (!arg || ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(arg)) == 8) {
+                return;
+            }
+            if (!int64_scope) {
+                int64_scope = al.make_new<SymbolTable>(current_scope);
+            }
+            ASR::ttype_t *int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
-            size = b.Variable(size_scope, "__lfortran_inquire_size",
-                size_type, ASRUtils::intent_local);
-        }
+            ASR::expr_t *temp = b.Variable(int64_scope, temp_name,
+                int64_type, ASRUtils::intent_local);
+            int64_targets.push_back({arg, temp});
+            arg = temp;
+        };
+        query_as_int64(size, "__lfortran_inquire_size");
+        query_as_int64(pos, "__lfortran_inquire_pos");
 
         tmp = ASR::make_FileInquire_t(al, x.base.base.loc, x.m_label,
                                   unit, file, iostat, err,
@@ -4011,21 +4021,23 @@ public:
                                   iolength_args.p, iolength_args.n, decimal,
                                   sign, encoding, stream, iomsg, round,
                                   pending, asynchronous);
-        if (size_target) {
-            // The query and conversion share statement-local storage, including
+        if (int64_scope) {
+            // The query and conversions share statement-local storage, including
             // when the containing region executes concurrently.
             Vec<ASR::stmt_t*> body;
-            body.reserve(al, 2);
+            body.reserve(al, 1 + int64_targets.size());
             body.push_back(al, ASRUtils::STMT(tmp));
-            ASR::expr_t *value = size;
-            ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
-                ASRUtils::expr_type(value),
-                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(size_target)), diag);
-            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, x.base.base.loc, size_target, value, nullptr, false, false)));
+            for (auto &[target, temp] : int64_targets) {
+                ASR::expr_t *value = temp;
+                ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
+                    ASRUtils::expr_type(value),
+                    ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(target)), diag);
+                body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, x.base.base.loc, target, value, nullptr, false, false)));
+            }
             std::string name = current_scope->get_unique_name("__lfortran_inquire");
             ASR::symbol_t *block = ASR::down_cast<ASR::symbol_t>(
-                ASR::make_Block_t(al, x.base.base.loc, size_scope,
+                ASR::make_Block_t(al, x.base.base.loc, int64_scope,
                     s2c(al, name), body.p, body.n));
             current_scope->add_symbol(name, block);
             tmp = ASR::make_BlockCall_t(al, x.base.base.loc, -1, block);
