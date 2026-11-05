@@ -95,6 +95,12 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
             && caps.offsets_follow_descriptor_index_64()) {
         caps.offset_kind = 8;
     }
+    if (caps.device == GpuDevice::Cuda && !pass_options.gpu_offload_hip) {
+        // On an H100 PCIe a dot product of 2**27 elements read at 1.63 TB/s
+        // with 2**16 threads and at 1.22 TB/s with 2**17; a 2-norm and a
+        // maximum lost 40% with 2**17.
+        caps.reduction_threads = 65536;
+    }
     if (pass_options.gpu_offload_hip) {
         // ROCm's device compiler does not unroll a loop whose trip count it
         // does not know, so a thread waits for each load of such a loop

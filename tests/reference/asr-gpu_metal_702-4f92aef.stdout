@@ -763,11 +763,11 @@
                             (IntegerCompare
                                 (Var 5 __gpu_iterations)
                                 Gt
-                                (IntegerConstant 131072 (Integer 4) Decimal)
+                                (IntegerConstant 65536 (Integer 4) Decimal)
                                 (Logical 4)
                                 ()
                             )
-                            (IntegerConstant 131072 (Integer 4) Decimal)
+                            (IntegerConstant 65536 (Integer 4) Decimal)
                             (Var 5 __gpu_iterations)
                             (Integer 4)
                             ()
@@ -3413,7 +3413,7 @@
                                 (IntegerCompare
                                     (Var 2 __gpu_iteration_count)
                                     Gt
-                                    (IntegerConstant 131072 (Integer 8) Decimal)
+                                    (IntegerConstant 65536 (Integer 8) Decimal)
                                     (Logical 4)
                                     ()
                                 )
@@ -3428,7 +3428,7 @@
                                 (Logical 4)
                                 ()
                             )
-                            (IntegerConstant 131072 (Integer 8) Decimal)
+                            (IntegerConstant 65536 (Integer 8) Decimal)
                             (Var 2 __gpu_iteration_count)
                             (Integer 8)
                             ()
@@ -3990,11 +3990,11 @@
                                 (IntegerCompare
                                     (Var 2 __gpu_reduction_slots)
                                     Gt
-                                    (IntegerConstant 131072 (Integer 8) Decimal)
+                                    (IntegerConstant 65536 (Integer 8) Decimal)
                                     (Logical 4)
                                     ()
                                 )
-                                (IntegerConstant 131072 (Integer 8) Decimal)
+                                (IntegerConstant 65536 (Integer 8) Decimal)
                                 (Var 2 __gpu_reduction_slots)
                                 (Integer 8)
                                 ()

@@ -76,7 +76,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     int j__dc1;
     const int lo = -3;
     __gpu_iterations = (32 * 5);
-    __gpu_stride = (((__gpu_iterations > 131072)) ? (131072) : (__gpu_iterations));
+    __gpu_stride = (((__gpu_iterations > 65536)) ? (65536) : (__gpu_iterations));
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= __gpu_stride)) {
         return;
     }

@@ -2880,7 +2880,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         first_flat_position = 2;
     } else if (strided) {
         // A reduction runs its iterations in a grid-stride loop: at most
-        // gpu_reduction_threads threads, the first `stride` of the launch,
+        // device_caps.reduction_threads threads, the first `stride` of the launch,
         // each run every stride-th iteration from its own number and
         // accumulate them in one slot. The host then folds `stride` slots
         // rather than one per iteration (gpu_offload_launch.cpp launches no
@@ -2896,7 +2896,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         assign(stride_total, total);
         stride_var = kernel_local("__gpu_stride", index_type);
         ASR::expr_t *limit = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
-            loc, gpu_reduction_threads, index_type,
+            loc, device_caps.reduction_threads, index_type,
             ASR::integerbozType::Decimal));
         assign(stride_var, ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
             ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, stride_total,

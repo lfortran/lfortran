@@ -26,7 +26,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __gpu_stride;
     int i__dc;
     __gpu_iterations = (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0));
-    __gpu_stride = (((__gpu_iterations > 131072)) ? (131072) : (__gpu_iterations));
+    __gpu_stride = (((__gpu_iterations > 65536)) ? (65536) : (__gpu_iterations));
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= __gpu_stride)) {
         return;
     }
@@ -90,7 +90,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int i__dc1;
     int j__dc;
     __gpu_iterations = (10 * (((__loop_end_1 >= __loop_start_1)) ? (((__loop_end_1 - __loop_start_1) + 1)) : (0)));
-    __gpu_stride = (((__gpu_iterations > 131072)) ? (131072) : (__gpu_iterations));
+    __gpu_stride = (((__gpu_iterations > 65536)) ? (65536) : (__gpu_iterations));
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= __gpu_stride)) {
         return;
     }
@@ -158,7 +158,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     int __gpu_stride;
     int i__dc2;
     __gpu_iterations = 10;
-    __gpu_stride = (((__gpu_iterations > 131072)) ? (131072) : (__gpu_iterations));
+    __gpu_stride = (((__gpu_iterations > 65536)) ? (65536) : (__gpu_iterations));
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= __gpu_stride)) {
         return;
     }
