@@ -1967,7 +1967,80 @@ public:
 
     // void visit_FileEndfile(const ASR::FileEndfile_t &x) {}
 
-    // void visit_FileInquire(const ASR::FileInquire_t &x) {}
+    void visit_FileInquire(const ASR::FileInquire_t &x) {
+        std::string r;
+        r = indent;
+        r += "inquire";
+        r += "(";
+        bool need_comma = false;
+        auto emit_specifier = [&](const char *keyword, ASR::expr_t *value) {
+            if (!value) {
+                return;
+            }
+            if (need_comma) {
+                r += ", ";
+            }
+            need_comma = true;
+            r += keyword;
+            r += "=";
+            visit_expr(*value);
+            r += src;
+        };
+        emit_specifier("unit", x.m_unit);
+        emit_specifier("file", x.m_file);
+        emit_specifier("iostat", x.m_iostat);
+        emit_specifier("err", x.m_err);
+        emit_specifier("exist", x.m_exist);
+        emit_specifier("opened", x.m_opened);
+        emit_specifier("number", x.m_number);
+        emit_specifier("named", x.m_named);
+        emit_specifier("name", x.m_name);
+        emit_specifier("access", x.m_access);
+        emit_specifier("sequential", x.m_sequential);
+        emit_specifier("direct", x.m_direct);
+        emit_specifier("form", x.m_form);
+        emit_specifier("formatted", x.m_formatted);
+        emit_specifier("unformatted", x.m_unformatted);
+        emit_specifier("recl", x.m_recl);
+        emit_specifier("nextrec", x.m_nextrec);
+        emit_specifier("blank", x.m_blank);
+        emit_specifier("position", x.m_position);
+        emit_specifier("action", x.m_action);
+        emit_specifier("read", x.m_read);
+        emit_specifier("write", x.m_write);
+        emit_specifier("readwrite", x.m_readwrite);
+        emit_specifier("delim", x.m_delim);
+        emit_specifier("pad", x.m_pad);
+        emit_specifier("flen", x.m_flen);
+        emit_specifier("blocksize", x.m_blocksize);
+        emit_specifier("convert", x.m_convert);
+        emit_specifier("carriagecontrol", x.m_carriagecontrol);
+        emit_specifier("size", x.m_size);
+        emit_specifier("pos", x.m_pos);
+        emit_specifier("iolength", x.m_iolength);
+        emit_specifier("decimal", x.m_decimal);
+        emit_specifier("sign", x.m_sign);
+        emit_specifier("encoding", x.m_encoding);
+        emit_specifier("stream", x.m_stream);
+        emit_specifier("iomsg", x.m_iomsg);
+        emit_specifier("round", x.m_round);
+        emit_specifier("pending", x.m_pending);
+        emit_specifier("asynchronous", x.m_asynchronous);
+        r += ")";
+        if (x.n_iolength_vars > 0) {
+            r += " ";
+            for (size_t i = 0; i < x.n_iolength_vars; i++) {
+                if (i > 0) {
+                    r += ", ";
+                }
+                visit_expr(*x.m_iolength_vars[i]);
+                r += src;
+            }
+        }
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         ASR::StringFormat_t *sf = nullptr;
