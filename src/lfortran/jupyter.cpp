@@ -550,9 +550,11 @@ public:
         // does at its high-water mark: a subscriber that reads too slowly,
         // such as a prompt at a slow terminal or waiting for redirected
         // input, then still gets the latest output, of its own next cell too.
-        // A message larger than 64 MiB is sent whole: it cannot be cut short.
-        // While it is still being sent, the latest message published after it
-        // is the one kept, and publishing another replaces it with a notice.
+        // A message larger than 64 MiB that has started sending is sent whole:
+        // it cannot be cut short. One that has not started yet is dropped like
+        // any other. While such a message is being sent, the latest message
+        // published after it is kept, and publishing another replaces it with
+        // a notice.
         droppable
     };
 
