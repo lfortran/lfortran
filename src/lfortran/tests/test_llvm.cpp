@@ -15,6 +15,10 @@
 #include <lfortran/fortran_kernel.h>
 #ifndef __EMSCRIPTEN__
 #include <thread>
+#ifndef _WIN32
+#include <pthread.h>
+#include <sys/resource.h>
+#endif
 #endif
 #include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
@@ -5391,6 +5395,57 @@ static void run_cell(FortranEvaluator &e, const std::string &code,
     CAPTURE(code);
     REQUIRE_MESSAGE(cell.ok, cell.error_text());
 }
+
+#ifndef _WIN32
+// The cell runs on a thread of its own while the caller passes its output on.
+// That thread must have the stack the cell had on the main thread, not the
+// default for a new thread, which on macOS is 512 KiB (#16348). glibc's
+// default follows RLIMIT_STACK, so it is lowered here to what macOS has.
+TEST_CASE("FortranEvaluator execute: a streaming cell keeps the main thread's stack") {
+    struct rlimit limit;
+    REQUIRE(getrlimit(RLIMIT_STACK, &limit) == 0);
+    if (limit.rlim_cur != RLIM_INFINITY && limit.rlim_cur < 8 * 1024 * 1024) {
+        MESSAGE("RLIMIT_STACK is below 8 MiB; skipping");
+        return;
+    }
+#ifdef __GLIBC__
+    struct DefaultStack {
+        pthread_attr_t saved;
+        DefaultStack() {
+            REQUIRE(pthread_getattr_default_np(&saved) == 0);
+            pthread_attr_t small;
+            REQUIRE(pthread_attr_init(&small) == 0);
+            REQUIRE(pthread_attr_setstacksize(&small, 512 * 1024) == 0);
+            REQUIRE(pthread_setattr_default_np(&small) == 0);
+            pthread_attr_destroy(&small);
+        }
+        ~DefaultStack() {
+            pthread_setattr_default_np(&saved);
+            pthread_attr_destroy(&saved);
+        }
+    } default_stack;
+#endif
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    run_cell(e, R"(
+recursive function depth(n) result(r)
+integer, intent(in) :: n
+integer :: r
+if (n == 0) then
+    r = 0
+else
+    r = 1 + depth(n - 1)
+end if
+end function
+)", io);
+    // 2 to 4 MiB of frames: well beyond 512 KiB, well within 8 MiB.
+    run_cell(e, "print '(i0)', depth(100000)", io);
+    CHECK(output == "100000\n");
+}
+#endif
 
 static void check_input(const std::string &code,
         std::vector<std::string> records, int expected_calls = -1) {

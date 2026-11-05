@@ -29,6 +29,11 @@
 #undef interface
 #else
 #include <unistd.h>
+#ifndef __EMSCRIPTEN__
+#include <pthread.h>
+#include <sys/resource.h>
+#include <system_error>
+#endif
 #endif
 #include <sys/stat.h>
 
@@ -252,6 +257,70 @@ public:
         return done;
     }
 };
+
+#ifndef _WIN32
+// The stack a cell had when it ran on the main thread: RLIMIT_STACK, or 8 MiB
+// if that is unlimited, but never less than the default for a new thread.
+size_t cell_stack_size() {
+    size_t size = 8 * 1024 * 1024;
+    struct rlimit limit;
+    if (getrlimit(RLIMIT_STACK, &limit) == 0 && limit.rlim_cur != RLIM_INFINITY) {
+        size = limit.rlim_cur;
+    }
+    pthread_attr_t attr;
+    if (pthread_attr_init(&attr) == 0) {
+        size_t default_size = 0;
+        if (pthread_attr_getstacksize(&attr, &default_size) == 0) {
+            size = std::max(size, default_size);
+        }
+        pthread_attr_destroy(&attr);
+    }
+    size = std::max(size, size_t(PTHREAD_STACK_MIN));
+    const long page = sysconf(_SC_PAGESIZE);
+    if (page > 0) size = (size + page - 1) / page * page;
+    return size;
+}
+
+// Runs a cell like std::thread, but with the stack of the main thread. A new
+// thread gets the platform default instead, which on macOS is 512 KiB: much
+// less recursion than a cell had on the main thread, and a SIGSEGV beyond it.
+// Windows gives a new thread the 1 MiB that the main thread has.
+class CellThread {
+    pthread_t thread;
+    std::function<void()> body;
+    bool joined = false;
+    static void *run(void *self) {
+        static_cast<CellThread *>(self)->body();
+        return nullptr;
+    }
+public:
+    explicit CellThread(std::function<void()> body) : body(std::move(body)) {
+        pthread_attr_t attr;
+        int error = pthread_attr_init(&attr);
+        if (error == 0) {
+            error = pthread_attr_setstacksize(&attr, cell_stack_size());
+            if (error == 0) error = pthread_create(&thread, &attr, run, this);
+            pthread_attr_destroy(&attr);
+        }
+        // A stack that cannot be had is no reason not to run the cell.
+        if (error != 0) error = pthread_create(&thread, nullptr, run, this);
+        if (error != 0) {
+            throw std::system_error(error, std::generic_category(),
+                "cannot start the cell's thread");
+        }
+    }
+    // Like std::thread: the thread uses `body`, so it must be joined first.
+    ~CellThread() { if (!joined) std::terminate(); }
+    CellThread(const CellThread &) = delete;
+    CellThread &operator=(const CellThread &) = delete;
+    void join() {
+        pthread_join(thread, nullptr);
+        joined = true;
+    }
+};
+#else
+using CellThread = std::thread;
+#endif
 #endif
 
 // A hook is called from generated code, so its exception must not unwind
@@ -882,7 +951,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
 #ifndef __EMSCRIPTEN__
         if (threaded) {
             std::exception_ptr worker_error;
-            std::thread worker([&]() {
+            CellThread worker([&]() {
                 try { execute_cell(); }
                 catch (...) { worker_error = std::current_exception(); }
                 mailbox.finish();
