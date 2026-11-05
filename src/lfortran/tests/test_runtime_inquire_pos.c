@@ -21,8 +21,8 @@ static void check(bool condition, const char *message) {
 static const int32_t unit = 10;
 static const char *file_name = "test_runtime_inquire_pos.txt";
 
-static int32_t inquire_pos(void) {
-    int32_t pos = -1;
+static int64_t inquire_pos(void) {
+    int64_t pos = -1;
     _lfortran_inquire(NULL, 0, NULL, unit, NULL, NULL, &pos,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0,
         NULL, NULL, NULL,
