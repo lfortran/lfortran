@@ -177,6 +177,8 @@ if (WITH_LLVM)
             COMPILE_FLAGS -Wno-deprecated-declarations)
         set_source_files_properties(codegen/llvm_utils.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
+        set_source_files_properties(codegen/llvm_rsqrt.cpp PROPERTIES
+            COMPILE_FLAGS -Wno-deprecated-declarations)
         set_source_files_properties(stacktrace.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
     endif()
