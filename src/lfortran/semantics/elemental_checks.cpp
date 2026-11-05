@@ -53,6 +53,119 @@ void ElementalChecks::check_procedure(const ASR::Function_t &f,
     }
 }
 
+class ElementalChecks::BodyWalk : public ASR::BaseWalkVisitor<BodyWalk> {
+public:
+    bool ok = true;
+
+    explicit BodyWalk(diag::Diagnostics &diag) : diag(diag) {
+        visit_compile_time_value = false;
+    }
+
+    // Contained procedures and interface bodies are checked on their own.
+    void visit_Function(const ASR::Function_t &) {}
+
+    void visit_Variable(const ASR::Variable_t &x) {
+        ok = not_pointer_target(x.m_symbolic_value, diag) && ok;
+        BaseWalkVisitor<BodyWalk>::visit_Variable(x);
+    }
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        ok = not_pointer_target(x.m_value, diag) && ok;
+        BaseWalkVisitor<BodyWalk>::visit_Associate(x);
+    }
+
+    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+        check_component_values(x.m_args, x.n_args);
+        BaseWalkVisitor<BodyWalk>::visit_StructConstructor(x);
+    }
+
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        check_component_values(x.m_args, x.n_args);
+        BaseWalkVisitor<BodyWalk>::visit_StructConstant(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        check_call(x.m_name, x.m_args, x.n_args);
+        BaseWalkVisitor<BodyWalk>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        check_call(x.m_name, x.m_args, x.n_args);
+        BaseWalkVisitor<BodyWalk>::visit_SubroutineCall(x);
+    }
+
+private:
+    diag::Diagnostics &diag;
+
+    void check_component_values(ASR::call_arg_t *args, size_t n_args) {
+        for (size_t i = 0; i < n_args; i++) {
+            ok = not_pointer_target(args[i].m_value, diag) && ok;
+        }
+    }
+
+    void check_call(ASR::symbol_t *name, ASR::call_arg_t *args,
+            size_t n_args) {
+        for (size_t i = 0; i < n_args; i++) {
+            ok = not_actual_argument(args[i].m_value, diag) && ok;
+        }
+        const ASR::Function_t *f = elemental_procedure(name);
+        if (f == nullptr) return;
+        for (size_t i = 0; i < n_args && i < f->n_args; i++) {
+            if (args[i].m_value == nullptr) continue;
+            if (!ASR::is_a<ASR::Var_t>(*f->m_args[i])) continue;
+            ASR::symbol_t *dummy = ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*dummy)) continue;
+            const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(dummy);
+            if (v.m_intent != ASR::intentType::Out
+                    && v.m_intent != ASR::intentType::InOut) continue;
+            ok = output_no_repeated_vector_subscript(args[i].m_value, v, diag)
+                && ok;
+        }
+    }
+
+    // The called procedure if it is elemental, else nullptr.
+    static const ASR::Function_t *elemental_procedure(ASR::symbol_t *name) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(name);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+            sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
+        }
+        if (!ASR::is_a<ASR::Function_t>(*sym)) return nullptr;
+        const ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+        return ASRUtils::get_FunctionType(*f)->m_elemental ? f : nullptr;
+    }
+};
+
+void ElementalChecks::check_body(const ASR::Function_t &f,
+        diag::Diagnostics &diag, const CompilerOptions &compiler_options) {
+    check_scope(*f.m_symtab, f.m_body, f.n_body, diag, compiler_options);
+}
+
+void ElementalChecks::check_body(const ASR::Program_t &p,
+        diag::Diagnostics &diag, const CompilerOptions &compiler_options) {
+    check_scope(*p.m_symtab, p.m_body, p.n_body, diag, compiler_options);
+}
+
+void ElementalChecks::check_body(const ASR::Module_t &m,
+        diag::Diagnostics &diag, const CompilerOptions &compiler_options) {
+    check_scope(*m.m_symtab, nullptr, 0, diag, compiler_options);
+}
+
+void ElementalChecks::check_scope(const SymbolTable &scope,
+        ASR::stmt_t **body, size_t n_body, diag::Diagnostics &diag,
+        const CompilerOptions &compiler_options) {
+    BodyWalk walk(diag);
+    for (auto &a : scope.get_scope()) {
+        walk.visit_symbol(*a.second);
+    }
+    for (size_t i = 0; i < n_body; i++) {
+        walk.visit_stmt(*body[i]);
+    }
+    if (!walk.ok && !compiler_options.continue_compilation) {
+        throw SemanticAbort();
+    }
+}
+
 bool ElementalChecks::dummy_not_allocatable(const ASR::Variable_t &v,
         const std::string &proc_name, diag::Diagnostics &diag) {
     if (!ASRUtils::is_allocatable(v.m_type)) return true;
@@ -277,44 +390,6 @@ bool ElementalChecks::result_derived_type_params(const ASR::Function_t &,
         const ASR::Variable_t &, const std::string &, diag::Diagnostics &) {
     // TODO: check the length parameter expressions of a derived-type result
     return true;
-}
-
-void ElementalChecks::check_call_actuals(const Vec<ASR::call_arg_t> &args,
-        diag::Diagnostics &diag, const CompilerOptions &compiler_options) {
-    bool ok = true;
-    for (size_t i = 0; i < args.size(); i++) {
-        ok = not_actual_argument(args[i].m_value, diag) && ok;
-    }
-    if (!ok && !compiler_options.continue_compilation) {
-        throw SemanticAbort();
-    }
-}
-
-void ElementalChecks::check_subroutine_call(const ASR::SubroutineCall_t &x,
-        diag::Diagnostics &diag, const CompilerOptions &compiler_options) {
-    ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_name);
-    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
-        sym = ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
-    }
-    if (!ASR::is_a<ASR::Function_t>(*sym)) return;
-    const ASR::Function_t &f = *ASR::down_cast<ASR::Function_t>(sym);
-    if (!ASRUtils::get_FunctionType(f)->m_elemental) return;
-    bool ok = true;
-    for (size_t i = 0; i < x.n_args && i < f.n_args; i++) {
-        if (x.m_args[i].m_value == nullptr) continue;
-        if (!ASR::is_a<ASR::Var_t>(*f.m_args[i])) continue;
-        ASR::symbol_t *dummy = ASR::down_cast<ASR::Var_t>(f.m_args[i])->m_v;
-        if (!ASR::is_a<ASR::Variable_t>(*dummy)) continue;
-        const ASR::Variable_t &v = *ASR::down_cast<ASR::Variable_t>(dummy);
-        if (v.m_intent != ASR::intentType::Out
-                && v.m_intent != ASR::intentType::InOut) continue;
-        ok = output_no_repeated_vector_subscript(x.m_args[i].m_value, v, diag)
-            && ok;
-    }
-    if (!ok && !compiler_options.continue_compilation) {
-        throw SemanticAbort();
-    }
 }
 
 bool ElementalChecks::is_nonintrinsic_elemental(ASR::symbol_t *sym) {
