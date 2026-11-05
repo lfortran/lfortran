@@ -22208,6 +22208,33 @@ public:
         builder->CreateCall(fn, {mode});
     }
 
+    // A POS= seek reports a failed access mode through IOSTAT=. Skip the data
+    // transfer then: it would otherwise reposition and run, clearing the
+    // error. Without IOSTAT= the runtime has already exited, so the statement
+    // runs unconditionally. Returns the block to resume emission in, or null
+    // if the statement is not guarded.
+    llvm::BasicBlock* enter_pos_error_guard(llvm::Value* iostat) {
+        if (llvm::isa<llvm::ConstantPointerNull>(iostat)) return nullptr;
+        llvm::BasicBlock *check_bb = llvm::BasicBlock::Create(context, "pos.check");
+        llvm::BasicBlock *run_bb = llvm::BasicBlock::Create(context, "pos.run");
+        llvm::BasicBlock *done_bb = llvm::BasicBlock::Create(context, "pos.done");
+        builder->CreateCondBr(builder->CreateIsNull(iostat), run_bb, check_bb);
+        llvm_utils->start_new_block(check_bb);
+        llvm::Value *iostat_val = builder->CreateLoad(
+            llvm::Type::getInt32Ty(context), iostat);
+        builder->CreateCondBr(builder->CreateICmpEQ(iostat_val,
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0)),
+            run_bb, done_bb);
+        llvm_utils->start_new_block(run_bb);
+        return done_bb;
+    }
+
+    void leave_pos_error_guard(llvm::BasicBlock* done_bb) {
+        if (!done_bb) return;
+        builder->CreateBr(done_bb);
+        llvm_utils->start_new_block(done_bb);
+    }
+
     void visit_FileRead(const ASR::FileRead_t &x) {
         if( x.m_overloaded ) {
             this->visit_stmt(*x.m_overloaded);
@@ -22361,6 +22388,7 @@ public:
         llvm::Value *advance, *advance_length;
         llvm::Value *iostat_user = nullptr; // User's iostat variable 
         int iostat_kind = 4; // kind of iostat variable (default INT32)
+        llvm::BasicBlock *pos_error_join = nullptr;
         bool is_string = false;
         bool empty_read = (x.n_values == 0 && x.m_iostat == nullptr && x.m_iomsg == nullptr);
         if (empty_read && x.m_unit == nullptr) {
@@ -22494,6 +22522,7 @@ public:
                         llvm_utils->i32->getPointerTo() // iostat
                     });
             builder->CreateCall(fn, {unit_val, pos_val, iostat});
+            pos_error_join = enter_pos_error_guard(iostat);
         }
 
         if (x.m_rec && !is_string) {
@@ -23011,6 +23040,7 @@ public:
             }
             }
         }
+        leave_pos_error_guard(pos_error_join);
         // Copy temporary i32 iostat back to user's variable if needed
         if (iostat_user && iostat_kind != 4) {
             llvm::Value* i32_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), iostat);
@@ -24944,6 +24974,7 @@ public:
         llvm::Value *end_data {}, *end_len {};
         llvm::Value *unit = nullptr;
         llvm::Value *iostat = nullptr;
+        llvm::BasicBlock *pos_error_guard = nullptr;
         std::string runtime_func_name;
         bool is_string = ASRUtils::is_character(*expr_type(x.m_unit));
 
@@ -25068,6 +25099,7 @@ public:
                         llvm_utils->i32->getPointerTo()
                     });
             builder->CreateCall(fn, {unit, pos_val, iostat});
+            pos_error_guard = enter_pos_error_guard(iostat);
         }
 
         if (x.m_separator) {
@@ -25280,6 +25312,7 @@ public:
             builder->CreateCall(iomsg_fn, {iomsg_data, iomsg_len});
         }
         llvm_utils->stringFormat_return.free();
+        leave_pos_error_guard(pos_error_guard);
 
         this->current_decimal_mode = nullptr;
         this->current_sign_mode = nullptr;

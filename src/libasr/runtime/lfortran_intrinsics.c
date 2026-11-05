@@ -14780,6 +14780,8 @@ LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t 
     if (iostat > 0) {
         if (iostat == 5016) {
             msg = "Record shorter than required under PAD=NO";
+        } else if (iostat == 5002) {
+            msg = "POS= is allowed only for a unit connected for stream access";
         } else {
             msg = "Invalid input in READ statement";
         }
@@ -14805,10 +14807,22 @@ LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* io
         return;
     }
 
-    FILE* fp = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id = -1;
+    FILE* fp = get_file_pointer_from_unit(unit_num, NULL, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!fp) {
         if (iostat) { *iostat = 1; return; }
         fprintf(stderr, "No file found with given unit number %d.\n", unit_num);
+        exit(1);
+    }
+
+    if (access_id != 1) {
+        // POS= is allowed only for a unit connected for stream access.
+        if (iostat) {
+            *iostat = 5002;
+            return;
+        }
+        fprintf(stderr, "Runtime Error: POS= is allowed only for a unit "
+            "connected for stream access (unit %d).\n", unit_num);
         exit(1);
     }
 
