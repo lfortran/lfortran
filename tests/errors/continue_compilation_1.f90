@@ -4503,3 +4503,14 @@ subroutine cc_elem_calls_implicit()
     b = [1, 2, 3]
     call cc_elem_calls_ext(b)
 end subroutine
+
+! A structure constructor in an initialization expression cannot give an
+! allocatable component a value, since the constructor cannot allocate it in a
+! constant initialization. The same constructor is valid in an assignment.
+module cc1_allocatable_component_init
+    implicit none
+    type :: cc1_alloc_component_t
+        integer, allocatable :: a(:)
+    end type
+    type(cc1_alloc_component_t) :: cc1_alloc_component_v = cc1_alloc_component_t([1, 2])  ! {Error} an initialization expression cannot specify a value for allocatable component 'a' of a structure constructor
+end module
