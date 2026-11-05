@@ -48,7 +48,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc1 = (__flat_idx + 1);
     {
-        float* r = ((__workspace_extent) > 0) ? (__workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
+        float* r = ((__workspace_extent) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         const int __lfortran_end_0 = (__sizes_arr_v[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
         for (__gpu_elem_i = 1; __gpu_elem_i <= __lfortran_end_0; __gpu_elem_i++) {
             r[((int)((1 + (__gpu_elem_i - 1))) - (1))] = __data_arr_v[__offsets_arr_v[((int)(i__dc1) - (1))] + ((int)((__sizes_arr_v[(((int)(i__dc1) - (1))) * 2 + 1] + (__gpu_elem_i - 1))) - (__sizes_arr_v[(((int)(i__dc1) - (1))) * 2 + 1]))];

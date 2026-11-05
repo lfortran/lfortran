@@ -5251,6 +5251,19 @@ filename = "../integration_tests/gpu_metal_707.f90"
 asr = true
 options = "--gpu=cuda --pass=gpu_offload --cumulative"
 
+# The slice of a per-thread workspace starts at the thread's index times the
+# slice size, multiplied in 64 bits (#15380): in a block (gpu_metal_710) and
+# at the top of the kernel (gpu_metal_711).
+[[test]]
+filename = "../integration_tests/gpu_metal_710.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_711.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_37.f90"
 gpu_metal_kernel = true

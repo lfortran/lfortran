@@ -367,9 +367,10 @@ class DeviceLaunchExpandVisitor :
 
         // The checks of check_element_count for every array of a launch
         // whose number of elements is only known at run time. The
-        // per-thread workspaces of block local arrays are not checked: a
-        // thread's slice of one starts at an unsigned 32-bit product, also
-        // with --descriptor-index-64 (#15380).
+        // per-thread workspaces of block local arrays are not checked: the
+        // kernel finds a thread's slice of one at a 64-bit offset, so the
+        // slices of all threads together may hold more than huge(0)
+        // elements (#15380).
         void check_element_counts_of(const ASR::GpuKernelLaunch_t &x,
                 Vec<ASR::stmt_t*> &out) {
             const Location &loc = x.base.base.loc;

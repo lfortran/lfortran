@@ -158,7 +158,7 @@ kernel void __lfortran_gpu_kernel_6(
     int __gpu_loop_end_gpu;
     int __gpu_loop_group_gpu;
     int __gpu_loop_start_gpu;
-    device float* __libasr_created__array_section__gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + __thread_id * (__workspace_extent_gpu)) : nullptr;
+    device float* __libasr_created__array_section__gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + ((long)__thread_id) * __workspace_extent_gpu) : nullptr;
     device float* __libasr_created__array_section_pointer__gpu;
     int __libasr_index_0_1_gpu;
     int __libasr_index_0__gpu;

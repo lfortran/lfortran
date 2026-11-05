@@ -28,7 +28,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         int __gpu_sum_k;
         float __gpu_sum_res;
-        float* work = ((__workspace_extent) > 0) ? (__workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
+        float* work = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         for (k = 1; k <= nn; k++) {
             work[((int)(k) - (1))] = ((float)(k * i__dc));
         }
@@ -67,7 +67,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
     {
-        float* work = ((__workspace_extent) > 0) ? (__workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
+        float* work = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         for (k = 1; k <= (nn + i__dc); k++) {
             work[((int)(k) - (1))] = ((float)k);
         }

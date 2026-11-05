@@ -52,7 +52,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
 {
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __flat_idx;
-    int* __libasr_created__subroutine_from_function_ = ((__workspace_extent) > 0) ? (__workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent)) : nullptr;
+    int* __libasr_created__subroutine_from_function_ = ((__workspace_extent) > 0) ? (__workspace_5 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
     int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
         return;
