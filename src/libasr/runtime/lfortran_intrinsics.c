@@ -8702,8 +8702,19 @@ static int64_t inquire_file_size(FILE *fp)
     return size;
 }
 
+static int64_t inquire_file_position(FILE *fp)
+{
+#if defined(_WIN32)
+    return _ftelli64(fp);
+#elif defined(__linux__) && !defined(COMPILE_TO_WASM)
+    return ftello64(fp);
+#else
+    return ftello(fp);
+#endif
+}
+
 LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
-                                    bool *opened, int64_t *size, int32_t *pos,
+                                    bool *opened, int64_t *size, int64_t *pos,
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,
                                     char *readwrite, int64_t readwrite_len,
@@ -8870,16 +8881,16 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *opened = (fp != NULL);
         }
         if (pos != NULL && fp != NULL) {
-            long p = ftell(fp);
+            int64_t p = inquire_file_position(fp);
             if (!unit_file_bin && access_id == 0) {
                 int32_t nl = count_newlines_up_to(fp, p);
                 if (nl > 0) {
-                    *pos = (int32_t)(p - nl);
+                    *pos = p - nl;
                 } else {
-                    *pos = (int32_t)p + 1;
+                    *pos = p + 1;
                 }
             } else {
-                *pos = (int32_t)p + 1;
+                *pos = p + 1;
             }
         }
         if (size != NULL && fp != NULL) {
@@ -9184,16 +9195,16 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *opened = (fp != NULL);
         }
         if (pos != NULL && fp != NULL) {
-            long p = ftell(fp);
+            int64_t p = inquire_file_position(fp);
             if (!unit_file_bin && access_id == 0) {
                 int32_t nl = count_newlines_up_to(fp, p);
                 if (nl > 0) {
-                    *pos = (int32_t)(p - nl);
+                    *pos = p - nl;
                 } else {
-                    *pos = (int32_t)p + 1;
+                    *pos = p + 1;
                 }
             } else {
-                *pos = (int32_t)p + 1;
+                *pos = p + 1;
             }
         }
         if (size != NULL && fp != NULL) {

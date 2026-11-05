@@ -207,6 +207,12 @@ public:
                 && ASRUtils::extract_kind_from_ttype_t(type) == 8,
                 "FileInquire size must be a scalar integer(8)");
         }
+        if (x.m_pos) {
+            ASR::ttype_t *type = ASRUtils::expr_type(x.m_pos);
+            require(ASRUtils::is_integer(*type) && !ASRUtils::is_array(type)
+                && ASRUtils::extract_kind_from_ttype_t(type) == 8,
+                "FileInquire pos must be a scalar integer(8)");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_FileInquire(x);
     }
 

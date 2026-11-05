@@ -93,7 +93,7 @@ define i32 @main(i32 %0, i8** %1) {
   br i1 true, label %do_loop.body, label %do_loop.end
 
 do_loop.body:                                     ; preds = %do_loop.head, %.entry
-  call void @_lfortran_inquire(i8* null, i64 0, i1* %16, i32 10, i1* %15, i64* null, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i1* %14, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i1* %13, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0)
+  call void @_lfortran_inquire(i8* null, i64 0, i1* %16, i32 10, i1* %15, i64* null, i64* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i1* %14, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i1* %13, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0)
   %31 = load i1, i1* %15, align 1
   %32 = zext i1 %31 to i32
   store i32 %32, i32* %op, align 4
@@ -306,7 +306,7 @@ declare i8* @_lfortran_get_default_allocator()
 
 declare i64 @_lfortran_open(i32, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i32*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i32*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64)
 
-declare void @_lfortran_inquire(i8*, i64, i1*, i32, i1*, i64*, i32*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i32*, i32*, i1*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i32*, i32*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i1*, i8*, i64, i8*, i64, i8*, i64, i8*, i64)
+declare void @_lfortran_inquire(i8*, i64, i1*, i32, i1*, i64*, i64*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i32*, i32*, i1*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i32*, i32*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i1*, i8*, i64, i8*, i64, i8*, i64, i8*, i64)
 
 declare i32 @_lfortran_get_decimal_mode(i32)
 
