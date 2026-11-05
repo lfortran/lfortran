@@ -3887,6 +3887,25 @@ public:
             }
         }
 
+        // F2018 9.6.4.6: SIZE= and POS= are scalar integer variables.
+        const auto check_inquire_integer_variable = [&](ASR::expr_t* arg, const char* name) {
+            if (arg == nullptr) {
+                return;
+            }
+            ASR::ttype_t *type = ASRUtils::expr_type(arg);
+            if (!ASRUtils::is_integer(*type) || ASRUtils::is_array(type)
+                    || !ASRUtils::is_variable(arg)) {
+                diag.add(Diagnostic(
+                    std::string(name) + " in inquire must be a scalar integer variable",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {arg->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        };
+        check_inquire_integer_variable(size, "size");
+        check_inquire_integer_variable(pos, "pos");
+
         // SIZE= and POS= are queried as integer(8); a variable of another
         // kind is assigned from a statement-local integer(8) temporary.
         SymbolTable *int64_scope = nullptr;

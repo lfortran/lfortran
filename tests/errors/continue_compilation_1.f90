@@ -4384,3 +4384,16 @@ contains
         y = z(k+1:k+1)  ! {Error} Different shape for array assignment on dimension 1(3 and 1)
     end subroutine
 end module
+
+module cc1_inquire_size_pos
+contains
+    subroutine cc1_inquire_size_pos_sub()
+        real :: real_size, real_pos
+        real(8) :: real8_size
+        integer(8) :: pos_array(2)
+        inquire(unit=10, size=real_size)  ! {Error} size in inquire must be a scalar integer variable
+        inquire(unit=10, pos=real_pos)  ! {Error} pos in inquire must be a scalar integer variable
+        inquire(unit=10, size=real8_size)  ! {Error} size in inquire must be a scalar integer variable
+        inquire(unit=10, pos=pos_array)  ! {Error} pos in inquire must be a scalar integer variable
+    end subroutine
+end module cc1_inquire_size_pos

@@ -1816,84 +1816,6 @@ semantic error: result length of elemental function 'cc_elem_result_len_trim' ca
 4293 |         character(len=len_trim(x)) :: r
      |                                ^ 
 
-semantic error: dummy argument 'a' of pure function 'ccep_iface_fn' must be intent(in) or have the value attribute
-    --> tests/errors/continue_compilation_1.f90:4307:24
-     |
-4307 |             integer :: a
-     |                        ^ 
-
-semantic error: dummy argument 'b' of pure subroutine 'ccep_iface_sub' must have an explicit intent or the value attribute
-    --> tests/errors/continue_compilation_1.f90:4310:24
-     |
-4310 |             integer :: b
-     |                        ^ 
-
-semantic error: dummy argument 'x' of pure subroutine 'ccep_elem_sub' must have an explicit intent or the value attribute
-    --> tests/errors/continue_compilation_1.f90:4317:20
-     |
-4317 |         integer :: x
-     |                    ^ 
-
-semantic error: dummy argument 'x' of elemental procedure 'ccep_elem_sub' must have an explicit intent or the value attribute
-    --> tests/errors/continue_compilation_1.f90:4317:20
-     |
-4317 |         integer :: x
-     |                    ^ 
-
-semantic error: dummy argument 'x' of elemental procedure 'ccep_impure_elem_sub' must have an explicit intent or the value attribute
-    --> tests/errors/continue_compilation_1.f90:4322:20
-     |
-4322 |         integer :: x
-     |                    ^ 
-
-semantic error: dummy argument 'x' of pure function 'ccep_elem_fn' must be intent(in) or have the value attribute
-    --> tests/errors/continue_compilation_1.f90:4327:20
-     |
-4327 |         integer :: x
-     |                    ^ 
-
-semantic error: dummy argument 'x' of elemental procedure 'ccep_elem_fn' must have an explicit intent or the value attribute
-    --> tests/errors/continue_compilation_1.f90:4327:20
-     |
-4327 |         integer :: x
-     |                    ^ 
-
-semantic error: dummy argument 'x' of pure function 'ccep_elem_fn_out' must be intent(in) or have the value attribute
-    --> tests/errors/continue_compilation_1.f90:4333:33
-     |
-4333 |         integer, intent(out) :: x
-     |                                 ^ 
-
-semantic error: dummy argument 'a' of pure function 'ccep_pure_fn' must be intent(in) or have the value attribute
-    --> tests/errors/continue_compilation_1.f90:4339:33
-     |
-4339 |         integer, intent(out) :: a
-     |                                 ^ 
-
-semantic error: dummy argument 'b' of pure function 'ccep_pure_fn' must be intent(in) or have the value attribute
-    --> tests/errors/continue_compilation_1.f90:4340:35
-     |
-4340 |         integer, intent(inout) :: b
-     |                                   ^ 
-
-semantic error: dummy argument 'x' of pure subroutine 'ccep_pure_sub' must have an explicit intent or the value attribute
-    --> tests/errors/continue_compilation_1.f90:4353:20
-     |
-4353 |         integer :: x
-     |                    ^ 
-
-warning: Assuming implicit save attribute for variable declaration
-    --> tests/errors/continue_compilation_1.f90:4360:20
-     |
-4360 |         integer :: s = 9
-     |                    ^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
-
-warning: Assuming implicit save attribute for variable declaration
-    --> tests/errors/continue_compilation_1.f90:4366:25
-     |
-4366 |         type(ccep_t) :: s = ccep_t(9)
-     |                         ^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
-
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -5323,23 +5245,29 @@ semantic error: type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is pr
 4231 |         k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
      |             ^^^^^^^^^^^^ 
 
-semantic error: local variable 's' of pure procedure 'ccep_init' cannot have an initial value, because it implies the save attribute
-    --> tests/errors/continue_compilation_1.f90:4360:20
+semantic error: size in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4304:31
      |
-4360 |         integer :: s = 9
-     |                    ^^^^^ 
+4304 |         inquire(unit=10, size=real_size)  ! {Error} size in inquire must be a scalar integer variable
+     |                               ^^^^^^^^^ 
 
-semantic error: local variable 's' of pure procedure 'ccep_init_type' cannot have an initial value, because it implies the save attribute
-    --> tests/errors/continue_compilation_1.f90:4366:25
+semantic error: pos in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4305:30
      |
-4366 |         type(ccep_t) :: s = ccep_t(9)
-     |                         ^^^^^^^^^^^^^ 
+4305 |         inquire(unit=10, pos=real_pos)  ! {Error} pos in inquire must be a scalar integer variable
+     |                              ^^^^^^^^ 
 
-semantic error: local variable 's' of pure procedure 'ccep_save' cannot have the save attribute
-    --> tests/errors/continue_compilation_1.f90:4372:26
+semantic error: size in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4306:31
      |
-4372 |         integer, save :: s
-     |                          ^ 
+4306 |         inquire(unit=10, size=real8_size)  ! {Error} size in inquire must be a scalar integer variable
+     |                               ^^^^^^^^^^ 
+
+semantic error: pos in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4307:30
+     |
+4307 |         inquire(unit=10, pos=pos_array)  ! {Error} pos in inquire must be a scalar integer variable
+     |                              ^^^^^^^^^ 
 
 semantic error: Different shape for array assignment on dimension 1(3 and 1)
     --> tests/errors/continue_compilation_1.f90:4384:9
