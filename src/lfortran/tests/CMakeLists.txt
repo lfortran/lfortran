@@ -31,6 +31,11 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD)
     if (NOT WIN32 AND NOT EMSCRIPTEN)
         ADDTESTC(test_system_clock lfortran_runtime_static)
     endif()
+    # Windows opens formatted files in text mode, which translates the
+    # record terminators this test counts.
+    if (NOT WIN32 AND NOT EMSCRIPTEN)
+        ADDTESTC(test_runtime_inquire_pos lfortran_runtime_static)
+    endif()
     # Needs a 64-bit file offset type; seeks past 2**31 without writing data.
     if (NOT EMSCRIPTEN AND (WIN32 OR CMAKE_SIZEOF_VOID_P EQUAL 8))
         ADDTESTC(test_file_seek lfortran_runtime_static)
