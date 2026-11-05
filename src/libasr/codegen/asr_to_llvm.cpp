@@ -28546,20 +28546,27 @@ public:
         }
     }
 
-    llvm::Value* get_array_size_from_asr_type(ASR::ttype_t* type, int size_kind = 4) {
+    // Total element count of an array type, as an i64. Each extent is clamped
+    // to zero first: in Fortran an extent of ub - lb + 1 <= 0 means the
+    // dimension has zero elements, so a negative runtime extent must make the
+    // total zero instead of contributing a negative factor to the product.
+    llvm::Value* get_array_size_from_asr_type(ASR::ttype_t* type) {
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(type, m_dims));
+        llvm::Type* size_type = llvm_utils->getIntType(8);
         if( ASRUtils::extract_physical_type(type) == ASR::array_physical_typeType::FixedSizeArray ) {
             int64_t size = ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
-            return llvm::ConstantInt::get(llvm_utils->getIntType(size_kind), llvm::APInt(size_kind * 8, size));
+            return llvm::ConstantInt::get(size_type, llvm::APInt(64, size));
         } else {
-            llvm::Value* llvm_size = llvm::ConstantInt::get(llvm_utils->getIntType(size_kind), llvm::APInt(size_kind * 8, 1));
+            llvm::Value* llvm_size = llvm::ConstantInt::get(size_type, llvm::APInt(64, 1));
+            llvm::Value* zero = llvm::ConstantInt::get(size_type, llvm::APInt(64, 0));
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 2;
             for( int i = 0; i < n_dims; i++ ) {
                 if (m_dims[i].m_length) {
                     load_array_size_deep_copy(m_dims[i].m_length);
-                    tmp = builder->CreateSExtOrTrunc(tmp, llvm_utils->getIntType(size_kind));
+                    tmp = builder->CreateSExtOrTrunc(tmp, size_type);
+                    tmp = builder->CreateSelect(builder->CreateICmpSLT(tmp, zero), zero, tmp);
                     llvm_size = builder->CreateMul(tmp, llvm_size);
                 }
             }
@@ -28774,13 +28781,10 @@ public:
                         }
                         builder->CreateBr(mergeBB);
                         start_new_block(elseBB);
-                        llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 4);
-                        // Convert user array size to i32 to match descriptor format
-                        llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
-                            get_array_size_from_asr_type(arr_cast->m_type),
-                            llvm::Type::getInt32Ty(context));
+                        llvm::Value* desc_size = arr_descr->get_array_size(arr_type, arg, nullptr, 8);
+                        llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
                         llvm_utils->generate_runtime_error(builder->CreateICmpNE(desc_size, pointer_size),
-                                "Array size mismatch in subroutine '%s'. Tried to match size %d of argument number %d, but expected size is %d",
+                                "Array size mismatch in subroutine '%s'. Tried to match size %lld of argument number %d, but expected size is %lld",
                                 {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                 infile,
                                 location_manager,
@@ -28793,7 +28797,7 @@ public:
                     } else if (ASRUtils::has_explicit_dimension_bounds(arr_cast->m_type)) {
                         emit_sequence_assoc_size_check(m_name, arg_expr,
                             arr_descr->get_array_size(arr_type, arg, nullptr, 8),
-                            get_array_size_from_asr_type(arr_cast->m_type, 8), i);
+                            get_array_size_from_asr_type(arr_cast->m_type), i);
                     }
                     // Else the dummy is assumed-shape and declares no extent in
                     // its type, so there is no dummy element count to compare
@@ -28834,14 +28838,12 @@ public:
                                 }
                             }
                         } else {
-                            llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), ASRUtils::get_fixed_size_of_array(fixed_size_type));
-                            // Convert user array size to i32 to match fixed-size format
-                            llvm::Value* pointer_size = builder->CreateSExtOrTrunc(
-                                get_array_size_from_asr_type(arr_cast->m_type),
-                                llvm::Type::getInt32Ty(context));
+                            llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                                llvm::APInt(64, ASRUtils::get_fixed_size_of_array(fixed_size_type)));
+                            llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
                             llvm_utils->generate_runtime_error(builder->CreateICmpNE(fixed_size, pointer_size),
                                     "Runtime error: Array size mismatch in subroutine '%s'\n\n"
-                                    "Tried to match size %d of argument number %d, but expected size is %d\n",
+                                    "Tried to match size %lld of argument number %d, but expected size is %lld\n",
                                     {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                     infile,
                                     location_manager,
@@ -28854,7 +28856,7 @@ public:
                         emit_sequence_assoc_size_check(m_name, arg_expr,
                             llvm::ConstantInt::get(llvm_utils->getIntType(8),
                                 ASRUtils::get_fixed_size_of_array(fixed_size_type)),
-                            get_array_size_from_asr_type(arr_cast->m_type, 8), i);
+                            get_array_size_from_asr_type(arr_cast->m_type), i);
                     }
                     // Else the dummy is assumed-shape and declares no extent in
                     // its type, so there is no dummy element count to compare
