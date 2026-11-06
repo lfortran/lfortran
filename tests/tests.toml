@@ -5543,6 +5543,11 @@ gpu_cuda_kernel = true
 gpu_metal_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_metal_732.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
+[[test]]
 filename = "../integration_tests/gpu_metal_669.f90"
 gpu_cuda_kernel = true
 options = "--gpu-chunk-limit=50"

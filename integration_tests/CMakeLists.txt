@@ -7219,6 +7219,8 @@ RUN(NAME gpu_reduction_overwrite_01_chunks FILE gpu_reduction_overwrite_01 LABEL
 # An array defined whole by a full-extent section in each iteration is
 # private to the iteration (lfortran/lfortran#17013).
 RUN(NAME gpu_metal_731 LABELS gfortran llvm metal cuda)
+# The same for arrays with bounds set on entry (automatic arrays).
+RUN(NAME gpu_metal_732 LABELS gfortran llvm metal cuda)
 # Logical reductions (lfortran/lfortran#16725), in one launch and in many.
 RUN(NAME gpu_metal_728 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_729 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
