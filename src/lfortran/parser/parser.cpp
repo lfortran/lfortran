@@ -1062,6 +1062,11 @@ bool prescan_impl(std::string &out, const std::string &s, LocationManager &lm,
             }
             if (!(s[pos] == '&' &&  previous_nonspace_character(s, pos) == '\n')){
                 out += s[pos];
+            } else {
+                // The `&` starting a continuation line is dropped, so the
+                // output continues at the next input character
+                lm.files.back().out_start.push_back(source_offset(out.size()));
+                lm.files.back().in_start.push_back(source_offset(pos+1));
             }
             pos++;
         }

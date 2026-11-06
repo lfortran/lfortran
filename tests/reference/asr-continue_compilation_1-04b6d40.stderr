@@ -5483,6 +5483,12 @@ semantic error: Argument `p` with intent(in) passed to a dummy argument with mod
 4570 |         call cc1_ptr_inout(p)  ! {Error} Argument `p` with intent(in) passed to a dummy argument with modifying intent
      |                            ^ 
 
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:4587:5
+     |
+4587 |     i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+     |     ^   ^^^ type mismatch (integer and string)
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
