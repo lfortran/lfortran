@@ -200,8 +200,8 @@ std::set<ASR::symbol_t*> gpu_body_names(const ParallelLoopNest &work) {
     return named;
 }
 
-// What a run of statements does with the value an array held when the
-// run was entered.
+// What a run of statements does with the value an array (or a scalar,
+// see `scalars_read_after_region`) held when the run was entered.
 //   Untouched -- never reads it: the array is not accessed, or it is first
 //                accessed by a definition of all of it on every path
 //                that accesses it.
@@ -214,7 +214,8 @@ enum class GpuArrayFlow { Untouched, Defined, Read };
 
 // Reads statements in the order they run, to find whether they may read
 // the value `sym` held when they were entered. Every shape it does not
-// know is taken to read it.
+// know is taken to read it. A scalar `sym` (`arr` null) is defined only by
+// `sym = v`.
 class GpuArrayFlowReader {
 public:
     ASR::symbol_t *sym;
@@ -223,8 +224,9 @@ public:
 
     GpuArrayFlowReader(ASR::symbol_t *sym_, GpuArrayAccess &access_,
             const std::set<ASR::symbol_t*> &host_associated_)
-        : sym(sym_), arr(ASR::down_cast<ASR::Array_t>(
-            ASRUtils::symbol_type(sym_))), access(access_),
+        : sym(sym_), arr(ASR::is_a<ASR::Array_t>(*ASRUtils::symbol_type(sym_))
+            ? ASR::down_cast<ASR::Array_t>(ASRUtils::symbol_type(sym_))
+            : nullptr), access(access_),
             host_associated(host_associated_) {}
 
     // `escaped` is set when a path may leave the run elsewhere than past
@@ -284,7 +286,7 @@ private:
                 // the array constructor lowering starts its counter.
                 ASR::ArrayBound_t *b = ASR::down_cast<ASR::ArrayBound_t>(e);
                 int64_t dim = 0, start = 0, length = 0;
-                if (!ASR::is_a<ASR::Var_t>(*b->m_v) ||
+                if (arr == nullptr || !ASR::is_a<ASR::Var_t>(*b->m_v) ||
                         ASR::down_cast<ASR::Var_t>(b->m_v)->m_v != sym ||
                         !constant(b->m_dim, dim) || dim < 1 ||
                         dim > (int64_t)arr->n_dims ||
@@ -372,7 +374,7 @@ private:
     // array element order.
     bool known_element(const ASR::ArrayItem_t &item, int64_t &offset,
             bool defined) {
-        if (!ASR::is_a<ASR::Var_t>(*item.m_v) ||
+        if (arr == nullptr || !ASR::is_a<ASR::Var_t>(*item.m_v) ||
                 ASR::down_cast<ASR::Var_t>(item.m_v)->m_v != sym ||
                 item.n_args != arr->n_dims) {
             return false;
@@ -444,6 +446,7 @@ private:
 
     // The number of elements of the array, when it is a constant.
     bool extent(int64_t &n) {
+        if (arr == nullptr) return false;
         n = 1;
         for (size_t d = 0; d < arr->n_dims; d++) {
             int64_t length = 0;
@@ -499,7 +502,9 @@ private:
         if (ASR::is_a<ASR::Var_t>(*e)) {
             return ASR::down_cast<ASR::Var_t>(e)->m_v == sym;
         }
-        if (!ASR::is_a<ASR::ArraySection_t>(*e)) return false;
+        if (arr == nullptr || !ASR::is_a<ASR::ArraySection_t>(*e)) {
+            return false;
+        }
         ASR::ArraySection_t *s = ASR::down_cast<ASR::ArraySection_t>(e);
         if (!ASR::is_a<ASR::Var_t>(*s->m_v) ||
                 ASR::down_cast<ASR::Var_t>(s->m_v)->m_v != sym ||
@@ -538,6 +543,7 @@ private:
     //     t(k) = ...
     //   end do
     bool defines_by_loops(ASR::DoLoop_t *outer) {
+        if (arr == nullptr) return false;
         std::vector<ASR::DoLoop_t*> loops;
         ASR::stmt_t *s = &outer->base;
         while (ASR::is_a<ASR::DoLoop_t>(*s)) {
@@ -845,6 +851,140 @@ bool read_after_region(GpuArrayFlowReader &reader,
     return false;
 }
 
+// What reading the statements that run after a region needs to know of
+// the procedure (or main program) that holds it, found once per region.
+struct GpuAfterRegion {
+    SymbolTable *proc_scope = nullptr;
+    // The way from the procedure's statements to the region.
+    std::vector<GpuStmtPathStep> path;
+    // What the procedures contained in this one name, which they reach by
+    // host association.
+    std::set<ASR::symbol_t*> host_associated;
+    // What an EQUIVALENCE makes a pointer point into (GetPointer): the
+    // other variable then reads and writes its storage, which
+    // access_paths.h does not take it to.
+    std::set<ASR::symbol_t*> equivalenced;
+    PointerTargets pointers;
+    std::map<ASR::Function_t*, bool> outside;
+
+    // False when the reading does not apply: no procedure holds the
+    // region, or a jump may enter a statement list in its middle.
+    bool init(SymbolTable *scope, const ASR::OMPRegion_t &region) {
+        // The procedure, or main program, the loop is in.
+        proc_scope = scope;
+        while (proc_scope && proc_scope->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*proc_scope->asr_owner)) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                proc_scope->asr_owner);
+            if (!ASR::is_a<ASR::Block_t>(*owner) &&
+                    !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                break;
+            }
+            proc_scope = proc_scope->parent;
+        }
+        if (proc_scope == nullptr || proc_scope->asr_owner == nullptr ||
+                !ASR::is_a<ASR::symbol_t>(*proc_scope->asr_owner)) {
+            return false;
+        }
+        ASR::symbol_t *proc = ASR::down_cast<ASR::symbol_t>(
+            proc_scope->asr_owner);
+        ASR::stmt_t **proc_body = nullptr;
+        size_t proc_n_body = 0;
+        if (ASR::is_a<ASR::Program_t>(*proc)) {
+            proc_body = ASR::down_cast<ASR::Program_t>(proc)->m_body;
+            proc_n_body = ASR::down_cast<ASR::Program_t>(proc)->n_body;
+        } else if (ASR::is_a<ASR::Function_t>(*proc)) {
+            proc_body = ASR::down_cast<ASR::Function_t>(proc)->m_body;
+            proc_n_body = ASR::down_cast<ASR::Function_t>(proc)->n_body;
+        } else {
+            return false;
+        }
+        {
+            GpuJumpFinder jumps;
+            for (size_t i = 0; i < proc_n_body; i++) {
+                jumps.visit_stmt(*proc_body[i]);
+            }
+            if (jumps.found) return false;
+        }
+        if (!find_stmt_path(proc_body, proc_n_body, false, nullptr,
+                &region.base, path)) {
+            return false;
+        }
+        {
+            VarSymbolCollector c(host_associated);
+            std::function<void(SymbolTable*)> scan_contained =
+                [&](SymbolTable *st) {
+                for (auto &item : st->get_scope()) {
+                    if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                        c.visit_symbol(*item.second);
+                    } else if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                        scan_contained(ASR::down_cast<ASR::Block_t>(
+                            item.second)->m_symtab);
+                    }
+                }
+            };
+            scan_contained(proc_scope);
+        }
+        {
+            PointerCollector c(pointers);
+            for (size_t i = 0; i < proc_n_body; i++) {
+                c.visit_stmt(*proc_body[i]);
+            }
+        }
+        {
+            struct Equivalenced
+                    : public ASRUtils::BlockBodyWalkVisitor<Equivalenced> {
+                std::set<ASR::symbol_t*> &found;
+                explicit Equivalenced(std::set<ASR::symbol_t*> &found_)
+                    : found(found_) {}
+                void visit_GetPointer(const ASR::GetPointer_t &x) {
+                    VarSymbolCollector c(found);
+                    c.visit_expr(*x.m_arg);
+                }
+            } c(equivalenced);
+            for (size_t i = 0; i < proc_n_body; i++) {
+                c.visit_stmt(*proc_body[i]);
+            }
+        }
+        return true;
+    }
+
+    // Whether the reading can follow every access to `sym`: a local,
+    // non-saved variable declared outside the loop (in one of
+    // `outer_scopes`) that no pointer or other procedure can reach, and
+    // that is not an associate name.
+    bool followed(ASR::symbol_t *sym,
+            const std::set<SymbolTable*> &outer_scopes) const {
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+        if (!outer_scopes.count(v->m_parent_symtab) ||
+                v->m_parent_symtab->asr_owner == nullptr ||
+                !ASR::is_a<ASR::symbol_t>(*v->m_parent_symtab->asr_owner)) {
+            return false;
+        }
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+            v->m_parent_symtab->asr_owner);
+        if (ASR::is_a<ASR::AssociateBlock_t>(*owner)) return false;
+        return v->m_intent == ASR::intentType::Local
+            && v->m_storage == ASR::storage_typeType::Default
+            && !v->m_symbolic_value && !v->m_value
+            && !v->m_is_volatile && !v->m_is_asynchronous
+            && !v->m_common_block && v->n_codims == 0
+            && !reachable_elsewhere(sym, proc_scope)
+            && !host_associated.count(sym);
+    }
+
+    // The scopes from that of the region out to the procedure's.
+    std::set<SymbolTable*> outer_scopes(SymbolTable *scope) const {
+        std::set<SymbolTable*> scopes;
+        for (SymbolTable *s = scope; s; s = s->parent) {
+            scopes.insert(s);
+            if (s == proc_scope) break;
+        }
+        return scopes;
+    }
+};
+
 } // namespace
 
 // An array of unspecified locality that every iteration of a DO
@@ -889,108 +1029,23 @@ GpuOffloadVisitor::iteration_array_candidates(
         const ASR::OMPRegion_t &region, ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
     std::vector<ASR::symbol_t*> candidates;
-    // The procedure, or main program, the loop is in.
-    SymbolTable *proc_scope = current_scope;
-    while (proc_scope && proc_scope->asr_owner &&
-            ASR::is_a<ASR::symbol_t>(*proc_scope->asr_owner)) {
-        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
-            proc_scope->asr_owner);
-        if (!ASR::is_a<ASR::Block_t>(*owner) &&
-                !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
-            break;
-        }
-        proc_scope = proc_scope->parent;
-    }
-    if (proc_scope == nullptr || proc_scope->asr_owner == nullptr ||
-            !ASR::is_a<ASR::symbol_t>(*proc_scope->asr_owner)) {
-        return candidates;
-    }
-    ASR::symbol_t *proc = ASR::down_cast<ASR::symbol_t>(
-        proc_scope->asr_owner);
-    ASR::stmt_t **proc_body = nullptr;
-    size_t proc_n_body = 0;
-    if (ASR::is_a<ASR::Program_t>(*proc)) {
-        proc_body = ASR::down_cast<ASR::Program_t>(proc)->m_body;
-        proc_n_body = ASR::down_cast<ASR::Program_t>(proc)->n_body;
-    } else if (ASR::is_a<ASR::Function_t>(*proc)) {
-        proc_body = ASR::down_cast<ASR::Function_t>(proc)->m_body;
-        proc_n_body = ASR::down_cast<ASR::Function_t>(proc)->n_body;
-    } else {
-        return candidates;
-    }
-    {
-        GpuJumpFinder jumps;
-        for (size_t i = 0; i < proc_n_body; i++) {
-            jumps.visit_stmt(*proc_body[i]);
-        }
-        if (jumps.found) return candidates;
-    }
-    std::vector<GpuStmtPathStep> path;
-    if (!find_stmt_path(proc_body, proc_n_body, false, nullptr,
-            &region.base, path)) {
-        return candidates;
-    }
+    GpuAfterRegion after;
+    if (!after.init(current_scope, region)) return candidates;
+    SymbolTable *proc_scope = after.proc_scope;
 
     // The scopes from the loop's own out to the procedure's: a variable
     // declared in one of them is declared outside the loop.
-    std::set<SymbolTable*> outer_scopes;
-    for (SymbolTable *s = current_scope; s; s = s->parent) {
-        outer_scopes.insert(s);
-        if (s == proc_scope) break;
-    }
+    std::set<SymbolTable*> outer_scopes = after.outer_scopes(current_scope);
 
     std::set<ASR::symbol_t*> named = gpu_body_names(work);
 
-    // What the procedures contained in this one name, which they reach by
-    // host association.
-    std::set<ASR::symbol_t*> host_associated;
-    {
-        VarSymbolCollector c(host_associated);
-        std::function<void(SymbolTable*)> scan_contained =
-            [&](SymbolTable *st) {
-            for (auto &item : st->get_scope()) {
-                if (ASR::is_a<ASR::Function_t>(*item.second)) {
-                    c.visit_symbol(*item.second);
-                } else if (ASR::is_a<ASR::Block_t>(*item.second)) {
-                    scan_contained(ASR::down_cast<ASR::Block_t>(
-                        item.second)->m_symtab);
-                }
-            }
-        };
-        scan_contained(proc_scope);
-    }
-
-    PointerTargets pointers;
-    {
-        PointerCollector c(pointers);
-        for (size_t i = 0; i < proc_n_body; i++) c.visit_stmt(*proc_body[i]);
-    }
-    std::map<ASR::Function_t*, bool> outside;
-
     for (ASR::symbol_t *sym : named) {
-        if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+        if (!after.followed(sym, outer_scopes)) continue;
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-        if (!outer_scopes.count(v->m_parent_symtab) ||
-                v->m_parent_symtab->asr_owner == nullptr ||
-                !ASR::is_a<ASR::symbol_t>(*v->m_parent_symtab->asr_owner)) {
-            continue;
-        }
-        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
-            v->m_parent_symtab->asr_owner);
-        if (ASR::is_a<ASR::AssociateBlock_t>(*owner)) continue;
-        if (!ASR::is_a<ASR::Array_t>(*v->m_type) ||
-                v->m_intent != ASR::intentType::Local ||
-                v->m_storage != ASR::storage_typeType::Default ||
-                v->m_symbolic_value || v->m_value ||
-                v->m_is_volatile || v->m_is_asynchronous ||
-                v->m_common_block || v->n_codims > 0 ||
-                reachable_elsewhere(sym, proc_scope) ||
-                host_associated.count(sym)) {
-            continue;
-        }
+        if (!ASR::is_a<ASR::Array_t>(*v->m_type)) continue;
         ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(v->m_type);
         if (!gpu_private_element_type(arr->m_type)) continue;
-        GpuArrayAccess access(sym, proc_scope, pointers, outside);
+        GpuArrayAccess access(sym, proc_scope, after.pointers, after.outside);
         bool named_outside_body = false;
         for (size_t d = 0; d < work.n_heads(); d++) {
             named_outside_body = named_outside_body
@@ -1006,13 +1061,13 @@ GpuOffloadVisitor::iteration_array_candidates(
         }
         if (named_outside_body) continue;
 
-        GpuArrayFlowReader reader(sym, access, host_associated);
+        GpuArrayFlowReader reader(sym, access, after.host_associated);
         bool escaped = false;
         if (reader.run(work.body, work.n_body, escaped)
                 == GpuArrayFlow::Read) {
             continue;
         }
-        if (read_after_region(reader, path)) continue;
+        if (read_after_region(reader, after.path)) continue;
         candidates.push_back(sym);
     }
     // The body becomes the statements of a BLOCK (below).
@@ -1020,6 +1075,73 @@ GpuOffloadVisitor::iteration_array_candidates(
         candidates.clear();
     }
     return candidates;
+}
+
+// A scalar of unspecified locality that a DO CONCURRENT loop assigns has
+// the value one iteration gives it once the loop has run only if no other
+// iteration defines it (Fortran 2018, 11.1.7.5): as when the loop runs one
+// iteration, which may be known only at run time. So the host has to read
+// back what the kernel leaves in it whenever a statement that can run
+// after the loop may read that value. A statement that only names it does
+// not necessarily: `t = 0`, or a later loop every iteration of which
+// assigns `t` before referencing it, as in
+//
+//   do concurrent (i = 1:n)
+//     t = 0
+//     do concurrent (k = 1:m) reduce(+:t)
+//       t = t + x(i,k)
+//     end do
+//     s0(i) = t
+//   end do
+//   do concurrent (i = 1:n)
+//     t = 0
+//     ...
+//
+// The reading is the one that tells whether an array can become local to
+// each iteration (`iteration_array_candidates`): of the statements that
+// may run after the region, in the order they run, through the
+// constructs and loops around it. A scalar it cannot follow every access
+// to -- one a pointer, an EQUIVALENCE, another procedure or an ASSOCIATE
+// around the loop can reach, or whose assignment finalizes, and so reads,
+// its old value -- may be read.
+std::set<std::string> GpuOffloadVisitor::scalars_read_after_region(
+        const ASR::OMPRegion_t &region, const std::set<std::string> &names,
+        const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
+    std::set<std::string> read = names;
+    GpuAfterRegion after;
+    if (!after.init(current_scope, region)) return read;
+    std::set<SymbolTable*> outer_scopes = after.outer_scopes(current_scope);
+    for (const std::string &name : names) {
+        ASR::symbol_t *sym = current_scope->resolve_symbol(name);
+        if (sym == nullptr) continue;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (!after.followed(sym, outer_scopes)
+                || after.equivalenced.count(sym)) {
+            continue;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+        if (ASRUtils::is_array(v->m_type)
+                || ASRUtils::is_class_type(v->m_type)) {
+            continue;
+        }
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))
+                && (v->m_type_declaration == nullptr
+                    || ASRUtils::struct_needs_finalization(
+                        v->m_type_declaration))) {
+            continue;
+        }
+        GpuArrayAccess access(sym, after.proc_scope, after.pointers,
+            after.outside);
+        bool in_associate = false;
+        for (auto &assoc : enclosing_assoc_map) {
+            in_associate = in_associate || assoc.first == sym
+                || access.expr(assoc.second);
+        }
+        if (in_associate) continue;
+        GpuArrayFlowReader reader(sym, access, after.host_associated);
+        if (!read_after_region(reader, after.path)) read.erase(name);
+    }
+    return read;
 }
 
 // A variable of LOCAL locality (`local(t)`, the OMPPrivate clause of the

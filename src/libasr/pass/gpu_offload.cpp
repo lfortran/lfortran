@@ -663,30 +663,23 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     std::set<std::string> reduction_names;
     for (auto &r : pending_reductions) reduction_names.insert(r.orig_name);
 
-    // A later statement that names a scalar keeps the value the loop leaves
-    // in it only if it may read it before something replaces all of it
-    // (gpu_value_read_after_loop): `t = 0` does not, nor does a later loop
-    // every trip of which assigns `t` first.
     std::set<std::string> live_vars;
     for (auto *names : {&assigned_vars, &may_define}) {
         for (auto &name : *names) {
             if (inner_loop_vars.count(name)) continue;
-            ASR::symbol_t *sym = current_scope->resolve_symbol(name);
-            if (everything_live
-                    || gpu_visible_outside_procedure(sym, current_scope)) {
+            if (everything_live || post_loop_vars.count(name) > 0
+                    || gpu_visible_outside_procedure(
+                        current_scope->resolve_symbol(name), current_scope)) {
                 live_vars.insert(name);
-                continue;
             }
-            if (post_loop_vars.count(name) == 0) continue;
-            auto it = involved_syms.find(name);
-            if (it != involved_syms.end()
-                    && !ASRUtils::is_array(it->second.first)
-                    && !gpu_value_read_after_loop(region, current_scope,
-                        sym)) {
-                continue;
-            }
-            live_vars.insert(name);
         }
+    }
+    // A later statement that names a scalar keeps the value the loop leaves
+    // in it only if it may read that value: `t = 0` does not, nor does a
+    // later loop every iteration of which assigns `t` first.
+    if (!everything_live && !live_vars.empty()) {
+        live_vars = scalars_read_after_region(region, live_vars,
+            enclosing_assoc_map);
     }
     // Where the kernel keeps each variable the loop defines or may define
     // (gpu_locality).

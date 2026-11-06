@@ -644,16 +644,6 @@ public:
 std::set<std::string> gpu_names_referenced_after_loop(
     const ASR::OMPRegion_t &loop, SymbolTable *scope, bool &everything);
 
-// Whether a statement that can run once the parallel loop `loop` in `scope`
-// has run may read the value the loop leaves in the variable `v`, before
-// something replaces all of it: a contained procedure that names `v`, or a
-// statement after the loop, or of a loop around it, that may use the value
-// `v` holds when control reaches it. Only the statements that name `v`
-// (gpu_names_referenced_after_loop) can; one that assigns all of it first,
-// like a later loop whose every trip does, does not.
-bool gpu_value_read_after_loop(const ASR::OMPRegion_t &loop,
-    SymbolTable *scope, ASR::symbol_t *v);
-
 // Whether the value a parallel loop in `scope` gives the variable `sym`
 // can be read once the procedure (or main program) holding the loop has
 // returned, or by another procedure: it is a dummy argument or the

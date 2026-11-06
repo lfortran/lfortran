@@ -692,6 +692,14 @@ public:
             const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
             std::vector<ASR::symbol_t*> &local, GpuDecline &rejected);
 
+    // The variables of `names` whose value when the loop `region` ends a
+    // statement run after it may read before something defines all of
+    // them again: every array, and every scalar the reading cannot follow
+    // (gpu_offload_privatize.cpp).
+    std::set<std::string> scalars_read_after_region(
+            const ASR::OMPRegion_t &region, const std::set<std::string> &names,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
+
     // The arrays privatize_iteration_arrays may make local.
     std::vector<ASR::symbol_t*> iteration_array_candidates(
             const ASR::OMPRegion_t &region, ParallelLoopNest &work,
