@@ -4962,14 +4962,14 @@ public:
     };
 
     // Whether the dummy argument `v` of `f`, a data object so far, may still
-    // become a procedure. With implicit interfaces, a scalar dummy argument
-    // without INTENT that `f` references as a procedure (`real :: f` and
-    // `f(a)`, or `call f(a)`) is a procedure with an implicit interface,
-    // which only the body visitor makes it.
+    // become a procedure. A scalar dummy argument without INTENT that `f`
+    // references as a procedure (`real :: f` and `f(a)`, or `call f(a)`) is
+    // a procedure with an implicit interface, which only the body visitor
+    // makes it (with implicit interfaces; otherwise it reports an error).
+    // A substring reference `s(1:1)` is not a procedure reference.
     bool generic_dummy_may_be_procedure(ASR::Function_t *f,
             ASR::Variable_t *v) {
-        if (!compiler_options.implicit_interface
-                || v->m_intent != ASRUtils::intent_unspecified
+        if (v->m_intent != ASRUtils::intent_unspecified
                 || ASRUtils::is_array(v->m_type)) {
             return false;
         }
@@ -5094,10 +5094,25 @@ public:
             uncertain = true;
         }
         if (!type_compatible) return false;
-        return ASRUtils::is_assumed_rank_array(a->m_type)
-            || ASRUtils::is_assumed_rank_array(b->m_type)
-            || ASRUtils::extract_n_dims_from_ttype(a->m_type)
+        bool assumed_rank_a = ASRUtils::is_assumed_rank_array(a->m_type);
+        bool assumed_rank_b = ASRUtils::is_assumed_rank_array(b->m_type);
+        if (assumed_rank_a && assumed_rank_b) return true;
+        if (!assumed_rank_a && !assumed_rank_b) {
+            return ASRUtils::extract_n_dims_from_ttype(a->m_type)
                 == ASRUtils::extract_n_dims_from_ttype(b->m_type);
+        }
+        // Exactly one is assumed-rank, so the ranks are compatible. When
+        // either is also unlimited polymorphic or of assumed type, the two
+        // are TKR compatible by the F2018 text, e.g. CLASS(*) :: c(..) and
+        // INTEGER :: c(:,:), or TYPE(*) :: b(:) and CLASS(t) :: a(..). Yet
+        // gfortran and flang accept many such pairs in generic interfaces,
+        // some of them both (the second one). So as not to reject code that
+        // other compilers accept, such a pair is left undecided.
+        if (ASRUtils::is_unlimited_polymorphic_type(ta)
+                || ASRUtils::is_unlimited_polymorphic_type(tb)) {
+            uncertain = true;
+        }
+        return true;
     }
 
     // Whether two dummy arguments are distinguishable (F2018 15.4.3.4.5 p3).
@@ -5219,7 +5234,9 @@ public:
     // is TKR compatible with the other, or if one is ALLOCATABLE and the
     // other a POINTER. Any doubt (unresolved or parameterized types,
     // C_PTR, dummy procedures on both sides, dummy arguments that may still
-    // become procedures, ...) means distinguishable, so
+    // become procedures, an assumed-rank dummy argument against one of
+    // another rank where either is CLASS(*) or TYPE(*), ...) means
+    // distinguishable, so
     // only certain violations are reported. `passed_object_a` and
     // `passed_object_b` are the indices of the passed-object dummy arguments
     // to leave out, or -1.

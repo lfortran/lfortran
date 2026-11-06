@@ -2,7 +2,8 @@
 ! (F2018 C1514) by kind, rank, type, argument count, argument names,
 ! ALLOCATABLE versus POINTER, procedure versus data object, derived type,
 ! optional arguments or the number of arguments a polymorphic dummy argument
-! of the other specific accepts. Each call must resolve to the expected
+! of the other specific accepts, also with TYPE(*), CLASS(*) and assumed-rank
+! dummy arguments. Each call must resolve to the expected
 ! specific.
 module generic_interface_distinguishable_01_m
     implicit none
@@ -88,6 +89,26 @@ module generic_interface_distinguishable_01_m
     ! The same with a class(cnt_base) dummy and two extensions of cnt_base.
     interface g_count_class
         module procedure cc1, cc2
+    end interface
+
+    ! TYPE(*) scalar and integer rank 1: ranks differ.
+    interface g_star_rank
+        module procedure sr1, sr2
+    end interface
+
+    ! Assumed rank and rank 2 of different types: types differ.
+    interface g_arank
+        module procedure ar1, ar2
+    end interface
+
+    ! CLASS(*) rank 1 and real scalar: ranks differ.
+    interface g_star_r1
+        module procedure su1, su2
+    end interface
+
+    ! TYPE(*) only, with one and two nonoptional dummy arguments (C1514 (1)).
+    interface g_star_count
+        module procedure sn1, sn2
     end interface
 
     interface g_body
@@ -242,6 +263,42 @@ contains
         which = 32 + 0 * x%i
     end subroutine
 
+    subroutine sr1(x)
+        type(*), intent(in) :: x
+        which = 33
+    end subroutine
+    subroutine sr2(x)
+        integer, intent(in) :: x(:)
+        which = 34 + 0 * size(x)
+    end subroutine
+
+    subroutine ar1(x)
+        integer, intent(in) :: x(..)
+        which = 35 + 0 * rank(x)
+    end subroutine
+    subroutine ar2(x)
+        real, intent(in) :: x(:,:)
+        which = 36 + 0 * size(x)
+    end subroutine
+
+    subroutine su1(x)
+        class(*), intent(in) :: x(:)
+        which = 37 + 0 * size(x)
+    end subroutine
+    subroutine su2(x)
+        real, intent(in) :: x
+        which = 38 + 0 * int(x)
+    end subroutine
+
+    subroutine sn1(x)
+        type(*), intent(in) :: x
+        which = 39
+    end subroutine
+    subroutine sn2(x, y)
+        type(*), intent(in) :: x, y
+        which = 40
+    end subroutine
+
     real function twice(x)
         real, intent(in) :: x
         twice = 2 * x
@@ -274,6 +331,7 @@ program generic_interface_distinguishable_01
     integer :: i2(2, 2)
     type(cnt_a) :: ca
     type(cnt_b) :: cb
+    real :: ra2(2, 2)
 
     call g_kind(1.0_4)
     if (which /= 1) error stop
@@ -360,6 +418,29 @@ program generic_interface_distinguishable_01
     if (which /= 32) error stop
     call g_count_class(cb)
     if (which /= 32) error stop
+
+    call g_star_rank(1.0)
+    if (which /= 33) error stop
+    call g_star_rank([1, 2])
+    if (which /= 34) error stop
+
+    call g_arank(i2)
+    if (which /= 35) error stop
+    call g_arank(1)
+    if (which /= 35) error stop
+    ra2 = 0
+    call g_arank(ra2)
+    if (which /= 36) error stop
+
+    call g_star_r1([1, 2])
+    if (which /= 37) error stop
+    call g_star_r1(1.0)
+    if (which /= 38) error stop
+
+    call g_star_count(1)
+    if (which /= 39) error stop
+    call g_star_count(1, 2.0)
+    if (which /= 40) error stop
 
     ! The generic IEEE inquiries of the runtime take an optional X.
     if (.not. ieee_support_denormal()) error stop

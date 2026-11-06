@@ -42,6 +42,37 @@ module continue_compilation_ambiguous_generic
             real(8), intent(in) :: y
         end subroutine
     end interface
+
+    ! CLASS(*) and TYPE(*) are type compatible with every entity.
+    interface amb_g7
+        module procedure amb_xa, amb_xb  ! {Error} ambiguous interfaces in generic interface 'amb_g7' for 'amb_xa' and 'amb_xb'
+    end interface
+
+    interface amb_g8
+        module procedure amb_ya, amb_yb  ! {Error} ambiguous interfaces in generic interface 'amb_g8' for 'amb_ya' and 'amb_yb'
+    end interface
+
+    ! An assumed-rank dummy argument is rank compatible with every rank.
+    interface amb_g9
+        module procedure amb_za, amb_zb  ! {Error} ambiguous interfaces in generic interface 'amb_g9' for 'amb_za' and 'amb_zb'
+    end interface
+
+    interface amb_g10
+        module procedure amb_qa, amb_qb  ! {Error} ambiguous interfaces in generic interface 'amb_g10' for 'amb_qa' and 'amb_qb'
+    end interface
+
+    ! A substring reference is not a procedure reference: amb_ra's dummy
+    ! argument is a data object.
+    interface amb_g11
+        module procedure amb_ra, amb_rb  ! {Error} ambiguous interfaces in generic interface 'amb_g11' for 'amb_ra' and 'amb_rb'
+    end interface
+
+    ! TKR compatible by F2018, but left undecided: an assumed-rank dummy
+    ! argument against one of another rank, either unlimited polymorphic or
+    ! of assumed type (gfortran accepts these). No error.
+    interface amb_undecided
+        module procedure amb_qa, amb_pb
+    end interface
 contains
     subroutine amb_sa(x)
         real(8), intent(in) :: x
@@ -87,5 +118,51 @@ contains
 
     subroutine amb_wb(b)
         type(amb_child), intent(in) :: b
+    end subroutine
+
+    subroutine amb_xa(x)
+        class(*), intent(in) :: x
+    end subroutine
+
+    subroutine amb_xb(x)
+        integer, intent(in) :: x
+    end subroutine
+
+    subroutine amb_ya(x)
+        type(*), intent(in) :: x
+    end subroutine
+
+    subroutine amb_yb(x)
+        real, intent(in) :: x
+    end subroutine
+
+    subroutine amb_za(x)
+        integer, intent(in) :: x(..)
+    end subroutine
+
+    subroutine amb_zb(x)
+        integer, intent(in) :: x(:)
+    end subroutine
+
+    subroutine amb_qa(x)
+        class(*), intent(in) :: x(..)
+    end subroutine
+
+    subroutine amb_qb(x)
+        integer, intent(in) :: x(..)
+    end subroutine
+
+    subroutine amb_pb(x)
+        integer, intent(in) :: x(:,:)
+    end subroutine
+
+    subroutine amb_ra(s)
+        character(len=*) :: s
+        print *, s(1:1)
+    end subroutine
+
+    subroutine amb_rb(t)
+        character(len=*) :: t
+        print *, t
     end subroutine
 end module
