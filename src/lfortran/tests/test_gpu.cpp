@@ -2687,3 +2687,60 @@ TEST_CASE("A device check every call satisfies does not make a kernel stop") {
     }
 }
 #endif
+
+#ifndef HAVE_BUILD_TO_WASM
+TEST_CASE("A kernel's call of a small function that runs a loop is inlined") {
+    // gpu_inline_loop_calls_01 sums the squares of a column through
+    // sum_squares and a weighted column through weighted: both calls are
+    // inlined, so the lanes of an iteration share their loops and combine
+    // the sums, and no kernel calls either function.
+    std::string filename = "gpu_inline_loop_calls_01.f90";
+    std::string source = read_project_file("integration_tests/" + filename);
+    CompilerOptions options;
+    options.gpu_backend = "metal";
+    options.po.gpu_offload_metal = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = filename;
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_vector_lanes", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+    struct Kernel : public ASR::BaseWalkVisitor<Kernel> {
+        size_t reductions = 0, calls = 0;
+        void visit_GpuLaneReduce(const ASR::GpuLaneReduce_t &x) {
+            reductions++;
+            ASR::BaseWalkVisitor<Kernel>::visit_GpuLaneReduce(x);
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            std::string name = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(x.m_name));
+            if (name.rfind("sum_squares", 0) == 0
+                    || name.rfind("weighted", 0) == 0) {
+                calls++;
+            }
+            ASR::BaseWalkVisitor<Kernel>::visit_FunctionCall(x);
+        }
+    } kernel;
+    for (const auto &entry: parsed.result->m_symtab->get_scope()) {
+        if (ASRUtils::is_device_kernel(entry.second)) {
+            kernel.visit_symbol(*entry.second);
+        }
+    }
+    CHECK(kernel.calls == 0);
+    CHECK(kernel.reductions == 2);
+}
+#endif

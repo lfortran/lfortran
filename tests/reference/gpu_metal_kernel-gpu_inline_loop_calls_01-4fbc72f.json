@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_inline_loop_calls_01-4fbc72f",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_inline_loop_calls_01.f90",
+    "infile_hash": "297f16d87554703104289c5ae884270196de4edb23ec0b7fb394e3c8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_inline_loop_calls_01-4fbc72f.stdout",
+    "stdout_hash": "2bd0b7b9ebb47bee0d9cf59167c599a8b458d331943332b6ec8a4436",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

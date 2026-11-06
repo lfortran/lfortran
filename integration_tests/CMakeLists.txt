@@ -1349,6 +1349,7 @@ RUN(NAME gpu_residue_unroll_03 FAIL LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_integer_powers_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_guard_fold_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_guard_fold_02 FAIL LABELS gfortran llvm metal cuda) # stops: a part of 4 fails the check
+RUN(NAME gpu_inline_loop_calls_01 LABELS gfortran llvm metal cuda)
 RUN(NAME dot_product_01 LABELS gfortran llvm)
 RUN(NAME intrinsic_reduce_01 LABELS llvm GFORTRAN_ARGS -std=f2018)
 RUN(NAME intrinsic_reduce_derived_type_01 LABELS llvm)

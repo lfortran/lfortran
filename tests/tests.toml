@@ -5713,6 +5713,13 @@ gpu_metal_kernel = true
 filename = "../integration_tests/gpu_lanes_reuse_01.f90"
 gpu_metal_kernel = true
 
+# A kernel's calls of small pure functions that run a loop are inlined, so
+# that the lanes of an iteration share the loop and combine its sum.
+[[test]]
+filename = "../integration_tests/gpu_inline_loop_calls_01.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
 # Nested `do concurrent` loops shared out between the lanes.
 [[test]]
 filename = "../integration_tests/gpu_lanes_nested_01.f90"

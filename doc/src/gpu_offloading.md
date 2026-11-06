@@ -1321,6 +1321,14 @@ Metal and on an NVIDIA GPU; a device's capabilities say how many, see
   others take the scalars it assigned from it (`GpuLaneBroadcast`).
 * Everything else runs on every lane, with the same values.
 
+The pass sees the loops of the kernel's own body, not those of the
+procedures it calls, so a call in a kernel of a small pure function that
+runs a loop, such as `sum_squares(x(:, m))` returning `sum(x**2)`, is
+inlined first (`gpu_inline_loop_calls`, using the inliner of the loop
+transformations, `GpuInliner`): its loop is then one of the kernel's, and
+the lanes share it and combine its sum. An RMS norm of a 5120-element row
+computes its sum of squares this way.
+
 A lane that stops in a shared-out loop records the stop and returns, as a
 thread does, and the other lanes return after the loop. A kernel is left as
 it is when a statement in the way cannot be run on one lane (it returns, or
