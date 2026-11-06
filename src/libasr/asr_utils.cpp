@@ -9714,7 +9714,8 @@ ASR::ttype_t* import_procedure_type(Allocator &al,
 }
 
 ASR::symbol_t* import_type_declaration(Allocator &al,
-        ASR::symbol_t* type_declaration, SymbolTable* scope) {
+        ASR::symbol_t* type_declaration, SymbolTable* scope,
+        const std::string &declared_name) {
     if (type_declaration == nullptr || scope == nullptr) {
         return type_declaration;
     }
@@ -9740,7 +9741,16 @@ ASR::symbol_t* import_type_declaration(Allocator &al,
             !ASR::is_a<ASR::Function_t>(*definition)) {
         return type_declaration;
     }
-    return import_symbol(al, type_declaration, scope, ASR::accessType::Public);
+    // A new import takes the name of the type only when that name is free
+    // and is not the name of the variable being declared. Otherwise it takes
+    // a `1_`-prefixed name no user code can spell: a free name such as `t11`
+    // could be taken by a symbol declared in the scope later, e.g. a sibling
+    // associate name.
+    std::string name = symbol_name(definition);
+    std::string name_prefix = (name == declared_name ||
+        scope->resolve_symbol(name) != nullptr) ? "1_" : "";
+    return import_symbol(al, type_declaration, scope, ASR::accessType::Public,
+        name_prefix);
 }
 
 void set_cptr_type_declaration(ASR::ttype_t* type,
@@ -9773,7 +9783,7 @@ ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     ASR::codimension_t* a_codims, size_t n_codims,
     ASR::symbol_t* a_common_block) {
     a_type_declaration = import_type_declaration(
-        al, a_type_declaration, a_parent_symtab);
+        al, a_type_declaration, a_parent_symtab, a_name);
     a_type = import_procedure_type(al, a_type, a_parent_symtab);
     set_cptr_type_declaration(a_type, a_type_declaration);
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
@@ -14569,8 +14579,21 @@ ASR::ttype_t* ReplaceWithFunctionParamVisitor::replace_args_with_FunctionParam(A
 
 void SymbolDuplicator::duplicate_SymbolTable(SymbolTable* symbol_table,
     SymbolTable* destination_symtab) {
+    // Copy the imports first. A variable copied before an import of its
+    // scope or of an enclosing scope would not find that import and would
+    // import its type again under a free name, which a symbol of the scope
+    // copied later can be spelled like (e.g. an associate name spelled like
+    // the type).
+    for( auto& item: symbol_table->get_scope() ) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            duplicate_symbol(item.second, destination_symtab);
+        }
+    }
     std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> variables;
     for( auto& item: symbol_table->get_scope() ) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            continue;
+        }
         bool is_new = destination_symtab->get_symbol(item.first) == nullptr;
         duplicate_symbol(item.second, destination_symtab);
         ASR::symbol_t* copy = destination_symtab->get_symbol(item.first);

@@ -2397,8 +2397,14 @@ ASR::ttype_t* import_procedure_type(Allocator &al,
 // or a pass building a temporary from an existing expression -- would
 // otherwise leave the variable naming a type nothing in its scope can reach.
 // Import it here, once, rather than at every one of those producers.
+// `declared_name` is the name of the variable about to be declared in
+// `scope`, which the import must not take: an associate name can be spelled
+// like a type that is not accessible under that name. A new import takes
+// the name of the type when that name is free, otherwise a `1_`-prefixed
+// name that no symbol declared in `scope` later can be spelled like.
 ASR::symbol_t* import_type_declaration(Allocator &al,
-        ASR::symbol_t* type_declaration, SymbolTable* scope);
+        ASR::symbol_t* type_declaration, SymbolTable* scope,
+        const std::string &declared_name="");
 
 void set_cptr_type_declaration(ASR::ttype_t* type,
         ASR::symbol_t* type_declaration);
