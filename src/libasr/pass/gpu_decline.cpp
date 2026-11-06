@@ -1,4 +1,5 @@
 #include <cctype>
+#include <limits>
 
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
@@ -53,6 +54,9 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // 32-bit integers and floats.
             caps.lane_reductions = true;
             caps.lane_reduction_max_kind = 4;
+            // As many as the 32-bit thread index of a kernel numbers.
+            caps.lanes_column_iterations_max =
+                std::numeric_limits<int32_t>::max() / 32;
             caps.threads_per_block = 64;
             caps.sequential_loop_unroll_factor = 16;
             // A kernel is compiled for the GPU that runs it, so this is the

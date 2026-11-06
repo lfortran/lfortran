@@ -83,6 +83,11 @@ struct GpuDeviceCapabilities {
     // A launch gets lanes only when it has at most this many iterations;
     // with more, the iterations alone fill the GPU.
     int64_t lanes_iterations_max = 1024;
+    // And a kernel whose lanes read along a column of an array that each
+    // iteration takes a column of (gpu_vector_lanes.cpp, `pays_at_any_size`)
+    // gets them up to this many: one lane per iteration would read 32
+    // columns at once there, and lanes read one.
+    int64_t lanes_column_iterations_max = 1024;
     // Whether the lanes of an iteration can share a loop that accumulates
     // into private scalars and combine what each lane accumulated
     // (GpuLaneReduce).

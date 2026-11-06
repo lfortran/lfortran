@@ -1327,7 +1327,14 @@ The host chooses the lanes per launch: the SIMD-group width for a launch of
 at most `lanes_iterations_max` iterations (1024 on Metal, 65536 on an NVIDIA
 GPU, which keeps about 230,000 threads resident), one otherwise, where the
 iterations fill the GPU anyway and the lanes would only repeat each other's
-work. On an NVIDIA GPU only reduction loops are shared out
+work. A kernel whose shared-out loops all read along the first subscript of
+the arrays they name, at least one along a column the iteration takes (a
+later subscript depends on it), and that repeats no such column walk on
+every lane, gets lanes up to `lanes_column_iterations_max` iterations
+(`huge(0)/32` on Metal): one lane per iteration would read 32 columns at
+once there, a few elements at a time, while the lanes read one column
+together. Every row of a quantized matrix-vector product, and every row of a
+gated-delta state update, is such an iteration. On an NVIDIA GPU only reduction loops are shared out
 (`lane_independent_loops` is off), and a kernel with workspaces or that
 takes memory from the device heap keeps one lane per iteration. The kernel takes
 the lanes as its last parameter (`gpu_kernel_layout.lanes`); its thread
