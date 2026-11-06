@@ -19987,11 +19987,18 @@ public:
         if (is_assumed_rank) {
             compile_time_size = -1;
         } else if (dim != nullptr) {
-            int32_t dim_idx = -1;
-            ASRUtils::extract_value(dim, dim_idx);
-            if (dim_idx == -1) {
-                compile_time_size = -1;
-            } else {
+            ASR::expr_t* dim_value = ASRUtils::expr_value(dim);
+            int64_t dim_idx = -1;
+            if (dim_value && ASRUtils::extract_value(dim_value, dim_idx)) {
+                if (dim_idx > (int64_t) n_dims || dim_idx < 1) {
+                    diag.add(Diagnostic(
+                        "Dimension " + std::to_string(dim_idx) +
+                        " is invalid. Rank of the array, " +
+                        std::to_string(n_dims),
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
                 ASR::dimension_t m_dim = m_dims[dim_idx - 1];
                 ASR::expr_t* length_expr = m_dim.m_length;
                 int64_t length = -1;
@@ -20001,6 +20008,8 @@ public:
                 } else {
                     compile_time_size = length;
                 }
+            } else {
+                compile_time_size = -1;
             }
         } else {
             if (n_dims == 0) compile_time_size = -1;
