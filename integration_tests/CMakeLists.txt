@@ -3263,6 +3263,7 @@ RUN(NAME type_bound_generic_pass_01 LABELS gfortran llvm)
 RUN(NAME type_bound_private_01 LABELS gfortran llvm)
 RUN(NAME type_bound_private_02 LABELS gfortran llvm)
 RUN(NAME type_bound_private_03 LABELS gfortran llvm)
+RUN(NAME type_bound_private_04 LABELS llvm)
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

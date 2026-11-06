@@ -6520,6 +6520,46 @@ size_t passed_object_index(const ASR::StructMethodDeclaration_t &x,
     return proc->n_args;
 }
 
+// Whether code in module `m` can access the private entities of module
+// `owner`: `m` is `owner` itself or one of its submodules.
+static bool has_private_access(const ASR::Module_t *m,
+    const ASR::Module_t *owner)
+{
+    std::set<const ASR::Module_t*> seen;
+    while (m != nullptr && seen.insert(m).second) {
+        if (m == owner || std::string(m->m_name) == owner->m_name) {
+            return true;
+        }
+        if (m->m_parent_module == nullptr || m->m_symtab->parent == nullptr) {
+            return false;
+        }
+        ASR::symbol_t *parent = m->m_symtab->parent->resolve_symbol(
+            std::string(m->m_parent_module));
+        parent = parent ? ASRUtils::symbol_get_past_external(parent) : nullptr;
+        if (parent == nullptr || !ASR::is_a<ASR::Module_t>(*parent)) {
+            return false;
+        }
+        m = ASR::down_cast<ASR::Module_t>(parent);
+    }
+    return false;
+}
+
+bool is_binding_accessible_in_extension(
+    const ASR::StructMethodDeclaration_t &binding,
+    const ASR::symbol_t *extension)
+{
+    if (binding.m_access != ASR::accessType::Private) return true;
+    if (binding.m_parent_symtab == nullptr ||
+            binding.m_parent_symtab->asr_owner == nullptr ||
+            !ASR::is_a<ASR::symbol_t>(*binding.m_parent_symtab->asr_owner)) {
+        return true;
+    }
+    ASR::Module_t *owner = get_sym_module0(
+        ASR::down_cast<ASR::symbol_t>(binding.m_parent_symtab->asr_owner));
+    if (owner == nullptr) return true;
+    return has_private_access(get_sym_module0(extension), owner);
+}
+
 ASR::StructMethodDeclaration_t* overridden_binding(
     const ASR::StructMethodDeclaration_t &x)
 {
@@ -6543,11 +6583,30 @@ ASR::StructMethodDeclaration_t* overridden_binding(
         ASR::symbol_t *sym = s->m_symtab->get_symbol(std::string(x.m_name));
         if (sym != nullptr &&
                 ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
-            return ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+            ASR::StructMethodDeclaration_t *b =
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+            // A binding with the procedure of the inherited one is the
+            // inherited binding itself, as copied into the extension.
+            if (is_binding_accessible_in_extension(*b, owner) ||
+                    ASRUtils::symbol_get_past_external(b->m_proc) ==
+                    ASRUtils::symbol_get_past_external(x.m_proc)) {
+                return b;
+            }
         }
         parent = s->m_parent;
     }
     return nullptr;
+}
+
+bool binding_overrides(const ASR::StructMethodDeclaration_t *x,
+    const ASR::StructMethodDeclaration_t *target)
+{
+    std::set<const ASR::StructMethodDeclaration_t*> seen;
+    while (x != nullptr && seen.insert(x).second) {
+        if (x == target) return true;
+        x = overridden_binding(*x);
+    }
+    return false;
 }
 
 InterfaceMismatch binding_override_mismatch(

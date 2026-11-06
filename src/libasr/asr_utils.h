@@ -4576,10 +4576,24 @@ InterfaceMismatch interface_mismatch(const std::string &what,
 size_t passed_object_index(const ASR::StructMethodDeclaration_t &x,
     ASR::Function_t *proc);
 
+// Whether the binding `binding` of an ancestor type is accessible in the
+// scoping unit that declares the derived type `extension`. A private binding
+// is accessible only in its module and that module's submodules.
+bool is_binding_accessible_in_extension(
+    const ASR::StructMethodDeclaration_t &binding,
+    const ASR::symbol_t *extension);
+
 // The binding of the same name that `x` overrides, searched up the parent
-// chain of the derived type `x` belongs to, or nullptr.
+// chain of the derived type `x` belongs to, or nullptr. Fortran 2023 7.5.7.3:
+// only an accessible binding is overridden; a binding with the name of an
+// inaccessible private one is a new binding.
 ASR::StructMethodDeclaration_t* overridden_binding(
     const ASR::StructMethodDeclaration_t &x);
+
+// Whether the binding `x` is `target` or overrides it, directly or through
+// intermediate overrides.
+bool binding_overrides(const ASR::StructMethodDeclaration_t *x,
+    const ASR::StructMethodDeclaration_t *target);
 
 // Fortran 2018 7.5.7.3: an overriding type-bound procedure and the one it
 // overrides must have the same interface apart from the passed-object dummy

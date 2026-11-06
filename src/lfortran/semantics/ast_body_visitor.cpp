@@ -9966,6 +9966,7 @@ public:
                         final_sym = resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(p->m_procs[i]),
                                         to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+                        final_sym = generic_specific_binding(p->m_procs[i], final_sym);
                         final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
                             final_sym, current_scope);
                         ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(final_sym));
@@ -10013,9 +10014,10 @@ public:
 
                 // Case: GenericProcedure is present in abstract class and called from derived class object
                 if (x.n_member >= 1) {
-                    func_sym = resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(func_sym),
+                    func_sym = generic_specific_binding(func_sym,
+                        resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(func_sym),
                                     to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
-                                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
+                                    ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope));
                     ASR::symbol_t* selected = ASRUtils::symbol_get_past_external(func_sym);
                     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*selected)) {
                         nopass = ASR::down_cast<ASR::StructMethodDeclaration_t>(selected)->m_is_nopass;

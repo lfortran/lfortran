@@ -3375,6 +3375,14 @@ class ASRToLLVMVisitor;
                                             std::vector<llvm::Constant*>& impls,
                                             llvm::Module* module);
 
+            // The vtable slot of `binding`, the binding a call through an
+            // object of declared type `struct_sym` resolved to. The slot is
+            // looked up in the type that declares the binding, so a binding
+            // of an extension with the same name as an inaccessible private
+            // one of an ancestor does not select the ancestor's slot.
+            int64_t get_vtable_function_offset(ASR::symbol_t* struct_sym,
+                                            ASR::StructMethodDeclaration_t* binding);
+
             void create_type_info_for_intrinsic_type(ASR::ttype_t* ttype,
                                             int kind, llvm::Module* module);
             void create_vtab_for_intrinsic_type(ASR::ttype_t* ttype,

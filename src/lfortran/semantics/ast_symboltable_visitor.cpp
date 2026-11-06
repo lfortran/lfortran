@@ -5291,6 +5291,17 @@ public:
                         continue;
                     }
                     ASR::symbol_t *proc = resolve_and_copy_type_bound_proc(clss, proc_name);
+                    ASR::symbol_t *specific = ASRUtils::symbol_get_past_external(m_procs[i]);
+                    // A binding of `clss` named like the specific but not
+                    // overriding it (the specific is private and not
+                    // accessible here) leaves the generic with the specific.
+                    if (proc && ASR::is_a<ASR::StructMethodDeclaration_t>(*proc) &&
+                            ASR::is_a<ASR::StructMethodDeclaration_t>(*specific) &&
+                            !ASRUtils::binding_overrides(
+                                ASR::down_cast<ASR::StructMethodDeclaration_t>(proc),
+                                ASR::down_cast<ASR::StructMethodDeclaration_t>(specific))) {
+                        proc = m_procs[i];
+                    }
                     procs.push_back(al, proc && ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)
                         ? proc : m_procs[i]);
                 }
