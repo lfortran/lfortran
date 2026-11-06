@@ -5,6 +5,7 @@ program implied_do_loops64
     implicit none
     integer :: i, j, k, lo, hi
     integer(8) :: hi8
+    integer :: w(3)
     integer, allocatable :: v(:)
     ! The same sizes in specification expressions, whose bounds are known at
     ! compile time here and only at run time in `automatic` and `nest`.
@@ -68,6 +69,19 @@ program implied_do_loops64
     if (sum([(((k, k = 1, j), j = 1, i), i = 1, lo)]) /= 70) error stop 19
     call check([(((k, k = j, 3), j = 1, 4), i = 1, 2)], &
         [1, 2, 3, 2, 3, 3, 1, 2, 3, 2, 3, 3])
+
+    ! A stepped inner loop whose range is shorter than its step in the
+    ! wrong direction, as `j = 4, 3, 2`, has no iterations.
+    call check([((j, j = i, 3, 2), i = 1, lo)], [1, 3, 2, 3])
+    call check([((j, j = i, 3, 2), i = 1, 5)], [1, 3, 2, 3])
+    call check([((j, j = i, 1, -2), i = 0, 3)], [1, 2, 3, 1])
+    if (size([((j, j = 1, i, 3), i = -4, 2)]) /= 2) error stop 26
+    w = [10, 20, 30]
+    call check([([w(i:3:2)], i = 1, lo)], [10, 30, 20, 30])
+    deallocate(v)
+    allocate(v(4))
+    v = [((j, j = i, 3, 2), i = 1, lo)]
+    if (any(v /= [1, 3, 2, 3])) error stop 27
 
     if (size(d1) /= 6) error stop 20
     if (size(d2) /= 10) error stop 21

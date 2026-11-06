@@ -2316,10 +2316,11 @@ ASR::expr_t* count_ImpliedDoLoop_elements(Allocator& al,
     const std::function<ASR::expr_t*(ArraySizeStatements&)>& iteration_size);
 
 // The extent (end - start)/step + 1 of a section triplet, in the type
-// `size_type`.
+// `size_type`. With `clamp`, the number of its elements,
+// max(0, (end - start + step)/step), which is zero for an empty triplet.
 ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
     ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step,
-    ASR::ttype_t* size_type);
+    ASR::ttype_t* size_type, bool clamp = false);
 
 // The number of elements of `x`; `stmts` and `clamp` as for
 // get_ImpliedDoLoop_size.

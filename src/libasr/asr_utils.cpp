@@ -5355,6 +5355,13 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     }
     if( d == nullptr ) {
         implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
+    } else if( clamp ) {
+        // max(0, (end - start + step) / step) (F2018 11.1.7.4.1): with
+        // truncating division, `(end - start) / step + 1` is one, not zero,
+        // for an empty loop such as `j = 4, 3, 2`.
+        d = builder.i2i_t(d, bound_type);
+        implied_doloop_size = builder.Div(builder.Add(
+            builder.Sub(end, start), d), d);
     } else {
         d = builder.i2i_t(d, bound_type);
         implied_doloop_size = builder.Add(builder.Div(
@@ -5474,7 +5481,7 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
 
 ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
         ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step,
-        ASR::ttype_t* size_type) {
+        ASR::ttype_t* size_type, bool clamp) {
     // A bound of the triplet may be integer(8): the extent is computed in
     // the widest kind of the triplet and only then converted.
     ASRUtils::ASRBuilder builder(al, loc);
@@ -5490,9 +5497,16 @@ ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
             ASRUtils::expr_type(e)) == kind ? e
             : builder.i2i_t(e, triplet_type);
     };
-    ASR::expr_t* extent = builder.Add(builder.Div(
-        builder.Sub(in_kind(end), in_kind(start)), in_kind(step)),
-        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
+    ASR::expr_t* extent = nullptr;
+    if( clamp ) {
+        extent = Max::create_extent(al, builder.Div(builder.Add(
+            builder.Sub(in_kind(end), in_kind(start)), in_kind(step)),
+            in_kind(step)));
+    } else {
+        extent = builder.Add(builder.Div(
+            builder.Sub(in_kind(end), in_kind(start)), in_kind(step)),
+            make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
+    }
     if( kind != ASRUtils::extract_kind_from_ttype_t(size_type) ) {
         extent = builder.i2i_t(extent, size_type);
     }
@@ -5576,10 +5590,7 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
                     continue;
                 }
                 ASR::expr_t* dim_size = get_triplet_extent(al, loc, start,
-                    end, d, int_type);
-                if( clamp ) {
-                    dim_size = Max::create_extent(al, dim_size);
-                }
+                    end, d, int_type, clamp);
                 if( array_section_size == nullptr ) {
                     array_section_size = dim_size;
                 } else {
