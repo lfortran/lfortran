@@ -1500,6 +1500,22 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 ASRUtils::is_dummy_procedure(*ASR::down_cast<ASR::Function_t>(new_sym));
         }
 
+        // A call through the interface of an external procedure links to that procedure by name.
+        void keep_descriptor_procedure(ASR::symbol_t* sym) {
+            not_to_be_erased.insert(sym);
+            if( !ASR::is_a<ASR::Function_t>(*sym) ) {
+                return;
+            }
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
+            if( !ASRUtils::is_external_procedure_interface(ASRUtils::get_FunctionType(fn)) ) {
+                return;
+            }
+            ASR::symbol_t* impl = fn->m_symtab->get_tu_scope()->get_symbol(fn->m_name);
+            if( impl != nullptr ) {
+                not_to_be_erased.insert(impl);
+            }
+        }
+
         static bool is_struct_method_declaration(ASR::symbol_t* const sym){
             return ASR::is_a<ASR::StructMethodDeclaration_t>(*ASRUtils::symbol_get_past_external(sym));
         }
@@ -1612,7 +1628,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             if( !can_edit_call(x.m_args, x.n_args)
                     && !is_struct_method_declaration(x.m_name)
                     && !replaces_dummy_procedure(subrout_sym) ) {
-                not_to_be_erased.insert(subrout_sym);
+                keep_descriptor_procedure(subrout_sym);
                 return ;
             }
             if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
