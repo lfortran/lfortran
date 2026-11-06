@@ -6116,6 +6116,7 @@ RUN(NAME separate_compilation_external_symbol_02 LABELS gfortran llvm
 RUN(NAME separate_compilation_procedure_pointer_01 LABELS gfortran llvm
     EXTRAFILES separate_compilation_procedure_pointer_01a.f90
     EXTRA_ARGS --implicit-interface) # calls through procedure pointer components with implicit interfaces in a module (#16414)
+RUN(NAME class_star_array_arg_01 LABELS gfortran llvm)
 RUN(NAME class_star_pointer_01 LABELS gfortran llvm)
 RUN(NAME class_star_pointer_02 LABELS gfortran llvm)
 
