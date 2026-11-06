@@ -5265,7 +5265,8 @@ ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x) {
             ASRUtils::get_fixed_size_of_array(x->m_type), int_type, x->base.base.loc);
 }
 
-ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop) {
+ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop,
+        ArraySizeStatements* stmts, bool clamp) {
     const Location& loc = implied_doloop->base.base.loc;
     ASRUtils::ASRBuilder builder(al, loc);
     ASR::expr_t* start = implied_doloop->m_start;
@@ -5300,52 +5301,84 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
             builder.Sub(end, start), d),
             make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
     }
+    if( clamp ) {
+        implied_doloop_size = Max::create_extent(al, implied_doloop_size);
+    }
+    // The number of elements of one iteration: `const_elements` scalars and
+    // the elements of the nested loops and constructors,
+    // `implied_doloop_size_` (nullptr if there are none). False if the size
+    // of one of these can only be computed with statements and
+    // `iteration_stmts` is nullptr.
+    auto iteration_size = [&](ArraySizeStatements* iteration_stmts,
+            bool clamp_sizes, int& const_elements,
+            ASR::expr_t*& implied_doloop_size_) -> bool {
+        const_elements = 0;
+        implied_doloop_size_ = nullptr;
+        for( size_t i = 0; i < implied_doloop->n_values; i++ ) {
+            ASR::expr_t* value_size = nullptr;
+            if( ASR::is_a<ASR::ImpliedDoLoop_t>(*implied_doloop->m_values[i]) ) {
+                value_size = get_ImpliedDoLoop_size(al,
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i]),
+                    iteration_stmts, clamp_sizes);
+            } else if( ASR::is_a<ASR::ArrayConstructor_t>(*implied_doloop->m_values[i]) ) {
+                value_size = get_ArrayConstructor_size(al,
+                    ASR::down_cast<ASR::ArrayConstructor_t>(implied_doloop->m_values[i]),
+                    iteration_stmts, clamp_sizes);
+            } else {
+                const_elements += 1;
+                continue;
+            }
+            if( value_size == nullptr ) {
+                return false;
+            }
+            if( implied_doloop_size_ == nullptr ) {
+                implied_doloop_size_ = value_size;
+            } else {
+                implied_doloop_size_ = builder.Add(value_size, implied_doloop_size_);
+            }
+        }
+        return true;
+    };
     int const_elements = 0;
     ASR::expr_t* implied_doloop_size_ = nullptr;
-    for( size_t i = 0; i < implied_doloop->n_values; i++ ) {
-        if( ASR::is_a<ASR::ImpliedDoLoop_t>(*implied_doloop->m_values[i]) ) {
-            if( implied_doloop_size_ == nullptr ) {
-                implied_doloop_size_ = get_ImpliedDoLoop_size(al,
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i]));
-            } else {
-                implied_doloop_size_ = builder.Add(get_ImpliedDoLoop_size(al,
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i])),
-                    implied_doloop_size_);
-            }
-        } else if( ASR::is_a<ASR::ArrayConstructor_t>(*implied_doloop->m_values[i]) ) {
-            ASR::expr_t* ac_size = get_ArrayConstructor_size(al,
-                ASR::down_cast<ASR::ArrayConstructor_t>(implied_doloop->m_values[i]));
-            if( implied_doloop_size_ == nullptr ) {
-                implied_doloop_size_ = ac_size;
-            } else {
-                implied_doloop_size_ = builder.Add(ac_size, implied_doloop_size_);
-            }
-        } else {
-            const_elements += 1;
-        }
-    }
+    bool sized = iteration_size(nullptr, clamp, const_elements, implied_doloop_size_);
 
     ASR::symbol_t* loop_var_sym = nullptr;
     if (ASR::is_a<ASR::Var_t>(*implied_doloop->m_var)) {
         loop_var_sym = ASR::down_cast<ASR::Var_t>(implied_doloop->m_var)->m_v;
     }
-    bool inner_depends_on_var = (loop_var_sym != nullptr &&
-        implied_doloop_size_ != nullptr &&
-        expr_references_symbol(implied_doloop_size_, loop_var_sym));
+    // A nested size that needs statements is taken to depend on the
+    // variable: its statements are put in the loop that counts the elements.
+    bool inner_depends_on_var = (loop_var_sym != nullptr && (!sized ||
+        (implied_doloop_size_ != nullptr &&
+         expr_references_symbol(implied_doloop_size_, loop_var_sym))));
 
     if (inner_depends_on_var) {
-        ASR::expr_t* arith_sum = to_size_type(get_ImpliedDoLoop_sum(al,
-            implied_doloop, implied_doloop_size_, implied_doloop_size));
-        if (const_elements > 0) {
-            ASR::expr_t* const_total = builder.Mul(
-                make_ConstantWithKind(make_IntegerConstant_t,
-                    make_Integer_t, const_elements, 4, loc),
-                to_size_type(implied_doloop_size));
-            implied_doloop_size = builder.Add(arith_sum, const_total);
-        } else {
-            implied_doloop_size = arith_sum;
+        if (stmts == nullptr) {
+            return nullptr;
         }
+        return count_ImpliedDoLoop_elements(al, implied_doloop, size_type,
+            *stmts, [&](ArraySizeStatements& body) {
+                int n_scalars = 0;
+                ASR::expr_t* values_size = nullptr;
+                bool iteration_sized = iteration_size(&body, true, n_scalars,
+                    values_size);
+                LCOMPILERS_ASSERT(iteration_sized);
+                ASR::expr_t* scalars = make_ConstantWithKind(
+                    make_IntegerConstant_t, make_Integer_t, n_scalars, 4, loc);
+                if( values_size == nullptr ) {
+                    return scalars;
+                }
+                return n_scalars > 0 ? builder.Add(scalars, values_size)
+                    : values_size;
+            });
     } else {
+        if( !sized ) {
+            if( stmts == nullptr ) {
+                return nullptr;
+            }
+            iteration_size(stmts, clamp, const_elements, implied_doloop_size_);
+        }
         implied_doloop_size = to_size_type(implied_doloop_size);
         if( const_elements > 0 ) {
             if( implied_doloop_size_ == nullptr ) {
@@ -5392,7 +5425,8 @@ ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
     return extent;
 }
 
-ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x) {
+ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x,
+        ArraySizeStatements* stmts, bool clamp) {
     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
     ASR::expr_t* array_size = nullptr;
     int64_t constant_size = 0;
@@ -5416,7 +5450,10 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
             }
         } else if( ASR::is_a<ASR::ArrayConstructor_t>(*element) ) {
             ASR::expr_t* element_array_size = get_ArrayConstructor_size(al,
-                ASR::down_cast<ASR::ArrayConstructor_t>(element));
+                ASR::down_cast<ASR::ArrayConstructor_t>(element), stmts, clamp);
+            if( element_array_size == nullptr ) {
+                return nullptr;
+            }
             if( array_size == nullptr ) {
                 array_size = element_array_size;
             } else {
@@ -5445,7 +5482,10 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
             }
         } else if( ASR::is_a<ASR::ImpliedDoLoop_t>(*element) ) {
             ASR::expr_t* implied_doloop_size = get_ImpliedDoLoop_size(al,
-                ASR::down_cast<ASR::ImpliedDoLoop_t>(element));
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(element), stmts, clamp);
+            if( implied_doloop_size == nullptr ) {
+                return nullptr;
+            }
             if( array_size ) {
                 array_size = builder.Add(implied_doloop_size, array_size);
             } else {
@@ -5463,6 +5503,9 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
                 }
                 ASR::expr_t* dim_size = get_triplet_extent(al, loc, start,
                     end, d, int_type);
+                if( clamp ) {
+                    dim_size = Max::create_extent(al, dim_size);
+                }
                 if( array_section_size == nullptr ) {
                     array_section_size = dim_size;
                 } else {
@@ -5992,7 +6035,13 @@ ASR::asr_t* make_ArraySize_t_util(
             ASR::down_cast<ASR::Cast_t>(a_v)->m_arg, a_dim, a_type, a_value, for_type);
     } else if( ASR::is_a<ASR::ArrayConstructor_t>(*a_v) && for_type ) {
         ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(a_v);
-        return &(get_ArrayConstructor_size(al, array_constructor)->base);
+        ASR::expr_t* constructor_size = get_ArrayConstructor_size(al, array_constructor);
+        if( constructor_size == nullptr ) {
+            // Only the statements that evaluate the constructor can count
+            // its elements.
+            return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
+        }
+        return &(constructor_size->base);
     } else {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = 0;
@@ -6584,41 +6633,41 @@ public:
 
 }
 
-ASR::expr_t* get_ImpliedDoLoop_sum(Allocator& al, ASR::ImpliedDoLoop_t* idl,
-        ASR::expr_t* term, ASR::expr_t* trip_count) {
+ASR::expr_t* count_ImpliedDoLoop_elements(Allocator& al,
+        ASR::ImpliedDoLoop_t* idl, ASR::ttype_t* count_type,
+        ArraySizeStatements& stmts,
+        const std::function<ASR::expr_t*(ArraySizeStatements&)>& iteration_size) {
     const Location& loc = idl->base.base.loc;
     ASRUtils::ASRBuilder builder(al, loc);
-    ASR::ttype_t* sum_type = expr_type(trip_count);
-    ASR::ttype_t* var_type = expr_type(idl->m_var);
-    auto convert = [&](ASR::expr_t* e, ASR::ttype_t* type) {
-        return extract_kind_from_ttype_t(expr_type(e)) ==
-            extract_kind_from_ttype_t(type) ? e : builder.i2i_t(e, type);
-    };
-    ASR::expr_t* first = convert(idl->m_start, var_type);
-    ASR::expr_t* last = nullptr;
-    if (idl->m_increment == nullptr) {
-        last = convert(idl->m_end, var_type);
-    } else {
-        // start + (trip_count - 1) * increment
-        ASR::expr_t* one = make_ConstantWithType(make_IntegerConstant_t,
-            1, sum_type, loc);
-        last = convert(builder.Add(convert(idl->m_start, sum_type),
-            builder.Mul(builder.Sub(trip_count, one),
-                convert(idl->m_increment, sum_type))), var_type);
-    }
-    ASR::symbol_t* var = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
-    auto term_at = [&](ASR::expr_t* value) {
-        ExprStmtDuplicator duplicator(al);
-        ASR::expr_t* term_value = duplicator.duplicate_expr(term);
-        ImpliedDoLoopVarSubstituter substituter(var, value);
-        substituter.current_expr = &term_value;
-        substituter.replace_expr(term_value);
-        return convert(term_value, sum_type);
-    };
-    ASR::expr_t* two = make_ConstantWithType(make_IntegerConstant_t,
-        2, sum_type, loc);
-    return builder.Div(builder.Mul(trip_count,
-        builder.Add(term_at(first), term_at(last))), two);
+    std::string name = stmts.scope->get_unique_name(
+        "__libasr_implied_do_loop_size");
+    ASR::symbol_t* count_sym = ASR::down_cast<ASR::symbol_t>(
+        make_Variable_t_util(al, loc, stmts.scope, s2c(al, name), nullptr, 0,
+            ASR::intentType::Local, nullptr, nullptr,
+            ASR::storage_typeType::Default, count_type, nullptr,
+            ASR::abiType::Source, ASR::accessType::Public,
+            ASR::presenceType::Required, false));
+    stmts.scope->add_symbol(name, count_sym);
+    ASR::expr_t* count = ASRUtils::EXPR(ASR::make_Var_t(al, loc, count_sym));
+    stmts.body->push_back(al, builder.Assignment(count,
+        make_ConstantWithType(make_IntegerConstant_t, 0, count_type, loc)));
+    Vec<ASR::stmt_t*> loop_body;
+    loop_body.reserve(al, 1);
+    ArraySizeStatements iteration_stmts{&loop_body, stmts.scope};
+    ASR::expr_t* size = iteration_size(iteration_stmts);
+    loop_body.push_back(al, builder.Assignment(count,
+        builder.Add(count, size)));
+    ExprStmtDuplicator duplicator(al);
+    ASR::do_loop_head_t head;
+    head.loc = loc;
+    head.m_v = idl->m_var;
+    head.m_start = duplicator.duplicate_expr(idl->m_start);
+    head.m_end = duplicator.duplicate_expr(idl->m_end);
+    head.m_increment = idl->m_increment
+        ? duplicator.duplicate_expr(idl->m_increment) : nullptr;
+    stmts.body->push_back(al, ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al,
+        loc, nullptr, head, loop_body.p, loop_body.size(), nullptr, 0)));
+    return count;
 }
 
 // Whether the bounds and steps of `idl` and of the loops nested in it are
@@ -12873,7 +12922,8 @@ ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a_loc,
         size_known = true;
     } else if (can_compute_size) {
         ASR::expr_t* ctor_size_expr = ASRUtils::get_ArrayConstructor_size(al, arr_ctor);
-        if (ASRUtils::extract_value(ASRUtils::expr_value(ctor_size_expr), ctor_size_val)) {
+        if (ctor_size_expr != nullptr &&
+                ASRUtils::extract_value(ASRUtils::expr_value(ctor_size_expr), ctor_size_val)) {
             size_known = true;
         }
     }

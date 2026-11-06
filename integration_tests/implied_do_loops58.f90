@@ -34,6 +34,36 @@ program implied_do_loops58
     end do
     print '(*(i0,1x))', [((j, j = i, 2), i = 0, 2)]
 
+    ! The inner trip counts are zero for some values of the outer variable,
+    ! are not linear in it, or the nest is deeper: the size is the sum of the
+    ! counts, each at least zero.
+    lo = 5
+    call check([((j, j = i, 3), i = 1, lo)], [1, 2, 3, 2, 3, 3])
+    call check([((j, j = i, 3), i = 1, 5)], [1, 2, 3, 2, 3, 3])
+    call check([((j, j = i, 3), i = 1, 7, 2)], [1, 2, 3, 3])
+    call check([((j, j = 1, i, 2), i = 2, 4)], [1, 1, 3, 1, 3])
+    call check([((j, j = 1, i, 2), i = 1, lo)], [1, 1, 1, 3, 1, 3, 1, 3, 5])
+    call check([((j, j = i, 2), (j, j = i, 4), i = 1, lo)], &
+        [1, 2, 1, 2, 3, 4, 2, 2, 3, 4, 3, 4, 4])
+    call check([([(j, j = i, 3)], i = 1, lo)], [1, 2, 3, 2, 3, 3])
+    hi = -1
+    if (size([(((k, k = 1, hi), j = i, 3), i = 1, lo)]) /= 0) error stop 11
+    if (size([((j, j = 1, i), i = lo, 1)]) /= 0) error stop 12
+    hi = 1000
+    if (size([((j, j = i, hi), i = 1, 2 * hi)]) /= 500500) error stop 13
+    deallocate(v)
+    allocate(v(500500))
+    v = [((j, j = i, hi), i = 1, 2 * hi)]
+    if (sum(int(v, 8)) /= 333833500_8) error stop 14
+    if (size([((j, j = 1, i * i), i = 1, 4)]) /= 30) error stop 15
+    if (sum([((j, j = 1, i * i), i = 1, 4)]) /= 192) error stop 16
+    if (size([((j, j = 1, i * (6 - i)), i = 1, lo)]) /= 35) error stop 17
+    call check([(((k, k = 1, j), j = 1, i), i = 1, 3)], [1, 1, 1, 2, 1, 1, 2, 1, 2, 3])
+    if (size([(((k, k = 1, j), j = 1, i), i = 1, lo)]) /= 35) error stop 18
+    if (sum([(((k, k = 1, j), j = 1, i), i = 1, lo)]) /= 70) error stop 19
+    call check([(((k, k = j, 3), j = 1, 4), i = 1, 2)], &
+        [1, 2, 3, 2, 3, 3, 1, 2, 3, 2, 3, 3])
+
 contains
 
     subroutine check(x, expected)
