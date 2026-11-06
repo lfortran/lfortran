@@ -1554,7 +1554,8 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
-                if( !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type)) ) {
+                if( !ASRUtils::is_variable(a_iostat) ||
+                    !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type)) ) {
                         diag.add(Diagnostic(
                             "`iostat` must be a variable of type, Integer or IntegerPointer",
                             Level::Error, Stage::Semantic, {

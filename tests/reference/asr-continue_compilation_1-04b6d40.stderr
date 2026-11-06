@@ -5555,6 +5555,18 @@ semantic error: `iomsg` must be scalar
 4587 |         backspace(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: `iostat` must be a variable of type, Integer or IntegerPointer
+    --> tests/errors/continue_compilation_1.f90:4596:9
+     |
+4596 |         close(unit=99, iostat=ios + 1)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iostat` must be a variable of type, Integer or IntegerPointer
+    --> tests/errors/continue_compilation_1.f90:4597:9
+     |
+4597 |         close(unit=99, iostat=cc1_close_iostat_fixed)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
