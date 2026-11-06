@@ -461,6 +461,9 @@ class ASRToLLVMVisitor;
             llvm::Value* allocate_string_descriptor_on_heap(llvm::Type* string_desc_type);
             void ensure_string_descriptor_on_heap(llvm::Type* array_desc_type, llvm::Value* array_desc,
                 llvm::Type* string_desc_type);
+            // Stores a new heap descriptor in `desc_ptr` if it is null; returns the descriptor.
+            llvm::Value* ensure_array_descriptor_on_heap(ASR::expr_t* expr, ASR::ttype_t* array_type,
+                llvm::Type* desc_type, llvm::Value* desc_ptr);
 
             /// Check llvm SSA is matching some type.
             void validate_llvm_SSA([[maybe_unused]] llvm::Type* type_to_check_against, [[maybe_unused]] llvm::Value* llvm_SSA);
