@@ -4577,3 +4577,15 @@ subroutine cc1_char_len_entity_override()
     implicit none
     character(len=cc1_char_len_nundef) :: c*4  ! {Error} Variable 'cc1_char_len_nundef' is not declared
 end subroutine
+
+! An array initializer must have the same shape as the declared array.
+module cc1_initializer_shape
+    implicit none
+    integer :: cc1_xi(3) = [1, 2]  ! {Error} different shape for array initialization on dimension 1 (3 and 2)
+contains
+    subroutine cc1_initializer_shape_local()
+        integer, parameter :: p(2, 2) = reshape([1, 2, 3, 4], [2, 2])
+        integer :: yi(2, 3) = p  ! {Error} different shape for array initialization on dimension 2 (3 and 2)
+        print *, yi
+    end subroutine
+end module

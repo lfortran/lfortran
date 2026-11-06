@@ -7065,3 +7065,28 @@ TEST_CASE("FortranEvaluator module character variables across cells") {
     REQUIRE(r.ok);
     CHECK(r.result.str == "modq1");
 }
+
+TEST_CASE("FortranEvaluator array initializer of a different shape") {
+    // `integer :: xi(3) = [1, 2]` is rejected in semantics, not in codegen,
+    // and leaves the session usable.
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate("integer :: xi_16971(3) = [1, 2]", false, lm, lpm, d);
+    CHECK(!r.ok);
+    REQUIRE(d.diagnostics.size() >= 1);
+    CHECK(d.diagnostics[0].stage == LCompilers::diag::Stage::Semantic);
+    CHECK(d.diagnostics[0].message
+        == "different shape for array initialization on dimension 1 (3 and 2)");
+    REQUIRE(e.evaluate2("integer :: yi_16971(3) = [1, 2, 3]").ok);
+    r = e.evaluate2("sum(yi_16971)");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+}
