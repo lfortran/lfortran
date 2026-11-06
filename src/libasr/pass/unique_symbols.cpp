@@ -259,7 +259,9 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             // external procedure interface references it, so that units
             // compiled with this option link with each other and with
             // GFortran's objects. Internal and module procedures are not
-            // global and keep their names.
+            // global and keep their names. Like GFortran, exactly one
+            // underscore is appended, also to a name that already ends in
+            // one, so that `f` and `f_` stay distinct (`f_` and `f__`).
             bool global_definition = !ASRUtils::is_declaration_deftype(f_type->m_deftype)
                 && f_type->m_abi == ASR::abiType::Source
                 && ASRUtils::is_tu_scope(x.m_symtab->parent);
@@ -269,7 +271,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                 bool has_reserved_prefix = (startswith(name, "_lfortran") ||
                                             startswith(name, "_lpython") ||
                                             startswith(name, "_lcompilers"));
-                if (!has_reserved_prefix && !name.empty() && name.back() != '_') {
+                if (!has_reserved_prefix && !name.empty()) {
                     ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
                     sym_to_renamed[sym] = name + "_";
                 }
