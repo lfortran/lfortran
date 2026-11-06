@@ -11539,7 +11539,14 @@ public:
                         implicit_save = true;
                         storage_type = ASR::storage_typeType::Save;
                     }
-                    if (init_expr && is_local && !is_derived_type && !is_pointer &&
+                    // A global an interactive cell declares directly in its
+                    // translation unit has no body to run the assignments an
+                    // initializer would otherwise be lowered to. An array of
+                    // a derived type there is initialized statically, like
+                    // the same array in a procedure.
+                    bool is_tu_array = ASRUtils::is_tu_scope(current_scope)
+                        && ASRUtils::is_array(type);
+                    if (init_expr && (is_local || is_tu_array) && !is_derived_type && !is_pointer &&
                             storage_type != ASR::storage_typeType::Parameter) {
                         ASR::expr_t* static_init = nullptr;
                         bool is_struct_scalar = ASR::is_a<ASR::StructType_t>(*type);
@@ -11552,6 +11559,16 @@ public:
                             // element is stored once, so the array has the
                             // save attribute for the same reason a scalar does.
                             static_init = init_expr;
+                        } else if (!is_local && ASR::is_a<ASR::StructType_t>(
+                                    *ASRUtils::type_get_past_array(type))) {
+                            // `type(t) :: a(2) = [t(5), t(6)]` in an
+                            // interactive cell: a constant initializer is
+                            // stored once, as the global's static data.
+                            ASR::expr_t* init_value = ASRUtils::expr_value(init_expr);
+                            if (init_value != nullptr
+                                    && ASR::is_a<ASR::ArrayConstant_t>(*init_value)) {
+                                static_init = init_value;
+                            }
                         } else if (ASR::is_a<ASR::CPtr_t>(*type) &&
                                 ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
                             static_init = init_expr;

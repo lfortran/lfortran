@@ -5053,6 +5053,70 @@ end program
     REQUIRE(r.result.i32 == 15);
 }
 
+// An array of a derived type that a cell declares with a constant array
+// initializer keeps the initializer's element values rather than only the
+// components' defaults (#16945).
+TEST_CASE("FortranEvaluator derived type array constant initializer") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: arr_init_t\ninteger :: k\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_t) :: arr_init_a(2) = [arr_init_t(5), arr_init_t(6)]");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_a(1)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 5);
+    r = e.evaluate2("arr_init_a(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+
+    // A component default, overridden by the initializer.
+    r = e.evaluate2("type :: arr_init_d\ninteger :: k = 3, m = 4\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_d) :: arr_init_b(3) = [arr_init_d(7, 8), arr_init_d(9, 10), arr_init_d(11, 12)]");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_b(3)%m");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 12);
+    r = e.evaluate2("arr_init_b(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+
+    // A scalar structure constructor broadcast to every element.
+    r = e.evaluate2("type(arr_init_t) :: arr_init_s(3) = arr_init_t(15)");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_s(1)%k + arr_init_s(3)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 30);
+
+    // The array stays assignable after its static initialization.
+    r = e.evaluate2("arr_init_a(1)%k = 20");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_a(1)%k + arr_init_a(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 26);
+
+    // The type, the declaration and a use of it in a single cell.
+    r = e.evaluate2(R"(type :: arr_init_c
+integer :: k
+end type
+type(arr_init_c) :: arr_init_v(2) = [arr_init_c(13), arr_init_c(14)]
+arr_init_v(1)%k + arr_init_v(2)%k)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 27);
+}
+
 TEST_CASE("FortranEvaluator the calls the kernel makes") {
     CompilerOptions cu;
     cu.interactive = true;
