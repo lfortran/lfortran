@@ -19,7 +19,9 @@ src/bin/lfortran -c integration_tests/modules_15.f90 -o modules_15.o
 if [[ $WIN == "1" ]]; then # Windows
     cl /MD /c integration_tests/modules_15c.c /Fomodules_15c.o
 elif [[ $MACOS == "1" ]]; then # macOS
-    clang -c integration_tests/modules_15c.c -o modules_15c.o
+    # The Pixi environment sets CC to Xcode's clang, which knows the SDK; its
+    # own LLVM clang does not.
+    "${CC:-clang}" -c integration_tests/modules_15c.c -o modules_15c.o
 else # Linux
     gcc -c integration_tests/modules_15c.c -o modules_15c.o
 fi
@@ -98,7 +100,6 @@ if [[ $WIN != "1" ]]; then
     fi
     cd ..
 
-    pip install src/server/tests tests/server
     # NOTE: `--full-trace` tends to print excessively long stack traces. Please
     # re-enable it if needed:
     # pytest -vv --showlocals --full-trace --capture=no --timeout=5 tests/server

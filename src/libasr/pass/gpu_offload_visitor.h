@@ -67,8 +67,6 @@ public:
 
     void lower_loaded_implied_do_loops(ASR::TranslationUnit_t &sub_tu);
 
-    ASR::expr_t* dup_expr_to_scope(ASR::expr_t *expr, SymbolTable *scope);
-
     void fixup_struct_refs_in_scope(SymbolTable *scope,
             SymbolTable *kernel_scope,
             char *kernel_fn_name = nullptr);
@@ -228,28 +226,34 @@ public:
             Vec<ASR::stmt_t*> &out, SymbolTable *var_scope,
             bool scope_has_workspaces);
 
-    bool matmul_operand_aliases_target(ASR::IntrinsicArrayFunction_t *mm,
-            ASR::expr_t *target);
-
-    ASR::expr_t* matmul_temp_section(ASR::expr_t *tmp, ASR::expr_t *target);
-
-    bool declared_constant_dims(ASR::expr_t *e, Vec<ASR::dimension_t> &out);
-
     ASR::expr_t* make_matmul_result_temp(ASR::IntrinsicArrayFunction_t *mm,
             const Location &loc, SymbolTable *var_scope,
-            bool scope_has_workspaces, ASR::expr_t *target = nullptr);
+            bool scope_has_workspaces);
 
     bool intrinsic_array_result_dims(ASR::expr_t *e,
             Vec<ASR::dimension_t> &dims);
 
     ASR::dimension_t dim_or_runtime_extent(ASR::expr_t *operand,
-            ASR::dimension_t *dims, size_t d);
+            ASR::dimension_t *dims, size_t d, int size_kind = 4);
+
+    // True while rewrite_loop_body_for_kernel lowers the kernel's loop
+    // nest, whose BLOCKs are remapped into the kernel in place.
+    bool lowering_kernel_nest = false;
+
+    // Each bound copy_bound copied, mapped to the node it was first
+    // copied from.
+    std::map<ASR::expr_t*, ASR::expr_t*> bound_copies;
+
+    ASR::expr_t* own_bound(ASR::expr_t *bound);
+
+    ASR::expr_t* copy_bound(ASR::expr_t *bound);
+
+    ASR::expr_t* bound_origin(ASR::expr_t *e);
 
     void inline_intrinsic_matmul(ParallelLoopNest &nest);
 
     ASR::expr_t* index_array_expr(ASR::expr_t *expr,
-            ASR::array_index_t *idx_p, size_t idx_n,
-            ASR::ttype_t *elem_type, const Location &loc);
+            ASR::array_index_t *idx_p, size_t idx_n, const Location &loc);
 
     ASR::IntrinsicArrayFunction_t* find_array_intrinsic_in_expr(
             ASR::expr_t *expr, ASRUtils::IntrinsicArrayFunctions which,
@@ -269,11 +273,21 @@ public:
 
     void inline_intrinsic_transpose(ParallelLoopNest &nest);
 
+    bool inline_transpose_stmts(ASR::stmt_t **&body, size_t &n_body);
+
     static bool is_int_literal(ASR::expr_t *e, int64_t value);
 
     ASR::expr_t *int32_const(const Location &loc, int64_t n);
 
     ASR::expr_t *to_int32(const Location &loc, ASR::expr_t *e);
+
+    ASR::ttype_t *index_type(const Location &loc);
+
+    ASR::expr_t *index_const(const Location &loc, int64_t n);
+
+    ASR::expr_t *to_index_kind(const Location &loc, ASR::expr_t *e);
+
+    ASR::expr_t *bound_to_index_kind(const Location &loc, ASR::expr_t *e);
 
     ASR::expr_t *section_extent(const Location &loc,
             const ASR::array_index_t &d);
@@ -288,7 +302,8 @@ public:
             ASR::expr_t **extents, size_t n_extents,
             const std::string &prefix);
 
-    ASR::expr_t *self_aliasing_target(ASR::Assignment_t *asgn);
+    ASR::expr_t *self_aliasing_target(ASR::Assignment_t *asgn,
+            bool *in_non_elemental = nullptr);
 
     bool alias_temp_is_fixed_size(ASR::expr_t *target);
 
@@ -468,6 +483,12 @@ public:
     // different blocks in two different scopes.
     std::vector<ASR::symbol_t*> kernel_blocks;
 
+    // The BLOCKs materialize_runtime_alias_blocks made for an assignment
+    // whose target a TRANSPOSE or MATMUL operand reads. The TRANSPOSE
+    // lowering, which takes only the statements of the loop body itself,
+    // takes the statements of these too.
+    std::set<ASR::symbol_t*> non_elemental_alias_blocks;
+
     ASR::stmt_t* copy_loop_stmt(ASR::stmt_t *stmt,
             ASRUtils::ExprStmtDuplicator &dup);
 
@@ -564,10 +585,17 @@ public:
     // slot of its own instead: the kernel sets its slot to the identity of
     // the operator, accumulates into that, and the host folds the slots
     // into the original scalar once the launch has finished. The device
-    // needs no atomics for it and the launch stays a single dispatch.
+    // needs no atomics for it and no kernel of its own to combine the slots.
     //
-    // There is one slot per iteration, so a thread the bounds guard turns
-    // away has no slot to leave unwritten.
+    // A kernel that can run its iterations in a grid-stride loop (the body
+    // has no cycle of the offloaded loop and no scalar live after it) runs
+    // at most device_caps.reduction_threads threads, each of which accumulates its
+    // iterations in a local variable and combines it into its slot once, so
+    // the host folds at most that many slots. Otherwise there is one slot
+    // per iteration. Either way a thread the bounds guard turns away has no
+    // slot to leave unwritten. A launch that runs in chunks has one per
+    // thread of its largest chunk, the first: the threads of the later
+    // chunks combine into the slots the first one started.
     struct GpuReductionInfo {
         std::string orig_name;
         ASR::reduction_opType op;
@@ -606,13 +634,30 @@ public:
         std::vector<LiveoutScalarInfo> liveout_scalars;
         std::vector<GpuReductionInfo> reductions;
         std::vector<DimInfo> dim_info;
-        std::vector<ASR::symbol_t*> optional_syms;
         // A launch that can run in tiles (GpuDeviceCapabilities::
         // tile_width): the call argument that tells the kernel whether it
         // does (-1 when the kernel always numbers the iterations flat), and
         // the dimensions the width and the height of a tile run along.
         int tiled_arg = -1;
         size_t tile_dims[2] = {0, 0};
+        // The dimensions in the order the kernel numbers the iterations in,
+        // fastest first, and for each dimension the launch may split into
+        // chunks the kernel parameters that hold its bounds (nullptr for
+        // one it never splits), and the product of the constant extents of
+        // the others, or 0 when the launch is never split (see
+        // GpuKernelLaunch.chunk_dimensions).
+        std::vector<size_t> order;
+        std::vector<ASR::symbol_t*> start_parameters;
+        std::vector<ASR::symbol_t*> end_parameters;
+        int64_t chunk_fixed_iterations = 0;
+        // The kernel parameter a launch that may run in chunks sets to 1
+        // when it runs as one or for its first chunk, and to 0 for the
+        // later chunks, or nullptr (see
+        // GpuKernelLaunch.first_chunk_parameter).
+        ASR::symbol_t *first_chunk_parameter = nullptr;
+        // The kernel runs its iterations in a grid-stride loop of at most
+        // device_caps.reduction_threads threads (a launch with a reduction).
+        bool strided = false;
     };
 
     void decline(const ASR::OMPRegion_t &x);

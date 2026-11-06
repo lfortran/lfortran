@@ -31,6 +31,11 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD)
     if (NOT WIN32 AND NOT EMSCRIPTEN)
         ADDTESTC(test_system_clock lfortran_runtime_static)
     endif()
+    # Windows opens formatted files in text mode, which translates the
+    # record terminators this test counts.
+    if (NOT WIN32 AND NOT EMSCRIPTEN)
+        ADDTESTC(test_runtime_inquire_pos lfortran_runtime_static)
+    endif()
     # Needs a 64-bit file offset type; seeks past 2**31 without writing data.
     if (NOT EMSCRIPTEN AND (WIN32 OR CMAKE_SIZEOF_VOID_P EQUAL 8))
         ADDTESTC(test_file_seek lfortran_runtime_static)
@@ -61,6 +66,7 @@ set(SRC
     test_asr_text.cpp
     test_asr_text_parser.cpp
     test_gpu.cpp
+    test_c_cpp.cpp
     ../../bin/cuda_link_helpers.cpp
     ../../tests/test_cuda_link_helpers.cpp
     ../../bin/lfortran_command_line_parser.cpp
@@ -79,6 +85,9 @@ if (WITH_LLVM)
 endif()
 
 if (WITH_LSP)
+    add_executable(test_lsp_union_copy test_lsp_union_copy.cpp)
+    target_link_libraries(test_lsp_union_copy llanguage_server)
+    add_test(NAME test_lsp_union_copy COMMAND test_lsp_union_copy)
     set(SRC_AST ${SRC_AST}
         test_ast.cpp
     )

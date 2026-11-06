@@ -125,8 +125,7 @@ expand or reject the array items themselves. The pass runs after `print_arr`
 and `print_struct_type`, which expand array items for the code generators
 that use them, after `array_struct_temporary`, which makes an array section
 item a pointer to the section, and after every pass that changes the
-physical type of an array, and before `do_loops`, which lowers the copy
-loops. When the passes are verified, it checks the invariant it establishes
+physical type of an array. When the passes are verified, it checks the invariant it establishes
 (ASRVerifyOptions::string_format_array_args).
 */
 

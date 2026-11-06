@@ -62,15 +62,10 @@ This is the ordinary xeus kernel, described in
 [Enabling the Jupyter Kernel](installation.md). In short:
 
 ```bash
-conda install xeus>=6.0.0 xeus-zmq>=4.0.0 nlohmann_json jupyter -c conda-forge
-
-cmake -S . -B build -G Ninja \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DWITH_LLVM=yes \
-    -DWITH_XEUS=yes \
-    -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+pixi shell -e llvm11   # provides Xeus, xeus-zmq, nlohmann_json and Jupyter
+pixi run -e llvm11 build -DCMAKE_BUILD_TYPE=Debug -DWITH_XEUS=yes \
     -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
-cmake --build build -j --target install
+cmake --build build/llvm11 --target install
 
 jupyter kernelspec list --json   # "fortran" must be listed
 jupyter lab share/lfortran/nb/Mandelbrot.ipynb
@@ -132,7 +127,7 @@ Two things about these tasks are worth knowing when editing `pixi.toml`:
   installed copies in the `wasm-host` environment.
 * `lab-build` passes `--XeusAddon.default_channels` explicitly. `jupyterlite-xeus`
   otherwise recovers the channel list from the prefix's `conda-meta/history`,
-  which micromamba writes and pixi does not; without it the build fails late
+  which conda and micromamba write and pixi does not; without it the build fails late
   with `Cannot detect channels from prefix ...`. The flag must be **repeated
   once per channel** — passing a quoted list (`="['a','b']"`) makes traitlets
   store the bracketed text as a single channel, which builds without error but
@@ -306,16 +301,12 @@ notebook keeps its locally-stored version even after a rebuild — use
 
 ### Running the same commands as CI
 
-CI does not use pixi; it drives the same three scripts with micromamba
-environments built from `ci/environment_linux.yml`, `environment-wasm-build.yml`
-and `environment-wasm-host.yml` (see `.github/workflows/Exhaustive-Checks-CI.yml`).
-The scripts are identical — only the environment manager and the value of
-`PREFIX` differ:
+CI runs the same tasks (the "Build xlfortran JupyterLite kernel and run tests"
+job of `.github/workflows/Exhaustive-Checks-CI.yml`):
 
 ```bash
-export PREFIX=$MAMBA_ROOT_PREFIX/envs/xeus-lfortran-wasm-host
-micromamba run -n lf ./wasm-build0.sh
-micromamba run -n xeus-lfortran-wasm-build ./wasm-build1.sh
+pixi run -e wasm-build wasm-test
+pixi run -e lite lab-build
 ```
 
 ## Writing a test for a lab bug

@@ -170,6 +170,12 @@ bool struct_assignment_is_more_than_a_copy(ASR::symbol_t* struct_sym);
 // ones included) is of a type for which this holds.
 bool struct_needs_finalization(ASR::symbol_t* struct_sym);
 
+// Whether the derived type `struct_type`, or a type it extends, has a
+// character member (directly or inside a nested nonpointer component). Such
+// a member's storage is set up at run time when the type is a parameter, so
+// the scope that declares the parameter owns that storage.
+bool struct_has_character_member(ASR::Struct_t* struct_type);
+
 // Whether a function result of type `type`, declared by `struct_sym`, is one
 // that F2018 7.5.6.3 p5 finalizes after the statement that references the
 // function: a nonpointer, nonallocatable, nonpolymorphic scalar of a derived
@@ -632,8 +638,9 @@ std::string type_to_str_fortran_symbol(const ASR::ttype_t *t, ASR::symbol_t* sym
 char *symbol_name(const ASR::symbol_t *f);
 // Includes contained scopes: whole-routine restrictions must also respect
 // regions granting asynchronous/volatile access to the canonical entity.
+// Use include_nested=false when checking each scope enclosing a use site.
 bool has_scoped_variable_attribute(const ASR::Variable_t &variable,
-    const SymbolTable *scope);
+    const SymbolTable *scope, bool include_nested = true);
 
 std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add_symbol_access_specifiers);
 
@@ -945,6 +952,15 @@ bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value);
 
 bool is_value_constant(ASR::expr_t *a_value);
 
+// Whether `value`, given for the component `member` of a structure
+// constructor, keeps the constructor a constant expression. An omitted value
+// does. An allocatable component is part of a constant only when it is given
+// null() (Fortran 2018, 10.1.12): any other value has to be allocated at run
+// time. Other components, including a pointer component given null() or a
+// procedure as its initialization target, need a constant.
+bool is_constant_struct_component_value(ASR::symbol_t* member,
+    ASR::expr_t* value);
+
 // A local that is neither saved nor a parameter is initialized on every entry
 // to its procedure or BLOCK. A non-constant initializer on such a local is
 // how a pass evaluates a specification expression, such as the bound of an
@@ -963,6 +979,121 @@ const ASR::Variable_t* undefined_local_on_entry(ASR::expr_t* expr, SymbolTable* 
 
 // Whether `f` is a reference to the intrinsic MAX.
 bool is_intrinsic_max(const ASR::IntrinsicElementalFunction_t &f);
+
+// A Variable of HostAssociated storage denotes a variable of the host of its
+// procedure, which its symbolic_value designates through the frame dummy
+// argument of the procedure.
+static inline bool is_host_associated(const ASR::Variable_t &v) {
+    return v.m_storage == ASR::storage_typeType::HostAssociated;
+}
+
+// Whether `v` has storage of its own, which its scope allocates, initializes,
+// finalizes and deallocates. A variable in a common block lives in the
+// storage of the block, and a HostAssociated variable denotes the storage of
+// a host variable.
+static inline bool has_own_storage(const ASR::Variable_t &v) {
+    return v.m_common_block == nullptr && !is_host_associated(v);
+}
+
+// Whether an internal procedure reaches the host variable `v` through the
+// frame of its host (see nested_vars). A variable in a common block lives in
+// the static storage of the block, and each thread has its own threadprivate
+// variable: internal procedures reference them directly.
+static inline bool is_reached_through_host_frame(const ASR::Variable_t &v) {
+    return v.m_common_block == nullptr &&
+        v.m_storage != ASR::storage_typeType::Threadprivate;
+}
+
+static inline bool is_reference(const ASR::ttype_t *t) {
+    return t != nullptr && ASR::is_a<ASR::Reference_t>(*t);
+}
+
+// The member of `x` when it is a member of Reference type, which `x` then
+// designates the referenced variable of; nullptr otherwise.
+static inline ASR::Variable_t* get_reference_member(
+        const ASR::StructInstanceMember_t &x) {
+    ASR::symbol_t *member = symbol_get_past_external(x.m_m);
+    if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+        return nullptr;
+    }
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(member);
+    return is_reference(v->m_type) ? v : nullptr;
+}
+
+// Whether `decl` declares the type of a frame (see nested_vars): a derived
+// type with a member of Reference type.
+static inline bool is_frame_type(ASR::symbol_t *decl) {
+    decl = decl != nullptr ? symbol_get_past_external(decl) : nullptr;
+    if (decl == nullptr || !ASR::is_a<ASR::Struct_t>(*decl)) {
+        return false;
+    }
+    for (auto &item: ASR::down_cast<ASR::Struct_t>(decl)->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Variable_t>(*item.second) && is_reference(
+                ASR::down_cast<ASR::Variable_t>(item.second)->m_type)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Whether `decl` is the type of the frame slots of a thunk pool (see
+// nested_vars): a derived type whose one member is a pointer to a frame.
+static inline bool is_frame_slot_type(ASR::symbol_t *decl) {
+    decl = decl != nullptr ? symbol_get_past_external(decl) : nullptr;
+    if (decl == nullptr || !ASR::is_a<ASR::Struct_t>(*decl)) {
+        return false;
+    }
+    ASR::Struct_t *s = ASR::down_cast<ASR::Struct_t>(decl);
+    if (s->n_members != 1) {
+        return false;
+    }
+    ASR::symbol_t *member = s->m_symtab->get_symbol(s->m_members[0]);
+    if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+        return false;
+    }
+    ASR::Variable_t *m = ASR::down_cast<ASR::Variable_t>(member);
+    return m->m_type != nullptr && ASR::is_a<ASR::Pointer_t>(*m->m_type) &&
+        is_frame_type(m->m_type_declaration);
+}
+
+// Whether `v` holds frame slots of a host (see nested_vars), which the
+// procedures nested in the host read directly: a saved pointer to a frame,
+// or the saved array of the frame slots of the thunk pools.
+static inline bool is_frame_slot(const ASR::Variable_t &v) {
+    if (v.m_storage != ASR::storage_typeType::Save || v.m_type == nullptr) {
+        return false;
+    }
+    if (ASR::is_a<ASR::Pointer_t>(*v.m_type)) {
+        return is_frame_type(v.m_type_declaration);
+    }
+    return ASR::is_a<ASR::Array_t>(*v.m_type) &&
+        is_frame_slot_type(v.m_type_declaration);
+}
+
+// Whether `sym` can be a frame entry (see nested_vars), which a FrameAddress
+// names: an internal procedure (with a body, declared in a procedure or main
+// program) whose last dummy argument is a type(c_ptr) value, through which it
+// takes the frame of its host.
+static inline bool is_frame_entry(ASR::symbol_t *sym) {
+    if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) {
+        return false;
+    }
+    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+    ASR::asr_t *owner = f->m_symtab->parent->asr_owner;
+    if (owner == nullptr || !ASR::is_a<ASR::symbol_t>(*owner) ||
+            !(ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner)) ||
+              ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(owner))) ||
+            f->n_args == 0 || ASR::down_cast<ASR::FunctionType_t>(
+                f->m_function_signature)->m_deftype !=
+                    ASR::deftypeType::Implementation ||
+            !ASR::is_a<ASR::Var_t>(*f->m_args[f->n_args - 1])) {
+        return false;
+    }
+    ASR::symbol_t *last = ASR::down_cast<ASR::Var_t>(f->m_args[f->n_args - 1])->m_v;
+    return ASR::is_a<ASR::Variable_t>(*last) &&
+        ASR::down_cast<ASR::Variable_t>(last)->m_value_attr &&
+        ASR::is_a<ASR::CPtr_t>(*ASR::down_cast<ASR::Variable_t>(last)->m_type);
+}
 
 // The common block in whose storage `v` lives, or nullptr when `v` has
 // storage of its own.
@@ -1231,6 +1362,17 @@ ASR::expr_t* get_constant_zero_with_given_type(Allocator& al, ASR::ttype_t* asr_
 
 
 ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::ttype_t* asr_type);
+
+// A function reference is not a whole array, so its lower bounds are 1.
+static inline void set_function_result_lbounds_to_one(Allocator& al,
+        ASR::dimension_t* dims, size_t n_dims) {
+    for (size_t i = 0; i < n_dims; i++) {
+        if (dims[i].m_start && dims[i].m_length) {
+            dims[i].m_start = get_constant_one_with_given_type(
+                al, expr_type(dims[i].m_start));
+        }
+    }
+}
 
 void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u);
 
@@ -1850,6 +1992,59 @@ inline bool is_assumed_size_array(ASR::ttype_t* x) {
     return true;
 }
 
+// Whether an array type declares an explicit extent for at least one
+// dimension. That is true for an explicit-shape dummy and for an assumed-size
+// dummy that still declares all but its last extent (`a(n, *)`), for which an
+// actual argument is associated by element sequence (F2023 15.5.2.12) rather
+// than by shape. A deferred-shape (assumed-shape) dummy, and an assumed-size
+// dummy that declares no extent at all (`a(*)`), declare none and return
+// false.
+//
+// Call_t_body takes the ArrayPhysicalCast target of an array argument from the
+// formal parameter's dimensions, with the call's arguments substituted, and
+// pass_array_by_data keeps it deferred when it replaces an assumed-shape dummy
+// by a data pointer. When the formal extent's symbols are visible from the
+// caller and the actual argument is not a pointer, the predicate on such a
+// target therefore answers for the dummy argument, not for the actual
+// argument. Pre-existing Call_t_body fallbacks keep the actual argument's
+// extents instead: a pointer actual, an extent whose symbols the caller cannot
+// see, and a deferred extent on a descriptor cast. The predicate there answers
+// for the actual argument. Codegen then compares the actual with itself when
+// the extent's symbols were hidden, and emits no check when the pointer target
+// stays deferred (the predicate is false) or when the target is a descriptor
+// cast, which is not a checked cast form.
+inline bool has_explicit_dimension_bounds(ASR::ttype_t* x) {
+    x = type_get_past_allocatable(type_get_past_pointer(x));
+    if (!ASR::is_a<ASR::Array_t>(*x)) {
+        return false;
+    }
+    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x);
+    for (size_t i = 0; i < array_t->n_dims; i++) {
+        if (array_t->m_dims[i].m_length != nullptr) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Whether at least one extent is deferred, e.g. the last one of an assumed-size
+// dummy `a(n, *)`. Such a dummy has exactly the actual argument's element
+// count (F2023 15.5.2.12p6), so its explicit extents are a lower bound only for
+// a nonempty actual argument: a zero-element actual gives a zero-size dummy.
+inline bool has_deferred_dimension_bound(ASR::ttype_t* x) {
+    x = type_get_past_allocatable(type_get_past_pointer(x));
+    if (!ASR::is_a<ASR::Array_t>(*x)) {
+        return false;
+    }
+    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x);
+    for (size_t i = 0; i < array_t->n_dims; i++) {
+        if (array_t->m_dims[i].m_length == nullptr) {
+            return true;
+        }
+    }
+    return false;
+}
+
 inline bool is_array_t(ASR::ttype_t* const x){
     return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(x));
 }
@@ -2080,12 +2275,52 @@ ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);
 
+// The extent (end - start)/step + 1 of a section triplet, in the type
+// `size_type`.
+ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
+    ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step,
+    ASR::ttype_t* size_type);
+
 ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x);
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
     ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move,
     bool a_new_target = false, bool a_new_allocation = false);
+
+// Return `head` in the normalized form required of every counted DO-loop
+// head (`DoLoop`, each head of `DoConcurrentLoop` and `ForAllSingle`):
+// `m_start`, `m_end` and `m_increment` have exactly the type of the DO
+// variable `m_v` (explicit `Cast` nodes are inserted where needed) and a
+// missing `m_increment` becomes 1 (located at `loc`). A DO-forever head (all
+// four fields absent) is returned unchanged. A counted head must have a DO
+// variable.
+ASR::do_loop_head_t normalize_do_loop_head(Allocator &al,
+    const Location &loc, const ASR::do_loop_head_t &head);
+
+// Whether `head` is in the normalized form (see `normalize_do_loop_head`).
+// On failure, `reason` describes the first violation.
+bool is_normalized_do_loop_head(const ASR::do_loop_head_t &head,
+    std::string &reason);
+
+// `make_DoLoop_t` with a normalized head. Use it (or `ASRBuilder::DoLoop`)
+// instead of `ASR::make_DoLoop_t` whenever a loop is created.
+ASR::asr_t* make_DoLoop_t_util(Allocator &al, const Location &a_loc,
+    char* a_name, const ASR::do_loop_head_t &a_head,
+    ASR::stmt_t** a_body, size_t n_body,
+    ASR::stmt_t** a_orelse, size_t n_orelse);
+
+// `make_DoConcurrentLoop_t` with every head normalized in place.
+ASR::asr_t* make_DoConcurrentLoop_t_util(Allocator &al, const Location &a_loc,
+    ASR::do_loop_head_t* a_head, size_t n_head,
+    ASR::expr_t** a_shared, size_t n_shared,
+    ASR::expr_t** a_local, size_t n_local,
+    ASR::reduction_expr_t* a_reduction, size_t n_reduction,
+    ASR::stmt_t** a_body, size_t n_body);
+
+// `make_ForAllSingle_t` with a normalized head.
+ASR::asr_t* make_ForAllSingle_t_util(Allocator &al, const Location &a_loc,
+    const ASR::do_loop_head_t &a_head, ASR::stmt_t* a_assign_stmt);
 
 ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
@@ -2200,6 +2435,13 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                                  Location loc,
                                                  ASR::symbol_t* derived_type_sym,
                                                  bool is_cstruct);
+
+// The type of an instance of the derived type `struct_sym`, which is not
+// polymorphic (`asr.verify.struct.signature_is_instance_type`).
+static inline ASR::ttype_t* get_struct_signature(ASR::symbol_t* struct_sym) {
+    return ASR::down_cast<ASR::Struct_t>(
+        symbol_get_past_external(struct_sym))->m_struct_signature;
+}
 
 // A `class(t)` declaration of a deferred type argument (C706 of the Fortran 2028
 // working draft J3/26-007r1) is recorded as an ASR::TypeParameter_t whose
@@ -2352,6 +2594,16 @@ static inline bool is_string_only(ASR::ttype_t* type){
 static inline bool is_array_of_strings(ASR::ttype_t* type){
     return is_array(type) &&
            ASR::is_a<ASR::String_t>(*extract_type(type));
+}
+
+// Whether `t` is an assumed-size array of strings, represented by the
+// descriptor of its data and its length (which has an address like a
+// variable, see nested_vars)
+static inline bool is_assumed_size_string_array(ASR::ttype_t *t) {
+    return is_array(t) && extract_physical_type(t) ==
+            ASR::array_physical_typeType::UnboundedPointerArray &&
+        is_character(*extract_type(t)) &&
+        get_string_type(t)->m_physical_type == ASR::DescriptorString;
 }
 
 /*
@@ -3398,8 +3650,10 @@ template <typename SemanticAbort>
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,
                                      std::string bound, Allocator& al, diag::Diagnostics &diag, int index_kind = 4) {
     ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, index_kind));
+    // Only the bound takes the index kind; `dim` stays a default integer,
+    // as in lbound(a, 1, kind=8).
     ASR::expr_t* dim_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_expr->base.loc,
-                                                                       dim, int_type));
+        dim, ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4))));
     ASR::arrayboundType bound_type = ASR::arrayboundType::LBound;
     if( bound == "ubound" ) {
         bound_type = ASR::arrayboundType::UBound;
@@ -3489,9 +3743,10 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,
                                                 int32_type, nullptr));
 }
 
-static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al, bool for_type=true) {
-    ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4));
-    return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr, for_type));
+static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al,
+        bool for_type=true, int kind=4) {
+    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, kind));
+    return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int_type, nullptr, for_type));
 }
 
 ASR::ttype_t* get_union_type(Allocator &al, const Location &loc, ASR::symbol_t* union_sym);
@@ -3531,9 +3786,50 @@ static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
 {
     return is_unlimited_polymorphic_type(ASRUtils::expr_type(expr));
 }
+
+// A `type(*)` dummy argument is represented by the internal `~assumed_type`
+// struct. It is opaque: it carries no dynamic type, and it is associated with
+// an actual argument exactly like a nonpolymorphic dummy of the actual's type
+// (F2018 8.5.2). Only its address is meaningful, so c_loc of the dummy is the
+// address of the actual argument (F2023 18.2.3.7).
+static inline bool is_assumed_type_dummy(const ASR::Variable_t* v)
+{
+    if (v == nullptr || v->m_type_declaration == nullptr) {
+        return false;
+    }
+    ASR::symbol_t* sym = symbol_get_past_external(v->m_type_declaration);
+    return ASR::is_a<ASR::Struct_t>(*sym) &&
+        std::string(symbol_name(sym)) == "~assumed_type";
+}
 /// Check if type is a class + not unlimited-polymorphic one
 inline bool non_unlimited_polymorphic_class(ASR::ttype_t* const t){
     return is_class_type(extract_type(t)) && !is_unlimited_polymorphic_type(t);
+}
+
+/// Whether the entity `expr` is polymorphic, i.e. declared with CLASS, either
+/// CLASS(t) or CLASS(*). A TYPE(*) assumed-type entity shares the unlimited
+/// polymorphic StructType representation but is not polymorphic (its
+/// declaration symbol is `~assumed_type`), so it is not reported here.
+/// C_LOC's X argument (F2023 18.2.3.7) and C_F_POINTER's FPTR argument
+/// (F2023 18.2.3.3) are required to be nonpolymorphic.
+static inline bool is_polymorphic_entity(ASR::expr_t* const expr) {
+    ASR::ttype_t* type = extract_type(expr_type(expr));
+    if (ASR::is_a<ASR::TypeParameter_t>(*type)) {
+        return ASR::down_cast<ASR::TypeParameter_t>(type)->m_is_class;
+    }
+    if (!is_class_type(type)) {
+        return false;
+    }
+    if (!is_unlimited_polymorphic_type(type)) {
+        return true;
+    }
+    ASR::symbol_t* struct_sym =
+        get_struct_sym_from_struct_expr(expr);
+    if (struct_sym == nullptr) {
+        return true;
+    }
+    struct_sym = symbol_get_past_external(struct_sym);
+    return std::string(symbol_name(struct_sym)) != "~assumed_type";
 }
 
 void set_enum_value_type(ASR::enumtypeType &enum_value_type,
@@ -3929,6 +4225,14 @@ ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr,
 void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
     bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt);
+
+// Matches the arguments of the call `x` with the dummy arguments of its
+// procedure again, without cast statements or implicit casting, after a pass
+// replaced some of them with expressions of another physical type.
+template <typename T>
+static inline void rematch_call_args(Allocator &al, T &x) {
+    Call_t_body(al, x.m_name, x.m_args, x.n_args, x.m_dt, nullptr, false);
+}
 
 // Insert self (a_dt) into args at the PASS position for method calls.
 // Callers must invoke this BEFORE make_*Call_t_util so that m_args

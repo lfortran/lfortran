@@ -6,6 +6,8 @@
 
 namespace LCompilers {
 
+    bool may_be_storage_associated(const ASR::Variable_t* var);
+
     ASR::ttype_t* normalize_string_temporary_type(Allocator& al,
         const Location& loc, ASR::ttype_t* var_type, bool capture_length=false);
 

@@ -169,7 +169,8 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
             that_array: str,
             this_is_pointer: bool = False,
             that_is_pointer: bool = False,
-            init_array: Callable[[], None] = noop
+            init_array: Callable[[], None] = noop,
+            init_copy: Optional[Callable[[str], None]] = None
     ) -> None:
         array_spec = array_symbol.spec
         that_expr = that_array
@@ -180,10 +181,17 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
             with self.type_declaration_options(wrap_ptr=False):
                 type_name = self.get_type_declaration(array_spec)
             this_expr = f'std::make_unique<{type_name}>({that_expr})'
+
+        def assign_copy() -> None:
+            if init_copy is None:
+                self.gen_assign(this_array, this_expr)
+            else:
+                init_copy(this_expr)
+
         elem_spec: LspSpec = array_spec["element"]
         match elem_spec["kind"]:
             case "base":
-                self.gen_assign(this_array, this_expr)
+                assign_copy()
             case "reference":
                 elem_type_name = elem_spec["name"]
                 match elem_type_name:
@@ -209,11 +217,11 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                                     init_array
                                 )
                             case LspSymbolKind.ENUMERATION | LspSymbolKind.UNION:
-                                self.gen_assign(this_array, this_expr)
+                                assign_copy()
                             case _:
                                 raise ValueError(f'Unsupported array type ({elem_symbol.kind}): {elem_symbol.spec}')
             case "or":
-                self.gen_assign(this_array, this_expr)
+                assign_copy()
             case "literal":
                 self.gen_copy_array_2(
                     array_symbol,
@@ -375,12 +383,15 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
         that_expr = that_tuple
         if that_is_pointer:
             that_expr = f'*{that_expr}'
-        this_expr = that_expr
         if this_is_pointer:
             with self.type_declaration_options(wrap_ptr=False):
                 tuple_type = self.get_type_declaration(tuple_spec)
-                this_expr = f'std::make_unique<{tuple_type}>({this_expr})'
-        self.gen_assign(this_tuple, this_expr)
+            self.update_union_field(
+                this_tuple, tuple_type,
+                f'std::make_unique<{tuple_type}>({that_expr})'
+            )
+        else:
+            self.gen_assign(this_tuple, that_expr)
 
     def gen_struct_copy_tuple_1(
             self,
@@ -1061,6 +1072,9 @@ class CPlusPlusSpecificationSourceGenerator(BaseCPlusPlusLspVisitor):
                         init_array=lambda: self.update_union_field(
                             f'_{field_name}', array_type,
                             f'std::make_unique<{array_type}>()'
+                        ),
+                        init_copy=lambda value: self.update_union_field(
+                            f'_{field_name}', array_type, value
                         )
                     )
                 case LspSymbolKind.MAP:

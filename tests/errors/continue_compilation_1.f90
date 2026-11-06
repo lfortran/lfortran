@@ -3691,7 +3691,7 @@ subroutine implied_do_mixed_derived_types_error(n)
     print '(*(i0,1x))', (x(i), y(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
     print *, (x(i), y(i), i=1,3,n)  ! {Error} run-time bounds or step is not supported yet
     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
-    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
+    print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! not conforming, but accepted: the nested loop has a variable of its own
     print '(*(i0,1x))', (x(1), y(1), i=1,m)  ! {Error} more than 256 iterations, bounds that are not all literals ... is not supported yet
     write(10) (x(i), y(i), i=1,3)  ! {Error} unformatted output of an implied-do loop ... is not supported yet
     print '(*(i0,1x))', (x(i), y(i), i=1,3)
@@ -3989,5 +3989,561 @@ contains
         renamed = 1  ! {Error} cannot assign to use-associated variable 'scalar' in a pure procedure
         object%value = 2  ! {Error} cannot assign to use-associated variable 'object' in a pure procedure
         cc1_pa_values(1:2) = 3  ! {Error} cannot assign to use-associated variable 'cc1_pa_values' in a pure procedure
+    end subroutine
+end module
+
+module cc1_logical_reduce
+contains
+    subroutine cc1_logical_reduce_sub()
+        integer :: i, k
+        real :: r
+        logical :: l
+        k = 7
+        r = 1.0
+        l = .true.
+        do concurrent (i = 1:4) reduce(.and.: k)  ! {Error} reduction variable 'k' for operator .and. must be of type logical, found integer(4)
+            k = iand(k, 7)
+        end do
+        do concurrent (i = 1:4) reduce(.or.: r)  ! {Error} reduction variable 'r' for operator .or. must be of type logical, found real(4)
+            r = r + 1.0
+        end do
+        do concurrent (i = 1:4) reduce(.eqv.: l, k)  ! {Error} reduction variable 'k' for operator .eqv. must be of type logical, found integer(4)
+            l = l .eqv. .true.
+        end do
+        do concurrent (i = 1:4) reduce(.neqv.: k)  ! {Error} reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
+            k = k + 1
+        end do
+    end subroutine
+end module
+
+module cc1_branch_into_construct
+contains
+    subroutine cc1_branch_into_construct_sub()
+        integer :: i, k
+        k = 0
+        go to 20  ! {Error} branch to label 20 enters a DO loop from outside it
+        do i = 1, 3
+20          k = k + 1
+        end do
+        go to 30  ! {Error} branch to label 30 enters a BLOCK construct from outside it
+        block
+            integer :: m
+30          m = k
+            k = m + 1
+        end block
+    end subroutine
+end module
+
+module cc1_ibset_pos
+    integer(1), parameter :: lower_ok = ibset(0_1, 0), upper_ok = ibset(0_1, 7)
+    integer(8), parameter :: widest_ok = ibset(0_8, 63_8)
+    integer(1), parameter :: above8 = ibset(0_1, 8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(2), parameter :: above16 = ibset(0_2, 16)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(4), parameter :: above32 = ibset(0_4, 32)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(8), parameter :: above64 = ibset(0_8, 64_8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(8), parameter :: large_pos = ibset(0_8, 9223372036854775807_8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    integer(1), parameter :: negative = ibset(0_1, -1)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
+    integer(8), parameter :: lowest_pos = ibset(0_8, -9223372036854775807_8 - 1_8)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
+end module
+
+! A nonintrinsic elemental procedure cannot be a procedure pointer target
+! (Fortran 2018 C1031), nor an initial procedure target (C1519) (#16573).
+module cc1_elemental_proc_target
+implicit none
+abstract interface
+    integer function cc1_ept_iface(x)
+        integer, intent(in) :: x
+    end function
+end interface
+type cc1_ept_t
+    procedure(cc1_ept_iface), pointer, nopass :: c => null()
+end type
+procedure(cc1_ept_iface), pointer :: cc1_ept_later => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+contains
+elemental integer function cc1_ept_ef(x)
+    integer, intent(in) :: x
+    cc1_ept_ef = x + 1
+end function
+subroutine cc1_ept_sub()
+    type cc1_ept_u
+        procedure(cc1_ept_iface), pointer, nopass :: c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    end type
+    procedure(cc1_ept_iface), pointer :: p
+    procedure(cc1_ept_iface), pointer :: q => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    type(cc1_ept_t) :: a
+    p => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    a%c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    a = cc1_ept_t(cc1_ept_ef)  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+end subroutine
+end module
+
+module cc1_procptr_component_nopass
+    type :: t_implicit_procptr
+        procedure(), pointer :: s  ! {Error} procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+    end type
+    type :: t_typed_procptr
+        procedure(integer), pointer :: f  ! {Error} procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+    end type
+    type :: t_kinded_procptr
+        procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+    end type
+end module
+
+module cc1_duplicate_implicit_none
+    implicit none
+    implicit none  ! {Error} duplicate implicit none statement
+contains
+    subroutine cc1_duplicate_implicit_none_sub()
+        implicit none
+        implicit none (external)  ! {Error} duplicate implicit none statement
+    end subroutine
+    integer function cc1_duplicate_implicit_none_fn()
+        implicit none (type)
+        implicit none  ! {Error} duplicate implicit none statement
+        cc1_duplicate_implicit_none_fn = 1
+    end function
+end module
+
+module cc1_elemental_allocatable_dummy
+contains
+    elemental integer function cc1_ead_f(x)
+        integer, allocatable, intent(in) :: x  ! {Error} dummy argument 'x' of elemental procedure 'cc1_ead_f' cannot be allocatable
+        cc1_ead_f = 1
+    end function
+    elemental subroutine cc1_ead_s(y)
+        integer, allocatable, intent(inout) :: y  ! {Error} dummy argument 'y' of elemental procedure 'cc1_ead_s' cannot be allocatable
+    end subroutine
+end module
+
+module cc1_shifta_out_of_range
+contains
+    subroutine cc1_shifta_sub(n)
+        integer, intent(in) :: n
+        print *, shifta(n, 33)  ! {Error} shift argument of shifta out of range
+        print *, shifta(n, -1_8)  ! {Error} shift argument of shifta out of range
+        print *, shifta(n, [1, 40])  ! {Error} shift argument of shifta out of range
+    end subroutine
+end module
+
+module cc1_private_binding_def
+    type :: cc1_pb_t
+    contains
+        procedure, private, nopass :: cc1_pb_s
+        procedure, private, nopass :: cc1_pb_f
+    end type
+    type :: cc1_pb_default_t
+    contains
+        private
+        procedure, nopass :: cc1_pb_s
+        procedure, public, nopass :: cc1_pb_f
+    end type
+contains
+    subroutine cc1_pb_s()
+    end subroutine
+    integer function cc1_pb_f()
+        cc1_pb_f = 1
+    end function
+end module
+
+module cc1_private_binding_use
+    use cc1_private_binding_def
+contains
+    subroutine cc1_pb_use()
+        type(cc1_pb_t) :: x
+        type(cc1_pb_default_t) :: y
+        integer :: k
+        call x%cc1_pb_s()  ! {Error} type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+        k = x%cc1_pb_f()  ! {Error} type-bound procedure 'cc1_pb_f' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+        call y%cc1_pb_s()  ! {Error} type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_default_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+        k = y%cc1_pb_f()
+    end subroutine
+end module
+
+module cc1_private_generic_def
+    type :: cc1_pg_t
+    contains
+        procedure, nopass :: cc1_pg_s
+        generic, private :: cc1_pg_gen => cc1_pg_s
+    end type
+    type :: cc1_pg_default_t
+    contains
+        private
+        procedure, public, nopass :: cc1_pg_s
+        generic :: cc1_pg_gen => cc1_pg_s
+        generic, public :: cc1_pg_pub => cc1_pg_s
+    end type
+contains
+    subroutine cc1_pg_s()
+    end subroutine
+end module
+
+module cc1_private_generic_use
+    use cc1_private_generic_def
+contains
+    subroutine cc1_pg_use()
+        type(cc1_pg_t) :: x
+        type(cc1_pg_default_t) :: y
+        call x%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+        call y%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_default_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+        call y%cc1_pg_pub()
+        call x%cc1_pg_s()
+    end subroutine
+end module
+
+module cc1_private_inherited_def
+    type :: cc1_pi_t
+    contains
+        procedure, nopass :: cc1_pi_p
+        generic, private :: cc1_pi_g => cc1_pi_p
+        procedure, private, nopass :: cc1_pi_q
+        generic :: cc1_pi_h => cc1_pi_q
+    end type
+contains
+    integer function cc1_pi_p()
+        cc1_pi_p = 1
+    end function
+    integer function cc1_pi_q()
+        cc1_pi_q = 2
+    end function
+end module
+
+module cc1_private_inherited_ext
+    use cc1_private_inherited_def
+    type, extends(cc1_pi_t) :: cc1_pi_c
+    end type
+contains
+    subroutine cc1_pi_use()
+        type(cc1_pi_c) :: y
+        integer :: k
+        k = y%cc1_pi_g()  ! {Error} generic type-bound procedure 'cc1_pi_g' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+        k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+        k = y%cc1_pi_h()
+        k = y%cc1_pi_p()
+    end subroutine
+end module
+
+module cc1_private_inherited_use
+    use cc1_private_inherited_ext
+contains
+    subroutine cc1_pi_use2()
+        type(cc1_pi_c) :: y
+        integer :: k
+        k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    end subroutine
+end module
+
+module cc_elem_dummies_m
+    implicit none
+    abstract interface
+        pure integer function cc_elem_dummies_iface(i)
+            integer, intent(in) :: i
+        end function
+    end interface
+contains
+    elemental integer function cc_elem_dummies_array(x)
+        integer, intent(in) :: x(3)
+        cc_elem_dummies_array = 1
+    end function
+
+    elemental subroutine cc_elem_dummies_pointer(x)
+        integer, pointer, intent(in) :: x
+    end subroutine
+
+    elemental subroutine cc_elem_dummies_coarray(x)
+        integer, intent(in) :: x[*]
+    end subroutine
+
+    elemental subroutine cc_elem_dummies_procedure(g, h)
+        interface
+            pure integer function g(i)
+                integer, intent(in) :: i
+            end function
+        end interface
+        procedure(cc_elem_dummies_iface), pointer, intent(in) :: h
+    end subroutine
+
+    elemental subroutine cc_elem_dummies_alt_return(x, *)
+        integer, intent(in) :: x
+    end subroutine
+end module
+
+module cc_elem_result_m
+    implicit none
+contains
+    elemental function cc_elem_result_array(x) result(r)
+        integer, intent(in) :: x
+        integer :: r(2)
+        r = x
+    end function
+
+    elemental function cc_elem_result_allocatable(x) result(r)
+        integer, intent(in) :: x
+        integer, allocatable :: r
+        r = x
+    end function
+
+    elemental function cc_elem_result_pointer(x) result(r)
+        integer, intent(in) :: x
+        integer, pointer :: r
+        r => null()
+    end function
+
+    elemental function cc_elem_result_len_trim(x) result(r)
+        character(len=*), intent(in) :: x
+        character(len=len_trim(x)) :: r
+        r = x
+    end function
+end module
+
+module cc_elem_pure_m
+    implicit none
+
+    type :: ccep_t
+        integer :: h = 0
+    end type
+
+    interface
+        pure integer function ccep_iface_fn(a)
+            integer :: a
+        end function
+        pure subroutine ccep_iface_sub(b)
+            integer :: b
+        end subroutine
+    end interface
+
+contains
+
+    elemental subroutine ccep_elem_sub(x)
+        integer :: x
+        x = 1
+    end subroutine
+
+    impure elemental subroutine ccep_impure_elem_sub(x)
+        integer :: x
+        x = 1
+    end subroutine
+
+    elemental integer function ccep_elem_fn(x, y)
+        integer :: x
+        integer, value :: y
+        ccep_elem_fn = x + y
+    end function
+
+    elemental integer function ccep_elem_fn_out(x)
+        integer, intent(out) :: x
+        x = 1
+        ccep_elem_fn_out = 1
+    end function
+
+    pure integer function ccep_pure_fn(a, b, p, v, g)
+        integer, intent(out) :: a
+        integer, intent(inout) :: b
+        integer, pointer :: p
+        integer, value :: v
+        interface
+            pure integer function g(y)
+                integer, intent(in) :: y
+            end function
+        end interface
+        a = 1
+        ccep_pure_fn = b + p + v + g(1)
+    end function
+
+    pure subroutine ccep_pure_sub(x, p)
+        integer :: x
+        integer, pointer :: p
+        x = p
+    end subroutine
+
+    pure integer function ccep_init() result(r)
+        integer, parameter :: k = 3
+        integer :: s = 9
+        r = s + k
+    end function
+
+    elemental integer function ccep_init_type(x) result(r)
+        integer, intent(in) :: x
+        type(ccep_t) :: s = ccep_t(9)
+        type(ccep_t) :: u
+        r = s%h + u%h + x
+    end function
+
+    pure integer function ccep_save() result(r)
+        integer, save :: s
+        s = 1
+        r = s
+    end function
+end module
+
+module cc1_section_extent_one_int8
+contains
+    subroutine cc1_seo_sub(k)
+        integer(8), intent(in) :: k
+        integer :: z(10), y(3)
+        z = 1
+        y = z(k+1:k+1)  ! {Error} Different shape for array assignment on dimension 1(3 and 1)
+    end subroutine
+end module
+
+module cc1_inquire_size_pos
+contains
+    subroutine cc1_inquire_size_pos_sub()
+        real :: real_size, real_pos
+        real(8) :: real8_size
+        integer(8) :: pos_array(2)
+        inquire(unit=10, size=real_size)  ! {Error} size in inquire must be a scalar integer variable
+        inquire(unit=10, pos=real_pos)  ! {Error} pos in inquire must be a scalar integer variable
+        inquire(unit=10, size=real8_size)  ! {Error} size in inquire must be a scalar integer variable
+        inquire(unit=10, pos=pos_array)  ! {Error} pos in inquire must be a scalar integer variable
+    end subroutine
+end module cc1_inquire_size_pos
+
+module cc1_inquire_nondefinable
+    integer, parameter :: cc1_inquire_fixed = 1
+contains
+    subroutine cc1_inquire_nondefinable_sub(input)
+        integer, intent(in) :: input
+        inquire(unit=10, size=input)  ! {Error} size in inquire must be a scalar integer variable
+        inquire(unit=10, pos=input)  ! {Error} pos in inquire must be a scalar integer variable
+    end subroutine
+
+    subroutine cc1_inquire_param_sub()
+        inquire(unit=10, size=cc1_inquire_fixed)  ! {Error} size in inquire must be a scalar integer variable
+    end subroutine
+end module cc1_inquire_nondefinable
+
+module cc_elem_calls_m
+    implicit none
+    abstract interface
+        integer function cc_elem_calls_iface(x)
+            integer, intent(in) :: x
+        end function
+        real function cc_elem_calls_riface(x)
+            real, intent(in) :: x
+        end function
+    end interface
+    type :: cc_elem_calls_t
+        integer :: k = 0
+    contains
+        procedure, nopass :: get => cc_elem_calls_call_f
+    end type
+    interface assignment(=)
+        module procedure cc_elem_calls_copy
+    end interface
+contains
+    elemental integer function cc_elem_calls_ef(x)
+        integer, intent(in) :: x
+        cc_elem_calls_ef = x + 1
+    end function
+
+    elemental subroutine cc_elem_calls_es(x)
+        integer, intent(inout) :: x
+        x = x + 1
+    end subroutine
+
+    elemental subroutine cc_elem_calls_copy(to, from)
+        type(cc_elem_calls_t), intent(out) :: to
+        type(cc_elem_calls_t), intent(in) :: from
+        to%k = from%k
+    end subroutine
+
+    integer function cc_elem_calls_call_f(f)
+        procedure(cc_elem_calls_iface) :: f
+        cc_elem_calls_call_f = f(1)
+    end function
+
+    real function cc_elem_calls_call_r(f)
+        procedure(cc_elem_calls_riface) :: f
+        cc_elem_calls_call_r = f(0.0)
+    end function
+
+    subroutine cc_elem_calls_call_s(s)
+        interface
+            subroutine s(x)
+                integer, intent(inout) :: x
+            end subroutine
+        end interface
+        integer :: i
+        i = 1
+        call s(i)
+    end subroutine
+
+    integer function cc_elem_calls_apply(h, x)
+        interface
+            elemental integer function h(x)
+                integer, intent(in) :: x
+            end function
+        end interface
+        integer, intent(in) :: x
+        cc_elem_calls_apply = h(x)
+    end function
+
+    subroutine cc_elem_calls_use()
+        intrinsic :: sin
+        type(cc_elem_calls_t) :: o, a(2), c(3)
+        integer :: b(3)
+        b = [1, 2, 3]
+        print *, cc_elem_calls_call_r(sin)
+        print *, cc_elem_calls_call_f(cc_elem_calls_ef)
+        print *, o%get(cc_elem_calls_ef)
+        call cc_elem_calls_call_s(cc_elem_calls_es)
+        call cc_elem_calls_es(b([3, 1]))
+        call cc_elem_calls_es(b([1, 1]))
+        c([2, 2]) = a
+    end subroutine
+end module
+
+elemental subroutine cc_elem_calls_ext(x)
+    integer, intent(inout) :: x
+    x = x + 1
+end subroutine
+
+subroutine cc_elem_calls_implicit()
+    integer :: b(3)
+    b = [1, 2, 3]
+    call cc_elem_calls_ext(b)
+end subroutine
+
+! A structure constructor in an initialization expression cannot give an
+! allocatable component a value, since the constructor cannot allocate it in a
+! constant initialization. The same constructor is valid in an assignment.
+module cc1_allocatable_component_init
+    implicit none
+    type :: cc1_alloc_component_t
+        integer, allocatable :: a(:)
+    end type
+    type(cc1_alloc_component_t) :: cc1_alloc_component_v = cc1_alloc_component_t([1, 2])  ! {Error} an initialization expression cannot specify a value for allocatable component 'a' of a structure constructor
+end module
+
+module cc1_polymorphic_c_ptr_intrinsics
+    use, intrinsic :: iso_c_binding, only: c_ptr, c_loc, c_f_pointer
+    implicit none
+
+    type :: cc1_poly_t
+        integer :: i
+    end type
+contains
+    subroutine cc1_polymorphic_c_loc(x)
+        class(*), target, intent(inout) :: x
+        type(c_ptr) :: c
+        c = c_loc(x)  ! {Error} the X argument of c_loc() shall not be polymorphic
+    end subroutine
+
+    subroutine cc1_polymorphic_c_loc_class_t(x)
+        class(cc1_poly_t), target, intent(inout) :: x
+        type(c_ptr) :: c
+        c = c_loc(x)  ! {Error} the X argument of c_loc() shall not be polymorphic
+    end subroutine
+
+    subroutine cc1_polymorphic_c_f_pointer(p, q)
+        type(c_ptr), intent(in) :: p
+        class(*), pointer, intent(out) :: q
+        call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
+    end subroutine
+
+    subroutine cc1_polymorphic_c_f_pointer_class_t(p, q)
+        type(c_ptr), intent(in) :: p
+        class(cc1_poly_t), pointer, intent(out) :: q
+        call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
     end subroutine
 end module

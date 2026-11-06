@@ -174,6 +174,15 @@ cudaError_t cudaDeviceGetAttribute(int *value, cudaDeviceAttr attr,
         case cudaDevAttrMaxGridDimZ: *value = MAX_GRID_DIM_Z; break;
         case cudaDevAttrWarpSize: *value = WARP_SIZE; break;
         case cudaDevAttrL2CacheSize: *value = L2_CACHE_SIZE; break;
+        // The emulated device memory is host memory, so a kernel can use
+        // what the host allocated in place (LFORTRAN_GPU_MEMORY=unified),
+        // but the emulation reports a separate device, so that the default
+        // memory model is the copy model, as on a GPU with memory of its own.
+        case cudaDevAttrIntegrated: *value = 0; break;
+        case cudaDevAttrPageableMemoryAccess: *value = 1; break;
+        // So that the default stays the copy model, as for unified memory;
+        // LFORTRAN_GPU_MEMORY=managed selects the managed one.
+        case cudaDevAttrConcurrentManagedAccess: *value = 0; break;
         default: return fail(cudaErrorInvalidValue);
     }
     return cudaSuccess;
@@ -247,6 +256,49 @@ cudaError_t cudaFree(void *ptr) {
     stats.frees++;
     return cudaSuccess;
 }
+
+cudaError_t cudaMallocManaged(void **ptr, size_t size, unsigned int flags) {
+    if (flags != cudaMemAttachGlobal) return fail(cudaErrorInvalidValue);
+    return cudaMalloc(ptr, size);
+}
+
+// Checks a prefetch of managed memory to `device` (cudaCpuDeviceId for the
+// host), which moves nothing.
+static cudaError_t prefetch(const void *ptr, size_t count, int device,
+    cudaStream_t stream)
+{
+    if (stream != 0) return fail(cudaErrorInvalidResourceHandle);
+    if (device != cudaCpuDeviceId && device != current_device) {
+        return fail(cudaErrorInvalidDevice);
+    }
+    if (count > 0 && !device_range(ptr, count)) {
+        return fail(cudaErrorInvalidValue);
+    }
+    if (device == cudaCpuDeviceId) stats.host_prefetches++;
+    else stats.device_prefetches++;
+    return cudaSuccess;
+}
+
+#if CUDART_VERSION >= 13000
+cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count,
+    struct cudaMemLocation location, unsigned int flags, cudaStream_t stream)
+{
+    if (flags != 0) return fail(cudaErrorInvalidValue);
+    switch (location.type) {
+        case cudaMemLocationTypeDevice:
+            return prefetch(ptr, count, location.id, stream);
+        case cudaMemLocationTypeHost:
+            return prefetch(ptr, count, cudaCpuDeviceId, stream);
+        default: return fail(cudaErrorInvalidValue);
+    }
+}
+#else
+cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count, int device,
+    cudaStream_t stream)
+{
+    return prefetch(ptr, count, device, stream);
+}
+#endif
 
 // Checks the two ranges of a copy against its direction, and copies.
 static cudaError_t copy(void *dst, const void *src, size_t count,

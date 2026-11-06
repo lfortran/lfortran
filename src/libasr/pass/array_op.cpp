@@ -105,8 +105,45 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
             ASRUtils::struct_base_lending_shape(x) == nullptr ) {
             return ;
         }
-        ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_StructInstanceMember(
-            ASR::down_cast<ASR::StructInstanceMember_t>(x->m_v));
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(x->m_v);
+        ASR::expr_t** slot = &member->m_v;
+        ASR::expr_t* node = member->m_v;
+        // The subscripts consumed the rank of every component they index,
+        // so the shape comes from the array below them, not from the
+        // component expression itself: `a%x(2)` is shaped like `a`, not
+        // like the rank-two `a%x`, and `a%x(2)%u(2)` likewise. Descend
+        // past an array component selected out of an array base, and past
+        // an element selection that lends the shape of its own base,
+        // until reaching the expression the loops should index.
+        while( true ) {
+            if( ASR::is_a<ASR::Var_t>(*node) ) {
+                break;
+            }
+            if( ASR::is_a<ASR::StructInstanceMember_t>(*node) ) {
+                ASR::StructInstanceMember_t* sim =
+                    ASR::down_cast<ASR::StructInstanceMember_t>(node);
+                if( ASRUtils::is_array(ASRUtils::symbol_type(sim->m_m)) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(sim->m_v)) ) {
+                    slot = &sim->m_v;
+                    node = sim->m_v;
+                    continue;
+                }
+                break;
+            }
+            if( ASR::is_a<ASR::ArrayItem_t>(*node) ) {
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(node);
+                if( ASRUtils::is_array(item->m_type) &&
+                    ASRUtils::struct_base_lending_shape(item) != nullptr ) {
+                    slot = &item->m_v;
+                    node = item->m_v;
+                    continue;
+                }
+            }
+            break;
+        }
+        current_expr = slot;
+        BaseExprReplacer<ArrayVarAddressReplacer>::replace_expr(node);
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
@@ -598,17 +635,6 @@ ASR::expr_t* at(Vec<ASR::expr_t*>& vec, int64_t index) {
     return vec[index];
 }
 
-// Whether an expression has a section of an array among its operands.
-class ArraySectionFinder: public ASR::BaseWalkVisitor<ArraySectionFinder> {
-    public:
-
-    bool found = false;
-
-    void visit_ArraySection(const ASR::ArraySection_t& /*x*/) {
-        found = true;
-    }
-};
-
 // Collect the array expressions which should be of the same size
 class CollectComponentsFromElementalExpr: public ASR::BaseWalkVisitor<CollectComponentsFromElementalExpr> {
 private:
@@ -1012,7 +1038,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::do_loop_head_t head;
         head.m_v = offset; head.m_start = zero; head.m_end = loop_end;
         head.m_increment = nullptr; head.loc = loc;
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(
+        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(
             al, loc, nullptr, head, loop_body.p, 1, nullptr, 0)));
         remove_original_stmt = true;
     }
@@ -1369,6 +1395,89 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         return true;
     }
 
+    ASR::expr_t* contiguous_array_storage(ASR::expr_t* array,
+            const Location& loc) {
+        // Device preparation owns array storage; its arrays already lower to
+        // device pointers, not the host descriptors this optimization exposes.
+        for( SymbolTable* scope = current_scope; scope; scope = scope->parent ) {
+            if( scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                    ASRUtils::runs_on_device(
+                        ASR::down_cast<ASR::symbol_t>(scope->asr_owner)) ) {
+                return array;
+            }
+        }
+        ASR::ttype_t* type = ASRUtils::expr_type(array);
+        if( !pass_options.fast || bounds_checking || !ASRUtils::is_array(type) ||
+                !ASRUtils::is_contiguous_array_designator(array) ||
+                ASRUtils::extract_physical_type(type) !=
+                    ASR::array_physical_typeType::DescriptorArray ) {
+            return array;
+        }
+        ASR::ttype_t* element = ASRUtils::extract_type(type);
+        if( !ASR::is_a<ASR::Integer_t>(*element) &&
+                !ASR::is_a<ASR::UnsignedInteger_t>(*element) &&
+                !ASR::is_a<ASR::Real_t>(*element) &&
+                !ASR::is_a<ASR::Complex_t>(*element) ) {
+            return array;
+        }
+        ASR::expr_t* base = array;
+        while( ASR::is_a<ASR::StructInstanceMember_t>(*base) ) {
+            base = ASR::down_cast<ASR::StructInstanceMember_t>(base)->m_v;
+        }
+        if( !ASR::is_a<ASR::Var_t>(*base) ) {
+            return array;
+        }
+        // Expose the layout promised by the declaration without changing
+        // the descriptor's lower bounds.
+        size_t rank = ASRUtils::extract_n_dims_from_ttype(type);
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, rank);
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t* index_type = get_index_type(loc);
+        for( size_t i = 0; i < rank; i++ ) {
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = PassUtils::get_bound(array, i + 1,
+                "lbound", al, get_index_kind());
+            dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
+                array, b.i_t(i + 1, index_type), index_type, nullptr));
+            dims.push_back(al, dim);
+        }
+        ASR::ttype_t* storage_type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_allocatable_pointer(type), &dims,
+            ASR::array_physical_typeType::PointerArray, true);
+        return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+            al, loc, array, ASR::array_physical_typeType::DescriptorArray,
+            ASR::array_physical_typeType::PointerArray, storage_type, nullptr));
+    }
+
+    ASR::expr_t* contiguous_array_item(ASR::expr_t* item,
+            const Location& loc) {
+        ASR::ArrayItem_t* ref = ASR::down_cast<ASR::ArrayItem_t>(item);
+        ref->m_v = contiguous_array_storage(ref->m_v, loc);
+        return item;
+    }
+
+    void visit_Associate(const ASR::Associate_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor>::visit_Associate(x);
+        ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(x.m_value);
+        if( ASR::is_a<ASR::ArraySection_t>(*value) ) {
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(value);
+            ASR::expr_t* storage = contiguous_array_storage(section->m_v,
+                section->base.base.loc);
+            if( storage != section->m_v ) {
+                // A vector subscript can also reference this section through
+                // an ArrayItem that still expects its descriptor.
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                ASR::Associate_t& associate = const_cast<ASR::Associate_t&>(x);
+                associate.m_value = duplicator.duplicate_expr(x.m_value);
+                section = ASR::down_cast<ASR::ArraySection_t>(
+                    ASRUtils::get_past_array_physical_cast(associate.m_value));
+                section->m_v = storage;
+            }
+        }
+    }
+
     // The element of the base array of `section` that the loop indices
     // `indices` select, one index for each subscript triplet.
     ASR::expr_t* index_section_through_base(ASR::ArraySection_t* section,
@@ -1385,10 +1494,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 section->m_args[i].m_right : indices[k++];
             args.push_back(al, arg);
         }
-        return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+        return contiguous_array_item(ASRUtils::EXPR(
+            ASRUtils::make_ArrayItem_t_util(al, loc,
             section->m_v, args.p, args.size(),
             ASRUtils::extract_type(section->m_type),
-            ASR::arraystorageType::ColMajor, nullptr, in_bounds));
+            ASR::arraystorageType::ColMajor, nullptr, in_bounds)), loc);
     }
 
     enum IndexType {
@@ -1616,7 +1726,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
         increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc, &index2step);
-        ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+        ASR::stmt_t* do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
         do_loop_depth += 1;
         array_indices_args_i += 1;
@@ -1649,7 +1759,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     index2var[do_loop_head.m_v].first, bound_dim, "ubound", al, get_index_kind());
                 do_loop_head.m_increment = nullptr;
             }
-            ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            ASR::stmt_t* do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
             do_loop_depth++;
             array_indices_args_i += 1;
@@ -1769,9 +1879,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
             ASR::ttype_t* var_i_type = ASRUtils::extract_type(
                 ASRUtils::expr_type(*vars[i]));
-            *vars[i] = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, *vars[i], indices.p,
+            *vars[i] = contiguous_array_item(ASRUtils::EXPR(
+                ASRUtils::make_ArrayItem_t_util(al, loc, *vars[i], indices.p,
                 indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr,
-                in_bounds[i]));
+                in_bounds[i])), loc);
         }
 
         ASRUtils::RemoveArrayProcessingNodeVisitor array_broadcast_visitor(al);
@@ -1807,7 +1918,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
         increment_index_variables(var2indices, var_with_maxrank, 0,
                                   do_loop_body, loc, &index2step);
-        ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+        ASR::stmt_t* do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
         parent_do_loop_body.push_back(al, do_loop);
         do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
@@ -1823,7 +1934,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             do_loop_head.m_v = var2indices[var_with_maxrank].p[i];
             get_loop_bounds(vars_expr[var_with_maxrank], i, do_loop_head.m_start,
                 do_loop_head.m_end, do_loop_head.m_increment);
-            ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            ASR::stmt_t* do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
             parent_do_loop_body.push_back(al, do_loop);
             do_loop_body.from_pointer_n_copy(al, parent_do_loop_body.p, parent_do_loop_body.size());
@@ -2533,7 +2644,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             Vec<ASR::stmt_t*> body;
             body.reserve(al, 1);
             body.push_back(al, curr_stmt);
-            curr_stmt = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            curr_stmt = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 loop_head, body.p, body.size(), nullptr, 0));
         }
         pass_result.push_back(al, curr_stmt);
@@ -2611,10 +2722,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 // is allocated with that source as its mold.
                 ASR::expr_t* arg_mold = get_polymorphic_mold(
                     xx.m_args[i].m_a, xx.m_source);
+                // Record the source's type at allocation, independently of
+                // the element copy loop, which is empty for a zero-sized array.
+                set_dynamic_type_of_polymorphic_target(xx.m_args[i],
+                    xx.m_args[i].m_a, xx.m_source, arg_mold);
                 if (arg_mold != nullptr) {
                     mold = arg_mold;
-                    xx.m_args[i].m_type = ASRUtils::duplicate_type(al,
-                        ASRUtils::extract_type(ASRUtils::expr_type(mold)));
                 }
             }
             // Clear source when data copy loops were generated, since
@@ -2880,7 +2993,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         head.m_end = PassUtils::get_bound(
             duplicator.duplicate_expr(target), 1, "ubound", al, index_kind);
         head.m_increment = nullptr;
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(
+        pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(
             al, loc, nullptr, head, body.p, body.size(), nullptr, 0)));
         return true;
     }
@@ -3103,8 +3216,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::down_cast<ASR::ArrayItem_t>(expr))))
         // A section target with scalar and triplet subscripts only, such as
         // `a(:, i)`, is assigned element by element through its base array
-        // in the general loop below, once every section in the value has
-        // been replaced by a temporary.
+        // in the general loop below. Any section left in the value by
+        // array_struct_temporary is safe to index through its base too.
         bool is_target_section_indexed_through_base = false;
         if( ASR::is_a<ASR::ArraySection_t>(*xx.m_target) &&
             !ASRUtils::is_array_indexed_with_array_indices(
@@ -3113,9 +3226,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             !is_array_indexed_with_array_indices_check(xx.m_value) &&
             !call_replace_on_expr(xx.m_value->type) &&
             !ASR::is_a<ASR::ImpliedDoLoop_t>(*xx.m_value) ) {
-            ArraySectionFinder value_section_finder;
-            value_section_finder.visit_expr(*xx.m_value);
-            is_target_section_indexed_through_base = !value_section_finder.found;
+            is_target_section_indexed_through_base = true;
         }
         if( ( is_array_indexed_with_array_indices_check(xx.m_value) ) ||
             ( is_array_indexed_with_array_indices_check(xx.m_target) &&
@@ -3237,7 +3348,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         } else {
             vars.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
         }
-        ArrayVarAddressCollector var_collector_value(al, vars);
+        ArrayVarAddressCollector var_collector_value(al, vars, true);
         var_collector_value.current_expr = const_cast<ASR::expr_t**>(&(xx.m_value));
         if (!is_value_assumed_rank) {
             var_collector_value.call_replacer();
@@ -3288,6 +3399,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             components.reserve(al, 1);
             CollectComponentsFromElementalExpr collect_components(al, components);
             collect_components.visit_expr(*x.m_value);
+            for (size_t i = 0; i < vars.size(); i++) {
+                if (*vars[i] != x.m_target && ASR::is_a<ASR::ArraySection_t>(**vars[i])) {
+                    components.push_back(al, *vars[i]);
+                }
+            }
             bool conforms_at_compile_time = false;
             if (have_same_rank(x.m_target, components)) {
                 conforming_operands.insert(x.m_target);

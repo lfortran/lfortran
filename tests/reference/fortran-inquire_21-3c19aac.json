@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-inquire_21-3c19aac",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/inquire_21.f90",
+    "infile_hash": "2b7916c5e7ebc1f240e64eabc067d85619bf4da8efcf384bcc43c2c0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-inquire_21-3c19aac.f90",
+    "stdout_hash": "6a9c2f2f017d6a0af117de3881852202989e8ec7c68ea3d85d355532",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

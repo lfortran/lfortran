@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-gpu_metal_597-0cbd15f",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/gpu_metal_597.f90",
+    "infile_hash": "d0952d9c38235e0608bfd610511102d87dbefd4f59c8276fb36c0990",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-gpu_metal_597-0cbd15f.stdout",
+    "stdout_hash": "2ddab5e0652f51ba3217369d73ad65ffe0f2e3f6e7177db7d6efdc94",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

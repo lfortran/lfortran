@@ -8,6 +8,7 @@
 #include <libasr/pass/pass_utils.h>
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <set>
 #include <string>
@@ -1346,8 +1347,7 @@ private:
         const Location &loc = d->base.base.loc;
         ASRUtils::ASRBuilder b(al, loc);
         ASR::ttype_t *type = ASRUtils::expr_type(d->m_head.m_v);
-        ASR::expr_t *step = d->m_head.m_increment
-            ? d->m_head.m_increment : b.i_t(1, type);
+        ASR::expr_t *step = d->m_head.m_increment;
         ASR::expr_t *lane = b.i2i_t(lane_index(loc), type);
         ASR::expr_t *lanes = b.i2i_t(lanes_var(loc), type);
         d->m_head.m_start = b.Add(d->m_head.m_start, b.Mul(lane, step));
@@ -1916,6 +1916,12 @@ void pass_gpu_vector_lanes(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &pass_options) {
     GpuDeviceCapabilities caps = gpu_device_capabilities(pass_options);
     if (!caps.device_selected() || caps.lanes_per_iteration <= 1) return;
+    // A launch gets lanes only when it has at most iterations_max
+    // iterations, so it starts at most this many threads, also when it runs
+    // in chunks (device_launch_expand.cpp): few enough to be numbered in
+    // the 32-bit thread index of a Metal kernel.
+    LCOMPILERS_ASSERT(caps.lanes_per_iteration
+        <= std::numeric_limits<int32_t>::max() / iterations_max);
     VectorLanes v(al, caps.lanes_per_iteration);
     v.visit_TranslationUnit(unit);
 }

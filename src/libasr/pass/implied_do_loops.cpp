@@ -36,12 +36,30 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     std::map<ASR::expr_t*, ASR::expr_t*>& resultvar2value;
     bool realloc_lhs, allocate_target;
     const LCompilers::PassOptions& pass_options;
-    bool skip_idl_save_restore;
     // Index variables of the enclosing FORALL statements
     std::vector<ASR::symbol_t*> forall_indices;
 
     int get_index_kind() const {
         return pass_options.descriptor_index_64 ? 8 : 4;
+    }
+
+    // Partial sizes of an array constructor are summed and multiplied
+    // together, so all of them use the index kind. Sizes are created in the
+    // index kind where possible; this only converts values that are exact in
+    // their own kind (dimension lengths, implied-do trip counts).
+    ASR::expr_t* to_index_kind(ASR::expr_t* size) {
+        ASR::ttype_t* size_type = ASRUtils::expr_type(size);
+        if( ASRUtils::extract_kind_from_ttype_t(size_type) == get_index_kind() ) {
+            return size;
+        }
+        ASRUtils::ASRBuilder builder(al, size->base.loc);
+        return builder.i2i_t(size, ASRUtils::TYPE(ASR::make_Integer_t(al,
+            size->base.loc, get_index_kind())));
+    }
+
+    ASR::expr_t* get_index_kind_size(ASR::expr_t* array, bool for_type) {
+        return to_index_kind(ASRUtils::get_size(array, al, for_type,
+            get_index_kind()));
     }
 
     ASR::expr_t* get_first_scalar_expr(ASR::expr_t* expr) {
@@ -167,7 +185,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     result_var(nullptr), result_counter(0),
     resultvar2value(resultvar2value_),
     realloc_lhs(realloc_lhs_), allocate_target(allocate_target_),
-    pass_options(pass_options_), skip_idl_save_restore(false) {}
+    pass_options(pass_options_) {}
 
     // Given an array expression (e.g. elemental function call, binop on
     // arrays), return the size of the array without referencing the
@@ -190,11 +208,11 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
         if( n_dims > 0 && m_dims[0].m_length != nullptr ) {
-            ASR::expr_t* size = m_dims[0].m_length;
+            ASR::expr_t* size = to_index_kind(m_dims[0].m_length);
             for( size_t d = 1; d < n_dims; d++ ) {
                 if( m_dims[d].m_length == nullptr ) break;
                 ASRUtils::ASRBuilder b(al, expr->base.loc);
-                size = b.Mul(size, m_dims[d].m_length);
+                size = b.Mul(size, to_index_kind(m_dims[d].m_length));
             }
             return size;
         }
@@ -243,7 +261,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         }
 
         // Leaf array expressions (ArraySection, Var, etc.)
-        return ASRUtils::get_size(expr, al, false);
+        return get_index_kind_size(expr, false);
     }
 
     ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop) {
@@ -253,12 +271,25 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::expr_t* end = implied_doloop->m_end;
         ASR::expr_t* d = implied_doloop->m_increment;
         ASR::expr_t* implied_doloop_size = nullptr;
-        int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end));
-        start = builder.i2i_t(start, ASRUtils::expr_type(end));
+        // As in ASRUtils::get_triplet_extent, the trip count is computed in
+        // the widest of the loop and index kinds; only the resulting sizes
+        // are converted to the index kind.
+        int kind = std::max(get_index_kind(), std::max(
+            ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start)),
+            ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end))));
+        if( d != nullptr ) {
+            kind = std::max(kind, ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(d)));
+        }
+        ASR::ttype_t* trip_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) != kind ) {
+            end = builder.i2i_t(end, trip_type);
+        }
+        start = builder.i2i_t(start, trip_type);
         if( d == nullptr ) {
             implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
         } else {
-            d = builder.i2i_t(d, ASRUtils::expr_type(end));
+            d = builder.i2i_t(d, trip_type);
             implied_doloop_size = builder.Add(builder.Div(
                 builder.Sub(end, start), d),
                 make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
@@ -298,8 +329,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         const_elements += ASRUtils::get_fixed_size_of_array(element_type);
                     } else {
                         has_runtime_array_size = true;
-                        ASR::expr_t* element_array_size = get_array_expr_size(
-                            implied_doloop->m_values[i]);
+                        ASR::expr_t* element_array_size = to_index_kind(
+                            get_array_expr_size(implied_doloop->m_values[i]));
                         // The size expression may reference the loop variable
                         // (e.g. size(a(i)%values())). Since this expression is
                         // evaluated before the loop starts, replace the loop
@@ -360,15 +391,18 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             } else {
                 implied_doloop_size = arith_sum;
             }
+            implied_doloop_size = to_index_kind(implied_doloop_size);
         } else {
+            implied_doloop_size = to_index_kind(implied_doloop_size);
+            int index_kind = get_index_kind();
             if( const_elements > 0 ) {
                 if( implied_doloop_size_ == nullptr ) {
                     implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
-                        make_Integer_t, const_elements, kind, loc);
+                        make_Integer_t, const_elements, index_kind, loc);
                 } else {
                     implied_doloop_size_ = builder.Add(
                         make_ConstantWithKind(make_IntegerConstant_t,
-                            make_Integer_t, const_elements, kind, loc),
+                            make_Integer_t, const_elements, index_kind, loc),
                         implied_doloop_size_);
                 }
             }
@@ -421,7 +455,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array_item->m_type);
                         constant_size += ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
                     } else {
-                        ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                        ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                         if( array_size == nullptr ) {
                             array_size = element_array_size;
                         } else {
@@ -441,7 +475,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(element_type, m_dims);
                         constant_size += ASRUtils::get_fixed_size_of_array(m_dims, n_dims);
                     } else {
-                        ASR::expr_t* element_array_size = ASRUtils::get_size(element, al);
+                        ASR::expr_t* element_array_size = get_index_kind_size(element, true);
                         if( array_size == nullptr ) {
                             array_size = element_array_size;
                         } else {
@@ -470,9 +504,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     if( d == nullptr ) {
                         continue;
                     }
-                    ASR::expr_t* dim_size = builder.Add(builder.Div(
-                        builder.Sub(end, start), d),
-                        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, get_index_kind(), loc));
+                    ASR::expr_t* dim_size = ASRUtils::get_triplet_extent(al,
+                        loc, start, end, d, int_type);
                     if( array_section_size == nullptr ) {
                         array_section_size = dim_size;
                     } else {
@@ -490,7 +523,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 if( ASRUtils::is_fixed_size_array(intrinsic_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(intrinsic_element_t->m_type);
                 } else {
-                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                    ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                     if( array_size == nullptr ) {
                         array_size = element_array_size;
                     } else {
@@ -504,7 +537,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 if( ASRUtils::is_fixed_size_array(fc_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(fc_element_t->m_type);
                 } else {
-                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                    ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                     if( array_size == nullptr ) {
                         array_size = element_array_size;
                     } else {
@@ -518,7 +551,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 if( ASRUtils::is_fixed_size_array(intrinsic_element_t->m_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(intrinsic_element_t->m_type);
                 } else {
-                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                    ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                     if( array_size == nullptr ) {
                         array_size = element_array_size;
                     } else {
@@ -533,7 +566,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 if( ASRUtils::is_fixed_size_array(arr_type) ) {
                     constant_size += ASRUtils::get_fixed_size_of_array(arr_type);
                 } else {
-                    ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                    ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                     if( array_size == nullptr ) {
                         array_size = element_array_size;
                     } else {
@@ -556,7 +589,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                     if( ASRUtils::is_fixed_size_array(element_type) ) {
                         constant_size += ASRUtils::get_fixed_size_of_array(element_type);
                     } else {
-                        ASR::expr_t* element_array_size = ASRUtils::get_size(element, al, false);
+                        ASR::expr_t* element_array_size = get_index_kind_size(element, false);
                         if( array_size == nullptr ) {
                             array_size = element_array_size;
                         } else {
@@ -782,7 +815,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         Vec<ASR::stmt_t*>* result_vec = &pass_result;
         PassUtils::ReplacerUtils::replace_ArrayConstructor_(al, x, result_var,
             result_vec, current_scope, false, ASR::cast_kindType::IntegerToInteger,
-            nullptr, skip_idl_save_restore);
+            nullptr);
         result_var = result_var_copy;
     }
 
@@ -972,6 +1005,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         bool m_is_formatted = true;
         ReplaceArrayConstant replacer;
         Vec<ASR::stmt_t*> pass_result;
+        // Statements to put after the statement being visited
+        Vec<ASR::stmt_t*> pass_result_after;
         Vec<ASR::stmt_t*>* parent_body;
         std::map<ASR::expr_t*, ASR::expr_t*> resultvar2value;
         const LCompilers::PassOptions& pass_options;
@@ -991,6 +1026,8 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             replacer.call_replacer_on_value = false;
             pass_result.n = 0;
             pass_result.reserve(al, 0);
+            pass_result_after.n = 0;
+            pass_result_after.reserve(al, 0);
             print = false, file_write = false;
             m_unit = nullptr;
             m_rec = nullptr;
@@ -1110,6 +1147,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             for (size_t i = 0; i < n_body; i++) {
                 pass_result.n = 0;
                 pass_result.reserve(al, 1);
+                pass_result_after.n = 0;
                 remove_original_statement = false;
                 replacer.result_var = nullptr;
                 Vec<ASR::stmt_t*>* parent_body_copy = parent_body;
@@ -1122,6 +1160,10 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 if( !remove_original_statement ) {
                     body.push_back(al, m_body[i]);
                 }
+                for (size_t j = 0; j < pass_result_after.size(); j++) {
+                    body.push_back(al, pass_result_after[j]);
+                }
+                pass_result_after.n = 0;
                 remove_original_statement = false;
             }
             m_body = body.p;
@@ -1450,7 +1492,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 do_loop_body.push_back(al, stmt);
             }
             
-            do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, nullptr, do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+            do_loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, x->base.base.loc, nullptr, do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
             return do_loop;
         }
 
@@ -1481,12 +1523,140 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 do_loop_body.push_back(al, stmt);
             }
 
-            return ASRUtils::STMT(ASR::make_DoLoop_t(al, x->base.base.loc, nullptr,
+            return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, x->base.base.loc, nullptr,
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
+        }
+
+        // Collects the variables of `idl` and of the implied do loops nested
+        // in it.
+        static void implied_do_variables(ASR::ImpliedDoLoop_t* idl,
+                std::vector<ASR::symbol_t*>& vars) {
+            if (ASR::is_a<ASR::Var_t>(*idl->m_var)) {
+                vars.push_back(ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v);
+            }
+            for (size_t i = 0; i < idl->n_values; i++) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
+                    implied_do_variables(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), vars);
+                }
+            }
+        }
+
+        // Whether the heads of `idl` and of the implied do loops nested in it
+        // give the same iterations when they are evaluated again after the
+        // statement: no bound calls a function, which must be called only
+        // once, no loop has the variable of a loop enclosing it (not
+        // conforming), and the bounds of a nested loop use no variable of
+        // `nest` but those of the loops `enclosing` it. Those of the
+        // outermost loop are evaluated before the statement.
+        bool can_run_implied_do_again(ASR::ImpliedDoLoop_t* idl,
+                const std::vector<ASR::symbol_t*>& nest,
+                std::vector<ASR::symbol_t*>& enclosing) {
+            class HasFunctionCall : public ASR::BaseWalkVisitor<HasFunctionCall> {
+                public:
+                bool found = false;
+                void visit_FunctionCall(const ASR::FunctionCall_t &/*x*/) {
+                    found = true;
+                }
+            };
+            if (!ASR::is_a<ASR::Var_t>(*idl->m_var)) return false;
+            ASR::symbol_t* var = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
+            if (std::find(enclosing.begin(), enclosing.end(), var) != enclosing.end()) {
+                return false;
+            }
+            for (ASR::expr_t* bound : {idl->m_start, idl->m_end, idl->m_increment}) {
+                if (!bound) continue;
+                HasFunctionCall has_call;
+                has_call.visit_expr(*bound);
+                if (has_call.found) return false;
+                if (enclosing.empty()) continue;
+                for (ASR::symbol_t* var : nest) {
+                    if (std::find(enclosing.begin(), enclosing.end(), var) == enclosing.end()
+                            && ASRUtils::expr_references_symbol(bound, var)) {
+                        return false;
+                    }
+                }
+            }
+            enclosing.push_back(var);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])
+                        && !can_run_implied_do_again(
+                            ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]),
+                            nest, enclosing)) {
+                    return false;
+                }
+            }
+            enclosing.pop_back();
+            return true;
+        }
+
+        // The value of `bound` of the outermost loop, evaluated before the
+        // statement into a variable unless it is a constant.
+        ASR::expr_t* bound_before_statement(ASR::expr_t* bound) {
+            if (ASRUtils::expr_value(bound)) return ASRUtils::expr_value(bound);
+            std::string name = current_scope->get_unique_name("__implied_do_bound");
+            ASR::stmt_t* assign = nullptr;
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::expr_t* var = PassUtils::create_auxiliary_variable_for_expr(
+                duplicator.duplicate_expr(bound), name, al, current_scope, assign);
+            pass_result.push_back(al, assign);
+            return var;
+        }
+
+        // A DO loop nest with the heads of `idl` and of the implied do loops
+        // nested in it, and no other statements.
+        ASR::stmt_t* implied_do_variable_loop(ASR::ImpliedDoLoop_t* idl, bool outermost) {
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 1);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
+                    body.push_back(al, implied_do_variable_loop(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]), false));
+                }
+            }
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::do_loop_head_t head;
+            head.loc = idl->base.base.loc;
+            head.m_v = idl->m_var;
+            if (outermost) {
+                head.m_start = bound_before_statement(idl->m_start);
+                head.m_end = bound_before_statement(idl->m_end);
+                head.m_increment = idl->m_increment
+                    ? bound_before_statement(idl->m_increment) : nullptr;
+            } else {
+                head.m_start = duplicator.duplicate_expr(idl->m_start);
+                head.m_end = duplicator.duplicate_expr(idl->m_end);
+                head.m_increment = idl->m_increment
+                    ? duplicator.duplicate_expr(idl->m_increment) : nullptr;
+            }
+            return ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, idl->base.base.loc,
+                nullptr, head, body.p, body.size(), nullptr, 0));
+        }
+
+        // An implied do loop of an output list leaves its variable at its
+        // final value (F2023 12.6.3). The values may be written without a
+        // loop, expanded at compile time, so the loops run again, without
+        // values, after the statement, and the backends set the variables as
+        // for any DO loop.
+        void set_implied_do_variables_after(ASR::expr_t** values, size_t n_values) {
+            for (size_t i = 0; i < n_values; i++) {
+                if (ASR::is_a<ASR::StringFormat_t>(*values[i])) {
+                    ASR::StringFormat_t* format = ASR::down_cast<ASR::StringFormat_t>(values[i]);
+                    set_implied_do_variables_after(format->m_args, format->n_args);
+                } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                    ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
+                    std::vector<ASR::symbol_t*> nest, enclosing;
+                    implied_do_variables(idl, nest);
+                    if (can_run_implied_do_again(idl, nest, enclosing)) {
+                        pass_result_after.push_back(al, implied_do_variable_loop(idl, true));
+                    }
+                }
+            }
         }
 
         void visit_Print(const ASR::Print_t &x) {
             print = true;
+            set_implied_do_variables_after(const_cast<ASR::expr_t**>(&x.m_text), 1);
             /*
                 integer :: i
                 print *, (i, i=1, 10)
@@ -1500,16 +1670,11 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 ASR::Print_t* print_stmt = const_cast<ASR::Print_t*>(&x);
                 ASR::expr_t** current_expr_copy_9 = current_expr;
                 current_expr = const_cast<ASR::expr_t**>(&(print_stmt->m_text));
-                bool prev_skip = replacer.skip_idl_save_restore;
-                if (pass_options.use_loop_variable_after_loop) {
-                    replacer.skip_idl_save_restore = true;
-                }
                 this->call_replacer();
                 current_expr = current_expr_copy_9;
                 if( !remove_original_statement ) {
                     this->visit_expr(*print_stmt->m_text);
                 }
-                replacer.skip_idl_save_restore = prev_skip;
                 print = false;
             } else {
                 LCOMPILERS_ASSERT_MSG(false, "print should support stringFormat or single string");
@@ -2104,6 +2269,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
 
         void visit_FileWrite(const ASR::FileWrite_t &x) {
             file_write = true;
+            set_implied_do_variables_after(x.m_values, x.n_values);
             m_unit = x.m_unit;
             m_rec = x.m_rec;
             m_iomsg = x.m_iomsg;
@@ -2127,10 +2293,6 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 integer :: i
                 write(*,*) [(i, i=1, 10)]
             */
-            bool prev_skip = replacer.skip_idl_save_restore;
-            if (pass_options.use_loop_variable_after_loop) {
-                replacer.skip_idl_save_restore = true;
-            }
             ASR::FileWrite_t* write_stmt = const_cast<ASR::FileWrite_t*>(&x);
             for(size_t i = 0; i < x.n_values; i++) {
                 ASR::expr_t* value = x.m_values[i];
@@ -2183,7 +2345,6 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     }
                 }
             }
-            replacer.skip_idl_save_restore = prev_skip;
             file_write = false;
         }
 

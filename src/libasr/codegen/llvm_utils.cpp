@@ -10,6 +10,11 @@
 
 namespace LCompilers {
 
+    static bool lazy_allocator_enabled(const CompilerOptions &options) {
+        return options.po.fast && !options.openmp && !options.po.coarray &&
+            !options.po.gpu_offload_metal && !options.po.gpu_offload_cuda;
+    }
+
     namespace LLVM {
 
         static bool memory_debug_enabled = false;
@@ -260,8 +265,8 @@ namespace LCompilers {
                     i8_ptr,
                     i8_ptr
                 });
-        // Get allocator BEFORE the branch so the SSA value dominates all uses
-        llvm::Value* allocator = get_allocator(module);
+        const bool lazy = lazy_allocator_enabled(compiler_options);
+        llvm::Value* allocator = lazy ? nullptr : get_allocator(module);
         // Null check prevents freeing null pointers and ensures dominance
         // when allocations happen conditionally but frees happen at cleanup.
         // The bitcast must be inside the non-null branch to preserve dominance.
@@ -271,6 +276,7 @@ namespace LCompilers {
         llvm::BasicBlock* cont_bb = llvm::BasicBlock::Create(context, "free_done", current_fn);
         builder->CreateCondBr(is_null, cont_bb, free_bb);
         builder->SetInsertPoint(free_bb);
+        if (lazy) allocator = get_allocator(module);
         llvm::Value* ptr_i8 = builder->CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo());
         builder->CreateCall(fn, {allocator, ptr_i8});
         builder->CreateBr(cont_bb);
@@ -312,6 +318,9 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMUtils::get_allocator(llvm::Module* mod) {
+        if (lazy_allocator_enabled(compiler_options)) {
+            return LLVM::get_allocator(context, *mod, *builder);
+        }
         // Check if the cached instance is valid for the current function.
         // Each LLVM function needs its own call to the allocator getter
         // because SSA values can't cross function boundaries.
@@ -1446,10 +1455,42 @@ namespace LCompilers {
 
     llvm::PointerType* LLVMUtils::get_opaque_procedure_ptr_type(const ASR::FunctionType_t &x,
             llvm::Module* module) {
-        llvm::Type* return_type = x.m_return_var_type != nullptr
-            ? get_type_from_ttype_t_util(nullptr, x.m_return_var_type, module)
-            : llvm::Type::getVoidTy(context);
+        if (x.m_return_var_type == nullptr) {
+            return llvm::FunctionType::get(llvm::Type::getVoidTy(context), {},
+                false)->getPointerTo();
+        }
+        if (ASR::is_a<ASR::Complex_t>(*x.m_return_var_type)) {
+            // Lowered as `get_function_type` lowers a complex result.
+            int a_kind = ASR::down_cast<ASR::Complex_t>(x.m_return_var_type)->m_kind;
+            llvm::Type* return_type = get_complex_return_type(a_kind);
+            if (return_type == nullptr) {
+                return llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+                    {getComplexType(a_kind, true)}, false)->getPointerTo();
+            }
+            return llvm::FunctionType::get(return_type, {}, false)->getPointerTo();
+        }
+        llvm::Type* return_type = get_type_from_ttype_t_util(nullptr,
+            x.m_return_var_type, module);
         return llvm::FunctionType::get(return_type, {}, false)->getPointerTo();
+    }
+
+    llvm::Type* LLVMUtils::get_complex_return_type(int a_kind) {
+        if (a_kind == 4) {
+            if (compiler_options.platform == Platform::Windows) {
+                // i64
+                return llvm::Type::getInt64Ty(context);
+            } else if (compiler_options.platform == Platform::macOS_ARM) {
+                // {float, float}
+                return getComplexType(a_kind);
+            }
+            // <2 x float>
+            return FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
+        }
+        LCOMPILERS_ASSERT(a_kind == 8)
+        if (compiler_options.platform == Platform::Windows) {
+            return nullptr;
+        }
+        return getComplexType(a_kind);
     }
 
     llvm::FunctionType* LLVMUtils::get_function_type(const ASR::Function_t &x, llvm::Module* module) {
@@ -1477,30 +1518,14 @@ namespace LCompilers {
                     int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind);
                     // Use platform-specific return type for both BindC and Source ABI
                     // to ensure ABI compatibility when calling via implicit interfaces
-                    if (a_kind == 4) {
-                        if (compiler_options.platform == Platform::Windows) {
-                            // i64
-                            return_type = llvm::Type::getInt64Ty(context);
-                        } else if (compiler_options.platform == Platform::macOS_ARM) {
-                            // {float, float}
-                            return_type = getComplexType(a_kind);
-                        } else {
-                            // <2 x float>
-                            return_type = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
-                        }
-                    } else {
-                        LCOMPILERS_ASSERT(a_kind == 8)
-                        if (compiler_options.platform == Platform::Windows) {
-                            // pass as subroutine
-                            return_type = getComplexType(a_kind, true);
-                            std::vector<llvm::Type*> args = convert_args(x, module);
-                            args.insert(args.begin(), return_type);
-                            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                                    llvm::Type::getVoidTy(context), args, false);
-                            return function_type;
-                        } else {
-                            return_type = getComplexType(a_kind);
-                        }
+                    return_type = get_complex_return_type(a_kind);
+                    if (return_type == nullptr) {
+                        // pass as subroutine
+                        std::vector<llvm::Type*> args = convert_args(x, module);
+                        args.insert(args.begin(), getComplexType(a_kind, true));
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context), args, false);
+                        return function_type;
                     }
                     break;
                 }
@@ -1875,6 +1900,33 @@ namespace LCompilers {
                 bool is_pointer_ = (ASR::is_a<ASR::String_t>(*t2) && m_abi != ASR::abiType::BindC);
                 is_malloc_array_type = ASRUtils::is_array(t2);
                 handle_llvm_pointers1()
+                break;
+            }
+            case (ASR::ttypeType::Reference) : {
+                // The address of a variable of the referenced type: what
+                // llvm_symtab holds for such a variable, the pointer to its
+                // storage.
+                bool is_array_type_ = false, is_malloc_array_type_ = false;
+                bool is_list_ = false;
+                ASR::dimension_t* m_dims_ = nullptr;
+                int n_dims_ = 0, a_kind_ = 0;
+                // The member declares the interface of a procedure it
+                // refers to.
+                ASR::symbol_t* referenced_declaration = type_declaration;
+                if (referenced_declaration == nullptr && arg_expr != nullptr &&
+                        ASR::is_a<ASR::Var_t>(*arg_expr)) {
+                    ASR::symbol_t* member = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(arg_expr)->m_v);
+                    if (ASR::is_a<ASR::Variable_t>(*member)) {
+                        referenced_declaration =
+                            ASR::down_cast<ASR::Variable_t>(member)->m_type_declaration;
+                    }
+                }
+                llvm_type = get_type_from_ttype_t(arg_expr,
+                    ASR::down_cast<ASR::Reference_t>(asr_type)->m_type,
+                    referenced_declaration, m_storage, is_array_type_,
+                    is_malloc_array_type_, is_list_, m_dims_, n_dims_, a_kind_,
+                    module, m_abi)->getPointerTo();
                 break;
             }
             case (ASR::ttypeType::List) : {
@@ -9868,6 +9920,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return gep;
     }
 
+    llvm::Function* LLVMStruct::get_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module)
+    {
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        create_new_vtable_for_struct_type(struct_sym, module);
+        auto it = newclass2copyfn.find(struct_sym);
+        LCOMPILERS_ASSERT_MSG(it != newclass2copyfn.end(),
+            "no copy function for an unlimited polymorphic type");
+        return it->second;
+    }
+
     llvm::Value* LLVMUtils::get_type_identifier_for_polymorphic_type(
             ASR::expr_t* arg, llvm::Value* arg_val, ASR::symbol_t* struct_sym,
             llvm::Module* module, int class_type_id) {
@@ -10309,6 +10371,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         
         // create and add copy funciton
         llvm::Function* copy_function = define_struct_copy_function(struct_sym, module);
+        newclass2copyfn[struct_sym] = copy_function;
         // std::cout<<"Getting pointer to method for struct: "<<ASRUtils::symbol_name(struct_sym)<<std::endl;
         llvm::Function* allocate_array_members_function = define_allocate_struct_function(struct_sym, module);
         llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t, true);
@@ -10403,6 +10466,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             std::pair(ASRUtils::symbol_get_past_external(struct_sym), type_info_var));
     }
 
+    // The per-type `_copy_<owner>_<type>` and `_allocate_struct_<owner>_<type>`
+    // functions have internal linkage. Every translation unit that uses a type
+    // defines them itself and nothing refers to them by name, so they never
+    // have to be shared. Their names are not unique program-wide: the owner
+    // may be local to a translation unit (a procedure, a BLOCK or a
+    // submodule), and joining owner and type with `_` is ambiguous (module
+    // `a` with type `b_t` and module `a_b` with type `t`), so merging them
+    // across translation units could call another type's function.
     llvm::Function* LLVMStruct::define_allocate_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
     {
         llvm::FunctionType *funcType = llvm::FunctionType::get(
@@ -10420,7 +10491,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         func_name += ASRUtils::symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
-            llvm::Function::LinkOnceODRLinkage,
+            llvm::Function::InternalLinkage,
             func_name,
             module
         );
@@ -10497,7 +10568,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         func_name += ASRUtils::symbol_name(struct_sym);
         llvm::Function *func = llvm::Function::Create(
             funcType,
-            llvm::Function::LinkOnceODRLinkage,
+            llvm::Function::InternalLinkage,
             func_name,
             module
         );
@@ -11003,13 +11074,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 return;
             }
 
-            llvm::Value* fn = nullptr;
-            {
-                llvm::Value* vtable_ptr = get_pointer_to_method(&struct_sym->base, module);
-                fn = llvm_utils->CreateLoad2(
-                    llvm::FunctionType::get(llvm_utils->getIntType(4), {}, true)->getPointerTo(), vtable_ptr);
-                fn = builder->CreateBitCast(fn, fnPtrTy);
-            }
+            // Call this translation unit's copy function directly rather than
+            // through the type's vtable, whose symbol is not owner-qualified
+            // and can resolve to a same-named type of another module (#14543).
+            // The copy function has internal linkage, so this always calls
+            // the copy function of this type.
+            llvm::Function* copy_fn = get_struct_copy_function(&struct_sym->base, module);
 
             // Deep copy each struct element
             llvm::BasicBlock *loopHead = llvm::BasicBlock::Create(context, "struct_deepcopy.loop.head");
@@ -11035,17 +11105,31 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             llvm::Value* src_elem_ptr  = builder->CreateInBoundsGEP(llvm_data_type, src_data, i_val);
             llvm::Value* dest_elem_ptr = builder->CreateInBoundsGEP(llvm_data_type, dest_data, i_val);
             {
-                    // Elements are plain structs (declared as type(), not
-                    // class()), so they have no class wrapper.  Copy each
-                    // element directly via deepcopy on the element type.
+                    // Elements are struct values without a class wrapper.
                     ASR::ttype_t* elem_type = ASRUtils::extract_type(src_ty);
                     if (is_descriptor_array) {
                         allocate_struct_array_members(
                             struct_sym, dest_elem_ptr, elem_type, false);
                     }
-                    llvm_utils->deepcopy(src_expr, src_elem_ptr, dest_elem_ptr,
-                        elem_type, ASRUtils::extract_type(dest_ty), module,
-                        false, finalize_dest);
+                    if (!is_src_class && !is_dest_class) {
+                        // Call the type's copy function instead of expanding
+                        // the element copy inline: inline expansion follows
+                        // the type definition and never terminates for a
+                        // type with an allocatable array component of its
+                        // own type.
+                        builder->CreateCall(fnTy, copy_fn, {
+                            builder->CreateBitCast(src_elem_ptr, llvm_utils->i8_ptr),
+                            builder->CreateBitCast(dest_elem_ptr, llvm_utils->i8_ptr),
+                            finalize_dest});
+                    } else {
+                        // Mixed class/type copy: expand inline. This
+                        // terminates, because nested array components are
+                        // copied by calling a copy function (the branch
+                        // above, or through the vtable for class elements).
+                        llvm_utils->deepcopy(src_expr, src_elem_ptr, dest_elem_ptr,
+                            elem_type, ASRUtils::extract_type(dest_ty), module,
+                            false, finalize_dest);
+                    }
                 }
 
             llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));

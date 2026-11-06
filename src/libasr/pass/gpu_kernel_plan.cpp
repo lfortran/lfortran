@@ -3,7 +3,9 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/gpu_offload_preflight.h>
+#include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 
 namespace LCompilers {
@@ -621,6 +623,11 @@ public:
     // nullptr when a part of it has no host counterpart -- which is
     // also how a launch is declined, so an accepted launch is one whose
     // every workspace the host can size.
+    //
+    // The parts need not share a kind: a literal the derivation introduced
+    // is a default integer, a section's bounds may be integer(8), and the
+    // host's inquiries return integer(4). Each operation is built in the
+    // wider kind of its operands, as the kernel's own expression is.
     static ASR::expr_t* build_host_extent(Allocator &al,
             const Location &loc, const ASR::Function_t *kernel,
             ASR::call_arg_t *args, size_t n_args, const GpuExtent &e) {
@@ -661,6 +668,7 @@ public:
             case GpuExtentKind::BinOp: {
                 ASR::expr_t *l = child(0), *r = child(1);
                 if (!l || !r) return nullptr;
+                ASRUtils::cast_to_wider_kind(al, l, r);
                 return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, l,
                     e.binop, r, ASRUtils::expr_type(l), nullptr));
             }
@@ -673,6 +681,7 @@ public:
             case GpuExtentKind::Compare: {
                 ASR::expr_t *l = child(0), *r = child(1);
                 if (!l || !r) return nullptr;
+                ASRUtils::cast_to_wider_kind(al, l, r);
                 return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                     l, e.cmpop, r, ASRUtils::expr_type(e.expr), nullptr));
             }
@@ -680,14 +689,18 @@ public:
                 ASR::expr_t *t = child(0), *bdy = child(1),
                     *els = child(2);
                 if (!t || !bdy || !els) return nullptr;
+                ASRUtils::cast_to_wider_kind(al, bdy, els);
                 return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, t, bdy,
                     els, ASRUtils::expr_type(bdy), nullptr));
             }
             case GpuExtentKind::Max: {
                 ASR::expr_t *l = child(0), *r = child(1);
                 if (!l || !r) return nullptr;
+                ASRUtils::cast_to_wider_kind(al, l, r);
+                ASR::expr_t *first = child(0), *second = child(1);
+                ASRUtils::cast_to_wider_kind(al, first, second);
                 return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
-                    b.Gt(l, r), child(0), child(1), ASRUtils::expr_type(l),
+                    b.Gt(l, r), first, second, ASRUtils::expr_type(l),
                     nullptr));
             }
             case GpuExtentKind::Product: {
@@ -695,6 +708,9 @@ public:
                 for (size_t i = 0; i < e.children.size(); i++) {
                     ASR::expr_t *one = child(i);
                     if (one == nullptr) return nullptr;
+                    if (out != nullptr) {
+                        ASRUtils::cast_to_wider_kind(al, out, one);
+                    }
                     out = out ? b.Mul(out, one) : one;
                 }
                 return out;
@@ -745,11 +761,25 @@ public:
                     if (arg.m_value == nullptr || i >= callee->n_args) {
                         return nullptr;
                     }
-                    // The host hands an array over as the function takes
-                    // it, which is not how the host stores it.
                     ASR::ttype_t *type = ASRUtils::expr_type(arg.m_value);
                     ASR::ttype_t *dummy = ASRUtils::expr_type(
                         callee->m_args[i]);
+                    // An integer built wider than the dummy (a section
+                    // bound of integer(8), say) is passed in the dummy's
+                    // kind, as the kernel passes it.
+                    if (ASRUtils::is_integer(*type)
+                            && !ASRUtils::is_array(type)
+                            && ASRUtils::is_integer(*dummy)
+                            && !ASRUtils::is_array(dummy)
+                            && ASRUtils::extract_kind_from_ttype_t(type) !=
+                                ASRUtils::extract_kind_from_ttype_t(dummy)) {
+                        arg.m_value = b.i2i_t(arg.m_value,
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                dummy));
+                        type = ASRUtils::expr_type(arg.m_value);
+                    }
+                    // The host hands an array over as the function takes
+                    // it, which is not how the host stores it.
                     if (ASRUtils::is_array(type) && ASRUtils::is_array(dummy)
                             && ASRUtils::extract_physical_type(type) !=
                                 ASRUtils::extract_physical_type(dummy)) {
@@ -1150,9 +1180,10 @@ ASR::expr_t* gpu_workspace_host_extent(Allocator &al,
 }
 
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
-        ASR::call_arg_t *args, size_t n_args, GpuDecline &decline,
-        bool values_replaced) {
+        const std::vector<GpuKernelLaunchSite> &sites, GpuDecline &decline,
+        bool values_replaced, int offset_kind) {
     if (kernel.m_gpu) return true;
+    LCOMPILERS_ASSERT(!sites.empty());
     std::string unresolved_workspace;
     if (!gpu_kernel_workspace_extents_resolvable(kernel, unresolved_workspace)) {
         decline = GpuDecline(GpuDeclineReason::WorkspaceNotSizeableOnHost,
@@ -1207,20 +1238,91 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     GpuLaunchSupport support(decline,
         values_replaced ? &replaceable : nullptr);
     auto workspaces = collect_gpu_vla_workspaces(kernel, 0, true);
-    if (!support.supported(&kernel.base, args, n_args, workspaces,
-            device_functions)) {
-        return false;
+    for (const auto &site : sites) {
+        if (!support.supported(&kernel.base, site.launch->m_args,
+                site.launch->n_args, workspaces, device_functions)) return false;
     }
     const Location &loc = kernel.base.base.loc;
     ASRUtils::ASRBuilder b(al, loc);
     Vec<ASR::gpu_workspace_t> planned;
     planned.reserve(al, workspaces.size());
+    std::set<ASR::symbol_t*> source_arguments, address_taken;
+    SymbolTable *root = kernel.m_symtab;
+    while (root->parent) root = root->parent;
+    LCOMPILERS_ASSERT(ASRUtils::is_tu_scope(root));
+    if (!workspaces.empty()) {
+        gpu_collect_address_taken(
+            *ASR::down_cast2<ASR::TranslationUnit_t>(root->asr_owner),
+            address_taken);
+    }
+    for (size_t i = 0; i < kernel.n_args; i++) {
+        source_arguments.insert(ASR::down_cast<ASR::Var_t>(
+            kernel.m_args[i])->m_v);
+    }
+    auto changed = gpu_symbols_changed_in(kernel.m_body, kernel.n_body);
+    std::vector<std::vector<GpuWorkspaceGuardSite>> workspace_branches;
+    std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> captured_conditions;
+    std::map<ASR::If_t*, std::pair<ASR::expr_t*, bool>> captured_branches;
     for (const auto &workspace : workspaces) {
         ASR::gpu_workspace_t ws;
         ws.loc = loc;
         ws.m_variable = workspace.var;
         ws.m_element_size = workspace.elem_size;
         ws.m_buffer_index = 0;
+        ws.m_allocation_if = nullptr;
+        ws.m_allocation_parameter = nullptr;
+        ws.m_allocation_on_true = true;
+        std::vector<GpuWorkspaceGuardSite> branches;
+        if (!gpu_may_be_aliased(workspace.var, address_taken)) {
+            auto guards = gpu_workspace_data_guards(kernel, workspace.var);
+            for (auto it = guards.rbegin(); it != guards.rend(); ++it) {
+                bool negated;
+                ASR::expr_t *test = gpu_workspace_condition(it->branch->m_test, negated);
+                if (!ASRUtils::is_logical(*ASRUtils::expr_type(test)) ||
+                        !gpu_uniform_workspace_condition(test,
+                            source_arguments, it->scope, address_taken)) continue;
+                std::set<ASR::symbol_t*> refs;
+                gpu_collect_value_symbols(test, refs);
+                bool stable = true;
+                for (auto *symbol : refs) {
+                    stable &= !gpu_writes_symbol(*changed, symbol);
+                }
+                for (auto *scope : it->use_scopes) {
+                    stable &= gpu_uniform_workspace_condition(test,
+                        source_arguments, scope, address_taken);
+                }
+                for (const auto &branch : it->sites) {
+                    stable &= gpu_uniform_workspace_condition(test,
+                        source_arguments, branch.scope, address_taken);
+                }
+                for (const auto &site : sites) {
+                    ASR::expr_t *actual = gpu_bind_kernel_expression(al, kernel,
+                        site.launch->m_args, site.launch->n_args, test);
+                    std::set<ASR::symbol_t*> actual_arguments;
+                    for (size_t i = 0; i < site.launch->n_args; i++) {
+                        gpu_collect_value_symbols(site.launch->m_args[i].m_value,
+                            actual_arguments);
+                    }
+                    stable &= actual && gpu_uniform_workspace_condition(actual,
+                        actual_arguments, site.scope, address_taken);
+                    if (actual) {
+                        for (auto *scope : it->use_scopes) {
+                            stable &= gpu_uniform_workspace_condition(actual,
+                                actual_arguments, scope, address_taken);
+                        }
+                    }
+                }
+                if (!stable) continue;
+                branches = it->sites;
+                ASRUtils::ExprStmtDuplicator dup(al);
+                dup.success = true;
+                ws.m_allocation_if = dup.duplicate_expr(test);
+                LCOMPILERS_ASSERT(dup.success);
+                ws.m_allocation_on_true = it->on_true;
+                break;
+            }
+        }
+        workspace_branches.push_back(branches);
         Vec<ASR::gpu_workspace_dimension_t> dims;
         dims.reserve(al, workspace.dims.size());
         for (const auto &dim : workspace.dims) {
@@ -1233,12 +1335,14 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
             }
             HostCalledFunctions host_calls;
             host_calls.visit_expr(*extent);
-            if (!gpu_bind_kernel_expression(al, kernel, args, n_args,
-                    extent)) {
-                decline = GpuDecline(
-                    GpuDeclineReason::LaunchVlaExtentNotRebuildable,
-                    workspace.var_name);
-                return false;
+            for (const auto &site : sites) {
+                if (!gpu_bind_kernel_expression(al, kernel, site.launch->m_args,
+                        site.launch->n_args, extent)) {
+                    decline = GpuDecline(
+                        GpuDeclineReason::LaunchVlaExtentNotRebuildable,
+                        workspace.var_name);
+                    return false;
+                }
             }
             ASR::gpu_workspace_dimension_t d;
             d.loc = loc;
@@ -1272,6 +1376,43 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
             parameters.push_back(al, parameter);
             types.push_back(al, type);
         }
+        if (!workspace_branches[w].empty()) {
+            auto *condition = planned[w].m_allocation_if;
+            auto found = std::find_if(captured_conditions.begin(), captured_conditions.end(),
+                [&](const auto &capture) {
+                    return gpu_same_workspace_condition(capture.first, condition);
+                });
+            ASR::expr_t *parameter;
+            if (found == captured_conditions.end()) {
+                ASR::ttype_t *type = ASRUtils::expr_type(condition);
+                parameter = b.Variable(kernel.m_symtab,
+                    kernel.m_symtab->get_unique_name("__workspace_active"),
+                    type, ASR::intentType::In);
+                captured_conditions.emplace_back(condition, parameter);
+                parameters.push_back(al, parameter);
+                types.push_back(al, type);
+            } else {
+                parameter = found->second;
+            }
+            planned.p[w].m_allocation_parameter =
+                ASR::down_cast<ASR::Var_t>(parameter)->m_v;
+            for (const auto &site : workspace_branches[w]) {
+                auto inserted = captured_branches.emplace(site.branch,
+                    std::make_pair(parameter, site.negated));
+                LCOMPILERS_ASSERT(inserted.second ||
+                    (inserted.first->second.first == parameter &&
+                        inserted.first->second.second == site.negated));
+                (void)inserted;
+            }
+        }
+    }
+    for (const auto &capture : captured_branches) {
+        auto *parameter = capture.second.first;
+        capture.first->m_test = capture.second.second
+            ? ASRUtils::EXPR(ASR::make_LogicalNot_t(al,
+                capture.first->base.base.loc, parameter,
+                ASRUtils::expr_type(parameter), nullptr))
+            : parameter;
     }
     kernel.m_args = parameters.p;
     kernel.n_args = parameters.n;
@@ -1301,6 +1442,53 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
             if (data != nullptr) writes.written.insert(data);
         }
     }
+    // Bind scalar record components to their existing data and bound
+    // arguments by symbol, before late mangling can change their spellings.
+    Vec<ASR::stmt_t*> bindings;
+    bindings.reserve(al, 4);
+    for (size_t i = 0; i < parameters.n; i++) {
+        auto *var = ASR::down_cast<ASR::Variable_t>(
+            ASR::down_cast<ASR::Var_t>(parameters[i])->m_v);
+        if (ASRUtils::is_array(var->m_type)) continue;
+        auto *st = gpu_struct_definition(var->m_type_declaration);
+        if (!st) continue;
+        auto parameter = [&](const std::string &name) {
+            ASR::symbol_t *symbol = kernel.m_symtab->get_symbol(name);
+            LCOMPILERS_ASSERT(symbol != nullptr);
+            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, symbol));
+        };
+        for (auto &component : gpu_decomposed_components(st)) {
+            ASR::expr_t *data = parameter(
+                GpuNames::member_data(var->m_name, component.name()));
+            auto *array = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(data)));
+            LCOMPILERS_ASSERT(array->n_dims == component.rank);
+            for (size_t d = 0; d < component.rank; d++) {
+                array->m_dims[d].m_start = parameter(
+                    GpuNames::member_lower_bound(var->m_name,
+                        component.name(), d));
+                array->m_dims[d].m_length = parameter(component.rank == 1
+                    ? GpuNames::member_size(var->m_name, component.name())
+                    : GpuNames::member_dim_size(var->m_name,
+                        component.name(), d));
+            }
+            ASR::expr_t *member = ASRUtils::EXPR(
+                ASR::make_StructInstanceMember_t(al, loc, parameters[i],
+                    component.component,
+                    ASRUtils::symbol_type(component.component), nullptr));
+            bindings.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+                al, loc, member, data,
+                ASR::pointer_bounds_formType::NoPointerBounds)));
+        }
+    }
+    if (bindings.n) {
+        for (size_t i = 0; i < kernel.n_body; i++) {
+            bindings.push_back(al, kernel.m_body[i]);
+        }
+        kernel.m_body = bindings.p;
+        kernel.n_body = bindings.n;
+    }
     Vec<ASR::gpu_kernel_argument_t> buffers, scalars;
     buffers.reserve(al, parameters.n);
     scalars.reserve(al, parameters.n);
@@ -1323,11 +1511,18 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         arg.m_noalias = false;
         arg.m_type = ASRUtils::extract_type(ASRUtils::symbol_type(
             member ? member : arg.m_variable));
-        if (kind == ASR::gpu_argument_kindType::GpuMemberOffsets ||
-                kind == ASR::gpu_argument_kindType::GpuMemberSizes ||
-                kind == ASR::gpu_argument_kindType::GpuArrayExtent ||
+        if (kind == ASR::gpu_argument_kindType::GpuArrayExtent ||
                 kind == ASR::gpu_argument_kindType::GpuPackedOffset) {
             arg.m_type = int32;
+        } else if (kind == ASR::gpu_argument_kindType::GpuMemberOffsets ||
+                kind == ASR::gpu_argument_kindType::GpuMemberSizes) {
+            // Where each element's decomposed component starts in the
+            // packed data, and its extents and lower bounds, which its
+            // subscripts are counted from: in the kind the kernel computes
+            // element offsets in, as the components may hold more than
+            // huge(0) elements in all (#15929).
+            arg.m_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+                offset_kind));
         }
         return arg;
     };

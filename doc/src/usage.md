@@ -156,7 +156,12 @@ $ lfortran kernel -f session.json
 $ lfortran --connect session.json
 ```
 
-The kernel runs one cell at a time, in the order the cells arrive. Clients
+The kernel runs one cell at a time. The requests that wait while a cell runs
+are taken in turns, one from each client in the order the clients connected:
+each client's cells run in the order it sent them, and one client's queued cells
+do not all run ahead of a cell that another client sent. The order between
+cells that different clients sent while the kernel was busy is not otherwise
+defined. Clients
 subscribe to every cell's output, as in Jupyter: at a terminal, the prompt shows
 another client's cell, marked `[other client]`, and its published output even
 while idle or editing, preserving the current input and cursor. Redirected
@@ -175,6 +180,14 @@ A cell's output is shown when the cell finishes or reads input. A cell that fail
 aborts the cells waiting behind it, unless it was sent with `stop_on_error`
 false.
 Delivery is not guaranteed if a client cannot consume output fast enough.
+Once more than 64 MiB of output waits for a client, the built-in kernel drops
+the oldest of it, not the newest, and puts a notice in its place, so that a
+prompt that was idle or slow still shows the output of its own next cell. A
+single message larger than that is dropped whole like any other if it has not
+started sending, but one that has started sending is sent to completion: the
+part of it not yet sent cannot be dropped. While it is still being sent, the
+latest output is kept and earlier output is replaced by that notice, so nothing
+is lost silently and memory stays bounded.
 
 A READ asks the client that ran the cell. If that client disconnects, the
 READ fails with an I/O error: a READ with `iostat=` gets it and the cell goes
@@ -237,6 +250,7 @@ compilation options, output options, link options and so on.
 
 * `--fast`, Optimize for best performance on the host CPU (disable strict standard compliance). This implies native CPU selection unless `--march`, `--mcpu`, `--mtune`, or `--target` is specified. Without `--fast`, the LLVM backend runs no optimizations, like `-O0` in Clang and Flang (WebAssembly targets keep LLVM's default code generation level, which keeps the number of locals per function within engine limits); `-O<level>` is currently accepted and ignored.
 * `--implicit-argument-casting`, Allow implicit argument casting
+* `--internal-procedure-thunks <K>`, The number of instances of a procedure that can be active at the same time while holding procedure values of its internal procedures (default 8); see [Procedure values of internal procedures](#procedure-values-of-internal-procedures)
 * `--implicit-interface`, Allow implicit interface
 * `--implicit-typing`, Allow implicit typing
 * `--openmp`, Enable OpenMP
@@ -393,6 +407,23 @@ before printing.  This is obsolete and LFortran omits this unless
 
 LFortran does not currently expose arbitrary Clang options such as `-flto`.
 Use `--fast` and the target-selection options above for native optimization.
+
+### Procedure values of internal procedures
+
+An internal procedure that refers to variables of its host can be passed as
+an actual argument, made the target of a procedure pointer, or passed to
+`c_funloc`. GNU Fortran builds such a value on the stack at run time (a
+trampoline), so its executables need an executable stack. LFortran instead
+compiles a fixed number K of small procedures (thunks) for each such internal
+procedure. A procedure value stays a plain code address, so it can be passed
+to C and to code compiled by other compilers, and the stack stays
+non-executable.
+
+Each instance of the host that makes such a value holds one of its K thunks
+until it returns. If more than K recursive instances of one host hold a
+thunk at the same time, the program stops with an error that names the
+option. Recompile with a larger `--internal-procedure-thunks=<K>` in that
+case; Knuth's "man or boy" test with k = 10, for example, needs 384.
 
 GNU extension declarations `real*8 xvalue` are accepted but deprecated. This
 was never standard-conforming Fortran; it is an old IBM extension that predates Fortran-77.

@@ -144,24 +144,6 @@ void ASRToGpuCVisitor<D>::bind_kernel_arguments(const ASR::Function_t &kernel) {
             }
             continue;
         }
-        ASR::Struct_t *st = get_struct_decl(var);
-        if (!st) continue;
-        for (auto &component : gpu_decomposed_components(st)) {
-            std::string member = component.name();
-            std::string key = name + "." + member;
-            func_array_size_params[key] = GpuNames::member_size(name, member);
-            func_array_data_params[key] = GpuNames::member_data(name, member);
-            if (component.rank > 1) {
-                for (size_t d = 0; d < component.rank; d++) {
-                    func_array_size_params[dim_size_key(key, d)] =
-                        struct_member_dim_param(name, member, d);
-                }
-            }
-            for (size_t d = 0; d < component.rank; d++) {
-                func_array_lb_params[dim_size_key(key, d)] =
-                    GpuNames::member_lower_bound(name, member, d);
-            }
-        }
     }
     for (size_t i = 0; i < layout.n_scalars; i++) {
         const auto &arg = layout.m_scalars[i];

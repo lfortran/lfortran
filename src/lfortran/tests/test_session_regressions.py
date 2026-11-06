@@ -1,10 +1,11 @@
 """A shared session (`lfortran kernel -f`, `lfortran --connect`) with clients
-that misbehave: large output, connections that stall, a client that leaves
-during a READ, a prompt that ends the kernel it started, a prompt killed or
-hung up on, also during a cell that does not return or a READ, cells queued
-behind a failing one, cells that stop the kernel, `lfortran -v`, and a kernel
-told that another process is its parent. Each case runs against whichever
-kernel is built."""
+that misbehave: large output, a subscriber that does not read while another
+client prints more than the kernel keeps for it, connections that stall, a
+client that leaves during a READ, a prompt that ends the kernel it started,
+a prompt killed or hung up on, also during a cell that does not return or a
+READ, cells queued behind a failing one, cells that several clients queue,
+cells that stop the kernel, `lfortran -v`, and a kernel told that another
+process is its parent. Each case runs against whichever kernel is built."""
 
 import argparse
 import contextlib
@@ -255,6 +256,124 @@ def large_output(exe, cwd):
             check(out.count(b"x") >= size, "the prompt lost the output")
             check(re.search(rb"^42\r?$", out, re.M), "the prompt did not run its next cell")
             check(value(client, "7*8") == "56", "another client did not run its cell")
+        finally:
+            stalled.close()
+
+
+def zmtp_messages(s):
+    """The messages read from a raw ZeroMQ connection, as lists of frames"""
+    data, message = b"", []
+
+    def take(n):
+        nonlocal data
+        while len(data) < n:
+            chunk = s.recv(1 << 20)
+            if not chunk:
+                raise EOFError
+            data += chunk
+        taken, data = data[:n], data[n:]
+        return taken
+
+    while True:
+        flags = take(1)[0]
+        size = int.from_bytes(take(8 if flags & 2 else 1), "big")
+        body = take(size)
+        if flags & 4:
+            continue  # a command
+        message.append(body)
+        if not flags & 1:
+            yield message
+            message = []
+
+
+def slow_subscriber_output(exe, cwd):
+    """A subscriber that does not read while another client prints more
+    than the kernel keeps for it, such as an idle prompt or one at a slow
+    terminal, still gets the output of the next cell, after a notice that
+    older output was dropped (#16036)."""
+    with kernel(exe, cwd) as (_, join, ports):
+        client = join()
+        stalled = zmtp(ports["iopub_port"], b"SUB")
+        try:
+            stalled.sendall(b"\x00\x01\x01")  # subscribes to every message
+            check(value(client, "6*7") == "42", "a cell did not run")
+            for k in range(3):
+                reply, _ = run(client, "print '(a)', repeat('%d', 40 * 2**20)" % k,
+                    timeout=120)
+                check(reply["status"] == "ok", reply)
+            reply, _ = run(client, "print *, 'LATEST_16036'")
+            check(reply["status"] == "ok", reply)
+            # Then it reads what the kernel kept for it.
+            texts = []
+            for frames in zmtp_messages(stalled):
+                d = frames.index(b"<IDS|MSG>")
+                header, content = json.loads(frames[d + 2]), json.loads(frames[d + 5])
+                if header["msg_type"] == "stream":
+                    texts.append(content["text"][:100])
+                    if "LATEST_16036" in content["text"]:
+                        break
+            notices = [i for i, text in enumerate(texts) if "output was dropped" in text]
+            check(notices and notices[0] < len(texts) - 1,
+                "no notice of dropped output before the latest cell's: %r" % texts[-3:])
+        except (EOFError, socket.timeout):
+            raise AssertionError("the latest cell's output was lost")
+        finally:
+            stalled.close()
+
+
+def oversized_message_output(exe, cwd):
+    """A single output message larger than the most the kernel keeps for a
+    subscriber that does not read, of which it has sent only a part, must not
+    make the kernel drop the output that follows it silently: the subscriber
+    still gets the large message whole and the latest cell's output after it,
+    and a notice of the earlier output it no longer gets (#16846)."""
+    with kernel(exe, cwd) as (_, join, ports):
+        client = join()
+        stalled = zmtp(ports["iopub_port"], b"SUB")
+        try:
+            stalled.sendall(b"\x00\x01\x01")  # subscribes to every message
+            check(value(client, "6*7") == "42", "a cell did not run")
+            size = 70 * 2**20
+            reply, _ = run(client, "character(len=:), allocatable :: huge\n"
+                "huge = repeat('x', %d)\nhuge" % size, timeout=120)
+            check(reply["status"] == "ok", reply)
+            for marker in ["OLDER_16846", "LATEST_16846"]:
+                reply, _ = run(client, "print *, '%s'" % marker)
+                check(reply["status"] == "ok", reply)
+            # The kernel sends the rest of the large message as this reads it,
+            # then a notice that it dropped the older cell's output, then the
+            # latest cell's output.
+            marker, notice = b"LATEST_16846", b"output was dropped"
+            found, noticed, read = False, False, 0
+            keep = max(len(marker), len(notice)) - 1
+            window = b""
+            stalled.settimeout(20)
+            deadline = time.monotonic() + 120
+            while time.monotonic() < deadline and read < size + 16 * 2**20:
+                try:
+                    chunk = stalled.recv(1 << 20)
+                except socket.timeout:
+                    break
+                if not chunk:
+                    break
+                read += len(chunk)
+                data = window + chunk
+                at = data.find(marker)
+                if at >= 0:
+                    found = True
+                    noticed = noticed or data[:at].rfind(notice) >= 0
+                    break
+                if notice in data:
+                    noticed = True
+                window = data[-keep:]
+            check(found, "the output after a message larger than 64 MiB was"
+                " dropped silently")
+            check(read >= size, "the large message was not sent whole:"
+                " %d of %d bytes" % (read, size))
+            check(noticed, "the older output after the large message was"
+                " dropped without a notice")
+        except (EOFError, socket.timeout):
+            raise AssertionError("the output after the large message was lost")
         finally:
             stalled.close()
 
@@ -585,6 +704,60 @@ def stop_on_error(exe, cwd):
             else:
                 idle_order(client, [queued])
             check(value(client, "qx") == expected, "stop_on_error=%s: qx" % stop)
+
+
+def queued_in_turns(exe, cwd):
+    """The requests that wait while a cell runs are taken in turns, one from
+    each client: one client's backlog does not run ahead of a cell that
+    another client sent before it, and each client's cells keep their order."""
+    with kernel(exe, cwd) as (_, join, _ports):
+        first, second = join(), join()
+        check(run(first, "integer :: turn, gate")[0]["status"] == "ok", "declaration failed")
+        # The READ holds the kernel until all the requests have arrived.
+        gate = first.execute("read(*,*) gate", allow_stdin=True)
+        check(first.get_stdin_msg(timeout=20)["msg_type"] == "input_request", "no READ")
+        other = second.execute("turn = 0")
+        time.sleep(0.2)
+        backlog = [first.execute("turn = %d" % k) for k in range(1, 6)]
+        time.sleep(0.5)
+        first.input("1")
+        order, _ = idle_order(first, [gate, other] + backlog)
+        names = {gate: "gate", other: "other"}
+        names.update({msg_id: "first %d" % k for k, msg_id in enumerate(backlog, 1)})
+        ran = [names[msg_id] for msg_id in order]
+        check([msg_id for msg_id in order if msg_id in backlog] == backlog,
+            "the first client's cells ran out of order: %s" % ran)
+        check(order.index(other) <= 2,
+            "the first client's backlog ran ahead of the other client's cell: %s" % ran)
+
+
+def aborted_in_turns(exe, cwd):
+    """A cell that fails with stop_on_error aborts every execute_request that
+    waits behind it, all of its own client's and all of another client's,
+    not just the first of each."""
+    with kernel(exe, cwd) as (_, join, _ports):
+        first, second = join(), join()
+        check(run(first, "integer :: qx, gate")[0]["status"] == "ok", "declaration failed")
+        check(run(first, "qx = 0")[0]["status"] == "ok", "assignment failed")
+        # The READ holds the kernel until all the requests have arrived.
+        gate = first.execute("read(*,*) gate", allow_stdin=True)
+        check(first.get_stdin_msg(timeout=20)["msg_type"] == "input_request", "no READ")
+        failed = first.execute("integer :: broken(")
+        time.sleep(0.2)
+        own = [first.execute("qx = qx + 1") for _ in range(3)]
+        others = [second.execute("qx = qx + 10") for _ in range(3)]
+        time.sleep(0.5)
+        first.input("1")
+        check(reply_to(first, gate)["status"] == "ok", "the READ failed")
+        check(reply_to(first, failed)["status"] == "error", "the error was not seen")
+        statuses = ([reply_to(first, msg_id)["status"] for msg_id in own],
+            [reply_to(second, msg_id)["status"] for msg_id in others])
+        check(statuses == (["aborted"] * 3, ["aborted"] * 3),
+            "the waiting cells' statuses are %s" % (statuses,))
+        idle_order(first, [failed] + own)
+        idle_order(second, others)
+        qx = value(first, "qx")
+        check(qx == "0", "an aborted cell ran: qx is %s" % qx)
 
 
 def implicit_typing(exe, cwd):
@@ -1048,9 +1221,10 @@ def test_utf8_event_fragments(exe, cwd):
 CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
     test_fragmented_updates, test_unicode_updates, test_idle_disconnect,
     test_output_error_cleanup,
-    large_output, stalled_connections, read_disconnect,
+    large_output, slow_subscriber_output, oversized_message_output,
+    stalled_connections, read_disconnect,
     late_stdin, prompt_departure, prompt_killed_in_cell, kernel_parent, stop_ends_session,
-    stop_on_error, implicit_typing, verbose, xeus_connection_files]}
+    stop_on_error, queued_in_turns, aborted_in_turns, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.
 XEUS_ONLY = {"xeus_connection_files"}
 

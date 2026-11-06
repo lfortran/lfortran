@@ -2340,6 +2340,10 @@ form_team
 reduce_op
     : "+" { $$ = REDUCE_OP_TYPE_ADD(@$); }
     | "*" { $$ = REDUCE_OP_TYPE_MUL(@$); }
+    | ".and." { $$ = reduce_opType::ReduceAND; }
+    | ".or." { $$ = reduce_opType::ReduceOR; }
+    | ".eqv." { $$ = reduce_opType::ReduceEQV; }
+    | ".neqv." { $$ = reduce_opType::ReduceNEQV; }
     | id  { $$ = REDUCE_OP_TYPE_ID($1, @$); }
     ;
 

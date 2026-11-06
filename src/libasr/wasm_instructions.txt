@@ -1,7 +1,7 @@
 0x40 ⇒ emtpy_block_type
 0x00 ⇒ unreachable
 0x01 ⇒ nop
--- 0x02 bt:blocktype (in:instr)* 0x0B ⇒ block bt in* end
+0x02 ⇒ block
 0x03 ⇒ loop
 0x04 ⇒ if
 0x05 ⇒ else

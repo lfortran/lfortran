@@ -183,6 +183,8 @@ public:
             const std::vector<ASR::expr_t*> &index_,
             const SPath &target_)
         : al(al_), loc(loc_), b(al_, loc_), rank(rank_), index(index_),
+          kind(ASRUtils::extract_kind_from_ttype_t(
+              ASRUtils::expr_type(index_[0]))),
           target(target_) {}
 
     // The paths of the arrays and scalars the element reads.
@@ -226,7 +228,8 @@ public:
                 std::vector<ASR::expr_t*> subscripts;
                 for (int d = 0; d < rank; d++) {
                     subscripts.push_back(b.Sub(b.Add(
-                        b.ArrayLBound(e, d + 1), index[d]), b.i32(1)));
+                        b.ArrayLBound(e, d + 1, kind), index[d]),
+                        b.i_idx(1, kind)));
                 }
                 return b.ArrayItem_01(e, subscripts);
             }
@@ -325,6 +328,8 @@ private:
     ASRUtils::ASRBuilder b;
     int rank;
     std::vector<ASR::expr_t*> index;
+    // The kind of the indices, and of the subscripts made of them.
+    int kind;
     SPath target;
 
     // A whole array: no subscripts anywhere along the designator.
@@ -405,13 +410,13 @@ private:
             ASR::array_index_t ai;
             ai.loc = loc;
             if (d + 1 == dim) {
-                ai.m_left = b.ArrayLBound(array, d + 1);
-                ai.m_right = b.ArrayUBound(array, d + 1);
-                ai.m_step = b.i32(1);
+                ai.m_left = b.ArrayLBound(array, d + 1, kind);
+                ai.m_right = b.ArrayUBound(array, d + 1, kind);
+                ai.m_step = b.i_idx(1, kind);
             } else {
                 ai.m_left = nullptr;
-                ai.m_right = b.Sub(b.Add(b.ArrayLBound(array, d + 1),
-                    index[d_index++]), b.i32(1));
+                ai.m_right = b.Sub(b.Add(b.ArrayLBound(array, d + 1, kind),
+                    index[d_index++]), b.i_idx(1, kind));
                 ai.m_step = nullptr;
             }
             subscripts.push_back(al, ai);
@@ -586,11 +591,13 @@ private:
         if (rank < 1) return nullptr;
 
         ASRUtils::ASRBuilder b(al, loc);
+        // The loop counts in the kind the device computes element offsets
+        // in, so that the subscripts are exact for any bounds.
+        int kind = caps.offset_kind;
         std::vector<ASR::expr_t*> index;
         for (int d = 0; d < rank; d++) {
             index.push_back(b.Variable(scope, scope->get_unique_name(
-                "__gpu_array_i", false), ASRUtils::TYPE(
-                    ASR::make_Integer_t(al, loc, 4)),
+                "__gpu_array_i", false), b.int_type(kind),
                 ASR::intentType::Local));
         }
         ElementWriter writer(al, loc, rank, index, target_path);
@@ -614,8 +621,8 @@ private:
 
         std::vector<ASR::expr_t*> subscripts;
         for (int d = 0; d < rank; d++) {
-            subscripts.push_back(b.Sub(b.Add(b.ArrayLBound(target, d + 1),
-                index[d]), b.i32(1)));
+            subscripts.push_back(b.Sub(b.Add(b.ArrayLBound(target, d + 1,
+                kind), index[d]), b.i_idx(1, kind)));
         }
         ASR::stmt_t *assignment = ASRUtils::STMT(ASR::make_Assignment_t(al,
             loc, b.ArrayItem_01(target, subscripts), value, nullptr, false,
@@ -627,11 +634,11 @@ private:
             ASR::do_loop_head_t head;
             head.loc = loc;
             head.m_v = index[d];
-            head.m_start = b.i32(1);
+            head.m_start = b.i_idx(1, kind);
             head.m_end = b.ArraySize(target, b.i32(d + 1),
-                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+                b.int_type(kind));
             head.m_increment = nullptr;
-            ASR::stmt_t *loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+            ASR::stmt_t *loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,
                 s2c(al, ""), head, nest.p, nest.n, nullptr, 0));
             Vec<ASR::stmt_t*> outer;
             outer.reserve(al, 1);

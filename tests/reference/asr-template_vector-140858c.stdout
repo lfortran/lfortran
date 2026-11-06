@@ -564,7 +564,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        ())
+                                                        (IntegerConstant 1 (Integer 4) Decimal))
                                                         [(Assignment
                                                             (ArrayItem
                                                                 (Var 10 tmp)
@@ -727,6 +727,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    Public
                                                                 ),
                                                             resize:
                                                                 (StructMethodDeclaration
@@ -738,6 +739,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    Public
                                                                 ),
                                                             sz:
                                                                 (Variable
@@ -1465,7 +1467,7 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        ())
+                                                        (IntegerConstant 1 (Integer 4) Decimal))
                                                         [(Assignment
                                                             (ArrayItem
                                                                 (Var 6 tmp)
@@ -1686,6 +1688,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    Public
                                                                 ),
                                                             resize:
                                                                 (StructMethodDeclaration
@@ -1697,6 +1700,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    Public
                                                                 ),
                                                             sz:
                                                                 (Variable

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-gpu_kernel_launch_chunk_fixed_iterations-04d1afd",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/gpu_kernel_launch_chunk_fixed_iterations.asr",
+    "infile_hash": "e5526b39449f09d60511452d2bc585745c243482e05286da6bef9801",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-gpu_kernel_launch_chunk_fixed_iterations-04d1afd.stderr",
+    "stderr_hash": "a1bf5d3ca93f3bcca9fd9724d79f60d5306ff056045cca8c5abc0266",
+    "returncode": 2
+}

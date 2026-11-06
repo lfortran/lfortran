@@ -1,7 +1,8 @@
 # GPU Offloading
 
 This document describes how LFortran decides where a parallel loop runs when a
-GPU backend is selected with `--gpu=metal`, `--gpu=cuda` or `--gpu=cuda_cpu`.
+GPU backend is selected with `--gpu=metal`, `--gpu=cuda`, `--gpu=cuda_cpu` or
+`--gpu=hip`.
 It is a design document: where the current implementation differs, the
 differences are listed at the end.
 
@@ -62,6 +63,51 @@ components are all offloaded, or are an error until the pipeline supports them.
 
 Adding an entry to the list is a design decision, not a way to make a failing
 loop compile.
+
+### Device identifiers
+
+Valid Fortran names such as `half`, `kernel`, `int` and `device` need not be
+valid Metal identifiers. The `unique_symbols` pass gives Metal device data
+and derived types collision-free names in their defining scopes, updating
+component references and binding scalar record component arguments by symbol.
+It preserves types, layout, host ABI and kernel registration names, without
+enabling otherwise ineligible global mangling. Device helper declarations
+and calls use their existing emission names. CUDA (including `cuda_cpu`
+emulation) uses the same symbol-based renaming for C/C++ keywords such as
+`int`, `float` and `class`, without applying Metal-only naming restrictions.
+Ordinary CPU compilation is unchanged.
+
+Host launch expressions retain host component definitions, not aliases
+retargeted to device copies. In particular, workspace extents such as
+`size(records(selected)%component, dim)` are bound to the actual host
+array's derived type before device identifiers are renamed.
+
+### Scalar logarithms
+
+Real `log` in a kernel or a device-only procedure retains its intrinsic
+identity through the intrinsic-function pass and lowers to the device's native
+`log` operation. This includes transitive helper calls. Host procedures retain
+their normal runtime lowering; Metal still requires `real(real32)`.
+
+### Optional captures
+
+Optional captures do not suppress a GPU launch: nonoptional work still runs
+when a captured argument is absent. The optional-argument ASR pass supplies
+the kernel's explicit presence flag, including when forwarding to device
+procedures. Host buffer addresses and shape queries use a safe view associated
+with the actual argument only when it is present; absent arrays use an empty
+view. Decomposed allocatable components use the root argument's presence
+before associating their host views or reading their bounds. Scalar ABI
+placeholders likewise never read absent storage. These
+placeholders are not Fortran default values: guarded device accesses retain
+the original absence semantics. Views preserve proven contiguity without a
+host array copy; potentially strided arguments still use the normal
+copy-in/copy-out path.
+
+GPU synchronization recognizes the address-taken backing storage in the
+generated ASR associations, preserving host read/write and scope-exit
+synchronization for captured non-`TARGET` arguments. These body-local aliases
+do not change declared `TARGET` attributes or the separately compiled dummy ABI.
 
 ## The unsupported-construct check
 
@@ -132,6 +178,9 @@ kernel, lowers it through the shared ASR passes, lays out its arguments and
 generates the device source. It never falls back to the CPU:
 
 * There is no CPU alternative kept alongside the kernel, and nothing to undo.
+* Outlining copies nested `block` and `associate` scopes with their bodies.
+  Calls inside nested parallel regions name those copied scopes and the
+  kernel's copies of their helper procedures, not the host's symbols.
 * A construct the pipeline cannot lower yet is a compiler error at the loop
   ("not yet implemented"). It is fixed like any other compiler bug: reduce it to
   a minimal reproducer, fix the pipeline, add an integration test.
@@ -560,6 +609,16 @@ Which one is used is decided per array and per derived type:
   about; the host's type of an array argument is the kernel's copy the launch
   passes it for. Two types of one name, from two modules, are two types.
 
+Scalar reductions used as the sole actual of a side-effect-free scalar
+function, such as `rounded(sum(a*b))`, can use the same elementwise
+accumulator as a direct `s = sum(a*b)`: the shared array-temporary pass
+assigns the typed reduction to a scalar at the original evaluation site.
+The product then needs neither a workspace nor a device-heap allocation.
+This normalization excludes array-valued results, calls within the reduction,
+volatile/asynchronous reads, competing function evaluations and `where`
+bodies; sections must already support in-place elementwise reads.
+Other arrays and workspaces are unaffected.
+
 #### The arenas
 
 A launch whose kernel allocates on the heap gets one *arena* per element
@@ -677,8 +736,17 @@ reference of the kernel to it only reads it -- an operand, a subscript, the
 value of an assignment, an inquiry about its shape, an actual argument of
 an `intent(in)` dummy -- and *written* otherwise.
 
-* The host bytes of a read-only buffer are copied when the launch is made,
-  so the host may change or free them right after the launch.
+* The host bytes of a read-only buffer are copied when the launch is made.
+  The CUDA runtime keeps the copy of a range of at least 64 KiB in device
+  memory until the next `lfortran_gpu_wait` or `lfortran_gpu_sync`, and a
+  later launch that reads the same range uses it without copying again: the
+  host does not change what a launch since the last wait reads before it
+  waits (the `gpu_launch_sync` pass places the waits). The launches of a time
+  loop that only read an array, between which the host touches nothing they
+  use, copy it once. On an MI210, where a copy runs at about 25 GB/s, that
+  makes a matrix-vector product 27 times faster (24 to 634 GB/s) and a
+  sparse one 26 times. A kept copy that no launch used since the wait before
+  the last one is freed.
 * A written buffer is *resident*: the runtime keeps a device buffer for its
   host range in a table. When the device does not hold newer values than the
   host (the entry is not *dirty*), the host bytes are copied in; after the
@@ -723,9 +791,15 @@ emulation and registers in its place; the emulated `cudaLaunchKernel` runs the
 blocks one after another, and the threads of a block one after another, so a
 `__syncthreads()` cannot be honoured and stops the program. The emulated
 device reports a 64 MiB L2 cache.
+The runtime builds against the CUDA runtime API of CUDA 12 and of CUDA 13,
+which differ where the runtime prefetches managed memory
+(`cudaMemPrefetchAsync` takes a `cudaMemLocation` in CUDA 13). The emulation
+provides the CUDA 13 API, so `--gpu=cuda_cpu` builds the runtime as a CUDA 13
+toolkit does; it provides the CUDA 12 API when `CUDART_VERSION` is defined
+below 13000, which the `test_gpu_cuda_api_state_cuda12*` unit tests do.
 The CUDA runtime keeps the same table and orders copies and launches
-on one stream. It keeps scratch and read-only upload buffers per kernel and
-argument slot, reusing their capacity and deferring replaced allocations until
+on one stream. It keeps scratch buffers, and upload buffers for read-only
+ranges below 64 KiB, per kernel and argument slot, reusing their capacity and deferring replaced allocations until
 a synchronization. Preparing arguments can itself synchronize when the deferred
 queue or residency table fills. After such a synchronization, CUDA prepares all
 bindings again before dispatch: writable residents must still be present and
@@ -734,6 +808,113 @@ not add a synchronization to each launch. Discard buffers participate in this
 same retry and writable-residency preparation. Same-address writable aliases,
 including discards downgraded by overlap, use one covering extent so that
 preparation cannot alternate between their different byte counts.
+
+`--gpu=hip` runs the same CUDA runtime on AMD GPUs, through ROCm. HIP is
+CUDA C++ for AMD GPUs, so the backend shares everything with `--gpu=cuda` up
+to the toolchain: the ASR passes, the device capabilities and the device code
+generator, whose output only gains `#include <hip/hip_runtime.h>`. The one
+capability that differs is the unrolling of short sequential loops in device
+code: ROCm's device compiler does not unroll a loop whose trip count it does
+not know, so HIP unrolls them four times (a matrix-vector product with a
+thread per row ran 3x faster on an MI300A), while CUDA unrolls none. The HIP
+driver (`hipcc` by default, `--device-compiler` to choose another) compiles it
+as HIP for `--gpu-arch` (`gfx90a`, `gfx942`, ...; the GPUs of the compiling
+machine by default) and links the program. The GPU runtime is
+`lfortran_gpu_cuda.c` itself, which the host C compiler builds against
+`hip/cuda_runtime.h`, an implementation of the part of the CUDA runtime API
+it calls with HIP, and the headers of the ROCm installation the HIP driver
+belongs to. The program finds the HIP runtime library of that installation
+through its run path.
+
+### Memory models
+
+A GPU with memory of its own -- every discrete GPU, NVIDIA's and AMD's -- runs
+a kernel on copies of the host's arrays in device memory: the *copy model*
+above. A GPU that shares the host's memory and can access what the host
+allocated, such as the AMD MI300A with `HSA_XNACK=1`, can also run a kernel on
+the host's arrays where they are: the *unified model*. On an MI300A a kernel
+runs at the same speed either way, but the copies cost: a copy between host
+and device memory runs at about 58 GB/s there, while the kernels run at about
+3.5 TB/s, so a launch that copies its arrays spends nearly all its time
+copying.
+
+The unified model is a special case of the copy model rather than a design of
+its own: the compiler emits the same launches, waits and discards for both,
+and the CUDA runtime keeps the same residency table, in which a range used in
+place is an entry whose device memory is the host range itself. Only what the
+runtime does with an entry changes:
+
+* A range a kernel may write is used in place: nothing is allocated, copied
+  in or copied back, and `lfortran_gpu_sync` only waits. The host does not
+  access such a range before the next sync, as in the copy model.
+* The first touch of a page by the GPU is a page fault that the driver
+  serves, at about 2 GB/s on an MI300A, while glibc serves a large allocation
+  with a fresh `mmap` and unmaps it when it is freed: a temporary array a
+  loop allocates at every iteration, or the accumulators of a reduction,
+  would be fresh memory at every launch (a kernel writing a fresh 512 MB
+  array took 0.2-0.4 s instead of 0.2 ms). The runtime therefore makes glibc
+  serve every allocation from its heap and never trim it
+  (`mallopt(M_MMAP_MAX, 0)` and `mallopt(M_TRIM_THRESHOLD, -1)`), so freed
+  memory stays mapped, for the host and the GPU, and is reused.
+  `LFORTRAN_GPU_KEEP_MEMORY=0` leaves malloc as it is.
+* A range a kernel only reads of at most 64 KiB is still copied; a larger
+  one is used in place. The host does not change or free it while the launch
+  is pending: the `gpu_launch_sync` pass puts a `GpuWait` before a host
+  statement that may (see "Where the host waits").
+* `lfortran_gpu_discard` of a range that a pending launch writes in place
+  waits for the launch, since the host is about to free memory the kernel
+  uses.
+* The runtime gives the driver no advice about a range it uses in place. On
+  an MI300A, `hipMemAdvise(hipMemAdviseSetPreferredLocation)` for the GPU
+  made such kernels erratic: a STREAM triad ran at 2.7 TB/s in one run and
+  at 3 GB/s in the next, and a matrix-vector product at 1 GB/s in most runs.
+  Without it the triad runs at 3.2 TB/s and the product at 330 GB/s in every
+  run.
+
+A GPU with memory of its own whose driver can share memory with the host page
+by page -- CUDA managed memory on an NVIDIA GPU with concurrent managed access,
+such as an H100 -- has a third model, the *managed model*, which is what
+nvfortran's `-stdpar=gpu` uses for allocatable arrays. In the copy model every
+launch copies the arrays it only reads to the device again (the host may have
+changed them), and a host access copies back every array a kernel wrote, even
+to read one element: on an H100 over PCIe a STREAM triad of 1 GB arrays runs
+at 13 GB/s that way, against 1.9 TB/s in the kernel. In the managed model:
+
+* The CUDA runtime replaces the program's allocator (the default allocator of
+  `lfortran_intrinsics.c`) when the program starts, so that an allocation of
+  at least 1 MiB -- an allocatable array -- is managed memory. Smaller
+  allocations (strings, temporaries), and memory the allocator does not make
+  (stack and static arrays), stay as they are, in the copy model.
+* A range inside a managed allocation is used in place and has no entry: the
+  driver moves its pages to the device when a kernel touches them and back
+  when the host does, one page at a time. Nothing is copied at a launch,
+  `lfortran_gpu_sync` only waits, and a host read of one element moves one
+  page.
+* The first launch that uses an allocation moves all of it to the device
+  (`cudaMemPrefetchAsync`): 5 times faster than the page faults of the kernel
+  when the host has just filled it. Later launches leave the pages where they
+  are; prefetching ranges that are on the device already costs more than the
+  faults it saves.
+* As in the unified model, the host does not change a range a pending launch
+  reads before a `GpuWait`; freeing managed memory waits for every launch.
+
+The runtime selects the model at the first allocation it could make managed,
+or when it starts. `LFORTRAN_GPU_MEMORY=copy`, `unified` or `managed` selects
+one; `auto`, the default, selects the unified model on a GPU that reports
+that it is integrated with the host and can access its pageable memory (on
+AMD, an APU run with `HSA_XNACK=1`), the managed model on an NVIDIA GPU with
+concurrent managed access, and the copy model otherwise (on a separate AMD
+GPU too, where managed memory moves pages on demand only with `HSA_XNACK=1`).
+`unified` on a GPU that cannot access host memory is an error.
+`LFORTRAN_GPU_VERBOSE=1` prints the model selected. The CPU emulation reports
+a separate device that can access host memory but not managed memory
+concurrently, so its default is the copy model, and `LFORTRAN_GPU_MEMORY=
+unified` or `managed` runs the other models on the CPU.
+In the unified model on AMD the host waits for the GPU by sleeping until the
+driver wakes it (`hipDeviceScheduleBlockingSync`) rather than by spinning:
+the CPU and the GPU of an APU share the power of their socket, and on an
+MI300A a host thread spinning while a kernel streams through memory made the
+kernel 3-5% slower.
 
 The Metal runtime encodes the launches one after another into one compute
 encoder and commits its command buffer every 64 launches and at every wait:
@@ -745,10 +926,16 @@ barrier writes, or writes one that such a dispatch reads: launches that do
 not depend on each other overlap, and the others run in launch order. At
 most three committed command buffers are pending; a host that launches
 faster than the device runs waits for the oldest, which also bounds how many
-buffers the pending launches hold. A scratch buffer is kept per kernel and
-argument and used by every launch of the kernel, which writes it, so
-launches of one kernel never overlap, and what a launch leaves in it is dead
-when it ends.
+buffers the pending launches hold. A scratch buffer of at most 16 MiB is
+kept per kernel and argument and used by every launch of the kernel, which
+writes it, so launches of one kernel that share it never overlap. A larger
+one, such as a device-heap arena, is kept by the kernel handle of one launch
+and released with it, so a new launch gets a new one. A launch that runs in
+chunks encodes every chunk with its one kernel handle, so the chunks share
+all its scratch buffers, the small and the large ones: what an earlier chunk
+leaves in a scratch buffer is still there for the later chunks and for the
+host to read back. Between launches, what a launch leaves in a scratch
+buffer is dead.
 
 ### Where the host waits
 
@@ -760,8 +947,7 @@ keeps what pending launches may write and which of them may have recorded a
 stop. It waits:
 
 * before a host statement that may read or write, allocate or reallocate
-  storage a pending launch may write. Storage that a launch only reads needs
-  no wait;
+  storage a pending launch may write;
 * before a statement that acts outside the program -- input/output, `stop`,
   or a call to a procedure that is not pure and whose body may do
   input/output or stop -- while a launch that may have recorded a stop is
@@ -775,6 +961,19 @@ stop. It waits:
 A wait in a loop that launches nothing is placed before the loop instead.
 After every `GpuSync` the pass runs the stop replay of each launch that may
 be pending there (`GpuKernelLaunch.stop_replay`), in launch order.
+
+Storage that a launch only reads the runtime may hand the kernel in place
+(the unified and managed memory models), and the host must not change it
+under the kernel; in the copy model the runtime keeps its copy in device
+memory until the next wait, and the host must not change it before that
+either. The pass keeps what pending launches read as well, and
+puts a `GpuWait` -- wait for the launches that read host memory in place,
+copying nothing back -- before a host statement that may change or free
+such storage, and at the end of a `block` whose locals they read. Since an
+access is not known to be a read or a write, any statement that accesses
+the storage counts, except where it only evaluates an expression. A launch
+itself never waits, so launches that only share what they read, such as the
+iterations of a time loop, run back to back.
 
 Storage that a pending launch writes and the host frees is not waited for:
 a local of a `block` at the end of the block, or where `exit` or `cycle`
@@ -852,6 +1051,14 @@ An assignment whose every element is assigned again before anything reads it
 (`dcdw = 0.` followed by `dcdw = sum(reduce_dcdw, dim=4)`) is removed before
 this, by the `dead_array_store` pass, so it costs no launch at all.
 
+### Fast math in device code
+
+With `--fast` (and without `--no-fast-math`) the CUDA and HIP device code
+computes `1/sqrt(x)` as `rsqrt(x)`, one operation where a correctly rounded
+quotient of a correctly rounded root takes two long ones: an n-body
+force loop ran 16% faster on an H100. The result can differ from the exact
+one in the last bit, as host code under `--fast` can.
+
 ### Lanes: an iteration on a SIMD-group
 
 A loop with few iterations -- a training step over a mini-batch of one, a
@@ -911,11 +1118,15 @@ with a `stop` before that.
   the same program runs correctly on the CPU with `--gpu-allow-cpu-fallback`.
 * Every pipeline fix comes with an integration test that runs on the GPU
   backends (`metal`, `cuda` labels) and checks the results.
-* One `cuda` label covers both CUDA modes, and every `cuda` test must pass in
-  both: `integration_tests -b cuda_cpu` runs the `cuda` tests in the CPU
-  emulation (`--gpu=cuda_cpu`, what CI runs), and `integration_tests -b cuda`
-  runs the same tests natively on an NVIDIA GPU (`--gpu=cuda`). There is no
-  `cuda_cpu` label.
+* One `cuda` label covers every mode of the CUDA device code, and every
+  `cuda` test must pass in all of them: `integration_tests -b cuda_cpu` runs
+  the `cuda` tests in the CPU emulation (`--gpu=cuda_cpu`, what CI runs),
+  `integration_tests -b cuda` runs the same tests natively on an NVIDIA GPU
+  (`--gpu=cuda`), and `integration_tests -b hip` on an AMD GPU
+  (`--gpu=hip`). There are no `cuda_cpu` and `hip` labels. The memory models
+  are tested by running a backend with `LFORTRAN_GPU_MEMORY=copy` and
+  `unified`: the CPU emulation in either, an AMD APU with `HSA_XNACK=1` in
+  either, and a discrete GPU in the copy model.
 * Compiling is not enough: an offloaded loop can compile and still compute the
   wrong values. Integration tests therefore check their results in the program,
   and third-party codes whose test suites check values (Formal, Fiats) are run
@@ -1000,6 +1211,18 @@ GFortran, and native CUDA.
   analysis, one procedure at a time, does not see.
 
 ## Differences from the current implementation
+
+* `--gpu=hip` has the device capabilities of `--gpu=cuda` (the CUDA entry of
+  `gpu_device_capabilities`): its 512 KiB of stack per thread, and tiles of
+  32 iterations, the width of a warp rather than of an AMD wavefront (64). A
+  capability entry of its own, with the stack an AMD GPU gives a thread,
+  needs the passes that ask whether `gpu_offload_cuda` is set rather than
+  what the device can do to ask the capabilities instead.
+* A copy from pageable host memory (`malloc`) to the device waits for the
+  launches before it on the stream, in CUDA and in HIP, except for small
+  copies: the host waits for the device at every launch that copies an
+  array. Copying through pinned staging buffers would leave those launches
+  asynchronous.
 
 * The pipeline still has its own checks for device limits (the width of the
   data that reaches a kernel, input/output statements), spread over

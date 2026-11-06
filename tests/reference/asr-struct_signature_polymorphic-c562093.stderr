@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.struct.signature_is_instance_type]: Struct::m_struct_signature of 'point' must be the StructType of an instance of the type, which is not polymorphic
+ --> tests/asr/verify/struct_signature_polymorphic.asr:9:22
+  |
+9 |             "point" (Struct
+  |                      ^^^^^^ failed here

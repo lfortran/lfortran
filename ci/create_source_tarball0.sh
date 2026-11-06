@@ -15,15 +15,21 @@ cmake -E copy_directory doc/man $dest/doc/man
 # tarball has to carry it for `ctest` to be able to run that test.
 cmake -E copy_directory doc/src/asr $dest/doc/src/asr
 cmake -E copy_directory tests/asr $dest/tests/asr
-# test_lfortran pins the launch geometry, and the arrays the launches
-# overwrite, of these integration tests; its interactive stdin cases run
+# test_lfortran pins the launch geometry, arrays the launches overwrite,
+# and optional-view contiguity of these tests; its interactive stdin cases run
 # runtime_input_records.f90.
 cmake -E make_directory $dest/integration_tests
 cmake -E copy integration_tests/gpu_metal_485.f90 \
     integration_tests/gpu_metal_490.f90 integration_tests/gpu_metal_491.f90 \
     integration_tests/gpu_metal_527.f90 \
+    integration_tests/gpu_optional_launch_04.f90 \
+    integration_tests/gpu_scalar_reduction_actual_01.f90 \
+    integration_tests/gpu_private_reduction_01.f90 \
     integration_tests/gpu_tile_high_bounds_i4.f90 \
     integration_tests/gpu_tile_high_bounds_i8.f90 \
+    integration_tests/gpu_workspace_guard_01.f90 \
+    integration_tests/gpu_workspace_guard_02.f90 \
+    integration_tests/gpu_workspace_guard_03.f90 \
     integration_tests/runtime_input_records.f90 \
     $dest/integration_tests
 # test_scoped_attribute_roundtrip regenerates these kernels and links their

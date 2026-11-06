@@ -539,7 +539,7 @@
                                             UBound
                                             ()
                                         )
-                                        ())
+                                        (IntegerConstant 1 (Integer 4) Decimal))
                                         [(DoLoop
                                             ()
                                             ((Var 4 j)
@@ -557,7 +557,7 @@
                                                 UBound
                                                 ()
                                             )
-                                            ())
+                                            (IntegerConstant 1 (Integer 4) Decimal))
                                             [(DoLoop
                                                 ()
                                                 ((Var 4 k)
@@ -575,7 +575,7 @@
                                                     UBound
                                                     ()
                                                 )
-                                                ())
+                                                (IntegerConstant 1 (Integer 4) Decimal))
                                                 [(If
                                                     ()
                                                     (RealCompare
@@ -763,19 +763,19 @@
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 2 (Integer 4) Decimal)
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(DoLoop
                             ()
                             ((Var 2 j)
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (IntegerConstant 2 (Integer 4) Decimal)
-                            ())
+                            (IntegerConstant 1 (Integer 4) Decimal))
                             [(DoLoop
                                 ()
                                 ((Var 2 k)
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 2 (Integer 4) Decimal)
-                                ())
+                                (IntegerConstant 1 (Integer 4) Decimal))
                                 [(Assignment
                                     (ArrayItem
                                         (Var 2 a)

@@ -20,7 +20,7 @@ FunctionCall(symbol name, symbol? original_name, call_arg* args,
 | `args` | the actual arguments, each a [call_arg](../helper_nodes/call_arg.md). |
 | `type` | the type of the result. |
 | `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
-| `dt` | for a call through a type-bound procedure, the object it was reached through; `nil` otherwise. |
+| `dt` | for a call through a type-bound procedure, the object it was reached through; for a call through a procedure-pointer component with an implicit interface, a [FunctionPointerCast](FunctionPointerCast.md) of the component whose `to` is `name`, the call-site interface; `nil` otherwise. |
 
 ### Return values
 

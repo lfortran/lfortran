@@ -459,7 +459,8 @@ public:
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, current_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass,
+            x->m_access));
         current_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
@@ -549,7 +550,7 @@ public:
         head.m_end = duplicate_expr(x->m_head.m_end);
         head.m_increment = duplicate_expr(x->m_head.m_increment);
         head.loc = x->m_head.m_v->base.loc;
-        return ASR::make_DoLoop_t(al, x->base.base.loc, x->m_name, head, m_body.p, x->n_body, nullptr, 0);
+        return ASRUtils::make_DoLoop_t_util(al, x->base.base.loc, x->m_name, head, m_body.p, x->n_body, nullptr, 0);
     }
 
     ASR::asr_t* duplicate_Cast(ASR::Cast_t *x) {
@@ -2282,7 +2283,8 @@ public:
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, target_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass,
+            x->m_access));
         target_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
@@ -3198,7 +3200,7 @@ public:
         head.m_end = duplicate_expr(x->m_head.m_end);
         head.m_increment = duplicate_expr(x->m_head.m_increment);
         head.loc = x->m_head.m_v->base.loc;
-        return ASR::make_DoLoop_t(al, x->base.base.loc, x->m_name, head, m_body.p, x->n_body, x->m_orelse, x->n_orelse);
+        return ASRUtils::make_DoLoop_t_util(al, x->base.base.loc, x->m_name, head, m_body.p, x->n_body, x->m_orelse, x->n_orelse);
     }
 
     ASR::asr_t* duplicate_ArrayItem(ASR::ArrayItem_t *x) {

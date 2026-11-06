@@ -15,6 +15,11 @@ namespace LCompilers {
     void pass_gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
                               const PassOptions &pass_options);
 
+    // Eliminates a single-use private map into its full-domain ordered
+    // scalar fold after shared reduction lowering, before device storage.
+    void pass_gpu_private_reduction_fusion(Allocator &al,
+        ASR::TranslationUnit_t &unit, const PassOptions &pass_options);
+
     // The fusion, adding to `rarely_run` the original loops it keeps for
     // the last iteration of the DO loops around them (GpuRarelyRun in
     // gpu_loop_utils.h).

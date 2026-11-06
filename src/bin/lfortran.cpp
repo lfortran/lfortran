@@ -32,7 +32,6 @@
 #include <lfortran/pipeline.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/pass/pass_manager.h>
-#include <libasr/pass/replace_do_loops.h>
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/wrap_global_stmts.h>
 #include <libasr/pass/replace_implied_do_loops.h>
@@ -43,8 +42,6 @@
 #include <libasr/pass/unused_functions.h>
 #include <libasr/pass/replace_flip_sign.h>
 #include <libasr/pass/replace_div_to_mul.h>
-#include <libasr/pass/replace_fma.h>
-#include <libasr/pass/loop_unroll.h>
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/pass/dead_code_removal.h>
 #include <libasr/pass/replace_sign_from_value.h>
@@ -2146,6 +2143,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 // TODO: Fix the path usage for Windows
                 CC += "/";
             }
+            std::string linker_dir = CC;
 
             if (!linker.empty()) {
                 CC += linker;
@@ -2200,7 +2198,11 @@ int link_executable(const std::vector<std::string> &infiles,
                     + "/../libasr/runtime/lfortran_gpu_metal.m";
                 std::string metal_runtime_obj = LFORTRAN_TEMP_DIR
                     + "/lfortran_gpu_metal_" + LCOMPILERS_UNIQUE_ID + ".o";
-                std::string metal_compile_cmd = "clang -c -O2 -fobjc-arc"
+                // Use the clang of the linker path: the first clang on PATH
+                // (e.g. LLVM's clang in a Conda environment) may not know the
+                // macOS SDK and its Metal framework.
+                std::string metal_compile_cmd = linker_dir
+                    + "clang -c -O2 -fobjc-arc"
                     " -o " + metal_runtime_obj
                     + " " + metal_runtime_src;
                 int metal_err = system(metal_compile_cmd.c_str());
@@ -2240,18 +2242,33 @@ int link_executable(const std::vector<std::string> &infiles,
                 // declarations stay local and identical definitions do not
                 // collide when archive members are aggregated at link time.
                 bool emulate_cpu = compiler_options.gpu_cpu_emulation;
+                bool hip = compiler_options.gpu_hip;
                 std::string runtime_dir = runtime_library_dir
                     + "/../libasr/runtime";
-                // The CPU emulation of the CUDA runtime API comes first, so
-                // that its cuda_runtime.h is the one the GPU runtime finds.
+                // The CPU emulation of the CUDA runtime API, or its HIP
+                // implementation, comes first, so that its cuda_runtime.h is
+                // the one the GPU runtime finds.
                 std::string runtime_include = (emulate_cpu
-                        ? " -I" + runtime_dir + "/cuda_cpu" : std::string())
+                        ? " -I" + runtime_dir + "/cuda_cpu"
+                        : hip ? " -I" + runtime_dir + "/hip" : std::string())
                     + " -I" + runtime_dir;
                 // Every fragment, the runtime and the native link share this
                 // architecture; the CPU-emulation driver must not receive it.
                 std::string device_cc = cuda_device_compiler_command(
-                    compiler_options.device_compiler, emulate_cpu,
+                    compiler_options.device_compiler, emulate_cpu, hip,
                     compiler_options.gpu_arch);
+                // The ROCm installation of the HIP driver: its headers build
+                // the GPU runtime, and the program finds its HIP runtime
+                // library there, without LD_LIBRARY_PATH.
+                std::string hip_include_dir, hip_lib_dir;
+                if (hip && !hip_toolkit_dirs(compiler_options.device_compiler,
+                        hip_include_dir, hip_lib_dir)) {
+                    std::cerr << "The HIP headers of the device compiler `"
+                        << compiler_options.device_compiler << "` were not "
+                        "found: hip/hip_runtime_api.h is not in the include "
+                        "directory of its ROCm installation" << std::endl;
+                    return 10;
+                }
                 std::vector<std::string> cuda_kernel_objs;
                 std::set<std::string> seen_cuda_fragments;
                 size_t cuda_kernel_index = 0;
@@ -2276,8 +2293,11 @@ int link_executable(const std::vector<std::string> &infiles,
                     // compiler knows the .cu suffix. The emulation runs the
                     // threads of a block one after another, so a
                     // __syncthreads() reports that it cannot be honoured.
+                    // The HIP driver is named the language too, since the
+                    // suffix is CUDA's.
                     std::string cuda_kernel_cmd = device_cc + " -c -O2"
-                        + (emulate_cpu ? runtime_include + " -x c++" : "")
+                        + (emulate_cpu ? runtime_include + " -x c++"
+                            : hip ? std::string(" -x hip") : std::string())
                         + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
                     int cuda_err = system(cuda_kernel_cmd.c_str());
                     if (cuda_err) {
@@ -2306,6 +2326,12 @@ int link_executable(const std::vector<std::string> &infiles,
                 if (emulate_cpu) {
                     cuda_rt_cmd_base = device_cc + " -c -O2" + runtime_include
                         + " -x c";
+                } else if (hip) {
+                    // The HIP headers are C for the AMD platform, which the
+                    // HIP driver otherwise names.
+                    cuda_rt_cmd_base = get_c_compiler("cc") + " -c -O2"
+                        + " -D__HIP_PLATFORM_AMD__" + runtime_include
+                        + " -I\"" + hip_include_dir + "\"";
                 } else {
                     std::string cuda_include = cuda_toolkit_include_dir(
                         compiler_options.device_compiler);
@@ -2356,7 +2382,8 @@ int link_executable(const std::vector<std::string> &infiles,
                     // The device compiler also drives the link, since it knows
                     // where its own device runtime lives.
                     compile_cmd = device_cc
-                        + (static_library_search ? " -Xcompiler=-static" : "")
+                        + (static_library_search && !hip
+                            ? " -Xcompiler=-static" : "")
                         + " -o " + outfile + " ";
                     for (auto &s : infiles) {
                         compile_cmd += s + " ";
@@ -2371,6 +2398,10 @@ int link_executable(const std::vector<std::string> &infiles,
                     compile_cmd += " -L" + base_path
                         + " -Xlinker -rpath -Xlinker " + base_path
                         + " -l" + runtime_lib + " -lm";
+                    if (hip && !hip_lib_dir.empty()) {
+                        compile_cmd += " -Xlinker -rpath -Xlinker "
+                            + hip_lib_dir;
+                    }
                 }
             }
             run_cmd = "./" + outfile;
@@ -2906,8 +2937,7 @@ int main_app(int argc, char *argv[]) {
 
     if (opts.arg_backend == "llvm") {
         backend = Backend::llvm;
-        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_arr");
-        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_struct_type");
+        lfortran_pass_manager.skip_llvm_backend_passes();
     } else if (opts.arg_backend == "c") {
         backend = Backend::c;
     } else if (opts.arg_backend == "cpp") {

@@ -66,9 +66,17 @@ class ASRBuilder {
     ASR::expr_t *VariableOverwrite(SymbolTable *symtab, std::string var_name,
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
+        // Keep the declaration of a derived type being overwritten: the
+        // variable still has that type, and the verifier and the backend need
+        // its declaration.
+        ASR::symbol_t* type_decl = nullptr;
+        ASR::symbol_t* previous = symtab->get_symbol(var_name);
+        if (previous != nullptr && ASR::is_a<ASR::Variable_t>(*previous)) {
+            type_decl = ASR::down_cast<ASR::Variable_t>(previous)->m_type_declaration;
+        }
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
-            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
+            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr, false, false,
             nullptr, false, false, false, ASR::pass_attrType::NotMethod, nullptr));
         symtab->add_or_overwrite_symbol(s2c(al, var_name), sym);
@@ -1161,7 +1169,7 @@ class ASRBuilder {
         head.m_increment = step;
         Vec<ASR::stmt_t *> body;
         body.from_pointer_n_copy(al, &loop_body[0], loop_body.size());
-        return STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, body.p, body.n, nullptr, 0));
+        return STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head, body.p, body.n, nullptr, 0));
     }
 
     /*
@@ -1205,7 +1213,7 @@ class ASRBuilder {
             } else {
                 doloop_body.push_back(al, doloop);
             }
-            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                         head, doloop_body.p, doloop_body.size(), nullptr, 0));
         }
         return doloop;
@@ -1232,7 +1240,7 @@ class ASRBuilder {
             } else {
                 doloop_body.push_back(al, doloop);
             }
-            doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                         head, doloop_body.p, doloop_body.size(), nullptr, 0));
         }
         return doloop;

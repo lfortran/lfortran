@@ -1,0 +1,13 @@
+{
+    "basename": "asr-call_frame_argument_not_frame-b2c1e33",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/call_frame_argument_not_frame.asr",
+    "infile_hash": "0eea12636c9b1709d2bccf370340d89f28f2f69bad73db8e023aadc3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-call_frame_argument_not_frame-b2c1e33.stderr",
+    "stderr_hash": "ba86c266ac42dae9bf8c896fab45e8933402e7b236f08df3d9b838ae",
+    "returncode": 2
+}

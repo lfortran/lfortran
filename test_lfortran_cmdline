@@ -3,7 +3,8 @@
 set -e
 set -x
 
-CC=clang
+# On macOS the Pixi environment sets CC to Xcode's clang, which knows the SDK.
+CC=${CC:-clang}
 
 if [[ $1 == "" ]]; then
     echo "Test local lfortran"

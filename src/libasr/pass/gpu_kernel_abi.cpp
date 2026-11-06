@@ -126,6 +126,51 @@ public:
         expand(symbol, size);
     }
 
+    void replace_ArrayBound(ASR::ArrayBound_t *x) {
+        ASR::expr_t *array = ASRUtils::get_past_array_physical_cast(x->m_v);
+        if (!ASR::is_a<ASR::Var_t>(*array)) {
+            ASR::BaseExprReplacer<GpuThreadExpressionWriter>
+                ::replace_ArrayBound(x);
+            return;
+        }
+        ASR::symbol_t *symbol = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(array)->m_v);
+        ASR::ttype_t *type = ASRUtils::symbol_type(symbol);
+        if (parameters.count(symbol)
+                || ASRUtils::is_allocatable_or_pointer(type)) {
+            ASR::BaseExprReplacer<GpuThreadExpressionWriter>
+                ::replace_ArrayBound(x);
+            return;
+        }
+        ASR::dimension_t *dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        int64_t d = 0;
+        if (!x->m_dim || !ASRUtils::extract_value(
+                ASRUtils::expr_value(x->m_dim), d)
+                || d < 1 || (size_t)d > rank
+                || !dims[d - 1].m_start || !dims[d - 1].m_length) {
+            valid = false;
+            return;
+        }
+        // A private explicit-shape array has no host descriptor. Recover
+        // its bound from its own declaration, then expand only the shape,
+        // never the kernel-only array value.
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        ASR::expr_t *lower = dims[d - 1].m_start;
+        ASR::expr_t *length = dims[d - 1].m_length;
+        ASRUtils::cast_to_wider_kind(al, lower, length);
+        ASR::ttype_t *bound_type = ASRUtils::expr_type(length);
+        bool upper = x->m_bound == ASR::arrayboundType::UBound;
+        ASR::expr_t *bound = upper
+            ? b.Add(lower, b.Sub(length, b.i_t(1, bound_type))) : lower;
+        // In a zero-extent dimension Fortran's inquiry bounds are 1:0,
+        // regardless of the declared lower bound.
+        bound = ASRUtils::EXPR(ASR::make_IfExp_t(al, x->base.base.loc,
+            b.Gt(length, b.i_t(0, bound_type)), bound,
+            b.i_t(upper ? 0 : 1, bound_type), bound_type, nullptr));
+        expand(symbol, b.i2i_t(bound, x->m_type));
+    }
+
     void replace_Var(ASR::Var_t *x) {
         ASR::symbol_t *symbol = ASRUtils::symbol_get_past_external(x->m_v);
         if (parameters.count(symbol)) return;
@@ -338,23 +383,13 @@ public:
 // and passes the workspace extents that layout needs from every launch. A
 // kernel the layout cannot be built for is an error at its launch.
 class FinalizeGpuKernels : public PassUtils::PassVisitor<FinalizeGpuKernels> {
-    const PassOptions &options;
-
 public:
-    FinalizeGpuKernels(Allocator &al, const PassOptions &options)
-        : PassVisitor(al, nullptr), options(options) {}
+    explicit FinalizeGpuKernels(Allocator &al) : PassVisitor(al, nullptr) {}
 
     void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
         ASR::Function_t &kernel =
             *ASR::down_cast<ASR::Function_t>(x.m_kernel);
-        if (!kernel.m_gpu) {
-            GpuDecline decline;
-            if (!gpu_create_kernel_layout(al, kernel, x.m_args, x.n_args,
-                    decline, options.fast)) {
-                report_gpu_decline(options, x.base.base.loc, decline);
-                return;
-            }
-        }
+        if (!kernel.m_gpu) return; // The planning phase has reported the decline.
         const ASR::gpu_kernel_layout_t &layout = *kernel.m_gpu;
         if (x.n_args == kernel.n_args) return;
         LCOMPILERS_ASSERT(x.n_args == (size_t)layout.m_source_argument_count);
@@ -363,6 +398,7 @@ public:
         args.reserve(al, kernel.n_args);
         for (size_t i = 0; i < x.n_args; i++) args.push_back(al, x.m_args[i]);
         pass_result.reserve(al, kernel.n_args - x.n_args + 1);
+        std::set<ASR::symbol_t*> captured;
         for (size_t w = 0; w < layout.n_workspaces; w++) {
             const ASR::gpu_workspace_t &workspace = layout.m_workspaces[w];
             for (size_t d = 0; d < workspace.n_dims; d++) {
@@ -382,6 +418,20 @@ public:
                 ASR::call_arg_t arg;
                 arg.loc = x.base.base.loc;
                 arg.m_value = extent;
+                args.push_back(al, arg);
+            }
+            if (workspace.m_allocation_parameter &&
+                    captured.insert(workspace.m_allocation_parameter).second) {
+                ASR::expr_t *value = gpu_bind_kernel_expression(al, kernel,
+                    x.m_args, x.n_args, workspace.m_allocation_if);
+                LCOMPILERS_ASSERT(value != nullptr);
+                ASR::expr_t *condition = b.Variable(current_scope,
+                    current_scope->get_unique_name("__gpu_workspace_active"),
+                    ASRUtils::expr_type(value), ASR::intentType::Local);
+                pass_result.push_back(al, b.Assignment(condition, value));
+                ASR::call_arg_t arg;
+                arg.loc = x.base.base.loc;
+                arg.m_value = condition;
                 args.push_back(al, arg);
             }
         }
@@ -824,7 +874,25 @@ void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
 void pass_gpu_kernel_finalize(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &options) {
     if (!gpu_device_capabilities(options).device_selected()) return;
-    FinalizeGpuKernels finalizer(al, options);
+    struct LaunchSites : PassUtils::PassVisitor<LaunchSites> {
+        std::map<ASR::Function_t*, std::vector<GpuKernelLaunchSite>> sites;
+        explicit LaunchSites(Allocator &al) : PassVisitor(al, nullptr) {}
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            sites[ASR::down_cast<ASR::Function_t>(x.m_kernel)]
+                .push_back({&x, current_scope});
+        }
+    } sites(al);
+    sites.visit_TranslationUnit(unit);
+    for (const auto &entry : sites.sites) {
+        GpuDecline decline;
+        if (!gpu_create_kernel_layout(al, *entry.first, entry.second,
+                decline, options.fast,
+                gpu_device_capabilities(options).offset_kind)) {
+            report_gpu_decline(options,
+                entry.second.front().launch->base.base.loc, decline);
+        }
+    }
+    FinalizeGpuKernels finalizer(al);
     finalizer.visit_TranslationUnit(unit);
 
     GpuKernelLaunches launches;

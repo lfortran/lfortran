@@ -139,7 +139,11 @@
                   :stop_replay []
                   :overwritten []
                   :overwritten_if []
+                  :chunk_dimensions []
+                  :chunk_fixed_iterations 0
+                  :first_chunk_parameter nil
                 )
+                (GpuWait)
                 (GpuSync)
               ]
               :return_var nil

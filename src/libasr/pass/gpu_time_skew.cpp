@@ -1,6 +1,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/gpu_affine.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/intrinsic_function_registry.h>
@@ -485,7 +486,7 @@ public:
             ASR::symbol_t *f = ASRUtils::symbol_get_past_external(call->m_name);
             return ASR::is_a<ASR::Function_t>(*f) && gpu_function_inlinable(
                 ASR::down_cast<ASR::Function_t>(f));
-        });
+        }, gpu_device_capabilities(pass_options).offset_kind);
         ASR::stmt_t **bp = body.p;
         size_t bn = body.n;
         if (!dup.ok || !inliners.back().run(scope, bp, bn)) return false;
@@ -1321,15 +1322,10 @@ public:
         block_body.push_back(set(t0, bld.Add(v(t0), v(kn))));
         skewed.push_back(bld.While(bld.Lt(v(t0), v(n)), block_body));
         // The indices after the loops, as the DO loops leave them (every
-        // loop ran, since n > 1): one past the last iteration's value with
-        // use_loop_variable_after_loop, the last iteration's value
-        // otherwise (see PassUtils::replace_doloop).
+        // loop ran, since n > 1): one step past the last iteration's value.
         for (size_t d = 0; d < m; d++) {
-            ASR::expr_t *after = bld.Add(v(first[d]), v(trips[d]));
-            if (!pass_options.use_loop_variable_after_loop) {
-                after = bld.Sub(after, c(1));
-            }
-            skewed.push_back(set(vars[d], after));
+            skewed.push_back(set(vars[d], bld.Add(v(first[d]),
+                v(trips[d]))));
         }
         pre.push_back(bld.If(v(on), skewed, {stmt}));
         skews++;

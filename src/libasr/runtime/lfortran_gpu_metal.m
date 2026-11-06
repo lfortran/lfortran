@@ -27,7 +27,11 @@ Launches are asynchronous, and the device keeps what a kernel writes.
 * A buffer the kernel only reads (LFORTRAN_GPU_READ) is copied in when the
   launch is made, so the host may change it right after: into the encoder
   itself when it is small, into a pooled buffer otherwise. When it is a dirty
-  range, the kernel reads the resident buffer instead.
+  range, the kernel reads the resident buffer instead. The kernel handle
+  keeps the pooled buffer until the argument is set again or the handle is
+  released, so a later launch of the handle that is not handed the argument
+  again (the next chunk of a launch that runs in chunks) reads it without a
+  copy.
 * A range that overlaps a dirty one without being the same range makes the
   runtime sync first, so that the host bytes it copies are current.
 * A device buffer is never written by the host while a launch that uses it
@@ -49,7 +53,7 @@ Launches are asynchronous, and the device keeps what a kernel writes.
 // A read-only argument up to this size is copied into the encoder.
 static const size_t INLINE_BYTES_MAX = 4096;
 // Buffers up to this size are kept in the pool for reuse; a larger one, such
-// as the device heap, is released when the launch is done with it.
+// as the device heap, is released with the kernel handle that holds it.
 static const size_t POOLED_BUFFER_MAX = (size_t)16 * 1024 * 1024;
 enum { POOL_MAX = 128, MAX_RESIDENT = 1024, HASH_SIZE = 4096 };
 // Launches encoded into one command buffer before it is committed, and how
@@ -72,9 +76,12 @@ typedef struct buffer_use {
 //
 // Each kernel also keeps a scratch buffer per argument slot. The device runs
 // the launches one after another, and what a launch leaves in a scratch
-// buffer is dead once it ends (a part the host reads back is read before the
-// next launch is made), so every launch of the kernel can use the same one,
-// however many of them are still pending.
+// buffer is dead once the launch statement ends (a part the host reads back
+// is read before the next one is made), so every launch of the kernel can
+// use the same one, however many of them are still pending. A launch that
+// runs in chunks encodes each chunk with its one kernel handle, so its
+// chunks share the buffer: what an earlier chunk leaves in it is live for
+// the later chunks and for the host to read back after the last one.
 static struct {
     const char *name;
     const char *source;
@@ -184,9 +191,14 @@ struct lfortran_gpu_kernel {
     unsigned char scalar_bytes[SCALAR_BYTES];
     size_t scalar_used;
     void *scalar_heap[MAX_ARGS];
-    // A buffer only the device holds, created at the launch and kept until
-    // the kernel is released so that the host can read part of it back.
+    // A buffer only the device holds, kept until the kernel is released so
+    // that the host can read part of it back, and used by every launch of
+    // this handle: the chunks of one launch share it, as they share the
+    // device heap state they are handed.
     id<MTLBuffer> scratch_buffers[MAX_ARGS];
+    // The pooled copy of a read-only buffer argument the last launch read,
+    // kept for the next launch until the argument is set again.
+    id<MTLBuffer> read_buffers[MAX_ARGS];
     int n_args;
     uint64_t serial;
     // The kernel's entry in the registry.
@@ -563,17 +575,27 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     return k;
 }
 
+// Gives the copy of read-only argument `idx` that `k` keeps back to the
+// pool, once the launches that read it are done.
+static void release_read_buffer(lfortran_gpu_kernel *k, int idx) {
+    if (!k->read_buffers[idx]) return;
+    release_buffer(k->read_buffers[idx], k->serial);
+    k->read_buffers[idx] = nil;
+}
+
 void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
     if (!k) return;
     for (int i = 0; i < k->n_args; i++) {
         if (k->scalar_heap[i]) free(k->scalar_heap[i]);
         k->scratch_buffers[i] = nil;
+        release_read_buffer(k, i);
     }
     k->pipeline = nil;
     free(k);
 }
 
 static void set_arg(lfortran_gpu_kernel *k, int idx, int kind) {
+    release_read_buffer(k, idx);
     k->kind[idx] = kind;
     if (idx >= k->n_args) k->n_args = idx + 1;
 }
@@ -683,21 +705,26 @@ static void order_after_dependences(lfortran_gpu_ctx *ctx,
     }
 }
 
-// The scratch buffer of argument `slot` of the kernel `entry`, with room for
+// The scratch buffer of argument `slot` of the kernel `k`, with room for
 // `size` bytes. One larger than the pool keeps -- the device heap -- is made
-// for the launch.
-static id<MTLBuffer> scratch_buffer(lfortran_gpu_ctx *ctx, int entry,
-    int slot, size_t size)
+// for the handle, and kept by it for its later launches (the chunks of a
+// launch), which see what the earlier ones left there, like the slot buffer
+// of the CUDA runtime; it is released with the handle.
+static id<MTLBuffer> scratch_buffer(lfortran_gpu_kernel *k, int slot,
+    size_t size)
 {
+    lfortran_gpu_ctx *ctx = k->ctx;
     if (size > POOLED_BUFFER_MAX) {
+        id<MTLBuffer> buffer = k->scratch_buffers[slot];
+        if (buffer && [buffer length] >= size) return buffer;
         return tracked_buffer_alloc(ctx, size);
     }
-    id<MTLBuffer> buffer = source_registry[entry].scratch[slot];
+    id<MTLBuffer> buffer = source_registry[k->entry].scratch[slot];
     if (buffer && [buffer length] >= size) return buffer;
     size_t length = 256;
     while (length < size) length *= 2;
     buffer = tracked_buffer_alloc(ctx, length);
-    source_registry[entry].scratch[slot] = buffer;
+    source_registry[k->entry].scratch[slot] = buffer;
     return buffer;
 }
 
@@ -881,6 +908,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                     id<MTLBuffer> buffer = dirty_resident(k->ptrs[i],
                         k->sizes[i]);
                     if (buffer) {
+                        release_read_buffer(k, i);
                         entries[find_entry(k->ptrs[i])].last_use = serial;
                         uses[n_uses].buffer = (__bridge void *)buffer;
                         uses[n_uses++].write = 0;
@@ -889,13 +917,20 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                         [encoder setBytes:k->ptrs[i] length:k->sizes[i]
                             atIndex:i];
                     } else {
-                        buffer = acquire_buffer(ctx, k->sizes[i]);
-                        if (ctx->profile_enabled) {
-                            ctx->telemetry.memcpy_h2d_bytes += k->sizes[i];
+                        // The chunks of a launch hand the argument over
+                        // once: the copy the first one made is kept.
+                        buffer = k->read_buffers[i];
+                        if (!buffer) {
+                            buffer = acquire_buffer(ctx, k->sizes[i]);
+                            if (ctx->profile_enabled) {
+                                ctx->telemetry.memcpy_h2d_bytes
+                                    += k->sizes[i];
+                            }
+                            memcpy([buffer contents], k->ptrs[i],
+                                k->sizes[i]);
+                            k->read_buffers[i] = buffer;
                         }
-                        memcpy([buffer contents], k->ptrs[i], k->sizes[i]);
                         [encoder setBuffer:buffer offset:0 atIndex:i];
-                        release_buffer(buffer, serial);
                     }
                     break;
                 }
@@ -904,7 +939,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                         [encoder setBuffer:nil offset:0 atIndex:i];
                         break;
                     }
-                    id<MTLBuffer> buffer = scratch_buffer(ctx, k->entry, i,
+                    id<MTLBuffer> buffer = scratch_buffer(k, i,
                         k->sizes[i]);
                     k->scratch_buffers[i] = buffer;
                     uses[n_uses].buffer = (__bridge void *)buffer;
@@ -921,7 +956,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             }
         }
 
-        NSUInteger total_threads = (NSUInteger)(grid[0] * block[0]);
+        NSUInteger total_threads = (NSUInteger)grid[0] * (NSUInteger)block[0];
         NSUInteger threads_per_group = (NSUInteger)block[0];
         NSUInteger max_threads = [k->pipeline maxTotalThreadsPerThreadgroup];
         if (threads_per_group > max_threads) {
@@ -937,6 +972,12 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
 void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
     if (!ctx) return;
     sync_all(ctx);
+}
+
+// A launch copies what its kernel only reads, so the host may change it at
+// once: there is nothing to wait for.
+void lfortran_gpu_wait(lfortran_gpu_ctx* ctx) {
+    (void)ctx;
 }
 
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {

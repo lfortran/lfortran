@@ -83,11 +83,15 @@ ASR::symbol_t* gpu_new_variable(Allocator &al, const Location &loc,
 // for a component of rank more than one, the extent of each dimension.
 // The data follows, one array per component. The parameters are named as
 // the device code generators look them up (see GpuNames), so they find the
-// component's buffers by the name of the parameter and the component.
+// component's buffers by the name of the parameter and the component. The
+// extents and lower bounds are integers of kind `offset_kind`, the kind
+// the kernel computes element offsets in
+// (GpuDeviceCapabilities::offset_kind).
 void gpu_struct_member_extent_arguments(Allocator &al, const Location &loc,
         SymbolTable *kernel_scope, const std::string &name, ASR::Struct_t *st,
         const std::function<ASR::expr_t*(ASR::symbol_t*)> &host_member,
-        Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args);
+        int offset_kind, Vec<ASR::expr_t*> &kernel_args,
+        Vec<ASR::call_arg_t> &call_args);
 
 // `element_declaration` gives the kernel's declaration of the derived type
 // of the elements of a component that has elements of one.
@@ -143,7 +147,10 @@ public:
         ASR::BaseExprReplacer<GpuArraySizeFromTypeReplacer>
             ::replace_ArraySize(x);
         ASR::expr_t *rep = gpu_array_size_from_type(al, x);
-        if (rep) *current_expr = rep;
+        if (!rep) return;
+        LCOMPILERS_ASSERT(ASRUtils::check_equal_type(
+            ASRUtils::expr_type(rep), x->m_type, rep, &x->base));
+        *current_expr = rep;
     }
 };
 
@@ -328,6 +335,28 @@ public:
     }
 };
 
+// Walk statement containers, including nested parallel regions, but leave
+// entering a construct's symbol-owned body to the callback that rebinds it.
+class GpuConstructCallVisitor :
+        public ASR::BaseWalkVisitor<GpuConstructCallVisitor> {
+public:
+    std::function<void(ASR::BlockCall_t&)> block;
+    std::function<void(ASR::AssociateBlockCall_t&)> associate;
+
+    GpuConstructCallVisitor(
+            std::function<void(ASR::BlockCall_t&)> block_,
+            std::function<void(ASR::AssociateBlockCall_t&)> associate_ = {})
+        : block(block_), associate(associate_) {}
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        block(const_cast<ASR::BlockCall_t&>(x));
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        if (associate) associate(const_cast<ASR::AssociateBlockCall_t&>(x));
+    }
+};
+
 // Resolves associate variable references to their original targets.
 // A workspace extent written as `size(a(i)%m, d)` -- the extent of an
 // allocatable array component reached through a subscript into an array
@@ -361,18 +390,16 @@ public:
         : al(al_), orig_scope(orig_scope_), kernel_scope(kernel_scope_),
           arg_names(arg_names_), added(added_) {}
 
-    // The component symbol as the host scope names it.  The kernel body
-    // may reach a component through an ExternalSymbol that only the
-    // kernel scope holds, which the host expression must not reference.
-    ASR::symbol_t* host_member_ref(ASR::symbol_t *m) {
-        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(m);
-        for (auto &item : orig_scope->get_scope()) {
-            if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) continue;
-            if (ASRUtils::symbol_get_past_external(item.second) == target) {
-                return item.second;
-            }
-        }
-        return m;
+    // The copied body's component may already belong to the device type.
+    // Resolve against the actual host array's declaration before late naming.
+    ASR::symbol_t* host_member_ref(ASR::symbol_t *host_arr,
+            const std::string &name) {
+        ASR::Variable_t *host = ASR::down_cast<ASR::Variable_t>(
+            ASRUtils::symbol_get_past_external(host_arr));
+        ASR::symbol_t *member = gpu_struct_lookup_member(
+            host->m_type_declaration, name);
+        LCOMPILERS_ASSERT(member != nullptr);
+        return ASRUtils::symbol_get_past_external(member);
     }
 
     void replace_ArraySize(ASR::ArraySize_t *x) {
@@ -451,7 +478,7 @@ public:
             }
             ASR::expr_t *host_member = ASRUtils::EXPR(
                 ASR::make_StructInstanceMember_t(al, loc, host_item,
-                    host_member_ref(sim->m_m), sim->m_type, nullptr));
+                    host_member_ref(host_arr, mem_name), sim->m_type, nullptr));
             ASR::expr_t *host_dim = ASRUtils::EXPR(
                 ASR::make_IntegerConstant_t(al, loc, d, size_type,
                     ASR::integerbozType::Decimal));

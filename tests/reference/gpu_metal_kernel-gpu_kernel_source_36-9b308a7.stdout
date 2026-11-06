@@ -2,24 +2,24 @@
 using namespace metal;
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int n;
-    int __loop_end_0;
+    int n_gpu;
+    int __loop_end_0_gpu;
 };
 
 kernel void __lfortran_gpu_kernel_0(
-    device float* x [[buffer(0)]],
-    device float* y [[buffer(1)]],
+    device float* x_gpu [[buffer(0)]],
+    device float* y_gpu [[buffer(1)]],
     constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __flat_idx;
-    int i__dc4;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
+    int __flat_idx_gpu;
+    int i__dc4_gpu;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
         return;
     }
-    __flat_idx = ((0 * 0) + __thread_id);
-    i__dc4 = (__flat_idx + 1);
-    y[((int)(i__dc4) - (1))] = (((float)2) * x[((int)(i__dc4) - (1))]);
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    i__dc4_gpu = (__flat_idx_gpu + 1);
+    y_gpu[((int)(i__dc4_gpu) - (1))] = (((float)2) * x_gpu[((int)(i__dc4_gpu) - (1))]);
 }
 

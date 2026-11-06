@@ -47,7 +47,7 @@
                   )
                 ]
                 :member_function_types []
-                :is_cstruct false
+                :is_cstruct true
                 :is_unlimited_polymorphic false
               )
               :dependencies []
@@ -74,7 +74,7 @@
               :struct_signature (StructType
                 :data_member_types []
                 :member_function_types []
-                :is_cstruct false
+                :is_cstruct true
                 :is_unlimited_polymorphic false
               )
               :dependencies []

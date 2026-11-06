@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <fstream>
 #include <functional>
+#include <map>
 #include <set>
 #include <vector>
 
@@ -14,6 +15,10 @@
 #include <lfortran/fortran_kernel.h>
 #ifndef __EMSCRIPTEN__
 #include <thread>
+#ifndef _WIN32
+#include <pthread.h>
+#include <sys/resource.h>
+#endif
 #endif
 #include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
@@ -29,14 +34,20 @@
 #include <libasr/utils.h>
 #include <lfortran/utils.h>
 
+#include <llvm/Analysis/LoopInfo.h>
 #include <llvm/Config/llvm-config.h>
 #include <llvm/IR/BasicBlock.h>
+#include <llvm/IR/CFG.h>
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/Dominators.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/GetElementPtrTypeIterator.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Metadata.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/Operator.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #if LLVM_VERSION_MAJOR >= 17
@@ -632,22 +643,250 @@ end function)";
     CHECK(e.execfn<int32_t>("f") == 4);
 }
 
+TEST_CASE("ASR descriptor entry capability preserves direct specialization") {
+    std::string source = R"(module entry_capability_m
+implicit none
+contains
+subroutine consume(a, r)
+    real, intent(in) :: a(:)
+    real, intent(out) :: r
+    r = a(1) + a(size(a))
+end subroutine
+end module
+program caller
+use entry_capability_m
+implicit none
+real :: a(2), r
+call consume(a, r)
+end program)";
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    for (bool supported: {false, true}) {
+        CAPTURE(supported);
+        Allocator al(256*1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        CompilerOptions co;
+        co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        co.po.supports_descriptor_entry_wrappers = supported;
+        co.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
+        co.po.verify_all_passes = true;
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations file;
+        file.in_filename = "entry_capability.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+        auto *ast = TRY(LCompilers::LFortran::parse(al, source, diagnostics, co));
+        auto *asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast, diagnostics,
+            nullptr, false, co, lm));
+        auto *module = ASR::down_cast<ASR::Module_t>(
+            asr->m_symtab->get_symbol("entry_capability_m"));
+        auto *entry = ASR::down_cast<ASR::Function_t>(
+            module->m_symtab->get_symbol("consume"));
+        REQUIRE(entry->n_body == 1);
+        auto *original_body = entry->m_body[0];
+        LCompilers::PassManager passes;
+        std::string pass = "pass_array_by_data", skip;
+        passes.parse_pass_arg(pass, skip);
+        co.po.pass_cumulative = true;
+        passes.apply_passes(al, asr, co.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(LCompilers::asr_verify(*asr, true, diagnostics));
+        CHECK(module->m_symtab->get_symbol("consume") == &entry->base);
+        CHECK(entry->n_args == 2);
+        auto *caller = ASR::down_cast<ASR::Program_t>(
+            asr->m_symtab->get_symbol("caller"));
+        REQUIRE(caller->n_body == 1);
+        auto *call = ASR::down_cast<ASR::SubroutineCall_t>(caller->m_body[0]);
+        auto *clone = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(call->m_name));
+        REQUIRE(clone != entry);
+        CHECK(clone->n_args > entry->n_args);
+        REQUIRE(entry->n_body == 1);
+        if (supported) {
+            auto *delegation = ASR::down_cast<ASR::SubroutineCall_t>(
+                entry->m_body[0]);
+            CHECK(ASRUtils::symbol_get_past_external(delegation->m_name)
+                == &clone->base);
+        } else {
+            CHECK(entry->m_body[0] == original_body);
+            CHECK(ASR::is_a<ASR::Assignment_t>(*entry->m_body[0]));
+        }
+    }
+}
+
+TEST_CASE("ASR -> LLVM lowers DoLoop with loop-else and EXIT") {
+    std::string source = R"(
+integer function f_normal()
+    integer :: i
+    f_normal = 0
+    do i = 1, 3
+        f_normal = f_normal + 1
+    end do
+    f_normal = f_normal + 10
+    f_normal = f_normal + 100 * i
+end function
+
+integer function f_zero_trip()
+    integer :: i
+    f_zero_trip = 0
+    do i = 1, 0
+        f_zero_trip = f_zero_trip + 1
+    end do
+    f_zero_trip = f_zero_trip + 10
+    f_zero_trip = f_zero_trip + 100 * i
+end function
+
+integer function f_exit()
+    integer :: i
+    f_exit = 0
+    do i = 1, 3
+        f_exit = f_exit + 1
+        exit
+    end do
+    f_exit = f_exit + 10
+    f_exit = f_exit + 100 * i
+end function
+
+integer function f_while_nested_exit()
+    integer :: i, s
+    s = 0
+    do while (s < 2)
+        do i = 1, 3
+            exit
+        end do
+        s = s + 1
+    end do
+    s = s + 40
+    f_while_nested_exit = s
+end function
+)";
+
+    Allocator al(64*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions co;
+    co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    co.platform = LCompilers::get_platform();
+    FortranEvaluator evaluator(co);
+    LCompilers::LocationManager lm;
+    LCompilers::LocationManager::FileLocations file;
+    file.in_filename = "doloop_else.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    LCompilers::ASR::TranslationUnit_t *asr = parsed.result;
+
+    // Fortran has no loop-else, so move the statement that follows the
+    // first loop of `name` into the loop-else of that loop: it then runs
+    // only when the loop completes normally (not after an EXIT).
+    auto seed_orelse_from_next_stmt = [&](const std::string &name,
+                                          bool while_loop) {
+        LCompilers::ASR::symbol_t *sym = asr->m_symtab->resolve_symbol(name);
+        REQUIRE(sym != nullptr);
+        REQUIRE(LCompilers::ASR::is_a<LCompilers::ASR::Function_t>(*sym));
+        auto *fn = LCompilers::ASR::down_cast<LCompilers::ASR::Function_t>(sym);
+        size_t loop_idx = fn->n_body;
+        for (size_t i = 0; i < fn->n_body; i++) {
+            bool matched = while_loop
+                ? LCompilers::ASR::is_a<LCompilers::ASR::WhileLoop_t>(*fn->m_body[i])
+                : LCompilers::ASR::is_a<LCompilers::ASR::DoLoop_t>(*fn->m_body[i]);
+            if (matched) {
+                loop_idx = i;
+                break;
+            }
+        }
+        REQUIRE(loop_idx < fn->n_body);
+        REQUIRE(loop_idx + 1 < fn->n_body);
+        LCompilers::ASR::stmt_t *orelse_stmt = fn->m_body[loop_idx + 1];
+        auto **orelse_block = al.allocate<LCompilers::ASR::stmt_t*>(1);
+        orelse_block[0] = orelse_stmt;
+        if (while_loop) {
+            auto *loop = LCompilers::ASR::down_cast<LCompilers::ASR::WhileLoop_t>(
+                fn->m_body[loop_idx]);
+            LCompilers::ASR::WhileLoop_t &loop_mut = *loop;
+            loop_mut.m_orelse = orelse_block;
+            loop_mut.n_orelse = 1;
+        } else {
+            auto *loop = LCompilers::ASR::down_cast<LCompilers::ASR::DoLoop_t>(
+                fn->m_body[loop_idx]);
+            LCompilers::ASR::DoLoop_t &loop_mut = *loop;
+            loop_mut.m_orelse = orelse_block;
+            loop_mut.n_orelse = 1;
+        }
+        for (size_t i = loop_idx + 1; i + 1 < fn->n_body; i++) {
+            fn->m_body[i] = fn->m_body[i + 1];
+        }
+        fn->n_body--;
+    };
+
+    seed_orelse_from_next_stmt("f_normal", false);
+    seed_orelse_from_next_stmt("f_zero_trip", false);
+    seed_orelse_from_next_stmt("f_exit", false);
+    seed_orelse_from_next_stmt("f_while_nested_exit", true);
+
+    auto function_has_doloop = [&](const std::string &name) {
+        LCompilers::ASR::symbol_t *sym = asr->m_symtab->resolve_symbol(name);
+        REQUIRE(sym != nullptr);
+        auto *fn = LCompilers::ASR::down_cast<LCompilers::ASR::Function_t>(sym);
+        for (size_t i = 0; i < fn->n_body; i++) {
+            if (LCompilers::ASR::is_a<LCompilers::ASR::DoLoop_t>(*fn->m_body[i])) {
+                return true;
+            }
+        }
+        return false;
+    };
+    CHECK(function_has_doloop("f_normal"));
+    CHECK(function_has_doloop("f_zero_trip"));
+    CHECK(function_has_doloop("f_exit"));
+
+    LCompilers::LLVMEvaluator e(co);
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>> res =
+        LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+            e.get_target_config(), al, lpm, co, "", "", "", lm);
+    INFO(diagnostics.render2());
+    REQUIRE(res.ok);
+
+    // The passes kept the loops for the backend.
+    CHECK(function_has_doloop("f_normal"));
+    CHECK(function_has_doloop("f_zero_trip"));
+    CHECK(function_has_doloop("f_exit"));
+
+    e.add_module(std::move(res.result));
+    CHECK(e.execfn<int32_t>("f_normal") == 413);
+    CHECK(e.execfn<int32_t>("f_zero_trip") == 110);
+    CHECK(e.execfn<int32_t>("f_exit") == 101);
+    CHECK(e.execfn<int32_t>("f_while_nested_exit") == 42);
+}
+
 namespace {
 
 // Compiles `source` with the LLVM backend, with --fast if `fast`, and calls
 // `inspect` with each of the given procedures and its LLVM definition, before
-// any LLVM pass runs. Each procedure is given as {name, end of the name of its
-// LLVM definition}.
+// any LLVM pass runs, unless `optimize` is set. Each procedure is given as
+// {name, end of the name of its LLVM definition}.
 void inspect_definitions(const std::string &source, bool fast,
         const std::vector<std::pair<std::string, std::string>> &procedures,
         const std::function<void(const std::string &, llvm::Function &)>
-            &inspect) {
+            &inspect, bool stack_arrays = false, bool optimize = false,
+            bool detect_leaks = false,
+        const std::function<void(CompilerOptions &)> &configure = {}) {
     Allocator al(64*1024);
     LCompilers::diag::Diagnostics diagnostics;
     CompilerOptions co;
     co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     co.platform = LCompilers::get_platform();
     co.po.fast = fast;
+    co.po.stack_arrays = stack_arrays;
+    if (fast || optimize) {
+        co.po.bounds_checking = false;
+        co.po.strict_bounds_checking = false;
+    }
+    co.detect_leaks = detect_leaks;
+    if (configure) configure(co);
     LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(
         LCompilers::LFortran::parse(al, source, diagnostics, co));
     LCompilers::LocationManager lm;
@@ -665,6 +904,9 @@ void inspect_definitions(const std::string &source, bool fast,
         res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
             e.get_target_config(), al, lpm, co, "", "", "", lm);
     REQUIRE(res.ok);
+    if (optimize) {
+        e.opt(*res.result->m_m);
+    }
     for (const auto &[procedure, suffix]: procedures) {
         llvm::Function *fn = nullptr;
         for (llvm::Function &f: *res.result->m_m) {
@@ -677,6 +919,385 @@ void inspect_definitions(const std::string &source, bool fast,
         }
         REQUIRE(fn != nullptr);
         inspect(procedure, *fn);
+    }
+}
+
+TEST_CASE("LLVM statement-local stack storage for numeric function results") {
+    std::string source = R"(module stack_results
+implicit none
+type :: sigmoid
+contains
+    procedure :: evaluate, derivative, consume
+end type
+contains
+pure function evaluate(self, x) result(y)
+    class(sigmoid), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: y(size(x))
+    y = 1.0 / (1.0 + exp(-x))
+end function
+pure function derivative(self, x) result(y)
+    class(sigmoid), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: y(size(x))
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end function
+subroutine consume(self, y, x)
+    class(sigmoid), intent(in) :: self
+    real, intent(inout) :: y(:)
+    real, intent(in) :: x(:)
+    y = y - x
+end subroutine
+subroutine argument_expression(self, y, x, scale)
+    class(sigmoid), intent(in) :: self
+    real, intent(inout) :: y(:)
+    real, intent(in) :: x(:), scale
+    call self%consume(y, x / scale)
+end subroutine
+subroutine pointer_argument_expression(self, y, x, scale)
+    class(sigmoid), intent(in) :: self
+    real, intent(inout) :: y(:)
+    real, pointer, intent(in) :: x(:)
+    real, intent(in) :: scale
+    call self%consume(y, x / scale)
+end subroutine
+subroutine user_allocation(n, y)
+    integer, intent(in) :: n
+    real, allocatable, intent(out) :: y(:)
+    allocate(y(n))
+    y = 1.0
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        unsigned heap_calls[3][2] = {};
+        for (bool stack: {false, true}) {
+            inspect_definitions(source, fast,
+                {{"derivative", "_derivative"},
+                 {"argument_expression", "_argument_expression_real____1_real____2"},
+                 {"pointer_argument_expression", "_pointer_argument_expression"},
+                 {"user_allocation", "_user_allocation"}},
+                [&](const std::string &name, llvm::Function &fn) {
+                    unsigned allocations = 0, saves = 0, restores = 0;
+                    unsigned dynamic_arrays = 0, array_calls = 0;
+                    for (llvm::BasicBlock &block: fn) {
+                        for (llvm::Instruction &inst: block) {
+                            if (auto *allocation = llvm::dyn_cast<llvm::AllocaInst>(&inst)) {
+                                if (allocation->getAllocatedType()->isFloatTy()
+                                        && !llvm::isa<llvm::ConstantInt>(
+                                            allocation->getArraySize())) {
+                                    dynamic_arrays++;
+                                }
+                            }
+                            auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
+                            if (!call) continue;
+                            if (!call->getCalledFunction()) {
+                                array_calls++;
+                                continue;
+                            }
+                            llvm::StringRef callee = call->getCalledFunction()->getName();
+                            if (callee == "_lfortran_malloc_alloc") allocations++;
+                            auto intrinsic = call->getCalledFunction()->getIntrinsicID();
+                            if (intrinsic == llvm::Intrinsic::stacksave) saves++;
+                            if (intrinsic == llvm::Intrinsic::stackrestore) restores++;
+                        }
+                    }
+                    if (name == "user_allocation") {
+                        CHECK(allocations > 0);
+                    } else {
+                        unsigned index = name == "derivative" ? 0 :
+                            name == "argument_expression" ? 1 : 2;
+                        heap_calls[index][stack] = allocations;
+                        if (stack) {
+                            if (name != "derivative") {
+                                CHECK(array_calls == 1);
+                                CHECK(allocations == 0);
+                            }
+                            CHECK(array_calls > 0);
+                            CHECK(dynamic_arrays == array_calls);
+                            CHECK(saves == array_calls);
+                            CHECK(restores == saves);
+                        }
+                    }
+                }, stack);
+        }
+        for (auto& calls: heap_calls) {
+            CHECK(calls[1] < calls[0]);
+        }
+    }
+}
+
+TEST_CASE("LLVM reuses repeated pure array calls within arithmetic assignments") {
+    std::string source = R"(module pure_array_calls
+implicit none
+type :: activation
+contains
+    procedure :: evaluate
+end type
+contains
+pure function evaluate(self, x) result(y)
+    class(activation), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: y(size(x))
+    y = x + 1.0
+end function
+subroutine repeated(self, x, y)
+    class(activation), intent(in) :: self
+    real, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end subroutine
+subroutine different_arguments(self, x, z, y)
+    class(activation), intent(in) :: self
+    real, intent(in) :: x(:), z(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) + self%evaluate(z)
+end subroutine
+subroutine different_receivers(self, other, x, y)
+    class(activation), intent(in) :: self, other
+    real, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) + other%evaluate(x)
+end subroutine
+function impure_scalar() result(x)
+    real :: x
+    x = 1.0
+end function
+subroutine impure_surroundings(self, x, y)
+    class(activation), intent(in) :: self
+    real, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x)) + impure_scalar()
+end subroutine
+subroutine volatile_actual(self, x, y)
+    class(activation), intent(in) :: self
+    real, volatile, intent(inout) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end subroutine
+subroutine asynchronous_actual(self, x, y)
+    class(activation), intent(in) :: self
+    real, asynchronous, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end subroutine
+subroutine target_actual(self, x, y)
+    class(activation), intent(in) :: self
+    real, target, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end subroutine
+subroutine pointer_actual(self, x, y)
+    class(activation), intent(in) :: self
+    real, pointer, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = self%evaluate(x) * (1.0 - self%evaluate(x))
+end subroutine
+pure function invoke(callback, x) result(y)
+    interface
+        pure real function callback(x)
+            real, intent(in) :: x
+        end function
+    end interface
+    real, intent(in) :: x(:)
+    real :: y(size(x))
+    y = x + callback(1.0)
+end function
+subroutine procedure_actual(callback, x, y)
+    interface
+        pure real function callback(x)
+            real, intent(in) :: x
+        end function
+    end interface
+    real, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    y = invoke(callback, x) + invoke(callback, x)
+end subroutine
+end module
+)";
+    for (int mode = 0; mode < 7; mode++) {
+        inspect_definitions(source, mode != 0,
+            {{"repeated", "_repeated_real____1_real____2"},
+             {"different_arguments", "_different_arguments_real____1_real____2_real____3"},
+             {"different_receivers", "_different_receivers_real____2_real____3"},
+             {"impure_surroundings", "_impure_surroundings_real____1_real____2"},
+             {"volatile_actual", "_volatile_actual_real____1_real____2"},
+             {"asynchronous_actual", "_asynchronous_actual_real____1_real____2"},
+             {"target_actual", "_target_actual_real____2"},
+             {"pointer_actual", "_pointer_actual"},
+             {"procedure_actual", "_procedure_actual_real____1_real____2"}},
+            [&](const std::string &name, llvm::Function &fn) {
+                unsigned indirect_calls = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
+                        if (call && (!call->getCalledFunction() ||
+                                (name == "procedure_actual" &&
+                                call->getCalledFunction()->getName().contains("invoke")))) {
+                            indirect_calls++;
+                        }
+                    }
+                }
+                INFO("mode: " << mode << ", procedure: " << name);
+                CHECK(indirect_calls == ((mode == 1 || mode == 6) &&
+                    name == "repeated" ? 1 : 2));
+            }, false, false, false,
+            [&](CompilerOptions &co) {
+                co.po.openmp = mode == 2;
+                co.po.coarray = mode == 3;
+                co.po.gpu_offload_metal = mode == 4;
+                co.po.gpu_offload_cuda = mode == 5;
+                co.po.stack_arrays = mode == 6;
+                co.po.verify_all_passes = true;
+            });
+    }
+}
+
+TEST_CASE("LLVM internal procedures have internal linkage") {
+    // With --fast, `integrate` is copied into `host` as the internal procedure
+    // `integrate__f`, which calls `f` directly. Only `host` can name either,
+    // so neither is exported, and once both are inlined into `host`, LLVM
+    // deletes them.
+    std::string source = R"(module integ_m
+implicit none
+abstract interface
+    real(8) function fun(x)
+        real(8), intent(in) :: x
+    end function
+end interface
+contains
+    real(8) function integrate(f, a, b, n) result(s)
+        procedure(fun) :: f
+        real(8), intent(in) :: a, b
+        integer, intent(in) :: n
+        integer :: i
+        real(8) :: h
+        h = (b - a)/n
+        s = 0
+        do i = 1, n
+            s = s + f(a + (i - 0.5d0)*h)
+        end do
+        s = s*h
+    end function
+end module
+
+module host_m
+use integ_m, only: integrate
+implicit none
+contains
+    subroutine host(p, q, r, n, res)
+        real(8), intent(in) :: p, q, r
+        integer, intent(in) :: n
+        real(8), intent(out) :: res
+        res = integrate(f, 0d0, 1d0, n)
+    contains
+        real(8) function f(x)
+            real(8), intent(in) :: x
+            f = (p*x + q)*x + r
+        end function
+    end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        CAPTURE(fast);
+        std::vector<std::pair<std::string, std::string>> procedures = {
+            {"host", "_m_host"}, {"f", "_m_f"}};
+        if (fast) procedures.push_back({"integrate__f", "_integrate__f"});
+        inspect_definitions(source, fast, procedures,
+            [&](const std::string &procedure, llvm::Function &fn) {
+                CAPTURE(procedure);
+                CHECK(fn.hasInternalLinkage() == (procedure != "host"));
+            });
+    }
+    inspect_definitions(source, true, {{"host", "_m_host"}},
+        [&](const std::string &, llvm::Function &fn) {
+            for (llvm::Function &other: *fn.getParent()) {
+                std::string name = other.getName().str();
+                CAPTURE(name);
+                CHECK(name.rfind("host.", 0) != 0);
+            }
+        }, false, true);
+}
+
+TEST_CASE("LLVM rank-one SIZE avoids a runtime rank loop") {
+    std::string source = R"(module size_calls
+implicit none
+contains
+function extent(x) result(n)
+    real, target, intent(in) :: x(:)
+    integer(8) :: n
+    n = size(x, kind=8)
+end function
+function matrix_extent(x) result(n)
+    real, target, intent(in) :: x(:, :)
+    integer(8) :: n
+    n = size(x, kind=8)
+end function
+function dynamic_extent(x) result(n)
+    real, target, intent(in) :: x(..)
+    integer(8) :: n
+    n = size(x, kind=8)
+end function
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"extent", "_calls_extent"},
+             {"matrix_extent", "_matrix_extent"},
+             {"dynamic_extent", "_dynamic_extent"}},
+            [&](const std::string &name, llvm::Function &fn) {
+                unsigned conditional_branches = 0;
+                for (llvm::BasicBlock &block: fn) {
+#if LLVM_VERSION_MAJOR >= 23
+                    if (llvm::isa<llvm::CondBrInst>(block.getTerminator())) {
+                        conditional_branches++;
+                    }
+#else
+                    if (auto* branch = llvm::dyn_cast<llvm::BranchInst>(
+                            block.getTerminator())) {
+                        if (branch->isConditional()) conditional_branches++;
+                    }
+#endif
+                }
+                INFO(name, ", fast=", fast);
+                CHECK(conditional_branches == (fast && name == "extent" ? 0 : 1));
+            });
+    }
+}
+
+TEST_CASE("LLVM stack automatic arrays allocate their element type") {
+    std::string source = R"(module stack_alloca_m
+implicit none
+contains
+subroutine work(n, x)
+    integer, intent(in) :: n
+    real, intent(out) :: x
+    real :: w(n)
+    integer(8) :: k(n, 2)
+    w = 1
+    k = 2
+    x = sum(w) + real(sum(k))
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"work", "work"}},
+            [&](const std::string &, llvm::Function &fn) {
+                std::map<std::string, std::string> types;
+                for (llvm::Instruction &inst: fn.getEntryBlock()) {
+                    auto *alloca = llvm::dyn_cast<llvm::AllocaInst>(&inst);
+                    if (!alloca) continue;
+                    std::string name = alloca->getName().str();
+                    if (name != "w" && name != "k") continue;
+                    std::string type;
+                    llvm::raw_string_ostream os(type);
+                    alloca->getAllocatedType()->print(os);
+                    types[name] = os.str();
+                }
+                CAPTURE(fast);
+                CHECK(types["w"] == "float");
+                CHECK(types["k"] == "i64");
+            }, true);
     }
 }
 
@@ -732,8 +1353,10 @@ std::string tbaa_accesses(const std::string &source, bool fast,
                     }
                     llvm::MDNode *access_type = llvm::cast<llvm::MDNode>(
                         tag->getOperand(1));
-                    llvm::MDNode *root = llvm::cast<llvm::MDNode>(
-                        access_type->getOperand(1));
+                    llvm::MDNode *root = access_type;
+                    while (root->getNumOperands() > 1) {
+                        root = llvm::cast<llvm::MDNode>(root->getOperand(1));
+                    }
                     REQUIRE(llvm::cast<llvm::MDString>(root->getOperand(0))
                         ->getString() == "LFortran TBAA");
                     result.insert(procedure + ":" + access + " " + type_name
@@ -901,6 +1524,82 @@ end module
     CHECK(noalias_parameters(source, false, procedures).empty());
 }
 
+TEST_CASE("LLVM signed integer arithmetic is nsw under --fast") {
+    std::string source = R"(module integer_nsw_m
+implicit none
+contains
+integer function combine(a, b, c) result(r)
+    integer, intent(in) :: a, b, c
+    r = a*b + c - a
+end function
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast, {{"combine", "_combine"}},
+            [&](const std::string &, llvm::Function &fn) {
+                size_t ops = 0, nsw = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &inst: block) {
+                        auto *op = llvm::dyn_cast<llvm::BinaryOperator>(&inst);
+                        if (!op || !op->getType()->isIntegerTy(32)) continue;
+                        unsigned opcode = op->getOpcode();
+                        if (opcode != llvm::Instruction::Add &&
+                                opcode != llvm::Instruction::Sub &&
+                                opcode != llvm::Instruction::Mul) continue;
+                        ops++;
+                        if (op->hasNoSignedWrap()) nsw++;
+                    }
+                }
+                CAPTURE(fast);
+                CHECK(ops == 3);
+                CHECK(nsw == (fast ? 3u : 0u));
+            });
+    }
+}
+
+TEST_CASE("LLVM loops are not runtime unrolled under --fast") {
+    std::string source = R"(module runtime_unroll_m
+implicit none
+contains
+subroutine window(x, y, i0, i1)
+    real, intent(in) :: x(:,:)
+    real, intent(inout) :: y(:,:)
+    integer, intent(in) :: i0, i1
+    integer :: j
+    do j = 1, size(y, 2)
+        y(:, j) = y(:, j) + x(i0:i1, j)
+    end do
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"window", "_window_real_______0_real_______1"}},
+            [&](const std::string &, llvm::Function &fn) {
+                size_t latches = 0, rolled = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    llvm::MDNode *loop = block.getTerminator()->getMetadata(
+                        llvm::LLVMContext::MD_loop);
+                    if (!loop) continue;
+                    latches++;
+                    for (const llvm::MDOperand &op: loop->operands()) {
+                        auto *node = llvm::dyn_cast_or_null<llvm::MDNode>(op.get());
+                        if (!node || node->getNumOperands() == 0) continue;
+                        auto *name = llvm::dyn_cast<llvm::MDString>(node->getOperand(0));
+                        if (name && name->getString() ==
+                                "llvm.loop.unroll.runtime.disable") {
+                            rolled++;
+                        }
+                    }
+                }
+                CAPTURE(fast);
+                CHECK(rolled == latches);
+                // Both the DO loop and the array-operation loop it contains.
+                CHECK(latches == (fast ? 2u : 0u));
+            });
+    }
+}
+
 TEST_CASE("LLVM TBAA metadata under --fast") {
     std::string source = R"(module tbaa_ir_m
 implicit none
@@ -946,13 +1645,13 @@ end module
     // Nothing in the bind(c) procedure.
     std::string expected =
         // Elements of self%out and self%w.
-        "forward:load float:data; "
+        "forward:load float:allocated component; "
         // Offsets, lower bounds and strides of the descriptors.
         "forward:load i64:descriptor; "
         // The class wrapper (self), the descriptor pointers of the
         // components and the base addresses of their data.
         "forward:load pointer:descriptor; "
-        "forward:store float:data; "
+        "forward:store float:allocated component; "
         // TRANSFER reinterprets each element through an untagged scalar;
         // only the integer elements of the local fixed-size temporary that
         // holds its result are tagged.
@@ -961,6 +1660,464 @@ end module
     CHECK(tbaa_accesses(source, true, procedures) == expected);
     CHECK(tbaa_accesses(source, false, procedures).empty());
 }
+
+TEST_CASE("LLVM contiguous array-operation indexing under --fast") {
+    std::string source = R"(module contiguous_index_m
+implicit none
+type :: storage_t
+    real, allocatable :: a(:,:)
+    real, pointer :: p(:,:)
+end type
+contains
+subroutine scale_allocatable(self)
+    class(storage_t), intent(inout) :: self
+    self%a = 2*self%a
+end subroutine
+subroutine scale_pointer(self)
+    class(storage_t), intent(inout) :: self
+    self%p = 2*self%p
+end subroutine
+subroutine scale_allocatable_section(self)
+    class(storage_t), intent(inout), target :: self
+    integer :: j
+    do j = 1, size(self%a,2)
+        self%a(:,j) = 2*self%a(:,j)
+    end do
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"allocatable", "_m_scale_allocatable"},
+             {"pointer", "_m_scale_pointer"},
+             {"allocatable_section", "_m_scale_allocatable_section"}},
+            [&](const std::string &procedure, llvm::Function &fn) {
+                size_t stride_loads = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &instruction: block) {
+                        auto *load = llvm::dyn_cast<llvm::LoadInst>(&instruction);
+                        if (!load) continue;
+                        auto *gep = llvm::dyn_cast<llvm::GEPOperator>(
+                            load->getPointerOperand());
+                        if (!gep) continue;
+                        for (auto it = llvm::gep_type_begin(*gep),
+                                end = llvm::gep_type_end(*gep); it != end; ++it) {
+                            llvm::StructType *type = it.getStructTypeOrNull();
+                            if (!type || type->getName().str().rfind(
+                                    "dimension_descriptor", 0) != 0) continue;
+                            auto *field = llvm::dyn_cast<llvm::ConstantInt>(
+                                it.getOperand());
+                            if (field && field->equalsInt(2)) stride_loads++;
+                        }
+                    }
+                }
+                CAPTURE(fast);
+                CAPTURE(procedure);
+                CAPTURE(stride_loads);
+                CHECK((stride_loads == 0) ==
+                    (fast && procedure != "pointer"));
+            }, false, false);
+    }
+}
+
+TEST_CASE("LLVM descriptor entries with automatic BLOCK locals") {
+    std::string source = R"(module block_entry_m
+implicit none
+type :: accumulator
+    real :: total = 0
+contains
+    procedure :: automatic_block, saved_block, observer_block
+end type
+contains
+subroutine automatic_block(self, x)
+    class(accumulator), intent(inout) :: self
+    real, intent(in) :: x(:)
+    block
+        real :: work(size(x))
+        block
+            work = 2*x
+            self%total = sum(work)
+        end block
+    end block
+end subroutine
+subroutine saved_block(self, x)
+    class(accumulator), intent(inout) :: self
+    real, intent(in) :: x(:)
+    block
+        integer, save :: count = 0
+        count = count + 1
+        self%total = count + sum(x)
+    end block
+end subroutine
+subroutine observer_block(self, x)
+    class(accumulator), intent(inout) :: self
+    real, intent(in) :: x(:)
+    block
+        if (is_contiguous(x)) then
+            self%total = 1
+        else
+            self%total = -1
+        end if
+    end block
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        for (bool stack_arrays: {false, true}) {
+            inspect_definitions(source, fast,
+                {{"automatic", "_m_automatic_block"},
+                 {"saved", "_m_saved_block"},
+                 {"observer", "_m_observer_block"}},
+                [&](const std::string &procedure, llvm::Function &fn) {
+                    size_t delegates = 0;
+                    std::string suffix = "_m_" + procedure + "_block_real____1";
+                    for (llvm::BasicBlock &block: fn) {
+                        for (llvm::Instruction &instruction: block) {
+                            auto *call = llvm::dyn_cast<llvm::CallInst>(&instruction);
+                            if (!call || !call->getCalledFunction()) continue;
+                            std::string name = call->getCalledFunction()->getName().str();
+                            if (name.size() >= suffix.size() &&
+                                    name.compare(name.size() - suffix.size(),
+                                        suffix.size(), suffix) == 0) delegates++;
+                        }
+                    }
+                    CAPTURE(fast);
+                    CAPTURE(stack_arrays);
+                    CAPTURE(procedure);
+                    CAPTURE(delegates);
+                    CHECK(delegates == (procedure == "automatic" ? 1 : 0));
+                }, stack_arrays);
+        }
+    }
+}
+
+TEST_CASE("LLVM CLASS component storage provenance") {
+    std::string source = R"(module component_storage_m
+implicit none
+type :: inner_t
+    integer :: width
+end type
+type :: state_t
+    integer :: width
+    real :: fixed(4)
+    real, allocatable :: values(:,:)
+    real, allocatable :: scalar
+    real, pointer :: alias(:)
+    integer(kind=1) :: byte
+    character :: text
+    type(inner_t) :: inner
+end type
+type, extends(state_t) :: extended_t
+end type
+contains
+subroutine touch(self, i, out)
+    class(state_t), intent(inout) :: self
+    integer, intent(in) :: i
+    real, intent(out) :: out
+    out = self%fixed(i) + self%values(i,1) + self%alias(i) + self%width
+    self%fixed(i) = out
+    self%values(i,1) = out
+end subroutine
+subroutine excluded_members(self, out)
+    class(state_t), intent(in) :: self
+    real, intent(out) :: out
+    out = self%scalar + self%byte + iachar(self%text) + self%inner%width
+end subroutine
+subroutine parent_component(self, out)
+    class(extended_t), intent(in) :: self
+    real, intent(out) :: out
+    out = self%state_t%width + self%state_t%values(1,1)
+end subroutine
+end module
+)";
+    auto procedures = std::vector<std::pair<std::string, std::string>>{
+        {"touch", "_m_touch"}, {"excluded_members", "_m_excluded_members"},
+        {"parent_component", "_m_parent_component"}};
+    CHECK(tbaa_accesses(source, false, procedures).empty());
+    inspect_definitions(source, true, procedures,
+        [&](const std::string &procedure, llvm::Function &fn) {
+            std::set<std::string> components;
+            std::set<llvm::MDNode*> component_parents;
+            llvm::MDNode *generic_data_type = nullptr;
+            bool generic_pointer_data = false;
+            for (llvm::BasicBlock &block: fn) {
+                for (llvm::Instruction &inst: block) {
+                    llvm::MDNode *tag = inst.getMetadata(
+                        llvm::LLVMContext::MD_tbaa);
+                    if (!tag) continue;
+                    auto *type = llvm::cast<llvm::MDNode>(tag->getOperand(1));
+                    std::string name = llvm::cast<llvm::MDString>(
+                        type->getOperand(0))->getString().str();
+                    if (name == "data") {
+                        auto *load = llvm::dyn_cast<llvm::LoadInst>(&inst);
+                        if (load && load->getType()->isFloatTy()) {
+                            generic_pointer_data = true;
+                            generic_data_type = type;
+                        }
+                    }
+                    if (name != "inline component" &&
+                            name != "allocated component") continue;
+                    REQUIRE(procedure == "touch");
+                    auto *parent = llvm::cast<llvm::MDNode>(type->getOperand(1));
+                    component_parents.insert(parent);
+                    CHECK(llvm::cast<llvm::MDString>(parent->getOperand(0))
+                        ->getString() == "data");
+                    auto *load = llvm::dyn_cast<llvm::LoadInst>(&inst);
+                    auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst);
+                    REQUIRE((load || store));
+                    llvm::Type *value_type = load ? load->getType()
+                        : store->getValueOperand()->getType();
+                    CHECK(!value_type->isPointerTy());
+                    CHECK(!value_type->isIntegerTy(8));
+                    components.insert(name);
+                }
+            }
+            if (procedure == "touch") {
+                std::set<std::string> expected = {
+                    "inline component", "allocated component"};
+                CHECK(components == expected);
+                CHECK(generic_pointer_data);
+                REQUIRE(component_parents.size() == 1);
+                CHECK(*component_parents.begin() == generic_data_type);
+            } else {
+                CHECK(components.empty());
+            }
+        });
+
+    // Exclusions change only the receiver, not the accesses under test.
+    for (const char *declaration: {
+            "type(state_t), intent(inout) :: self",
+            "class(state_t), target, intent(inout) :: self",
+            "class(state_t), pointer, intent(inout) :: self",
+            "class(state_t), volatile, intent(inout) :: self",
+            "class(state_t), asynchronous, intent(inout) :: self"}) {
+        std::string excluded = source;
+        std::string original = "class(state_t), intent(inout) :: self";
+        excluded.replace(excluded.find(original), original.size(), declaration);
+        std::string accesses = tbaa_accesses(excluded, true, {procedures[0]});
+        CHECK(accesses.find("inline component") == std::string::npos);
+        CHECK(accesses.find("allocated component") == std::string::npos);
+    }
+    // The declaration-scope query must see attributes in contained BLOCKs.
+    std::string scoped = source;
+    std::string start = "    out = self%fixed(i)";
+    scoped.insert(scoped.find(start), "    block\n    volatile :: self\n");
+    std::string end = "end subroutine";
+    scoped.insert(scoped.find(end), "    end block\n");
+    std::string accesses = tbaa_accesses(scoped, true, {procedures[0]});
+    CHECK(accesses.find("inline component") == std::string::npos);
+    CHECK(accesses.find("allocated component") == std::string::npos);
+}
+
+TEST_CASE("LLVM CLASS inline component load hoists across owned array writes") {
+    std::string source = R"(module component_alias_m
+implicit none
+type :: state_t
+    integer :: width
+    real, allocatable :: values(:,:)
+end type
+contains
+subroutine accumulate(self, x, n)
+    class(state_t), intent(inout) :: self
+    integer, intent(in) :: n
+    real, intent(in) :: x(n,n)
+    integer :: i, j
+    do j = 1, n
+        do i = 1, self%width
+            self%values(i,j) = self%values(i,j) + x(i,j)
+        end do
+    end do
+end subroutine
+end module
+)";
+    inspect_definitions(source, true, {{"accumulate", "_m_accumulate"}},
+        [&](const std::string &, llvm::Function &fn) {
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            size_t width_reads = 0;
+            size_t loop_stores = 0;
+            for (llvm::BasicBlock &block: fn) {
+                for (llvm::Instruction &inst: block) {
+                    auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst);
+                    if (store && loops.getLoopFor(&block) &&
+                            store->getValueOperand()->getType()->isFPOrFPVectorTy()) {
+                        loop_stores++;
+                    }
+                    auto *load = llvm::dyn_cast<llvm::LoadInst>(&inst);
+                    if (!load || !load->getType()->isIntegerTy(32)) continue;
+                    llvm::MDNode *tag = load->getMetadata(
+                        llvm::LLVMContext::MD_tbaa);
+                    if (!tag) continue;
+                    auto *type = llvm::cast<llvm::MDNode>(tag->getOperand(1));
+                    auto *name = llvm::cast<llvm::MDString>(type->getOperand(0));
+                    if (name->getString() == "inline component") {
+                        width_reads++;
+                        CHECK(loops.getLoopFor(load->getParent()) == nullptr);
+                    }
+                }
+            }
+            CHECK(width_reads == 1);
+            CHECK(loop_stores > 0);
+        }, false, true);
+}
+
+TEST_CASE("LLVM private array function result slots") {
+    std::string source = R"(module private_result_m
+implicit none
+type :: operation_t
+contains
+    procedure :: evaluate
+    procedure :: derivative
+    procedure :: with_internal
+end type
+contains
+pure function evaluate(self, x) result(res)
+    class(operation_t), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: res(size(x))
+    res = 2*x
+end function
+pure function derivative(self, x) result(res)
+    class(operation_t), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: res(size(x))
+    res = self%evaluate(x)*(1 - self%evaluate(x))
+end function
+pure function with_internal(self, x) result(res)
+    class(operation_t), intent(in) :: self
+    real, intent(in) :: x(:)
+    real :: res(size(x))
+    res = self%evaluate(x)*(1 - self%evaluate(x))
+    if (size(x) > 0) res(1) = res(1) + probe()
+contains
+    pure function probe() result(value)
+        real :: value
+        value = sum(res)
+    end function
+end function
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"derivative", "_m_derivative"},
+             {"with_internal", "_m_with_internal"}},
+            [&](const std::string &procedure, llvm::Function &fn) {
+                size_t allocations = 0, evaluate_calls = 0;
+                for (llvm::BasicBlock &block: fn) {
+                    for (llvm::Instruction &instruction: block) {
+                        auto *call = llvm::dyn_cast<llvm::CallInst>(&instruction);
+                        if (!call) continue;
+                        llvm::Function *callee = call->getCalledFunction();
+                        if (!callee) evaluate_calls++;
+                        if (callee && callee->getName() == "_lfortran_malloc_alloc") {
+                            allocations++;
+                        }
+                    }
+                }
+                CAPTURE(fast);
+                CAPTURE(procedure);
+                CAPTURE(allocations);
+                CHECK(evaluate_calls > 0);
+                CHECK(allocations == evaluate_calls *
+                    (procedure == "derivative" ? 1 : 2));
+            });
+    }
+}
+
+#if LLVM_VERSION_MAJOR >= 17
+TEST_CASE("LLVM late cleanup hoists conditional window descriptors") {
+    // Keep unswitching profitable without relying on target-specific unrolling.
+    std::string source = R"(module conditional_window_updates
+implicit none
+type :: state_t
+    integer :: width, channels, kernel_size, filters, stride
+    real, allocatable :: kernel(:), gradient(:), dw(:,:,:)
+contains
+    procedure :: update
+end type
+contains
+pure subroutine update(self, input, gradient, enabled)
+    class(state_t), intent(inout) :: self
+    real, intent(in) :: input(:,:), gradient(:,:)
+    logical, intent(in) :: enabled
+    real :: dw(self%filters,self%channels,self%kernel_size)
+    integer :: i, k, n, r, iws, iwe
+    dw = 0
+    self%gradient = 0
+    do i = 1, self%width
+        iws = 1 + self%stride*(i-1)
+        iwe = min(iws + self%kernel_size - 1, size(input,2))
+        do k = 1, self%channels
+            do n = 1, self%filters
+                dw(n,k,1) = dw(n,k,1) + gradient(n,i)
+                if (enabled) then
+                    do r = iws, iwe
+                        self%gradient(r) = self%gradient(r) + self%kernel(r-iws+1)
+                    end do
+                end if
+            end do
+        end do
+    end do
+    self%dw = self%dw + dw
+end subroutine
+end module
+)";
+    inspect_definitions(source, true,
+        {{"update", "_update_real_______1_real_______2"}},
+        [&](const std::string &, llvm::Function &fn) {
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            struct Accesses {
+                unsigned data_stores = 0, component_stores = 0, descriptor_loads = 0;
+            };
+            auto accesses = [](llvm::Loop *loop) {
+                Accesses result;
+                for (llvm::BasicBlock *block: loop->blocks()) {
+                    for (llvm::Instruction &inst: *block) {
+                        llvm::MDNode *tag = inst.getMetadata(llvm::LLVMContext::MD_tbaa);
+                        if (!tag) continue;
+                        auto *type = llvm::cast<llvm::MDNode>(tag->getOperand(1));
+                        auto *name = llvm::cast<llvm::MDString>(type->getOperand(0));
+                        if (auto *store = llvm::dyn_cast<llvm::StoreInst>(&inst)) {
+                            if (!store->getValueOperand()->getType()->isFPOrFPVectorTy()) continue;
+                            result.data_stores += name->getString() == "data";
+                            result.component_stores += name->getString() == "allocated component";
+                        } else if (llvm::isa<llvm::LoadInst>(inst)) {
+                            result.descriptor_loads += name->getString() == "descriptor";
+                        }
+                    }
+                }
+                return result;
+            };
+            std::vector<llvm::Loop *> pending(loops.begin(), loops.end());
+            // Versioning and unrolling may clone stores and update loops.
+            unsigned update_loops = 0;
+            while (!pending.empty()) {
+                llvm::Loop *loop = pending.back();
+                pending.pop_back();
+                pending.insert(pending.end(), loop->begin(), loop->end());
+                Accesses found = accesses(loop);
+                if (!found.data_stores || !found.component_stores) continue;
+                bool nested_update = false;
+                for (llvm::Loop *child: *loop) {
+                    Accesses nested = accesses(child);
+                    nested_update |= nested.data_stores && nested.component_stores;
+                }
+                if (nested_update) continue;
+                update_loops++;
+                CHECK(found.descriptor_loads == 0);
+                REQUIRE(loop->getParentLoop() != nullptr);
+#if LLVM_VERSION_MAJOR >= 18
+                // LLVM 17's non-trivial unswitching leaves these descriptor
+                // loads guarded inside the parent loop, so LICM cannot hoist
+                // them.
+                CHECK(accesses(loop->getParentLoop()).descriptor_loads == 0);
+#endif
+            }
+            CHECK(update_loops > 0);
+        }, false, true);
+}
+#endif
 
 TEST_CASE("LLVM static SAVE initialization with VOLATILE in a BLOCK") {
     std::string source = R"(module saved_volatile_m
@@ -1007,6 +2164,66 @@ end module
                 }
                 CHECK(saved_stores == 1);
                 CHECK(saved_loads == 2);
+            });
+    }
+}
+
+TEST_CASE("LLVM conditional constructor temporaries allocate only in their branch") {
+    std::string source = R"(module constructor_scope_ir_m
+implicit none
+type :: base
+    real :: learning_rate = 0.25
+end type
+type, extends(base) :: optimizer
+    real :: momentum = 0
+    real, allocatable :: velocity(:)
+end type
+type :: finalizable
+    real, allocatable :: values(:)
+contains
+    final :: finish
+end type
+type :: pointer_owner
+    real, allocatable :: values(:)
+    real, pointer :: link => null()
+end type
+contains
+subroutine initialize(slot, enabled)
+    class(base), allocatable, intent(inout) :: slot
+    logical, intent(in) :: enabled
+    if (enabled) slot = optimizer()
+end subroutine
+subroutine initialize_finalizable(slot, enabled)
+    class(finalizable), allocatable, intent(inout) :: slot
+    logical, intent(in) :: enabled
+    if (enabled) slot = finalizable()
+end subroutine
+subroutine initialize_pointer(slot, enabled)
+    class(pointer_owner), allocatable, intent(inout) :: slot
+    logical, intent(in) :: enabled
+    if (enabled) slot = pointer_owner()
+end subroutine
+subroutine finish(self)
+    type(finalizable), intent(inout) :: self
+end subroutine
+end module
+)";
+    for (bool fast: {false, true}) {
+        inspect_definitions(source, fast,
+            {{"initialize", "_m_initialize"},
+             {"initialize_finalizable", "_m_initialize_finalizable"},
+             {"initialize_pointer", "_m_initialize_pointer"}},
+            [&](const std::string &procedure, llvm::Function &fn) {
+                unsigned entry_allocations = 0;
+                for (llvm::Instruction &inst: fn.getEntryBlock()) {
+                    auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
+                    if (call && call->getCalledFunction() &&
+                            call->getCalledFunction()->getName() ==
+                                "_lfortran_malloc_alloc") {
+                        entry_allocations++;
+                    }
+                }
+                CHECK(entry_allocations == (procedure == "initialize" ? 0 : 1));
             });
     }
 }
@@ -1243,6 +2460,165 @@ end module
     CHECK(noalias_allocators(source, true, procedures[0]) ==
         "_lfortran_malloc_alloc ");
     CHECK(noalias_allocators(source, false, procedures[0]).empty());
+}
+
+TEST_CASE("LLVM allocator accessors under --fast") {
+    const std::string source = R"(module allocator_accessors_ir_m
+implicit none
+contains
+subroutine unused()
+    real, allocatable :: a(:), b(:)
+end subroutine
+
+subroutine needed(n)
+    integer, intent(in) :: n
+    real, allocatable :: a(:), b(:)
+    interface
+        subroutine consume(a, b, n)
+            integer, intent(in) :: n
+            real, intent(inout) :: a(n), b(n)
+        end subroutine
+    end interface
+    allocate(a(n), b(n))
+    call consume(a, b, n)
+    deallocate(a, b)
+end subroutine
+end module)";
+    for (bool detect_leaks: {false, true}) {
+        const char *getter = detect_leaks
+            ? "_lfortran_get_compiler_mem_dbg_allocator"
+            : "_lfortran_get_default_allocator";
+        for (bool fast: {false, true}) {
+            inspect_definitions(source, fast, {{"needed", "needed"}},
+                [&](const std::string &, llvm::Function &fn) {
+                    llvm::Function *f = fn.getParent()->getFunction(getter);
+                    REQUIRE(f != nullptr);
+                    CHECK(f->doesNotAccessMemory() == fast);
+                    CHECK(f->doesNotThrow() == fast);
+#if LLVM_VERSION_MAJOR >= 9
+                    CHECK(f->hasFnAttribute(llvm::Attribute::WillReturn) == fast);
+#endif
+                    CHECK(!f->returnDoesNotAlias());
+                    for (const char *name: {"_lfortran_malloc_alloc",
+                            "_lfortran_free_alloc"}) {
+                        llvm::Function *allocation =
+                            fn.getParent()->getFunction(name);
+                        REQUIRE(allocation != nullptr);
+                        CHECK(!allocation->onlyReadsMemory());
+                    }
+                }, false, false, detect_leaks);
+        }
+        inspect_definitions(source, true,
+            {{"unused", "unused"}, {"needed", "needed"}},
+            [&](const std::string &procedure, llvm::Function &fn) {
+                int getters = 0, allocations = 0;
+                llvm::Value *identity = nullptr;
+                for (llvm::BasicBlock &bb: fn) {
+                    for (llvm::Instruction &inst: bb) {
+                        auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
+                        if (!call || !call->getCalledFunction()) continue;
+                        llvm::StringRef name = call->getCalledFunction()->getName();
+                        if (name == getter) {
+                            getters++;
+                        } else if (name == "_lfortran_malloc_alloc" ||
+                                name == "_lfortran_free_alloc") {
+                            llvm::Value *allocator = call->getArgOperand(0);
+                            if (identity) CHECK(allocator == identity);
+                            identity = allocator;
+                            allocations++;
+                        }
+                    }
+                }
+                if (procedure == "unused") {
+                    CHECK(getters == 0);
+                    CHECK(allocations == 0);
+                } else {
+                    CHECK(getters == 1);
+                    CHECK(allocations >= 4);
+                }
+            }, false, true, detect_leaks);
+    }
+}
+
+TEST_CASE("LLVM conditional allocation keeps allocator access on slow paths") {
+    const std::string source = R"(module lazy_allocator_ir_m
+implicit none
+contains
+subroutine conditional(needed, n, work)
+    logical, intent(in) :: needed
+    integer, intent(in) :: n
+    real, allocatable, intent(out) :: work(:)
+    if (needed) allocate(work(n))
+end subroutine
+end module)";
+    for (bool detect_leaks: {false, true}) {
+        const char *getter = detect_leaks
+            ? "_lfortran_get_compiler_mem_dbg_allocator"
+            : "_lfortran_get_default_allocator";
+        for (int mode = 0; mode < 6; mode++) {
+            bool fast = mode != 0;
+            bool lazy = mode == 1;
+            for (bool optimize: {false, true}) {
+                CAPTURE(detect_leaks);
+                CAPTURE(mode);
+                CAPTURE(optimize);
+                inspect_definitions(source, fast, {{"conditional", "conditional"}},
+                    [&](const std::string &, llvm::Function &fn) {
+                        int getters = 0, entry_getters = 0;
+                        int allocations = 0, frees = 0;
+                        std::set<llvm::BasicBlock *> allocator_blocks;
+                        for (llvm::BasicBlock &bb: fn) {
+                            for (llvm::Instruction &inst: bb) {
+                                auto *call = llvm::dyn_cast<llvm::CallInst>(&inst);
+                                if (!call || !call->getCalledFunction()) continue;
+                                llvm::StringRef name = call->getCalledFunction()->getName();
+                                if (name == getter) {
+                                    getters++;
+                                    if (&bb == &fn.getEntryBlock()) entry_getters++;
+                                } else if (name == "_lfortran_malloc_alloc") {
+                                    allocations++;
+                                } else if (name == "_lfortran_free_alloc") {
+                                    frees++;
+                                }
+                                if (name == getter ||
+                                        name == "_lfortran_malloc_alloc" ||
+                                        name == "_lfortran_free_alloc") {
+                                    allocator_blocks.insert(&bb);
+                                }
+                            }
+                        }
+                        CHECK(getters >= 1);
+                        CHECK(allocations >= 1);
+                        CHECK(frees >= 1);
+                        CHECK(entry_getters == (lazy ? 0 : 1));
+                        if (lazy) {
+                            std::vector<llvm::BasicBlock *> pending{&fn.getEntryBlock()};
+                            std::set<llvm::BasicBlock *> visited;
+                            bool allocation_free_return = false;
+                            while (!pending.empty()) {
+                                llvm::BasicBlock *bb = pending.back();
+                                pending.pop_back();
+                                if (!visited.insert(bb).second ||
+                                        allocator_blocks.count(bb)) continue;
+                                llvm::Instruction *end = bb->getTerminator();
+                                if (llvm::isa<llvm::ReturnInst>(end)) {
+                                    allocation_free_return = true;
+                                }
+                                for (llvm::BasicBlock *successor: llvm::successors(bb)) {
+                                    pending.push_back(successor);
+                                }
+                            }
+                            CHECK(allocation_free_return);
+                        }
+                    }, false, optimize, detect_leaks, [=](CompilerOptions &co) {
+                        co.openmp = mode == 2;
+                        co.po.coarray = mode == 3;
+                        co.po.gpu_offload_metal = mode == 4;
+                        co.po.gpu_offload_cuda = mode == 5;
+                    });
+            }
+        }
+    }
 }
 
 #endif // __EMSCRIPTEN__
@@ -1492,6 +2868,222 @@ end module funcmod)");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
     CHECK(std::abs(r.result.f32 - (-3.0)) <= 1e-8 );
+}
+
+// A derived-type global declared with a structure constructor keeps the
+// constructor's component values. The members are set up at run time in
+// interactive mode, and that setup must not fall back to the components'
+// declared defaults and overwrite the initializer (#16859).
+TEST_CASE("FortranEvaluator derived type constructor initializer") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: init_point\ninteger :: x, y\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(init_point) :: init_p = init_point(1, 2)");
+    CHECK(r.ok);
+    r = e.evaluate2("init_p%x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("init_p%y");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 2);
+}
+
+// A component inherited from a parent type declared in an earlier cell than
+// the extended type, read through a variable declared in yet another cell.
+TEST_CASE("FortranEvaluator parent component of an extended type from earlier cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: point_16952\ninteger :: x, y\nend type");
+    REQUIRE(r.ok);
+    r = e.evaluate2(R"(type, extends(point_16952) :: p3_16952
+integer :: z = 9
+end type
+)");
+    REQUIRE(r.ok);
+    r = e.evaluate2("type(p3_16952) :: q_16952");
+    REQUIRE(r.ok);
+    r = e.evaluate2("q_16952%z");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+    r = e.evaluate2("q_16952%x = 4\nq_16952%y = 5");
+    REQUIRE(r.ok);
+    r = e.evaluate2("q_16952%x");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 4);
+    r = e.evaluate2("q_16952%x + q_16952%y");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+}
+
+// The same, with the type and the declaration in one cell and the use in
+// another.
+TEST_CASE("FortranEvaluator derived type initializer in one cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(type :: init_cell_point
+integer :: x, y
+end type
+type(init_cell_point) :: init_cell_p = init_cell_point(5, 6))");
+    CHECK(r.ok);
+    r = e.evaluate2("init_cell_p%x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 5);
+    r = e.evaluate2("init_cell_p%y");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+
+    // The type, the declaration and a use of the result in a single cell.
+    r = e.evaluate2(R"(type :: init_use_point
+integer :: x, y
+end type
+type(init_use_point) :: init_use_p = init_use_point(7, 8)
+init_use_p%y)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 8);
+}
+
+// Controls for the same cell layout: a component's own default initializer
+// and a later assignment must keep working.
+TEST_CASE("FortranEvaluator derived type initializer controls") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: init_ctrl_point\ninteger :: x = 3, y = 4\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(init_ctrl_point) :: init_ctrl_default");
+    CHECK(r.ok);
+    r = e.evaluate2("init_ctrl_default%x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3);
+
+    r = e.evaluate2("type(init_ctrl_point) :: init_ctrl_assigned");
+    CHECK(r.ok);
+    r = e.evaluate2("init_ctrl_assigned = init_ctrl_point(9, 10)");
+    CHECK(r.ok);
+    r = e.evaluate2("init_ctrl_assigned%x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+    r = e.evaluate2("init_ctrl_assigned%y");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 10);
+}
+
+// The member setup of an interactive global must also apply a structure
+// constructor's string and nested derived-type component values (#16859).
+TEST_CASE("FortranEvaluator derived type initializer string and nested components") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: init_string_point\ncharacter(len=3) :: s\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(init_string_point) :: init_string_p = init_string_point('abc')");
+    CHECK(r.ok);
+    r = e.evaluate2("init_string_p%s");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::character);
+    CHECK(r.result.str == "abc");
+
+    r = e.evaluate2("type :: init_inner_point\ninteger :: k\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type :: init_nested_point\ntype(init_inner_point) :: inner\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(init_nested_point) :: init_nested_p = init_nested_point(init_inner_point(11))");
+    CHECK(r.ok);
+    r = e.evaluate2("init_nested_p%inner%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 11);
+}
+
+// A derived-type named constant declared in an earlier cell initializes a
+// variable of the same type in a later cell. The value of the constant names
+// the type it was constructed with, which must be the same type a later cell
+// declares from (#16953).
+TEST_CASE("FortranEvaluator derived type parameter from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: param_point\ninteger :: x, y\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(param_point), parameter :: param_cp = param_point(7, 8)");
+    CHECK(r.ok);
+    r = e.evaluate2("type(param_point) :: param_pc = param_cp");
+    CHECK(r.ok);
+    r = e.evaluate2("param_pc%x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 7);
+    r = e.evaluate2("param_pc%y");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 8);
+
+    // A constant whose value has a component of another derived type.
+    r = e.evaluate2("type :: param_inner\ninteger :: k\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type :: param_outer\ntype(param_inner) :: inner\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(param_outer), parameter :: param_co = param_outer(param_inner(12))");
+    CHECK(r.ok);
+    r = e.evaluate2("type(param_outer) :: param_po = param_co");
+    CHECK(r.ok);
+    r = e.evaluate2("param_po%inner%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 12);
+}
+
+// The same with the type, the constant and the variable in one cell.
+TEST_CASE("FortranEvaluator derived type parameter in one cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(type :: param_cell_point
+integer :: x, y
+end type
+type(param_cell_point), parameter :: param_cell_cp = param_cell_point(7, 8)
+type(param_cell_point) :: param_cell_pc = param_cell_cp)");
+    CHECK(r.ok);
+    r = e.evaluate2("param_cell_pc%x * 10 + param_cell_pc%y");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 78);
 }
 
 #ifndef __EMSCRIPTEN__
@@ -2036,6 +3628,67 @@ TEST_CASE("FortranEvaluator Array 2") {
     r = e.evaluate2("print *, x");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
+}
+
+// A fixed-size array a cell declares with an initializer is initialized
+// statically, like a module variable (#13459).
+TEST_CASE("FortranEvaluator Array initializer") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("integer :: a(3) = [1, 2, 3]");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("a(3)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3);
+    r = e.evaluate2("sum(a)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+
+    r = e.evaluate2("integer :: b(3) = (/4, 5, 6/)");
+    CHECK(r.ok);
+    r = e.evaluate2("b(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 5);
+
+    r = e.evaluate2("integer :: c(4) = 7");
+    CHECK(r.ok);
+    r = e.evaluate2("sum(c)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 28);
+
+    r = e.evaluate2("real(8) :: d(2) = [1.5d0, 2.5d0]");
+    CHECK(r.ok);
+    r = e.evaluate2("d(1) + d(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r.result.f64 == 4.0);
+
+    r = e.evaluate2("character(len=2) :: s(2) = [\"ab\", \"cd\"]\ns(1) == \"ab\" .and. s(2) == \"cd\"");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(r.result.b);
+
+    // The array stays assignable after its static initialization.
+    r = e.evaluate2("a(1) = 10");
+    CHECK(r.ok);
+    r = e.evaluate2("sum(a)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 15);
+
+    // The declaration and a use of the array in a single cell.
+    r = e.evaluate2("integer :: f(2) = [8, 9]\nf(1) * f(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 72);
 }
 
 TEST_CASE("FortranEvaluator re-declaration 1") {
@@ -3064,6 +4717,110 @@ end program
 )").ok);
 }
 
+TEST_CASE("FortranEvaluator generic subroutine called from a cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Issue 16710: a cell that calls a module's generic subroutine, after
+    // another cell used the module, crashed the kernel.
+    CHECK(e.evaluate2(R"(module mgsub
+implicit none
+integer :: last = 0
+interface show
+    module procedure show_int, show_real
+end interface
+contains
+    subroutine show_int(i)
+        integer, intent(in) :: i
+        last = i
+    end subroutine
+    subroutine show_real(x)
+        real(8), intent(in) :: x
+        last = -int(x)
+    end subroutine
+end module
+)").ok);
+    CHECK(e.evaluate2("use mgsub").ok);
+    CHECK(e.evaluate2("call show(3)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("last");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 3);
+    CHECK(e.evaluate2("call show(5.0d0)").ok);
+    r = e.evaluate2("last");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == -5);
+
+    // The use and the call in one cell.
+    FortranEvaluator e2(cu);
+    CHECK(e2.evaluate2(R"(module mgsub2
+implicit none
+integer :: last = 0
+interface show
+    module procedure show_int
+end interface
+contains
+    subroutine show_int(i)
+        integer, intent(in) :: i
+        last = i
+    end subroutine
+end module
+)").ok);
+    CHECK(e2.evaluate2(R"(use mgsub2
+call show(7)
+)").ok);
+    r = e2.evaluate2("last");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 7);
+
+    // Specifics with optional arguments, and a generic function.
+    FortranEvaluator e3(cu);
+    CHECK(e3.evaluate2(R"(module mgsub3
+implicit none
+integer :: last = 0
+interface put
+    module procedure put_int, put_real
+end interface
+interface twice
+    module procedure twice_int, twice_real
+end interface
+contains
+    subroutine put_int(i, scale)
+        integer, intent(in) :: i
+        integer, intent(in), optional :: scale
+        last = i
+        if (present(scale)) last = last * scale
+    end subroutine
+    subroutine put_real(x, scale)
+        real(8), intent(in) :: x
+        integer, intent(in), optional :: scale
+        last = int(x)
+        if (present(scale)) last = last * scale
+    end subroutine
+    integer function twice_int(i)
+        integer, intent(in) :: i
+        twice_int = 2 * i
+    end function
+    real(8) function twice_real(x)
+        real(8), intent(in) :: x
+        twice_real = 2 * x
+    end function
+end module
+)").ok);
+    CHECK(e3.evaluate2("use mgsub3").ok);
+    CHECK(e3.evaluate2("call put(4, scale=3)").ok);
+    r = e3.evaluate2("last");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 12);
+    CHECK(e3.evaluate2("call put(2.0d0)").ok);
+    r = e3.evaluate2("last");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 2);
+    r = e3.evaluate2("twice(21)");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 42);
+}
+
 TEST_CASE("FortranEvaluator a modfile module used by a cell's module") {
     // A module loaded from a modfile is held by the cell that first used it,
     // so a later cell resolves it through the chain and its module calls into
@@ -3512,6 +5269,103 @@ end program
     REQUIRE(r.result.i32 == 15);
 }
 
+// An array of a derived type that a cell declares with a constant array
+// initializer keeps the initializer's element values rather than only the
+// components' defaults (#16945).
+TEST_CASE("FortranEvaluator derived type array constant initializer") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: arr_init_t\ninteger :: k\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_t) :: arr_init_a(2) = [arr_init_t(5), arr_init_t(6)]");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_a(1)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 5);
+    r = e.evaluate2("arr_init_a(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+
+    // A component default, overridden by the initializer.
+    r = e.evaluate2("type :: arr_init_d\ninteger :: k = 3, m = 4\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_d) :: arr_init_b(3) = [arr_init_d(7, 8), arr_init_d(9, 10), arr_init_d(11, 12)]");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_b(3)%m");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 12);
+    r = e.evaluate2("arr_init_b(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+
+    // A scalar structure constructor broadcast to every element.
+    r = e.evaluate2("type(arr_init_t) :: arr_init_s(3) = arr_init_t(15)");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_s(1)%k + arr_init_s(3)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 30);
+
+    // The array stays assignable after its static initialization.
+    r = e.evaluate2("arr_init_a(1)%k = 20");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_a(1)%k + arr_init_a(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 26);
+
+    // The type, the declaration and a use of it in a single cell.
+    r = e.evaluate2(R"(type :: arr_init_c
+integer :: k
+end type
+type(arr_init_c) :: arr_init_v(2) = [arr_init_c(13), arr_init_c(14)]
+arr_init_v(1)%k + arr_init_v(2)%k)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 27);
+
+    // A type with an allocatable component: the static data and the
+    // component's runtime setup compose, and it can be allocated later.
+    r = e.evaluate2("type :: arr_init_u\ninteger, allocatable :: x(:)\ninteger :: k = 1\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_u) :: arr_init_w(2) = [arr_init_u(k=5), arr_init_u(k=6)]");
+    CHECK(r.ok);
+    r = e.evaluate2("10 * arr_init_w(1)%k + arr_init_w(2)%k + merge(100, 0, allocated(arr_init_w(1)%x))");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 56);
+    r = e.evaluate2("allocate(arr_init_w(1)%x(3))");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_w(1)%x = 7");
+    CHECK(r.ok);
+    r = e.evaluate2("sum(arr_init_w(1)%x) + arr_init_w(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 27);
+
+    // A type with array and character components.
+    r = e.evaluate2("type :: arr_init_e\ninteger :: a(2) = [1, 2]\ncharacter(len=3) :: s = \"abc\"\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_e) :: arr_init_f(2) = [arr_init_e([3, 4], \"xyz\"), arr_init_e()]");
+    CHECK(r.ok);
+    r = e.evaluate2("1000 * arr_init_f(1)%a(1) + 100 * arr_init_f(1)%a(2) + 10 * arr_init_f(2)%a(1) + arr_init_f(2)%a(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3412);
+    r = e.evaluate2("merge(1, 0, arr_init_f(1)%s == \"xyz\") + merge(10, 0, arr_init_f(2)%s == \"abc\")");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 11);
+}
+
 TEST_CASE("FortranEvaluator the calls the kernel makes") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -3738,6 +5592,40 @@ TEST_CASE("FortranEvaluator execute: results and cells") {
     CHECK(cell.value.text() == "2");
     CHECK(cell.diagnostics.find("warning: Different kinds of args in max0")
         != std::string::npos);
+}
+
+TEST_CASE("FortranEvaluator execute: formatted print of an array section") {
+    // The items of an array section share one format, as in a compiled
+    // program (#16712).
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    auto check_output = [&](const std::string &code,
+            const std::string &expected) {
+        output.clear();
+        auto cell = e.execute(code, false, io);
+        CAPTURE(code);
+        REQUIRE_MESSAGE(cell.ok, cell.error_text());
+        CHECK(output == expected);
+    };
+    REQUIRE(e.execute("real(8) :: a(3, 0:4)").ok);
+    REQUIRE(e.execute("a = 1").ok);
+    check_output("print \"(3f9.3)\", a(:, 4)",
+        "    1.000    1.000    1.000\n");
+    check_output("print \"(a, 3f9.3)\", \"a:\", a(:, 4)",
+        "a:    1.000    1.000    1.000\n");
+    REQUIRE(e.execute("integer, allocatable :: v(:)").ok);
+    REQUIRE(e.execute("allocate(v(4))").ok);
+    REQUIRE(e.execute("v = [1, 2, 3, 4]").ok);
+    check_output("print \"(a, 4i2, a)\", \"v:\", v, \".\"",
+        "v: 1 2 3 4.\n");
+    check_output("print \"(a, 2i2)\", \"v:\", v(2:3)", "v: 2 3\n");
+    REQUIRE(e.execute("type :: point\n    integer :: x, y\nend type").ok);
+    REQUIRE(e.execute("type(point) :: p").ok);
+    REQUIRE(e.execute("p = point(1, 2)").ok);
+    check_output("print \"(a, 2i2)\", \"p:\", p", "p: 1 2\n");
 }
 
 TEST_CASE("FortranEvaluator execute: persistent implicit none") {
@@ -4019,6 +5907,57 @@ static void run_cell(FortranEvaluator &e, const std::string &code,
     CAPTURE(code);
     REQUIRE_MESSAGE(cell.ok, cell.error_text());
 }
+
+#ifndef _WIN32
+// The cell runs on a thread of its own while the caller passes its output on.
+// That thread must have the stack the cell had on the main thread, not the
+// default for a new thread, which on macOS is 512 KiB (#16348). glibc's
+// default follows RLIMIT_STACK, so it is lowered here to what macOS has.
+TEST_CASE("FortranEvaluator execute: a streaming cell keeps the main thread's stack") {
+    struct rlimit limit;
+    REQUIRE(getrlimit(RLIMIT_STACK, &limit) == 0);
+    if (limit.rlim_cur != RLIM_INFINITY && limit.rlim_cur < 8 * 1024 * 1024) {
+        MESSAGE("RLIMIT_STACK is below 8 MiB; skipping");
+        return;
+    }
+#ifdef __GLIBC__
+    struct DefaultStack {
+        pthread_attr_t saved;
+        DefaultStack() {
+            REQUIRE(pthread_getattr_default_np(&saved) == 0);
+            pthread_attr_t small;
+            REQUIRE(pthread_attr_init(&small) == 0);
+            REQUIRE(pthread_attr_setstacksize(&small, 512 * 1024) == 0);
+            REQUIRE(pthread_setattr_default_np(&small) == 0);
+            pthread_attr_destroy(&small);
+        }
+        ~DefaultStack() {
+            pthread_setattr_default_np(&saved);
+            pthread_attr_destroy(&saved);
+        }
+    } default_stack;
+#endif
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    run_cell(e, R"(
+recursive function depth(n) result(r)
+integer, intent(in) :: n
+integer :: r
+if (n == 0) then
+    r = 0
+else
+    r = 1 + depth(n - 1)
+end if
+end function
+)", io);
+    // 2 to 4 MiB of frames: well beyond 512 KiB, well within 8 MiB.
+    run_cell(e, "print '(i0)', depth(100000)", io);
+    CHECK(output == "100000\n");
+}
+#endif
 
 static void check_input(const std::string &code,
         std::vector<std::string> records, int expected_calls = -1) {
@@ -4333,4 +6272,331 @@ allocate(character(n+1) :: s, t)
         REQUIRE(r.ok);
         CHECK(r.result.i32 == 2);
     }
+}
+
+TEST_CASE("FortranEvaluator assumed-shape procedure called from a later cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    // A procedure with an assumed-shape intent dummy also gets an
+    // array-by-data copy. A later cell can still call the original with
+    // a descriptor, so the cell that defines it has to keep it.
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(subroutine fill_16711(x)
+real(8), intent(out) :: x(:)
+x = 1.0d0
+end subroutine
+)").ok);
+        REQUIRE(e.evaluate2(R"(real(8) :: v(4)
+v = 0.0d0
+call fill_16711(v)
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("sum(v)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+        CHECK(r.result.f64 == 4.0);
+    }
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(real(8) function total_16711(x)
+real(8), intent(in) :: x(:)
+total_16711 = sum(x)
+end function
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("total_16711([1.0d0, 2.0d0, 3.0d0])");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+        CHECK(r.result.f64 == 6.0);
+    }
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(module m_16711
+implicit none
+contains
+real(8) function row_sum_16711(x)
+real(8), intent(in) :: x(:)
+row_sum_16711 = sum(x)
+end function
+end module
+)").ok);
+        REQUIRE(e.evaluate2(R"(use m_16711
+real(8) :: a(2, 3)
+a = reshape([1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0], [2, 3])
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("row_sum_16711(a(2, :))");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+        CHECK(r.result.f64 == 12.0);
+    }
+}
+
+// Whether the LLVM IR defines (not merely declares) a function whose
+// definition line mentions `name`.
+static bool llvm_ir_defines(const std::string &ir, const std::string &name) {
+    size_t pos = 0;
+    while ((pos = ir.find("define ", pos)) != std::string::npos) {
+        size_t end = ir.find('\n', pos);
+        std::string line = ir.substr(pos, end == std::string::npos
+            ? std::string::npos : end - pos);
+        if (line.find(name) != std::string::npos) return true;
+        if (end == std::string::npos) break;
+        pos = end;
+    }
+    return false;
+}
+
+TEST_CASE("FortranEvaluator keeps only linkable user procedures across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // A function with an assumed-shape dummy is specialized by
+    // array_by_data (total_16858_real____0). Its body's `sum(x)` also
+    // instantiates a compiler-generated helper, which is specialized in
+    // turn. A later cell can link to the user function, but not to the
+    // helper, which it regenerates for itself. Only the user function's
+    // descriptor original may stay in this cell's IR.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.skip_llvm_backend_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate(
+        R"(real(8) function total_16858(x)
+real(8), intent(in) :: x(:)
+total_16858 = sum(x)
+end function
+)", true, lm, lpm, d);
+    INFO(d.render2());
+    REQUIRE(r.ok);
+    const std::string &ir = r.result.llvm_ir;
+    CHECK(llvm_ir_defines(ir, "total_16858("));
+    CHECK(llvm_ir_defines(ir, "_lcompilers_Sum_8_1_0_idx4_real____0("));
+    // Match the helper's name only, so the assertion does not depend on how
+    // LLVM spells the descriptor argument.
+    CHECK_FALSE(llvm_ir_defines(ir, "_lcompilers_Sum_8_1_0_idx4("));
+    // The retained descriptor original still links from a later cell. Use a
+    // section, not a contiguous constructor: only a section keeps the
+    // descriptor call that needs the original.
+    REQUIRE(e.evaluate2(R"(real(8) :: w_16858(3)
+w_16858 = [1.0d0, 2.0d0, 3.0d0]
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r2
+        = e.evaluate2("total_16858(w_16858(2:3))");
+    REQUIRE(r2.ok);
+    CHECK(r2.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r2.result.f64 == 5.0);
+}
+
+TEST_CASE("FortranEvaluator drops only descriptor originals of nested procedures") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The scope half of the retention rule: a top-level procedure's descriptor
+    // original is kept for later cells, while an internal procedure's is
+    // dropped because no other unit can reach it. Both still get a data
+    // version that the host body calls.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.skip_llvm_backend_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate(
+        R"(real(8) function outer_16858(x)
+real(8), intent(in) :: x(:)
+outer_16858 = inner_16858(x)
+contains
+real(8) function inner_16858(y)
+real(8), intent(in) :: y(:)
+inner_16858 = sum(y)
+end function
+end function
+)", true, lm, lpm, d);
+    INFO(d.render2());
+    REQUIRE(r.ok);
+    const std::string &ir = r.result.llvm_ir;
+    CHECK(llvm_ir_defines(ir, "outer_16858("));
+    CHECK(llvm_ir_defines(ir, "outer_16858.inner_16858_real____0("));
+    CHECK_FALSE(llvm_ir_defines(ir, ".inner_16858("));
+    // The host original still links from a later cell with a section.
+    REQUIRE(e.evaluate2(R"(real(8) :: v_16858(4)
+v_16858 = [1.0d0, 2.0d0, 3.0d0, 4.0d0]
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r2
+        = e.evaluate2("outer_16858(v_16858(2:3))");
+    REQUIRE(r2.ok);
+    CHECK(r2.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r2.result.f64 == 5.0);
+}
+
+TEST_CASE("FortranEvaluator keeps a user procedure with a helper-like name") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Compiler provenance is structural, not a name prefix: a user procedure
+    // may legitimately start with `_lcompilers_`. Its descriptor original must
+    // stay so a later cell can call it with a section.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.skip_llvm_backend_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate(
+        R"(real(8) function _lcompilers_user_16858(x)
+real(8), intent(in) :: x(:)
+_lcompilers_user_16858 = sum(x)
+end function
+)", true, lm, lpm, d);
+    INFO(d.render2());
+    REQUIRE(r.ok);
+    const std::string &ir = r.result.llvm_ir;
+    CHECK(llvm_ir_defines(ir, "_lcompilers_user_16858("));
+    REQUIRE(e.evaluate2(R"(real(8) :: vv2_16858(4)
+vv2_16858 = [1.0d0, 2.0d0, 3.0d0, 4.0d0]
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r2
+        = e.evaluate2("_lcompilers_user_16858(vv2_16858(2:3))");
+    REQUIRE(r2.ok);
+    CHECK(r2.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r2.result.f64 == 5.0);
+}
+
+TEST_CASE("FortranEvaluator redefines a procedure in a later cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(integer function value_16858(x)
+integer, intent(in) :: x
+value_16858 = x + 1
+end function
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("value_16858(10)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 11);
+        // A later definition of the same name shadows the earlier one for
+        // cells that come after it.
+        REQUIRE(e.evaluate2(R"(integer function value_16858(x)
+integer, intent(in) :: x
+value_16858 = x * 10
+end function
+)").ok);
+        r = e.evaluate2("value_16858(10)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 100);
+    }
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(module m_red_16858
+implicit none
+contains
+integer function value_16858(x)
+integer, intent(in) :: x
+value_16858 = x + 1
+end function
+end module
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("use m_red_16858\nvalue_16858(10)\n");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 11);
+        // Redefining the module and using it in a later cell sees the new
+        // module procedure body.
+        REQUIRE(e.evaluate2(R"(module m_red_16858
+implicit none
+contains
+integer function value_16858(x)
+integer, intent(in) :: x
+value_16858 = x * 10
+end function
+end module
+)").ok);
+        r = e.evaluate2("use m_red_16858\nvalue_16858(10)\n");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 100);
+    }
+    {
+        FortranEvaluator e(cu);
+        // An assumed-shape procedure is specialized by array_by_data, so
+        // redefining it also exercises the pass's specialization cache.
+        REQUIRE(e.evaluate2(R"(real(8) function arr_value_16858(x)
+real(8), intent(in) :: x(:)
+arr_value_16858 = x(1) + x(2)
+end function
+)").ok);
+        REQUIRE(e.evaluate2(R"(real(8) :: av_16858(2)
+av_16858 = [1.0d0, 2.0d0]
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("arr_value_16858(av_16858)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+        CHECK(r.result.f64 == 3.0);
+        // The redefined body is used; the cached specialization of the first
+        // definition is not reused.
+        REQUIRE(e.evaluate2(R"(real(8) function arr_value_16858(x)
+real(8), intent(in) :: x(:)
+arr_value_16858 = 2.0d0 * (x(1) + x(2))
+end function
+)").ok);
+        r = e.evaluate2("arr_value_16858(av_16858)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+        CHECK(r.result.f64 == 6.0);
+    }
+}
+
+TEST_CASE("ASR structure constructor with an allocatable component in an assignment") {
+    // An initialization expression cannot give an allocatable component a
+    // value, but an assignment may: it allocates the component. The check
+    // for the initialization-expression restriction must not fire here.
+    std::string source = R"(module alloc_component_assignment_m
+implicit none
+type :: inner_t
+    integer :: n
+end type
+type :: outer_t
+    type(inner_t), allocatable :: c(:)
+end type
+type :: nested_inner_t
+    integer, allocatable :: a
+end type
+type :: nested_outer_t
+    type(nested_inner_t) :: arr(1)
+end type
+contains
+subroutine assign_alloc_component()
+    type(outer_t) :: x
+    x = outer_t([inner_t(5)])
+    x = outer_t(null())
+    x = outer_t()
+end subroutine
+subroutine assign_nested_alloc_component()
+    type(nested_outer_t) :: y
+    y = nested_outer_t([nested_inner_t(5)])
+end subroutine
+end module)";
+    Allocator al(256*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+    compiler_options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    auto *ast = TRY(LCompilers::LFortran::parse(al, source,
+        diagnostics, compiler_options));
+    LCompilers::LocationManager lm;
+    auto *asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast, diagnostics,
+        nullptr, false, compiler_options, lm));
+    CHECK_FALSE(diagnostics.has_error());
+    CHECK(asr->m_symtab->get_symbol("alloc_component_assignment_m") != nullptr);
 }

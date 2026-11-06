@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.call.frame_argument]: the call to 'inner' must pass a frame of type 'frame' as its argument 'f'
+   --> tests/asr/verify/call_frame_argument_not_frame.asr:369:18
+    |
+369 |                 (SubroutineCall
+    |                  ^^^^^^^^^^^^^^ failed here

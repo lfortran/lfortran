@@ -20,8 +20,8 @@ subroutine elements(u, v, i, j)
     integer(4), intent(in) :: j
     type(t), dimension(:), intent(in) :: u
     type(t), dimension(:), intent(inout) :: v
-__libasr_created_real_binop_left_ => u(j)%x(1:2)
-__libasr_created__array_section_ => v(i)%x(2:3)
+    __libasr_created_real_binop_left_ => u(j)%x(1:2)
+    __libasr_created__array_section_ => v(i)%x(2:3)
     __libasr_created__array_section_ = __libasr_created_real_binop_left_ - real(1, kind=4)
 end subroutine elements
 
@@ -36,8 +36,8 @@ subroutine fixed_sec(a, c)
     real(4), dimension(:), pointer :: __libasr_created_real_binop_left_
     type(t), intent(in) :: a
     type(t), intent(inout) :: c
-__libasr_created_real_binop_left_ => a%w(2:3)
-__libasr_created__array_section_ => c%w(1:2)
+    __libasr_created_real_binop_left_ => a%w(2:3)
+    __libasr_created__array_section_ => c%w(1:2)
     __libasr_created__array_section_ = __libasr_created_real_binop_left_ + real(1, kind=4)
 end subroutine fixed_sec
 
@@ -45,8 +45,8 @@ subroutine from_module(c)
     real(4), dimension(:), pointer :: __libasr_created__array_section_
     real(4), dimension(:), pointer :: __libasr_created__array_section_pointer_
     type(t), intent(inout) :: c
-__libasr_created__array_section_ => c%x(1:2)
-__libasr_created__array_section_pointer_ => g%x(2:3)
+    __libasr_created__array_section_ => c%x(1:2)
+    __libasr_created__array_section_pointer_ => g%x(2:3)
     __libasr_created__array_section_ = __libasr_created__array_section_pointer_
 end subroutine from_module
 
@@ -55,12 +55,12 @@ subroutine module_pointer()
     real(4), dimension(:), pointer :: __libasr_created__array_section_pointer_
     real(4), dimension(:), allocatable :: __libasr_created_real_binop_left_
     type(t), pointer :: p
-p => gt
+    p => gt
     deallocate(__libasr_created_real_binop_left_)
     allocate(__libasr_created_real_binop_left_((2 - 1)/1 + 1))
-__libasr_created__array_section_pointer_ => p%x(1:2)
+    __libasr_created__array_section_pointer_ => p%x(1:2)
     __libasr_created_real_binop_left_ = __libasr_created__array_section_pointer_
-__libasr_created__array_section_ => gt%x(2:3)
+    __libasr_created__array_section_ => gt%x(2:3)
     __libasr_created__array_section_ = __libasr_created_real_binop_left_ + real(1, kind=4)
 end subroutine module_pointer
 
@@ -79,9 +79,9 @@ subroutine same_array(v, i, j)
     type(t), dimension(:), intent(inout) :: v
     deallocate(__libasr_created_real_binop_left_)
     allocate(__libasr_created_real_binop_left_((2 - 1)/1 + 1))
-__libasr_created__array_section_pointer_ => v(j)%x(1:2)
+    __libasr_created__array_section_pointer_ => v(j)%x(1:2)
     __libasr_created_real_binop_left_ = __libasr_created__array_section_pointer_
-__libasr_created__array_section_ => v(i)%x(2:3)
+    __libasr_created__array_section_ => v(i)%x(2:3)
     __libasr_created__array_section_ = __libasr_created_real_binop_left_*real(10, kind=4)
 end subroutine same_array
 
@@ -93,7 +93,7 @@ subroutine same_array_fixed(v, i, j)
     type(t), dimension(:), intent(inout) :: v
     deallocate(__libasr_created__array_section_)
     allocate(__libasr_created__array_section_(3))
-__libasr_created__array_section_pointer_ => v(j)%w(3:1:-1)
+    __libasr_created__array_section_pointer_ => v(j)%w(3:1:-1)
     __libasr_created__array_section_ = __libasr_created__array_section_pointer_
     v(i)%w = __libasr_created__array_section_
 end subroutine same_array_fixed
@@ -103,10 +103,10 @@ subroutine same_object(c)
     real(4), dimension(:), allocatable :: __libasr_created__array_section_1
     real(4), dimension(:), pointer :: __libasr_created__array_section_pointer_
     type(t), intent(inout) :: c
-__libasr_created__array_section_ => c%x(2:3)
+    __libasr_created__array_section_ => c%x(2:3)
     deallocate(__libasr_created__array_section_1)
     allocate(__libasr_created__array_section_1((2 - 1)/1 + 1))
-__libasr_created__array_section_pointer_ => c%x(1:2)
+    __libasr_created__array_section_pointer_ => c%x(1:2)
     __libasr_created__array_section_1 = __libasr_created__array_section_pointer_
     __libasr_created__array_section_ = __libasr_created__array_section_1
 end subroutine same_object
@@ -118,9 +118,9 @@ subroutine sec_add(a, c, n)
     type(t), intent(in) :: a
     type(t), intent(inout) :: c
     integer(4), intent(in) :: n
-__libasr_created_real_binop_left_ => a%x(1:n)
-__libasr_created_real_binop_right_ => a%z(1:n, 1)
-__libasr_created__array_section_ => c%x(1:n)
+    __libasr_created_real_binop_left_ => a%x(1:n)
+    __libasr_created_real_binop_right_ => a%z(1:n, 1)
+    __libasr_created__array_section_ => c%x(1:n)
     __libasr_created__array_section_ = __libasr_created_real_binop_left_ + __libasr_created_real_binop_right_
 end subroutine sec_add
 
@@ -130,8 +130,8 @@ subroutine sec_copy(a, c, n)
     type(t), intent(in) :: a
     type(t), intent(inout) :: c
     integer(4), intent(in) :: n
-__libasr_created__array_section_ => c%x(1:n)
-__libasr_created__array_section_pointer_ => a%x(1:n)
+    __libasr_created__array_section_ => c%x(1:n)
+    __libasr_created__array_section_pointer_ => a%x(1:n)
     __libasr_created__array_section_ = __libasr_created__array_section_pointer_
 end subroutine sec_copy
 
@@ -140,8 +140,8 @@ subroutine sec_shift(a, c)
     real(4), dimension(:), pointer :: __libasr_created__array_section_pointer_
     type(t), intent(in) :: a
     type(t), intent(inout) :: c
-__libasr_created__array_section_ => c%x(2:3)
-__libasr_created__array_section_pointer_ => a%x(1:2)
+    __libasr_created__array_section_ => c%x(2:3)
+    __libasr_created__array_section_pointer_ => a%x(1:2)
     __libasr_created__array_section_ = __libasr_created__array_section_pointer_
 end subroutine sec_shift
 
@@ -153,9 +153,9 @@ subroutine targets(a, c)
     type(t), intent(inout), target :: c
     deallocate(__libasr_created_real_binop_left_)
     allocate(__libasr_created_real_binop_left_((2 - 1)/1 + 1))
-__libasr_created__array_section_pointer_ => a%x(1:2)
+    __libasr_created__array_section_pointer_ => a%x(1:2)
     __libasr_created_real_binop_left_ = __libasr_created__array_section_pointer_
-__libasr_created__array_section_ => c%x(2:3)
+    __libasr_created__array_section_ => c%x(2:3)
     __libasr_created__array_section_ = __libasr_created_real_binop_left_ + real(1, kind=4)
 end subroutine targets
 
@@ -166,7 +166,7 @@ subroutine targets_fixed(a, c)
     type(t), intent(inout), target :: c
     deallocate(__libasr_created__array_section_)
     allocate(__libasr_created__array_section_(3))
-__libasr_created__array_section_pointer_ => a%w(3:1:-1)
+    __libasr_created__array_section_pointer_ => a%w(3:1:-1)
     __libasr_created__array_section_ = __libasr_created__array_section_pointer_
     c%w = __libasr_created__array_section_
 end subroutine targets_fixed
@@ -177,10 +177,10 @@ subroutine through_pointer(p, c)
     real(4), dimension(:), pointer :: __libasr_created__array_section_pointer_
     type(t), intent(inout), target :: c
     type(t), pointer, intent(in) :: p
-__libasr_created__array_section_ => c%x(2:3)
+    __libasr_created__array_section_ => c%x(2:3)
     deallocate(__libasr_created__array_section_1)
     allocate(__libasr_created__array_section_1((2 - 1)/1 + 1))
-__libasr_created__array_section_pointer_ => p%x(1:2)
+    __libasr_created__array_section_pointer_ => p%x(1:2)
     __libasr_created__array_section_1 = __libasr_created__array_section_pointer_
     __libasr_created__array_section_ = __libasr_created__array_section_1
 end subroutine through_pointer

@@ -1,11 +1,14 @@
 #include <libasr/codegen/asr_to_cuda.h>
 #include <libasr/codegen/asr_to_gpu_c.h>
+#include <libasr/pass/gpu_decline.h>
 
 namespace LCompilers {
 
-// CUDA C++, and the CPU emulation of it that `--gpu=cuda_cpu` compiles as
-// ordinary host code. The spellings the shared device code generator asks a
-// dialect for; everything else it derives from the ASR itself.
+// CUDA C++, the CPU emulation of it that `--gpu=cuda_cpu` compiles as
+// ordinary host code, and HIP (`--gpu=hip`), which spells everything this
+// dialect emits as CUDA C++ does. The spellings the shared device code
+// generator asks a dialect for; everything else it derives from the ASR
+// itself.
 struct CudaDialect {
     // Whether to emit the trailing kernel-registration shim, which is only
     // meaningful to the runtime's lookup-by-name launch path.
@@ -13,9 +16,16 @@ struct CudaDialect {
     // Whether to emit the extra shims the CPU emulation needs. The real CUDA
     // output is left untouched.
     bool emulate_cpu = false;
+    // Whether the source is compiled as HIP for an AMD GPU.
+    bool hip = false;
+    // The integer kind element offsets are computed in
+    // (GpuDeviceCapabilities::offset_kind).
+    int element_offset_kind = 4;
 
-    CudaDialect(bool emit_registrar_, bool emulate_cpu_)
-        : emit_registrar(emit_registrar_), emulate_cpu(emulate_cpu_) {}
+    CudaDialect(bool emit_registrar_, bool emulate_cpu_, bool hip_,
+            int offset_kind_)
+        : emit_registrar(emit_registrar_), emulate_cpu(emulate_cpu_),
+          hip(hip_), element_offset_kind(offset_kind_) {}
 
     // CUDA has one flat address space for global memory, so a pointer into it
     // needs no qualifier at all; only the two special spaces are named.
@@ -33,8 +43,20 @@ struct CudaDialect {
         return (kind == 8) ? "double" : "float";
     }
 
+    // The integer kind an element's offset in an array is computed in:
+    // 8 with --descriptor-index-64, the flag that selects 64-bit array
+    // indexing, and 4 otherwise, which is cheaper to compute in.
+    int offset_kind() const {
+        return element_offset_kind;
+    }
+
     void emit_prologue(std::stringstream &src) const {
         src << "#include <stdint.h>\n";
+        if (hip) {
+            // nvcc includes the CUDA runtime header itself; the HIP driver
+            // needs the HIP one named.
+            src << "#include <hip/hip_runtime.h>\n";
+        }
         if (emulate_cpu) {
             // Turns the CUDA execution space qualifiers and the built-in
             // thread coordinates into plain host C++.
@@ -120,6 +142,19 @@ struct CudaDialect {
 
     std::string uint_type() const {
         return "unsigned int";
+    }
+
+    // The bits of `value` read as a `type` of the same width: a real of
+    // kind `kind` when `to_real`, else an integer of that kind. The CPU
+    // emulation defines these intrinsics in cuda_cpu_device.h.
+    std::string bit_cast(const std::string & /*type*/, bool to_real,
+            int kind, const std::string &value) const {
+        if (kind == 8) {
+            return std::string(to_real ? "__longlong_as_double("
+                : "__double_as_longlong(") + value + ")";
+        }
+        return std::string(to_real ? "__int_as_float(" : "__float_as_int(")
+            + value + ")";
     }
 
     // A relaxed atomic add to an `int` in device memory, giving the old
@@ -211,7 +246,8 @@ Result<std::string> asr_to_cuda(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
     diag::Diagnostics &diagnostics, CompilerOptions &co, bool emit_registrar)
 {
     ASRToGpuCVisitor<CudaDialect> v(co,
-        CudaDialect(emit_registrar, co.gpu_cpu_emulation));
+        CudaDialect(emit_registrar, co.gpu_cpu_emulation, co.gpu_hip,
+            gpu_device_capabilities(co.po).offset_kind));
     try {
         v.visit_TranslationUnit(asr);
     } catch (const CodeGenError &e) {

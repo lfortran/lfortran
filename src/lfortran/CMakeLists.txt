@@ -12,6 +12,8 @@ set(SRC
     semantics/ast_symboltable_visitor.cpp
     semantics/ast_body_visitor.cpp
     semantics/ast_to_asr.cpp
+    semantics/elemental_checks.cpp
+    semantics/pure_checks.cpp
 
     fortran_evaluator.cpp
     pipeline.cpp
@@ -84,6 +86,13 @@ target_include_directories(lfortran_lib PRIVATE $<BUILD_INTERFACE:${CMAKE_CURREN
 
 configure_file(config.h.cmakein config.h @ONLY)
 target_link_libraries(lfortran_lib asr lfortran_parser_obj lfortran_runtime_static)
+# The native fortran_evaluator.cpp uses std::thread. glibc < 2.34 (such as
+# the conda sysroot) keeps pthread_create in libpthread, which only LLVM's
+# link flags would otherwise pull in.
+if (NOT EMSCRIPTEN)
+    find_package(Threads REQUIRED)
+    target_link_libraries(lfortran_lib Threads::Threads)
+endif()
 
 
 if (WITH_ZLIB)

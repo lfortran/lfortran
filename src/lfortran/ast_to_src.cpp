@@ -3127,6 +3127,14 @@ public:
                 return "min";
             case (reduce_opType::ReduceMAX) :
                 return "max";
+            case (reduce_opType::ReduceAND) :
+                return ".and.";
+            case (reduce_opType::ReduceOR) :
+                return ".or.";
+            case (reduce_opType::ReduceEQV) :
+                return ".eqv.";
+            case (reduce_opType::ReduceNEQV) :
+                return ".neqv.";
             default:
                 return "";
         }

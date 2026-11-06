@@ -15,6 +15,14 @@
 // Set when the CUDA runtime API is this emulation.
 #define LFORTRAN_CUDA_CPU_EMULATION 1
 
+// The version of the CUDA runtime API that is emulated, as a toolkit's
+// CUDART_VERSION gives it (1000 * major + 10 * minor): the CUDA 13 API by
+// default. Defining CUDART_VERSION first selects an older API where the two
+// differ (cudaMemPrefetchAsync), so that both can be tested.
+#ifndef CUDART_VERSION
+#define CUDART_VERSION 13000
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,8 +57,15 @@ typedef enum cudaDeviceAttr {
     cudaDevAttrMaxGridDimY = 6,
     cudaDevAttrMaxGridDimZ = 7,
     cudaDevAttrWarpSize = 10,
-    cudaDevAttrL2CacheSize = 38
+    cudaDevAttrIntegrated = 18,
+    cudaDevAttrL2CacheSize = 38,
+    cudaDevAttrPageableMemoryAccess = 88,
+    cudaDevAttrConcurrentManagedAccess = 89
 } cudaDeviceAttr;
+
+// The only flag of cudaMallocManaged: the memory is accessible from every
+// stream.
+#define cudaMemAttachGlobal 0x01
 
 // Only the default stream (0) exists.
 typedef struct lfortran_cuda_cpu_stream *cudaStream_t;
@@ -71,6 +86,32 @@ cudaError_t cudaDeviceSynchronize(void);
 cudaError_t cudaDeviceReset(void);
 cudaError_t cudaMalloc(void **ptr, size_t size);
 cudaError_t cudaFree(void *ptr);
+// Memory the host and the device both access: emulated device memory, which
+// is host memory.
+cudaError_t cudaMallocManaged(void **ptr, size_t size, unsigned int flags);
+// Moving managed memory between the host and the device does nothing: both
+// are host memory.
+#define cudaCpuDeviceId (-1)
+#if CUDART_VERSION >= 13000
+// CUDA 13 names where the memory goes by a location rather than a device
+// number; `id` is the device of a cudaMemLocationTypeDevice location.
+typedef enum cudaMemLocationType {
+    cudaMemLocationTypeInvalid = 0,
+    cudaMemLocationTypeDevice = 1,
+    cudaMemLocationTypeHost = 2
+} cudaMemLocationType;
+
+struct cudaMemLocation {
+    enum cudaMemLocationType type;
+    int id;
+};
+
+cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count,
+    struct cudaMemLocation location, unsigned int flags, cudaStream_t stream);
+#else
+cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count, int device,
+    cudaStream_t stream);
+#endif
 cudaError_t cudaMemcpy(void *dst, const void *src, size_t count,
     cudaMemcpyKind kind);
 cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count,

@@ -12,7 +12,7 @@ import unittest
 CONVERTER = Path(__file__).resolve().parents[2] / "libasr" / "dwarf_convert.py"
 
 
-def line_table(directory, filename, rows):
+def line_table(directory, filename, rows, separator="\n"):
     return f'''debug_line[0x00000000]
 Line table prologue:
 include_directories[  1] = "{directory}"
@@ -23,8 +23,7 @@ file_names[  1]:
 Address            Line   Column File   ISA Discriminator Flags
 ------------------ ------ ------ ------ --- ------------- -------------
 {rows}
-
-'''
+''' + separator
 
 
 class TestDwarfConvert(unittest.TestCase):
@@ -84,6 +83,27 @@ class TestDwarfConvert(unittest.TestCase):
             filenames, rows = self.convert(directory, [table])
             self.assertEqual(filenames, [str(directory / "source.cpp")])
             self.assertEqual(rows, [(0x100, 2, 0), (0x120, 3, 0)])
+
+    def test_tables_without_blank_line_separators(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary).resolve()
+            # llvm-dwarfdump 7 and 8 print no blank line after the rows of a
+            # table, such as a Fortran and a C compilation unit.
+            first = line_table(directory, "main.f90", '''0x100 2 1 1 0 0 is_stmt
+0x110 3 1 1 0 0 end_sequence''', separator="")
+            second = line_table(directory, "helper.c", '''0x110 5 1 1 0 0 is_stmt
+0x120 6 1 1 0 0 end_sequence''', separator="")
+            filenames, rows = self.convert(directory, [first, second])
+            self.assertEqual(filenames, [
+                str(directory / "main.f90"),
+                str(directory / "helper.c"),
+            ])
+            self.assertEqual(rows, [
+                (0x100, 2, 0),
+                (0x110, 3, 0),
+                (0x110, 5, 1),
+                (0x120, 6, 1),
+            ])
 
 
 if __name__ == "__main__":

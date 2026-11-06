@@ -12,7 +12,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int m = __scalar_args.m;
-    int __do_loop_end;
     int __flat_idx;
     int j__dc;
     int k;
@@ -21,10 +20,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc = (__flat_idx + 1);
-    __do_loop_end = m;
-    k = (1 - 1);
-    while (((k + 1) <= __do_loop_end)) {
-        k = (k + 1);
+    for (k = 1; k <= m; k++) {
         t[((int)(k) - (1))] = ((float)j__dc);
     }
     y[((int)(j__dc) - (1))] = t[((int)(4) - (1))];

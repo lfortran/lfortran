@@ -339,7 +339,8 @@ namespace LCompilers {
                                      ASR::ttype_t* asr_data_type = nullptr,
                                      llvm::Type* result_desc_type = nullptr,
                                      llvm::Value* order = nullptr,
-                                     ASR::expr_t* order_expr = nullptr) = 0;
+                                     ASR::expr_t* order_expr = nullptr,
+                                     llvm::Value* result = nullptr) = 0;
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -390,7 +391,7 @@ namespace LCompilers {
                 virtual
                 llvm::Value* internal_to_cfi(
                     llvm::Type* internal_type, llvm::Value* internal_desc,
-                    llvm::Type* el_type, int n_dims, uint64_t elem_size,
+                    llvm::Type* el_type, int n_dims, llvm::Value* elem_size,
                     int8_t type_code, int cfi_attr) = 0;
 
                 virtual
@@ -399,6 +400,12 @@ namespace LCompilers {
                     llvm::Type* el_type, llvm::Value* cfi_desc,
                     int n_dims, uint64_t elem_size,
                     llvm::Value* internal_desc = nullptr) = 0;
+
+                virtual
+                void cfi_to_internal_string(
+                    llvm::Type* internal_type, llvm::Type* str_desc_type,
+                    llvm::Value* cfi_desc, int n_dims,
+                    llvm::Value* internal_desc) = 0;
 
                 virtual
                 void push_data_array_args(
@@ -635,7 +642,8 @@ namespace LCompilers {
                                      ASR::ttype_t* asr_data_type = nullptr,
                                      llvm::Type* result_desc_type = nullptr,
                                      llvm::Value* order = nullptr,
-                                     ASR::expr_t* order_expr = nullptr);
+                                     ASR::expr_t* order_expr = nullptr,
+                                     llvm::Value* result = nullptr);
 
                 virtual
                 void copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
@@ -686,11 +694,12 @@ namespace LCompilers {
                 // folds offset into base_addr, converts strides to bytes.
                 llvm::Value* internal_to_cfi(
                     llvm::Type* internal_type, llvm::Value* internal_desc,
-                    llvm::Type* el_type, int n_dims, uint64_t elem_size,
+                    llvm::Type* el_type, int n_dims, llvm::Value* elem_size,
                     int8_t type_code, int cfi_attr);
 
                 // Convert a CFI descriptor to an internal descriptor:
                 // sets offset=0, converts byte strides to element strides.
+                // Character data is wrapped in a string_descriptor.
                 // internal_type: the cached internal struct type to use for the alloca.
                 // internal_desc: an existing internal descriptor to write into;
                 // when null, a new one is allocated.
@@ -699,7 +708,16 @@ namespace LCompilers {
                     llvm::Type* el_type, llvm::Value* cfi_desc,
                     int n_dims, uint64_t elem_size,
                     llvm::Value* internal_desc = nullptr);
-                
+
+                // Write a CFI character array descriptor back into an
+                // existing internal one: its string_descriptor takes the
+                // CFI base_addr and elem_len (the runtime character length),
+                // and byte strides are divided by that length.
+                void cfi_to_internal_string(
+                    llvm::Type* internal_type, llvm::Type* str_desc_type,
+                    llvm::Value* cfi_desc, int n_dims,
+                    llvm::Value* internal_desc);
+
                 void push_data_array_args(
                     ASR::ttype_t* val_type, ASR::expr_t* val_expr,
                     llvm::Value* data_ptr, llvm::Value* n_elems,

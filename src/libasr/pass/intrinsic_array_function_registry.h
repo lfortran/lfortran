@@ -1430,6 +1430,17 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     ASRBuilder& b = builder;
     int64_t id_array = 0, id_array_dim = 1, id_array_mask = 2, id_array_dim_mask = 3;
 
+    if( overload_id == id_array_dim || overload_id == id_array_dim_mask ) {
+        // The generated function takes `dim` as an integer of the index kind,
+        // so convert an actual `dim` of any other kind
+        ASR::ttype_t* dim_type = ASRUtils::expr_type(new_args[1].m_value);
+        if( ASRUtils::extract_kind_from_ttype_t(dim_type) != index_kind ) {
+            ASR::ttype_t* index_type = b.int_type(index_kind);
+            new_args.p[1].m_value = b.i2i_t(new_args[1].m_value, index_type);
+            arg_types.p[1] = index_type;
+        }
+    }
+
     ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
         ASRUtils::type_get_past_pointer(arg_types[0]));
     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
@@ -6264,7 +6275,13 @@ namespace Parity {
             return b.Call(fn_sym, m_args, return_type, nullptr);
         } else {
             fill_func_arg("dim", duplicate_type_with_empty_dims(al, arg_types[1]));
-            ASR::expr_t *result = declare("result", return_type, Out);
+            // The extents of a result of a shape known only at run time are
+            // expressions of the caller, so the argument has empty ones
+            ASR::ttype_t* result_type = return_type;
+            if (!ASRUtils::is_fixed_size_array(return_type)) {
+                result_type = duplicate_type_with_empty_dims(al, return_type);
+            }
+            ASR::expr_t *result = declare("result", result_type, Out);
             args.push_back(al, result);
             /*
                 for array of rank 3, the following code is generated:
@@ -7847,12 +7864,36 @@ namespace ElementwiseReduction {
             (is_designator(x) || is_elementwise_operation(x));
     }
 
+    // Whether `x` is a reference to a pure elemental function that is
+    // invoked once for each element of its array actuals, so that the loop
+    // can evaluate it element by element instead of once into an array
+    // temporary. A function that may write to a module variable, through a
+    // saved local or an impure definition, is not.
+    static inline bool is_elemental_function_reference(ASR::expr_t* x) {
+        if (!ASR::is_a<ASR::FunctionCall_t>(*x)) {
+            return false;
+        }
+        ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(x);
+        if (call->m_dt != nullptr || call->m_value != nullptr ||
+                !ASRUtils::is_array(call->m_type) ||
+                !ASRUtils::is_elemental(call->m_name)) {
+            return false;
+        }
+        ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(call->m_name);
+        return ASR::is_a<ASR::Function_t>(*symbol) &&
+            ASRUtils::is_side_effect_free_function(
+                *ASR::down_cast<ASR::Function_t>(symbol));
+    }
+
     // Whether `x` is an array computed element by element from its operands
     // by intrinsic operations, and elemental intrinsic functions if
     // `elemental_functions`, only, with `operand` true for each operand.
+    // A reference to a pure elemental function is one of them if
+    // `elemental_calls`.
     template <typename Operand>
     static inline bool is_elementwise_operation_of(ASR::expr_t* x,
-            const Operand& operand, bool elemental_functions) {
+            const Operand& operand, bool elemental_functions,
+            bool elemental_calls = false) {
         x = ASRUtils::get_past_array_physical_cast(x);
         if (!ASRUtils::is_array(ASRUtils::expr_type(x)) ||
                 ASRUtils::is_simd_array(x) || !has_elementwise_element_type(x)) {
@@ -7919,6 +7960,19 @@ namespace ElementwiseReduction {
                 }
                 return true;
             }
+            case ASR::exprType::FunctionCall: {
+                if (!elemental_calls || !is_elemental_function_reference(x)) {
+                    return false;
+                }
+                ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(x);
+                for (size_t i = 0; i < call->n_args; i++) {
+                    if (call->m_args[i].m_value != nullptr &&
+                            !operand(call->m_args[i].m_value)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
             default: {
                 return false;
             }
@@ -7926,11 +7980,11 @@ namespace ElementwiseReduction {
     }
 
     // Whether `x` is an array computed element by element from its operands
-    // by intrinsic operations and elemental intrinsic functions only. A
-    // reference to a function, which may have side effects or return an
-    // array, is not.
+    // by intrinsic operations, elemental intrinsic functions and references
+    // to pure elemental functions only. A reference to any other function,
+    // which may have side effects or return an array of its own, is not.
     static inline bool is_elementwise_operation(ASR::expr_t* x) {
-        return is_elementwise_operation_of(x, is_elementwise_operand, true);
+        return is_elementwise_operation_of(x, is_elementwise_operand, true, true);
     }
 
     // The array and mask operands of the reduction `x`, if it is one with a

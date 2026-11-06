@@ -1,0 +1,78 @@
+#include <metal_stdlib>
+using namespace metal;
+
+inline void fill_device_t_gpu_18(thread float* a_gpu, int n_gpu) {
+    int __gpu_loop_end_gpu;
+    int __gpu_loop_group_gpu;
+    int k__dc_gpu;
+    int k_gpu;
+    __gpu_loop_end_gpu = n_gpu;
+    k__dc_gpu = 1;
+    if ((__gpu_loop_end_gpu >= 1)) {
+        for (__gpu_loop_group_gpu = 1; __gpu_loop_group_gpu <= (__gpu_loop_end_gpu - 15); __gpu_loop_group_gpu += 16) {
+            k__dc_gpu = __gpu_loop_group_gpu;
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 1);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 2);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 3);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 4);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 5);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 6);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 7);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 8);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 9);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 10);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 11);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 12);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 13);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 14);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+            k__dc_gpu = (__gpu_loop_group_gpu + 15);
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+        }
+        for (k__dc_gpu = __gpu_loop_group_gpu; k__dc_gpu <= __gpu_loop_end_gpu; k__dc_gpu++) {
+            a_gpu[((int)(k__dc_gpu) - (1))] = ((float)k__dc_gpu);
+        }
+    }
+    for (k_gpu = n_gpu; k_gpu >= 1; k_gpu -= 2) {
+        a_gpu[((int)(k_gpu) - (1))] = (-(a_gpu[((int)(k_gpu) - (1))]));
+    }
+}
+
+kernel void __lfortran_gpu_kernel_0(
+    device float* x_gpu [[buffer(0)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx_gpu;
+    int i__dc_gpu;
+    if ((((0 * 0) + __thread_id) >= 8)) {
+        return;
+    }
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    i__dc_gpu = (__flat_idx_gpu + 1);
+    {
+        int p__dc_gpu;
+        int q__dc_gpu;
+        float w_gpu[4];
+        fill_device_t_gpu_18(w_gpu, 4);
+        for (p__dc_gpu = 1; p__dc_gpu <= 4; p__dc_gpu++) {
+            for (q__dc_gpu = 1; q__dc_gpu <= 3; q__dc_gpu++) {
+                x_gpu[((int)(p__dc_gpu) - (1)) + (4 * ((int)(q__dc_gpu) - (1))) + ((4 * 3) * ((int)(i__dc_gpu) - (1)))] = ((w_gpu[((int)(p__dc_gpu) - (1))] * ((float)q__dc_gpu)) + ((float)i__dc_gpu));
+            }
+        }
+    }
+}
+

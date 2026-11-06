@@ -14,23 +14,25 @@ To build the documentation you will need the following dependencies
 - [nbsphinx](https://nbsphinx.readthedocs.io/en/latest/) for converting notebooks
 - LFortran with jupyter kernel for the notebook conversion
 
-You can install all required dependencies using the mamba package manager as
-shown in the next section.
+The `docs` environment of `pixi.toml` provides all of them, as in the
+Exhaustive "Documentation" job.
 
 
 ## Building the documentation
 
-First create and load the Conda environment:
+First build LFortran with the Jupyter kernel and install it into the `docs`
+environment, from the repository root:
 
 ```console
+pixi shell -e docs
+pixi run -e docs build -DWITH_XEUS=yes -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
+cmake --build build/docs --target install
+```
+
+To build the documentation run the `build.py` script, in the same shell:
+
+```
 cd doc
-mamba env create -f environment.yml
-conda activate lfortran_docs
-```
-
-To build the documentation run the `build.py` script:
-
-```
 python build.py
 ```
 

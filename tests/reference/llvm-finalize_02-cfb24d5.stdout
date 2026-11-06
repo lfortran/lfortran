@@ -26,7 +26,7 @@ FINALIZE_SYMTABLE_finalize_02:                    ; preds = %return
   ret i32 0
 }
 
-define void @finalize_02.ss(i32* %nang) {
+define internal void @finalize_02.ss(i32* %nang) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %1 = call i8* @_lfortran_get_default_allocator()

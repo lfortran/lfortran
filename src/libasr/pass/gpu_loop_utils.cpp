@@ -5,6 +5,7 @@
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/pass_utils.h>
 
 #include <sstream>
 
@@ -231,7 +232,7 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
         head.m_start = starts[k];
         head.m_end = ends[k];
         head.m_increment = nullptr;
-        ASR::stmt_t *loop = ASRUtils::STMT(ASR::make_DoLoop_t(al,
+        ASR::stmt_t *loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al,
             l->base.base.loc, nullptr, head, cur_body, cur_n, nullptr, 0));
         Vec<ASR::stmt_t*> one;
         one.reserve(al, 1);
@@ -282,11 +283,13 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
 }
 
 ASR::stmt_t *gpu_device_copy_nest(Allocator &al, const Location &loc,
-        SymbolTable *scope, ASR::expr_t *dest, ASR::expr_t *src) {
+        SymbolTable *scope, ASR::expr_t *dest, ASR::expr_t *src,
+        int index_kind) {
     ASRUtils::ASRBuilder b(al, loc);
     ASRUtils::ExprStmtDuplicator d(al);
     size_t rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(src));
-    ASR::ttype_t *it = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+    ASR::ttype_t *it = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+        index_kind));
     std::vector<ASR::symbol_t*> vars;
     for (size_t r = 0; r < rank; r++) {
         vars.push_back(ASR::down_cast<ASR::Var_t>(b.Variable(scope,
@@ -326,7 +329,7 @@ ASR::stmt_t *gpu_device_copy_nest(Allocator &al, const Location &loc,
             ASRUtils::duplicate_type(al, it), ASR::arrayboundType::UBound,
             nullptr));
         head.m_increment = nullptr;
-        ASR::stmt_t *loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+        ASR::stmt_t *loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,
             nullptr, head, body.p, body.n, nullptr, 0));
         Vec<ASR::stmt_t*> one;
         one.reserve(al, 1);
@@ -385,7 +388,19 @@ ASR::asr_t* GpuDuplicator::duplicate_Var(ASR::Var_t *x) {
     auto vm = value_map.find(s);
     if (vm != value_map.end()) {
         ASRUtils::ExprStmtDuplicator d(al);
-        return (ASR::asr_t*)d.duplicate_expr(vm->second);
+        ASR::expr_t *v = d.duplicate_expr(vm->second);
+        // In the kind of the variable it stands for: a subscript shifted
+        // in integer(8) (see duplicate_indices) can stand for an
+        // integer(4) index variable, whose value it is.
+        ASR::ttype_t *t = ASRUtils::symbol_type(s);
+        ASR::ttype_t *vt = ASRUtils::expr_type(v);
+        if (ASRUtils::is_integer(*t) && ASRUtils::is_integer(*vt)
+                && ASRUtils::extract_kind_from_ttype_t(t)
+                    != ASRUtils::extract_kind_from_ttype_t(vt)) {
+            v = ASRUtils::ASRBuilder(al, x->base.base.loc).i2i_t(v,
+                ASRUtils::duplicate_type(al, t));
+        }
+        return (ASR::asr_t*)v;
     }
     if (array_map.count(s)) {
         // A whole array dummy is only replaced as an actual argument.
@@ -413,12 +428,18 @@ ASR::array_index_t* GpuDuplicator::duplicate_indices(ASR::ArrayItem_t *x,
             } else if (map->shift[i]) {
                 ASRUtils::ExprStmtDuplicator d(al);
                 ASR::expr_t *shift = d.duplicate_expr(map->shift[i]);
-                // In the kind of the subscript (integer(8) indices).
+                // In the wider kind of the subscript (integer(8) indices)
+                // and the shift (integer(8) offsets), so that neither is
+                // narrowed.
                 ASR::ttype_t *t = ASRUtils::expr_type(idx.m_right);
-                if (ASRUtils::extract_kind_from_ttype_t(t)
-                        != ASRUtils::extract_kind_from_ttype_t(
-                            ASRUtils::expr_type(shift))) {
-                    ASRUtils::ASRBuilder b(al, idx.loc);
+                ASR::ttype_t *st = ASRUtils::expr_type(shift);
+                int kind = ASRUtils::extract_kind_from_ttype_t(t);
+                int shift_kind = ASRUtils::extract_kind_from_ttype_t(st);
+                ASRUtils::ASRBuilder b(al, idx.loc);
+                if (shift_kind > kind) {
+                    idx.m_right = b.i2i_t(idx.m_right,
+                        ASRUtils::duplicate_type(al, st));
+                } else if (shift_kind != kind) {
                     shift = b.i2i_t(shift, ASRUtils::duplicate_type(al, t));
                 }
                 idx.m_right = gpu_int_add(al, idx.m_right, shift);
@@ -473,8 +494,16 @@ ASR::asr_t* GpuDuplicator::duplicate_ArrayBound(ASR::ArrayBound_t *x) {
                 ok = false;
                 return (ASR::asr_t*)gpu_i32(al, x->base.base.loc, 1);
             }
+            // In the kind of the inquiry: ubound(a, 1, kind=8) is
+            // integer(8).
+            ASR::ttype_t *t = duplicate_ttype(x->m_type);
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
             ASRUtils::ExprStmtDuplicator d(al);
             ASR::expr_t *lower = d.duplicate_expr(am->second.lower[dim - 1]);
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(lower))
+                    != ASRUtils::extract_kind_from_ttype_t(t)) {
+                lower = b.i2i_t(lower, t);
+            }
             if (x->m_bound == ASR::arrayboundType::LBound) {
                 return (ASR::asr_t*)lower;
             }
@@ -482,10 +511,9 @@ ASR::asr_t* GpuDuplicator::duplicate_ArrayBound(ASR::ArrayBound_t *x) {
             ASR::expr_t *size = ASRUtils::EXPR(ASR::make_ArraySize_t(al,
                 x->base.base.loc, d.duplicate_expr(am->second.actual),
                 gpu_i32(al, x->base.base.loc, dim),
-                ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4)),
-                nullptr));
+                ASRUtils::duplicate_type(al, t), nullptr));
             return (ASR::asr_t*)gpu_int_sub(al, gpu_int_add(al, lower, size),
-                gpu_i32(al, x->base.base.loc, 1));
+                b.i_t(1, t));
         }
     }
     return BaseExprStmtDuplicator<GpuDuplicator>::duplicate_ArrayBound(x);
@@ -1651,28 +1679,29 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
                 // The lower bound of the actual: stated as a constant by
                 // its type, or read from it.
                 int64_t al_const = 0;
-                ASR::expr_t *alb = nullptr;
+                bool al_known = false;
                 if (!ASRUtils::is_allocatable(at) && !ASRUtils::is_pointer(at)
                         && adims && adims[d].m_length != nullptr) {
                     if (adims[d].m_start == nullptr) {
                         al_const = 1;
-                        alb = gpu_i32(al, loc, 1);
+                        al_known = true;
                     } else if (ASRUtils::extract_value(ASRUtils::expr_value(
                             adims[d].m_start), al_const)) {
-                        alb = gpu_i32(al, loc, al_const);
+                        al_known = true;
                     }
                 }
-                if (alb && al_const == dl) {
+                ASR::ttype_t *shift_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, loc, offset_kind));
+                if (al_known && al_const == dl) {
                     aa.shift.push_back(nullptr);
-                } else if (alb) {
-                    aa.shift.push_back(gpu_i32(al, loc, al_const - dl));
+                } else if (al_known) {
+                    aa.shift.push_back(b.i_t(al_const - dl, shift_type));
                 } else {
                     ASR::expr_t *lb = ASRUtils::EXPR(ASR::make_ArrayBound_t(
-                        al, loc, actual, gpu_i32(al, loc, d + 1),
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                        al, loc, actual, gpu_i32(al, loc, d + 1), shift_type,
                         ASR::arrayboundType::LBound, nullptr));
                     aa.shift.push_back(gpu_int_sub(al, lb,
-                        gpu_i32(al, loc, dl)));
+                        b.i_t(dl, shift_type)));
                 }
             }
             dup.array_map[dummy] = aa;
@@ -1981,6 +2010,295 @@ bool gpu_may_be_aliased(ASR::symbol_t *s,
     return v->m_target_attr || ASRUtils::is_pointer(v->m_type)
         || v->m_common_block || v->m_is_volatile || v->m_is_asynchronous
         || address_taken.count(s);
+}
+
+bool gpu_uniform_workspace_condition(ASR::expr_t *e,
+        const std::set<ASR::symbol_t*> &arguments, const SymbolTable *scope,
+        const std::set<ASR::symbol_t*> &address_taken) {
+    if (!e || !scope) return false;
+    switch (e->type) {
+        case ASR::exprType::IntegerConstant:
+        case ASR::exprType::LogicalConstant: return true;
+        case ASR::exprType::Var: {
+            auto *symbol = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+            if (!arguments.count(symbol) ||
+                    !ASR::is_a<ASR::Variable_t>(*symbol)) return false;
+            auto *var = ASR::down_cast<ASR::Variable_t>(symbol);
+            if ((!ASR::is_a<ASR::Integer_t>(*var->m_type) &&
+                    !ASR::is_a<ASR::Logical_t>(*var->m_type)) ||
+                    var->m_presence == ASR::presenceType::Optional ||
+                    gpu_may_be_aliased(symbol, address_taken)) return false;
+            for (auto *s = scope; s; s = s->parent) {
+                if (ASRUtils::has_scoped_variable_attribute(*var, s, false)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        case ASR::exprType::IntegerCompare: {
+            auto *op = ASR::down_cast<ASR::IntegerCompare_t>(e);
+            return gpu_uniform_workspace_condition(op->m_left, arguments, scope, address_taken) &&
+                gpu_uniform_workspace_condition(op->m_right, arguments, scope, address_taken);
+        }
+        case ASR::exprType::LogicalBinOp: {
+            auto *op = ASR::down_cast<ASR::LogicalBinOp_t>(e);
+            return gpu_uniform_workspace_condition(op->m_left, arguments, scope, address_taken) &&
+                gpu_uniform_workspace_condition(op->m_right, arguments, scope, address_taken);
+        }
+        case ASR::exprType::LogicalNot:
+            return gpu_uniform_workspace_condition(
+                ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg, arguments, scope, address_taken);
+        default: return false;
+    }
+}
+
+ASR::expr_t *gpu_workspace_condition(ASR::expr_t *test, bool &negated) {
+    negated = false;
+    while (ASR::is_a<ASR::LogicalNot_t>(*test)) {
+        negated = !negated;
+        test = ASR::down_cast<ASR::LogicalNot_t>(test)->m_arg;
+    }
+    return test;
+}
+
+bool gpu_same_workspace_condition(ASR::expr_t *left, ASR::expr_t *right) {
+    if (left->type != right->type ||
+            !ASRUtils::check_equal_type(ASRUtils::expr_type(left),
+                ASRUtils::expr_type(right), nullptr, nullptr)) return false;
+    switch (left->type) {
+        case ASR::exprType::Var:
+            return ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(left)->m_v) ==
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(right)->m_v);
+        case ASR::exprType::IntegerConstant:
+            return PassUtils::same_expression(left, right);
+        case ASR::exprType::LogicalConstant:
+            return ASR::down_cast<ASR::LogicalConstant_t>(left)->m_value ==
+                ASR::down_cast<ASR::LogicalConstant_t>(right)->m_value;
+        case ASR::exprType::IntegerCompare: {
+            auto *a = ASR::down_cast<ASR::IntegerCompare_t>(left);
+            auto *b = ASR::down_cast<ASR::IntegerCompare_t>(right);
+            return a->m_op == b->m_op &&
+                gpu_same_workspace_condition(a->m_left, b->m_left) &&
+                gpu_same_workspace_condition(a->m_right, b->m_right);
+        }
+        case ASR::exprType::LogicalBinOp: {
+            auto *a = ASR::down_cast<ASR::LogicalBinOp_t>(left);
+            auto *b = ASR::down_cast<ASR::LogicalBinOp_t>(right);
+            return a->m_op == b->m_op &&
+                gpu_same_workspace_condition(a->m_left, b->m_left) &&
+                gpu_same_workspace_condition(a->m_right, b->m_right);
+        }
+        case ASR::exprType::LogicalNot:
+            return gpu_same_workspace_condition(
+                ASR::down_cast<ASR::LogicalNot_t>(left)->m_arg,
+                ASR::down_cast<ASR::LogicalNot_t>(right)->m_arg);
+        default: return false;
+    }
+}
+
+std::vector<GpuWorkspaceGuard> gpu_workspace_data_guards(
+        const ASR::Function_t &kernel, ASR::symbol_t *workspace) {
+    struct Uses : ASR::BaseWalkVisitor<Uses> {
+        ASR::symbol_t *workspace;
+        SymbolTable *scope;
+        std::vector<GpuWorkspaceGuard> path, common;
+        bool seen = false, escaped = false, opaque = false;
+        std::set<ASR::symbol_t*> blocks;
+        std::set<SymbolTable*> use_scopes;
+        std::set<std::pair<ASR::Function_t*, size_t>> checking_calls;
+        Uses(ASR::symbol_t *workspace, SymbolTable *scope)
+            : workspace(workspace), scope(scope) {}
+        void visit_ttype(const ASR::ttype_t &) {}
+        void visit_Var(const ASR::Var_t &x) {
+            if (ASRUtils::symbol_get_past_external(x.m_v) != workspace) return;
+            escaped |= opaque;
+            use_scopes.insert(scope);
+            auto *var = ASR::down_cast<ASR::Variable_t>(workspace);
+            for (auto *s = scope; s; s = s->parent) {
+                if (ASRUtils::has_scoped_variable_attribute(*var, s, false)) {
+                    escaped = true;
+                }
+            }
+            if (!seen) {
+                common = path;
+                seen = true;
+            } else {
+                common.erase(std::remove_if(common.begin(), common.end(),
+                    [&](GpuWorkspaceGuard &g) {
+                        bool negated;
+                        auto *condition = gpu_workspace_condition(g.branch->m_test, negated);
+                        bool matched = false;
+                        for (const auto &p : path) {
+                            if (p.on_true != g.on_true ||
+                                    !gpu_same_workspace_condition(condition,
+                                        gpu_workspace_condition(p.branch->m_test, negated))) continue;
+                            matched = true;
+                            for (const auto &site : p.sites) {
+                                if (std::none_of(g.sites.begin(), g.sites.end(),
+                                        [&](const GpuWorkspaceGuardSite &s) {
+                                            return s.branch == site.branch;
+                                        })) g.sites.push_back(site);
+                            }
+                        }
+                        return !matched;
+                    }), common.end());
+            }
+        }
+        void shape(ASR::expr_t *e) {
+            e = ASRUtils::get_past_array_physical_cast(e);
+            if (!ASR::is_a<ASR::Var_t>(*e)) visit_expr(*e);
+        }
+        void visit_ArraySize(const ASR::ArraySize_t &x) {
+            shape(x.m_v);
+            if (x.m_dim) visit_expr(*x.m_dim);
+        }
+        void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+            shape(x.m_v);
+            if (x.m_dim) visit_expr(*x.m_dim);
+        }
+        void body(ASR::stmt_t **stmts, size_t n) {
+            for (size_t i = 0; i < n; i++) visit_stmt(*stmts[i]);
+        }
+        void declarations(SymbolTable *table) {
+            for (const auto &entry : table->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*entry.second)) continue;
+                auto *v = ASR::down_cast<ASR::Variable_t>(entry.second);
+                if (v->m_symbolic_value) visit_expr(*v->m_symbolic_value);
+                else if (v->m_value) visit_expr(*v->m_value);
+            }
+        }
+        void visit_If(const ASR::If_t &x) {
+            visit_expr(*x.m_test);
+            bool negated;
+            gpu_workspace_condition(x.m_test, negated);
+            auto *branch = const_cast<ASR::If_t*>(&x);
+            path.push_back({branch, !negated, scope, {}, {{branch, scope, negated}}});
+            body(x.m_body, x.n_body);
+            path.back().on_true = !path.back().on_true;
+            body(x.m_orelse, x.n_orelse);
+            path.pop_back();
+        }
+        void block(ASR::symbol_t *symbol, SymbolTable *table,
+                ASR::stmt_t **stmts, size_t n) {
+            if (!blocks.insert(symbol).second) {
+                escaped = true;
+                return;
+            }
+            auto *previous = scope;
+            scope = table;
+            declarations(table);
+            body(stmts, n);
+            scope = previous;
+        }
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            auto *b = ASR::down_cast<ASR::Block_t>(
+                ASRUtils::symbol_get_past_external(x.m_m));
+            block(&b->base, b->m_symtab, b->m_body, b->n_body);
+        }
+        void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+            auto *b = ASR::down_cast<ASR::AssociateBlock_t>(
+                ASRUtils::symbol_get_past_external(x.m_m));
+            block(&b->base, b->m_symtab, b->m_body, b->n_body);
+        }
+        void fence(ASR::expr_t *e) {
+            if (!e) return;
+            std::set<ASR::symbol_t*> names;
+            gpu_collect_value_symbols(e, names);
+            escaped |= names.count(workspace) != 0;
+            visit_expr(*e);
+        }
+        void call(ASR::call_arg_t *args, size_t n, ASR::expr_t *dt) {
+            fence(dt);
+            for (size_t i = 0; i < n; i++) fence(args[i].m_value);
+        }
+        bool scalar_nocapture(ASR::Function_t &function, size_t index) {
+            if (!function.m_return_var || !function.n_body ||
+                    index >= function.n_args ||
+                    !ASR::is_a<ASR::Var_t>(*function.m_args[index]) ||
+                    !ASRUtils::is_side_effect_free_function(function)) return false;
+            auto *type = ASRUtils::expr_type(function.m_return_var);
+            if (!ASR::is_a<ASR::Integer_t>(*type) &&
+                    !ASR::is_a<ASR::Real_t>(*type) &&
+                    !ASR::is_a<ASR::Logical_t>(*type)) return false;
+            auto *dummy = ASR::down_cast<ASR::Var_t>(function.m_args[index])->m_v;
+            if (ASR::down_cast<ASR::Variable_t>(dummy)->m_intent != ASR::intentType::In ||
+                    gpu_may_be_aliased(dummy, {}) ||
+                    checking_calls.count({&function, index})) return false;
+            Uses uses(dummy, function.m_symtab);
+            uses.checking_calls = checking_calls;
+            uses.checking_calls.insert({&function, index});
+            uses.declarations(function.m_symtab);
+            uses.body(function.m_body, function.n_body);
+            return !uses.escaped;
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            auto *symbol = ASRUtils::symbol_get_past_external(x.m_name);
+            auto *function = ASR::is_a<ASR::Function_t>(*symbol)
+                ? ASR::down_cast<ASR::Function_t>(symbol) : nullptr;
+            if (!function || x.m_dt || x.n_args != function->n_args) {
+                call(x.m_args, x.n_args, x.m_dt);
+                return;
+            }
+            for (size_t i = 0; i < x.n_args; i++) {
+                auto *actual = x.m_args[i].m_value;
+                if (!actual) continue;
+                std::set<ASR::symbol_t*> names;
+                gpu_collect_value_symbols(actual, names);
+                if (names.count(workspace) && !scalar_nocapture(*function, i)) {
+                    escaped = true;
+                }
+                visit_expr(*actual);
+            }
+        }
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            call(x.m_args, x.n_args, x.m_dt);
+        }
+        void visit_GetPointer(const ASR::GetPointer_t &x) { fence(x.m_arg); }
+        void visit_CLoc(const ASR::CLoc_t &x) { fence(x.m_arg); }
+        void visit_Associate(const ASR::Associate_t &x) {
+            fence(x.m_target);
+            fence(x.m_value);
+        }
+        void visit_PointerToCPtr(const ASR::PointerToCPtr_t &x) { fence(x.m_arg); }
+        void visit_stmt(const ASR::stmt_t &x) {
+            bool previous = opaque;
+            switch (x.type) {
+                case ASR::stmtType::Assignment:
+                case ASR::stmtType::If:
+                case ASR::stmtType::DoLoop:
+                case ASR::stmtType::WhileLoop:
+                case ASR::stmtType::BlockCall:
+                case ASR::stmtType::AssociateBlockCall:
+                case ASR::stmtType::SubroutineCall:
+                    break;
+                case ASR::stmtType::DoConcurrentLoop: {
+                    auto *loop = ASR::down_cast<ASR::DoConcurrentLoop_t>(&x);
+                    // Walk controls as well as data uses in the body. The
+                    // existing uniformity/write checks reject inner indices;
+                    // locality and reduction domains remain conservative.
+                    opaque |= loop->n_local != 0 || loop->n_reduction != 0;
+                    break;
+                }
+                default: opaque = true;
+            }
+            ASR::BaseWalkVisitor<Uses>::visit_stmt(x);
+            opaque = previous;
+        }
+    } uses(workspace, kernel.m_symtab);
+    auto *variable = ASR::down_cast<ASR::Variable_t>(workspace);
+    if (gpu_may_be_aliased(workspace, {}) ||
+            variable->m_storage != ASR::storage_typeType::Default ||
+            variable->m_intent != ASR::intentType::Local ||
+            variable->m_symbolic_value || variable->m_value) return {};
+    uses.declarations(kernel.m_symtab);
+    uses.body(kernel.m_body, kernel.n_body);
+    for (auto &guard : uses.common) {
+        guard.use_scopes.assign(uses.use_scopes.begin(), uses.use_scopes.end());
+    }
+    return uses.escaped ? std::vector<GpuWorkspaceGuard>{} : uses.common;
 }
 
 } // namespace LCompilers

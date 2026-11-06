@@ -22,15 +22,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + __loop_start_0);
     {
-        int __gpu_frame;
+        long __gpu_frame;
         int __gpu_frame_i__dc;
-        if ((i__dc < (1 + 1))) {
-            __gpu_frame = ((i__dc - ((1 + 1) - ((2 + (1 - 1)) / 1))) * 1);
-            if ((__gpu_frame < 2)) {
-                if ((__gpu_frame < 1)) {
-                    __gpu_frame_i__dc = (1 + __gpu_frame);
+        if ((((long)i__dc) < (((long)1) + ((long)1)))) {
+            __gpu_frame = ((((long)i__dc) - ((((long)1) + ((long)1)) - ((((long)2) + (((long)1) - ((long)1))) / ((long)1)))) * ((long)1));
+            if ((__gpu_frame < ((long)2))) {
+                if ((__gpu_frame < ((long)1))) {
+                    __gpu_frame_i__dc = ((int)(((long)1) + __gpu_frame));
                 } else {
-                    __gpu_frame_i__dc = (((n + 1) - 1) + (__gpu_frame - 1));
+                    __gpu_frame_i__dc = ((int)(((((long)n) + ((long)1)) - ((long)1)) + (__gpu_frame - ((long)1))));
                 }
                 if ((__gpu_frame_i__dc == 1)) {
                     m = (__gpu_frame_i__dc + 5);
@@ -110,15 +110,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc1 = (__flat_idx + __loop_start_0);
     {
-        int __gpu_frame1;
+        long __gpu_frame1;
         int __gpu_frame_i__dc1;
-        if ((i__dc1 < (1 + 1))) {
-            __gpu_frame1 = ((i__dc1 - ((1 + 1) - ((1 + (1 - 1)) / 1))) * 1);
-            if ((__gpu_frame1 < 1)) {
-                if ((__gpu_frame1 < 1)) {
-                    __gpu_frame_i__dc1 = (1 + __gpu_frame1);
+        if ((((long)i__dc1) < (((long)1) + ((long)1)))) {
+            __gpu_frame1 = ((((long)i__dc1) - ((((long)1) + ((long)1)) - ((((long)1) + (((long)1) - ((long)1))) / ((long)1)))) * ((long)1));
+            if ((__gpu_frame1 < ((long)1))) {
+                if ((__gpu_frame1 < ((long)1))) {
+                    __gpu_frame_i__dc1 = ((int)(((long)1) + __gpu_frame1));
                 } else {
-                    __gpu_frame_i__dc1 = (((n + 1) - 0) + (__gpu_frame1 - 1));
+                    __gpu_frame_i__dc1 = ((int)(((((long)n) + ((long)1)) - ((long)0)) + (__gpu_frame1 - ((long)1))));
                 }
                 if ((__gpu_frame_i__dc1 == 1)) {
                     k = (__gpu_frame_i__dc1 + 50);

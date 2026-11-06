@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-host_assoc_bindc_value_01-55c9d2d",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/errors/host_assoc_bindc_value_01.f90",
+    "infile_hash": "cb0d7fbe0f5d7f7076aaac86549cefc59a280f02b18442176ad9fef2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "llvm-host_assoc_bindc_value_01-55c9d2d.stderr",
+    "stderr_hash": "8483692ee4a6f4921ecb82991b79cd7c1a551bc222c5ce08a3a51f6c",
+    "returncode": 1
+}

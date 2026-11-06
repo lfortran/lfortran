@@ -1,0 +1,42 @@
+#include <stdint.h>
+
+__device__ inline int f_gpu_8(int m, int v, int* work) {
+    int r{};
+    int __gpu_sum_k;
+    int __gpu_sum_res;
+    int __libasr_index_0_;
+    for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + max(0, m) - 1); __libasr_index_0_++) {
+        work[((int)(__libasr_index_0_) - (1))] = v;
+    }
+    work[((int)(m) - (1))] = (v + 1);
+    __gpu_sum_res = 0;
+    for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, m); __gpu_sum_k++) {
+        __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+    }
+    r = __gpu_sum_res;
+    return r;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int n;
+    int __workspace_extent;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    int* __restrict__ out,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    int* __restrict__ __workspace_2)
+{
+    int n = __scalar_args.n;
+    int __workspace_extent = __scalar_args.__workspace_extent;
+    int __flat_idx;
+    int i__dc;
+    int* work = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 1000)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    out[((int)(i__dc) - (1))] = f_gpu_8(n, i__dc, work);
+}
+

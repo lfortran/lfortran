@@ -27,9 +27,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     tmp = ((float)0);
     __gpu_buf_tmp[((int)(1) - (1))] = tmp;
     __gpu_defined = 0;
-    j = (1 - 1);
-    while (((j + 1) <= 200)) {
-        j = (j + 1);
+    for (j = 1; j <= 200; j++) {
         tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
         __gpu_defined = 1;
     }

@@ -29,6 +29,12 @@
 #undef interface
 #else
 #include <unistd.h>
+#ifndef __EMSCRIPTEN__
+#include <limits.h>
+#include <pthread.h>
+#include <sys/resource.h>
+#include <system_error>
+#endif
 #endif
 #include <sys/stat.h>
 
@@ -252,6 +258,70 @@ public:
         return done;
     }
 };
+
+#ifndef _WIN32
+// The stack a cell had when it ran on the main thread: RLIMIT_STACK, or 8 MiB
+// if that is unlimited, but never less than the default for a new thread.
+size_t cell_stack_size() {
+    size_t size = 8 * 1024 * 1024;
+    struct rlimit limit;
+    if (getrlimit(RLIMIT_STACK, &limit) == 0 && limit.rlim_cur != RLIM_INFINITY) {
+        size = limit.rlim_cur;
+    }
+    pthread_attr_t attr;
+    if (pthread_attr_init(&attr) == 0) {
+        size_t default_size = 0;
+        if (pthread_attr_getstacksize(&attr, &default_size) == 0) {
+            size = std::max(size, default_size);
+        }
+        pthread_attr_destroy(&attr);
+    }
+    size = std::max(size, size_t(PTHREAD_STACK_MIN));
+    const long page = sysconf(_SC_PAGESIZE);
+    if (page > 0) size = (size + page - 1) / page * page;
+    return size;
+}
+
+// Runs a cell like std::thread, but with the stack of the main thread. A new
+// thread gets the platform default instead, which on macOS is 512 KiB: much
+// less recursion than a cell had on the main thread, and a SIGSEGV beyond it.
+// Windows gives a new thread the 1 MiB that the main thread has.
+class CellThread {
+    pthread_t thread;
+    std::function<void()> body;
+    bool joined = false;
+    static void *run(void *self) {
+        static_cast<CellThread *>(self)->body();
+        return nullptr;
+    }
+public:
+    explicit CellThread(std::function<void()> body) : body(std::move(body)) {
+        pthread_attr_t attr;
+        int error = pthread_attr_init(&attr);
+        if (error == 0) {
+            error = pthread_attr_setstacksize(&attr, cell_stack_size());
+            if (error == 0) error = pthread_create(&thread, &attr, run, this);
+            pthread_attr_destroy(&attr);
+        }
+        // A stack that cannot be had is no reason not to run the cell.
+        if (error != 0) error = pthread_create(&thread, nullptr, run, this);
+        if (error != 0) {
+            throw std::system_error(error, std::generic_category(),
+                "cannot start the cell's thread");
+        }
+    }
+    // Like std::thread: the thread uses `body`, so it must be joined first.
+    ~CellThread() { if (!joined) std::terminate(); }
+    CellThread(const CellThread &) = delete;
+    CellThread &operator=(const CellThread &) = delete;
+    void join() {
+        pthread_join(thread, nullptr);
+        joined = true;
+    }
+};
+#else
+using CellThread = std::thread;
+#endif
 #endif
 
 // A hook is called from generated code, so its exception must not unwind
@@ -410,6 +480,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::stri
     LocationManager lm;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
+    // As the compiler driver does for the LLVM backend; `print_arr` would
+    // print the elements of an array section with one format each (#16712).
+    lpm.skip_llvm_backend_passes();
     if (!compiler_options.interactive) {
         LocationManager::FileLocations fl;
         fl.in_filename = "input";
@@ -811,6 +884,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     diag::Diagnostics diagnostics;
     PassManager passes;
     passes.use_default_passes();
+    passes.skip_llvm_backend_passes();
     auto execute_cell = [&]() {
         try {
             const auto newline = code.find('\n');
@@ -882,7 +956,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
 #ifndef __EMSCRIPTEN__
         if (threaded) {
             std::exception_ptr worker_error;
-            std::thread worker([&]() {
+            CellThread worker([&]() {
                 try { execute_cell(); }
                 catch (...) { worker_error = std::current_exception(); }
                 mailbox.finish();
@@ -1101,6 +1175,39 @@ static void relink_procs(Allocator &al, SymbolTable *scope,
     n_procs = procs.size();
 }
 
+// A structure constructor or constant copied into `scope` names the derived
+// type it builds, which is still the original type. Points it at the copy that
+// `scope` resolves the name of the type to, so that it is the same type a
+// later cell declares an entity with.
+class RelinkStructConstructors
+    : public ASR::BaseWalkVisitor<RelinkStructConstructors>
+{
+    SymbolTable *scope;
+
+    void relink(ASR::symbol_t *&dt_sym) {
+        ASR::symbol_t *copy = scope->resolve_symbol(
+            ASRUtils::symbol_name(dt_sym));
+        if (copy != nullptr && ASR::is_a<ASR::Struct_t>(
+                *ASRUtils::symbol_get_past_external(copy))) {
+            dt_sym = copy;
+        }
+    }
+
+public:
+    RelinkStructConstructors(SymbolTable *scope) : scope(scope) {}
+
+    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+        relink(const_cast<ASR::StructConstructor_t&>(x).m_dt_sym);
+        ASR::BaseWalkVisitor<RelinkStructConstructors>
+            ::visit_StructConstructor(x);
+    }
+
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        relink(const_cast<ASR::StructConstant_t&>(x).m_dt_sym);
+        ASR::BaseWalkVisitor<RelinkStructConstructors>::visit_StructConstant(x);
+    }
+};
+
 // The duplicated symbols still point into the scopes they were copied from: an
 // ExternalSymbol at the module it names, a generic procedure at the specific
 // procedures it resolves to. A later cell resolves a name and finds the copy,
@@ -1161,11 +1268,32 @@ static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
                     ASRUtils::symbol_name(v->m_type_declaration));
                 if (copy != nullptr) v->m_type_declaration = copy;
             }
+            // The value of a derived-type named constant, or a variable's
+            // initial value, is a structure constructor naming its type in
+            // the same way. A later cell that initializes a variable from
+            // the constant compares that type with the one it declares.
+            RelinkStructConstructors relink(scope);
+            if (v->m_symbolic_value) relink.visit_expr(*v->m_symbolic_value);
+            if (v->m_value) relink.visit_expr(*v->m_value);
+        } else if (ASR::is_a<ASR::Struct_t>(*s)) {
+            // An extended type names its parent type. Left pointing at the
+            // original, a later cell reading an inherited component resolves
+            // the parent's name to the copy, not to the type the component
+            // belongs to, and cannot import that component.
+            ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+            if (st->m_parent != nullptr) {
+                ASR::symbol_t *copy = scope->resolve_symbol(
+                    ASRUtils::symbol_name(st->m_parent));
+                if (copy != nullptr && ASR::is_a<ASR::Struct_t>(
+                        *ASRUtils::symbol_get_past_external(copy))) {
+                    st->m_parent = copy;
+                }
+            }
+            relink_copied_symbols(al, st->m_symtab, tu);
         } else if (ASR::is_a<ASR::Module_t>(*s)
                 || ASR::is_a<ASR::Program_t>(*s)
                 || ASR::is_a<ASR::BlockData_t>(*s)
                 || ASR::is_a<ASR::Function_t>(*s)
-                || ASR::is_a<ASR::Struct_t>(*s)
                 || ASR::is_a<ASR::Enum_t>(*s)
                 || ASR::is_a<ASR::Union_t>(*s)
                 || ASR::is_a<ASR::Block_t>(*s)
@@ -1387,6 +1515,13 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         // later cell still can, so it has to be emitted. Dropping it here
         // leaves the later cell's call with no definition to link to.
         pass_manager.skip_pass("unused_functions");
+        // For the same reason, array_by_data has to keep the descriptor
+        // original of a procedure it specializes: a later cell may call
+        // it with a descriptor, e.g. with an array section. Only user
+        // procedures a later cell can link to (module and top-level
+        // procedures) are kept; compiler-generated helpers are regenerated
+        // by each cell's lowering and would only inflate this cell's IR.
+        compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
     }
 
     if (compiler_options.generate_code_for_global_procedures) {
@@ -1548,7 +1683,13 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     compiler_options.po.always_run = false;
     compiler_options.po.run_fun = "f";
     pass_manager.skip_c_passes();
-    pass_manager.apply_passes(al, &asr, compiler_options.po, diagnostics);
+    // Keep this target capability local: the evaluator can also emit LLVM.
+    PassOptions pass_options = compiler_options.po;
+    pass_options.supports_descriptor_entry_wrappers = false;
+    pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
+    pass_options.supports_descriptor_entry_wrappers =
+        compiler_options.po.supports_descriptor_entry_wrappers;
+    compiler_options.po = std::move(pass_options);
     // ASR pass -> C
     return asr_to_c(al, asr, diagnostics, compiler_options, default_lower_bound);
 }

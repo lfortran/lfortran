@@ -30,6 +30,10 @@ typedef struct lfortran_cuda_cpu_stats {
     unsigned long long copies[cudaMemcpyDefault + 1];
     // Successful calls of cudaMemsetAsync.
     unsigned long long async_memsets;
+    // Successful calls of cudaMemPrefetchAsync, to the device and to the
+    // host.
+    unsigned long long device_prefetches;
+    unsigned long long host_prefetches;
     // Calls that returned an error.
     unsigned long long errors;
     // Device allocations that are live now.

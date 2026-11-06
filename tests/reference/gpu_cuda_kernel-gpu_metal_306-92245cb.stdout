@@ -14,6 +14,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 {
     int __tiled = __scalar_args.__tiled;
     int __flat_idx;
+    int __ordinal;
     int __tiles;
     int i__dc;
     int j__dc;
@@ -28,17 +29,17 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     } else {
         __flat_idx = blockIdx.x;
         __tiles = ((((2 - 1) + 1) + 31) >> 5);
-        i__dc = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << 5) + (threadIdx.x & 31));
+        __ordinal = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << 5) + (threadIdx.x & 31));
+        if ((__ordinal >= ((2 - 1) + 1))) {
+            return;
+        }
+        i__dc = (__ordinal + 1);
         __flat_idx = (__flat_idx / __tiles);
-        j__dc = ((__flat_idx << 3) + (threadIdx.x >> 5));
-        if ((i__dc >= ((2 - 1) + 1))) {
+        __ordinal = ((__flat_idx << 3) + (threadIdx.x >> 5));
+        if ((__ordinal >= ((2 - 1) + 1))) {
             return;
         }
-        if ((j__dc >= ((2 - 1) + 1))) {
-            return;
-        }
-        i__dc = (i__dc + 1);
-        j__dc = (j__dc + 1);
+        j__dc = (__ordinal + 1);
     }
     c[((int)(i__dc) - (1)) + (2 * ((int)(j__dc) - (1)))].x = ((float)((10 * i__dc) + j__dc));
 }

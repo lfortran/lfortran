@@ -240,6 +240,16 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             }
         }
 
+        // The variables of the host that an internal procedure refers to
+        // are bound when it is entered, through its frame dummy argument.
+        for( auto& item: function->m_symtab->get_scope() ) {
+            if( ASR::is_a<ASR::Variable_t>(*item.second) &&
+                    ASRUtils::is_host_associated(
+                        *ASR::down_cast<ASR::Variable_t>(item.second)) ) {
+                return false;
+            }
+        }
+
         // Function should only have local variables and no external dependencies (nested variables, etc).
         Vec<ASR::symbol_t*> vars; vars.reserve(al, 1);
         VarCollector var_collector(al, vars);

@@ -114,6 +114,12 @@ public:
                     result_var->m_type_declaration);
             if (!finalizable_array && !ASRUtils::is_finalizable_function_result(
                     result_type, result_var->m_type_declaration)) {
+                // intent_out_deallocate has already run, so the new
+                // intent(out) dummy gets what it does on entry here.
+                if (ASRUtils::get_FunctionType(x)->m_deftype ==
+                        ASR::deftypeType::Implementation) {
+                    apply_intent_out_on_entry(al, x, x.n_args - 1);
+                }
                 return;
             }
             result_var->m_intent = ASR::intentType::InOut;
@@ -264,9 +270,15 @@ class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateF
         }
 
         // The type of the procedure variable `x` declared by a transformed
-        // interface, or null.
+        // interface, or null. For a member of Reference type (of a host
+        // frame, see nested_vars), the referenced type: that of the
+        // procedure variable the member refers to.
         ASR::ttype_t* transformed_procedure_variable_type(const ASR::Variable_t &x) {
-            if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(x.m_type))) {
+            ASR::ttype_t* type = x.m_type;
+            if (ASRUtils::is_reference(type)) {
+                type = ASR::down_cast<ASR::Reference_t>(type)->m_type;
+            }
+            if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(type))) {
                 return nullptr;
             }
             ASR::Function_t* decl = transformed_interface(x.m_type_declaration);
@@ -274,7 +286,7 @@ class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateF
                 return nullptr;
             }
             ASR::ttype_t* new_type = decl->m_function_signature;
-            if (ASR::is_a<ASR::Pointer_t>(*x.m_type)) {
+            if (ASR::is_a<ASR::Pointer_t>(*type)) {
                 new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, new_type));
             }
             return new_type;
@@ -284,8 +296,13 @@ class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateF
             ASR::ASRPassBaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_Variable(x);
             ASR::ttype_t* new_type = transformed_procedure_variable_type(x);
             if (new_type != nullptr) {
-                const_cast<ASR::Variable_t&>(x).m_type = ASRUtils::import_procedure_type(
-                    al, new_type, x.m_parent_symtab);
+                new_type = ASRUtils::import_procedure_type(al, new_type,
+                    x.m_parent_symtab);
+                if (ASRUtils::is_reference(x.m_type)) {
+                    new_type = ASRUtils::TYPE(ASR::make_Reference_t(al,
+                        x.base.base.loc, new_type));
+                }
+                const_cast<ASR::Variable_t&>(x).m_type = new_type;
             }
         }
 
@@ -1148,6 +1165,29 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     AccessPaths::reachable_elsewhere(root, routine)) {
                 return true;
             }
+            ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(root);
+            ASR::ttype_t *element_type = ASRUtils::extract_type(variable->m_type);
+            if (variable->m_intent == ASR::intentType::Local &&
+                    variable->m_storage == ASR::storage_typeType::Default &&
+                    ASRUtils::is_array(variable->m_type) &&
+                    (ASR::is_a<ASR::Integer_t>(*element_type) ||
+                     ASR::is_a<ASR::UnsignedInteger_t>(*element_type) ||
+                     ASR::is_a<ASR::Real_t>(*element_type) ||
+                     ASR::is_a<ASR::Complex_t>(*element_type)) &&
+                    !may_be_storage_associated(variable) &&
+                    variable->n_codims == 0 &&
+                    !variable->m_is_volatile && !variable->m_is_asynchronous &&
+                    !ASRUtils::has_scoped_variable_attribute(*variable, routine)) {
+                bool has_contained_procedure = false;
+                ASRUtils::for_each_symbol_in_scope_and_constructs(routine,
+                    [&](ASR::symbol_t *symbol) {
+                        has_contained_procedure |= ASR::is_a<ASR::Function_t>(*symbol) ||
+                            ASR::is_a<ASR::Template_t>(*symbol);
+                    });
+                // Without a contained procedure, a callback cannot capture
+                // a nonescaping automatic local, including a fresh result slot.
+                if (!has_contained_procedure) return false;
+            }
             std::set<ASR::symbol_t*> active;
             CallbackAccess callbacks(routine, active);
             return callbacks.call(fc->m_name, fc->m_args, fc->n_args, fc->m_dt);
@@ -1404,7 +1444,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 // statement (F2018 7.5.6.3 p5): it is an object of its own,
                 // and not the variable. Return it into a temporary, assign
                 // that to the variable and deallocate it, which finalizes it.
-                finalizable_allocatable_result =
+                // A new target is not finalized: the result is returned into
+                // it and becomes it (see below).
+                finalizable_allocatable_result = !assignment->m_new_target &&
                     is_finalizable_allocatable_scalar_result_to_allocatable(
                         value, target);
                 use_temp_var_for_return = use_temp_var_for_return ||
@@ -1567,11 +1609,17 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             }
 
             bool value_and_target_allocatable_array = false;
+            // A new target has no shape for the result to conform to, so an
+            // allocatable array result is returned straight into it rather
+            // than into a temporary that is then moved into it: an assignment
+            // that defines a new target copies its value (asr_verify.cpp).
+            bool new_target = ASR::is_a<ASR::Assignment_t>(xx) &&
+                ASR::down_cast<ASR::Assignment_t>(&xx)->m_new_target;
             if (ASRUtils::is_allocatable(value) && ASRUtils::is_allocatable(target)) {
                 // Pass in a temporary instead of the target, this is done for bounds checking in assignment to an array from a FunctionCall
                 if (ASRUtils::is_array(ASRUtils::expr_type(target)) &&
                     ASRUtils::is_array(ASRUtils::expr_type(value)) &&
-                    ASR::is_a<ASR::Assignment_t>(xx)) {
+                    ASR::is_a<ASR::Assignment_t>(xx) && !new_target) {
                     // If we already used a temp var for return don't use it here
                     if (!use_temp_var_for_return) {
                         target = create_temporary_variable_for_array(al, target, current_scope, "_subroutine_from_function_");
@@ -1591,7 +1639,13 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             result_arg.loc = target->base.loc;
             result_arg.m_value = target;
             s_args.push_back(al, result_arg);
-            if (replacer.is_call_with_finalizable_result(fc)) {
+            // A new target, which the assignment only defines, is not
+            // finalized (F2018 7.5.6.3). Returned into it, the result is the
+            // new object, such as the result of a thunk (nested_vars.cpp),
+            // which its caller finalizes.
+            if (replacer.is_call_with_finalizable_result(fc) &&
+                    !(new_target && target == ASR::down_cast<ASR::Assignment_t>(
+                        &xx)->m_target)) {
                 finalize_result_argument(al, target, current_scope,
                     pass_result);
             }

@@ -60,6 +60,15 @@ class WATVisitor : public WASMDecoder<WATVisitor>,
     void visit_Else() {
         src += indent.substr(0, indent.length() - 4U) + "else";
     }
+    void visit_Block() {
+        src += indent + "block";
+        {
+            indent += "    ";
+            decode_instructions();
+            indent.resize(indent.length() - 4U);
+        }
+        src += indent + "end";
+    }
     void visit_Loop() {
         src += indent + "loop";
         {

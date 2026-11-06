@@ -1,0 +1,206 @@
+#include <stdint.h>
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __dim_y_0;
+    int __lb_y_0;
+    int __dim_y_1;
+    int __lb_y_1;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* __restrict__ y,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __dim_y_0 = __scalar_args.__dim_y_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __lb_y_1 = __scalar_args.__lb_y_1;
+    int __flat_idx;
+    int i__dc;
+    int j__dc;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (64 * 33554431))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = ((__flat_idx - ((__flat_idx / ((64 - 1) + 1)) * ((64 - 1) + 1))) + 1);
+    __flat_idx = (__flat_idx / ((64 - 1) + 1));
+    j__dc = (__flat_idx + 1);
+    y[((int)(i__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(j__dc) - (__lb_y_1)))] = ((float)1);
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __tiled;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    float* __restrict__ z,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+{
+    int __tiled = __scalar_args.__tiled;
+    int __flat_idx;
+    int __ordinal;
+    int __tiles;
+    int i__dc1;
+    int j__dc1;
+    int k__dc;
+    if ((__tiled == 0)) {
+        if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((4 * 5) * 6))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+        i__dc1 = ((__flat_idx - ((__flat_idx / ((4 - 1) + 1)) * ((4 - 1) + 1))) + 1);
+        __flat_idx = (__flat_idx / ((4 - 1) + 1));
+        j__dc1 = ((__flat_idx - ((__flat_idx / ((5 - 1) + 1)) * ((5 - 1) + 1))) + 1);
+        __flat_idx = (__flat_idx / ((5 - 1) + 1));
+    } else {
+        __flat_idx = blockIdx.x;
+        __tiles = ((((4 - 1) + 1) + 31) >> 5);
+        __ordinal = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << 5) + (threadIdx.x & 31));
+        if ((__ordinal >= ((4 - 1) + 1))) {
+            return;
+        }
+        i__dc1 = (__ordinal + 1);
+        __flat_idx = (__flat_idx / __tiles);
+        __tiles = ((((5 - 1) + 1) + 7) >> 3);
+        __ordinal = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << 3) + (threadIdx.x >> 5));
+        if ((__ordinal >= ((5 - 1) + 1))) {
+            return;
+        }
+        j__dc1 = (__ordinal + 1);
+        __flat_idx = (__flat_idx / __tiles);
+    }
+    k__dc = (__flat_idx + 1);
+    z[((int)(i__dc1) - (1)) + (4 * ((int)(j__dc1) - (1))) + ((4 * 5) * ((int)(k__dc) - (1)))] = ((float)((i__dc1 + j__dc1) + k__dc));
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_2 {
+    int __tiled;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_2(
+    float* __restrict__ w,
+    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+{
+    int __tiled = __scalar_args.__tiled;
+    int __flat_idx;
+    int __ordinal;
+    int __tiles;
+    int i__dc2;
+    int j__dc2;
+    if ((__tiled == 0)) {
+        if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (64 * 64))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+        i__dc2 = ((__flat_idx - ((__flat_idx / ((64 - 1) + 1)) * ((64 - 1) + 1))) + 1);
+        __flat_idx = (__flat_idx / ((64 - 1) + 1));
+        j__dc2 = (__flat_idx + 1);
+    } else {
+        __flat_idx = blockIdx.x;
+        __tiles = ((((64 - 1) + 1) + 31) >> 5);
+        __ordinal = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << 5) + (threadIdx.x & 31));
+        if ((__ordinal >= ((64 - 1) + 1))) {
+            return;
+        }
+        i__dc2 = (__ordinal + 1);
+        __flat_idx = (__flat_idx / __tiles);
+        __ordinal = ((__flat_idx << 3) + (threadIdx.x >> 5));
+        if ((__ordinal >= ((64 - 1) + 1))) {
+            return;
+        }
+        j__dc2 = (__ordinal + 1);
+    }
+    w[((int)(i__dc2) - (1)) + (64 * ((int)(j__dc2) - (1)))] = ((float)(i__dc2 - j__dc2));
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_3 {
+    int __dim_s_0;
+    int __lb_s_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_3(
+    int* __restrict__ s,
+    int* __restrict__ v,
+    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
+{
+    int __lb_s_0 = __scalar_args.__lb_s_0;
+    int __flat_idx;
+    int __gpu_accumulator;
+    int __gpu_group;
+    int __gpu_iteration;
+    int __gpu_iterations;
+    int __gpu_slot;
+    int __gpu_stride;
+    int i__dc3;
+    int j__dc3;
+    __gpu_iterations = (10 * 20);
+    __gpu_stride = (((__gpu_iterations > 65536)) ? (65536) : (__gpu_iterations));
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= __gpu_stride)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __gpu_slot = __flat_idx;
+    s[((int)((__gpu_slot + 1)) - (__lb_s_0))] = 0;
+    __gpu_accumulator = 0;
+    const int __lfortran_end_0 = (((__gpu_iterations - ((blockIdx.x * blockDim.x) + threadIdx.x)) / (4 * __gpu_stride)) - 1);
+    for (__gpu_group = 0; __gpu_group <= __lfortran_end_0; __gpu_group++) {
+        __gpu_iteration = (((blockIdx.x * blockDim.x) + threadIdx.x) + (__gpu_group * (4 * __gpu_stride)));
+        __flat_idx = __gpu_iteration;
+        i__dc3 = ((__flat_idx - ((__flat_idx / ((10 - 1) + 1)) * ((10 - 1) + 1))) + 1);
+        __flat_idx = (__flat_idx / ((10 - 1) + 1));
+        j__dc3 = (__flat_idx + 1);
+        __gpu_accumulator = (__gpu_accumulator + v[((int)(i__dc3) - (1)) + (10 * ((int)(j__dc3) - (1)))]);
+        __gpu_iteration = (__gpu_iteration + __gpu_stride);
+        __flat_idx = __gpu_iteration;
+        i__dc3 = ((__flat_idx - ((__flat_idx / ((10 - 1) + 1)) * ((10 - 1) + 1))) + 1);
+        __flat_idx = (__flat_idx / ((10 - 1) + 1));
+        j__dc3 = (__flat_idx + 1);
+        __gpu_accumulator = (__gpu_accumulator + v[((int)(i__dc3) - (1)) + (10 * ((int)(j__dc3) - (1)))]);
+        __gpu_iteration = (__gpu_iteration + __gpu_stride);
+        __flat_idx = __gpu_iteration;
+        i__dc3 = ((__flat_idx - ((__flat_idx / ((10 - 1) + 1)) * ((10 - 1) + 1))) + 1);
+        __flat_idx = (__flat_idx / ((10 - 1) + 1));
+        j__dc3 = (__flat_idx + 1);
+        __gpu_accumulator = (__gpu_accumulator + v[((int)(i__dc3) - (1)) + (10 * ((int)(j__dc3) - (1)))]);
+        __gpu_iteration = (__gpu_iteration + __gpu_stride);
+        __flat_idx = __gpu_iteration;
+        i__dc3 = ((__flat_idx - ((__flat_idx / ((10 - 1) + 1)) * ((10 - 1) + 1))) + 1);
+        __flat_idx = (__flat_idx / ((10 - 1) + 1));
+        j__dc3 = (__flat_idx + 1);
+        __gpu_accumulator = (__gpu_accumulator + v[((int)(i__dc3) - (1)) + (10 * ((int)(j__dc3) - (1)))]);
+    }
+    for (__gpu_iteration = (((blockIdx.x * blockDim.x) + threadIdx.x) + (((__gpu_iterations - ((blockIdx.x * blockDim.x) + threadIdx.x)) / (4 * __gpu_stride)) * (4 * __gpu_stride))); __gpu_stride > 0 ? __gpu_iteration <= (__gpu_iterations - 1) : __gpu_iteration >= (__gpu_iterations - 1); __gpu_iteration += __gpu_stride) {
+        __flat_idx = __gpu_iteration;
+        i__dc3 = ((__flat_idx - ((__flat_idx / ((10 - 1) + 1)) * ((10 - 1) + 1))) + 1);
+        __flat_idx = (__flat_idx / ((10 - 1) + 1));
+        j__dc3 = (__flat_idx + 1);
+        __gpu_accumulator = (__gpu_accumulator + v[((int)(i__dc3) - (1)) + (10 * ((int)(j__dc3) - (1)))]);
+    }
+    s[((int)((__gpu_slot + 1)) - (__lb_s_0))] = (s[((int)((__gpu_slot + 1)) - (__lb_s_0))] + __gpu_accumulator);
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_4 {
+    int __loop_start_1;
+    int __loop_end_1;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_4(
+    int* __restrict__ v,
+    __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args)
+{
+    int __loop_start_1 = __scalar_args.__loop_start_1;
+    int __loop_end_1 = __scalar_args.__loop_end_1;
+    int __flat_idx;
+    int i__dc4;
+    int j__dc4;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (65536 * (((__loop_end_1 >= __loop_start_1)) ? (((__loop_end_1 - __loop_start_1) + 1)) : (0))))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc4 = ((__flat_idx - ((__flat_idx / ((65536 - 1) + 1)) * ((65536 - 1) + 1))) + 1);
+    __flat_idx = (__flat_idx / ((65536 - 1) + 1));
+    j__dc4 = (__flat_idx + __loop_start_1);
+    if ((i__dc4 == j__dc4)) {
+        v[((int)(1) - (1)) + (10 * ((int)(1) - (1)))] = 2;
+    }
+}
+

@@ -60,6 +60,9 @@
 #if LLVM_VERSION_MAJOR >= 17
     // TODO: removed from LLVM 17
     #include <llvm/Passes/PassBuilder.h>
+    #include <llvm/Transforms/Scalar/LICM.h>
+    #include <llvm/Transforms/Scalar/LoopPassManager.h>
+    #include <llvm/Transforms/Scalar/SimpleLoopUnswitch.h>
 #else
 #    include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #endif
@@ -206,6 +209,17 @@ std::vector<std::string> get_detected_host_features()
     return features;
 }
 
+bool host_has_feature(const char *name)
+{
+#if LLVM_VERSION_MAJOR >= 19
+    auto host_features = llvm::sys::getHostCPUFeatures();
+#else
+    llvm::StringMap<bool, llvm::MallocAllocator> host_features;
+    llvm::sys::getHostCPUFeatures(host_features);
+#endif
+    return host_features.lookup(name);
+}
+
 #if defined(HAVE_TARGET_AARCH64) && LLVM_VERSION_MAJOR >= 18
 std::vector<std::string> get_aarch64_extension_features(
     const llvm::AArch64::ExtensionSet &extensions)
@@ -343,6 +357,17 @@ std::string resolve_native_cpu(const llvm::Target &target,
     std::string cpu = get_host_cpu(option, config);
     if (!is_valid_cpu(target, triple, cpu)) {
         return "generic";
+    }
+    if (cpu == "generic") {
+        // LLVM reports "generic" for CPUs it does not recognize. Its generic
+        // cost model prefers 512-bit vectors, but known models with the same
+        // instruction set use 256-bit vectors, which is faster for small
+        // loops. Keep the detected features and only switch the CPU model.
+        if (host_has_feature("avx512f")) {
+            return "skylake-avx512";
+        } else if (host_has_feature("avx2")) {
+            return "haswell";
+        }
     }
     return cpu;
 }
@@ -1012,6 +1037,25 @@ void LLVMEvaluator::create_empty_object_file(const std::string &filename) {
     save_object_file(*module, filename);
 }
 
+#if LLVM_VERSION_MAJOR < 9
+// IndVarSimplify in LLVM 7 and 8 can mark the increment of a loop counter
+// that starts at -1 (a DO loop starting at 0) as `nuw`. Unrolling an inner
+// loop by the upper bound of its trip count then trusts that flag, assumes at
+// least two iterations and drops the first exit test, so a one-trip loop runs
+// twice. LLVM 9 fixed this. X86 enables upper-bound unrolling for CPUs with a
+// loop buffer, so the miscompile depends on the host CPU under `--fast`.
+static void disable_upper_bound_unrolling() {
+    llvm::StringMap<llvm::cl::Option*> &options
+        = llvm::cl::getRegisteredOptions();
+    auto option = options.find("unroll-max-upperbound");
+    // The option may occur only once per process; opt() runs for every file
+    // and REPL cell.
+    if (option != options.end() && option->second->getNumOccurrences() == 0) {
+        option->second->addOccurrence(0, "unroll-max-upperbound", "0");
+    }
+}
+#endif
+
 void LLVMEvaluator::opt(llvm::Module &m) {
     configure_module(m);
 
@@ -1027,9 +1071,18 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     PB.registerLoopAnalyses(LAM);
     PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
     llvm::ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O3);
+    // Late simplifications expose invariant conditions guarding descriptor loads.
+    llvm::LoopPassManager LPM;
+    LPM.addPass(llvm::SimpleLoopUnswitchPass(/*NonTrivial=*/true));
+    LPM.addPass(llvm::LICMPass(llvm::LICMOptions()));
+    MPM.addPass(llvm::createModuleToFunctionPassAdaptor(
+        llvm::createFunctionToLoopPassAdaptor(std::move(LPM), /*UseMemorySSA=*/true)));
     MPM.run(m, MAM);
 
 #else
+#if LLVM_VERSION_MAJOR < 9
+    disable_upper_bound_unrolling();
+#endif
     llvm::legacy::PassManager mpm;
     mpm.add(new llvm::TargetLibraryInfoWrapperPass(TM->getTargetTriple()));
     mpm.add(llvm::createTargetTransformInfoWrapperPass(TM->getTargetIRAnalysis()));

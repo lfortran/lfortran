@@ -311,7 +311,7 @@ LFORTRAN_API int32_t _lfortran_get_round_mode(int32_t unit_num);
 LFORTRAN_API void _lfortran_inquire(
     const fchar* f_name_data, int64_t f_name_len,
     bool *exists, int32_t unit_num,
-    bool *opened, int32_t *size, int32_t *pos,
+    bool *opened, int64_t *size, int64_t *pos,
     char *write, int64_t write_len,
     char *read, int64_t read_len,
     char *readwrite, int64_t readwrite_len,
@@ -394,7 +394,7 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
 LFORTRAN_API bool _lfortran_is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_len);
 LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_io_take_iomsg(char* iomsg, int64_t iomsg_len);
-LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
+LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_connect_unit_for_read(int32_t unit_num, int32_t unformatted, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status_len, int32_t* iostat);
@@ -440,6 +440,15 @@ typedef enum {
     LFORTRAN_NML_CHAR
 } lfortran_nml_type_t;
 
+// An array of a derived type that encloses a namelist item
+typedef struct {
+    const char *name;          // name segment, e.g. "x" or "%inner"
+    int32_t rank;
+    int64_t stride;            // byte stride between its elements
+    const int64_t *shape;      // rank-sized array of extents (Fortran order)
+    const int64_t *lbound;     // rank-sized array of lower bounds
+} lfortran_nml_level_t;
+
 typedef struct {
     const char *name;          // lower-case, null-terminated
     lfortran_nml_type_t type;
@@ -448,6 +457,13 @@ typedef struct {
     int64_t stride;            // byte stride between array elements
     void *data;                // scalar ptr or base address of array
     const int64_t *shape;      // rank-sized array of extents (Fortran order)
+    // If n_levels > 0, the item is a component of the elements of the
+    // enclosing derived-type arrays `levels` (outermost first): `name` is
+    // the last name segment (e.g. "%a"), `data` addresses it in their first
+    // elements, and it is written once per element as
+    // `x(i,...)%inner(j,...)%a=...`.
+    int32_t n_levels;
+    const lfortran_nml_level_t *levels;
 } lfortran_nml_item_t;
 
 typedef struct {

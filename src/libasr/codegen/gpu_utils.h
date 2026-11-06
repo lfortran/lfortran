@@ -189,6 +189,8 @@ struct GpuVlaWorkspace {
     int buffer_index;
     int elem_size;
     std::vector<GpuVlaDim> dims;
+    ASR::symbol_t *allocation_parameter = nullptr;
+    bool allocation_on_true = true;
 };
 
 // Every name of `names` that an expression reads. Used to order a scope's
@@ -424,6 +426,81 @@ inline std::string gpu_referenced_declarations(
     return result;
 }
 
+// The device C type of the integer kind `offset_kind` a dialect computes
+// element offsets in (GpuDeviceCapabilities::offset_kind).
+inline std::string gpu_offset_type(int offset_kind) {
+    LCOMPILERS_ASSERT(offset_kind == 4 || offset_kind == 8);
+    return offset_kind == 8 ? "long" : "int";
+}
+
+// The offset `sub - lb` of a subscript of integer kind `subscript_kind`
+// within its dimension, as device source in the integer of kind
+// `offset_kind`, the dialect's kind for element offsets. The difference is
+// taken in the narrower of the two kinds. A subscript wider than the
+// offsets is narrowed only once its lower bound is subtracted: the
+// difference fits where the subscript itself need not, as in an integer(8)
+// subscript of an array whose lower bound is 3000000000.
+//
+// An integer(4) subscript with 64-bit offsets has its difference reduced
+// modulo 2**32, as an unsigned int, before it is widened. Under
+// --descriptor-index-64 the offload passes count the array expressions
+// they lower inside a kernel in the offset kind (#16571), but integer(4)
+// subscripts still get here: user subscripts, and counters other passes
+// still build in integer(4), for example the inlined `transpose` loops,
+// fusion's affine bounds and run-time checks, and the device heap's copies
+// of allocatable components and its section subscripts (gpu_device_heap).
+// The list is not exhaustive (tracking: #16572). Such counters see
+// a lower bound beyond huge(0) truncated, and the truncation cancels only
+// modulo 2**32, so this branch must stay until no pass builds integer(4)
+// subscripts under the flag.
+// The reduction is exact whenever the true offset is in [0, 2**32): for
+// every user integer(4) subscript of an array whose lower bound is at
+// least -huge(0)-1 and reaches the kernel as integer(8), as a run-time
+// lower bound does (`a(-n:n)` with n = 1500000000 included; an integer(4)
+// lower-bound expression is subtracted in integer(4)), and for such a
+// counter run from a truncated lower bound up to an extent of 2**32. It
+// is still wrong for
+//  - an integer(4) subscript of an array whose lower bound is below
+//    -huge(0)-1, at an offset of 2**32 or more;
+//  - such a counter run past an extent of huge(0), or across huge(0) from
+//    a lower bound near it, since it overflows before it gets here.
+// An offset below zero, which only an element outside the array has (the
+// start of an empty section), becomes a far one that is never read.
+// Without the flag the offset kind is integer(4) and this branch is not
+// taken; whether kernels use 64-bit offsets by default is #16578
+// (tracking: #16572).
+//
+// The source before and after the subscript is the pair this returns, for
+// a caller that emits the subscript itself in between.
+inline std::pair<std::string, std::string> gpu_offset_term_parts(
+        const std::string &lb, int subscript_kind, int offset_kind) {
+    std::string type = gpu_offset_type(offset_kind);
+    if (subscript_kind > offset_kind) {
+        return {"((" + type + ")((", ") - (" + lb + ")))"};
+    }
+    if (subscript_kind == 4 && offset_kind == 8) {
+        return {"((" + type + ")((unsigned int)((", ") - (" + lb
+            + "))))"};
+    }
+    return {"((" + type + ")(", ") - (" + lb + "))"};
+}
+
+inline std::string gpu_offset_term(const std::string &sub,
+        const std::string &lb, int subscript_kind, int offset_kind) {
+    auto parts = gpu_offset_term_parts(lb, subscript_kind, offset_kind);
+    return parts.first + sub + parts.second;
+}
+
+// The product `a * b` of two extents, as device source, computed in the
+// integer of kind `offset_kind`: two extents of a large array multiply past
+// huge(0). A dialect whose offsets are 32-bit already multiplies in them.
+inline std::string gpu_index_product(const std::string &a,
+        const std::string &b, int offset_kind) {
+    if (offset_kind == 4) return "(" + a + " * " + b + ")";
+    return "(((" + gpu_offset_type(offset_kind) + ")(" + a + ")) * " + b
+        + ")";
+}
+
 // An allocatable array component of a kernel argument that is an array of a
 // derived type reaches the device as three buffers: the elements' data laid
 // out end to end, the per-element offsets into it, and the per-element sizes.
@@ -451,22 +528,31 @@ inline std::string gpu_referenced_declarations(
 // component's extents travel in. The last dimension is never counted past,
 // so it needs no extent; an empty `extent(d)` says the caller has none for
 // that dimension either, and an empty subscript that it has none for it.
+//
+// The position is counted in the integer of kind `offset_kind`, the
+// dialect's kind for element offsets: each subscript's offset
+// (gpu_offset_term, given the subscript's integer kind in
+// `subscript_kinds`) and each product of extents is converted to it before
+// it is multiplied, so with 64-bit offsets an array of more than huge(0)
+// elements is addressed without wrapping.
 inline std::string gpu_linearized_index_str(
         const std::vector<std::string> &subscripts,
+        const std::vector<int> &subscript_kinds,
         const std::function<std::string(size_t)> &lower,
-        const std::function<std::string(size_t)> &extent) {
+        const std::function<std::string(size_t)> &extent,
+        int offset_kind) {
     std::string out, stride;
     for (size_t d = 0; d < subscripts.size(); d++) {
         if (subscripts[d].empty()) continue;
-        std::string term = "((int)(" + subscripts[d] + ") - ("
-            + lower(d) + "))";
+        std::string term = gpu_offset_term(subscripts[d], lower(d),
+            subscript_kinds[d], offset_kind);
         if (!stride.empty()) term = "(" + stride + " * " + term + ")";
         out += out.empty() ? term : (" + " + term);
         if (d + 1 < subscripts.size()) {
             std::string ext = extent(d);
             if (ext.empty()) continue;
             stride = stride.empty() ? ext
-                : ("(" + stride + " * " + ext + ")");
+                : gpu_index_product(stride, ext, offset_kind);
         }
     }
     return out;
@@ -517,7 +603,7 @@ inline bool gpu_scalar_width_supported(ASR::ttype_t *t) {
     switch (t->type) {
         case ASR::ttypeType::Integer:
             switch (ASR::down_cast<ASR::Integer_t>(t)->m_kind) {
-                case 4: case 8: return true;
+                case 1: case 2: case 4: case 8: return true;
                 default: return false;
             }
         case ASR::ttypeType::Real:
@@ -635,6 +721,12 @@ inline ASR::Allocate_t* find_allocate_for_var(
             ASR::DoLoop_t *dl =
                 ASR::down_cast<ASR::DoLoop_t>(stmts[i]);
             auto *r = find_allocate_for_var(dl->m_body, dl->n_body,
+                var_name);
+            if (r) return r;
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmts[i])) {
+            ASR::DoConcurrentLoop_t *dc =
+                ASR::down_cast<ASR::DoConcurrentLoop_t>(stmts[i]);
+            auto *r = find_allocate_for_var(dc->m_body, dc->n_body,
                 var_name);
             if (r) return r;
         } else if (ASR::is_a<ASR::If_t>(*stmts[i])) {
@@ -2118,6 +2210,10 @@ inline ASR::expr_t* gpu_find_assigned_value(ASR::stmt_t **body,
         } else if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
             found = in(dl->m_body, dl->n_body);
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*stmt)) {
+            ASR::DoConcurrentLoop_t *dc =
+                ASR::down_cast<ASR::DoConcurrentLoop_t>(stmt);
+            found = in(dc->m_body, dc->n_body);
         } else if (ASR::is_a<ASR::WhileLoop_t>(*stmt)) {
             ASR::WhileLoop_t *wl = ASR::down_cast<ASR::WhileLoop_t>(stmt);
             found = in(wl->m_body, wl->n_body);

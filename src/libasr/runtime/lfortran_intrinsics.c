@@ -7436,6 +7436,10 @@ struct UNIT_FILE {
     int32_t seq_unf_record_len;
     // Set by ENDFILE or a READ that hit end of file: the unit is after the end-of-file record.
     bool after_endfile;
+    // Set by a formatted non-advancing WRITE: its record is still open. The
+    // record is completed by an advancing WRITE, or terminated when the unit
+    // is repositioned (REWIND, BACKSPACE), reaches ENDFILE or is closed.
+    bool pending_record;
     // Pending list-directed null-repeat state.
     int32_t lf_list_dir_null_remaining;
     // Child I/O mode (for DTIO: suppress record terminators in child writes).
@@ -7445,6 +7449,17 @@ struct UNIT_FILE {
     // Set by a CONVERT= that differs from the host byte order: unformatted
     // transfers reverse the bytes of every element and record marker.
     bool swap_bytes;
+    // INQUIRE(POS=) on a formatted sequential unit counts the record
+    // terminators before the position. When pos_nl_valid, the first
+    // pos_nl_offset bytes hold pos_nl_count of them and end with a record
+    // terminator (or pos_nl_offset is 0), so the next INQUIRE only scans the
+    // bytes from there. Any statement that moves the unit backwards across
+    // records (REWIND, BACKSPACE, ENDFILE, POS=, OPEN) clears it. The cache
+    // assumes the prefix changes only through this unit: if another unit or
+    // FILE* rewrites it, INQUIRE does not see that change.
+    bool pos_nl_valid;
+    int64_t pos_nl_offset;
+    int64_t pos_nl_count;
 };
 
 int32_t last_index_used = -1;
@@ -7487,6 +7502,30 @@ static size_t unf_fread(void *p, size_t elem_size, size_t n, FILE *filep,
         swap_element_bytes(p, elem_size, got);
     }
     return got;
+}
+
+static inline void pos_nl_reset(struct UNIT_FILE *uf) {
+    if (uf) uf->pos_nl_valid = false;
+}
+
+// Terminate the record a formatted non-advancing WRITE left open. A preceding
+// BACKSPACE can leave the stream in read mode with the old record in its
+// buffer, while the file has been truncated behind that buffer. Position the
+// stream first: C11 7.21.5.3p7 requires a file positioning call between
+// reading and writing an update stream, and the call also drops the stale
+// input buffer and clears the end-of-file indicator, so the terminator cannot
+// be followed by a read of the deleted record.
+static void terminate_pending_record(struct UNIT_FILE *uf, FILE *filep) {
+    if (!uf || !uf->pending_record || !filep) return;
+    uf->pending_record = false;
+    fseek(filep, 0, SEEK_CUR);
+    fputc('\n', filep);
+    fflush(filep);
+    long pos = ftell(filep);
+    if (pos >= 0) {
+        (void)!ftruncate(lfortran_fileno(filep), pos);
+    }
+    pos_nl_reset(uf);
 }
 
 static inline void seq_unf_state_reset(struct UNIT_FILE *uf) {
@@ -7659,20 +7698,55 @@ LFORTRAN_API void _lfortran_file_write_newline(int32_t unit_num) {
     if (!filep) {
         filep = stdout;
     }
+    struct UNIT_FILE *uf = find_unit(unit_num);
+    if (uf) uf->pending_record = false;
     fprintf(filep, "\n");
 }
 
-static int32_t count_newlines_up_to(FILE *fp, long end_pos) {
-    long saved = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-    int32_t count = 0;
-    for (long i = 0; i < end_pos; i++) {
+// Count the record terminators in [start, end_pos) of fp, adding them to
+// *count and setting *last_end to the offset just after the last one.
+// Returns false if fewer than end_pos - start bytes could be read.
+static bool count_newlines_from(FILE *fp, long start, long end_pos,
+        int64_t *count, int64_t *last_end) {
+    for (long i = start; i < end_pos; i++) {
         int ch = input_getc(fp);
-        if (ch == EOF) break;
-        if (ch == '\n') count++;
+        if (ch == EOF) return false;
+        if (ch == '\n') {
+            (*count)++;
+            *last_end = i + 1;
+        }
+    }
+    return true;
+}
+
+// Number of record terminators before end_pos. uf caches the count up to the
+// last terminator found, so that INQUIRE(POS=) after every WRITE of a loop
+// does not rescan the whole file each time.
+static int32_t count_newlines_up_to(struct UNIT_FILE *uf, FILE *fp, long end_pos) {
+    long saved = ftell(fp);
+    bool cacheable = uf != NULL && !provided_stdin(fp);
+    if (cacheable && uf->pos_nl_valid && end_pos >= uf->pos_nl_offset
+            && fseek(fp, (long)uf->pos_nl_offset, SEEK_SET) == 0) {
+        int64_t count = uf->pos_nl_count, last_end = uf->pos_nl_offset;
+        if (count_newlines_from(fp, (long)uf->pos_nl_offset, end_pos,
+                &count, &last_end)) {
+            uf->pos_nl_offset = last_end;
+            uf->pos_nl_count = count;
+            fseek(fp, saved, SEEK_SET);
+            return (int32_t)count;
+        }
+    }
+    pos_nl_reset(uf);
+    bool seek_ok = fseek(fp, 0, SEEK_SET) == 0;
+    int64_t count = 0, last_end = 0;
+    if (count_newlines_from(fp, 0, end_pos, &count, &last_end)
+            && cacheable && seek_ok && end_pos >= 0) {
+        uf->pos_nl_valid = true;
+        uf->pos_nl_offset = last_end;
+        uf->pos_nl_count = count;
     }
     fseek(fp, saved, SEEK_SET);
-    return count;
+    return (int32_t)count;
 }
 
 void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_file_bin, int access_id, bool read_access, bool write_access, int delim, bool blank_zero, int32_t record_length, int sign_mode, int decimal_mode, int encoding, int round_mode, int pad_mode) {
@@ -7698,8 +7772,10 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
             unit_to_file[i].pad_mode = pad_mode;
             unit_to_file[i].rereadable = file_is_rereadable(filep);
             unit_to_file[i].swap_bytes = false;
+            unit_to_file[i].pending_record = false;
             seq_unf_state_reset(&unit_to_file[i]);
             list_dir_state_reset(&unit_to_file[i]);
+            pos_nl_reset(&unit_to_file[i]);
             return;  // Don't add duplicate entry
         }
     }
@@ -7726,8 +7802,10 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
     unit_to_file[last_index_used].pad_mode = pad_mode;
     unit_to_file[last_index_used].rereadable = file_is_rereadable(filep);
     unit_to_file[last_index_used].swap_bytes = false;
+    unit_to_file[last_index_used].pending_record = false;
     seq_unf_state_reset(&unit_to_file[last_index_used]);
     list_dir_state_reset(&unit_to_file[last_index_used]);
+    pos_nl_reset(&unit_to_file[last_index_used]);
 }
 
 // Emscripten's stdin is a character device whose read() keeps filling the
@@ -8681,8 +8759,40 @@ LFORTRAN_API int32_t _lfortran_get_round_mode(int32_t unit_num) {
     return 0; // processor_defined
 }
 
+static int64_t inquire_file_size(FILE *fp)
+{
+#if defined(_WIN32)
+    int64_t current_pos = _ftelli64(fp);
+    if (current_pos < 0 || _fseeki64(fp, 0, SEEK_END) != 0) return -1;
+    int64_t size = _ftelli64(fp);
+    if (_fseeki64(fp, current_pos, SEEK_SET) != 0) return -1;
+#elif defined(__linux__) && !defined(COMPILE_TO_WASM)
+    int64_t current_pos = ftello64(fp);
+    if (current_pos < 0 || fseeko64(fp, 0, SEEK_END) != 0) return -1;
+    int64_t size = ftello64(fp);
+    if (fseeko64(fp, current_pos, SEEK_SET) != 0) return -1;
+#else
+    int64_t current_pos = ftello(fp);
+    if (current_pos < 0 || fseeko(fp, 0, SEEK_END) != 0) return -1;
+    int64_t size = ftello(fp);
+    if (fseeko(fp, current_pos, SEEK_SET) != 0) return -1;
+#endif
+    return size;
+}
+
+static int64_t inquire_file_position(FILE *fp)
+{
+#if defined(_WIN32)
+    return _ftelli64(fp);
+#elif defined(__linux__) && !defined(COMPILE_TO_WASM)
+    return ftello64(fp);
+#else
+    return ftello(fp);
+#endif
+}
+
 LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
-                                    bool *opened, int32_t *size, int32_t *pos,
+                                    bool *opened, int64_t *size, int64_t *pos,
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,
                                     char *readwrite, int64_t readwrite_len,
@@ -8708,6 +8818,9 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
                                     char *action, int64_t action_len,
                                     char *position, int64_t position_len,
                                     char *delim, int64_t delim_len) {
+    if (size != NULL) {
+        *size = -1;
+    }
     if (f_name_data && unit_num != -1) {
         if (iostat != NULL) {
             *iostat = 1;
@@ -8748,8 +8861,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         if (fp != NULL) {
             *exists = true;
             if (size != NULL) {
-                fseek(fp, 0, SEEK_END);
-                *size = ftell(fp);
+                *size = inquire_file_size(fp);
             }
             fclose(fp); // close the file
         } else {
@@ -8847,23 +8959,20 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *opened = (fp != NULL);
         }
         if (pos != NULL && fp != NULL) {
-            long p = ftell(fp);
+            int64_t p = inquire_file_position(fp);
             if (!unit_file_bin && access_id == 0) {
-                int32_t nl = count_newlines_up_to(fp, p);
+                int32_t nl = count_newlines_up_to(find_unit(u_num), fp, p);
                 if (nl > 0) {
-                    *pos = (int32_t)(p - nl);
+                    *pos = p - nl;
                 } else {
-                    *pos = (int32_t)p + 1;
+                    *pos = p + 1;
                 }
             } else {
-                *pos = (int32_t)p + 1;
+                *pos = p + 1;
             }
         }
         if (size != NULL && fp != NULL) {
-            long current_pos = ftell(fp);
-            fseek(fp, 0, SEEK_END);
-            *size = ftell(fp);
-            fseek(fp, current_pos, SEEK_SET);
+            *size = inquire_file_size(fp);
         }
         if (recl != NULL && access_id == 2) {
             *recl = unit_recl;
@@ -9164,23 +9273,20 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
             *opened = (fp != NULL);
         }
         if (pos != NULL && fp != NULL) {
-            long p = ftell(fp);
+            int64_t p = inquire_file_position(fp);
             if (!unit_file_bin && access_id == 0) {
-                int32_t nl = count_newlines_up_to(fp, p);
+                int32_t nl = count_newlines_up_to(find_unit(unit_num), fp, p);
                 if (nl > 0) {
-                    *pos = (int32_t)(p - nl);
+                    *pos = p - nl;
                 } else {
-                    *pos = (int32_t)p + 1;
+                    *pos = p + 1;
                 }
             } else {
-                *pos = (int32_t)p + 1;
+                *pos = p + 1;
             }
         }
         if (size != NULL && fp != NULL) {
-            long current_pos = ftell(fp);
-            fseek(fp, 0, SEEK_END);
-            *size = ftell(fp);
-            fseek(fp, current_pos, SEEK_SET);
+            *size = inquire_file_size(fp);
         }
         if (recl != NULL) {
             if (access_id == 1) {
@@ -9388,6 +9494,7 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* ioms
             exit(1);
         }
     }
+    terminate_pending_record(find_unit(unit_num), filep);
     if (fseek(filep, 0, SEEK_SET) != 0) {
         if (iostat != NULL) {
             *iostat = -1;
@@ -9404,6 +9511,7 @@ LFORTRAN_API void _lfortran_rewind(int32_t unit_num, int32_t* iostat, char* ioms
     rewind(filep);
     seq_unf_state_reset(find_unit(unit_num));
     list_dir_state_reset(find_unit(unit_num));
+    pos_nl_reset(find_unit(unit_num));
 }
 
 LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iomsg, int64_t iomsg_len)
@@ -9439,6 +9547,7 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iom
         strcpy(fname, fort_filename);
         store_unit_file(unit_num, fname, filep, false, 0, true, true, 0, false, 0, 0, 0, 0, 0, 1);
     }
+    terminate_pending_record(find_unit(unit_num), filep);
     fflush(filep);
     long pos = ftell(filep);
     if (pos >= 0) {
@@ -9446,6 +9555,7 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iom
     }
     struct UNIT_FILE *uf = find_unit(unit_num);
     if (uf) uf->after_endfile = true;
+    pos_nl_reset(uf);
 }
 
 LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *iomsg,  int64_t iomsg_len)
@@ -9472,6 +9582,7 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
     }
+    pos_nl_reset(find_unit(unit_num));
 
     if (unit_file_bin && access_id == 0) {
         struct UNIT_FILE *uf = find_unit(unit_num);
@@ -9500,6 +9611,7 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         return;
     }
 
+    terminate_pending_record(find_unit(unit_num), fd);
     fflush(fd);
     long pos = ftell(fd);
     if (pos <= 0) {
@@ -14716,18 +14828,42 @@ LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t 
     pad_with_spaces(iomsg, msg_len, iomsg_len);
 }
 
-LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat) {
+LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat, char* iomsg, int64_t iomsg_len) {
     if (iostat) *iostat = 0;
     if (unit_num == -1) {
-        // Cannot seek on stdin
+        // Cannot seek on stdin: it is not connected for stream access.
+        if (iomsg != NULL && iomsg_len > 0) {
+            char *msg = "POS= is allowed only for a unit connected for stream access";
+            _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+        }
         if (iostat) *iostat = 1;
         return;
     }
 
-    FILE* fp = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id = -1;
+    FILE* fp = get_file_pointer_from_unit(unit_num, NULL, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (!fp) {
+        if (iomsg != NULL && iomsg_len > 0) {
+            char *msg = "POS= is allowed only for a unit connected for stream access";
+            _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+        }
         if (iostat) { *iostat = 1; return; }
         fprintf(stderr, "No file found with given unit number %d.\n", unit_num);
+        exit(1);
+    }
+
+    if (access_id != 1) {
+        // POS= is allowed only for a unit connected for stream access.
+        if (iomsg != NULL && iomsg_len > 0) {
+            char *msg = "POS= is allowed only for a unit connected for stream access";
+            _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+        }
+        if (iostat) {
+            *iostat = 5002;
+            return;
+        }
+        fprintf(stderr, "Runtime Error: POS= is allowed only for a unit "
+            "connected for stream access (unit %d).\n", unit_num);
         exit(1);
     }
 
@@ -14738,10 +14874,17 @@ LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* io
     int seek_result = fseek(fp, pos - 1, SEEK_SET);
 #endif
     if (seek_result != 0) {
+        if (iomsg != NULL && iomsg_len > 0) {
+            char msg[100];
+            snprintf(msg, sizeof(msg),
+                "Cannot position the unit at POS=%" PRId64, pos);
+            _lfortran_copy_str_and_pad(iomsg, iomsg_len, msg, strlen(msg), 1);
+        }
         if (iostat) { *iostat = 1; return; }
         fprintf(stderr, "Error seeking to position %" PRId64 " in file.\n", pos);
         exit(1);
     }
+    pos_nl_reset(find_unit(unit_num));
 }
 
 LFORTRAN_API void _lfortran_connect_unit_for_read(int32_t unit_num, int32_t unformatted, int32_t* iostat)
@@ -15016,6 +15159,11 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             exit(1);
         }
 
+        // A formatted sequential WRITE leaves its record open unless it
+        // wrote an end-of-record terminator. A non-advancing WRITE (and the
+        // `$` edit descriptor) passes an empty terminator, and a write with
+        // no output list passes the terminator as its data.
+        bool record_terminated = true;
         // For direct access formatted writes, handle record boundaries:
         // The '/' edit descriptor produces '\n' in the formatted string.
         // For direct access, each record must be exactly unit_recl bytes,
@@ -15057,6 +15205,14 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
                 struct UNIT_FILE *uf_ = find_unit(unit_num);
                 if (uf_) is_child = uf_->lf_child_io_mode != 0;
             }
+            if (end != NULL) {
+                record_terminated = (end_len > 0 && !is_child);
+            } else {
+                // The "%s" protocol passes a write with no output list: the
+                // data is the record terminator the compiler would have
+                // appended, so a non-empty one ends the record.
+                record_terminated = (str_len > 0 && str[str_len - 1] == '\n');
+            }
             if (end != NULL && !is_child) {
                 if(open_delim != '\0') {
                     fprintf(filep, "%c%.*s%c%.*s",
@@ -15081,6 +15237,10 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
 
 
+        if (access_id == 0) {
+            struct UNIT_FILE *uf_ = find_unit(unit_num);
+            if (uf_) uf_->pending_record = !record_terminated;
+        }
         if(iostat != NULL) *iostat = dtio_iostat;
         internal_free(wide_encoded);
         va_end(args);
@@ -15993,7 +16153,10 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
     if (!filep) {
         return;
     }
-    
+
+    // CLOSE terminates a record a non-advancing WRITE left open.
+    terminate_pending_record(find_unit(unit_num), filep);
+
     // Don't close the process's standard streams, which the pre-connected
     // units 0, 5 and 6 use. A unit opened on a named file, even one of those
     // numbers, has its own stream that must be closed.
@@ -16985,6 +17148,57 @@ static int64_t get_element_size(const lfortran_nml_item_t *item) {
     }
 }
 
+static void write_nml_item_values(nml_writer_t *w, const lfortran_nml_item_t *item) {
+    int64_t total = compute_array_size(item);
+    for (int64_t j = 0; j < total; j++) {
+        if (j > 0) write_char(w, ',');
+        write_nml_value(w, item, j);
+    }
+}
+
+// Write an item nested in arrays of a derived type once per element of the
+// enclosing arrays, as `x(i,...)%inner(j,...)%a=...`
+static void write_nml_nested_item(nml_writer_t *w, const lfortran_nml_item_t *item) {
+    int64_t total = 1;
+    for (int32_t l = 0; l < item->n_levels; l++) {
+        for (int32_t d = 0; d < item->levels[l].rank; d++) {
+            total *= item->levels[l].shape[d];
+        }
+    }
+    char buf[32];
+    for (int64_t k = 0; k < total; k++) {
+        // The innermost level varies fastest, and within a level the
+        // first subscript varies fastest (array element order)
+        lfortran_nml_item_t elem = *item;
+        int64_t inner = total;
+        write_str(w, "  ");
+        for (int32_t l = 0; l < item->n_levels; l++) {
+            const lfortran_nml_level_t *level = &item->levels[l];
+            int64_t size = 1;
+            for (int32_t d = 0; d < level->rank; d++) {
+                size *= level->shape[d];
+            }
+            inner /= size;
+            int64_t idx = (k / inner) % size;
+            elem.data = (char*)elem.data + idx * level->stride;
+            write_str_upper(w, level->name);
+            write_char(w, '(');
+            for (int32_t d = 0; d < level->rank; d++) {
+                if (d > 0) write_char(w, ',');
+                snprintf(buf, sizeof(buf), "%" PRId64,
+                    idx % level->shape[d] + level->lbound[d]);
+                write_str(w, buf);
+                idx /= level->shape[d];
+            }
+            write_char(w, ')');
+        }
+        write_str_upper(w, item->name);
+        write_char(w, '=');
+        write_nml_item_values(w, &elem);
+        write_char(w, '\n');
+    }
+}
+
 void namelist_write_impl(nml_writer_t *w,
                          const lfortran_nml_group_t *group)
 {
@@ -16995,20 +17209,15 @@ void namelist_write_impl(nml_writer_t *w,
     for (int32_t i = 0; i < group->n_items; i++) {
         const lfortran_nml_item_t *item = &group->items[i];
 
+        if (item->n_levels > 0) {
+            write_nml_nested_item(w, item);
+            continue;
+        }
+
         write_str(w, "  ");
         write_str_upper(w, item->name);
         write_char(w, '=');
-
-        if (item->rank == 0) {
-            write_nml_value(w, item, 0);
-        } else {
-            int64_t total = compute_array_size(item);
-            for (int64_t j = 0; j < total; j++) {
-                if (j > 0) write_char(w, ',');
-                write_nml_value(w, item, j);
-            }
-        }
-
+        write_nml_item_values(w, item);
         write_char(w, '\n');
     }
 
@@ -17484,7 +17693,8 @@ static int collect_derived_items(const lfortran_nml_group_t *group, const char *
     size_t prefix_len = strlen(prefix);
     int count = 0;
     for (int32_t i = 0; i < group->n_items; i++) {
-        if (strncmp(group->items[i].name, prefix, prefix_len) == 0) {
+        if (group->items[i].n_levels == 0 &&
+                strncmp(group->items[i].name, prefix, prefix_len) == 0) {
             if (count < max_items) {
                 items[count++] = &group->items[i];
             }
@@ -17708,7 +17918,8 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
         lfortran_nml_item_t *derived_items[256];
         int derived_count = 0;
         for (int32_t i = 0; i < group->n_items; i++) {
-            if (strcmp(base_name, group->items[i].name) == 0) {
+            if (group->items[i].n_levels == 0 &&
+                    strcmp(base_name, group->items[i].name) == 0) {
                 item = &group->items[i];
                 break;
             }

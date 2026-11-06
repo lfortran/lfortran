@@ -427,7 +427,7 @@ class ASRToLLVMVisitor;
             llvm::Value* lfortran_free_nocheck(llvm::Value* ptr);
             llvm::Value* lfortran_free_alloc(llvm::Value* allocator, llvm::Value* ptr);
 
-            // Get or create the cached global allocator pointer
+            // Emit a local getter under native --fast; otherwise cache in entry.
             llvm::Value* get_allocator(llvm::Module* mod);
 
             llvm::Value* string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode=nullptr, llvm::Value* sign_mode=nullptr, llvm::Value* round_mode=nullptr, bool leading_blank=false,
@@ -879,9 +879,18 @@ class ASRToLLVMVisitor;
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
             // Pointer to a function of the opaque procedure type `x`: no
-            // parameters, returning the explicit result type or void.
+            // parameters, returning the explicit result type or void. The
+            // result is lowered as `get_function_type` lowers it, so that a
+            // procedure declared with the opaque type has this type; a
+            // result returned through a pointer (complex(8) on Windows)
+            // becomes the only parameter.
             llvm::PointerType* get_opaque_procedure_ptr_type(const ASR::FunctionType_t &x,
                 llvm::Module* module);
+
+            // The type a procedure returns a complex(a_kind) result as, by
+            // the platform C ABI; null when the result is instead returned
+            // through a leading pointer argument (complex(8) on Windows).
+            llvm::Type* get_complex_return_type(int a_kind);
 
             // Convert complex return value from platform ABI to internal representation
             // (\<2 x float\>, i64 on Windows, etc.) to the internal complex_4 struct.
@@ -1161,6 +1170,18 @@ class ASRToLLVMVisitor;
 
         void finalize_variable(ASR::Variable_t* const v){
             if(not_finalizable_variable(v)) return;
+            if (llvm_utils_->compiler_options.po.stack_arrays &&
+                    ASR::is_a<ASR::Array_t>(*v->m_type)) {
+                ASR::ttype_t* element = ASRUtils::extract_type(v->m_type);
+                // declare_vars allocates ordinary numeric arrays on the
+                // stack in this mode. They have no element resources to
+                // finalize; their scope reclaims storage, not the allocator.
+                // Allocatable and pointer arrays do not enter this branch.
+                if (ASRUtils::is_integer(*element) || ASRUtils::is_real(*element) ||
+                        ASRUtils::is_complex(*element) || ASRUtils::is_logical(*element)) {
+                    return;
+                }
+            }
             if(!is_finalizable_type(v->m_type, get_struct_sym(v), false)) return;
             LCOMPILERS_ASSERT_MSG(!is_struct_symtab(v->m_parent_symtab), "Struct members don't use this function")
 
@@ -2560,8 +2581,9 @@ class ASRToLLVMVisitor;
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
             // The storage of a common block outlives every scope that
-            // declares the block.
-            if (v->m_common_block != nullptr) {
+            // declares the block, and a HostAssociated variable denotes a
+            // variable of the host, which the host owns.
+            if (!ASRUtils::has_own_storage(*v)) {
                 return true;
             }
             if (LLVM::is_struct_value_dummy_copied(*v)) {
@@ -2594,15 +2616,29 @@ class ASRToLLVMVisitor;
             }
             if (v->m_storage == ASR::Parameter) {
                 // Keep most PARAMETER symbols non-finalizable. A narrow
-                // exception is program-scope parameter structs whose runtime
-                // construction can allocate member storage (for example,
-                // fixed-length character members initialized from constructors).
-                // Those need scope-exit finalization to avoid leaks.
+                // exception is a parameter struct whose runtime construction
+                // can allocate member storage (for example, character members
+                // initialized from constructors). Those need scope-exit
+                // finalization to avoid leaks.
                 ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
                     v->m_parent_symtab->asr_owner);
-                if (ASR::is_a<ASR::Program_t>(*owner)) {
-                    ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
-                    if (ASR::is_a<ASR::StructType_t>(*t)) {
+                ASR::ttype_t* t = ASRUtils::type_get_past_array(v->m_type);
+                if (ASR::is_a<ASR::StructType_t>(*t)) {
+                    if (ASR::is_a<ASR::Program_t>(*owner)) {
+                        return false;
+                    }
+                    // The nested_vars pass gives a procedure its own copy of
+                    // a parameter it reaches through host association, and
+                    // declare_vars sets up the copy's character members on
+                    // every call, so the procedure owns that storage. A
+                    // module's parameters are globals, which the program
+                    // finalizes at exit.
+                    if (!ASR::is_a<ASR::Module_t>(*owner)
+                            && v->m_type_declaration != nullptr
+                            && ASRUtils::struct_has_character_member(
+                                ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(
+                                        v->m_type_declaration)))) {
                         return false;
                     }
                 }
@@ -2783,6 +2819,8 @@ class ASRToLLVMVisitor;
                 return true;
                 case ASR::FunctionType:
                 case ASR::CPtr:
+                // A reference refers to a variable that something else owns.
+                case ASR::Reference:
                     return false;
                 default:
                     throw LCompilersException("Handle this case");
@@ -3314,6 +3352,7 @@ class ASRToLLVMVisitor;
         public:
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2vtab;
             std::map<ASR::symbol_t*, llvm::Constant*> newclass2typeinfo;   // Contains type-info object pointer for each struct
+            std::map<ASR::symbol_t*, llvm::Function*> newclass2copyfn;   // Contains the `_copy_<owner>_<type>` function for each struct
             std::map<std::string, llvm::Constant*> intrinsic_type_info;   // Contains type-info object pointer for each intrincic type and kind
             std::map<std::string, llvm::Constant*> intrinsic_type_vtab;
             std::map<std::string, llvm::Type*> intrinsic_type_vtabtype;
@@ -3325,6 +3364,7 @@ class ASRToLLVMVisitor;
                       LLVMFinalize &finalizer_instance_);
     
             llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym, llvm::Module* module);
+            llvm::Function* get_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module);
             llvm::Function* get_Upoly_finalize_fn(ASR::Struct_t* struct_sym, llvm::Value* upoly_ptr);
             void store_class_vptr(ASR::symbol_t* struct_sym, llvm::Value* ptr, llvm::Module* module);
             void store_class_struct(ASR::Struct_t* class_sym, llvm::Value* class_ptr, llvm::Value* struct_ptr);

@@ -544,11 +544,52 @@ public:
         // It keeps it, as losing a reply or a status would leave the peer
         // waiting for it, but disconnects a peer that leaves 16 MiB of them.
         reliable,
-        // It drops it once 64 MiB wait, as ZeroMQ does at its high-water
-        // mark: the output of cells, for a subscriber such as a prompt
-        // waiting for keys.
+        // The output of cells. Once more than 64 MiB wait, the kernel drops
+        // the oldest that it has not started to send, down to 48 MiB, and
+        // tells the peer so (make_room), rather than the newest, as ZeroMQ
+        // does at its high-water mark: a subscriber that reads too slowly,
+        // such as a prompt at a slow terminal or waiting for redirected
+        // input, then still gets the latest output, of its own next cell too.
+        // A message larger than 64 MiB that has started sending is sent whole:
+        // it cannot be cut short. One that has not started yet is dropped like
+        // any other. While such a message is being sent, the latest message
+        // published after it is kept, and publishing another replaces it with
+        // a notice.
         droppable
     };
+
+    // Makes room for a droppable message, if more than the most droppable
+    // output waits, by dropping the oldest and putting a notice of them,
+    // which `notice` builds, where the first of them was. The notice is
+    // droppable output itself, so a subscriber that never reads keeps one,
+    // which the next drop replaces, at the oldest gap. A first message that
+    // is partly sent is kept even when it alone is larger than the limit;
+    // while it is, every droppable message after it is dropped, so only the
+    // latest output published then waits behind it.
+    template <typename Notice>
+    void make_room(Notice notice)
+    {
+        if (blocking || closed || queued <= droppable_limit) return;
+        size_t notice_at = 0;
+        bool dropped = false;
+        // The first message may be partly sent already.
+        auto out = outbox.begin() + (sent > 0 ? 1 : 0);
+        for (auto in = out; in != outbox.end(); ++in) {
+            if (!in->reliable && queued > droppable_limit - droppable_limit / 4) {
+                if (!dropped) notice_at = static_cast<size_t>(out - outbox.begin());
+                queued -= in->data.size();
+                dropped = true;
+                continue;
+            }
+            if (out != in) *out = std::move(*in);
+            ++out;
+        }
+        outbox.erase(out, outbox.end());
+        if (!dropped) return;
+        std::string data = encode_frames(notice());
+        queued += data.size();
+        outbox.insert(outbox.begin() + notice_at, Outgoing{std::move(data), false});
+    }
 
     // Starts the handshake as a socket of `type`. A blocking peer finishes it
     // here, waiting while the kernel runs a cell, else closes `fd` and throws.
@@ -590,15 +631,14 @@ public:
     bool send(const std::vector<std::string> &frames,
         Delivery delivery = Delivery::reliable)
     {
-        std::string data;
-        for (size_t i = 0; i < frames.size(); i++) {
-            data += frame(i + 1 < frames.size() ? 1 : 0, frames[i]);
-        }
-        write(std::move(data), delivery);
+        write(encode_frames(frames), delivery);
         return !closed;
     }
 
     bool pending() const { return !closed && !outbox.empty(); }
+
+    // Whether a message read waits to be taken
+    bool waiting() const { return !received.empty(); }
 
     // Sends what the socket takes now.
     void flush(size_t budget = SIZE_MAX)
@@ -673,6 +713,16 @@ private:
     // The bytes in the outbox, those of reliable messages, and those of its
     // first message already sent
     size_t queued = 0, queued_reliable = 0, sent = 0;
+    static constexpr size_t droppable_limit = size_t(64) << 20;
+
+    static std::string encode_frames(const std::vector<std::string> &frames)
+    {
+        std::string data;
+        for (size_t i = 0; i < frames.size(); i++) {
+            data += frame(i + 1 < frames.size() ? 1 : 0, frames[i]);
+        }
+        return data;
+    }
 
     void write(std::string data, Delivery delivery)
     {
@@ -686,7 +736,10 @@ private:
             closed = true;
             return;
         }
-        if (!reliable && queued > (size_t(64) << 20)) return;
+        // A droppable message is always kept, even if a first message that is
+        // larger than the limit by itself leaves no room: make_room() has
+        // already dropped what it could, and the next one drops this message,
+        // with a notice, so that newer output is never lost silently.
         queued += data.size();
         if (reliable) queued_reliable += data.size();
         outbox.push_back({std::move(data), reliable});
@@ -851,12 +904,12 @@ struct Endpoint {
         if (fd.revents & ~POLLOUT) peer->read();
     }
 
-    // Removes the closed connections; only between requests, which refer to
-    // them.
+    // Removes the closed connections, once the messages read from them are
+    // taken; only between requests, which refer to them.
     void prune()
     {
         for (size_t i = peers.size(); i-- > 0;) {
-            if (peers[i]->closed) peers.erase(peers.begin() + i);
+            if (peers[i]->closed && !peers[i]->waiting()) peers.erase(peers.begin() + i);
         }
     }
 
@@ -1931,7 +1984,10 @@ public:
         bool had_client = false;
         auto started = std::chrono::steady_clock::now();
         while (!stopping && !stop_requested) {
-            progress({&shell_, &control_, &iopub_}, 250);
+            // Requests that wait are taken one per connection per pass, so
+            // the next pass only polls for what has arrived meanwhile.
+            progress({&shell_, &control_, &iopub_},
+                waiting(shell_) || waiting(control_) ? 0 : 250);
             // A subscriber sends only its subscriptions; it gets every message.
             for (auto &peer : iopub_.peers) {
                 std::vector<std::string> frames;
@@ -1970,17 +2026,32 @@ public:
     }
 
 private:
-    // Handles the requests read from the connections of `endpoint`.
-    void handle_received(Endpoint &endpoint)
+    static bool waiting(const Endpoint &endpoint)
     {
+        for (auto &peer : endpoint.peers) {
+            if (peer->waiting()) return true;
+        }
+        return false;
+    }
+
+    // Handles at most one request read from each connection of `endpoint`,
+    // in the order the connections were accepted, so that the requests of
+    // one client do not all run ahead of those another client sent
+    // meanwhile, and each client's requests keep their order. True if it
+    // handled any.
+    bool handle_received(Endpoint &endpoint)
+    {
+        bool handled = false;
         for (size_t i = 0; i < endpoint.peers.size() && !stopping; i++) {
             Peer &peer = *endpoint.peers[i];
             std::vector<std::string> frames;
-            while (!stopping && peer.next(frames)) {
+            if (peer.next(frames)) {
+                handled = true;
                 Message request;
                 if (decode(frames, key, request)) handle(peer, request);
             }
         }
+        return handled;
     }
 
     // A cell that fails with stop_on_error aborts the execute_requests that
@@ -1990,7 +2061,7 @@ private:
     {
         aborting = true;
         for (auto &peer : shell_.peers) peer->read();
-        handle_received(shell_);
+        while (!stopping && handle_received(shell_)) {}
         aborting = false;
     }
 
@@ -2004,12 +2075,26 @@ private:
             ? Peer::Delivery::reliable : Peer::Delivery::droppable;
         for (auto &peer : iopub_.peers) {
             if (peer->ready()) {
+                if (delivery == Peer::Delivery::droppable)
+                    peer->make_room([this] { return dropped_notice(); });
                 peer->send(frames, delivery);
                 // execute() pumps callbacks without returning to run().
                 // Make nonblocking progress without servicing new requests.
                 peer->flush();
             }
         }
+    }
+
+    // Tells a subscriber that output of cells was dropped, as it did not
+    // read it in time. It is of no cell, so a prompt shows it whether idle
+    // or running a cell of its own.
+    std::vector<std::string> dropped_notice()
+    {
+        Message m = new_message("stream", Object{}, Object{{"name", "stderr"},
+            {"text", "\n[some output was dropped, as this client did not read it in time]\n"}},
+            session);
+        m.identities = {"kernel." + session + ".stream"};
+        return encode(m, key);
     }
 
     void reply(Peer &peer, const Message &request, const std::string &type, Object content)

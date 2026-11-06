@@ -1,62 +1,60 @@
 #include <metal_stdlib>
 using namespace metal;
 
-inline float twice_gpu_11(float v) {
-    float twice;
-    twice = (((float)2) * v);
-    return twice;
+inline float twice_gpu_11(float v_gpu) {
+    float twice_gpu{};
+    twice_gpu = (((float)2) * v_gpu);
+    return twice_gpu;
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    float a;
-    int __dim_x_0;
-    int __lb_x_0;
-    int __dim_y_0;
-    int __lb_y_0;
-    int __dim_z_0;
-    int __lb_z_0;
-    int __dim_z_1;
-    int __lb_z_1;
-    int __loop_end_0;
-    int __gpu_lanes;
+    float a_gpu;
+    int __dim_x_0_gpu;
+    int __lb_x_0_gpu;
+    int __dim_y_0_gpu;
+    int __lb_y_0_gpu;
+    int __dim_z_0_gpu;
+    int __lb_z_0_gpu;
+    int __dim_z_1_gpu;
+    int __lb_z_1_gpu;
+    int __gpu_lanes_gpu;
 };
 
 kernel void __lfortran_gpu_kernel_0(
-    device float* x [[buffer(0)]],
-    device float* y [[buffer(1)]],
-    device float* z [[buffer(2)]],
+    device float* x_gpu [[buffer(0)]],
+    device float* y_gpu [[buffer(1)]],
+    device float* z_gpu [[buffer(2)]],
     constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {
-    float a = __scalar_args.a;
-    int __lb_x_0 = __scalar_args.__lb_x_0;
-    int __lb_y_0 = __scalar_args.__lb_y_0;
-    int __dim_z_0 = __scalar_args.__dim_z_0;
-    int __lb_z_0 = __scalar_args.__lb_z_0;
-    int __lb_z_1 = __scalar_args.__lb_z_1;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __gpu_lanes = __scalar_args.__gpu_lanes;
-    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes;
-    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes);
-    int __flat_idx;
-    int i__dc;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    float a_gpu = __scalar_args.a_gpu;
+    int __lb_x_0_gpu = __scalar_args.__lb_x_0_gpu;
+    int __lb_y_0_gpu = __scalar_args.__lb_y_0_gpu;
+    int __dim_z_0_gpu = __scalar_args.__dim_z_0_gpu;
+    int __lb_z_0_gpu = __scalar_args.__lb_z_0_gpu;
+    int __lb_z_1_gpu = __scalar_args.__lb_z_1_gpu;
+    int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
+    int __flat_idx_gpu;
+    int i__dc_gpu;
+    if ((((0 * 0) + __thread_id) >= 8)) {
         return;
     }
-    __flat_idx = ((0 * 0) + __thread_id);
-    i__dc = (__flat_idx + 1);
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    i__dc_gpu = (__flat_idx_gpu + 1);
     {
-        float t;
-        t = (a * x[((int)(i__dc) - (__lb_x_0))]);
+        float t_gpu;
+        t_gpu = (a_gpu * x_gpu[((int)(i__dc_gpu) - (__lb_x_0_gpu))]);
         if ((__gpu_lane == 0)) {
-            y[((int)(i__dc) - (__lb_y_0))] = (t + y[((int)(i__dc) - (__lb_y_0))]);
+            y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))] = (t_gpu + y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))]);
         }
-        if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
     if ((__gpu_lane == 0)) {
-        z[((int)(i__dc) - (__lb_z_0)) + (__dim_z_0 * ((int)(2) - (__lb_z_1)))] = twice_gpu_11(y[((int)(i__dc) - (__lb_y_0))]);
+        z_gpu[((int)(i__dc_gpu) - (__lb_z_0_gpu)) + (__dim_z_0_gpu * ((int)(2) - (__lb_z_1_gpu)))] = twice_gpu_11(y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))]);
     }
-    if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+    if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
 }
 

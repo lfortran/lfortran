@@ -238,7 +238,7 @@
                                     ()
                                     ()
                                     Default
-                                    (Integer 4)
+                                    (Integer 8)
                                     ()
                                     Source
                                     Public
@@ -344,7 +344,7 @@
                     []
                     [(Assignment
                         (Var 2 __gpu_iteration_count)
-                        (IntegerConstant 4 (Integer 4) Decimal)
+                        (IntegerConstant 4 (Integer 8) Decimal)
                         ()
                         .false.
                         .false.
@@ -356,7 +356,7 @@
                         (IntegerCompare
                             (Var 2 __gpu_iteration_count)
                             Gt
-                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 0 (Integer 8) Decimal)
                             (Logical 4)
                             ()
                         )
@@ -413,6 +413,9 @@
                                 (Logical 4)
                                 ()
                             )]
+                            []
+                            0
+                            ()
                         )]
                         []
                     )
@@ -421,7 +424,7 @@
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 4 (Integer 4) Decimal)
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(If
                             ()
                             (IntegerCompare
