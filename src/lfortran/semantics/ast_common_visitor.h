@@ -19050,6 +19050,11 @@ public:
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
                 indices.size(), ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr))),
                 ASR::arraystorageType::ColMajor, array_item_value, in_bounds);
+            // Selecting an element of an array component of an array, as in
+            // `a%x(2)` reached through a longer component chain, is an array
+            // shaped like the base, so lend it the shape of the base here
+            // as well.
+            give_struct_member_item_shape_of_base(ASRUtils::EXPR(array_item_node));
         }
     }
 
