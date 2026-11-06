@@ -1,6 +1,7 @@
 ! An associate name spelled like a derived type that is not accessible in
 ! the scope (only reached as a component type), in a procedure that is
-! copied for its assumed-shape dummy argument.
+! copied for its assumed-shape dummy argument, alone and next to other
+! associate names of the same type.
 module associate_65_m1
     implicit none
     type :: t1
@@ -52,11 +53,23 @@ contains
         end block
         r = r + t1
     end subroutine s_host_variable
+
+    subroutine s_sibling_first(x, f, r)
+        type(t2), intent(in) :: x
+        real, intent(in) :: f(:)
+        integer, intent(out) :: r
+        block
+            associate (a => x%c, t1 => x%c)
+                r = a%i + t1%i + size(f)
+            end associate
+        end block
+    end subroutine s_sibling_first
 end module associate_65_m2
 
 program associate_65
     use associate_65_m1, only: t2
-    use associate_65_m2, only: s_block, s_select_type, s_host_variable
+    use associate_65_m2, only: s_block, s_select_type, s_host_variable, &
+        s_sibling_first
     implicit none
     type(t2) :: x
     integer :: r
@@ -69,4 +82,7 @@ program associate_65
     call s_host_variable(x, [1.0], r)
     print *, r
     if (r /= 50) error stop 3
+    call s_sibling_first(x, [1.0, 2.0], r)
+    print *, r
+    if (r /= 86) error stop 4
 end program associate_65

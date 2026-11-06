@@ -14541,8 +14541,21 @@ ASR::ttype_t* ReplaceWithFunctionParamVisitor::replace_args_with_FunctionParam(A
 
 void SymbolDuplicator::duplicate_SymbolTable(SymbolTable* symbol_table,
     SymbolTable* destination_symtab) {
+    // Copy the imports first. A variable copied before an import of its
+    // scope or of an enclosing scope would not find that import and would
+    // import its type again under a free name, which a symbol of the scope
+    // copied later can be spelled like (e.g. an associate name spelled like
+    // the type).
+    for( auto& item: symbol_table->get_scope() ) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            duplicate_symbol(item.second, destination_symtab);
+        }
+    }
     std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> variables;
     for( auto& item: symbol_table->get_scope() ) {
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            continue;
+        }
         bool is_new = destination_symtab->get_symbol(item.first) == nullptr;
         duplicate_symbol(item.second, destination_symtab);
         ASR::symbol_t* copy = destination_symtab->get_symbol(item.first);
