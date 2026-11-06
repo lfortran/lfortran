@@ -448,10 +448,10 @@ static lfortran_gpu_ctx *singleton = NULL;
 static int telemetry_at_exit_registered = 0;
 
 // With LFORTRAN_GPU_PROFILE=1 the telemetry is printed when the runtime
-// shuts down or the program ends. The snapshot does not sync, which could
-// end the program from an exit handler: the host syncs before a procedure
-// that launches returns, but after a `stop` the numbers may leave out the
-// launches still pending.
+// shuts down or the program ends. Syncing may call exit(), which an exit
+// handler must not, so the snapshot does not sync: the host syncs before a
+// procedure that launches returns, but after a `stop` the numbers may leave
+// out the launches still pending.
 static void print_telemetry(lfortran_gpu_ctx *ctx) {
     lfortran_gpu_metal_telemetry t;
     lfortran_gpu_metal_telemetry_snapshot(ctx, &t);
@@ -492,8 +492,8 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
     singleton->profile_enabled = gpu_profile_enabled();
     singleton->telemetry.gpu_timing_available = singleton->profile_enabled;
     if (singleton->profile_enabled && !telemetry_at_exit_registered) {
-        telemetry_at_exit_registered = 1;
-        atexit(print_telemetry_at_exit);
+        telemetry_at_exit_registered =
+            atexit(print_telemetry_at_exit) == 0;
     }
     return singleton;
 }
@@ -501,8 +501,10 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
 void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     if (!ctx) return;
     sync_all(ctx);
-    // A later lfortran_gpu_init makes a new context; the exit handler no
-    // longer prints this one.
+    // The exit handler no longer prints this context, and a later
+    // lfortran_gpu_init makes a new one, on the same system default
+    // device, which keeps the pipelines and scratch buffers of the kernels
+    // compiled so far.
     if (ctx == singleton) singleton = NULL;
     if (ctx->profile_enabled) print_telemetry(ctx);
     for (int i = 0; i < n_entries; i++) {

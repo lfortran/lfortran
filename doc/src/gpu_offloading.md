@@ -940,10 +940,11 @@ buffer is dead.
 ### Metal telemetry
 
 With `LFORTRAN_GPU_PROFILE=1` the Metal runtime collects telemetry -- the
-command buffers committed and completed, the dispatches, the host syncs and
-waits, the bytes copied each way, the device buffers made and their bytes,
-the time the device spent running the command buffers (their sum and their
-union), and the time spent compiling kernels -- which
+command buffers committed and those the host has seen complete, the
+dispatches, the host syncs and waits, the bytes copied each way, the device
+buffers made and their bytes, the time the device spent running the command
+buffers (their sum and their union), and the time spent compiling kernels
+-- which
 `lfortran_gpu_metal_telemetry_snapshot` returns, and which is printed to
 standard error when the program ends (or `lfortran_gpu_shutdown` runs):
 

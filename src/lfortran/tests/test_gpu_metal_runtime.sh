@@ -20,8 +20,15 @@ off_stderr="$build_dir/test_gpu_metal_runtime_off.err"
 on_stderr="$build_dir/test_gpu_metal_runtime_on.err"
 exit_stderr="$build_dir/test_gpu_metal_runtime_exit.err"
 rm -f "$off_stderr" "$on_stderr" "$exit_stderr"
-# What the runs print to stderr is shown however the script ends.
-trap 'cat "$off_stderr" "$on_stderr" "$exit_stderr" >&2 2>/dev/null || true' EXIT
+# What the runs print to stderr is shown when the script fails.
+show_stderr() {
+    local status=$?
+    if [[ $status != 0 ]]; then
+        cat "$off_stderr" "$on_stderr" "$exit_stderr" >&2 2>/dev/null || true
+    fi
+    return $status
+}
+trap show_stderr EXIT
 off_output=$("${gpu_run[@]}" env -u LFORTRAN_GPU_PROFILE "$binary" \
     2>"$off_stderr")
 on_output=$("${gpu_run[@]}" env LFORTRAN_GPU_PROFILE=1 "$binary" \
