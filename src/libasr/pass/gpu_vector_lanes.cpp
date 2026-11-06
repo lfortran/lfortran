@@ -2,6 +2,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
+#include <libasr/pass/gpu_affine.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_offload_stop.h>
 #include <libasr/pass/gpu_vector_lanes.h>
@@ -94,6 +95,11 @@ values in its private scalars, except for these statements:
   identity of its operation, each accumulates its iterations, and after
   the loop every lane gets what they hold combined (GpuLaneReduce): the
   inner product of a matrix-vector product, the forces on one body.
+  An independent loop whose body holds such a reduction loop of a number
+  of iterations not known at compile time has that sum shared out instead
+  of its own iterations, which may be fewer than the lanes (a sum split in
+  a few parts); one whose sums have a fixed length (the groups of a
+  quantized matrix-vector product) is shared out itself.
 * A *single* statement runs on the first lane only: a statement outside a
   distributed loop that has an effect the lanes must not repeat -- one that
   assigns shared memory, calls a procedure that is not pure, takes elements
@@ -2138,6 +2144,19 @@ private:
             case ASR::stmtType::DoLoop: {
                 if (k.independent_loops && distributable(
                         ASR::down_cast<ASR::DoLoop_t>(s), frames)) {
+                    if (prefers_inner_reduction(
+                            ASR::down_cast<ASR::DoLoop_t>(s), frames)) {
+                        bool was_failed = failed;
+                        size_t n_serialized = serialized.size();
+                        if (nested_decide(s, frames) && !failed) {
+                            return Role::Recurse;
+                        }
+                        failed = was_failed;
+                        for (size_t i = serialized.size(); i-- > n_serialized;) {
+                            *serialized[i].first = serialized[i].second;
+                        }
+                        serialized.resize(n_serialized);
+                    }
                     distributed = true;
                     return Role::Distribute;
                 }
@@ -2202,6 +2221,64 @@ private:
             }
         }
         return Role::Single;
+    }
+
+    // Whether the lanes share out a sum inside the independent loop `l`
+    // better than `l` itself: a loop of its body (or of a block or an `if`
+    // in it) that they can share out as a reduction, and whose number of
+    // iterations is not a constant. Lanes that share out `l` idle when it
+    // has few iterations, as when a long sum is split in a few parts, while
+    // a sum of a length not known at compile time keeps them all busy, and
+    // has them read along the column together; the groups of a quantized
+    // matrix-vector product are the other way round: a sum of a fixed,
+    // short length (64 codes) in each of many iterations.
+    bool prefers_inner_reduction(ASR::DoLoop_t *l,
+            std::vector<Frame> &frames) {
+        if (!k.lane_reductions) return false;
+        return inner_reduction(l->m_body, l->n_body, &l->base, frames);
+    }
+
+    bool inner_reduction(ASR::stmt_t **body, size_t n_body,
+            ASR::stmt_t *owner, std::vector<Frame> &frames) {
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *s = body[i];
+            frames.push_back({body, n_body, i, owner});
+            bool found = false;
+            if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+                auto *d = ASR::down_cast<ASR::DoLoop_t>(s);
+                std::vector<Accumulator> accumulators;
+                found = !constant_trips(d)
+                    && reducible(d, frames, accumulators);
+            } else if (ASR::is_a<ASR::BlockCall_t>(*s)) {
+                ASR::Block_t *x = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::BlockCall_t>(s)->m_m));
+                found = inner_reduction(x->m_body, x->n_body, s, frames);
+            } else if (ASR::is_a<ASR::If_t>(*s)) {
+                auto *x = ASR::down_cast<ASR::If_t>(s);
+                found = inner_reduction(x->m_body, x->n_body, s, frames)
+                    || inner_reduction(x->m_orelse, x->n_orelse, s, frames);
+            }
+            frames.pop_back();
+            if (found) return true;
+        }
+        return false;
+    }
+
+    // Whether the number of iterations of `d` is the same in every run of
+    // it: its bounds differ by a constant, and its step is a constant.
+    bool constant_trips(ASR::DoLoop_t *d) {
+        int64_t step = 1;
+        if (d->m_head.m_increment && !ASRUtils::extract_value(
+                ASRUtils::expr_value(d->m_head.m_increment), step)) {
+            return false;
+        }
+        GpuAffineBuilder affine;
+        affine.invariant_variable = [](ASR::symbol_t *) { return true; };
+        GpuAffine start, end;
+        return affine.affine(d->m_head.m_start, start)
+            && affine.affine(d->m_head.m_end, end)
+            && end.plus(start, -1).is_constant();
     }
 
     // The accumulator and operation of `value`, the value assigned to the

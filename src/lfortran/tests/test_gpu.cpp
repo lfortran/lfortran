@@ -2687,3 +2687,121 @@ TEST_CASE("A device check every call satisfies does not make a kernel stop") {
     }
 }
 #endif
+#ifndef HAVE_BUILD_TO_WASM
+namespace {
+
+// What the launches of a procedure look like after the Metal pipeline up to
+// gpu_vector_lanes, with --fast.
+struct GpuLaunchSummary {
+    // The most iterations a launch gets lanes for: the constant its lanes
+    // selection compares the iteration count with, or -1 without lanes.
+    int64_t lanes_cap = -1;
+    // The most workspaces a launched kernel has.
+    size_t workspaces = 0;
+    // The lane reductions of the kernels it launches.
+    size_t reductions = 0;
+};
+
+// The GpuLaunchSummary of each procedure of module `module` in `source`
+// that launches a kernel, by the procedure's name up to the variant suffix
+// pass_array_by_data adds.
+std::map<std::string, GpuLaunchSummary> gpu_launch_summaries(
+        const std::string &source, const std::string &filename,
+        const std::string &module) {
+    CompilerOptions options;
+    options.gpu_backend = "metal";
+    options.po.gpu_offload_metal = true;
+    options.po.fast = true;
+    options.po.bounds_checking = false;
+    options.po.strict_bounds_checking = false;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = filename;
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_vector_lanes", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+    // `if (count <= cap) __gpu_lanes = 32` (VectorLanes), and the launches.
+    struct Launches : public ASR::BaseWalkVisitor<Launches> {
+        GpuLaunchSummary summary;
+        bool launches = false;
+        void visit_If(const ASR::If_t &x) {
+            if (x.n_body == 1 && ASR::is_a<ASR::Assignment_t>(*x.m_body[0])
+                    && ASR::is_a<ASR::IntegerCompare_t>(*x.m_test)) {
+                auto *a = ASR::down_cast<ASR::Assignment_t>(x.m_body[0]);
+                auto *c = ASR::down_cast<ASR::IntegerCompare_t>(x.m_test);
+                int64_t value = 0;
+                if (ASR::is_a<ASR::Var_t>(*a->m_target)
+                        && std::string(ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(a->m_target)->m_v))
+                            .rfind("__gpu_lanes", 0) == 0
+                        && c->m_op == ASR::cmpopType::LtE
+                        && ASRUtils::extract_value(c->m_right, value)) {
+                    summary.lanes_cap = std::max(summary.lanes_cap, value);
+                }
+            }
+            BaseWalkVisitor::visit_If(x);
+        }
+        std::set<ASR::Function_t*> kernels;
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            launches = true;
+            auto *kernel = ASR::down_cast<ASR::Function_t>(x.m_kernel);
+            summary.workspaces = std::max(summary.workspaces,
+                kernel->m_gpu->n_workspaces);
+            if (!kernels.insert(kernel).second) return;
+            struct Reductions : public ASR::BaseWalkVisitor<Reductions> {
+                size_t found = 0;
+                void visit_GpuLaneReduce(const ASR::GpuLaneReduce_t &x) {
+                    found++;
+                    BaseWalkVisitor::visit_GpuLaneReduce(x);
+                }
+            } reductions;
+            reductions.visit_symbol(kernel->base);
+            summary.reductions += reductions.found;
+        }
+    };
+    std::map<std::string, GpuLaunchSummary> summaries;
+    auto *m = ASR::down_cast<ASR::Module_t>(
+        parsed.result->m_symtab->get_symbol(module));
+    for (auto &entry : m->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::Function_t>(*entry.second)) continue;
+        Launches l;
+        l.visit_symbol(*entry.second);
+        if (!l.launches) continue;
+        std::string name = entry.first.substr(0, entry.first.find('_'));
+        GpuLaunchSummary &s = summaries[name];
+        s.lanes_cap = std::max(s.lanes_cap, l.summary.lanes_cap);
+        s.workspaces = std::max(s.workspaces, l.summary.workspaces);
+        s.reductions = std::max(s.reductions, l.summary.reductions);
+    }
+    return summaries;
+}
+
+}
+
+TEST_CASE("GPU lanes share the parts of a split sum one part at a time") {
+    // gpu_lanes_parts_01: the lanes share out the sum of each part, not
+    // the parts, of which there may be fewer than the lanes: the kernel
+    // reduces each part across the lanes, and then the parts.
+    std::string source = read_project_file(
+        "integration_tests/gpu_lanes_parts_01.f90");
+    auto launches = gpu_launch_summaries(source, "gpu_lanes_parts_01.f90",
+        "gpu_lanes_parts_01_m");
+    REQUIRE(launches.count("split"));
+    CHECK(launches["split"].reductions == 2);
+}
+
+#endif
