@@ -4547,3 +4547,26 @@ contains
         call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
     end subroutine
 end module
+
+! A pointer, intent(in) dummy cannot have its association changed, so it
+! cannot be passed to a pointer, intent(inout) dummy. Passing it to a
+! non-pointer intent(inout) dummy, which modifies only the target, is valid.
+module cc1_pointer_intent_in_actual
+    implicit none
+contains
+    subroutine cc1_ptr_inout(x)
+        integer, pointer, intent(inout) :: x
+        nullify(x)
+    end subroutine
+
+    subroutine cc1_nonptr_inout(x)
+        integer, intent(inout) :: x
+        x = x + 1
+    end subroutine
+
+    subroutine cc1_ptr_intent_in(p)
+        integer, pointer, intent(in) :: p
+        call cc1_nonptr_inout(p)
+        call cc1_ptr_inout(p)  ! {Error} Argument `p` with intent(in) passed to a dummy argument with modifying intent
+    end subroutine
+end module

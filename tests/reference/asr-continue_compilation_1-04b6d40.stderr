@@ -5471,6 +5471,12 @@ semantic error: the fptr argument of c_f_pointer() shall not be polymorphic
 4547 |         call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
      |                             ^ 
 
+semantic error: Argument `p` with intent(in) passed to a dummy argument with modifying intent
+    --> tests/errors/continue_compilation_1.f90:4570:28
+     |
+4570 |         call cc1_ptr_inout(p)  ! {Error} Argument `p` with intent(in) passed to a dummy argument with modifying intent
+     |                            ^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
