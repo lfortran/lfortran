@@ -1,0 +1,9 @@
+C preprocessor error: #error bad thing
+ --> tests/errors/cpp_err9.f90:8:1 - 9:6
+  |
+8 |    #error bad \
+  |    ^^^^^^^^^^^^...
+...
+  |
+9 |    thing
+  | ...^^^^^^ 

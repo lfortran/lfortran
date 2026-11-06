@@ -1,0 +1,5 @@
+semantic error: Variable 'zz_undef' is not declared
+ --> tests/errors/cpp_err8.f90:8:7
+  |
+8 |       zz_undef
+  |       ^^^^^^^^ 'zz_undef' is undeclared
