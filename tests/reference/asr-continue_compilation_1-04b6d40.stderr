@@ -5447,6 +5447,30 @@ semantic error: elemental procedure 'cc_elem_calls_ext' needs an explicit interf
 4504 |     call cc_elem_calls_ext(b)
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^ put 'cc_elem_calls_ext' in a module or declare it in an interface block
 
+semantic error: the X argument of c_loc() shall not be polymorphic
+    --> tests/errors/continue_compilation_1.f90:4529:19
+     |
+4529 |         c = c_loc(x)  ! {Error} the X argument of c_loc() shall not be polymorphic
+     |                   ^ 
+
+semantic error: the X argument of c_loc() shall not be polymorphic
+    --> tests/errors/continue_compilation_1.f90:4535:19
+     |
+4535 |         c = c_loc(x)  ! {Error} the X argument of c_loc() shall not be polymorphic
+     |                   ^ 
+
+semantic error: the fptr argument of c_f_pointer() shall not be polymorphic
+    --> tests/errors/continue_compilation_1.f90:4541:29
+     |
+4541 |         call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
+     |                             ^ 
+
+semantic error: the fptr argument of c_f_pointer() shall not be polymorphic
+    --> tests/errors/continue_compilation_1.f90:4547:29
+     |
+4547 |         call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
+     |                             ^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
