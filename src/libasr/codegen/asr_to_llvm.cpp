@@ -16118,6 +16118,17 @@ public:
             ASR::expr_t* left = check.m_left == 0 ? x.m_target
                 : x.m_components[check.m_left - 1];
             ASR::expr_t* right = x.m_components[check.m_right - 1];
+            llvm::BasicBlock* mergeBB = nullptr;
+            if (check.m_left == 0 && is_allocatable_descriptor_target) {
+                // An unallocated target is reported on its own, its shape
+                // must not be inspected here.
+                llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
+                llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+                builder->CreateCondBr(is_not_allocated, mergeBB, thenBB);
+                builder->SetInsertPoint(thenBB);
+            }
             visit_expr_wrapper(check.m_left_extent, true);
             llvm::Value* left_size = tmp;
             visit_expr_wrapper(check.m_right_extent, true);
@@ -16146,17 +16157,6 @@ public:
                         left_size, dim_llvm, right_size, dim_llvm);
                 }
                 continue;
-            }
-            llvm::BasicBlock* mergeBB = nullptr;
-            if (is_allocatable_descriptor_target) {
-                // An unallocated target is reported on its own, its shape
-                // must not be inspected here.
-                llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
-                llvm::Function* fn = builder->GetInsertBlock()->getParent();
-                llvm::BasicBlock* thenBB = llvm::BasicBlock::Create(context, "then", fn);
-                mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-                builder->CreateCondBr(is_not_allocated, mergeBB, thenBB);
-                builder->SetInsertPoint(thenBB);
             }
             llvm::Value* shape_mismatch = builder->CreateICmpNE(right_size, left_size);
             if (target_name.empty()) {
