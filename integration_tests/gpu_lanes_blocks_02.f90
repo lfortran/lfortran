@@ -10,7 +10,8 @@ contains
         real, contiguous, intent(in) :: q(:, :, :)
         real, contiguous, intent(out) :: out(:, :, :)
         integer, contiguous, intent(out) :: first(:, :)
-        do concurrent (integer :: token = 1:size(q, 3), h = 1:size(q, 2))
+        integer :: token, h
+        do concurrent (token = 1:size(q, 3), h = 1:size(q, 2))
             block
                 integer :: d, found
                 do d = 1, size(q, 1)

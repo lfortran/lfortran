@@ -12,8 +12,9 @@ contains
         real, contiguous, intent(out) :: y(:, :)
         logical, intent(in) :: vector
         integer :: groups
+        integer :: n
         groups = size(w, 1)/8
-        do concurrent (integer :: n = 1:size(w, 2))
+        do concurrent (n = 1:size(w, 2))
             block
                 real :: terms(groups), total, acc
                 integer :: m, g, d

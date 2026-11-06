@@ -17,7 +17,8 @@ contains
     pure subroutine products(w, x, y)
         real, contiguous, intent(in) :: w(:, :), x(:)
         real, contiguous, intent(out) :: y(:)
-        do concurrent (integer :: n = 1:size(w, 2))
+        integer :: n
+        do concurrent (n = 1:size(w, 2))
             block
                 real :: acc
                 integer :: d
@@ -34,8 +35,9 @@ contains
         real, contiguous, intent(in) :: w(:, :), x(:), s(:, :)
         real, contiguous, intent(out) :: y(:)
         integer :: groups
+        integer :: n
         groups = size(w, 1)/16
-        do concurrent (integer :: n = 1:size(w, 2))
+        do concurrent (n = 1:size(w, 2))
             block
                 real :: terms(groups)
                 integer :: g
@@ -58,7 +60,8 @@ contains
     pure subroutine norms(x, y)
         real, contiguous, intent(in) :: x(:, :)
         real, contiguous, intent(out) :: y(:, :)
-        do concurrent (integer :: m = 1:size(x, 2))
+        integer :: m
+        do concurrent (m = 1:size(x, 2))
             block
                 real :: scale
                 integer :: d

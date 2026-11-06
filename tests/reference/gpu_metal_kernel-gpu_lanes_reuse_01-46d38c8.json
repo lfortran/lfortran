@@ -2,7 +2,7 @@
     "basename": "gpu_metal_kernel-gpu_lanes_reuse_01-46d38c8",
     "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
     "infile": "tests/../integration_tests/gpu_lanes_reuse_01.f90",
-    "infile_hash": "3d89aff5ec036d8a74708412cad85b2085712b9fc9d2667d60b6a13a",
+    "infile_hash": "3fa4c5b9f0b9fab9f3686f16012eaeae833602fb26c4bd07a94b17ab",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "gpu_metal_kernel-gpu_lanes_reuse_01-46d38c8.stdout",

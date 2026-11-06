@@ -11,7 +11,8 @@ contains
         real, contiguous, intent(in) :: q(:, :, :)
         real, contiguous, intent(out) :: out(:, :, :)
         integer, contiguous, intent(out) :: last(:, :)
-        do concurrent (integer :: token = 1:size(q, 3), h = 1:size(q, 2))
+        integer :: token, h
+        do concurrent (token = 1:size(q, 3), h = 1:size(q, 2))
             block
                 integer :: d, t, n
                 real :: s(size(q, 1)), acc

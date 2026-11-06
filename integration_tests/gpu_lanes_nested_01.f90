@@ -13,16 +13,18 @@ contains
         real, contiguous, intent(in) :: x(:, :)
         real, contiguous, intent(out) :: y(:, :), z(:)
         real, intent(in) :: eps
-        do concurrent (integer :: m = 1:size(x, 2))
+        integer :: m
+        do concurrent (m = 1:size(x, 2))
             block
                 real :: rrms, total
+                integer :: d
                 rrms = 1/sqrt(sum(x(:, m)**2)/size(x, 1) + eps)
                 total = 0
-                do concurrent (integer :: d = 1:size(x, 1)) reduce(+:total)
+                do concurrent (d = 1:size(x, 1)) reduce(+:total)
                     total = total + x(d, m)
                 end do
                 z(m) = total
-                do concurrent (integer :: d = 1:size(x, 1))
+                do concurrent (d = 1:size(x, 1))
                     block
                         real :: normalized
                         normalized = x(d, m)*rrms
@@ -37,7 +39,8 @@ contains
         real, contiguous, intent(in) :: q(:, :, :)
         real, contiguous, intent(out) :: out(:, :, :), two(:, :, :)
         real, contiguous, intent(out) :: sums(:, :)
-        do concurrent (integer :: h = 1:size(q, 3))
+        integer :: h
+        do concurrent (h = 1:size(q, 3))
             block
                 real :: t, acc
                 integer :: i, j

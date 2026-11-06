@@ -16,17 +16,18 @@ integer(int32) :: w(k/4, n)
 integer :: codes(k, n), total(n), i, j, d, ref
 integer(int64) :: offset
 real :: q(k, n), o(k, n)
+integer :: r
 do j = 1, n
     do i = 1, k/4
         w(i, j) = int(z'01020304', int32) + 17*modulo(i + 3*j, 5)
     end do
 end do
-do concurrent (integer :: r = 1:n)
+do concurrent (r = 1:n)
     do d = 1, k
         codes(d, r) = ibits(w((d - 1)/4 + 1, r), 8*modulo(d - 1, 4), 8)
     end do
 end do
-do concurrent (integer :: r = 1:n) local(d)
+do concurrent (r = 1:n) local(d)
     block
         integer :: s
         s = 0
@@ -42,7 +43,7 @@ do j = 1, n
         q(i, j) = real(mod(i*j, 13))
     end do
 end do
-do concurrent (integer :: r = 1:n)
+do concurrent (r = 1:n)
     block
         integer(int64) :: position
         position = offset + int(r - 1, int64)
