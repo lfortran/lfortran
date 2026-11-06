@@ -433,6 +433,16 @@ Access first_access(ASR::stmt_t **body, size_t from, size_t to,
                     d->n_body, s) == Access::Write) {
                 continue;
             }
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*x)) {
+            auto *d = ASR::down_cast<ASR::DoConcurrentLoop_t>(x);
+            bool index = false, header = false;
+            for (size_t h = 0; h < d->n_head; h++) {
+                index |= d->m_head[h].m_v && root_of(d->m_head[h].m_v) == s;
+                header |= mentions(d->m_head[h].m_start, s)
+                    || mentions(d->m_head[h].m_end, s)
+                    || mentions(d->m_head[h].m_increment, s);
+            }
+            if (index) return header ? Access::Read : Access::Write;
         }
         if (mentions(*x, s)) return Access::Read;
     }
@@ -606,6 +616,15 @@ public:
                 || reads_iteration(k, x.m_head.m_increment));
         }
         BaseWalkVisitor::visit_DoLoop(x);
+    }
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        for (size_t h = 0; h < x.n_head; h++) {
+            if (x.m_head[h].m_v == nullptr) continue;
+            define(x.m_head[h].m_v, reads_iteration(k, x.m_head[h].m_start)
+                || reads_iteration(k, x.m_head[h].m_end)
+                || reads_iteration(k, x.m_head[h].m_increment));
+        }
+        BaseWalkVisitor::visit_DoConcurrentLoop(x);
     }
     void visit_BlockCall(const ASR::BlockCall_t &x) {
         ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
@@ -823,6 +842,18 @@ public:
                     return;
                 }
                 target(d->m_head.m_v);
+                BaseWalkVisitor::visit_stmt(x);
+                return;
+            }
+            case ASR::stmtType::DoConcurrentLoop: {
+                auto *d = ASR::down_cast<ASR::DoConcurrentLoop_t>(&x);
+                for (size_t h = 0; h < d->n_head; h++) {
+                    if (d->m_head[h].m_v == nullptr) {
+                        unknown = true;
+                        return;
+                    }
+                    target(d->m_head[h].m_v);
+                }
                 BaseWalkVisitor::visit_stmt(x);
                 return;
             }
@@ -1179,6 +1210,13 @@ public:
     bool failed = false;
     bool distributed = false;
 
+    // Puts back the `do concurrent` loops decide() tried as loops one
+    // inside the other, for a kernel that keeps one lane per iteration.
+    void restore() {
+        for (auto &s : serialized) *s.first = s.second;
+        serialized.clear();
+    }
+
     // Decides what every statement of a list, and of the lists inside it,
     // does. True when it distributes a loop.
     bool decide(ASR::stmt_t **&body, size_t &n_body, ASR::stmt_t *owner,
@@ -1186,7 +1224,19 @@ public:
         bool any = false;
         for (size_t i = 0; i < n_body; i++) {
             frames.push_back({body, n_body, i, owner});
+            // A `do concurrent` is tried as the loops over its indices one
+            // inside the other, which device code runs it as anyway, and
+            // kept as such where the lanes share them out.
+            ASR::stmt_t *concurrent = body[i];
+            ASR::stmt_t *serial = serial_loops(body[i]);
+            if (serial) body[i] = serial;
             Role r = role(body[i], frames);
+            if (serial && r != Role::Distribute && r != Role::Recurse) {
+                body[i] = concurrent;
+                r = role(body[i], frames);
+            } else if (serial) {
+                serialized.push_back({&body[i], concurrent});
+            }
             frames.pop_back();
             if (r == Role::Distribute && !reductions.count(body[i])) {
                 fuse_following(body, n_body, i, owner, frames);
@@ -1250,6 +1300,42 @@ private:
     // The distributed loops that accumulate into private scalars, which
     // the lanes combine after the loop.
     std::map<ASR::stmt_t*, std::vector<Accumulator>> reductions;
+    // Where decide() put the loops of a `do concurrent` in its place, and
+    // the `do concurrent`.
+    std::vector<std::pair<ASR::stmt_t**, ASR::stmt_t*>> serialized;
+
+    // The loops over the indices of a nested `do concurrent`, the first
+    // index outermost, with its body inside: they run its iterations in an
+    // order the construct allows, as device code does (asr_to_gpu_c.h,
+    // emit_concurrent_loops). Its `local` variables are assigned before
+    // they are read in each iteration, and a `reduce` variable accumulates
+    // by the statements of the body, so they need nothing else. Nullptr for
+    // any other statement.
+    ASR::stmt_t* serial_loops(ASR::stmt_t *s) {
+        if (!ASR::is_a<ASR::DoConcurrentLoop_t>(*s)) return nullptr;
+        auto *d = ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+        if (d->n_head == 0) return nullptr;
+        for (size_t h = 0; h < d->n_head; h++) {
+            if (d->m_head[h].m_v == nullptr || d->m_head[h].m_start == nullptr
+                    || d->m_head[h].m_end == nullptr) {
+                return nullptr;
+            }
+        }
+        ASR::stmt_t **inner = d->m_body;
+        size_t n_inner = d->n_body;
+        ASR::stmt_t *loop = nullptr;
+        for (size_t h = d->n_head; h-- > 0;) {
+            loop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al,
+                s->base.loc, nullptr, d->m_head[h], inner, n_inner, nullptr,
+                0));
+            Vec<ASR::stmt_t*> one;
+            one.reserve(al, 1);
+            one.push_back(al, loop);
+            inner = one.p;
+            n_inner = one.n;
+        }
+        return loop;
+    }
 
     // A bound of the loop at body[at]: the value a scalar it names was
     // last given in the list before, when that is all it is.
@@ -2241,7 +2327,10 @@ private:
             if (k.stop_scalars.count(s)) continue;
             if (!dead_after(frames, s)) return false;
             if (s == v) continue;
-            if (first_access(d->m_body, 0, d->n_body, s) != Access::Write) {
+            // Or assigned before it is read by every loop inside that
+            // names it, which may run no iteration (the `local` of a
+            // `do concurrent` over two indices, in its inner loop).
+            if (first_access(d->m_body, 0, d->n_body, s) == Access::Read) {
                 return false;
             }
         }
@@ -2381,7 +2470,10 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
     std::vector<Frame> frames;
     LaneRewriter rewrite(al, k);
     rewrite.decide(kernel.m_body, kernel.n_body, nullptr, frames);
-    if (rewrite.failed || !rewrite.distributed) return false;
+    if (rewrite.failed || !rewrite.distributed) {
+        rewrite.restore();
+        return false;
+    }
     k.lanes = add_lanes_parameter(al, kernel);
     rewrite.apply(kernel.m_body, kernel.n_body);
     return true;

@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_lanes_nested_01-4e301e6",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_nested_01.f90",
+    "infile_hash": "cd6ba7a622954f68084beac2899926ed12ec5c3dcf81251b976a675a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_lanes_nested_01-4e301e6.stdout",
+    "stdout_hash": "08e622e592e02b64c1b920c57aca9e8e1017bbeaf6f26fe0751ac913",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
