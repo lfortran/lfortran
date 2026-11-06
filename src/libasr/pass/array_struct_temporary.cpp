@@ -5669,6 +5669,20 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             // intrinsic array functions needing this
             force_replace_current_expr_for_array(current_expr, name_hint, al, current_body, current_scope,
                                                 exprs_with_target, is_assignment_target_array_section_item);
+        } else if (is_current_expr_linked_to_target(exprs_with_target, current_expr) &&
+                exprs_with_target[*current_expr].second == targetType::OriginalTarget &&
+                ASRUtils::is_array(x->m_type) &&
+                ASRUtils::is_allocatable(x->m_type) &&
+                !ASRUtils::is_allocatable(exprs_with_target[*current_expr].first)) {
+            // An intrinsic array function can have an allocatable result, such
+            // as shape() of an assumed-rank array. A later pass
+            // (intrinsic_function) implements it as a function whose result
+            // argument is allocatable, so it cannot be returned straight into
+            // a non-allocatable target. Return it into an allocatable
+            // temporary and copy that into the target, as replace_FunctionCall
+            // does for the same case.
+            force_replace_current_expr_for_array(current_expr, name_hint, al, current_body, current_scope,
+                                                exprs_with_target, is_assignment_target_array_section_item);
         } else {
             replace_current_expr(x, name_hint);
         }
