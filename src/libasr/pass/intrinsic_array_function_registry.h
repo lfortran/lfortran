@@ -2699,7 +2699,6 @@ namespace Cshift {
         */
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
             int64_t n_dims_return_type = ASRUtils::extract_n_dims_from_ttype(return_type);
-            bool is_allocatable = ASRUtils::is_allocatable(return_type);
             Vec<ASR::dimension_t> empty_dims;
             empty_dims.reserve(al, 2);
             for( int idim = 0; idim < n_dims_return_type; idim++ ) {
@@ -2709,11 +2708,9 @@ namespace Cshift {
                 empty_dim.m_length = nullptr;
                 empty_dims.push_back(al, empty_dim);
             }
+            // Not allocatable, so `result` is indexed from 1 like `array`
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
-            if( is_allocatable ) {
-                return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
-            }
         }
         return_type_ = ArrIntrinsic::result_dummy_type(al, return_type_);
         ASR::expr_t *result = declare("result", return_type_, Out);
@@ -3519,7 +3516,6 @@ namespace Eoshift {
         fill_func_arg("boundary", arg_types[2]);
         ASR::ttype_t* return_type_ = return_type;
         if( !ASRUtils::is_fixed_size_array(return_type) ) {
-            bool is_allocatable = ASRUtils::is_allocatable(return_type);
             int n_dims = ASRUtils::extract_n_dims_from_ttype(return_type_);
             if (n_dims < 1) n_dims = 1;
             Vec<ASR::dimension_t> empty_dims;
@@ -3531,11 +3527,9 @@ namespace Eoshift {
                 empty_dim.m_length = nullptr;
                 empty_dims.push_back(al, empty_dim);
             }
+            // Not allocatable, so `result` is indexed from 1 like `array`
             return_type_ = ASRUtils::make_Array_t_util(al, loc,
                 ASRUtils::extract_type(return_type_), empty_dims.p, empty_dims.size());
-            if( is_allocatable ) {
-                return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
-            }
         }
         return_type_ = ArrIntrinsic::result_dummy_type(al, return_type_);
         ASR::expr_t *result = declare("result", return_type_, Out);
