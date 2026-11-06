@@ -16010,8 +16010,10 @@ public:
                         source_array_type = target_array_type;
                     }
                     arr_descr->copy_array_move_allocation(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type, x.m_realloc_lhs);
-                } else if (ASRUtils::is_pointer(target_type)) {
-                    // Pointer targets may be associated with non-contiguous
+                } else if (ASRUtils::is_pointer(target_type) ||
+                        (!ASRUtils::is_allocatable(target_type) &&
+                         !ASRUtils::is_character(*target_type))) {
+                    // Pointer and dummy targets may be associated with non-contiguous
                     // array sections (e.g. output(seq, 1:4) in a 3x4 array has
                     // stride 3). Use element-wise copy that respects the target
                     // descriptor's strides instead of a flat memcpy.
@@ -16024,7 +16026,25 @@ public:
                         src_data, target_array_type, target,
                         target_el_type, rank, module.get());
                 } else {
-                    arr_descr->copy_array(source_array_type, value, target_array_type, target, module.get(), x.m_target, target_type, false);
+                    llvm::Value* copy_dims = llvm::ConstantInt::getTrue(context);
+                    if (ASRUtils::is_allocatable(target_type)) {
+                        // An allocated target keeps its bounds unless the shape changes.
+                        llvm::Value* src_dims = arr_descr->get_pointer_to_dimension_descriptor_array(
+                            source_array_type, value);
+                        llvm::Value* dest_dims = arr_descr->get_pointer_to_dimension_descriptor_array(
+                            target_array_type, target);
+                        copy_dims = llvm::ConstantInt::getFalse(context);
+                        int rank = ASRUtils::extract_n_dims_from_ttype(target_type);
+                        for (int i = 0; i < rank; i++) {
+                            llvm::Value* dim = llvm::ConstantInt::get(
+                                llvm::Type::getInt32Ty(context), i);
+                            copy_dims = builder->CreateOr(copy_dims, builder->CreateICmpNE(
+                                arr_descr->get_dimension_size(src_dims, dim),
+                                arr_descr->get_dimension_size(dest_dims, dim)));
+                        }
+                    }
+                    arr_descr->copy_array(source_array_type, value, target_array_type, target,
+                        module.get(), x.m_target, target_type, false, copy_dims);
                 }
             }
         } else if( ASR::is_a<ASR::DictItem_t>(*x.m_target) ) {
