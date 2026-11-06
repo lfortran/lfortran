@@ -1295,10 +1295,11 @@ Metal and on an NVIDIA GPU; a device's capabilities say how many, see
   matrix-vector product, the forces on one body -- by one statement each,
   `s = s op e` (`+`, `-`, `*`, `max`, `min`), and otherwise only assigns
   scalars of its own in every iteration, is shared out as well where the
-  lanes can combine values (an NVIDIA GPU, whose warps run them;
-  `lane_reductions`): the lanes but the first start every accumulator at
-  the identity, and after the loop every lane gets them combined
-  (`GpuLaneReduce`, shuffles within the warp). A loop that reads a matrix
+  lanes can combine values (`lane_reductions`: an NVIDIA GPU, whose warps
+  run them, and Metal, for values of 4 bytes): the lanes but the first
+  start every accumulator at the identity, and after the loop every lane
+  gets them combined (`GpuLaneReduce`: shuffles within the warp on CUDA,
+  `simd_sum`, `simd_product`, `simd_min` and `simd_max` on Metal). A loop that reads a matrix
   along a row (`a(i, j)` over `j`) is left to one lane per iteration, since
   the threads of the launch already read a column of it together, and so
   are a loop of fewer than 64 iterations known at compile time and a loop

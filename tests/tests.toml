@@ -5696,6 +5696,12 @@ filename = "../integration_tests/gpu_lanes_calls_01.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
+# Reductions shared out between the lanes of a SIMD-group on Metal and
+# combined with simd_sum, simd_product, simd_min and simd_max.
+[[test]]
+filename = "../integration_tests/gpu_lanes_reduce_02.f90"
+gpu_metal_kernel = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true

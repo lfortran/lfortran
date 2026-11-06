@@ -48,6 +48,11 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             caps.device_function_runtime_sized_locals = false;
             // Every Apple GPU runs SIMD-groups of 32 threads.
             caps.lanes_per_iteration = 32;
+            // The lanes of an iteration are a whole SIMD-group, whose
+            // `simd_sum`, `simd_product`, `simd_min` and `simd_max` combine
+            // 32-bit integers and floats.
+            caps.lane_reductions = true;
+            caps.lane_reduction_max_kind = 4;
             caps.threads_per_block = 64;
             caps.sequential_loop_unroll_factor = 16;
             // A kernel is compiled for the GPU that runs it, so this is the

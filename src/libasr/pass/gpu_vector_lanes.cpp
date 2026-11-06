@@ -81,12 +81,13 @@ values in its private scalars, except for these statements:
   shared out instead of its own (`collapsible`).
 * A *reduction* loop is distributed the same way where the device's lanes
   can combine values (GpuDeviceCapabilities::lane_reductions: an NVIDIA
-  GPU, whose warps run the lanes): its iterations are independent but for
-  private scalars each accumulates into, by one statement `s = s op e`
-  (`+`, `-`, `*`, `max`, `min`, with an `e` that does not name `s`), and
-  its body only assigns private scalars -- accumulators, and scalars of
-  its own in every iteration and dead after it -- and calls pure
-  functions. The lanes but the first start every accumulator at the
+  GPU, whose warps run the lanes, and Metal, whose SIMD-groups do, for
+  values of at most lane_reduction_max_kind bytes): its iterations are
+  independent but for private scalars each accumulates into, by one
+  statement `s = s op e` (`+`, `-`, `*`, `max`, `min`, with an `e` that
+  does not name `s`), and its body only assigns private scalars --
+  accumulators, and scalars of its own in every iteration and dead after
+  it -- and calls pure functions. The lanes but the first start every accumulator at the
   identity of its operation, each accumulates its iterations, and after
   the loop every lane gets what they hold combined (GpuLaneReduce): the
   inner product of a matrix-vector product, the forces on one body.
@@ -501,6 +502,9 @@ struct KernelInfo {
     // The device's lanes can combine what each of them accumulated
     // (GpuDeviceCapabilities::lane_reductions).
     bool lane_reductions = false;
+    // The widest kind of a value they combine
+    // (GpuDeviceCapabilities::lane_reduction_max_kind).
+    int lane_reduction_max_kind = 8;
     // The device's lanes share loops whose iterations are independent
     // (GpuDeviceCapabilities::lane_independent_loops).
     bool independent_loops = true;
@@ -1990,7 +1994,8 @@ private:
             ASR::ttype_t *t = ASRUtils::symbol_type(s);
             int kind = ASRUtils::extract_kind_from_ttype_t(t);
             if (!(ASRUtils::is_integer(*t) || ASRUtils::is_real(*t))
-                    || (kind != 4 && kind != 8)) {
+                    || (kind != 4 && kind != 8)
+                    || kind > k.lane_reduction_max_kind) {
                 return false;
             }
             size_t updates = 0;
@@ -2006,6 +2011,13 @@ private:
                 }
             }
             if (updates != 1) return false;
+            // The lanes but the first start it at the identity before the
+            // loop, so its bounds must not read it: `do j = 1, n` with
+            // `n = n - 1` in the body would run no iteration there.
+            if (mentions(d->m_head.m_start, s) || mentions(d->m_head.m_end, s)
+                    || mentions(d->m_head.m_increment, s)) {
+                return false;
+            }
             accumulators.push_back(acc);
         }
         return !accumulators.empty();
@@ -2298,6 +2310,7 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
     KernelInfo k;
     k.fn = &kernel;
     k.lane_reductions = caps.lane_reductions;
+    k.lane_reduction_max_kind = caps.lane_reduction_max_kind;
     k.independent_loops = caps.lane_independent_loops;
     // Where lanes share out only reductions (NVIDIA GPUs), a kernel with
     // workspaces or that takes memory from the device heap keeps one lane

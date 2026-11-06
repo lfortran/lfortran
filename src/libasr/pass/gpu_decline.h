@@ -87,6 +87,8 @@ struct GpuDeviceCapabilities {
     // into private scalars and combine what each lane accumulated
     // (GpuLaneReduce).
     bool lane_reductions = false;
+    // The widest integer or real kind of a value the lanes combine.
+    int lane_reduction_max_kind = 8;
     // Whether the lanes of an iteration share loops whose iterations are
     // independent (gpu_vector_lanes.cpp). Off where only reductions are
     // shared out (NVIDIA GPUs, for now).
