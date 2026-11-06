@@ -12,6 +12,7 @@
 
 #include <hip/hip_runtime_api.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 // Set when the CUDA runtime API is this adapter.
 #define LFORTRAN_GPU_HIP 1
@@ -34,7 +35,7 @@ static const cudaDeviceAttr cudaDevAttrL2CacheSize =
     hipDeviceAttributeL2CacheSize;
 // Whether the GPU shares the host's physical memory (an APU such as the
 // MI300A), and whether it can access memory the host allocated with malloc
-// through the host's page tables (on AMD, only with HSA_XNACK=1).
+// through the host's page tables (on AMD, only with XNACK on).
 static const cudaDeviceAttr cudaDevAttrIntegrated =
     hipDeviceAttributeIntegrated;
 static const cudaDeviceAttr cudaDevAttrPageableMemoryAccess =
@@ -55,6 +56,13 @@ static inline void lfortran_gpu_hip_block_while_waiting(void) {
     if (hipSetDeviceFlags(hipDeviceScheduleBlockingSync) != hipSuccess) {
         (void)hipGetLastError();
     }
+}
+// Lets the GPU access memory the host allocated (XNACK), unless the user
+// set HSA_XNACK. ROCm reads it once, when the HIP runtime starts, so this
+// must come before any HIP call. A GPU or kernel that cannot serve the GPU's
+// page faults ignores it.
+static inline void lfortran_gpu_hip_enable_xnack(void) {
+    setenv("HSA_XNACK", "1", 0);
 }
 static inline cudaError_t cudaGetDevice(int *device) {
     return hipGetDevice(device);
