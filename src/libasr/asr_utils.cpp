@@ -11613,11 +11613,14 @@ ASR::expr_t* compute_length_from_start_end_step(Allocator& al,
 }
 
 bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vector<size_t>& v) {
-    // BindC interfaces already pass array by data pointer so we don't need to track
+    // bind(C) procedures keep their C interface
+    if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
+        return false;
+    }
+    // BindPython interfaces already pass array by data pointer so we don't need to track
     // them and use extra variables for their dimensional information. Only those functions
     // need to be tracked which by default pass arrays by using descriptors.
-    if ((ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC
-         || ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython)
+    if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython
         && (ASRUtils::is_declaration_deftype(ASRUtils::get_FunctionType(x)->m_deftype)
             || ASRUtils::get_FunctionType(x)->m_bindc_name)) {
         return false;
