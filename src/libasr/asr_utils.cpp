@@ -9670,10 +9670,14 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
     }
     if (is_named_from(definition, scope)) return definition;
     std::string name = symbol_name(definition);
-    ASR::symbol_t* existing = scope->resolve_symbol(name);
-    if (existing != nullptr && symbol_get_past_external(existing) == definition &&
-            is_named_from(existing, scope)) {
-        return existing;
+    std::string local_name = name_prefix + name + name_suffix;
+    for (const std::string &candidate : {name, local_name}) {
+        ASR::symbol_t* existing = scope->resolve_symbol(candidate);
+        if (existing != nullptr &&
+                symbol_get_past_external(existing) == definition &&
+                is_named_from(existing, scope)) {
+            return existing;
+        }
     }
     for (auto &item : scope->get_scope()) {
         if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second) &&
@@ -9687,7 +9691,6 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
             !ASR::is_a<ASR::Struct_t>(*module_sym))) {
         return sym;
     }
-    std::string local_name = name_prefix + name + name_suffix;
     for (int i = 1; scope->resolve_symbol(local_name) != nullptr; i++) {
         local_name = name_prefix + name + name_suffix + std::to_string(i);
     }
@@ -9740,7 +9743,13 @@ ASR::symbol_t* import_type_declaration(Allocator &al,
             !ASR::is_a<ASR::Function_t>(*definition)) {
         return type_declaration;
     }
-    return import_symbol(al, type_declaration, scope, ASR::accessType::Public);
+    // The import is made under a `1_`-prefixed name no user code can spell:
+    // the type need not be accessible under its own name in `scope`, and a
+    // name the user can spell could be taken by a later declaration (an
+    // ASSOCIATE name, an implicitly typed variable) or by the copy of a
+    // sibling symbol that a pass duplicates after this one.
+    return import_symbol(al, type_declaration, scope, ASR::accessType::Public,
+        "1_");
 }
 
 void set_cptr_type_declaration(ASR::ttype_t* type,
@@ -12117,37 +12126,13 @@ void import_struct_t(Allocator& al,
 }
 
 ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
-    const Location& loc, ASR::expr_t* v_expr, SymbolTable* current_scope) {
+    ASR::expr_t* v_expr, SymbolTable* current_scope) {
     ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(v_expr);
     if (struct_sym == nullptr) return nullptr;
-    // ExternalSymbol.m_external must point at the original definition (e.g.
-    // Struct), never another ExternalSymbol. Expressions like s%component can
-    // yield a use-associated ExternalSymbol when the component type is only
-    // reached transitively (not imported into the current scope).
-    ASR::symbol_t* original_struct = symbol_get_past_external(struct_sym);
-    if (original_struct == nullptr) return nullptr;
-    std::string struct_name = symbol_name(original_struct);
-    if (current_scope->resolve_symbol(struct_name) == nullptr) {
-        struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-            al, loc, current_scope, s2c(al, struct_name), original_struct,
-            ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_struct)), nullptr, 0,
-            s2c(al, struct_name), ASR::accessType::Public));
-        current_scope->add_symbol(struct_name, struct_sym);
-    } else {
-        ASR::symbol_t* resolved = current_scope->resolve_symbol(struct_name);
-        ASR::symbol_t* resolved_underlying = symbol_get_past_external(resolved);
-        if (resolved_underlying && ASR::is_a<ASR::Struct_t>(*resolved_underlying)) {
-            struct_sym = resolved;
-        } else {
-            std::string unique_name = current_scope->get_unique_name(struct_name);
-            struct_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                al, loc, current_scope, s2c(al, unique_name), original_struct,
-                ASRUtils::symbol_name(ASRUtils::get_asr_owner(original_struct)), nullptr, 0,
-                s2c(al, struct_name), ASR::accessType::Public));
-            current_scope->add_symbol(unique_name, struct_sym);
-        }
-    }
-    return struct_sym;
+    // Expressions like s%component can yield a type that is only reached
+    // transitively and is not accessible in `current_scope` under its own
+    // name, so it is imported the way a type declaration is.
+    return import_type_declaration(al, struct_sym, current_scope);
 }
 
 ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,
