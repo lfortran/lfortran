@@ -759,6 +759,7 @@ public:
         llvm::Type* el_type;
         int n_dims;
         uint64_t elem_size;
+        bool local_str_desc;    // a missing string_descriptor may be a stack one
     };
     std::vector<CFIArrayWriteback> pending_cfi_array_writebacks;
 
@@ -11719,8 +11720,12 @@ public:
                         intent == ASRUtils::intent_inout) {
                         int8_t type_code = get_cfi_type_code(elem_asr_type);
                         int cfi_attr = ASRUtils::is_allocatable(arg_type) ? 2 : 1;
+                        // Characters: kind here, times the length at exit
+                        uint64_t cfi_el_size = is_string_descriptor_type(elem_llvm_type)
+                            ? ASRUtils::extract_kind_from_ttype_t(elem_asr_type)
+                            : elem_size;
                         bindc_stride_exits.push_back({sym_val, desc_type,
-                            elem_size, n_dims, cfi_ptr, elem_llvm_type,
+                            cfi_el_size, n_dims, cfi_ptr, elem_llvm_type,
                             type_code, cfi_attr});
                     }
                 } else {
@@ -12029,13 +12034,50 @@ public:
             // and write to the original CFI descriptor pointer.
             llvm::Value* internal_ptr = llvm_utils->CreateLoad2(
                 info.desc_array_type->getPointerTo(), info.desc_ptr_ptr);
+            llvm::DataLayout dl(module->getDataLayout());
+            llvm::Value* el_size = llvm::ConstantInt::get(
+                context, llvm::APInt(64, info.el_size));
+            if (is_string_descriptor_type(info.el_type)) {
+                // Unwrap the string_descriptor in a copy: base_addr = data,
+                // elem_len = len * kind
+                llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+                llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
+                llvm::Value* desc_copy = arr_descr->create_descriptor_alloca(
+                    info.desc_array_type, "char_desc_copy");
+                builder->CreateMemCpy(
+                    builder->CreateBitCast(desc_copy, i8_ptr_type), llvm::MaybeAlign(8),
+                    builder->CreateBitCast(internal_ptr, i8_ptr_type), llvm::MaybeAlign(8),
+                    dl.getTypeAllocSize(info.desc_array_type));
+                llvm::Value* base_addr_gep = llvm_utils->create_gep2(
+                    info.desc_array_type, desc_copy, 0);
+                llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                    info.el_type->getPointerTo(), base_addr_gep);
+                llvm::Value* str_len_ptr = llvm_utils->CreateAlloca(
+                    i64_type, nullptr, "cfi_str_len");
+                builder->CreateStore(llvm::ConstantInt::get(i64_type, 0), str_len_ptr);
+                llvm::Value* has_str_desc = builder->CreateICmpNE(str_desc,
+                    llvm::ConstantPointerNull::get(
+                        llvm::cast<llvm::PointerType>(str_desc->getType())));
+                llvm_utils->create_if_else(has_str_desc, [&]() {
+                    llvm::Value* raw_data = llvm_utils->CreateLoad2(i8_ptr_type,
+                        llvm_utils->create_gep2(info.el_type, str_desc, 0));
+                    builder->CreateStore(
+                        builder->CreateBitCast(raw_data, info.el_type->getPointerTo()),
+                        base_addr_gep);
+                    builder->CreateStore(
+                        llvm_utils->CreateLoad2(i64_type,
+                            llvm_utils->create_gep2(info.el_type, str_desc, 1)),
+                        str_len_ptr);
+                }, [](){});
+                el_size = builder->CreateMul(
+                    llvm_utils->CreateLoad2(i64_type, str_len_ptr), el_size);
+                internal_ptr = desc_copy;
+            }
             llvm::Value* cfi_result = arr_descr->internal_to_cfi(
                 info.desc_array_type, internal_ptr, info.el_type, info.n_dims,
-                llvm::ConstantInt::get(context, llvm::APInt(64, info.el_size)),
-                info.type_code, info.cfi_attr);
+                el_size, info.type_code, info.cfi_attr);
             // Copy CFI data back to the original CFI descriptor
             llvm::StructType* cfi_type = arr_descr->get_cfi_type(info.el_type, info.n_dims);
-            llvm::DataLayout dl(module->getDataLayout());
             uint64_t cfi_size = dl.getTypeAllocSize(cfi_type);
             llvm::Value* orig_cfi_i8 = builder->CreateBitCast(
                 info.original_cfi_ptr,
@@ -27519,17 +27561,41 @@ public:
                             desc_type, tmp, 0);
                         llvm::Value* str_desc = llvm_utils->CreateLoad2(
                             elem_llvm_type->getPointerTo(), base_addr_gep);
-                        llvm::Value* data_gep = llvm_utils->create_gep2(
-                            elem_llvm_type, str_desc, 0);
-                        llvm::Value* raw_data = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            data_gep);
-                        builder->CreateStore(
-                            builder->CreateBitCast(raw_data,
-                                elem_llvm_type->getPointerTo()),
-                            base_addr_gep);
-                        llvm::Value* str_len = llvm_utils->get_string_length(
-                            ASRUtils::get_string_type(elem_asr_type), str_desc);
+                        ASR::String_t* str_type = ASRUtils::get_string_type(elem_asr_type);
+                        bool is_const_len = str_type->m_len &&
+                            ASRUtils::is_value_constant(str_type->m_len);
+                        llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+                        // A disassociated pointer (nullify, => null()) has no
+                        // string_descriptor: keep its null base_addr and,
+                        // unless the length is a constant, elem_len = 0.
+                        llvm::Value* str_len_ptr = nullptr;
+                        if (!is_const_len) {
+                            str_len_ptr = llvm_utils->CreateAlloca(i64_type,
+                                nullptr, "cfi_str_len");
+                            builder->CreateStore(
+                                llvm::ConstantInt::get(i64_type, 0), str_len_ptr);
+                        }
+                        llvm::Value* has_str_desc = builder->CreateICmpNE(str_desc,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(str_desc->getType())));
+                        llvm_utils->create_if_else(has_str_desc, [&]() {
+                            llvm::Value* data_gep = llvm_utils->create_gep2(
+                                elem_llvm_type, str_desc, 0);
+                            llvm::Value* raw_data = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                data_gep);
+                            builder->CreateStore(
+                                builder->CreateBitCast(raw_data,
+                                    elem_llvm_type->getPointerTo()),
+                                base_addr_gep);
+                            if (str_len_ptr) {
+                                builder->CreateStore(llvm_utils->get_string_length(
+                                    str_type, str_desc), str_len_ptr);
+                            }
+                        }, [](){});
+                        llvm::Value* str_len = str_len_ptr
+                            ? llvm_utils->CreateLoad2(i64_type, str_len_ptr)
+                            : llvm_utils->get_string_length(str_type, str_desc);
                         elem_size_val = builder->CreateMul(str_len, elem_size_val);
                     }
                     int n_dims = ASRUtils::extract_n_dims_from_ttype(actual_type);
@@ -27549,10 +27615,29 @@ public:
                     if (cfi_attr != 0 && !is_type_star &&
                             ASRUtils::is_array(actual_type) &&
                             orig_arg->m_intent != ASR::intentType::In) {
+                        // A local of this scope (or of the main program)
+                        // lives as long as this stack frame
+                        bool local_str_desc = false;
+                        if (is_character_array &&
+                                ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                            ASR::symbol_t* arg_sym = ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v);
+                            ASR::asr_t* owner = current_scope->asr_owner;
+                            bool in_program = owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                                ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(owner));
+                            if (ASR::is_a<ASR::Variable_t>(*arg_sym)) {
+                                ASR::Variable_t* arg_var = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                                local_str_desc = arg_var->m_parent_symtab == current_scope &&
+                                    arg_var->m_intent == ASRUtils::intent_local &&
+                                    (in_program ||
+                                     arg_var->m_storage != ASR::storage_typeType::Save);
+                            }
+                        }
                         // Write back to the original descriptor, not to the
                         // base_addr-replaced copy made for character arrays
                         pending_cfi_array_writebacks.push_back({orig_desc_ptr,
-                            tmp, desc_type, elem_llvm_type, n_dims, elem_size});
+                            tmp, desc_type, elem_llvm_type, n_dims, elem_size,
+                            local_str_desc});
                     }
                     if (is_type_star) {
                         llvm::Type* cfi_struct = llvm::cast<llvm::AllocaInst>(
@@ -29334,6 +29419,20 @@ public:
     void apply_cfi_array_writebacks() {
         for (auto& wb : pending_cfi_array_writebacks) {
             if (is_string_descriptor_type(wb.el_type)) {
+                if (wb.local_str_desc) {
+                    // Use a stack string_descriptor, so it is not leaked
+                    llvm::Value* base_addr_gep = llvm_utils->create_gep2(
+                        wb.internal_type, wb.internal_desc, 0);
+                    llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                        wb.el_type->getPointerTo(), base_addr_gep);
+                    llvm::Value* is_null = builder->CreateICmpEQ(str_desc,
+                        llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(str_desc->getType())));
+                    llvm_utils->create_if_else(is_null, [&]() {
+                        builder->CreateStore(llvm_utils->CreateAlloca(
+                            wb.el_type, nullptr, "cfi_str_desc"), base_addr_gep);
+                    }, [](){});
+                }
                 arr_descr->cfi_to_internal_string(wb.internal_type, wb.el_type,
                     wb.cfi_desc, wb.n_dims, wb.internal_desc);
             } else {

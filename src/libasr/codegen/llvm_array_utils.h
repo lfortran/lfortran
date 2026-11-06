@@ -699,6 +699,7 @@ namespace LCompilers {
 
                 // Convert a CFI descriptor to an internal descriptor:
                 // sets offset=0, converts byte strides to element strides.
+                // Character data is wrapped in a string_descriptor.
                 // internal_type: the cached internal struct type to use for the alloca.
                 // internal_desc: an existing internal descriptor to write into;
                 // when null, a new one is allocated.

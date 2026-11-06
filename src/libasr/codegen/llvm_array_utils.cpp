@@ -2040,6 +2040,18 @@ namespace LCompilers {
                     llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
             }
 
+            // Characters: wrap the CFI data in a string_descriptor
+            if (el_type == llvm_utils->string_descriptor) {
+                builder->CreateStore(
+                    llvm_utils->CreateAlloca(el_type, nullptr, "cfi_str_desc"),
+                    llvm_utils->create_gep2(internal_type, internal, FIELD_BASE_ADDR));
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_size),
+                    llvm_utils->create_gep2(internal_type, internal, FIELD_ELEM_LEN));
+                cfi_to_internal_string(internal_type, el_type, cfi_desc, n_dims,
+                    internal);
+            }
+
             return internal;
         }
 
