@@ -7410,7 +7410,7 @@ RUN(NAME gpu_kernel_source_39 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-s
 RUN(NAME gpu_kernel_source_40 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_kernel_source_41 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_kernel_source_42 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=50)
-RUN(NAME gpu_kernel_source_43 LABELS gfortran llvm) # not run on a GPU: the arrays defined in part stay shared, a race there
+RUN(NAME gpu_kernel_source_43 LABELS gfortran llvm) # not run on a GPU: the arrays defined in part stay shared, a race there (lfortran/lfortran#15910)
 RUN(NAME gpu_optional_launch_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --verify-all-passes)
 RUN(NAME gpu_optional_launch_02 LABELS gfortran llvm metal cuda
     EXTRAFILES gpu_optional_launch_02_mod.f90 EXTRA_ARGS --separate-compilation --verify-all-passes)
