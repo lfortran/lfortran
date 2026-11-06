@@ -419,8 +419,9 @@ namespace LCompilers {
                 // A block-private map read element by element after it
                 // is written needs no per-thread device storage at all.
                 "gpu_private_map_forwarding",
-                // A block-private map read once by an ordered scalar fold
-                // needs only a scalar, not a per-thread device workspace.
+                // A block-private map read once by an ordered scalar fold,
+                // or by `sum`, needs only a scalar, not a per-thread device
+                // workspace.
                 "gpu_private_reduction_fusion",
                 // A device loop over packed data, reading `(d + r)/K` and
                 // `modulo(d + r, K)` of its index, is unrolled by K so that

@@ -1282,8 +1282,9 @@ TEST_CASE("Scalar call actual reductions do not reserve a product heap") {
         if (!ASRUtils::is_device_kernel(entry.second)) continue;
         auto* kernel = ASR::down_cast<ASR::Function_t>(entry.second);
         REQUIRE(kernel->m_gpu != nullptr);
-        // Codes, weights, terms and partial_values remain distinct workspaces.
-        CHECK(kernel->m_gpu->n_workspaces == 4);
+        // Codes and weights remain distinct workspaces; terms and
+        // partial_values, which only a sum reads, need none.
+        CHECK(kernel->m_gpu->n_workspaces == 2);
         kernels++;
     }
     CHECK(kernels == 1);
@@ -2879,4 +2880,19 @@ TEST_CASE("GPU lanes sum along columns while stepping an index of their own") {
     CHECK(launches["packed"].reductions >= 1);
 }
 
+TEST_CASE("GPU private maps that only a sum reads need no workspace") {
+    // gpu_private_reduction_02: the group terms of `grouped` (in a branch
+    // of an `if`) and of `counts` are added to their sums as they are
+    // computed; `reread` reads its map again and keeps its workspace.
+    std::string source = read_project_file(
+        "integration_tests/gpu_private_reduction_02.f90");
+    auto launches = gpu_launch_summaries(source, "gpu_private_reduction_02.f90",
+        "gpu_private_reduction_02_m");
+    REQUIRE(launches.count("grouped"));
+    CHECK(launches["grouped"].workspaces == 0);
+    REQUIRE(launches.count("counts"));
+    CHECK(launches["counts"].workspaces == 0);
+    REQUIRE(launches.count("reread"));
+    CHECK(launches["reread"].workspaces == 1);
+}
 #endif
