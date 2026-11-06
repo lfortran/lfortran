@@ -302,7 +302,7 @@ namespace LCompilers {
 
             // if first depth of hierarchy contains array, don't set array_ref_container_node and return array_ref directly.
             if (ASR::is_a<ASR::StructInstanceMember_t>(*arr_expr) &&
-                ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(
+                ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(
                     ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(arr_expr)->m_m)))){
                 original_arr_expr = &array_ref;
             }
@@ -325,7 +325,7 @@ namespace LCompilers {
                    !inherits_shape_from_base){
                     arr_expr = tmp->m_v;
                     array_ref_container_node = &(tmp->m_v);
-                } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::symbol_type(tmp->m_m))) && check_m_m){
+                } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(ASRUtils::symbol_type(tmp->m_m))) && check_m_m){
                     array_ref_container_node = &arr_expr;
                 } else if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp->m_v)){
                     arr_expr = tmp->m_v;

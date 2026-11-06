@@ -3216,6 +3216,7 @@ RUN(NAME derived_types_250 LABELS gfortran llvm EXTRAFILES derived_types_250_mod
 RUN(NAME derived_types_251 LABELS gfortran llvm EXTRAFILES derived_types_251_module1.f90 derived_types_251_module2.f90 EXTRA_ARGS --separate-compilation) # module a with type b_node next to module a_b with type node (#14189)
 RUN(NAME derived_types_252 LABELS gfortran llvm) # element of an array component of each element of a derived-type array, a%x(2)%u(2) (#13629)
 RUN(NAME derived_types_253 LABELS gfortran llvm) # scalar component of an element of an array component, a%x(2)%u (#13629)
+RUN(NAME derived_types_254 LABELS gfortran llvm) # pointer array component of a component, a%b%p, passed to an explicit-shape dummy (#16887)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)
