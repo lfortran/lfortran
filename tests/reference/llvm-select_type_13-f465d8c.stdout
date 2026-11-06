@@ -89,6 +89,8 @@ target datalayout = "..."
 @string_const.11 = private global %string_descriptor { i8* getelementptr inbounds ([16 x i8], [16 x i8]* @string_const_data.10, i32 0, i32 0), i64 16 }
 @53 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
+declare float @area(%select_type_13_module.shape.3_class*)
+
 define float @__module_select_type_13_module_circle_area(%select_type_13_module.circle.5_class* %this) {
 .entry:
   %circle_area = alloca float, align 4
