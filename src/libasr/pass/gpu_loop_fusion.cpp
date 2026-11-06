@@ -2382,7 +2382,9 @@ class PrivateMapForwarding {
         return true;
     }
 
-    // The variable a target designator assigns, through any subscripting.
+    // The variable a target designator assigns, through any subscripting
+    // and component selection: `z%f_(k, j)` assigns `z`, the symbol reads
+    // of `z%f_` are collected under.
     static ASR::symbol_t *assigned_variable(ASR::expr_t *e) {
         while (e) {
             if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
@@ -2390,8 +2392,7 @@ class PrivateMapForwarding {
             } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
                 e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
-                return ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
             } else {
                 break;
             }
