@@ -16069,13 +16069,12 @@ public:
         }
 
         // Ensure all values are constant before creating StructConstant
-        for (const auto& val : vals) {
-            // If val.m_value is nullptr, default value is not needed and it is still const (Variable with Allocatable type)
-            if (val.m_value &&
-                    !(ASRUtils::is_value_constant(val.m_value) ||
-                      ASRUtils::is_value_constant(ASRUtils::expr_value(val.m_value)))) {
-                    is_const = false;
-                    break;
+        for (size_t i = 0; i < vals.size(); i++) {
+            ASR::symbol_t* member = i < members.size() ? members[i] : nullptr;
+            if (!ASRUtils::is_constant_struct_component_value(member,
+                    vals.p[i].m_value)) {
+                is_const = false;
+                break;
             }
         }
         ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);

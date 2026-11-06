@@ -952,6 +952,15 @@ bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value);
 
 bool is_value_constant(ASR::expr_t *a_value);
 
+// Whether `value`, given for the component `member` of a structure
+// constructor, keeps the constructor a constant expression. An omitted value
+// does. An allocatable component is part of a constant only when it is given
+// null() (Fortran 2018, 10.1.12): any other value has to be allocated at run
+// time. Other components, including a pointer component given null() or a
+// procedure as its initialization target, need a constant.
+bool is_constant_struct_component_value(ASR::symbol_t* member,
+    ASR::expr_t* value);
+
 // A local that is neither saved nor a parameter is initialized on every entry
 // to its procedure or BLOCK. A non-constant initializer on such a local is
 // how a pass evaluates a specification expression, such as the bound of an

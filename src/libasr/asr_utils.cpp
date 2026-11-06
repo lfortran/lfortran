@@ -8359,22 +8359,50 @@ bool is_value_constant(ASR::expr_t *a_value) {
         } case ASR::exprType::StructConstructor: {
             ASR::StructConstructor_t* struct_type_constructor =
                 ASR::down_cast<ASR::StructConstructor_t>(a_value);
-            bool is_constant = true;
-            for( size_t i = 0; i < struct_type_constructor->n_args; i++ ) {
-                if( struct_type_constructor->m_args[i].m_value ) {
-                    is_constant = is_constant &&
-                                (is_value_constant(
-                                    struct_type_constructor->m_args[i].m_value) ||
-                                is_value_constant(
-                                    ASRUtils::expr_value(
-                                        struct_type_constructor->m_args[i].m_value)));
+            // The arguments hold the members of the parent types first.
+            std::vector<ASR::symbol_t*> members;
+            std::vector<ASR::Struct_t*> struct_chain;
+            ASR::symbol_t* dt_sym = struct_type_constructor->m_dt_sym ?
+                symbol_get_past_external(struct_type_constructor->m_dt_sym) : nullptr;
+            while( dt_sym && ASR::is_a<ASR::Struct_t>(*dt_sym) ) {
+                ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(dt_sym);
+                struct_chain.push_back(st);
+                dt_sym = st->m_parent ? symbol_get_past_external(st->m_parent) : nullptr;
+            }
+            for( auto it = struct_chain.rbegin(); it != struct_chain.rend(); ++it ) {
+                for( size_t j = 0; j < (*it)->n_members; j++ ) {
+                    members.push_back((*it)->m_symtab->get_symbol((*it)->m_members[j]));
                 }
             }
-            return is_constant;
+            for( size_t i = 0; i < struct_type_constructor->n_args; i++ ) {
+                ASR::symbol_t* member = i < members.size() ? members[i] : nullptr;
+                if( !is_constant_struct_component_value(member,
+                        struct_type_constructor->m_args[i].m_value) ) {
+                    return false;
+                }
+            }
+            return true;
         } default: {
             return false;
         }
     }
+}
+
+bool is_constant_struct_component_value(ASR::symbol_t* member,
+        ASR::expr_t* value) {
+    if( value == nullptr ) {
+        return true;
+    }
+    if( member ) {
+        member = symbol_get_past_external(member);
+    }
+    if( member && ASR::is_a<ASR::Variable_t>(*member) &&
+            is_allocatable(ASR::down_cast<ASR::Variable_t>(member)->m_type) ) {
+        ASR::expr_t* folded = expr_value(value);
+        return ASR::is_a<ASR::PointerNullConstant_t>(*value) ||
+            (folded && ASR::is_a<ASR::PointerNullConstant_t>(*folded));
+    }
+    return is_value_constant(value) || is_value_constant(expr_value(value));
 }
 
 void update_common_block_role(ASR::CommonBlock_t *block) {
