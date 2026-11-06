@@ -373,15 +373,13 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             loop_var_sym = ASR::down_cast<ASR::Var_t>(implied_doloop->m_var)->m_v;
         }
         bool inner_depends_on_var = (loop_var_sym != nullptr &&
-            implied_doloop_size_ != nullptr && d == nullptr &&
+            implied_doloop_size_ != nullptr &&
             !has_runtime_array_size &&
             ASRUtils::expr_references_symbol(implied_doloop_size_, loop_var_sym));
 
         if (inner_depends_on_var) {
-            ASR::expr_t* two = make_ConstantWithKind(
-                make_IntegerConstant_t, make_Integer_t, 2, kind, loc);
-            ASR::expr_t* arith_sum = builder.Div(
-                builder.Mul(implied_doloop_size, builder.Add(start, end)), two);
+            ASR::expr_t* arith_sum = ASRUtils::get_ImpliedDoLoop_sum(al,
+                implied_doloop, implied_doloop_size_, implied_doloop_size);
             if (const_elements > 0) {
                 ASR::expr_t* const_total = builder.Mul(
                     make_ConstantWithKind(make_IntegerConstant_t,
