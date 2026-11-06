@@ -5360,8 +5360,8 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
         // truncating division, `(end - start) / step + 1` is one, not zero,
         // for an empty loop such as `j = 4, 3, 2`.
         d = builder.i2i_t(d, bound_type);
-        implied_doloop_size = builder.Div(builder.Add(
-            builder.Sub(end, start), d), d);
+        implied_doloop_size = ASRUtils::compute_length_from_start_end_step(
+            al, start, end, d);
     } else {
         d = builder.i2i_t(d, bound_type);
         implied_doloop_size = builder.Add(builder.Div(
@@ -5499,9 +5499,8 @@ ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
     };
     ASR::expr_t* extent = nullptr;
     if( clamp ) {
-        extent = Max::create_extent(al, builder.Div(builder.Add(
-            builder.Sub(in_kind(end), in_kind(start)), in_kind(step)),
-            in_kind(step)));
+        extent = Max::create_extent(al, compute_length_from_start_end_step(
+            al, in_kind(start), in_kind(end), in_kind(step)));
     } else {
         extent = builder.Add(builder.Div(
             builder.Sub(in_kind(end), in_kind(start)), in_kind(step)),

@@ -295,8 +295,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             // max(0, (end - start + step) / step), as in
             // ASRUtils::get_ImpliedDoLoop_size.
             d = builder.i2i_t(d, trip_type);
-            implied_doloop_size = builder.Div(builder.Add(
-                builder.Sub(end, start), d), d);
+            implied_doloop_size = ASRUtils::compute_length_from_start_end_step(
+                al, start, end, d);
         } else {
             d = builder.i2i_t(d, trip_type);
             implied_doloop_size = builder.Add(builder.Div(
