@@ -1,0 +1,13 @@
+{
+    "basename": "pass_pass_array_by_data-mangle_underscore_05-15b97be",
+    "cmd": "lfortran --pass=pass_array_by_data --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/mangle_underscore_05.f90",
+    "infile_hash": "715972d46611d3d16cff21d4425f9ee4089695de00ca9b56fbfa625f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_pass_array_by_data-mangle_underscore_05-15b97be.stdout",
+    "stdout_hash": "6c1ce94ea992fbbbedc99edba1724884569e928e5e8bd506a357a9c4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
