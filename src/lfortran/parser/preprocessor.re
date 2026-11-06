@@ -147,26 +147,6 @@ std::string CPreprocessor::token(unsigned char *tok, unsigned char* cur) const
     return std::string((char *)tok, cur - tok);
 }
 
-void handle_continuation_lines(std::string &s, unsigned char *&cur);
-
-std::string parse_continuation_lines(unsigned char *&cur) {
-    std::string output;
-    while (*cur != '\n') {
-        output += *cur;
-        cur++;
-    }
-    cur++;
-    handle_continuation_lines(output, cur);
-    return output;
-}
-
-void handle_continuation_lines(std::string &s, unsigned char *&cur) {
-    if (s.size() > 0 && s[s.size()-1] == '\\') {
-        s = s.substr(0, s.size()-1);
-        s += parse_continuation_lines(cur);
-    }
-}
-
 // Parse a macro declaration argument, e.g. in:
 // f(a,b, c,  d  )
 std::string parse_argument(unsigned char *string_start, unsigned char *old_cur, unsigned char *&cur) {
@@ -609,7 +589,6 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                 if (t3 != nullptr) {
                     LCOMPILERS_ASSERT(t4 != nullptr);
                     macro_subs = token(t3, t4);
-                    handle_continuation_lines(macro_subs, cur);
                 }
                 CPPMacro fn;
                 fn.expansion = macro_subs;
@@ -622,7 +601,6 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);
-                handle_continuation_lines(macro_subs, cur);
                 CPPMacro fn;
                 fn.expansion = macro_subs;
                 macro_definitions[macro_name] = fn;
@@ -634,7 +612,6 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);
-                handle_continuation_lines(macro_subs, cur);
                 CPPMacro fn;
                 fn.function_like = true;
                 fn.args = {};
@@ -647,7 +624,6 @@ Result<std::string> CPreprocessor::run_spliced(const std::string &input,
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);
-                handle_continuation_lines(macro_subs, cur);
                 std::vector<std::string> args = parse_arguments(string_start, t2, true);
                 CPPMacro fn;
                 fn.function_like = true;
@@ -1230,7 +1206,6 @@ void get_next_token(unsigned char *string_start, unsigned char *&cur, CPPTokenTy
             whitespace { continue; }
             "//" [^\n\x00]* { continue; }
             "/*" ([^*\x00] | "*"[^/\x00])* "*/" { continue; }
-            "\\" whitespace? newline { continue; }
             "+" { type = CPPTokenType::TK_PLUS; return; }
             "-" { type = CPPTokenType::TK_MINUS; return; }
             "*" { type = CPPTokenType::TK_MUL; return; }

@@ -1,0 +1,5 @@
+tokenizer error: Token '\' is not recognized
+ --> tests/errors/cpp_err10.f90:8:5
+  |
+8 | i = X
+  |     ^ token not recognized
