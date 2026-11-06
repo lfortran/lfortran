@@ -3879,4 +3879,248 @@ void pass_allocate_on_assignment(Allocator &al, ASR::TranslationUnit_t &unit,
     v.visit_TranslationUnit(unit);
 }
 
+/*
+The run-time checks of the actual arguments of a reference to an elemental
+procedure, made with array bounds checking. They are put before the
+statement with the reference:
+
+    call s(a, b)        ! s elemental, a and b arrays
+
+becomes
+
+    DebugCheckArrayBounds(a, b)     ! a and b have the same shape
+    call s(a, b)
+
+and, with `b` an optional dummy argument of the caller passed to an optional
+dummy argument of `f`, and no other array actual for a non-optional dummy,
+
+    print *, f(1.0, b)
+
+becomes
+
+    if (.not. present(b)) error stop "..."
+    print *, f(1.0, b)
+
+The pass runs before transform_optional_argument_functions, while optional
+dummy arguments are still optional.
+*/
+
+namespace {
+
+class ElementalRuntimeChecks {
+public:
+    ElementalRuntimeChecks() = delete;
+
+    // Appends to `checks` the run-time checks of a reference to the
+    // elemental procedure `f` with the actual arguments `args`.
+    static void check_elemental_reference(Allocator &al, const Location &loc,
+            const ASR::Function_t &f, ASR::call_arg_t *args, size_t n_args,
+            bool is_subroutine, Vec<ASR::stmt_t*> &checks) {
+        // The array actuals of a function are checked as operands of its expression
+        if (is_subroutine) {
+            runtime_check_elemental_actuals_conform(al, loc, f, args, n_args, checks);
+        }
+        runtime_check_absent_optional_array(al, f, args, n_args, checks);
+    }
+
+private:
+    // F2018 15.8.3
+    static void runtime_check_elemental_actuals_conform(Allocator &al,
+            const Location &loc, const ASR::Function_t &f, ASR::call_arg_t *args,
+            size_t n_args, Vec<ASR::stmt_t*> &checks) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        Vec<ASR::expr_t*> actuals;
+        actuals.reserve(al, n_args);
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::expr_t *actual = args[i].m_value;
+            if (actual == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(actual))
+                    || !has_runtime_shape_check(actual)
+                    || (is_optional_dummy(f, i) && may_be_absent(actual))) {
+                continue;
+            }
+            if (actuals.size() > 0 && ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(actual)) != ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(actuals[0]))) {
+                return;
+            }
+            actuals.push_back(al, duplicator.duplicate_expr(actual));
+        }
+        if (actuals.size() < 2) {
+            return;
+        }
+        ASR::stmt_t *check = PassUtils::make_DebugCheckOperandShapes(al, loc, actuals);
+        if (check != nullptr) {
+            checks.push_back(al, check);
+        }
+    }
+
+    // F2018 15.5.2.12
+    static void runtime_check_absent_optional_array(Allocator &al,
+            const ASR::Function_t &f, ASR::call_arg_t *args, size_t n_args,
+            Vec<ASR::stmt_t*> &checks) {
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::expr_t *actual = args[i].m_value;
+            if (actual == nullptr || !is_optional_dummy(f, i)) {
+                continue;
+            }
+            ASR::Variable_t *v = optional_dummy(actual);
+            if (v == nullptr || !ASRUtils::is_array(v->m_type)) {
+                continue;
+            }
+            int rank = ASRUtils::extract_n_dims_from_ttype(v->m_type);
+            if (has_nonoptional_array_actual(f, args, n_args, rank)) {
+                continue;
+            }
+            const Location &loc = actual->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            std::string msg = "optional array '" + std::string(v->m_name)
+                + "' is not present, so it cannot be passed to elemental procedure '"
+                + std::string(f.m_name) + "': no array of the same rank is passed"
+                " to a non-optional dummy of '" + std::string(f.m_name) + "'";
+            ASR::stmt_t *stop = ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc,
+                b.StringConstant(msg, b.String(b.i32(msg.size()),
+                    ASR::ExpressionLength))));
+            Vec<ASR::expr_t*> present_args;
+            present_args.reserve(al, 1);
+            present_args.push_back(al, ASRUtils::ExprStmtDuplicator(al).duplicate_expr(
+                ASRUtils::get_past_array_physical_cast(actual)));
+            ASR::expr_t *present = ASRUtils::EXPR(ASR::make_IntrinsicElementalFunction_t(
+                al, loc, static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present),
+                present_args.p, present_args.n, 0,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+            checks.push_back(al, b.If(present, {}, {stop}));
+        }
+    }
+
+    static bool is_optional_dummy(const ASR::Function_t &f, size_t i) {
+        if (i >= f.n_args) {
+            return false;
+        }
+        ASR::Variable_t *v = ASRUtils::expr_to_variable_or_null(f.m_args[i]);
+        return v != nullptr && v->m_presence == ASR::presenceType::Optional;
+    }
+
+    // The optional dummy argument that `actual` is, or nullptr
+    static ASR::Variable_t *optional_dummy(ASR::expr_t *actual) {
+        actual = ASRUtils::get_past_array_physical_cast(actual);
+        if (!ASR::is_a<ASR::Var_t>(*actual)) {
+            return nullptr;
+        }
+        ASR::Variable_t *v = ASRUtils::expr_to_variable_or_null(actual);
+        if (v == nullptr || v->m_presence != ASR::presenceType::Optional) {
+            return nullptr;
+        }
+        return v;
+    }
+
+    // An actual for an optional dummy is absent when it is an absent
+    // optional, an unallocated allocatable or a disassociated pointer
+    static bool may_be_absent(ASR::expr_t *actual) {
+        ASR::ttype_t *type = ASRUtils::expr_type(actual);
+        return optional_dummy(actual) != nullptr || ASRUtils::is_allocatable(type)
+            || ASRUtils::is_pointer(type);
+    }
+
+    static bool has_nonoptional_array_actual(const ASR::Function_t &f,
+            ASR::call_arg_t *args, size_t n_args, int rank) {
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::expr_t *actual = args[i].m_value;
+            if (actual != nullptr && !is_optional_dummy(f, i)
+                    && ASRUtils::is_array(ASRUtils::expr_type(actual))
+                    && ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(actual)) == rank) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // The arrays whose extents a DebugCheckArrayBounds can read
+    static bool has_runtime_shape_check(ASR::expr_t *actual) {
+        if (ASR::is_a<ASR::ArraySection_t>(*actual)) {
+            return !ASRUtils::is_array_indexed_with_array_indices(
+                ASR::down_cast<ASR::ArraySection_t>(actual));
+        }
+        return ASR::is_a<ASR::Var_t>(*actual) || ASR::is_a<ASR::ArrayPhysicalCast_t>(*actual)
+            || ASR::is_a<ASR::StructInstanceMember_t>(*actual)
+            || ASR::is_a<ASR::ArrayConstant_t>(*actual);
+    }
+};
+
+// Collects the checks of the elemental references of one statement, not of
+// the statements nested in it
+class ElementalReferenceCollector :
+        public ASR::BaseWalkVisitor<ElementalReferenceCollector> {
+    Allocator &al;
+    Vec<ASR::stmt_t*> &checks;
+    bool in_stmt = false;
+
+public:
+    ElementalReferenceCollector(Allocator &al_, Vec<ASR::stmt_t*> &checks_) :
+        al(al_), checks(checks_) {}
+
+    void visit_stmt(const ASR::stmt_t &x) {
+        if (in_stmt) {
+            return;
+        }
+        in_stmt = true;
+        ASR::BaseWalkVisitor<ElementalReferenceCollector>::visit_stmt(x);
+    }
+
+    void visit_ttype(const ASR::ttype_t &) {}
+
+    // An operand of .and. or .or. may not be evaluated
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &) {}
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        if (ASRUtils::is_elemental(x.m_name)) {
+            ElementalRuntimeChecks::check_elemental_reference(al, x.base.base.loc,
+                *ASRUtils::get_function(x.m_name), x.m_args, x.n_args, false, checks);
+        }
+        ASR::BaseWalkVisitor<ElementalReferenceCollector>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        if (ASRUtils::is_elemental(x.m_name)) {
+            ElementalRuntimeChecks::check_elemental_reference(al, x.base.base.loc,
+                *ASRUtils::get_function(x.m_name), x.m_args, x.n_args, true, checks);
+        }
+        ASR::BaseWalkVisitor<ElementalReferenceCollector>::visit_SubroutineCall(x);
+    }
+};
+
+class ElementalRuntimeChecksVisitor :
+        public PassUtils::PassVisitor<ElementalRuntimeChecksVisitor> {
+public:
+    ElementalRuntimeChecksVisitor(Allocator &al_) : PassVisitor(al_, nullptr) {
+        pass_result.reserve(al, 1);
+    }
+
+    void visit_stmt(const ASR::stmt_t &x) {
+        Vec<ASR::stmt_t*> checks;
+        checks.reserve(al, 1);
+        ElementalReferenceCollector collector(al, checks);
+        collector.visit_stmt(x);
+        PassUtils::PassVisitor<ElementalRuntimeChecksVisitor>::visit_stmt(x);
+        if (checks.size() > 0) {
+            pass_result.n = 0;
+            for (size_t i = 0; i < checks.size(); i++) {
+                pass_result.push_back(al, checks[i]);
+            }
+            retain_original_stmt = true;
+        }
+    }
+};
+
+} // namespace
+
+void pass_elemental_runtime_checks(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options) {
+    if (!pass_options.bounds_checking) {
+        return;
+    }
+    ElementalRuntimeChecksVisitor v(al);
+    v.visit_TranslationUnit(unit);
+}
+
 } // namespace LCompilers

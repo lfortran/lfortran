@@ -113,6 +113,7 @@ namespace LCompilers {
             {"implied_do_loops", &pass_replace_implied_do_loops},
             {"array_op", &pass_replace_array_op},
             {"allocate_on_assignment", &pass_allocate_on_assignment},
+            {"elemental_runtime_checks", &pass_elemental_runtime_checks},
             {"symbolic", &pass_replace_symbolic},
             {"flip_sign", &pass_replace_flip_sign},
             {"intrinsic_function", &pass_replace_intrinsic_function},
@@ -383,6 +384,9 @@ namespace LCompilers {
                 // the dummy into a required one and `present()` into its
                 // presence argument.
                 "intent_out_deallocate",
+                // Run-time checks of elemental references, which read
+                // whether an optional dummy argument is present.
+                "elemental_runtime_checks",
                 "transform_optional_argument_functions",
                 "select_case",
                 // With --fast, a call that passes an internal procedure to a

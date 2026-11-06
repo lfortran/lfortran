@@ -1,0 +1,1 @@
+ERROR STOP optional array 'b' is not present, so it cannot be passed to elemental procedure 'f': no array of the same rank is passed to a non-optional dummy of 'f'

@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in binary operation with operands 'a' and 'b'. Tried to match size 2 of dimension 1 of 'a' with size 3 of dimension 1 of 'b'.
+ --> tests/errors/array_bounds_check_24.f90:8:12
+  |
+8 |     call s(a, b)
+  |            ^ LHS size is 2
+  |
+8 |     call s(a, b)
+  |               ^ RHS size is 3
