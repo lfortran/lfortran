@@ -16,7 +16,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/IntrinsicInst.h>
-#ifdef HAVE_TARGET_X86
+#if defined(HAVE_TARGET_X86) && LLVM_VERSION_MAJOR >= 10
 #include <llvm/IR/IntrinsicsX86.h>
 #endif
 #include <llvm/IR/Operator.h>
@@ -139,6 +139,7 @@ bool is_double_vector(Type *type) {
     return n == 2 || n == 4 || n == 8;
 }
 
+#ifdef HAVE_TARGET_X86
 unsigned double_vector_size(Type *type) {
 #if LLVM_VERSION_MAJOR >= 11
     return cast<FixedVectorType>(type)->getNumElements();
@@ -163,6 +164,7 @@ bool has_target_feature(const Function &f, StringRef name) {
     }
     return false;
 }
+#endif
 
 // The AVX-512 reciprocal square root estimate for a vector of doubles.
 bool has_double_estimate(const Function &f, Type *type) {
