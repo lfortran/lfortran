@@ -6640,7 +6640,6 @@ public:
         current_module_dependencies.clear(al);
         current_scope = v->m_symtab;
         current_module = v;
-        bind_external_declarations_to_cell_procedures(current_scope);
 
         // Instantiations need bodies too; transform_stmts skips declarations.
         for (size_t i=0; i<x.n_items; i++) {

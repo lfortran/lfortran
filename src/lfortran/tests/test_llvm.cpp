@@ -4801,6 +4801,95 @@ end function
     CHECK(r.result.i32 == 7);
 }
 
+TEST_CASE("FortranEvaluator interface body used by a contained procedure") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 1
+end function
+)").ok);
+    // The contained procedure declares a procedure pointer with the host's
+    // interface, so the interface stays.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(R"(integer function c()
+interface
+integer function fn()
+end function
+end interface
+c = g()
+contains
+integer function g()
+procedure(fn), pointer :: p => null()
+g = 6
+if (associated(p)) g = 0
+end function
+end function
+)");
+    REQUIRE(r.ok);
+    r = e.evaluate2("c()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 6);
+}
+
+TEST_CASE("FortranEvaluator interface body in a module used by another module") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 1
+end function
+)").ok);
+    // A module's interface body is an entity of the module, which `use`
+    // makes accessible, so it stays.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(R"(module m_iface
+interface
+integer function fn()
+end function
+end interface
+end module
+module m2_iface
+use m_iface
+contains
+integer function h()
+h = 7
+end function
+end module
+)");
+    REQUIRE(r.ok);
+    REQUIRE(e.evaluate2("use m2_iface").ok);
+    r = e.evaluate2("h()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 7);
+}
+
+TEST_CASE("FortranEvaluator interface body in a generic interface block") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 1
+end function
+)").ok);
+    // The generic interface refers to the interface body, so it stays and
+    // the cell compiles; as without an earlier `fn`, a call of `c` would
+    // then not link.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(R"(integer function c()
+interface gen
+integer function fn()
+end function
+end interface
+c = gen()
+end function
+)");
+    CHECK(r.ok);
+}
+
 TEST_CASE("FortranEvaluator old and new module side by side") {
     CompilerOptions cu;
     cu.interactive = true;

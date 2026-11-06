@@ -7631,17 +7631,95 @@ public:
     // procedure it means is the one of that name visible from the cell: drop
     // the declaration, so that the name resolves to that procedure through
     // the chain of cells, and record that `scope` accesses it.
+    //
+    // The symbol table visitor has already built the ASR that refers to
+    // the declaration, so it is dropped only where nothing but a procedure
+    // pointer or dummy declared with it in `scope` itself refers to it (those
+    // are redirected to the procedure): not in a module, whose entities
+    // other modules and `use` access, and not if a generic interface, a
+    // procedure that `scope` contains or another declaration refers to it.
     void bind_external_declarations_to_cell_procedures(SymbolTable *scope) {
         if (!compiler_options.interactive) return;
+        if (scope->asr_owner == nullptr
+                || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
+                || ASR::is_a<ASR::Module_t>(
+                    *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+            return;
+        }
         SymbolTable *tu = scope;
         while (tu != nullptr && !ASRUtils::is_tu_scope(tu)) tu = tu->parent;
         if (tu == nullptr) return;
         ASR::Function_t *owner = nullptr;
-        if (scope->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
-            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
-            if (ASR::is_a<ASR::Function_t>(*owner_sym)) {
-                owner = ASR::down_cast<ASR::Function_t>(owner_sym);
+        ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        if (ASR::is_a<ASR::Function_t>(*owner_sym)) {
+            owner = ASR::down_cast<ASR::Function_t>(owner_sym);
+        }
+        // The symbols that ASR in `scope` refers to, other than a symbol of
+        // `scope` that refers to itself and a declaration of a procedure
+        // pointer or dummy of `scope` with an interface.
+        class ScopeReferences : public ASR::BaseWalkVisitor<ScopeReferences> {
+        public:
+            SymbolTable *scope;
+            ASR::symbol_t *walked = nullptr;
+            std::set<ASR::symbol_t*> referenced;
+            ScopeReferences(SymbolTable *scope) : scope{scope} {}
+
+            void add(ASR::symbol_t *sym) {
+                if (sym != nullptr && sym != walked) referenced.insert(sym);
             }
+
+            void visit_Variable(const ASR::Variable_t &x) {
+                if (x.m_parent_symtab != scope) add(x.m_type_declaration);
+                ASR::BaseWalkVisitor<ScopeReferences>::visit_Variable(x);
+            }
+
+            void visit_GenericProcedure(const ASR::GenericProcedure_t &x) {
+                for (size_t i = 0; i < x.n_procs; i++) add(x.m_procs[i]);
+            }
+
+            void visit_CustomOperator(const ASR::CustomOperator_t &x) {
+                for (size_t i = 0; i < x.n_procs; i++) add(x.m_procs[i]);
+            }
+
+            void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+                add(x.m_external);
+            }
+
+            void visit_StructMethodDeclaration(
+                    const ASR::StructMethodDeclaration_t &x) {
+                add(x.m_proc);
+            }
+
+            void visit_dtio_binding(const ASR::dtio_binding_t &x) {
+                add(x.m_procedure);
+                add(x.m_callback);
+            }
+
+            void visit_Var(const ASR::Var_t &x) {
+                add(x.m_v);
+            }
+
+            void visit_FrameAddress(const ASR::FrameAddress_t &x) {
+                add(x.m_procedure);
+                ASR::BaseWalkVisitor<ScopeReferences>::visit_FrameAddress(x);
+            }
+
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                add(x.m_name);
+                add(x.m_original_name);
+                ASR::BaseWalkVisitor<ScopeReferences>::visit_FunctionCall(x);
+            }
+
+            void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+                add(x.m_name);
+                add(x.m_original_name);
+                ASR::BaseWalkVisitor<ScopeReferences>::visit_SubroutineCall(x);
+            }
+        };
+        ScopeReferences references(scope);
+        for (auto &item : scope->get_scope()) {
+            references.walked = item.second;
+            references.visit_symbol(*item.second);
         }
         std::vector<std::pair<std::string, ASR::symbol_t*>> bindings;
         for (auto &item : scope->get_scope()) {
@@ -7652,7 +7730,8 @@ public:
             if ((ftype->m_deftype != ASR::deftypeType::Interface
                         && !ASRUtils::is_bare_implicit_interface(*ftype))
                     || ftype->m_abi != ASR::abiType::Source
-                    || !ASRUtils::is_external_procedure_interface(ftype)) {
+                    || !ASRUtils::is_external_procedure_interface(ftype)
+                    || references.referenced.count(sym) > 0) {
                 continue;
             }
             // A dummy procedure is not an external procedure.
@@ -7661,6 +7740,7 @@ public:
                 if (ASR::is_a<ASR::Var_t>(*owner->m_args[i]) &&
                         ASR::down_cast<ASR::Var_t>(owner->m_args[i])->m_v == sym) {
                     is_dummy = true;
+                    break;
                 }
             }
             if (is_dummy) continue;
@@ -7678,7 +7758,9 @@ public:
             }
             if (ASRUtils::is_bare_implicit_interface(*ftype)) {
                 // EXTERNAL gives no interface, only the type of a function
-                // when it is declared.
+                // when it is declared. An untyped `external fn` binds to a
+                // function or a subroutine: its references are checked
+                // against the procedure it binds to.
                 ASR::ttype_t *type = ftype->m_return_var_type;
                 ASR::ttype_t *impl_type
                     = ASRUtils::get_FunctionType(impl)->m_return_var_type;
