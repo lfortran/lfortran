@@ -14,7 +14,7 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/Target/TargetMachine.h>
-#ifdef HAVE_TARGET_X86
+#if defined(HAVE_TARGET_X86) && LLVM_VERSION_MAJOR >= 10
 #include <llvm/IR/IntrinsicsX86.h>
 #endif
 
@@ -399,7 +399,6 @@ bool recombine_horizontal_reductions(llvm::Function &f,
             continue;
         }
         llvm::Value *bases[4] = {nullptr, nullptr, nullptr, nullptr};
-        llvm::Value *squares[3] = {nullptr, nullptr, nullptr};
         bool used_lane[3] = {false, false, false};
         bool ok = true;
         for (unsigned k = 0; k < 3 && ok; k++) {
@@ -408,7 +407,6 @@ bool recombine_horizontal_reductions(llvm::Function &f,
                 ok = false;
                 break;
             }
-            squares[k] = terms[k];
             bool matched = false;
             for (unsigned lane = 0; lane < 3 && !matched; lane++) {
                 if (used_lane[lane]) {
