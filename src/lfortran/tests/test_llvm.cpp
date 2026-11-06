@@ -5115,6 +5115,39 @@ arr_init_v(1)%k + arr_init_v(2)%k)");
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
     CHECK(r.result.i32 == 27);
+
+    // A type with an allocatable component: the static data and the
+    // component's runtime setup compose, and it can be allocated later.
+    r = e.evaluate2("type :: arr_init_u\ninteger, allocatable :: x(:)\ninteger :: k = 1\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_u) :: arr_init_w(2) = [arr_init_u(k=5), arr_init_u(k=6)]");
+    CHECK(r.ok);
+    r = e.evaluate2("10 * arr_init_w(1)%k + arr_init_w(2)%k + merge(100, 0, allocated(arr_init_w(1)%x))");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 56);
+    r = e.evaluate2("allocate(arr_init_w(1)%x(3))");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_w(1)%x = 7");
+    CHECK(r.ok);
+    r = e.evaluate2("sum(arr_init_w(1)%x) + arr_init_w(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 27);
+
+    // A type with array and character components.
+    r = e.evaluate2("type :: arr_init_e\ninteger :: a(2) = [1, 2]\ncharacter(len=3) :: s = \"abc\"\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_e) :: arr_init_f(2) = [arr_init_e([3, 4], \"xyz\"), arr_init_e()]");
+    CHECK(r.ok);
+    r = e.evaluate2("1000 * arr_init_f(1)%a(1) + 100 * arr_init_f(1)%a(2) + 10 * arr_init_f(2)%a(1) + arr_init_f(2)%a(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3412);
+    r = e.evaluate2("merge(1, 0, arr_init_f(1)%s == \"xyz\") + merge(10, 0, arr_init_f(2)%s == \"abc\")");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 11);
 }
 
 TEST_CASE("FortranEvaluator the calls the kernel makes") {

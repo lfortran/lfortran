@@ -11542,8 +11542,10 @@ public:
                     // A global an interactive cell declares directly in its
                     // translation unit has no body to run the assignments an
                     // initializer would otherwise be lowered to. An array of
-                    // a derived type there is initialized statically, like
-                    // the same array in a procedure.
+                    // a derived type there gets the implicit save attribute
+                    // and its constant initializer as static data, as an
+                    // initialized intrinsic-type array in a cell already
+                    // does.
                     bool is_tu_array = ASRUtils::is_tu_scope(current_scope)
                         && ASRUtils::is_array(type);
                     if (init_expr && (is_local || is_tu_array) && !is_derived_type && !is_pointer &&
