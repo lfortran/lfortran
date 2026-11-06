@@ -214,8 +214,12 @@ static void run_phase(lfortran_gpu_ctx *ctx, lfortran_gpu_kernel *kernel,
     (void)synced;
 }
 
-int main(void)
+// With --no-shutdown the program ends without lfortran_gpu_shutdown, as a
+// Fortran program does, so that the runtime prints the telemetry from its
+// exit handler.
+int main(int argc, char **argv)
 {
+    const int shutdown = !(argc > 1 && strcmp(argv[1], "--no-shutdown") == 0);
     @autoreleasepool {
         float out[PROBE_LEN];
         float input[PROBE_LEN];
@@ -359,7 +363,7 @@ int main(void)
 
         lfortran_gpu_release_kernel(kernel);
         check_chunks_copy_once(ctx, out, input, wide, profile_enabled);
-        lfortran_gpu_shutdown(ctx);
+        if (shutdown) lfortran_gpu_shutdown(ctx);
 
         (void)start;
         return 0;

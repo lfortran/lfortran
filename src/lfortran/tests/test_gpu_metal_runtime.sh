@@ -16,8 +16,34 @@ xcrun --sdk macosx clang -O2 -fobjc-arc \
     -o "$binary"
 
 gpu_run=(bash "$repo/examples/nbody/gpu_run.sh")
-off_output=$("${gpu_run[@]}" env -u LFORTRAN_GPU_PROFILE "$binary")
-on_output=$("${gpu_run[@]}" env LFORTRAN_GPU_PROFILE=1 "$binary")
+off_stderr="$build_dir/test_gpu_metal_runtime_off.err"
+on_stderr="$build_dir/test_gpu_metal_runtime_on.err"
+exit_stderr="$build_dir/test_gpu_metal_runtime_exit.err"
+rm -f "$off_stderr" "$on_stderr" "$exit_stderr"
+# What the runs print to stderr is shown however the script ends.
+trap 'cat "$off_stderr" "$on_stderr" "$exit_stderr" >&2 2>/dev/null || true' EXIT
+off_output=$("${gpu_run[@]}" env -u LFORTRAN_GPU_PROFILE "$binary" \
+    2>"$off_stderr")
+on_output=$("${gpu_run[@]}" env LFORTRAN_GPU_PROFILE=1 "$binary" \
+    2>"$on_stderr")
+# Without lfortran_gpu_shutdown, as a Fortran program ends.
+"${gpu_run[@]}" env LFORTRAN_GPU_PROFILE=1 "$binary" --no-shutdown \
+    >/dev/null 2>"$exit_stderr"
+
+# The telemetry is printed to stderr, once, only when profiling is on: at
+# shutdown, or when the program ends.
+telemetry='^lfortran_gpu: commits=[1-9][0-9]* completed=[1-9][0-9]* dispatches=[1-9]'
+if grep -q '^lfortran_gpu:' "$off_stderr"; then
+    echo "telemetry printed with profiling off" >&2
+    exit 1
+fi
+for err in "$on_stderr" "$exit_stderr"; do
+    if [[ $(grep -c "$telemetry" "$err") != 1 ]]; then
+        echo "telemetry not printed once with LFORTRAN_GPU_PROFILE=1" \
+            "($err)" >&2
+        exit 1
+    fi
+done
 
 printf '%s\n' "$off_output"
 printf '%s\n' "$on_output"
