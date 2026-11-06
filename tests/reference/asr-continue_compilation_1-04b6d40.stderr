@@ -1916,6 +1916,12 @@ semantic error: different shape for array initialization on dimension 2 (3 and 2
 4588 |         integer :: yi(2, 3) = p  ! {Error} different shape for array initialization on dimension 2 (3 and 2)
      |                    ^^^^^^^^^^^^ 
 
+semantic error: different shape for array initialization on dimension 1 (3 and 2)
+    --> tests/errors/continue_compilation_1.f90:4600:29
+     |
+4600 |     type(cc1_dt_shape_t) :: cc1_xt(3) = [cc1_dt_shape_t(1), cc1_dt_shape_t(2)]  ! {Error} different shape for array initialization on dimension 1 (3 and 2)
+     |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

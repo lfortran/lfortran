@@ -8176,6 +8176,43 @@ public:
         }
     };
 
+    // An array initializer must conform in shape to the declared
+    // explicit-shape array: `integer :: x(3) = [1, 2]` is rejected. Extents
+    // are compared only where both fold to constants; a scalar broadcast
+    // already has the declared type.
+    void check_array_initializer_shape(ASR::ttype_t *decl_type,
+            ASR::expr_t *init_expr, const Location &loc) {
+        ASR::ttype_t *init_type = ASRUtils::expr_type(init_expr);
+        if (!ASR::is_a<ASR::Array_t>(*decl_type)
+                || !ASR::is_a<ASR::Array_t>(*init_type)) {
+            return;
+        }
+        ASR::Array_t *arr_lhs = ASR::down_cast<ASR::Array_t>(decl_type);
+        ASR::Array_t *arr_rhs = ASR::down_cast<ASR::Array_t>(init_type);
+        if (arr_lhs->n_dims != arr_rhs->n_dims) {
+            return;
+        }
+        for (size_t i = 0; i < arr_lhs->n_dims; i++) {
+            int64_t lhs_len = -1, rhs_len = -1;
+            if (arr_lhs->m_dims[i].m_length && arr_rhs->m_dims[i].m_length
+                    && ASRUtils::extract_value(ASRUtils::expr_value(
+                        arr_lhs->m_dims[i].m_length), lhs_len)
+                    && ASRUtils::extract_value(ASRUtils::expr_value(
+                        arr_rhs->m_dims[i].m_length), rhs_len)
+                    && lhs_len >= 0 && rhs_len >= 0
+                    && lhs_len != rhs_len) {
+                diag.add(Diagnostic(
+                    "different shape for array initialization on dimension "
+                    + std::to_string(i + 1) + " (" + std::to_string(lhs_len)
+                    + " and " + std::to_string(rhs_len) + ")",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     // A `type(...)` entity may only be initialized with a value of its own
     // declared type. A different derived type, a parent or extension of it,
     // or an intrinsic value is rejected, as is a derived-type value for an
@@ -11541,6 +11578,9 @@ public:
                         check_type_initializer_type(type, type_declaration,
                             init_expr, s.m_initializer->base.loc);
                     }
+                    if (init_expr && !is_pointer && !is_compile_time) {
+                        check_array_initializer_shape(type, init_expr, s.loc);
+                    }
                     if (init_expr && is_null_intrinsic_reference(s.m_initializer)
                             && !is_pointer && !is_allocatable) {
                         reject_null_initializer_if_not_pointer_or_allocatable(
@@ -12029,33 +12069,9 @@ public:
                             }
                         }
                    }
-                    if (!is_compile_time && lhs_rank == rhs_rank && lhs_rank > 0
-                            && !ASR::is_a<ASR::ArrayReshape_t>(*init_expr)
-                            && ASR::is_a<ASR::Array_t>(*type)
-                            && ASR::is_a<ASR::Array_t>(*init_type)) {
-                        // An array initializer must conform in shape to the
-                        // declared explicit-shape array: `integer :: x(3) = [1, 2]`
-                        ASR::Array_t* arr_lhs = ASR::down_cast<ASR::Array_t>(type);
-                        ASR::Array_t* arr_rhs = ASR::down_cast<ASR::Array_t>(init_type);
-                        for (size_t i = 0; i < lhs_rank; i++) {
-                            int64_t lhs_len = -1, rhs_len = -1;
-                            if (arr_lhs->m_dims[i].m_length && arr_rhs->m_dims[i].m_length
-                                    && ASRUtils::extract_value(ASRUtils::expr_value(
-                                        arr_lhs->m_dims[i].m_length), lhs_len)
-                                    && ASRUtils::extract_value(ASRUtils::expr_value(
-                                        arr_rhs->m_dims[i].m_length), rhs_len)
-                                    && lhs_len >= 0 && rhs_len >= 0
-                                    && lhs_len != rhs_len) {
-                                diag.add(Diagnostic(
-                                    "different shape for array initialization on dimension "
-                                    + std::to_string(i + 1) + " (" + std::to_string(lhs_len)
-                                    + " and " + std::to_string(rhs_len) + ")",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("", {s.loc})
-                                    }));
-                                throw SemanticAbort();
-                            }
-                        }
+                    if (!is_compile_time
+                            && !ASR::is_a<ASR::ArrayReshape_t>(*init_expr)) {
+                        check_array_initializer_shape(type, init_expr, s.loc);
                     }
                     if (init_type->type == ASR::ttypeType::Integer
                         && ASRUtils::type_get_past_array(ASRUtils::type_get_past_pointer(type))->type == ASR::ttypeType::String
