@@ -35,6 +35,14 @@ public:
         cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics,
         bool macro_expansion=false) const;
 
+    // Preprocess `input` in which backslash-newline sequences have already
+    // been spliced (called by `run`). `newlines` are the positions in `input`
+    // that end the original lines (if nullptr, the newlines of `input`).
+    Result<std::string> run_spliced(const std::string &input,
+        LocationManager &lm, cpp_symtab &macro_definitions,
+        diag::Diagnostics &diagnostics, bool macro_expansion,
+        const std::vector<uint32_t> *newlines) const;
+
     // Return the current token's location
     void token_loc(Location &loc, unsigned char *tok, unsigned char* cur,
             unsigned char *string_start) const
