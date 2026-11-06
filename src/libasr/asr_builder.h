@@ -66,9 +66,17 @@ class ASRBuilder {
     ASR::expr_t *VariableOverwrite(SymbolTable *symtab, std::string var_name,
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
+        // Keep the declaration of a derived type being overwritten: the
+        // variable still has that type, and the verifier and the backend need
+        // its declaration.
+        ASR::symbol_t* type_decl = nullptr;
+        ASR::symbol_t* previous = symtab->get_symbol(var_name);
+        if (previous != nullptr && ASR::is_a<ASR::Variable_t>(*previous)) {
+            type_decl = ASR::down_cast<ASR::Variable_t>(previous)->m_type_declaration;
+        }
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
-            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
+            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr, false, false,
             nullptr, false, false, false, ASR::pass_attrType::NotMethod, nullptr));
         symtab->add_or_overwrite_symbol(s2c(al, var_name), sym);
