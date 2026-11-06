@@ -1012,7 +1012,7 @@ stop. It waits:
 * before a launch of a kernel that can stop while a launch of another such
   kernel is pending, so that the stop reported is the first one;
 * before `return`, `goto` and the end of the procedure while any launch is
-  pending;
+  pending, except in a deferring twin (below);
 * before any statement it does not know.
 
 A wait in a loop that launches nothing is placed before the loop instead.
@@ -1025,6 +1025,33 @@ dummy or local of the subroutine, the subroutine has no `intent(out)` dummy,
 and the actual arguments call no function.
 After every `GpuSync` the pass runs the stop replay of each launch that may
 be pending there (`GpuKernelLaunch.stop_replay`), in launch order.
+
+A module subroutine with an array or derived-type dummy -- not `bind(c)`,
+elemental, a separate module procedure or device code, and with no pointer,
+target, procedure or frame dummy -- gets a *deferring twin*,
+`<name>__gpu_deferred`, which takes over its body, while the subroutine
+itself only calls the twin and then waits as before. The pass makes the
+twins first, of the modules of the file and of those loaded from module
+files alike: the choice depends only on the declaration, which is in the
+module file, so every file that uses the module makes the same twins. The
+calls the pass sees by name are redirected to the twin; a call through a
+procedure pointer, a dummy procedure or a binding, and one from a file
+compiled without a GPU device or from C, reaches the subroutine, which
+waits. The twin may return with launches pending, provided they write and
+read only what its dummy arguments hold -- not what an intent(in) dummy
+holds, a module variable, what a pointer points to -- and none may have
+recorded a stop (whose replay reads a status buffer that is a local of the
+twin): otherwise it waits at its exits as before, once the launches on its
+locals are discarded. A call of a twin is followed like a launch: it may
+leave launches pending that write the actual arguments of the dummies that
+are not intent(in), and read the others -- or, for a twin of this file, only
+those that the launches pending at its exits do. A caller does not wait
+before the call for the launches pending on an array actual argument that
+only the twin can name (a local or dummy no pointer reaches); the twin
+starts as if launches its caller made were pending on what its array
+dummies hold, and waits where it accesses them on the host. Before any other
+actual argument, a module variable, and when a launch that may have
+recorded a stop is pending, the caller waits as before.
 
 Storage that a launch only reads the runtime may hand the kernel in place
 (the unified and managed memory models), and the host must not change it

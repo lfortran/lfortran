@@ -1645,8 +1645,10 @@ TEST_CASE("GPU optional views preserve known contiguity without host copies") {
             parsed.result->m_symtab->get_symbol("gpu_optional_launch_04_m"));
         for (auto name : {"explicit_input", "contiguous_input", "strided_update"}) {
             INFO(name);
+            // The body is in the deferring twin gpu_launch_sync makes.
             auto *function = ASR::down_cast<ASR::Function_t>(
-                module->m_symtab->get_symbol(name));
+                module->m_symtab->get_symbol(std::string(name)
+                    + "__gpu_deferred"));
             struct Allocations : public ASR::BaseWalkVisitor<Allocations> {
                 size_t count = 0;
                 void visit_Allocate(const ASR::Allocate_t &x) {
@@ -1920,13 +1922,17 @@ end module
     Keeps k = keeps("both");
     CHECK(k.kept == names{"a", "b"});
     CHECK(k.waits == 1);
+    // The body is in the deferring twin, entered with launches of its
+    // caller perhaps pending on `a` and `b`: before the host changes `a`
+    // it waits, on the path that launched nothing in this iteration too,
+    // so the wait after the launch keeps both until that one.
     k = keeps("host_changes");
-    CHECK(k.kept == names{"b"});
+    CHECK(k.kept == names{"a", "b", "b"});
     k = keeps("pointer_dummy");
     CHECK(k.kept.empty());
     CHECK(k.waits == 0);
     k = keeps("contained_changes");
-    CHECK(k.kept == names{"b"});
+    CHECK(k.kept == names{"b", "b"});
 }
 
 namespace {
@@ -1965,8 +1971,8 @@ public:
 };
 
 // The SyncTrace of procedure `name` of module `module` (or of the program
-// `name` when `module` is empty) after the Metal pipeline up to
-// gpu_launch_sync.
+// `name` when `module` is empty), or of its deferring twin, after the Metal
+// pipeline up to gpu_launch_sync.
 std::string gpu_sync_trace(const std::string &source,
         const std::string &module, const std::string &name) {
     CompilerOptions options;
@@ -2012,6 +2018,11 @@ std::string gpu_sync_trace(const std::string &source,
     }
     INFO(names);
     REQUIRE(sym != nullptr);
+    // A procedure gpu_launch_sync gave a deferring twin calls it.
+    if (ASR::symbol_t *twin = scope->get_symbol(
+            ASRUtils::symbol_name(sym) + std::string("__gpu_deferred"))) {
+        sym = twin;
+    }
     SyncTrace trace;
     if (ASR::is_a<ASR::Program_t>(*sym)) {
         ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(sym);
@@ -2066,9 +2077,11 @@ end subroutine
 end module
 )";
     CHECK(gpu_sync_trace(source, "sync_summaries", "shapes_only")
-        == "[L|]C[L|]S");
+        == "[L|]C[L|]");
+    // The twin returns with the second launch pending, and waits for the
+    // reads it kept copies for past the first wait (GpuKeep).
     CHECK(gpu_sync_trace(source, "sync_summaries", "reads_value")
-        == "[L|]S[[L|]|]S");
+        == "[L|]S[[L|]|]W");
 }
 
 TEST_CASE("GPU calls test the early return of their subroutine") {
@@ -2077,8 +2090,6 @@ TEST_CASE("GPU calls test the early return of their subroutine") {
     // `dm` the array the launch writes, is in the branch that dumps.
     // `keep` defines its intent(out) dummy even when it returns at once,
     // and `count` evaluates an impure function: neither call is skipped.
-    // `keep` reads `directory` through the frame of its host, so the host
-    // waits before it as before any call that may access anything.
     const std::string source = R"(
 module sync_hooks
 implicit none
@@ -2189,6 +2200,67 @@ print *, x(1, 1), total
 end program
 )";
     CHECK(gpu_sync_trace(source, "", "sync_escape") == "C[L|][C|][L|]S");
+}
+
+TEST_CASE("GPU module procedures return with their launches pending") {
+    // The twin of `both` leaves the launches of the twins of `add_one`
+    // pending, and the program waits for them before `print`. A twin
+    // waits before returning when a launch writes a module variable, or
+    // may have recorded a stop. A call through a procedure pointer reaches
+    // `add_one` itself, which waits.
+    const std::string source = R"(
+module sync_twins
+implicit none
+real :: shared(8)
+contains
+subroutine add_one(x)
+    real, intent(inout) :: x(:)
+    integer :: i
+    do concurrent (i = 1:size(x))
+        x(i) = x(i) + 1
+    end do
+end subroutine
+subroutine both(x, y)
+    real, intent(inout) :: x(:), y(:)
+    call add_one(x)
+    call add_one(y)
+end subroutine
+subroutine to_shared(x)
+    real, intent(in) :: x(:)
+    integer :: i
+    do concurrent (i = 1:8)
+        shared(i) = x(i)
+    end do
+end subroutine
+subroutine checked(x, n)
+    real, intent(inout) :: x(:)
+    integer, intent(in) :: n
+    integer :: i
+    do concurrent (i = 1:size(x))
+        if (n < 0) error stop "negative"
+        x(i) = x(i) + n
+    end do
+end subroutine
+end module
+program sync_twins_main
+use sync_twins
+implicit none
+real :: x(100), y(100)
+procedure(add_one), pointer :: p
+x = 1
+y = 2
+call both(x, y)
+p => add_one
+call p(x)
+call both(x, y)
+print *, x(1), y(1)
+end program
+)";
+    CHECK(gpu_sync_trace(source, "sync_twins", "add_one") == "[L|]");
+    CHECK(gpu_sync_trace(source, "sync_twins", "both") == "CC");
+    CHECK(gpu_sync_trace(source, "sync_twins", "to_shared") == "[L|]S");
+    CHECK(gpu_sync_trace(source, "sync_twins", "checked") == "[L|]S[|]");
+    CHECK(gpu_sync_trace(source, "", "sync_twins_main") == "CSCCS");
 }
 
 #endif

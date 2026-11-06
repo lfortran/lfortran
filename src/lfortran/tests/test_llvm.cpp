@@ -1116,13 +1116,17 @@ end subroutine
 end module
 )";
     for (int mode = 0; mode < 7; mode++) {
+        // With a GPU device the body of a module subroutine without a
+        // target, pointer or procedure dummy is in its deferring twin
+        // (gpu_launch_sync.cpp).
+        std::string twin = mode == 4 || mode == 5 ? "__gpu_deferred" : "";
         inspect_definitions(source, mode != 0,
-            {{"repeated", "_repeated_real____1_real____2"},
-             {"different_arguments", "_different_arguments_real____1_real____2_real____3"},
-             {"different_receivers", "_different_receivers_real____2_real____3"},
-             {"impure_surroundings", "_impure_surroundings_real____1_real____2"},
-             {"volatile_actual", "_volatile_actual_real____1_real____2"},
-             {"asynchronous_actual", "_asynchronous_actual_real____1_real____2"},
+            {{"repeated", "_repeated_real____1_real____2" + twin},
+             {"different_arguments", "_different_arguments_real____1_real____2_real____3" + twin},
+             {"different_receivers", "_different_receivers_real____2_real____3" + twin},
+             {"impure_surroundings", "_impure_surroundings_real____1_real____2" + twin},
+             {"volatile_actual", "_volatile_actual_real____1_real____2" + twin},
+             {"asynchronous_actual", "_asynchronous_actual_real____1_real____2" + twin},
              {"target_actual", "_target_actual_real____2"},
              {"pointer_actual", "_pointer_actual"},
              {"procedure_actual", "_procedure_actual_real____1_real____2"}},
@@ -2562,7 +2566,11 @@ end module)";
                 CAPTURE(detect_leaks);
                 CAPTURE(mode);
                 CAPTURE(optimize);
-                inspect_definitions(source, fast, {{"conditional", "conditional"}},
+                // With a GPU device the body is in the deferring twin of
+                // `conditional` (gpu_launch_sync.cpp).
+                std::string twin = mode == 4 || mode == 5
+                    ? "conditional__gpu_deferred" : "conditional";
+                inspect_definitions(source, fast, {{"conditional", twin}},
                     [&](const std::string &, llvm::Function &fn) {
                         int getters = 0, entry_getters = 0;
                         int allocations = 0, frees = 0;
