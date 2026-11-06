@@ -494,7 +494,26 @@ bool dead_after(const std::vector<Frame> &frames, ASR::symbol_t *s) {
         for (size_t j = k; j < frames.size(); j++) {
             const Frame &g = frames[j];
             if (j > k) {
-                if (g.owner && ASR::is_a<ASR::If_t>(*g.owner)) return false;
+                // The `if` may take its other branch instead, which then
+                // goes on after the `if`, as checked above.
+                if (g.owner && ASR::is_a<ASR::If_t>(*g.owner)) {
+                    auto *c = ASR::down_cast<ASR::If_t>(g.owner);
+                    if (mentions(c->m_test, s)) return false;
+                    ASR::stmt_t **other;
+                    size_t n_other;
+                    if (g.body == c->m_body) {
+                        other = c->m_orelse;
+                        n_other = c->n_orelse;
+                    } else if (g.body == c->m_orelse) {
+                        other = c->m_body;
+                        n_other = c->n_body;
+                    } else {
+                        return false;
+                    }
+                    if (first_access(other, 0, n_other, s) == Access::Read) {
+                        return false;
+                    }
+                }
                 if (header_reads(g.owner)) return false;
             }
             a = first_access(g.body, 0, g.index, s);

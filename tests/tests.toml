@@ -5718,6 +5718,12 @@ gpu_metal_kernel = true
 filename = "../integration_tests/gpu_lanes_nested_01.f90"
 gpu_metal_kernel = true
 
+# A loop in one branch of an `if` inside a loop, shared out between the
+# lanes.
+[[test]]
+filename = "../integration_tests/gpu_lanes_branches_01.f90"
+gpu_metal_kernel = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
