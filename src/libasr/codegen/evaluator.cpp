@@ -37,6 +37,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Transforms/Scalar/GVN.h>
+#include <llvm/Transforms/InstCombine/InstCombine.h>
 #include <llvm/Transforms/Scalar/InstSimplifyPass.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
@@ -63,6 +64,8 @@
     #include <llvm/Transforms/Scalar/LICM.h>
     #include <llvm/Transforms/Scalar/LoopPassManager.h>
     #include <llvm/Transforms/Scalar/SimpleLoopUnswitch.h>
+    #include <llvm/Transforms/Scalar/SROA.h>
+    #include <llvm/Transforms/Scalar/SimplifyCFG.h>
 #else
 #    include <llvm/Transforms/IPO/PassManagerBuilder.h>
 #endif
@@ -101,6 +104,7 @@
 #include <libasr/codegen/KaleidoscopeJIT.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
+#include <libasr/codegen/llvm_reductions.h>
 #include <libasr/codegen/llvm_rsqrt.h>
 #include <libasr/codegen/asr_to_cpp.h>
 #include <libasr/exception.h>
@@ -1123,6 +1127,75 @@ void LLVMEvaluator::opt(llvm::Module &m) {
 #endif
     for (llvm::Function &f : m) {
         expand_reciprocal_sqrt(f, TM->getTargetTriple());
+    }
+
+    // SROA runs before the vectorizer, so a fixed-size local array that the
+    // vectorized loop then accesses keeps its stack slot. Simplifying once
+    // more promotes it and exposes the reductions the vectorizer built.
+#if LLVM_VERSION_MAJOR >= 17
+    {
+        llvm::FunctionPassManager LateFPM;
+        LateFPM.addPass(llvm::SROAPass(llvm::SROAOptions(
+            llvm::SROAOptions::ModifyCFG)));
+        LateFPM.addPass(llvm::InstCombinePass());
+        LateFPM.addPass(llvm::SimplifyCFGPass());
+        llvm::ModulePassManager LateMPM;
+        LateMPM.addPass(llvm::createModuleToFunctionPassAdaptor(
+            std::move(LateFPM)));
+        LateMPM.run(m, MAM);
+    }
+#else
+    {
+        llvm::legacy::FunctionPassManager late(&m);
+        late.add(llvm::createTargetTransformInfoWrapperPass(
+            TM->getTargetIRAnalysis()));
+        late.add(llvm::createSROAPass());
+        late.add(llvm::createInstructionCombiningPass());
+        late.add(llvm::createCFGSimplificationPass());
+        late.doInitialization();
+        for (llvm::Function &func : m) {
+            late.run(func);
+        }
+        late.doFinalization();
+    }
+#endif
+
+    // The horizontal reduction pass matches the lane transpose the SLP
+    // vectorizer builds for a four-way sum of squares and rewrites it as
+    // pairwise horizontal additions. It only matches fast math instructions,
+    // so ordinary compilations keep their existing output.
+    bool reduced = false;
+    for (llvm::Function &f : m) {
+        reduced |= recombine_horizontal_reductions(f, *TM);
+    }
+    if (reduced) {
+        // Simplify and schedule the rewritten reductions.
+#if LLVM_VERSION_MAJOR >= 17
+        llvm::ModulePassManager Final
+            = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);
+        Final.run(m, MAM);
+#else
+        llvm::legacy::PassManager final_mpm;
+        final_mpm.add(new llvm::TargetLibraryInfoWrapperPass(
+            TM->getTargetTriple()));
+        final_mpm.add(llvm::createTargetTransformInfoWrapperPass(
+            TM->getTargetIRAnalysis()));
+        llvm::legacy::FunctionPassManager final_fpm(&m);
+        final_fpm.add(llvm::createTargetTransformInfoWrapperPass(
+            TM->getTargetIRAnalysis()));
+        llvm::PassManagerBuilder final_builder;
+        final_builder.OptLevel = 1;
+        final_builder.SizeLevel = 0;
+        final_builder.Inliner = llvm::createFunctionInliningPass(1, 0, false);
+        final_builder.populateFunctionPassManager(final_fpm);
+        final_builder.populateModulePassManager(final_mpm);
+        final_fpm.doInitialization();
+        for (llvm::Function &func : m) {
+            final_fpm.run(func);
+        }
+        final_fpm.doFinalization();
+        final_mpm.run(m);
+#endif
     }
 }
 

@@ -28,6 +28,7 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/codegen/asr_to_llvm.h>
+#include <libasr/codegen/llvm_reductions.h>
 #include <libasr/codegen/llvm_rsqrt.h>
 #include <lfortran/pickle.h>
 #include <libasr/pickle.h>
@@ -52,6 +53,12 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
+#include <llvm/Target/TargetOptions.h>
+#if LLVM_VERSION_MAJOR >= 14
+#include <llvm/MC/TargetRegistry.h>
+#else
+#include <llvm/Support/TargetRegistry.h>
+#endif
 #if LLVM_VERSION_MAJOR >= 17
 #include <llvm/TargetParser/Triple.h>
 #else
@@ -7840,3 +7847,150 @@ pp_13073 = q_13073%point_13073
     CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
     CHECK(r.result.i32 == 13);
 }
+
+#ifndef __EMSCRIPTEN__
+namespace {
+
+// A fast three-term sum of squares of four vectors, written the way the SLP
+// vectorizer writes it: three shuffle chains gather one component of the four
+// vectors and the squares are added. The horizontal reduction pass rewrites
+// this as two horizontal adds, two shuffles and one add.
+const std::string reductions_sum_ir = R"""(
+define double @reductions_sum() #0 {
+entry:
+  %v0 = fsub fast <4 x double> <double 1.0, double 2.0, double 3.0, double 0.0>, zeroinitializer
+  %v1 = fsub fast <4 x double> <double 2.0, double 3.0, double 4.0, double 0.0>, zeroinitializer
+  %v2 = fsub fast <4 x double> <double 3.0, double 4.0, double 5.0, double 0.0>, zeroinitializer
+  %v3 = fsub fast <4 x double> <double 4.0, double 5.0, double 6.0, double 0.0>, zeroinitializer
+  %g0a = shufflevector <4 x double> %v0, <4 x double> %v1, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
+  %g0b = shufflevector <4 x double> %g0a, <4 x double> %v2, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
+  %g0c = shufflevector <4 x double> %g0b, <4 x double> %v3, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
+  %s0 = fmul fast <4 x double> %g0c, %g0c
+  %g1a = shufflevector <4 x double> %v0, <4 x double> %v1, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
+  %g1b = shufflevector <4 x double> %g1a, <4 x double> %v2, <4 x i32> <i32 0, i32 1, i32 5, i32 undef>
+  %g1c = shufflevector <4 x double> %g1b, <4 x double> %v3, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
+  %s1 = fmul fast <4 x double> %g1c, %g1c
+  %g2a = shufflevector <4 x double> %v0, <4 x double> %v1, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
+  %g2b = shufflevector <4 x double> %g2a, <4 x double> %v2, <4 x i32> <i32 0, i32 1, i32 6, i32 undef>
+  %g2c = shufflevector <4 x double> %g2b, <4 x double> %v3, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
+  %s2 = fmul fast <4 x double> %g2c, %g2c
+  %t0 = fadd fast <4 x double> %s0, %s1
+  %t1 = fadd fast <4 x double> %t0, %s2
+  %r = extractelement <4 x double> %t1, i32 0
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
+// A call to an intrinsic whose name contains `name`.
+bool calls_intrinsic_like(llvm::Function &f, const std::string &name) {
+    for (llvm::BasicBlock &bb : f) {
+        for (llvm::Instruction &i : bb) {
+            auto *call = llvm::dyn_cast<llvm::CallInst>(&i);
+            if (!call) {
+                continue;
+            }
+            llvm::Function *callee = call->getCalledFunction();
+            if (callee && std::string(callee->getName()).find(name)
+                    != std::string::npos) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// A target machine for `triple` with the baseline `cpu` and no extra
+// features, so the function attributes decide the subtarget. Null if LLVM
+// was built without that target.
+std::unique_ptr<llvm::TargetMachine> reductions_target_machine(
+        const std::string &triple, const std::string &cpu) {
+    LCompilers::LLVMEvaluator e; // Registers the targets LFortran supports.
+    std::string error;
+#if LLVM_VERSION_MAJOR >= 21
+    const llvm::Target *target = llvm::TargetRegistry::lookupTarget(
+        llvm::Triple(triple), error);
+#else
+    const llvm::Target *target = llvm::TargetRegistry::lookupTarget(
+        triple, error);
+#endif
+    if (!target) {
+        return nullptr;
+    }
+    llvm::TargetOptions options;
+    return std::unique_ptr<llvm::TargetMachine>(target->createTargetMachine(
+#if LLVM_VERSION_MAJOR >= 21
+        llvm::Triple(triple),
+#else
+        triple,
+#endif
+        cpu, "", options, llvm::Reloc::PIC_));
+}
+
+// Whether the pass rewrites `reductions_sum` in `ir` for `tm`. Checks that
+// the result is valid IR and calls the horizontal add exactly when rewritten.
+bool reductions_rewrite(const std::string &ir, const llvm::TargetMachine &tm) {
+    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<llvm::Module> m = e.parse_module(ir, "");
+    llvm::Function &f = *m->getFunction("reductions_sum");
+    bool changed = LCompilers::recombine_horizontal_reductions(f, tm);
+    std::string err;
+    llvm::raw_string_ostream os(err);
+    CHECK(!llvm::verifyFunction(f, &os));
+    CHECK(calls_intrinsic_like(f, "hadd") == changed);
+    return changed;
+}
+
+std::string reductions_replace(std::string ir, const std::string &from,
+        const std::string &to) {
+    size_t pos = 0;
+    while ((pos = ir.find(from, pos)) != std::string::npos) {
+        ir.replace(pos, from.size(), to);
+        pos += to.size();
+    }
+    return ir;
+}
+
+} // namespace
+
+TEST_CASE("LLVM horizontal reductions of four vector squares") {
+    std::unique_ptr<llvm::TargetMachine> x86
+        = reductions_target_machine("x86_64-unknown-linux-gnu", "x86-64");
+    if (x86) {
+        // The pass replaces the shuffle transpose with horizontal adds.
+        CHECK(reductions_rewrite(reductions_sum_ir, *x86));
+        // A CPU with AVX enables it without a target-features attribute,
+        // which is how `--mcpu` and `--fast` describe the host CPU.
+        CHECK(reductions_rewrite(reductions_replace(reductions_sum_ir,
+            "\"target-features\"=\"+avx\"", "\"target-cpu\"=\"haswell\""),
+            *x86));
+        // Without AVX there is no horizontal add to build.
+        CHECK(!reductions_rewrite(reductions_replace(reductions_sum_ir,
+            "+avx", "+sse2"), *x86));
+        CHECK(!reductions_rewrite(reductions_replace(reductions_sum_ir,
+            "\"target-features\"=\"+avx\"", "\"target-cpu\"=\"x86-64\""),
+            *x86));
+        // Without fast math the shuffle chain is not rewritten.
+        CHECK(!reductions_rewrite(reductions_replace(reductions_sum_ir,
+            " fast ", " "), *x86));
+    }
+    // Other targets are left to LLVM.
+    std::unique_ptr<llvm::TargetMachine> arm
+        = reductions_target_machine("aarch64-apple-macosx", "generic");
+    if (arm) {
+        CHECK(!reductions_rewrite(reductions_sum_ir, *arm));
+    }
+    // The rewritten function computes the same value when it runs. It
+    // needs AVX to run, so it only runs on an x86 host with AVX.
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
+    if (x86 && __builtin_cpu_supports("avx")) {
+        LCompilers::LLVMEvaluator e;
+        std::unique_ptr<llvm::Module> m = e.parse_module(reductions_sum_ir, "");
+        CHECK(LCompilers::recombine_horizontal_reductions(
+            *m->getFunction("reductions_sum"), *x86));
+        e.add_module(std::move(m));
+        CHECK(e.execfn<double>("reductions_sum") == 14.0);
+    }
+#endif
+}
+#endif // __EMSCRIPTEN__
