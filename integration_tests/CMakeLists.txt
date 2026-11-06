@@ -5790,6 +5790,7 @@ RUN(NAME pointer_intent_in_02 LABELS gfortran llvm)
 RUN(NAME pointer_intent_in_03 LABELS gfortran llvm)
 RUN(NAME pointer_intent_in_04 LABELS gfortran llvm)
 RUN(NAME pointer_intent_in_05 LABELS gfortran llvm)
+RUN(NAME pointer_intent_in_06 LABELS gfortran llvm)
 RUN(NAME sequence_assoc_01 LABELS gfortran llvm)
 RUN(NAME sequence_assoc_02 LABELS gfortran llvm)
 RUN(NAME sequence_assoc_03 FAIL NO_FAST LABELS llvm) # run-time "Array size mismatch": empty actual, non-empty dummy

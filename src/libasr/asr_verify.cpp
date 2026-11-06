@@ -3641,7 +3641,8 @@ public:
                         if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
                             ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
                             require_with_loc(
-                                passed_var->m_intent != ASR::intentType::In,
+                                !ASRUtils::is_intent_in_passed_to_modifying_dummy(
+                                    passed_var, callee_param),
                                 "Argument `" + std::string(passed_var->m_name) +
                                 "` with intent(in) passed to a dummy argument with modifying intent",
                                 passed_arg_expr->base.loc

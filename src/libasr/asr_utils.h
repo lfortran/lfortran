@@ -4145,6 +4145,24 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
 ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
     ASR::expr_t** a_args, size_t n_args);
 
+// Whether passing the intent(in) dummy `actual` to `formal` is forbidden
+// because `formal` has a modifying intent. The intent of a pointer dummy
+// restricts only its association, not its target (Fortran 2023 8.5.10), so
+// a pointer intent(in) dummy may be passed to a non-pointer dummy of any
+// intent: that dummy becomes argument associated with the target.
+inline bool is_intent_in_passed_to_modifying_dummy(ASR::Variable_t* actual,
+        ASR::Variable_t* formal) {
+    if (actual->m_intent != ASR::intentType::In) {
+        return false;
+    }
+    if (formal->m_intent != ASR::intentType::Out &&
+            formal->m_intent != ASR::intentType::InOut) {
+        return false;
+    }
+    return !ASRUtils::is_pointer(actual->m_type) ||
+        ASRUtils::is_pointer(formal->m_type);
+}
+
 template <typename SemanticAbort>
 inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args) {
     for (size_t i = 0; i < args.size(); i++) {
@@ -4202,8 +4220,8 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                 if (passed_var->m_intent == ASR::intentType::In) {
                     if (i < f->n_args) {
                         ASR::Variable_t* callee_param = ASRUtils::EXPR2VAR(f->m_args[i]);
-                        if (callee_param->m_intent == ASR::intentType::Out ||
-                            callee_param->m_intent == ASR::intentType::InOut) {
+                        if (is_intent_in_passed_to_modifying_dummy(passed_var,
+                                callee_param)) {
                             diag.add(diag::Diagnostic(
                                 "Argument `" + std::string(passed_var->m_name) +
                                 "` with intent(in) passed to a dummy argument with modifying intent",
