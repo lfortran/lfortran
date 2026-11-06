@@ -29,6 +29,15 @@ variable that is not a local or a dummy argument of the procedure without the
 `target` attribute (a module variable, a variable of a procedure this one is
 contained in, a target, what a pointer may point to); a call to a procedure
 contained in this one may access anything.
+
+A collector given a `CallSummaries` (an opt-in of the passes that use it)
+counts a call of a procedure whose body it knows, and which launches nothing,
+more precisely: such a call accesses what that body accesses, with what the
+body names through a dummy argument replaced by the same part of the actual
+argument, and the variables of the procedures it is contained in that it
+names; it may access what another procedure can reach only when the body
+names such a variable or calls a procedure, and it acts outside the program
+when the body may, `stop` included.
 */
 
 namespace AccessPaths {
@@ -530,6 +539,8 @@ inline DummyUse dummy_use(ASR::Function_t *fn, size_t i) {
     return use;
 }
 
+class CallSummaries;
+
 class AccessCollector : public ASR::BaseWalkVisitor<AccessCollector> {
 public:
     Accesses &acc;
@@ -540,12 +551,16 @@ public:
     // counts as accessing what another procedure can reach, instead of
     // anything: the caller checks which variables of `routine` it names.
     std::vector<ASR::Function_t*> *contained = nullptr;
+    // What the calls of procedures with a known body access, or nullptr to
+    // count every call as accessing all its actual arguments.
+    CallSummaries *summaries;
 
     AccessCollector(Accesses &acc_, SymbolTable *routine_,
             const PointerTargets &pointers_,
-            std::map<ASR::Function_t*, bool> &outside_)
+            std::map<ASR::Function_t*, bool> &outside_,
+            CallSummaries *summaries_ = nullptr)
         : acc(acc_), routine(routine_), pointers(pointers_),
-          outside(outside_) {}
+          outside(outside_), summaries(summaries_) {}
 
     void designator(ASR::expr_t *e) {
         Path p;
@@ -647,6 +662,10 @@ public:
         ASR::Function_t *plain = dt == nullptr
             && ASR::is_a<ASR::Function_t>(*callee)
             ? ASR::down_cast<ASR::Function_t>(callee) : nullptr;
+        if (plain != nullptr && n_args == plain->n_args
+                && summarized_call(plain, args, n_args)) {
+            return;
+        }
         for (size_t i = 0; i < n_args; i++) {
             if (!args[i].m_value) continue;
             // A derived-type value handed to a procedure that names only
@@ -704,6 +723,11 @@ public:
         call(x.m_name, x.m_args, x.n_args, x.m_dt);
     }
 
+    // Counts a call of `fn` from what its body accesses (CallSummaries);
+    // false when that is not known.
+    inline bool summarized_call(ASR::Function_t *fn, ASR::call_arg_t *args,
+        size_t n_args);
+
     // A namelist input/output statement accesses every variable of the
     // group, which it does not name.
     void namelist(ASR::symbol_t *nml) {
@@ -755,6 +779,227 @@ public:
         for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
     }
 };
+
+// What the body of a procedure accesses, as a call of it counts it.
+struct BodyAccesses {
+    // What it names through dummy argument `first`: paths rooted at that
+    // dummy.
+    std::vector<std::pair<size_t, Path>> dummies;
+    // What it names of the procedures it is contained in.
+    std::vector<Path> host;
+    bool globals = false;
+    bool everything = false;
+    bool observable = false;
+};
+
+// Whether a body may run device code or wait for it, which a call of it then
+// does too: it launches, waits, or has a loop another compilation of it may
+// launch.
+class RunsDeviceCode : public ASR::BaseWalkVisitor<RunsDeviceCode> {
+public:
+    bool found = false;
+    bool stops = false;
+    std::set<ASR::symbol_t*> blocks;
+    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &) { found = true; }
+    void visit_GpuSync(const ASR::GpuSync_t &) { found = true; }
+    void visit_GpuWait(const ASR::GpuWait_t &) { found = true; }
+    void visit_GpuDiscard(const ASR::GpuDiscard_t &) { found = true; }
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &) {
+        found = true;
+    }
+    void visit_OMPRegion(const ASR::OMPRegion_t &) { found = true; }
+    void visit_Stop(const ASR::Stop_t &x) {
+        stops = true;
+        BaseWalkVisitor::visit_Stop(x);
+    }
+    void visit_ErrorStop(const ASR::ErrorStop_t &x) {
+        stops = true;
+        BaseWalkVisitor::visit_ErrorStop(x);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::AssociateBlock_t *block = ASR::down_cast<ASR::AssociateBlock_t>(
+            b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
+// What a call of a procedure accesses, from its body, for the procedures
+// whose body is known, that run no device code and whose dummy arguments are
+// neither pointers, targets nor procedures. Each body is looked at once; a
+// procedure that calls itself, directly or not, is not summarized while its
+// summary is being made.
+class CallSummaries {
+public:
+    std::map<ASR::Function_t*, bool> &outside;
+    explicit CallSummaries(std::map<ASR::Function_t*, bool> &outside_)
+        : outside(outside_) {}
+
+    // nullptr when a call of `fn` is not summarized.
+    const BodyAccesses *get(ASR::Function_t *fn) {
+        auto it = memo.find(fn);
+        if (it != memo.end()) return it->second.known ? &it->second : nullptr;
+        if (active.count(fn) > 0) return nullptr;
+        Summary s;
+        active.insert(fn);
+        s.known = summarize(fn, s);
+        active.erase(fn);
+        Summary &kept = memo[fn] = s;
+        return kept.known ? &kept : nullptr;
+    }
+
+private:
+    struct Summary : BodyAccesses {
+        bool known = false;
+    };
+    std::map<ASR::Function_t*, Summary> memo;
+    std::set<ASR::Function_t*> active;
+
+    // Whether a path goes through a Reference, which refers to a variable
+    // the path does not name.
+    static bool through_reference(const Path &p) {
+        if (ASR::is_a<ASR::Reference_t>(*ASRUtils::symbol_type(p.root))) {
+            return true;
+        }
+        for (ASR::symbol_t *m : p.members) {
+            if (ASR::is_a<ASR::Reference_t>(*ASRUtils::symbol_type(m))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool summarize(ASR::Function_t *fn, Summary &s) {
+        ASR::FunctionType_t *type = ASRUtils::get_FunctionType(fn);
+        if (type->m_deftype != ASR::deftypeType::Implementation
+                || fn->m_gpu != nullptr) {
+            return false;
+        }
+        std::map<ASR::symbol_t*, size_t> dummies;
+        for (size_t i = 0; i < fn->n_args; i++) {
+            if (fn->m_args[i] == nullptr
+                    || !ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+                return false;
+            }
+            ASR::symbol_t *d = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*d)) return false;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(d);
+            if (v->m_target_attr || ASRUtils::is_pointer(v->m_type)) {
+                return false;
+            }
+            dummies[d] = i;
+        }
+        RunsDeviceCode device;
+        for (size_t i = 0; i < fn->n_body && !device.found; i++) {
+            device.visit_stmt(*fn->m_body[i]);
+        }
+        if (device.found) return false;
+        PointerTargets targets;
+        PointerCollector collector(targets);
+        for (size_t i = 0; i < fn->n_body; i++) {
+            collector.visit_stmt(*fn->m_body[i]);
+        }
+        Accesses acc;
+        AccessCollector c(acc, fn->m_symtab, targets, outside, this);
+        c.declarations(fn->m_symtab);
+        for (size_t i = 0; i < fn->n_body; i++) c.visit_stmt(*fn->m_body[i]);
+        s.everything = acc.everything;
+        s.globals = acc.globals;
+        s.observable = acc.observable || device.stops
+            || acts_outside(fn, outside);
+        for (const Path &p : acc.paths) {
+            if (p.root == nullptr || !ASR::is_a<ASR::Variable_t>(*p.root)) {
+                s.globals = true;
+                continue;
+            }
+            if (through_reference(p)) {
+                // A frame of a host procedure (nested_vars): the variable
+                // it refers to is not on the path.
+                s.everything = true;
+                continue;
+            }
+            auto d = dummies.find(p.root);
+            if (d != dummies.end()) {
+                s.dummies.push_back({d->second, p});
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(p.root);
+            SymbolTable *owner = enclosing_routine(v->m_parent_symtab);
+            if (owner == fn->m_symtab) {
+                // Its own storage, which no launch of the caller can be
+                // writing unless a pointer can reach it.
+                if (v->m_target_attr || is_pointer_variable(p.root)) {
+                    s.globals = true;
+                }
+            } else if (owner != nullptr && contained_in(fn, owner)
+                    && !is_pointer_variable(p.root)
+                    && !aliasable(p.root)) {
+                // A variable of a procedure `fn` is contained in.
+                s.host.push_back(p);
+            } else {
+                s.globals = true;
+            }
+        }
+        return true;
+    }
+};
+
+inline bool AccessCollector::summarized_call(ASR::Function_t *fn,
+        ASR::call_arg_t *args, size_t n_args) {
+    if (summaries == nullptr) return false;
+    const BodyAccesses *body = summaries->get(fn);
+    if (body == nullptr) return false;
+    if (contained != nullptr && contained_in(fn, routine)) {
+        contained->push_back(fn);
+    }
+    for (size_t i = 0; i < n_args; i++) {
+        if (!args[i].m_value) continue;
+        Path p;
+        std::vector<ASR::expr_t*> subscripts;
+        if (!path_of(pointers, args[i].m_value, p, &subscripts)) {
+            // An expression: the body sees its value, not the storage it
+            // reads, which evaluating it accesses.
+            visit_expr(*args[i].m_value);
+            continue;
+        }
+        for (ASR::expr_t *sub : subscripts) visit_expr(*sub);
+        if (is_pointer_variable(p.root)) acc.globals = true;
+        for (const auto &d : body->dummies) {
+            if (d.first != i) continue;
+            Path q = p;
+            q.members.insert(q.members.end(), d.second.members.begin(),
+                d.second.members.end());
+            q.shallow = d.second.shallow;
+            acc.paths.push_back(q);
+        }
+    }
+    for (const Path &p : body->host) {
+        acc.paths.push_back(p);
+        // Unless this procedure is the one that has them, another
+        // procedure's variables.
+        if (!contained_in(fn, routine)
+                || enclosing_routine(ASR::down_cast<ASR::Variable_t>(p.root)
+                    ->m_parent_symtab) != routine) {
+            acc.globals = true;
+        }
+    }
+    acc.globals = acc.globals || body->globals;
+    acc.everything = acc.everything || body->everything;
+    acc.observable = acc.observable || body->observable;
+    return true;
+}
 
 // Whether `acc`, the accesses of something in the procedure whose scope is
 // `routine`, may access what `x` names.
@@ -831,10 +1076,11 @@ public:
 
 inline Accesses expression_accesses(ASR::expr_t *e, SymbolTable *routine,
         const PointerTargets &pointers,
-        std::map<ASR::Function_t*, bool> &outside) {
+        std::map<ASR::Function_t*, bool> &outside,
+        CallSummaries *summaries = nullptr) {
     Accesses acc;
     if (e != nullptr) {
-        AccessCollector c(acc, routine, pointers, outside);
+        AccessCollector c(acc, routine, pointers, outside, summaries);
         c.visit_expr(*e);
     }
     return acc;

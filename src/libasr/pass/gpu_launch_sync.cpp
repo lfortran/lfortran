@@ -326,6 +326,8 @@ private:
     const std::set<ASR::symbol_t*> &reached;
     // Which procedures may act outside the program.
     std::map<ASR::Function_t*, bool> outside;
+    // What calls of procedures with a known body access.
+    CallSummaries summaries{outside};
     std::vector<SymbolTable*> blocks;
     struct Loop {
         ASR::stmt_t *loop;
@@ -557,7 +559,7 @@ private:
             Vec<ASR::stmt_t*> *out) {
         const Location &loc = x->base.loc;
         Accesses test_acc = expression_accesses(test, routine, pointers,
-            outside);
+            outside, &summaries);
         if (test != nullptr) before(test_acc, entry, emit, out, loc);
         loops.push_back({x, name ? name : "", blocks.size(), false,
             State::unreachable(), State::unreachable()});
@@ -637,7 +639,7 @@ private:
         // What the host itself reads for the launch: the scalars, the
         // geometry, and the arguments it copies.
         Accesses acc;
-        AccessCollector c(acc, routine, pointers, outside);
+        AccessCollector c(acc, routine, pointers, outside, &summaries);
         c.visit_expr(*x.m_thread_count);
         c.visit_expr(*x.m_block_size);
         for (size_t i = 0; i < layout.n_scalars; i++) {
@@ -786,7 +788,7 @@ private:
             case ASR::stmtType::If: {
                 ASR::If_t *i = ASR::down_cast<ASR::If_t>(x);
                 before(expression_accesses(i->m_test, routine, pointers,
-                    outside), s, emit, out, loc);
+                    outside, &summaries), s, emit, out, loc);
                 Vec<ASR::stmt_t*> body = new_body(i->n_body);
                 Vec<ASR::stmt_t*> orelse = new_body(i->n_orelse);
                 State a = process_body(i->m_body, i->n_body, s, emit,
@@ -806,7 +808,7 @@ private:
             case ASR::stmtType::Select: {
                 ASR::Select_t *sel = ASR::down_cast<ASR::Select_t>(x);
                 Accesses acc = expression_accesses(sel->m_test, routine,
-                    pointers, outside);
+                    pointers, outside, &summaries);
                 for (size_t i = 0; i < sel->n_body; i++) {
                     ASR::case_stmt_t *c = sel->m_body[i];
                     if (ASR::is_a<ASR::CaseStmt_t>(*c)) {
@@ -814,7 +816,7 @@ private:
                             c);
                         for (size_t j = 0; j < cs->n_test; j++) {
                             Accesses t = expression_accesses(cs->m_test[j],
-                                routine, pointers, outside);
+                                routine, pointers, outside, &summaries);
                             acc.paths.insert(acc.paths.end(),
                                 t.paths.begin(), t.paths.end());
                             acc.globals |= t.globals;
@@ -826,7 +828,7 @@ private:
                             ASR::down_cast<ASR::CaseStmt_Range_t>(c);
                         for (ASR::expr_t *e : {cr->m_start, cr->m_end}) {
                             Accesses t = expression_accesses(e, routine,
-                                pointers, outside);
+                                pointers, outside, &summaries);
                             acc.paths.insert(acc.paths.end(),
                                 t.paths.begin(), t.paths.end());
                             acc.globals |= t.globals;
@@ -872,7 +874,7 @@ private:
             case ASR::stmtType::DoLoop: {
                 ASR::DoLoop_t *d = ASR::down_cast<ASR::DoLoop_t>(x);
                 Accesses acc;
-                AccessCollector c(acc, routine, pointers, outside);
+                AccessCollector c(acc, routine, pointers, outside, &summaries);
                 for (ASR::expr_t *e : {d->m_head.m_start, d->m_head.m_end,
                         d->m_head.m_increment}) {
                     if (e) c.visit_expr(*e);
@@ -891,7 +893,7 @@ private:
                 ASR::DoConcurrentLoop_t *d =
                     ASR::down_cast<ASR::DoConcurrentLoop_t>(x);
                 Accesses acc;
-                AccessCollector c(acc, routine, pointers, outside);
+                AccessCollector c(acc, routine, pointers, outside, &summaries);
                 for (size_t i = 0; i < d->n_head; i++) {
                     for (ASR::expr_t *e : {d->m_head[i].m_start,
                             d->m_head[i].m_end, d->m_head[i].m_increment}) {
@@ -984,7 +986,7 @@ private:
                 }
                 deallocate(vars, n_vars, s, emit, out, loc);
                 Accesses acc;
-                AccessCollector c(acc, routine, pointers, outside);
+                AccessCollector c(acc, routine, pointers, outside, &summaries);
                 c.visit_stmt(*x);
                 before(acc, s, emit, out, loc, true);
                 if (emit) out->push_back(al, x);
@@ -1005,7 +1007,7 @@ private:
             case ASR::stmtType::Expr:
             case ASR::stmtType::CPtrToPointer: {
                 Accesses acc;
-                AccessCollector c(acc, routine, pointers, outside);
+                AccessCollector c(acc, routine, pointers, outside, &summaries);
                 c.visit_stmt(*x);
                 before(acc, s, emit, out, loc, true);
                 if (emit) out->push_back(al, x);

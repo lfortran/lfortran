@@ -1072,7 +1072,14 @@ variable that a pointer may point to or that another procedure can reach (a
 module variable, a variable of a procedure this one is contained in, a
 `target`); a call to a procedure contained in this one may access anything.
 Of a derived-type value it is handed, a call whose callee's body is known
-accesses only the components the body names.
+accesses only the components the body names. A call of a procedure whose
+body is known, launches nothing and has no pointer, target or procedure
+dummy accesses what that body accesses: the same parts of its actual
+arguments, the variables of its host procedure it names, what another
+procedure can reach only when the body names or calls something that can,
+and it acts outside the program when the body may, `stop` included. So a
+call that only asks for the shapes of its arguments (`call
+check_shapes(x, y)`) does not wait for the launch that writes them.
 
 The data the host copies for a launch itself -- a contiguous copy of a
 strided array, the components of an array of derived type, the arrays of a

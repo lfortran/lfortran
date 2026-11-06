@@ -1929,6 +1929,148 @@ end module
     CHECK(k.kept == names{"b"});
 }
 
+namespace {
+
+// The launches (`L`), syncs (`S`), waits (`W`) and subroutine calls (`C`)
+// of a procedure body after gpu_launch_sync, in order, the two branches of
+// an `if` in brackets (a launch is in one: it is skipped when it has no
+// iterations).
+class SyncTrace : public ASR::BaseWalkVisitor<SyncTrace> {
+public:
+    std::string trace;
+    std::set<ASR::symbol_t*> blocks;
+    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &/*x*/) {
+        trace += "L";
+    }
+    void visit_GpuSync(const ASR::GpuSync_t &/*x*/) { trace += "S"; }
+    void visit_GpuWait(const ASR::GpuWait_t &/*x*/) { trace += "W"; }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &/*x*/) {
+        trace += "C";
+    }
+    void visit_If(const ASR::If_t &x) {
+        trace += "[";
+        for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
+        trace += "|";
+        for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
+        trace += "]";
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
+// The SyncTrace of procedure `name` of module `module` (or of the program
+// `name` when `module` is empty) after the Metal pipeline up to
+// gpu_launch_sync.
+std::string gpu_sync_trace(const std::string &source,
+        const std::string &module, const std::string &name) {
+    CompilerOptions options;
+    options.gpu_backend = "metal";
+    options.po.gpu_offload_metal = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "gpu_sync_trace.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    ASR::TranslationUnit_t &unit = *parsed.result;
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_vector_lanes", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, &unit, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    pass_gpu_launch_sync(allocator, unit, options.po);
+    REQUIRE(asr_verify(unit, true, diagnostics));
+    SymbolTable *scope = unit.m_symtab;
+    if (!module.empty()) {
+        scope = ASR::down_cast<ASR::Module_t>(
+            unit.m_symtab->get_symbol(module))->m_symtab;
+    }
+    // pass_array_by_data may have replaced the procedure by its variant
+    // `<name>_<suffix>`.
+    ASR::symbol_t *sym = scope->get_symbol(name);
+    std::string names;
+    for (auto &item : scope->get_scope()) {
+        names += item.first + " ";
+        if (sym == nullptr && item.first.rfind(name + "_", 0) == 0
+                && ASR::is_a<ASR::Function_t>(*item.second)) {
+            sym = item.second;
+        }
+    }
+    INFO(names);
+    REQUIRE(sym != nullptr);
+    SyncTrace trace;
+    if (ASR::is_a<ASR::Program_t>(*sym)) {
+        ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(sym);
+        for (size_t i = 0; i < p->n_body; i++) trace.visit_stmt(*p->m_body[i]);
+    } else {
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+        for (size_t i = 0; i < f->n_body; i++) trace.visit_stmt(*f->m_body[i]);
+    }
+    return trace.trace;
+}
+
+}
+
+TEST_CASE("GPU calls access only what the body of the callee accesses") {
+    // `check` only asks for the sizes of its arguments, and `first` reads
+    // an element: the host waits for the first launch before `first` only.
+    const std::string source = R"(
+module sync_summaries
+implicit none
+contains
+pure subroutine check(x, y)
+    real, intent(in) :: x(:), y(:)
+    if (size(x) /= size(y)) error stop "size mismatch"
+end subroutine
+pure real function first(x)
+    real, intent(in) :: x(:)
+    first = x(1)
+end function
+subroutine shapes_only(x, y)
+    real, intent(inout) :: x(:), y(:)
+    integer :: i
+    do concurrent (i = 1:size(x))
+        y(i) = x(i) + 1
+    end do
+    call check(x, y)
+    do concurrent (i = 1:size(x))
+        x(i) = 2*y(i)
+    end do
+end subroutine
+subroutine reads_value(x, y)
+    real, intent(inout) :: x(:), y(:)
+    integer :: i
+    do concurrent (i = 1:size(x))
+        y(i) = x(i) + 1
+    end do
+    if (first(y) > 0) then
+        do concurrent (i = 1:size(x))
+            x(i) = 2*y(i)
+        end do
+    end if
+end subroutine
+end module
+)";
+    CHECK(gpu_sync_trace(source, "sync_summaries", "shapes_only")
+        == "[L|]C[L|]S");
+    CHECK(gpu_sync_trace(source, "sync_summaries", "reads_value")
+        == "[L|]S[[L|]|]S");
+}
+
 #endif
 
 TEST_CASE("A scalar every iteration assigns first is not read back when "
