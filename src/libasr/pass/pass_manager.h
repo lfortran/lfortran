@@ -70,6 +70,7 @@
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_launch_sync.h>
 #include <libasr/pass/gpu_sequential_unroll.h>
+#include <libasr/pass/gpu_residue_unroll.h>
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_time_skew.h>
 #include <libasr/pass/gpu_index_set_split.h>
@@ -158,6 +159,7 @@ namespace LCompilers {
             {"gpu_loop_fusion", &pass_gpu_loop_fusion},
             {"gpu_private_map_forwarding", &pass_gpu_private_map_forwarding},
             {"gpu_private_reduction_fusion", &pass_gpu_private_reduction_fusion},
+            {"gpu_residue_unroll", &pass_gpu_residue_unroll},
             {"gpu_time_skew", &pass_gpu_time_skew},
             {"gpu_index_set_split", &pass_gpu_index_set_split},
             {"gpu_loop_transforms", &pass_gpu_loop_transforms},
@@ -408,6 +410,12 @@ namespace LCompilers {
                 // A block-private map read once by an ordered scalar fold
                 // needs only a scalar, not a per-thread device workspace.
                 "gpu_private_reduction_fusion",
+                // A device loop over packed data, reading `(d + r)/K` and
+                // `modulo(d + r, K)` of its index, is unrolled by K so that
+                // each copy has constant residues, while `modulo` is still
+                // an intrinsic and the checks of small functions are still
+                // IF and STOP statements.
+                "gpu_residue_unroll",
                 "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",

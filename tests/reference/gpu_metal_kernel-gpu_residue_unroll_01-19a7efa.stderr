@@ -1,0 +1,11 @@
+style suggestion: do not rely on the DO variable 'd' after the loop
+  --> tests/../integration_tests/gpu_residue_unroll_01.f90:55:37
+   |
+55 |                     final = final + d
+   |                                     ^ after the loop, 'd' is one step past the last iteration
+   |
+51 |                     do d = (g-1)*8+1, g*8
+   |                        ~ the loop sets 'd' here
+   = help: the value is well defined, but it depends on how the loop ends and
+           is easy to misread; inside the loop, assign the value you need to
+           a variable with a meaningful name instead

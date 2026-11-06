@@ -171,6 +171,11 @@ public:
         : al(al_), select(select_), offset_kind(offset_kind_) {}
     // Inlines in place; false when a picked call cannot be inlined.
     bool run(SymbolTable *scope, ASR::stmt_t **&body, size_t &n_body);
+    // Whether a function whose body holds a STOP or ERROR STOP may be
+    // inlined (gpu_function_inlinable): the statement then runs where the
+    // call was, in the same order. Off by default, since the loop
+    // transformations reorder what they inline across iterations.
+    bool allow_stops = false;
     // Removes every symbol `run` added (after a failure).
     void rollback();
     std::vector<std::pair<SymbolTable*, std::string>> added;
@@ -190,9 +195,9 @@ private:
 
 // Whether calls of `fn` can be inlined: a pure function with a body and a
 // scalar result, scalar dummies and assumed-shape array dummies, scalar
-// locals without initialization, and no RETURN, STOP, input/output or
-// subroutine call.
-bool gpu_function_inlinable(ASR::Function_t *fn);
+// locals without initialization, and no RETURN, input/output or subroutine
+// call, nor a STOP or ERROR STOP unless `allow_stops`.
+bool gpu_function_inlinable(ASR::Function_t *fn, bool allow_stops = false);
 
 // Whether a function names no variable but its own dummy arguments and
 // locals (named constants aside) and calls only procedures that do the

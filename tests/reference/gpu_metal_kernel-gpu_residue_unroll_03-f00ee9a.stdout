@@ -1,0 +1,135 @@
+#include <metal_stdlib>
+using namespace metal;
+
+inline int _lcompilers_ibits_i324_gpu_28(int x_gpu, int y_gpu, int z_gpu) {
+    int _lcompilers_ibits_i324_gpu{};
+    _lcompilers_ibits_i324_gpu = ((x_gpu >> ((int)y_gpu)) & ((1 << ((int)z_gpu)) - 1));
+    return _lcompilers_ibits_i324_gpu;
+}
+
+inline int low_part_gpu_14(int word_gpu, int idx_gpu, thread int& __gpu_stop_site_gpu, thread int& __gpu_stop_code_gpu) {
+    int low_part_gpu{};
+    if ((idx_gpu > 2)) {
+        __gpu_stop_site_gpu = 1;
+        return low_part_gpu;
+    }
+    low_part_gpu = _lcompilers_ibits_i324_gpu_28(word_gpu, (8 * idx_gpu), 8);
+    return low_part_gpu;
+}
+
+inline int _lcompilers_ibits_i32_gpu_22(int x_gpu, int y_gpu, int z_gpu) {
+    int _lcompilers_ibits_i32_gpu{};
+    _lcompilers_ibits_i32_gpu = ((x_gpu >> ((int)y_gpu)) & ((1 << ((int)z_gpu)) - 1));
+    return _lcompilers_ibits_i32_gpu;
+}
+
+inline int _lcompilers_ibits_i321_gpu_23(int x_gpu, int y_gpu, int z_gpu) {
+    int _lcompilers_ibits_i321_gpu{};
+    _lcompilers_ibits_i321_gpu = ((x_gpu >> ((int)y_gpu)) & ((1 << ((int)z_gpu)) - 1));
+    return _lcompilers_ibits_i321_gpu;
+}
+
+inline int _lcompilers_ibits_i322_gpu_24(int x_gpu, int y_gpu, int z_gpu) {
+    int _lcompilers_ibits_i322_gpu{};
+    _lcompilers_ibits_i322_gpu = ((x_gpu >> ((int)y_gpu)) & ((1 << ((int)z_gpu)) - 1));
+    return _lcompilers_ibits_i322_gpu;
+}
+
+inline int _lcompilers_ibits_i323_gpu_25(int x_gpu, int y_gpu, int z_gpu) {
+    int _lcompilers_ibits_i323_gpu{};
+    _lcompilers_ibits_i323_gpu = ((x_gpu >> ((int)y_gpu)) & ((1 << ((int)z_gpu)) - 1));
+    return _lcompilers_ibits_i323_gpu;
+}
+
+inline int _lcompilers_optimization_modulo_i32_gpu_26(int a_gpu, int p_gpu) {
+    int _lcompilers_optimization_modulo_i32_gpu{};
+    _lcompilers_optimization_modulo_i32_gpu = ((a_gpu) % (((int)p_gpu)));
+    if (((int)((_lcompilers_optimization_modulo_i32_gpu != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i32_gpu < 0) && (((int)p_gpu) > 0))) || ((int)((_lcompilers_optimization_modulo_i32_gpu > 0) && (((int)p_gpu) < 0)))))))) {
+        _lcompilers_optimization_modulo_i32_gpu = (_lcompilers_optimization_modulo_i32_gpu + ((int)p_gpu));
+    }
+    return _lcompilers_optimization_modulo_i32_gpu;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __dim_w_0_gpu;
+    int __lb_w_0_gpu;
+    int __dim_w_1_gpu;
+    int __lb_w_1_gpu;
+    int __dim_y_0_gpu;
+    int __lb_y_0_gpu;
+    int __loop_end_0_gpu;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device int* w_gpu [[buffer(0)]],
+    device int* y_gpu [[buffer(1)]],
+    device int* __gpu_stop_status_gpu [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __dim_w_0_gpu = __scalar_args.__dim_w_0_gpu;
+    int __lb_w_0_gpu = __scalar_args.__lb_w_0_gpu;
+    int __lb_w_1_gpu = __scalar_args.__lb_w_1_gpu;
+    int __lb_y_0_gpu = __scalar_args.__lb_y_0_gpu;
+    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
+    int __flat_idx_gpu;
+    int __gpu_stop_code_gpu;
+    int __gpu_stop_site_gpu;
+    int n__dc_gpu;
+    __gpu_stop_site_gpu = 0;
+    __gpu_stop_code_gpu = 0;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    n__dc_gpu = (__flat_idx_gpu + 1);
+    {
+        int __gpu_residue_element_gpu;
+        int __gpu_residue_group_gpu;
+        int acc_gpu;
+        int d_gpu;
+        acc_gpu = 0;
+        if ((((4 * __dim_w_0_gpu) - 1) >= 3)) {
+            for (__gpu_residue_group_gpu = 1; __gpu_residue_group_gpu <= ((4 * __dim_w_0_gpu) - 3); __gpu_residue_group_gpu += 4) {
+                __gpu_residue_element_gpu = w_gpu[((int)((((__gpu_residue_group_gpu - 1) / 4) + 1)) - (__lb_w_0_gpu)) + (__dim_w_0_gpu * ((int)(n__dc_gpu) - (__lb_w_1_gpu)))];
+                {
+                    int __low_part_low_part_gpu;
+                    __low_part_low_part_gpu = _lcompilers_ibits_i32_gpu_22(__gpu_residue_element_gpu, (8 * 0), 8);
+                    acc_gpu = (acc_gpu + __low_part_low_part_gpu);
+                }
+                {
+                    int __low_part_low_part_gpu;
+                    __low_part_low_part_gpu = _lcompilers_ibits_i321_gpu_23(__gpu_residue_element_gpu, (8 * 1), 8);
+                    acc_gpu = (acc_gpu + __low_part_low_part_gpu);
+                }
+                {
+                    int __low_part_low_part_gpu;
+                    __low_part_low_part_gpu = _lcompilers_ibits_i322_gpu_24(__gpu_residue_element_gpu, (8 * 2), 8);
+                    acc_gpu = (acc_gpu + __low_part_low_part_gpu);
+                }
+                {
+                    int __low_part_low_part_gpu;
+                    if ((__gpu_stop_status_gpu[((int)(1) - (1))] == 0)) {
+                        __gpu_stop_status_gpu[((int)(1) - (1))] = 2;
+                    }
+                    return;
+                    __low_part_low_part_gpu = _lcompilers_ibits_i323_gpu_25(__gpu_residue_element_gpu, (8 * 3), 8);
+                    acc_gpu = (acc_gpu + __low_part_low_part_gpu);
+                }
+            }
+        } else {
+            for (d_gpu = 1; d_gpu <= (4 * __dim_w_0_gpu); d_gpu++) {
+                acc_gpu = (acc_gpu + low_part_gpu_14(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (__lb_w_0_gpu)) + (__dim_w_0_gpu * ((int)(n__dc_gpu) - (__lb_w_1_gpu)))], _lcompilers_optimization_modulo_i32_gpu_26((d_gpu - 1), 4), __gpu_stop_site_gpu, __gpu_stop_code_gpu));
+                if ((__gpu_stop_site_gpu != 0)) {
+                    if ((__gpu_stop_status_gpu[((int)(1) - (1))] == 0)) {
+                        __gpu_stop_status_gpu[((int)((__gpu_stop_site_gpu + 1)) - (1))] = __gpu_stop_code_gpu;
+                        __gpu_stop_status_gpu[((int)(1) - (1))] = __gpu_stop_site_gpu;
+                    }
+                    return;
+                }
+            }
+        }
+        y_gpu[((int)(n__dc_gpu) - (__lb_y_0_gpu))] = acc_gpu;
+    }
+}
+
