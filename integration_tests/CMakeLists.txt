@@ -6783,6 +6783,7 @@ RUN(NAME gpu_lanes_nested_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_lanes_unroll_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_lanes_branches_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_lanes_columns_01 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_lanes_parts_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_separate_compilation_01 LABELS gfortran llvm metal cuda EXTRAFILES gpu_separate_compilation_01_mod.f90 EXTRA_ARGS --separate-compilation)
 # Only the module's own compilation needs the fallback for its loop that
 # prints: the program that uses it compiles none of the module's loops.
