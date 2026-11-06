@@ -4961,6 +4961,23 @@ public:
         bool optional;
     };
 
+    // Whether the dummy argument `v` of `f`, a data object so far, may still
+    // become a procedure. With implicit interfaces, a scalar dummy argument
+    // without INTENT that `f` references as a procedure (`real :: f` and
+    // `f(a)`, or `call f(a)`) is a procedure with an implicit interface,
+    // which only the body visitor makes it.
+    bool generic_dummy_may_be_procedure(ASR::Function_t *f,
+            ASR::Variable_t *v) {
+        if (!compiler_options.implicit_interface
+                || v->m_intent != ASRUtils::intent_unspecified
+                || ASRUtils::is_array(v->m_type)) {
+            return false;
+        }
+        auto it = procedure_references.find(f->m_symtab->counter);
+        return it != procedure_references.end()
+            && it->second.count(v->m_name) > 0;
+    }
+
     // The dummy arguments of `f`, without the passed-object dummy argument
     // at index `passed_object` (if any), in order, so that the index of a
     // dummy argument is its effective position (F2018 15.4.3.4.5 p4).
@@ -4984,6 +5001,9 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
                 if (std::string(v->m_name) == "__lfortran_alt_ret") {
                     // An alternate return indicator is not a data object.
+                    return false;
+                }
+                if (generic_dummy_may_be_procedure(f, v)) {
                     return false;
                 }
                 bool optional = v->m_presence == ASR::presenceType::Optional;
@@ -5106,31 +5126,34 @@ public:
             && !generic_dummy_tkr_compatible(b.var, a.var, uncertain);
     }
 
-    // Rule (1) of C1514 for a dummy data object of `one`: the number of
-    // nonoptional dummy data objects of `one` with which it is TKR compatible
-    // exceeds the number of dummy data objects of `other` that are not
-    // distinguishable from it.
+    // Rule (1) of C1514 counted in `one` against `other`: a dummy data
+    // object X of either procedure is TKR compatible with more nonoptional
+    // dummy data objects of `one` than `other` has dummy data objects that
+    // are not distinguishable from X. A polymorphic X of `other` can be TKR
+    // compatible with several dummy data objects of `one`.
     bool generic_specifics_distinguishable_by_count(
             const std::vector<GenericDummy> &one,
             const std::vector<GenericDummy> &other, bool &uncertain) {
-        for (auto &x : one) {
-            if (x.var == nullptr) continue;
-            size_t compatible = 0;
-            for (auto &y : one) {
-                if (y.var != nullptr && !y.optional
-                        && generic_dummy_tkr_compatible(x.var, y.var,
-                            uncertain)) {
-                    compatible++;
+        for (const std::vector<GenericDummy> *xs : {&one, &other}) {
+            for (auto &x : *xs) {
+                if (x.var == nullptr) continue;
+                size_t compatible = 0;
+                for (auto &y : one) {
+                    if (y.var != nullptr && !y.optional
+                            && generic_dummy_tkr_compatible(x.var, y.var,
+                                uncertain)) {
+                        compatible++;
+                    }
                 }
-            }
-            size_t not_distinguishable = 0;
-            for (auto &z : other) {
-                if (z.var != nullptr
-                        && !generic_dummies_distinguishable(x, z, uncertain)) {
-                    not_distinguishable++;
+                size_t not_distinguishable = 0;
+                for (auto &z : other) {
+                    if (z.var != nullptr && !generic_dummies_distinguishable(
+                            x, z, uncertain)) {
+                        not_distinguishable++;
+                    }
                 }
+                if (compatible > not_distinguishable) return true;
             }
-            if (compatible > not_distinguishable) return true;
         }
         return false;
     }
@@ -5181,10 +5204,10 @@ public:
     // Whether the specific procedures `a` and `b` of a generic interface are
     // known to violate F2018 C1514 (15.4.3.4.5): both are subroutines or both
     // are functions, and none of the rules holds:
-    //   (1) one has a dummy data object X such that the number of its
-    //       nonoptional dummy data objects with which X is TKR compatible
-    //       exceeds the number of dummy data objects of the other that are
-    //       not distinguishable from X,
+    //   (1) one or the other has a dummy data object X such that the
+    //       number of nonoptional dummy data objects of one with which X is
+    //       TKR compatible exceeds the number of dummy data objects of the
+    //       other that are not distinguishable from X,
     //   (2) both have passed-object dummy arguments (type-bound generics)
     //       and these are distinguishable, or
     //   (3) one has a nonoptional dummy argument at an effective position
@@ -5195,7 +5218,8 @@ public:
     // procedure and the other a data object, if neither of two data objects
     // is TKR compatible with the other, or if one is ALLOCATABLE and the
     // other a POINTER. Any doubt (unresolved or parameterized types,
-    // C_PTR, dummy procedures on both sides, ...) means distinguishable, so
+    // C_PTR, dummy procedures on both sides, dummy arguments that may still
+    // become procedures, ...) means distinguishable, so
     // only certain violations are reported. `passed_object_a` and
     // `passed_object_b` are the indices of the passed-object dummy arguments
     // to leave out, or -1.

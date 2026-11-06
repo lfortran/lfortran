@@ -1,7 +1,9 @@
 ! Generic interfaces whose specific procedures are distinguishable
 ! (F2018 C1514) by kind, rank, type, argument count, argument names,
-! ALLOCATABLE versus POINTER, procedure versus data object, derived type or
-! optional arguments. Each call must resolve to the expected specific.
+! ALLOCATABLE versus POINTER, procedure versus data object, derived type,
+! optional arguments or the number of arguments a polymorphic dummy argument
+! of the other specific accepts. Each call must resolve to the expected
+! specific.
 module generic_interface_distinguishable_01_m
     implicit none
     integer :: which = 0
@@ -17,6 +19,13 @@ module generic_interface_distinguishable_01_m
     end type
     type :: other
         integer :: i = 4
+    end type
+    type :: cnt_base
+        integer :: i = 5
+    end type
+    type, extends(cnt_base) :: cnt_a
+    end type
+    type, extends(cnt_base) :: cnt_b
     end type
 
     abstract interface
@@ -67,6 +76,18 @@ module generic_interface_distinguishable_01_m
 
     interface g_fun
         module procedure fi, fr
+    end interface
+
+    ! The class(*) dummy of cs2 is TKR compatible with both nonoptional
+    ! dummy arguments of cs1, but only one dummy argument of cs2 is not
+    ! distinguishable from it (C1514 (1)).
+    interface g_count_star
+        module procedure cs1, cs2
+    end interface
+
+    ! The same with a class(cnt_base) dummy and two extensions of cnt_base.
+    interface g_count_class
+        module procedure cc1, cc2
     end interface
 
     interface g_body
@@ -201,6 +222,26 @@ contains
         fr = 26 + 0 * int(x)
     end function
 
+    subroutine cs1(a, x)
+        integer, intent(in) :: a
+        real, intent(in) :: x
+        which = 29 + 0 * a + 0 * int(x)
+    end subroutine
+    subroutine cs2(x)
+        class(*), intent(in) :: x
+        which = 30
+    end subroutine
+
+    subroutine cc1(a, x)
+        type(cnt_a), intent(in) :: a
+        type(cnt_b), intent(in) :: x
+        which = 31 + 0 * a%i + 0 * x%i
+    end subroutine
+    subroutine cc2(x)
+        class(cnt_base), intent(in) :: x
+        which = 32 + 0 * x%i
+    end subroutine
+
     real function twice(x)
         real, intent(in) :: x
         twice = 2 * x
@@ -231,6 +272,8 @@ program generic_interface_distinguishable_01
     type(base) :: b
     type(other) :: o
     integer :: i2(2, 2)
+    type(cnt_a) :: ca
+    type(cnt_b) :: cb
 
     call g_kind(1.0_4)
     if (which /= 1) error stop
@@ -303,6 +346,20 @@ program generic_interface_distinguishable_01
     if (which /= 27) error stop
     call g_body(1.0)
     if (which /= 28) error stop
+
+    call g_count_star(1, 2.0)
+    if (which /= 29) error stop
+    call g_count_star(3)
+    if (which /= 30) error stop
+    call g_count_star(4.0)
+    if (which /= 30) error stop
+
+    call g_count_class(ca, cb)
+    if (which /= 31) error stop
+    call g_count_class(ca)
+    if (which /= 32) error stop
+    call g_count_class(cb)
+    if (which /= 32) error stop
 
     ! The generic IEEE inquiries of the runtime take an optional X.
     if (.not. ieee_support_denormal()) error stop
