@@ -255,7 +255,16 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             }
         }
         if (mangle_underscore_external) {
-            if (ASRUtils::is_external_procedure_interface(f_type)) {
+            // A global procedure is defined under the same name by which an
+            // external procedure interface references it, so that units
+            // compiled with this option link with each other and with
+            // GFortran's objects. Internal and module procedures are not
+            // global and keep their names.
+            bool global_definition = !ASRUtils::is_declaration_deftype(f_type->m_deftype)
+                && f_type->m_abi == ASR::abiType::Source
+                && ASRUtils::is_tu_scope(x.m_symtab->parent);
+            if (ASRUtils::is_external_procedure_interface(f_type)
+                    || global_definition) {
                 std::string name = x.m_name;
                 bool has_reserved_prefix = (startswith(name, "_lfortran") ||
                                             startswith(name, "_lpython") ||
