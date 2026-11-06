@@ -419,7 +419,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 loc, get_index_kind()));
             return ASRUtils::count_ImpliedDoLoop_elements(al, implied_doloop,
                 index_type, *stmts, [&](ASRUtils::ArraySizeStatements& body) {
-                    bool iteration_sized = iteration_size(&body, true);
+                    [[maybe_unused]] bool iteration_sized = iteration_size(&body, true);
                     LCOMPILERS_ASSERT(iteration_sized);
                     ASR::expr_t* scalars = make_ConstantWithKind(
                         make_IntegerConstant_t, make_Integer_t, const_elements,

@@ -5442,8 +5442,8 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
             *stmts, [&](ArraySizeStatements& body) {
                 int n_scalars = 0;
                 ASR::expr_t* values_size = nullptr;
-                bool iteration_sized = iteration_size(&body, true, n_scalars,
-                    values_size);
+                [[maybe_unused]] bool iteration_sized = iteration_size(&body,
+                    true, n_scalars, values_size);
                 LCOMPILERS_ASSERT(iteration_sized);
                 ASR::expr_t* scalars = make_ConstantWithKind(
                     make_IntegerConstant_t, make_Integer_t, n_scalars, 4, loc);
