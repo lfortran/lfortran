@@ -2509,7 +2509,17 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         ASR::symbol_t *mem_es = nullptr;
         std::string mem_name = "1_" + std::string(member_variable->m_name) +
             "_" + std::string(ASRUtils::symbol_name(member));
-        if (current_scope->resolve_symbol(mem_name)) {
+        // The parent component of an extended type is the parent type
+        // itself. A type declared in a program, a block or the global scope
+        // (as in interactive mode) cannot be imported from, but it is
+        // visible through host association wherever an object of an
+        // extension of it is, so it is referenced directly.
+        ASR::symbol_t* member_owner = ASRUtils::get_asr_owner(member);
+        if (member_owner == nullptr ||
+                ASR::is_a<ASR::Program_t>(*member_owner) ||
+                ASR::is_a<ASR::Block_t>(*member_owner)) {
+            mem_es = member;
+        } else if (current_scope->resolve_symbol(mem_name)) {
             mem_es = current_scope->resolve_symbol(mem_name);
         } else {
             mem_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
@@ -11269,6 +11279,14 @@ ASR::symbol_t* import_struct_instance_member(Allocator& al,
     std::string struct_member_name = ASRUtils::symbol_name(struct_member);
 
     ASR::symbol_t* struct_t = ASRUtils::get_asr_owner(struct_member);
+    // A parent component is the parent type itself; one declared in a
+    // program, a block or the global scope cannot be imported from and is
+    // referenced directly.
+    if (ASR::is_a<ASR::Struct_t>(*struct_member) && (struct_t == nullptr ||
+            ASR::is_a<ASR::Program_t>(*struct_t) ||
+            ASR::is_a<ASR::Block_t>(*struct_t))) {
+        return struct_member;
+    }
     std::string struct_t_name = ASRUtils::symbol_name(struct_t);
 
     std::string struct_external_symbol_name = struct_t_name;
