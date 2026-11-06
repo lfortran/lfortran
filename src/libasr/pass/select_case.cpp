@@ -298,6 +298,10 @@ public:
     }
 
     void visit_Select(const ASR::Select_t &x) {
+        // Lower the Selects nested in the case bodies and in the default
+        // block first, so that the If chain built below contains no Select
+        // and nesting of any depth is lowered in a single walk.
+        ASR::ASRPassBaseWalkVisitor<SelectCaseVisitor>::visit_Select(x);
         if( x.m_enable_fall_through ) {
             pass_result = replace_selectcase_with_fall_through(al, x, current_scope);
         } else {
@@ -312,9 +316,6 @@ public:
 void pass_replace_select_case(Allocator &al, ASR::TranslationUnit_t &unit,
                               const LCompilers::PassOptions& /*pass_options*/) {
     SelectCaseVisitor v(al);
-    // Each call transforms only one layer of nested loops, so we call it twice
-    // to transform doubly nested loops:
-    v.visit_TranslationUnit(unit);
     v.visit_TranslationUnit(unit);
 }
 
