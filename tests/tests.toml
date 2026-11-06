@@ -3739,6 +3739,10 @@ filename = "errors/continue_compilation_ambiguous_generic.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_ambiguous_generic_binding.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_ff_1.f"
 fixed_form_cc_asr = true
 
