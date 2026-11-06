@@ -12,6 +12,9 @@ contains
     real, intent(in) :: x
     real :: w(k)
     integer :: j
+    ! `w` keeps its storage: the host has to size it from `k`, which the
+    ! caller changes before the call.
+    if (size(w) /= k) error stop "shape"
     do j = 1, k
       w(j) = x + j
     end do

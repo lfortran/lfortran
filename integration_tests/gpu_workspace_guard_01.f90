@@ -72,6 +72,7 @@ contains
                 real :: work(n)
                 integer :: d
                 y(j) = 3
+                if (size(work) /= n) error stop "shape"
                 if (outer) then
                     if (inner) then
                         do d = 1, n
@@ -92,6 +93,7 @@ contains
                 real :: work(n)
                 integer :: d
                 y(j) = 7
+                if (size(work) /= n) error stop "shape"
                 if (mod(j,2) == 0) then
                     do d = 1, n
                         work(d) = 5
@@ -111,6 +113,7 @@ contains
                 real :: work(n)
                 integer :: d
                 y(j) = 9
+                if (size(work) /= n) error stop "shape"
                 if (active) then
                     if (10 / divisor > 0) then
                         do d = 1, n

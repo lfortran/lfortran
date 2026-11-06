@@ -1,9 +1,9 @@
 ASR pass error: parallel loop cannot be offloaded to the GPU yet: workspace 'w' cannot be sized on the host
-  --> tests/../integration_tests/gpu_metal_406.f90:39:3 - 41:8
+  --> tests/../integration_tests/gpu_metal_406.f90:42:3 - 44:8
    |
-39 |      do concurrent (i = 1:m)
+42 |      do concurrent (i = 1:m)
    |      ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-41 |      end do
+44 |      end do
    | ...^^^^^^^^ workspace 'w' cannot be sized on the host

@@ -54,6 +54,7 @@ contains
             block
                 real :: inherited_work(k)
                 y(n) = 7
+                if (size(inherited_work) /= k) error stop "shape"
                 if (active) then
                     do concurrent (d = 1:k)
                         if (d > 0) inherited_work(d) = real(d)
@@ -73,6 +74,7 @@ contains
                 real :: varying_work(k)
                 logical :: vector
                 vector = modulo(n, 2) == 1
+                if (size(varying_work) /= k) error stop "shape"
                 do concurrent (d = 1:k)
                     if (.not. vector) varying_work(d) = real(d)
                 end do
@@ -93,6 +95,7 @@ contains
         do concurrent (n = 1:3)
             block
                 real :: outside_work(k)
+                if (size(outside_work) /= k) error stop "shape"
                 do concurrent (d = 1:k)
                     outside_work(d) = real(d)
                 end do

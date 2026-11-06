@@ -9,11 +9,11 @@ contains
 end module
 
 program gpu_kernel_source_08
-! Each loop defines `t` whole before it reads it, so the GPU offload gives
-! every thread its own `t`. Late storage placement measures the actual
-! gathered rows (loops 1 and 2) and alias temporaries (loops 3 and 4).
-! In loops 1 and 4 the larger array spills to a private workspace slice;
-! `t` stays on the stack. Neither array becomes shared.
+! Each loop defines `t` whole before reading one element of it, so the
+! offload recomputes `t` where it is read and `t` needs no storage at all.
+! Late storage placement measures the actual gathered rows (loops 1 and 2)
+! and alias temporaries (loops 3 and 4). In loops 1 and 4 the larger array
+! spills to a private workspace slice. Neither array becomes shared.
 use gpu_kernel_source_08_m, only: row_sum
 implicit none
 integer, parameter :: n = 4, m = 10000

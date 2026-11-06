@@ -19,12 +19,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc = (__flat_idx + 1);
     {
-        float t[64];
         for (k = 1; k <= m; k++) {
-            t[((int)(k) - (1))] = ((float)((j__dc + k) + it));
-        }
-        for (k = 1; k <= m; k++) {
-            g[((int)(k) - (1)) + (64 * ((int)(j__dc) - (1)))] = t[((int)(((m + 1) - k)) - (1))];
+            g[((int)(k) - (1)) + (64 * ((int)(j__dc) - (1)))] = ((float)((j__dc + ((m + 1) - k)) + it));
         }
     }
 }
@@ -36,7 +32,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     float* __restrict__ y)
 {
     int __flat_idx;
-    int __gpu_elem_i;
     int __gpu_sec_i;
     int j__dc1;
     const int m = 64;
@@ -48,12 +43,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     {
         int __gpu_sum_k;
         float __gpu_sum_res;
-        float t[64];
-        for (__gpu_elem_i = 1; __gpu_elem_i <= 64; __gpu_elem_i++) {
-            t[((int)(__gpu_elem_i) - (1))] = (x[((int)(__gpu_elem_i) - (1)) + (64 * ((int)(j__dc1) - (1)))] + ((float)1));
-        }
         for (__gpu_sec_i = 1; __gpu_sec_i <= ((((int)64) + ((int)1)) - 1); __gpu_sec_i++) {
-            g[((int)(__gpu_sec_i) - (1)) + (64 * ((int)(j__dc1) - (1)))] = t[((int)((m + ((__gpu_sec_i - 1) * (-(1))))) - (1))];
+            g[((int)(__gpu_sec_i) - (1)) + (64 * ((int)(j__dc1) - (1)))] = (x[((int)((m + ((__gpu_sec_i - 1) * (-(1))))) - (1)) + (64 * ((int)(j__dc1) - (1)))] + ((float)1));
         }
         if ((j__dc1 == 1)) {
             __gpu_sum_res =   0.00000000000000000e+00f;
