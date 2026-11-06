@@ -550,12 +550,20 @@ public:
         // does at its high-water mark: a subscriber that reads too slowly,
         // such as a prompt at a slow terminal or waiting for redirected
         // input, then still gets the latest output, of its own next cell too.
+        // A message larger than 64 MiB that has started sending is sent whole:
+        // it cannot be cut short. One that has not started yet is dropped like
+        // any other. While such a message is being sent, the latest message
+        // published after it is kept, and publishing another replaces it with
+        // a notice.
         droppable
     };
 
     // Makes room for a droppable message, if more than the most droppable
     // output waits, by dropping the oldest. Returns the bytes dropped; a
-    // notice of them, given with notify(), then takes their place.
+    // notice of them, given with notify(), then takes their place. A first
+    // message that is partly sent is kept even when it alone is larger than
+    // the limit; while it is, every droppable message after it is dropped, so
+    // only the latest output published then waits behind it.
     size_t make_room()
     {
         if (blocking || closed || queued <= droppable_limit) return 0;
@@ -734,7 +742,10 @@ private:
             closed = true;
             return;
         }
-        if (!reliable && queued > droppable_limit) return;
+        // A droppable message is always kept, even if a first message that is
+        // larger than the limit by itself leaves no room: make_room() has
+        // already dropped what it could, and the next one drops this message,
+        // with a notice, so that newer output is never lost silently.
         queued += data.size();
         if (reliable) queued_reliable += data.size();
         outbox.push_back({std::move(data), reliable});

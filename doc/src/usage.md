@@ -182,7 +182,12 @@ false.
 Delivery is not guaranteed if a client cannot consume output fast enough.
 Once more than 64 MiB of output waits for a client, the built-in kernel drops
 the oldest of it, not the newest, and puts a notice in its place, so that a
-prompt that was idle or slow still shows the output of its own next cell.
+prompt that was idle or slow still shows the output of its own next cell. A
+single message larger than that is dropped whole like any other if it has not
+started sending, but one that has started sending is sent to completion: the
+part of it not yet sent cannot be dropped. While it is still being sent, the
+latest output is kept and earlier output is replaced by that notice, so nothing
+is lost silently and memory stays bounded.
 
 A READ asks the client that ran the cell. If that client disconnects, the
 READ fails with an I/O error: a READ with `iostat=` gets it and the cell goes
