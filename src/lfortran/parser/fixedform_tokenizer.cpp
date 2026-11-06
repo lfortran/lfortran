@@ -1416,6 +1416,15 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        // `import`, `import k`, `import :: a, b`, `import, only: a`,
+        // `import, none`, `import, all`; assignments such as `import = 2`
+        // or `importx = 1` were already handled above
+        if (next_is(cur, "import")) {
+            push_token_advance(cur, "import");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "include")) {
             push_token_advance(cur, "include");
             tokenize_line(cur);
