@@ -16040,7 +16040,12 @@ public:
             bool is_const) {
         conform_struct_constructor_args(vals, members);
 
-        if (is_const) {
+        // The restriction is on an initialization expression only. A
+        // structure constructor in an assignment may supply a value for an
+        // allocatable component, which allocates it, and is valid even
+        // though its arguments are constants.
+        if (is_const
+                && restricted_expr_context == RestrictedExprContext::InitExpr) {
             check_allocatable_initializer_components(v, vals.p, vals.size());
         }
 

@@ -6304,3 +6304,46 @@ end function
         CHECK(r.result.f64 == 6.0);
     }
 }
+
+TEST_CASE("ASR structure constructor with an allocatable component in an assignment") {
+    // An initialization expression cannot give an allocatable component a
+    // value, but an assignment may: it allocates the component. The check
+    // for the initialization-expression restriction must not fire here.
+    std::string source = R"(module alloc_component_assignment_m
+implicit none
+type :: inner_t
+    integer :: n
+end type
+type :: outer_t
+    type(inner_t), allocatable :: c(:)
+end type
+type :: nested_inner_t
+    integer, allocatable :: a
+end type
+type :: nested_outer_t
+    type(nested_inner_t) :: arr(1)
+end type
+contains
+subroutine assign_alloc_component()
+    type(outer_t) :: x
+    x = outer_t([inner_t(5)])
+    x = outer_t(null())
+    x = outer_t()
+end subroutine
+subroutine assign_nested_alloc_component()
+    type(nested_outer_t) :: y
+    y = nested_outer_t([nested_inner_t(5)])
+end subroutine
+end module)";
+    Allocator al(256*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+    compiler_options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    auto *ast = TRY(LCompilers::LFortran::parse(al, source,
+        diagnostics, compiler_options));
+    LCompilers::LocationManager lm;
+    auto *asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast, diagnostics,
+        nullptr, false, compiler_options, lm));
+    CHECK_FALSE(diagnostics.has_error());
+    CHECK(asr->m_symtab->get_symbol("alloc_component_assignment_m") != nullptr);
+}
