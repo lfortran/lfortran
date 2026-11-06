@@ -2341,6 +2341,8 @@ RUN(NAME modules_86 LABELS gfortran llvm)
 RUN(NAME modules_87 LABELS gfortran llvm fortran)
 RUN(NAME modules_88 LABELS gfortran llvm)
 RUN(NAME modules_89 LABELS gfortran llvm EXTRAFILES modules_89_mod.f90)
+RUN(NAME modules_90 LABELS gfortran llvm)
+RUN(NAME modules_91 LABELS gfortran llvm)
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 
@@ -3514,6 +3516,9 @@ RUN(NAME associate_60 LABELS llvm) # gfortran skips the temporary for associate 
 RUN(NAME associate_61 LABELS llvm) # gfortran aliases a parenthesized (expression) selector instead of copying it, and rejects the (str(2:4)) selector
 RUN(NAME associate_62 LABELS gfortran llvm)
 RUN(NAME associate_63 LABELS gfortran llvm)
+RUN(NAME associate_64 LABELS gfortran llvm)
+RUN(NAME associate_65 LABELS gfortran llvm)
+RUN(NAME associate_66 LABELS gfortran llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

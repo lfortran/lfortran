@@ -3978,7 +3978,7 @@ void import_struct_t(Allocator& al,
     ASR::intentType intent, SymbolTable* current_scope, ASR::expr_t* var);
 
 ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
-    const Location& loc, ASR::expr_t* v_expr, SymbolTable* current_scope);
+    ASR::expr_t* v_expr, SymbolTable* current_scope);
 
 ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_arg, ASR::array_physical_typeType a_old, ASR::array_physical_typeType a_new,

@@ -4658,7 +4658,7 @@ public:
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, tmp_type, nullptr, nullptr, name);
-            ASR::symbol_t* struct_sym = ASRUtils::import_struct_sym_as_external(al, x.base.base.loc, tmp_expr, current_scope);
+            ASR::symbol_t* struct_sym = ASRUtils::import_struct_sym_as_external(al, tmp_expr, current_scope);
             // An associate name for a simply contiguous array is a pointer
             // that is associated with all of it, so it is contiguous too
             // (F2018 9.5.4).
@@ -4839,8 +4839,8 @@ public:
                 || ASRUtils::is_class_type(mold_elem_type)) {
             return nullptr;
         }
-        return ASRUtils::import_struct_sym_as_external(al, mold->base.loc,
-            mold, current_scope);
+        return ASRUtils::import_struct_sym_as_external(al, mold,
+            current_scope);
     }
 
     void visit_Allocate(const AST::Allocate_t& x) {

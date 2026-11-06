@@ -629,7 +629,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     ASR::symbol_t* arg_expr_decl = nullptr;
                     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_expr_type))) {
                         arg_expr_decl = ASRUtils::import_struct_sym_as_external(
-                            al, x.m_args[i].loc, arg_expr, scope);
+                            al, arg_expr, scope);
                     }
                     ASR::expr_t* dummy_variable = PassUtils::create_auxiliary_variable(
                         x.m_args[i].loc, dummy_variable_name, al, scope,
