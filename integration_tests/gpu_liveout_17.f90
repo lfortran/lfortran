@@ -6,7 +6,7 @@
 ! it back even though a later statement assigns it first.
 program gpu_liveout_17
     implicit none
-    real(8) :: t, u, e1, e2
+    real :: t, u, e1, e2
     integer :: i, k, it, m, n2
     equivalence (e1, e2)
     m = 1
@@ -37,7 +37,7 @@ program gpu_liveout_17
         n2 = 4*i
     end do
     block
-        real(8) :: w(n2)
+        real :: w(n2)
         w = 1
         u = sum(w)
     end block

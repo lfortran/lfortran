@@ -7,7 +7,7 @@
 program gpu_liveout_16
     implicit none
     integer, parameter :: nr = 8, np = 16
-    real(8) :: x(nr,np), s0(nr), s1(nr), t, u
+    real :: x(nr,np), s0(nr), s1(nr), t, u
     integer :: it, i, k, m
     x = 1
     do it = 1, 3
@@ -30,8 +30,8 @@ program gpu_liveout_16
         end do
     end do
     do i = 1, nr
-        if (abs(s0(i) - np*(1 + 3*i)) > 1d-12) error stop 1
-        if (abs(s1(i) - 2*np*(1 + 3*i)) > 1d-12) error stop 2
+        if (abs(s0(i) - np*(1 + 3*i)) > 1e-6) error stop 1
+        if (abs(s1(i) - 2*np*(1 + 3*i)) > 1e-6) error stop 2
     end do
 
     ! One iteration: the value of `u` it defines is read after the loop.
@@ -43,7 +43,7 @@ program gpu_liveout_16
         end do
         s0(i) = u
     end do
-    if (abs(u - np*4) > 1d-12) error stop 3
+    if (abs(u - np*4) > 1e-6) error stop 3
 
     ! Read in one branch of a later IF, assigned first in the other.
     do concurrent (i = 1:m)

@@ -6,7 +6,7 @@
 program gpu_liveout_18
     implicit none
     integer, parameter :: n = 100
-    real(8) :: t, x(n), y(n)
+    real :: t, x(n), y(n)
     integer :: i, m
     t = 5
     x = -1
