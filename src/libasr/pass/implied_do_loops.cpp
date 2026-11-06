@@ -291,6 +291,12 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         start = builder.i2i_t(start, trip_type);
         if( d == nullptr ) {
             implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
+        } else if( clamp ) {
+            // max(0, (end - start + step) / step), as in
+            // ASRUtils::get_ImpliedDoLoop_size.
+            d = builder.i2i_t(d, trip_type);
+            implied_doloop_size = builder.Div(builder.Add(
+                builder.Sub(end, start), d), d);
         } else {
             d = builder.i2i_t(d, trip_type);
             implied_doloop_size = builder.Add(builder.Div(
@@ -553,10 +559,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         continue;
                     }
                     ASR::expr_t* dim_size = ASRUtils::get_triplet_extent(al,
-                        loc, start, end, d, int_type);
-                    if( clamp ) {
-                        dim_size = ASRUtils::Max::create_extent(al, dim_size);
-                    }
+                        loc, start, end, d, int_type, clamp);
                     if( array_section_size == nullptr ) {
                         array_section_size = dim_size;
                     } else {
