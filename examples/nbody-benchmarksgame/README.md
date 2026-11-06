@@ -25,7 +25,7 @@ committed here.
 - Compilers: gcc/g++ 15.3.0, rustc 1.99.1, flang 23.1.4, gfortran 16.2.0,
   LFortran `--fast` (LLVM 11.1.0).
 - All binaries print the same two energies, `-0.169075164` and
-  `-0.169059907`.
+  `-0.169087605`.
 
 ## Results
 
