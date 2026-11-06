@@ -135,6 +135,7 @@ set(SRC
     pass/gpu_time_skew.cpp
     pass/gpu_index_set_split.cpp
     pass/gpu_array_statements.cpp
+    pass/gpu_call_guards.cpp
     pass/dead_array_store.cpp
     pass/gpu_vector_lanes.cpp
     pass/gpu_memory_space.cpp

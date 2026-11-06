@@ -1016,6 +1016,13 @@ stop. It waits:
 * before any statement it does not know.
 
 A wait in a loop that launches nothing is placed before the loop instead.
+A call of a subroutine whose first statement is `if (c) return`, such as a
+debug hook that returns unless a dump directory is set, tests `c` first
+(the `gpu_call_guards` pass, which runs before the temporaries of actual
+arguments are made), so its wait goes into the branch that calls it. It does
+so only when that is not observable: `c` calls no function and names no
+dummy or local of the subroutine, the subroutine has no `intent(out)` dummy,
+and the actual arguments call no function.
 After every `GpuSync` the pass runs the stop replay of each launch that may
 be pending there (`GpuKernelLaunch.stop_replay`), in launch order.
 

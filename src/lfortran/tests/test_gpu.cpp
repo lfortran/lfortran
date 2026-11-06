@@ -2071,6 +2071,61 @@ end module
         == "[L|]S[[L|]|]S");
 }
 
+TEST_CASE("GPU calls test the early return of their subroutine") {
+    // `dm` returns at once unless a directory is given: its call tests
+    // that first, so the wait for the launch before the call, which hands
+    // `dm` the array the launch writes, is in the branch that dumps.
+    // `keep` defines its intent(out) dummy even when it returns at once,
+    // and `count` evaluates an impure function: neither call is skipped.
+    // `keep` reads `directory` through the frame of its host, so the host
+    // waits before it as before any call that may access anything.
+    const std::string source = R"(
+module sync_hooks
+implicit none
+integer :: calls = 0
+contains
+integer function next()
+    calls = calls + 1
+    next = calls
+end function
+subroutine two_steps(x, directory)
+    real, intent(inout) :: x(:)
+    character(*), intent(in) :: directory
+    real :: y(2)
+    integer :: i
+    do concurrent (i = 1:size(x))
+        x(i) = x(i) + 1
+    end do
+    call dm('after_first', x)
+    do concurrent (i = 1:size(x))
+        x(i) = x(i) + 1
+    end do
+    call keep(y)
+    call count(next())
+contains
+    subroutine dm(name, values)
+        character(*), intent(in) :: name
+        real, intent(in) :: values(:)
+        if (len_trim(directory) == 0) return
+        print *, name, values(1)
+    end subroutine
+    subroutine keep(values)
+        real, intent(out) :: values(:)
+        if (len_trim(directory) == 0) return
+        values = 0
+    end subroutine
+    subroutine count(k)
+        integer, intent(in) :: k
+        if (len_trim(directory) == 0) return
+        print *, k
+    end subroutine
+end subroutine
+end module
+)";
+    CHECK(gpu_sync_trace(source, "sync_hooks", "two_steps")
+        == "[L|][SC|][L|]SCC");
+}
+
 #endif
 
 TEST_CASE("A scalar every iteration assigns first is not read back when "
