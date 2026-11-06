@@ -554,13 +554,22 @@ public:
             form->elements[1]->kind == ASRText::ValueKind::Keyword &&
             std::find(names.begin(), names.end(),
                 form->elements[1]->text) != names.end();
-        if (!named && (form->elements.size() == expected_count + 1 ||
-                form->elements.size() == required_count + 1)) {
-            bool omit_optional = form->elements.size() == required_count + 1;
+        // A positional form may omit a trailing run of the optional fields:
+        // the writer omits an absent optional field only when every later
+        // optional field is absent too.
+        if (!named && form->elements.size() >= required_count + 1 &&
+                form->elements.size() <= expected_count + 1) {
+            size_t present_optional =
+                form->elements.size() - 1 - required_count;
+            size_t optional_index = 0;
             size_t position = 1;
             for (size_t i = 0; i < expected_count; i++) {
-                fields[i] = omit_optional && optional(names[i])
-                    ? &absent : form->elements[position++];
+                if (optional(names[i]) &&
+                        optional_index++ >= present_optional) {
+                    fields[i] = &absent;
+                } else {
+                    fields[i] = form->elements[position++];
+                }
             }
             return true;
         }
