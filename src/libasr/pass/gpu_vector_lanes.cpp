@@ -481,10 +481,11 @@ bool dead_after(const std::vector<Frame> &frames, ASR::symbol_t *s) {
                 if (header_reads(g.owner)) return false;
             }
             a = first_access(g.body, 0, g.index, s);
-            if (a == Access::Write) return true;
+            if (a == Access::Write) break;
             if (a == Access::Read) return false;
         }
-        return true;
+        // Or the loop ends, with the value its last iteration left in `s`,
+        // which what comes after the loop must not read either.
     }
     return true;
 }
