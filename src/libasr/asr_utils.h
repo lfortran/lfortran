@@ -1977,8 +1977,13 @@ inline bool is_assumed_size_array(ASR::ttype_t* x) {
 // Call_t_body takes the ArrayPhysicalCast target of an array argument from the
 // formal parameter's dimensions, with the call's arguments substituted, and
 // pass_array_by_data keeps it deferred when it replaces an assumed-shape dummy
-// by a data pointer. The predicate on such a target therefore answers for the
-// dummy argument, not for the actual argument.
+// by a data pointer. When the formal extent's symbols are visible from the
+// caller and the actual argument is not a pointer, the predicate on such a
+// target therefore answers for the dummy argument, not for the actual
+// argument. The two pre-existing Call_t_body fallbacks (a pointer actual, and
+// an extent whose symbols the caller cannot see) keep the actual argument's
+// extents instead, so there the predicate answers for the actual argument; a
+// deferred pointer target makes it false and codegen emits no check.
 inline bool has_explicit_dimension_bounds(ASR::ttype_t* x) {
     x = type_get_past_allocatable(type_get_past_pointer(x));
     if (!ASR::is_a<ASR::Array_t>(*x)) {

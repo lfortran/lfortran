@@ -28744,11 +28744,17 @@ public:
                     // of a converted function call.
                     //
                     // `arr_cast->m_type` is the dummy argument's declared
-                    // shape: Call_t_body builds the cast target from the formal
-                    // parameter's dimensions with the call's arguments
-                    // substituted (and pass_array_by_data keeps an assumed-shape
-                    // dummy's extent deferred when it replaces it by a data
-                    // pointer), so a deferred extent stays absent here.
+                    // shape when Call_t_body could substitute the formal
+                    // parameter's dimensions with the call's arguments (and
+                    // pass_array_by_data keeps an assumed-shape dummy's extent
+                    // deferred when it replaces it by a data pointer), so a
+                    // deferred extent stays absent here. Two pre-existing
+                    // fallbacks keep the actual argument's extents instead:
+                    // for a pointer actual argument, and when a substituted
+                    // extent references a symbol the caller cannot see. A
+                    // target that stays deferred therefore emits no check, and
+                    // a target built from the actual's own extents compares
+                    // the actual with itself.
                     if (compiler_options.po.strict_bounds_checking || is_return_value) {
                         ASR::dimension_t* m_dims = nullptr;
                         int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims));

@@ -13134,6 +13134,11 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     cast_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (ASRUtils::is_pointer(physical_cast_type) &&
                            orig_arg_array_t->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
+                    // A pointer actual keeps its own extents: leaving the
+                    // dimensions empty keeps the actual argument's dimensions
+                    // in the cast target, so the target is not the dummy's
+                    // declared shape. A deferred-shape pointer stays deferred,
+                    // for which the size gate emits no check (pre-existing).
                     dimensions = nullptr;
                 } else if (ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims)) {
                     dimensions = &dimension_;
@@ -13207,8 +13212,13 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                             }
                           }
                         } else {
-                        dimensions = nullptr;
-                    }
+                            // The dummy's extent is not expressible in the
+                            // caller, so the cast target keeps the actual
+                            // argument's dimensions. Codegen then compares the
+                            // actual with itself, so a too-small actual is not
+                            // diagnosed (pre-existing).
+                            dimensions = nullptr;
+                        }
                 }
 
                 //TO DO : Add appropriate errors in 'asr_uttils.h'.
