@@ -1425,6 +1425,15 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        // procedure declaration statement, e.g. `procedure(a) :: p`,
+        // `procedure(a) p`, `procedure(), pointer :: q => null()`;
+        // assignments such as `procedure(i) = 1` were already handled above
+        if (next_is(cur, "procedure(")) {
+            push_token_advance(cur, "procedure");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "include")) {
             push_token_advance(cur, "include");
             tokenize_line(cur);
