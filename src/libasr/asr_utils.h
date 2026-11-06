@@ -1980,10 +1980,13 @@ inline bool is_assumed_size_array(ASR::ttype_t* x) {
 // by a data pointer. When the formal extent's symbols are visible from the
 // caller and the actual argument is not a pointer, the predicate on such a
 // target therefore answers for the dummy argument, not for the actual
-// argument. The two pre-existing Call_t_body fallbacks (a pointer actual, and
-// an extent whose symbols the caller cannot see) keep the actual argument's
-// extents instead, so there the predicate answers for the actual argument; a
-// deferred pointer target makes it false and codegen emits no check.
+// argument. Pre-existing Call_t_body fallbacks keep the actual argument's
+// extents instead: a pointer actual, an extent whose symbols the caller cannot
+// see, and a deferred extent on a descriptor cast. The predicate there answers
+// for the actual argument. Codegen then compares the actual with itself when
+// the extent's symbols were hidden, and emits no check when the pointer target
+// stays deferred (the predicate is false) or when the target is a descriptor
+// cast, which is not a checked cast form.
 inline bool has_explicit_dimension_bounds(ASR::ttype_t* x) {
     x = type_get_past_allocatable(type_get_past_pointer(x));
     if (!ASR::is_a<ASR::Array_t>(*x)) {

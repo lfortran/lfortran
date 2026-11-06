@@ -13212,11 +13212,15 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                             }
                           }
                         } else {
-                            // The dummy's extent is not expressible in the
-                            // caller, so the cast target keeps the actual
-                            // argument's dimensions. Codegen then compares the
-                            // actual with itself, so a too-small actual is not
-                            // diagnosed (pre-existing).
+                            // The dummy's extent cannot be carried into the
+                            // cast target, which therefore keeps the actual
+                            // argument's dimensions. When a substituted extent
+                            // references a symbol the caller cannot see,
+                            // codegen compares the actual with itself; when the
+                            // extent is deferred and the target is a descriptor
+                            // (a fixed-size actual passed to an assumed-shape
+                            // dummy), the cast is not a checked cast form, so
+                            // codegen emits no check. Both are pre-existing.
                             dimensions = nullptr;
                         }
                 }
