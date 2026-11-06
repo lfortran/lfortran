@@ -5683,6 +5683,11 @@ filename = "errors/array_bounds_check_23.f90"
 run = true
 
 [[test]]
+filename = "errors/array_bounds_check_24.f90"
+run = true
+options = "--strict-array-bounds-checking"
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 

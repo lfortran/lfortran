@@ -28844,7 +28844,7 @@ public:
                                     llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
                                         tmp, llvm_utils->getIntType(8));
                                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(fixed_length, pointer_length),
-                                            "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
+                                            "Array shape mismatch in subroutine '%s'\n\n"
                                             "Tried to match size %lld of dimension %d of argument number %d, but expected size is %lld\n",
                                             {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                             infile,
@@ -28861,7 +28861,7 @@ public:
                                 llvm::APInt(64, ASRUtils::get_fixed_size_of_array(fixed_size_type)));
                             llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
                             llvm_utils->generate_runtime_error(builder->CreateICmpNE(fixed_size, pointer_size),
-                                    "Runtime error: Array size mismatch in subroutine '%s'\n\n"
+                                    "Array size mismatch in subroutine '%s'\n\n"
                                     "Tried to match size %lld of argument number %d, but expected size is %lld\n",
                                     {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                     infile,
