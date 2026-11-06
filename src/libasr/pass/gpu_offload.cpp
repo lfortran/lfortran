@@ -676,9 +676,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
     // A later statement that names a scalar keeps the value the loop leaves
     // in it only if it may read that value: `t = 0` does not, nor does a
-    // later loop every iteration of which assigns `t` first.
+    // later loop every iteration of which assigns `t` first. One the body
+    // may read before assigning it stays live, which copies its value in.
     if (!everything_live && !live_vars.empty()) {
-        live_vars = scalars_read_after_region(region, live_vars,
+        live_vars = scalars_read_after_region(region, work, live_vars,
             enclosing_assoc_map);
     }
     // Where the kernel keeps each variable the loop defines or may define

@@ -1103,9 +1103,12 @@ GpuOffloadVisitor::iteration_array_candidates(
 // constructs and loops around it. A scalar it cannot follow every access
 // to -- one a pointer, an EQUIVALENCE, another procedure or an ASSOCIATE
 // around the loop can reach, or whose assignment finalizes, and so reads,
-// its old value -- may be read.
+// its old value -- may be read. So may one an iteration may read before
+// assigning it: being live is also what gives the kernel the value it had
+// before the loop.
 std::set<std::string> GpuOffloadVisitor::scalars_read_after_region(
-        const ASR::OMPRegion_t &region, const std::set<std::string> &names,
+        const ASR::OMPRegion_t &region, const ParallelLoopNest &work,
+        const std::set<std::string> &names,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
     std::set<std::string> read = names;
     GpuAfterRegion after;
@@ -1139,6 +1142,13 @@ std::set<std::string> GpuOffloadVisitor::scalars_read_after_region(
         }
         if (in_associate) continue;
         GpuArrayFlowReader reader(sym, access, after.host_associated);
+        // The live private copy is also what gives an iteration that reads
+        // the scalar before assigning it the value it had before the loop.
+        bool escaped = false;
+        if (reader.run(work.body, work.n_body, escaped)
+                == GpuArrayFlow::Read) {
+            continue;
+        }
         if (!read_after_region(reader, after.path)) read.erase(name);
     }
     return read;
