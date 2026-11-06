@@ -366,6 +366,58 @@ static int keep_reads()
     return 0;
 }
 
+// lfortran_gpu_keep right before a wait keeps the copies inside the range it
+// names fresh past that wait (the host does not change the range until the
+// launches after it read it); a copy only partly inside, or one not named,
+// is uploaded again. The next wait without it ends the copy as before.
+static int keep_across_waits()
+{
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    lfortran_gpu_register_kernel("keep_across", entry(read_once_entry));
+    std::vector<int32_t> a(KEEP_READ_MIN_BYTES / sizeof(int32_t) * 2, 1);
+    size_t bytes = a.size() * sizeof(int32_t);
+    std::array<int32_t, 8> out{};
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    auto h2d = []() { return stats().async_copies[cudaMemcpyHostToDevice]; };
+    // A launch uploads `out`, which it writes, unless it is still on the
+    // device (no sync since the last launch): the uploads of `a` are those
+    // beyond that.
+    auto launch = [&](int32_t chunk, unsigned long long out_uploads = 1) {
+        auto before = h2d();
+        auto *k = lfortran_gpu_load_kernel(ctx, "keep_across", 11);
+        lfortran_gpu_set_buffer_arg(k, 0, out.data(), sizeof(out),
+            LFORTRAN_GPU_WRITE);
+        lfortran_gpu_set_buffer_arg(k, 1, a.data(), bytes,
+            LFORTRAN_GPU_READ);
+        lfortran_gpu_set_scalar_arg(k, 2, &chunk, sizeof(chunk));
+        lfortran_gpu_launch(ctx, k, grid, block);
+        lfortran_gpu_release_kernel(k);
+        return h2d() - before - out_uploads;
+    };
+    require(launch(0) == 1, "the first launch uploads the range");
+    lfortran_gpu_sync(ctx);
+    require(launch(1) == 1, "after a sync the range is uploaded again");
+    lfortran_gpu_keep(ctx, a.data(), bytes);
+    lfortran_gpu_sync(ctx);
+    require(launch(2) == 0, "a kept range is not uploaded again");
+    lfortran_gpu_keep(ctx, a.data() + 1, bytes - sizeof(int32_t));
+    lfortran_gpu_sync(ctx);
+    require(launch(3) == 1, "a copy partly outside the range is not kept");
+    lfortran_gpu_keep(ctx, a.data(), bytes);
+    lfortran_gpu_wait(ctx);
+    require(launch(4, 0) == 0, "a wait keeps it as a sync does");
+    lfortran_gpu_sync(ctx);
+    for (size_t i = 0; i < a.size(); i++) a[i] = 2;
+    require(launch(5) == 1, "the next sync ends the copy");
+    lfortran_gpu_sync(ctx);
+    require(out[2] == 66 && out[3] == 67 && out[4] == 68 && out[5] == 133,
+        "every launch reads the values the host last wrote");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    return 0;
+}
+
 // A deferred free that fails stops the program with the CUDA error, here
 // for memory that is not a device allocation.
 static int failed_free()
@@ -590,6 +642,9 @@ int main(int argc, char **argv)
     }
     if (argc == 2 && strcmp(argv[1], "keep-reads") == 0) {
         return keep_reads();
+    }
+    if (argc == 2 && strcmp(argv[1], "keep-across-waits") == 0) {
+        return keep_across_waits();
     }
     if (argc == 2 && strcmp(argv[1], "failed-free") == 0) {
         return failed_free();

@@ -11,6 +11,7 @@
 #include <libasr/pass/pass_utils.h>
 
 #include <algorithm>
+#include <functional>
 #include <map>
 #include <set>
 #include <tuple>
@@ -46,6 +47,11 @@ statement that may change or free storage a pending launch reads, at the
 end of a `block` whose locals a pending launch reads, and where any GpuSync
 would go. Accesses are not split into reads and writes: a statement that
 may access such storage, other than by evaluating an expression, waits.
+
+Where the host does not change an array a launch since the last wait read
+until a later launch reads it, a GpuKeep naming it goes right before the
+GpuSync or GpuWait, so that a runtime that copies what a kernel reads to the
+device may keep that copy past the wait (see "Keeping copies" below).
 
 After every GpuSync, the stops each pending launch may have recorded are
 replayed (GpuKernelLaunch.stop_replay, see gpu_offload_stop.h), in launch
@@ -287,6 +293,7 @@ public:
         out.reserve(al, n_body + 4);
         State end = process_body(body, n_body, State(), true, &out);
         if (end.reachable && end.any) sync(end, true, &out, loc);
+        place_keeps(out, loc);
         // Each status buffer is cleared once, before its first launch.
         Vec<ASR::stmt_t*> result;
         result.reserve(al, out.size() + status_buffers.size());
@@ -772,6 +779,10 @@ private:
                 wait(s, emit, out, loc);
                 return s;
             }
+            case ASR::stmtType::GpuKeep: {
+                if (emit) out->push_back(al, x);
+                return s;
+            }
             case ASR::stmtType::If: {
                 ASR::If_t *i = ASR::down_cast<ASR::If_t>(x);
                 before(expression_accesses(i->m_test, routine, pointers,
@@ -1008,6 +1019,704 @@ private:
                 return s;
             }
         }
+    }
+
+    /*
+    Keeping copies.
+
+    A runtime with memory of its own copies an array a launch only reads to
+    the device, and may keep that copy for the launches after it until the
+    host next waits: the host changes such an array only after a wait. A
+    GpuKeep right before a GpuSync or GpuWait names the arrays whose copies
+    may outlive it too: on every path from the wait, the host changes none of
+    them before the next GpuSync or GpuWait, which decides again. The
+    candidates at a wait are the arrays a launch since the previous one read,
+    and those the previous one kept, but not one a launch since the last
+    GpuSync writes: the sync copies that back into the host.
+
+    This is worked out over the body with its waits placed, forward: the
+    state holds the (wait, array) pairs still kept, and a host statement
+    that may change an array drops its pairs -- that wait does not keep it.
+    Unlike the waits above, reads and writes are told apart here: an
+    assignment changes its target, and an expression only what the
+    procedures it calls may change. A procedure contained in this one
+    changes a variable of this one only if it, or a procedure contained here
+    that it calls, names it.
+
+    A local of a `block` ends with the block, and a procedure's arrays may
+    change once it returns, so at a `return` or the end of a procedure that
+    is not the main program, a GpuWait with nothing kept goes in when a pair
+    is still kept there, unless the wait that keeps it is the statement right
+    before. Only whole arrays that are locals or dummy arguments of the
+    procedure, contiguous and not pointers, are kept: the runtime is handed
+    the bytes from their first element to their last.
+    */
+    struct KeepState {
+        bool reachable = true;
+        // Read by launches since the last wait.
+        std::set<Path> read;
+        // Written by launches since the last GpuSync.
+        std::set<Path> written;
+        std::set<std::pair<ASR::stmt_t*, Path>> kept;
+        // The wait that is the statement before, on every path.
+        ASR::stmt_t *adjacent = nullptr;
+
+        static KeepState unreachable() {
+            KeepState s;
+            s.reachable = false;
+            return s;
+        }
+        void join(const KeepState &o) {
+            if (!o.reachable) return;
+            if (!reachable) {
+                *this = o;
+                return;
+            }
+            read.insert(o.read.begin(), o.read.end());
+            written.insert(o.written.begin(), o.written.end());
+            kept.insert(o.kept.begin(), o.kept.end());
+            if (adjacent != o.adjacent) adjacent = nullptr;
+        }
+        bool operator==(const KeepState &o) const {
+            return reachable == o.reachable && read == o.read
+                && written == o.written && kept == o.kept
+                && adjacent == o.adjacent;
+        }
+    };
+    struct KeepLoop {
+        std::string name;
+        size_t blocks;
+        KeepState at_cycle;
+        KeepState at_exit;
+    };
+    // What a statement or expression accesses, with the procedures contained
+    // in this one that it calls.
+    struct KeepAccesses {
+        Accesses acc;
+        std::vector<ASR::Function_t*> contained;
+    };
+    std::vector<KeepLoop> keep_loops;
+    std::vector<SymbolTable*> keep_blocks;
+    // What each wait may keep, and the pairs a host statement drops.
+    std::map<ASR::stmt_t*, std::set<Path>> keep_candidates;
+    std::set<std::pair<ASR::stmt_t*, Path>> keep_dropped;
+    // The `return` statements a GpuWait goes before, and whether one goes at
+    // the end of the procedure.
+    std::set<ASR::stmt_t*> keep_wait_before;
+    bool keep_wait_at_end = false;
+    // The analysis did not settle: nothing is kept.
+    bool keep_failed = false;
+    // The variables of this procedure each contained procedure may name.
+    std::map<ASR::Function_t*, std::set<ASR::symbol_t*>> keep_named;
+
+    bool is_main_program() const {
+        return routine->asr_owner != nullptr
+            && ASR::is_a<ASR::symbol_t>(*routine->asr_owner)
+            && ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(
+                routine->asr_owner));
+    }
+
+    // Whether the runtime can be told about `p` at a wait: a whole array
+    // that is a local or dummy argument of the procedure, not a pointer,
+    // and contiguous.
+    bool keepable(const Path &p) const {
+        if (may_point_anywhere(p.root) || !p.members.empty() || p.shallow
+                || !ASR::is_a<ASR::Variable_t>(*p.root)) {
+            return false;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(p.root);
+        if (enclosing_routine(v->m_parent_symtab) != routine
+                || !ASRUtils::is_array(v->m_type)) {
+            return false;
+        }
+        ASR::ttype_t *t = ASRUtils::type_get_past_allocatable(v->m_type);
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(t))) {
+            return false;
+        }
+        // An assumed-shape dummy may be a section with gaps.
+        bool dummy = v->m_intent != ASR::intentType::Local
+            && v->m_intent != ASR::intentType::ReturnVar;
+        return !dummy || ASRUtils::is_allocatable(v->m_type)
+            || ASRUtils::extract_physical_type(t)
+                != ASR::array_physical_typeType::DescriptorArray;
+    }
+
+    // Collects the variables `fn` names, through the procedures contained
+    // in this one that it calls too; null stands for any variable (a call
+    // this does not follow).
+    class Names : public ASR::BaseWalkVisitor<Names> {
+    public:
+        std::set<ASR::symbol_t*> &names;
+        SymbolTable *routine;
+        std::set<ASR::Function_t*> seen;
+        Names(std::set<ASR::symbol_t*> &names_, SymbolTable *routine_)
+            : names(names_), routine(routine_) {}
+        void function(ASR::Function_t *fn) {
+            if (!seen.insert(fn).second) return;
+            for (auto &item : fn->m_symtab->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                        item.second);
+                    visit_ttype(*v->m_type);
+                    if (v->m_symbolic_value) visit_expr(*v->m_symbolic_value);
+                } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                    names.insert(ASRUtils::symbol_get_past_external(
+                        item.second));
+                }
+            }
+            for (size_t i = 0; i < fn->n_body; i++) {
+                visit_stmt(*fn->m_body[i]);
+            }
+        }
+        void visit_Var(const ASR::Var_t &x) {
+            names.insert(ASRUtils::symbol_get_past_external(x.m_v));
+        }
+        void call(ASR::symbol_t *name) {
+            ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
+            if (!ASR::is_a<ASR::Function_t>(*callee)) {
+                names.insert(nullptr);
+                return;
+            }
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(callee);
+            if (contained_in(fn, routine)) function(fn);
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            call(x.m_name);
+            BaseWalkVisitor::visit_FunctionCall(x);
+        }
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            call(x.m_name);
+            BaseWalkVisitor::visit_SubroutineCall(x);
+        }
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(
+                ASRUtils::symbol_get_past_external(x.m_m));
+            for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
+        }
+        void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+            ASR::AssociateBlock_t *b = ASR::down_cast<ASR::AssociateBlock_t>(
+                ASRUtils::symbol_get_past_external(x.m_m));
+            for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
+        }
+    };
+
+    // Whether the contained procedure `fn` may access the variable `root`
+    // of this procedure.
+    bool contained_names(ASR::Function_t *fn, ASR::symbol_t *root) {
+        auto it = keep_named.find(fn);
+        if (it == keep_named.end()) {
+            std::set<ASR::symbol_t*> names;
+            Names n(names, routine);
+            n.function(fn);
+            it = keep_named.insert({fn, names}).first;
+        }
+        // A pointer may point to `root` only if it is reached; then
+        // `conflicts` drops it already.
+        return it->second.count(root) > 0 || it->second.count(nullptr) > 0;
+    }
+
+    KeepAccesses keep_accesses(ASR::expr_t *e) {
+        KeepAccesses k;
+        if (e == nullptr) return k;
+        AccessCollector c(k.acc, routine, pointers, outside);
+        c.contained = &k.contained;
+        c.visit_expr(*e);
+        return k;
+    }
+
+    KeepAccesses keep_accesses(ASR::stmt_t *x) {
+        KeepAccesses k;
+        AccessCollector c(k.acc, routine, pointers, outside);
+        c.contained = &k.contained;
+        c.visit_stmt(*x);
+        return k;
+    }
+
+    void keep_drop(KeepState &s, const std::function<bool(const Path&)> &f) {
+        for (auto it = s.kept.begin(); it != s.kept.end(); ) {
+            if (f(it->second)) {
+                keep_dropped.insert(*it);
+                it = s.kept.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    // A host statement (`statement`) may change what it accesses; an
+    // expression only what the procedures it calls may.
+    void keep_access(const KeepAccesses &k, KeepState &s, bool statement) {
+        if (!statement && !k.acc.everything && !k.acc.globals) return;
+        keep_drop(s, [&](const Path &p) {
+            if (conflicts(k.acc, std::vector<Path>{p})) return true;
+            for (ASR::Function_t *fn : k.contained) {
+                if (contained_names(fn, p.root)) return true;
+            }
+            return false;
+        });
+    }
+
+    // The locals of `scope` end.
+    void keep_end_scope(SymbolTable *scope, KeepState &s) {
+        auto local = [&](const Path &p) {
+            return p.root != nullptr && ASR::is_a<ASR::Variable_t>(*p.root)
+                && ASR::down_cast<ASR::Variable_t>(p.root)->m_parent_symtab
+                    == scope;
+        };
+        keep_drop(s, local);
+        for (auto it = s.read.begin(); it != s.read.end(); ) {
+            if (local(*it)) it = s.read.erase(it);
+            else ++it;
+        }
+    }
+
+    void keep_drop_all(KeepState &s) {
+        keep_drop(s, [](const Path &) { return true; });
+    }
+
+    // The procedure ends here (`ret`, or the end of its body when null).
+    void keep_exit(ASR::stmt_t *ret, KeepState &s) {
+        if (s.kept.empty() || is_main_program()) return;
+        if (s.adjacent != nullptr) {
+            keep_drop_all(s);
+            return;
+        }
+        if (ret != nullptr) keep_wait_before.insert(ret);
+        else keep_wait_at_end = true;
+        s.kept.clear();
+    }
+
+    void keep_launch(ASR::GpuKernelLaunch_t &x, KeepState &s) {
+        ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(x.m_kernel));
+        const ASR::gpu_kernel_layout_t &layout = *kernel->m_gpu;
+        // What the host evaluates for the launch.
+        KeepAccesses k;
+        AccessCollector c(k.acc, routine, pointers, outside);
+        c.contained = &k.contained;
+        c.visit_expr(*x.m_thread_count);
+        c.visit_expr(*x.m_block_size);
+        for (size_t i = 0; i < layout.n_scalars; i++) {
+            const ASR::gpu_kernel_argument_t &e = layout.m_scalars[i];
+            if (e.m_kind != ASR::gpu_argument_kindType::GpuScalar) continue;
+            if ((size_t)e.m_argument_index >= x.n_args) continue;
+            ASR::expr_t *v = x.m_args[e.m_argument_index].m_value;
+            if (v) c.visit_expr(*v);
+        }
+        for (size_t i = 0; i < layout.n_buffers; i++) {
+            const ASR::gpu_kernel_argument_t &e = layout.m_buffers[i];
+            ASR::expr_t *arg = x.m_args[e.m_argument_index].m_value;
+            if (gpu_launch_buffer_handling(x, e)
+                    == GpuBufferHandling::Scratch) {
+                continue;
+            }
+            Path p;
+            std::vector<ASR::expr_t*> subscripts;
+            if (!path_of(pointers, arg, p, &subscripts)) {
+                p = Path::pointee();
+            }
+            for (ASR::expr_t *sub : subscripts) c.visit_expr(*sub);
+            if (e.m_member) p.members.push_back(
+                ASRUtils::symbol_get_past_external(e.m_member));
+            if (e.m_written) s.written.insert(p);
+            else s.read.insert(p);
+        }
+        keep_access(k, s, false);
+    }
+
+    void keep_wait(ASR::stmt_t *w, bool is_sync, KeepState &s) {
+        std::set<Path> candidates;
+        auto consider = [&](const Path &p) {
+            if (!keepable(p)) return;
+            for (const Path &q : s.written) {
+                if (may_overlap(p, q)) return;
+            }
+            candidates.insert(p);
+        };
+        for (const Path &p : s.read) consider(p);
+        for (const auto &k : s.kept) consider(k.second);
+        keep_candidates[w].insert(candidates.begin(), candidates.end());
+        s.kept.clear();
+        for (const Path &p : candidates) s.kept.insert({w, p});
+        s.read.clear();
+        if (is_sync) s.written.clear();
+        s.adjacent = w;
+    }
+
+    KeepState keep_body(ASR::stmt_t **body, size_t n_body, KeepState s) {
+        for (size_t i = 0; i < n_body; i++) s = keep_process(body[i], s);
+        return s;
+    }
+
+    KeepState keep_loop(const char *name, ASR::stmt_t **body, size_t n_body,
+            ASR::expr_t *test, KeepState entry) {
+        KeepAccesses test_acc = keep_accesses(test);
+        keep_loops.push_back({name ? name : "", keep_blocks.size(),
+            KeepState::unreachable(), KeepState::unreachable()});
+        KeepState head = entry;
+        head.adjacent = nullptr;
+        for (int iteration = 0; ; iteration++) {
+            if (iteration > 64) {
+                keep_failed = true;
+                break;
+            }
+            KeepLoop &l = keep_loops.back();
+            l.at_cycle = KeepState::unreachable();
+            l.at_exit = KeepState::unreachable();
+            KeepState in = head;
+            keep_access(test_acc, in, false);
+            KeepState back = keep_body(body, n_body, in);
+            back.join(keep_loops.back().at_cycle);
+            KeepState next = entry;
+            next.join(back);
+            next.adjacent = nullptr;
+            if (next == head) break;
+            head = next;
+        }
+        KeepState after = head;
+        keep_access(test_acc, after, false);
+        after.join(keep_loops.back().at_exit);
+        after.adjacent = nullptr;
+        keep_loops.pop_back();
+        return after;
+    }
+
+    KeepState keep_process(ASR::stmt_t *x, KeepState s) {
+        if (!s.reachable) return s;
+        if (!ASR::is_a<ASR::GpuSync_t>(*x) && !ASR::is_a<ASR::GpuWait_t>(*x)) {
+            s.adjacent = nullptr;
+        }
+        switch (x->type) {
+            case ASR::stmtType::GpuKernelLaunch: {
+                keep_launch(*ASR::down_cast<ASR::GpuKernelLaunch_t>(x), s);
+                return s;
+            }
+            case ASR::stmtType::GpuSync:
+            case ASR::stmtType::GpuWait: {
+                keep_wait(x, ASR::is_a<ASR::GpuSync_t>(*x), s);
+                return s;
+            }
+            case ASR::stmtType::GpuKeep:
+            case ASR::stmtType::Associate: {
+                return s;
+            }
+            case ASR::stmtType::If: {
+                ASR::If_t *i = ASR::down_cast<ASR::If_t>(x);
+                keep_access(keep_accesses(i->m_test), s, false);
+                KeepState a = keep_body(i->m_body, i->n_body, s);
+                KeepState b = keep_body(i->m_orelse, i->n_orelse, s);
+                a.join(b);
+                return a;
+            }
+            case ASR::stmtType::Select: {
+                ASR::Select_t *sel = ASR::down_cast<ASR::Select_t>(x);
+                keep_access(keep_accesses(sel->m_test), s, false);
+                for (size_t i = 0; i < sel->n_body; i++) {
+                    ASR::case_stmt_t *c = sel->m_body[i];
+                    if (ASR::is_a<ASR::CaseStmt_t>(*c)) {
+                        ASR::CaseStmt_t *cs = ASR::down_cast<ASR::CaseStmt_t>(
+                            c);
+                        for (size_t j = 0; j < cs->n_test; j++) {
+                            keep_access(keep_accesses(cs->m_test[j]), s,
+                                false);
+                        }
+                    } else {
+                        ASR::CaseStmt_Range_t *cr =
+                            ASR::down_cast<ASR::CaseStmt_Range_t>(c);
+                        keep_access(keep_accesses(cr->m_start), s, false);
+                        keep_access(keep_accesses(cr->m_end), s, false);
+                    }
+                }
+                KeepState result = keep_body(sel->m_default, sel->n_default,
+                    s);
+                KeepState previous = KeepState::unreachable();
+                for (size_t i = 0; i < sel->n_body; i++) {
+                    ASR::case_stmt_t *c = sel->m_body[i];
+                    KeepState in = s;
+                    if (sel->m_enable_fall_through) in.join(previous);
+                    KeepState end = ASR::is_a<ASR::CaseStmt_t>(*c)
+                        ? keep_body(ASR::down_cast<ASR::CaseStmt_t>(c)
+                            ->m_body, ASR::down_cast<ASR::CaseStmt_t>(c)
+                            ->n_body, in)
+                        : keep_body(ASR::down_cast<ASR::CaseStmt_Range_t>(c)
+                            ->m_body, ASR::down_cast<ASR::CaseStmt_Range_t>(c)
+                            ->n_body, in);
+                    previous = end;
+                    result.join(end);
+                }
+                return result;
+            }
+            case ASR::stmtType::DoLoop: {
+                ASR::DoLoop_t *d = ASR::down_cast<ASR::DoLoop_t>(x);
+                for (ASR::expr_t *e : {d->m_head.m_start, d->m_head.m_end,
+                        d->m_head.m_increment}) {
+                    keep_access(keep_accesses(e), s, false);
+                }
+                KeepState after = keep_loop(d->m_name, d->m_body, d->n_body,
+                    nullptr, s);
+                return keep_body(d->m_orelse, d->n_orelse, after);
+            }
+            case ASR::stmtType::DoConcurrentLoop: {
+                ASR::DoConcurrentLoop_t *d =
+                    ASR::down_cast<ASR::DoConcurrentLoop_t>(x);
+                for (size_t i = 0; i < d->n_head; i++) {
+                    for (ASR::expr_t *e : {d->m_head[i].m_start,
+                            d->m_head[i].m_end, d->m_head[i].m_increment}) {
+                        keep_access(keep_accesses(e), s, false);
+                    }
+                }
+                return keep_loop(nullptr, d->m_body, d->n_body, nullptr, s);
+            }
+            case ASR::stmtType::WhileLoop: {
+                ASR::WhileLoop_t *w = ASR::down_cast<ASR::WhileLoop_t>(x);
+                KeepState after = keep_loop(w->m_name, w->m_body, w->n_body,
+                    w->m_test, s);
+                return keep_body(w->m_orelse, w->n_orelse, after);
+            }
+            case ASR::stmtType::BlockCall:
+            case ASR::stmtType::AssociateBlockCall: {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                    ASR::is_a<ASR::BlockCall_t>(*x)
+                        ? ASR::down_cast<ASR::BlockCall_t>(x)->m_m
+                        : ASR::down_cast<ASR::AssociateBlockCall_t>(x)->m_m);
+                SymbolTable *scope;
+                ASR::stmt_t **body;
+                size_t n_body;
+                if (ASR::is_a<ASR::Block_t>(*sym)) {
+                    ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(sym);
+                    scope = b->m_symtab;
+                    body = b->m_body;
+                    n_body = b->n_body;
+                } else {
+                    ASR::AssociateBlock_t *b =
+                        ASR::down_cast<ASR::AssociateBlock_t>(sym);
+                    scope = b->m_symtab;
+                    body = b->m_body;
+                    n_body = b->n_body;
+                }
+                // What the declarations of its locals evaluate.
+                KeepAccesses k;
+                AccessCollector c(k.acc, routine, pointers, outside);
+                c.contained = &k.contained;
+                c.declarations(scope);
+                keep_access(k, s, false);
+                keep_blocks.push_back(scope);
+                s = keep_body(body, n_body, s);
+                keep_blocks.pop_back();
+                if (s.reachable) keep_end_scope(scope, s);
+                s.adjacent = nullptr;
+                return s;
+            }
+            case ASR::stmtType::Exit:
+            case ASR::stmtType::Cycle: {
+                bool is_exit = ASR::is_a<ASR::Exit_t>(*x);
+                const char *name = is_exit
+                    ? ASR::down_cast<ASR::Exit_t>(x)->m_stmt_name
+                    : ASR::down_cast<ASR::Cycle_t>(x)->m_stmt_name;
+                KeepLoop *l = nullptr;
+                for (size_t i = keep_loops.size(); i > 0; i--) {
+                    if (name == nullptr || keep_loops[i - 1].name == name) {
+                        l = &keep_loops[i - 1];
+                        break;
+                    }
+                }
+                if (l == nullptr) {
+                    // Leaving a construct that is not a loop.
+                    keep_drop_all(s);
+                    return KeepState::unreachable();
+                }
+                for (size_t i = keep_blocks.size(); i > l->blocks; i--) {
+                    keep_end_scope(keep_blocks[i - 1], s);
+                }
+                (is_exit ? l->at_exit : l->at_cycle).join(s);
+                return KeepState::unreachable();
+            }
+            case ASR::stmtType::Return: {
+                keep_exit(x, s);
+                return KeepState::unreachable();
+            }
+            case ASR::stmtType::Stop:
+            case ASR::stmtType::ErrorStop: {
+                return KeepState::unreachable();
+            }
+            case ASR::stmtType::GoTo: {
+                keep_drop_all(s);
+                return KeepState::unreachable();
+            }
+            case ASR::stmtType::GoToTarget: {
+                keep_drop_all(s);
+                return KeepState();
+            }
+            case ASR::stmtType::Assignment: {
+                // It changes its target only, unless it moves the
+                // allocation of its value or is a defined assignment.
+                ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(x);
+                if (a->m_overloaded != nullptr || a->m_move_allocation) {
+                    keep_access(keep_accesses(x), s, true);
+                    return s;
+                }
+                keep_access(keep_accesses(a->m_target), s, true);
+                keep_access(keep_accesses(a->m_value), s, false);
+                return s;
+            }
+            case ASR::stmtType::Print: {
+                keep_access(keep_accesses(
+                    ASR::down_cast<ASR::Print_t>(x)->m_text), s, false);
+                return s;
+            }
+            case ASR::stmtType::Allocate:
+            case ASR::stmtType::ReAlloc:
+            case ASR::stmtType::Nullify:
+            case ASR::stmtType::DebugCheckArrayBounds:
+            case ASR::stmtType::SubroutineCall:
+            case ASR::stmtType::IntrinsicImpureSubroutine:
+            case ASR::stmtType::Expr:
+            case ASR::stmtType::CPtrToPointer:
+            case ASR::stmtType::ExplicitDeallocate:
+            case ASR::stmtType::ImplicitDeallocate:
+            case ASR::stmtType::GpuDiscard:
+            case ASR::stmtType::FileWrite:
+            case ASR::stmtType::FileRead:
+            case ASR::stmtType::FileOpen:
+            case ASR::stmtType::FileClose:
+            case ASR::stmtType::FileInquire:
+            case ASR::stmtType::FileRewind:
+            case ASR::stmtType::FileBackspace:
+            case ASR::stmtType::FileEndfile:
+            case ASR::stmtType::Flush: {
+                // It may change what it accesses: what an input statement
+                // reads into, the variables of its specifiers (`iostat`).
+                keep_access(keep_accesses(x), s, true);
+                return s;
+            }
+            default: {
+                // Anything else may change anything.
+                keep_drop_all(s);
+                return s;
+            }
+        }
+    }
+
+    // Puts the GpuKeep statements before the waits, and the GpuWait
+    // statements before the `return` statements that need one.
+    void keep_rewrite(ASR::stmt_t **&body, size_t &n_body) {
+        Vec<ASR::stmt_t*> nb;
+        nb.reserve(al, n_body + 2);
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *x = body[i];
+            const Location &loc = x->base.loc;
+            switch (x->type) {
+                case ASR::stmtType::If: {
+                    ASR::If_t *s = ASR::down_cast<ASR::If_t>(x);
+                    keep_rewrite(s->m_body, s->n_body);
+                    keep_rewrite(s->m_orelse, s->n_orelse);
+                    break;
+                }
+                case ASR::stmtType::Select: {
+                    ASR::Select_t *s = ASR::down_cast<ASR::Select_t>(x);
+                    for (size_t j = 0; j < s->n_body; j++) {
+                        ASR::case_stmt_t *c = s->m_body[j];
+                        if (ASR::is_a<ASR::CaseStmt_t>(*c)) {
+                            ASR::CaseStmt_t *cs =
+                                ASR::down_cast<ASR::CaseStmt_t>(c);
+                            keep_rewrite(cs->m_body, cs->n_body);
+                        } else {
+                            ASR::CaseStmt_Range_t *cr =
+                                ASR::down_cast<ASR::CaseStmt_Range_t>(c);
+                            keep_rewrite(cr->m_body, cr->n_body);
+                        }
+                    }
+                    keep_rewrite(s->m_default, s->n_default);
+                    break;
+                }
+                case ASR::stmtType::DoLoop: {
+                    ASR::DoLoop_t *s = ASR::down_cast<ASR::DoLoop_t>(x);
+                    keep_rewrite(s->m_body, s->n_body);
+                    keep_rewrite(s->m_orelse, s->n_orelse);
+                    break;
+                }
+                case ASR::stmtType::DoConcurrentLoop: {
+                    ASR::DoConcurrentLoop_t *s =
+                        ASR::down_cast<ASR::DoConcurrentLoop_t>(x);
+                    keep_rewrite(s->m_body, s->n_body);
+                    break;
+                }
+                case ASR::stmtType::WhileLoop: {
+                    ASR::WhileLoop_t *s = ASR::down_cast<ASR::WhileLoop_t>(x);
+                    keep_rewrite(s->m_body, s->n_body);
+                    keep_rewrite(s->m_orelse, s->n_orelse);
+                    break;
+                }
+                case ASR::stmtType::BlockCall: {
+                    ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(
+                        ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::BlockCall_t>(x)->m_m));
+                    keep_rewrite(b->m_body, b->n_body);
+                    break;
+                }
+                case ASR::stmtType::AssociateBlockCall: {
+                    ASR::AssociateBlock_t *b =
+                        ASR::down_cast<ASR::AssociateBlock_t>(
+                            ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::AssociateBlockCall_t>(x)
+                                    ->m_m));
+                    keep_rewrite(b->m_body, b->n_body);
+                    break;
+                }
+                case ASR::stmtType::GpuSync:
+                case ASR::stmtType::GpuWait: {
+                    auto it = keep_candidates.find(x);
+                    if (it == keep_candidates.end()) break;
+                    Vec<ASR::expr_t*> vars;
+                    vars.reserve(al, it->second.size());
+                    for (const Path &p : it->second) {
+                        if (keep_dropped.count({x, p})) continue;
+                        vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al,
+                            loc, p.root)));
+                    }
+                    if (vars.size() > 0) {
+                        nb.push_back(al, ASRUtils::STMT(ASR::make_GpuKeep_t(
+                            al, loc, vars.p, vars.n)));
+                    }
+                    break;
+                }
+                case ASR::stmtType::Return: {
+                    if (keep_wait_before.count(x)) {
+                        nb.push_back(al, ASRUtils::STMT(ASR::make_GpuWait_t(
+                            al, loc)));
+                    }
+                    break;
+                }
+                default: break;
+            }
+            nb.push_back(al, x);
+        }
+        body = nb.p;
+        n_body = nb.n;
+    }
+
+    void place_keeps(Vec<ASR::stmt_t*> &out, const Location &loc) {
+        KeepState end = keep_body(out.p, out.n, KeepState());
+        if (end.reachable) keep_exit(nullptr, end);
+        if (keep_failed) return;
+        bool any = false;
+        for (auto &c : keep_candidates) {
+            for (const Path &p : c.second) {
+                if (!keep_dropped.count({c.first, p})) any = true;
+            }
+        }
+        if (!any) return;
+        ASR::stmt_t **body = out.p;
+        size_t n_body = out.n;
+        keep_rewrite(body, n_body);
+        Vec<ASR::stmt_t*> result;
+        result.reserve(al, n_body + 1);
+        for (size_t i = 0; i < n_body; i++) result.push_back(al, body[i]);
+        if (keep_wait_at_end) {
+            result.push_back(al, ASRUtils::STMT(ASR::make_GpuWait_t(al,
+                loc)));
+        }
+        out = result;
     }
 };
 

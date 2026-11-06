@@ -42,6 +42,7 @@ FormTeam
 GoTo
 GoToTarget
 GpuDiscard
+GpuKeep
 GpuKernelLaunch
 GpuLaneBarrier
 GpuSync

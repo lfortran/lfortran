@@ -195,6 +195,11 @@ void lfortran_gpu_wait(lfortran_gpu_ctx* ctx);
 // what a launch since the last sync wrote there: the runtime forgets the
 // range without copying anything back.
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size);
+// Called right before lfortran_gpu_sync or lfortran_gpu_wait: the host does
+// not change the `size` bytes at `ptr` from there until a launch reads them
+// or the next sync or wait, so a copy a launch since the last wait made of
+// them may still serve the launches after this one.
+void lfortran_gpu_keep(lfortran_gpu_ctx* ctx, void* ptr, size_t size);
 long long lfortran_gpu_heap_size(void);
 
 // The size in bytes of the device's last-level cache, which the loop
