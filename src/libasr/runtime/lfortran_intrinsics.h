@@ -489,6 +489,8 @@ LFORTRAN_API void _lfortran_namelist_write_str_array(
 LFORTRAN_API void _lfortran_namelist_read(
     int32_t unit_num,
     int32_t *iostat,
+    char *iomsg,
+    int64_t iomsg_len,
     lfortran_nml_group_t *group
 );
 
@@ -496,6 +498,8 @@ LFORTRAN_API void _lfortran_namelist_read_str(
     const char *data,
     int64_t data_len,
     int32_t *iostat,
+    char *iomsg,
+    int64_t iomsg_len,
     lfortran_nml_group_t *group
 );
 
@@ -504,6 +508,8 @@ LFORTRAN_API void _lfortran_namelist_read_str_array(
     int64_t elem_len,
     int64_t n_elems,
     int32_t *iostat,
+    char *iomsg,
+    int64_t iomsg_len,
     lfortran_nml_group_t *group
 );
 

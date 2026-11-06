@@ -22358,6 +22358,12 @@ public:
                 emit_connect_unit_for_read(unit_val, false, iostat);
             }
 
+            llvm::Value *iomsg_data = llvm::Constant::getNullValue(character_type);
+            llvm::Value *iomsg_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));
+            if (x.m_iomsg) {
+                std::tie(iomsg_data, iomsg_len) = get_string_data_and_length(x.m_iomsg);
+            }
+
             // Build namelist descriptor and call _lfortran_namelist_read
             llvm::Value* nml_group = build_namelist_descriptor(x.m_nml, false);
 
@@ -22383,6 +22389,8 @@ public:
                     llvm_utils->i64,                        // elem_len
                     llvm_utils->i64,                        // n_elems
                     llvm_utils->i32->getPointerTo(),        // iostat
+                    character_type,                         // iomsg
+                    llvm_utils->i64,                        // iomsg_len
                     group_type->getPointerTo()              // group
                 };
             } else if (is_string) {
@@ -22390,12 +22398,16 @@ public:
                     character_type,                         // data
                     llvm_utils->i64,                        // data_len
                     llvm_utils->i32->getPointerTo(),        // iostat
+                    character_type,                         // iomsg
+                    llvm_utils->i64,                        // iomsg_len
                     group_type->getPointerTo()              // group
                 };
             } else {
                 args = {
                     llvm_utils->i32,                        // unit_num
                     llvm_utils->i32->getPointerTo(),        // iostat
+                    character_type,                         // iomsg
+                    llvm_utils->i64,                        // iomsg_len
                     group_type->getPointerTo()              // group
                 };
             }
@@ -22444,14 +22456,17 @@ public:
                 data_ptr = builder->CreateBitCast(data_ptr,
                     llvm::Type::getInt8Ty(context)->getPointerTo());
 
-                builder->CreateCall(fn, {data_ptr, elem_len, n_elems, iostat, nml_group});
+                builder->CreateCall(fn, {data_ptr, elem_len, n_elems, iostat,
+                    iomsg_data, iomsg_len, nml_group});
             } else if (is_string) {
                 llvm::Value *data_ptr, *data_len;
                 std::tie(data_ptr, data_len) = llvm_utils->get_string_length_data(
                     ASRUtils::get_string_type(x.m_unit), unit_val);
-                builder->CreateCall(fn, {data_ptr, data_len, iostat, nml_group});
+                builder->CreateCall(fn, {data_ptr, data_len, iostat,
+                    iomsg_data, iomsg_len, nml_group});
             } else {
-                builder->CreateCall(fn, {unit_val, iostat, nml_group});
+                builder->CreateCall(fn, {unit_val, iostat, iomsg_data, iomsg_len,
+                    nml_group});
             }
             return;
         }
