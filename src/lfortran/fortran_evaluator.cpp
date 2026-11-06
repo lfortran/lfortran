@@ -1235,11 +1235,25 @@ static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
                     ASRUtils::symbol_name(v->m_type_declaration));
                 if (copy != nullptr) v->m_type_declaration = copy;
             }
+        } else if (ASR::is_a<ASR::Struct_t>(*s)) {
+            // An extended type names its parent type. Left pointing at the
+            // original, a later cell reading an inherited component resolves
+            // the parent's name to the copy, not to the type the component
+            // belongs to, and cannot import that component.
+            ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+            if (st->m_parent != nullptr) {
+                ASR::symbol_t *copy = scope->resolve_symbol(
+                    ASRUtils::symbol_name(st->m_parent));
+                if (copy != nullptr && ASR::is_a<ASR::Struct_t>(
+                        *ASRUtils::symbol_get_past_external(copy))) {
+                    st->m_parent = copy;
+                }
+            }
+            relink_copied_symbols(al, st->m_symtab, tu);
         } else if (ASR::is_a<ASR::Module_t>(*s)
                 || ASR::is_a<ASR::Program_t>(*s)
                 || ASR::is_a<ASR::BlockData_t>(*s)
                 || ASR::is_a<ASR::Function_t>(*s)
-                || ASR::is_a<ASR::Struct_t>(*s)
                 || ASR::is_a<ASR::Enum_t>(*s)
                 || ASR::is_a<ASR::Union_t>(*s)
                 || ASR::is_a<ASR::Block_t>(*s)

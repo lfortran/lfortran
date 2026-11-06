@@ -2895,6 +2895,40 @@ TEST_CASE("FortranEvaluator derived type constructor initializer") {
     CHECK(r.result.i32 == 2);
 }
 
+// A component inherited from a parent type declared in an earlier cell than
+// the extended type, read through a variable declared in yet another cell.
+TEST_CASE("FortranEvaluator parent component of an extended type from earlier cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: point_16952\ninteger :: x, y\nend type");
+    REQUIRE(r.ok);
+    r = e.evaluate2(R"(type, extends(point_16952) :: p3_16952
+integer :: z = 9
+end type
+)");
+    REQUIRE(r.ok);
+    r = e.evaluate2("type(p3_16952) :: q_16952");
+    REQUIRE(r.ok);
+    r = e.evaluate2("q_16952%z");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+    r = e.evaluate2("q_16952%x = 4\nq_16952%y = 5");
+    REQUIRE(r.ok);
+    r = e.evaluate2("q_16952%x");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 4);
+    r = e.evaluate2("q_16952%x + q_16952%y");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+}
+
 // The same, with the type and the declaration in one cell and the use in
 // another.
 TEST_CASE("FortranEvaluator derived type initializer in one cell") {
