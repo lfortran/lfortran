@@ -1629,9 +1629,10 @@ namespace LCompilers {
             return reshaped;
         }
 
-        // Shallow copies source array descriptor to destination descriptor
+        // Copies the data of `src` into `dest`, and its dimensions too when `copy_dims` (an i1) is true
         void SimpleCMODescriptor::copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
-            llvm::Module* module, ASR::expr_t* array_expr, ASR::ttype_t* asr_data_type, bool reserve_memory) {
+            llvm::Module* module, ASR::expr_t* array_expr, ASR::ttype_t* asr_data_type, bool reserve_memory,
+            llvm::Value* copy_dims) {
             llvm::Value* num_elements = this->get_array_size(src_ty, src, nullptr, 4);
 
             llvm::Value* first_ptr = this->get_pointer_to_data(dest_ty, dest);
@@ -1650,39 +1651,40 @@ namespace LCompilers {
             builder->CreateMemCpy(llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), first_ptr), llvm::MaybeAlign(),
                                   llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr), llvm::MaybeAlign(),
                                   num_elements);
+            llvm_utils->create_if_else(copy_dims, [&]() {
+                llvm::Value* src_dim_des_val = this->get_pointer_to_dimension_descriptor_array(src_ty, src);
+                llvm::Value* n_dims = this->get_rank(src_ty, src, false);
+                llvm::Value* dest_dim_des_val = this->get_pointer_to_dimension_descriptor_array(dest_ty, dest);
+                llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
+                llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
+                llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
 
-            llvm::Value* src_dim_des_val = this->get_pointer_to_dimension_descriptor_array(src_ty, src);
-            llvm::Value* n_dims = this->get_rank(src_ty, src, false);
-            llvm::Value* dest_dim_des_val = this->get_pointer_to_dimension_descriptor_array(dest_ty, dest);
-            llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
-            llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
-            llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+                // Loop to copy `dimension_descriptor` from src to dest
+                llvm::Value* r = llvm_utils->CreateAlloca(llvm_utils->getIntType(4));
+                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
+                // head
+                llvm_utils->start_new_block(loophead);
+                llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims);
+                builder->CreateCondBr(cond, loopbody, loopend);
 
-            // Loop to copy `dimension_descriptor` from src to dest
-            llvm::Value* r = llvm_utils->CreateAlloca(llvm_utils->getIntType(4));
-            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 0)), r);
-            // head
-            llvm_utils->start_new_block(loophead);
-            llvm::Value *cond = builder->CreateICmpSLT(llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r), n_dims);
-            builder->CreateCondBr(cond, loopbody, loopend);
+                // body
+                llvm_utils->start_new_block(loopbody);
+                llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
+                llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
+                llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
+                builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
+                                        src_dim_val, llvm::MaybeAlign(),
+                                        llvm::ConstantInt::get(
+                                        context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));
+                r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
+                builder->CreateStore(r_val, r);
+                builder->CreateBr(loophead);
 
-            // body
-            llvm_utils->start_new_block(loopbody);
-            llvm::Value* r_val = llvm_utils->CreateLoad2(llvm_utils->getIntType(4), r);
-            llvm::Value* src_dim_val = llvm_utils->create_ptr_gep2(dim_des, src_dim_des_val, r_val);
-            llvm::Value* dest_dim_val = llvm_utils->create_ptr_gep2(dim_des, dest_dim_des_val, r_val);
-            builder->CreateMemCpy(dest_dim_val, llvm::MaybeAlign(),
-                                    src_dim_val, llvm::MaybeAlign(),
-                                    llvm::ConstantInt::get(
-                                    context, llvm::APInt(32, data_layout.getTypeAllocSize(dim_des))));
-            r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            builder->CreateStore(r_val, r);
-            builder->CreateBr(loophead);
+                // end
+                llvm_utils->start_new_block(loopend);
 
-            // end
-            llvm_utils->start_new_block(loopend);
-
-            this->set_rank(dest_ty, dest, n_dims);
+                this->set_rank(dest_ty, dest, n_dims);
+            }, []() {});
         }
 
         // Copy destination's descriptor to the source descriptor
