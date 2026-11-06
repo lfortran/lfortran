@@ -17272,6 +17272,28 @@ public:
         return total;
     }
 
+    // Cast the values inside an implied-do (recursing into nested implied-do
+    // loops) to `type`. The loops themselves must stay ImpliedDoLoop nodes,
+    // otherwise they are no longer recognised and counted as loops.
+    void cast_implied_do_values(ASR::ImpliedDoLoop_t* idl, ASR::ttype_t* type) {
+        for (size_t k = 0; k < idl->n_values; k++) {
+            ASR::expr_t* v = idl->m_values[k];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*v)) {
+                cast_implied_do_values(ASR::down_cast<ASR::ImpliedDoLoop_t>(v), type);
+            } else {
+                ASR::ttype_t* v_type = ASRUtils::expr_type(v);
+                if (!ASRUtils::check_equal_type(v_type, type, v, v)) {
+                    ImplicitCastRules::set_converted_value(al, v->base.loc,
+                        &idl->m_values[k], v_type, type, diag);
+                }
+            }
+        }
+        idl->m_value = nullptr;  // folded value has the old type
+        if (!ASRUtils::is_array(idl->m_type)) {
+            idl->m_type = type;
+        }
+    }
+
     void visit_ArrayInitializer(const AST::ArrayInitializer_t &x) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_args);
@@ -17453,8 +17475,16 @@ public:
                     throw SemanticAbort();
                 }
             } else if (!ASRUtils::check_equal_type(expr_type, type, expr, expr)) {
-                ImplicitCastRules::set_converted_value(al, expr->base.loc,
-                    &expr, expr_type, type, diag);
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+                    // Cast the values inside the implied-do, not the loop
+                    // itself, so it stays an ImpliedDoLoop and is counted
+                    // correctly below.
+                    cast_implied_do_values(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(expr), type);
+                } else {
+                    ImplicitCastRules::set_converted_value(al, expr->base.loc,
+                        &expr, expr_type, type, diag);
+                }
             }
 
             if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
