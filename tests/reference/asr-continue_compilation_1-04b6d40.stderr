@@ -5471,6 +5471,54 @@ semantic error: the fptr argument of c_f_pointer() shall not be polymorphic
 4547 |         call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
      |                             ^ 
 
+semantic error: Non-variable expression for `iomsg`
+    --> tests/errors/continue_compilation_1.f90:4562:9
+     |
+4562 |         open(newunit=u, file="x", iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} Non-variable expression for `iomsg`
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression for `iostat`
+    --> tests/errors/continue_compilation_1.f90:4563:9
+     |
+4563 |         write(*, *, iostat=cc1_io_nc_k%i) 1  ! {Error} Non-variable expression for `iostat`
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression for `iomsg`
+    --> tests/errors/continue_compilation_1.f90:4564:9
+     |
+4564 |         read(*, *, iostat=ios, iomsg=cc1_io_nc_k%s) u  ! {Error} Non-variable expression for `iomsg`
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be of type, String or StringPointer
+    --> tests/errors/continue_compilation_1.f90:4565:9
+     |
+4565 |         close(unit=99, iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} `iomsg` must be of type, String or StringPointer
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be a variable of type Character
+    --> tests/errors/continue_compilation_1.f90:4566:9
+     |
+4566 |         backspace(unit=99, iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} `iomsg` must be a variable of type Character
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iostat` must be a variable of type, Integer  or IntegerPointer
+    --> tests/errors/continue_compilation_1.f90:4567:9
+     |
+4567 |         backspace(unit=99, iostat=cc1_io_nc_k%i)  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be a variable of type Character
+    --> tests/errors/continue_compilation_1.f90:4568:9
+     |
+4568 |         backspace(unit=99, iostat=ios, iomsg=cc1_io_nc_k%s)  ! {Error} `iomsg` must be a variable of type Character
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iostat` must be a variable of type, Integer  or IntegerPointer
+    --> tests/errors/continue_compilation_1.f90:4569:9
+     |
+4569 |         backspace(unit=99, iostat=cc1_io_nc_a(2))  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

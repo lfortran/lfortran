@@ -8083,7 +8083,7 @@ bool is_variable(ASR::expr_t* a_value) {
         case ASR::exprType::StringSection:
         case ASR::exprType::ArraySection:
         case ASR::exprType::StructInstanceMember: {
-            return true;
+            return !is_named_constant_designator(a_value);
         }
         default: {
             return false;
