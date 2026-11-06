@@ -7731,6 +7731,7 @@ public:
                         && !ASRUtils::is_bare_implicit_interface(*ftype))
                     || ftype->m_abi != ASR::abiType::Source
                     || !ASRUtils::is_external_procedure_interface(ftype)
+                    || ASRUtils::is_abstract_interface(*iface)
                     || references.referenced.count(sym) > 0) {
                 continue;
             }

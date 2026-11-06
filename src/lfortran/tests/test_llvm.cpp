@@ -4890,6 +4890,35 @@ end function
     CHECK(r.ok);
 }
 
+TEST_CASE("FortranEvaluator abstract interface named as an earlier cell's function") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 1
+end function
+)").ok);
+    // An abstract interface declares no procedure, so it does not refer to
+    // the earlier cell's `fn` and cannot be referenced.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate(R"(integer function c()
+abstract interface
+integer function fn()
+end function
+end interface
+c = fn()
+end function
+)", false, lm, lpm, d);
+    CHECK(!r.ok);
+    cu.use_colors = false;
+    CHECK(d.render(lm, cu).find("ASR verify") == std::string::npos);
+}
+
 TEST_CASE("FortranEvaluator old and new module side by side") {
     CompilerOptions cu;
     cu.interactive = true;
