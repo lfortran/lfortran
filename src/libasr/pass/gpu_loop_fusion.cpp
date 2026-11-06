@@ -2565,8 +2565,7 @@ class PrivateMapForwarding {
         };
     };
 
-    void scan(ASR::stmt_t **body, size_t n, ASR::symbol_t *array,
-            ASR::stmt_t *skip, Reader &r) {
+    void scan(ASR::stmt_t **body, size_t n, Reader &r) {
         for (size_t i = 0; i < n; i++) r.visit_stmt(*body[i]);
     }
 
@@ -2786,7 +2785,7 @@ class PrivateMapForwarding {
 
         // No read of the map before its store, here or in the loop.
         Reader before(array, nullptr);
-        scan(body, i, array, nullptr, before);
+        scan(body, i, before);
         if (before.other_use || !before.reads.empty()) {
             return false;
         }
@@ -2810,8 +2809,7 @@ class PrivateMapForwarding {
         }
         if (!parents.empty()) {
             Reader in_if(array, stmt_of(store));
-            scan(parents.back()->m_body, parents.back()->n_body, array,
-                stmt_of(store), in_if);
+            scan(parents.back()->m_body, parents.back()->n_body, in_if);
             if (in_if.other_use || !in_if.reads.empty()
                     || !in_if.bounds.empty()) {
                 return false;
@@ -2820,20 +2818,19 @@ class PrivateMapForwarding {
 
         // Every later read is an element read under the store's conditions.
         Reader late(array, stmt_of(store));
-        scan(loop_body + top, loop_n - top, array,
-            stmt_of(store), late);
+        scan(loop_body + top, loop_n - top, late);
         if (late.other_use) {
             return false;
         }
         Reader after(array, nullptr);
-        scan(body + i + 1, n - i - 1, array, nullptr, after);
+        scan(body + i + 1, n - i - 1, after);
         if (after.other_use) {
             return false;
         }
         // Every use in the block must be one of the reads replaced below:
         // the same map may be named before the loop or in another branch.
         Reader everywhere(array, stmt_of(store));
-        scan(root, root_n, array, stmt_of(store), everywhere);
+        scan(root, root_n, everywhere);
         if (everywhere.other_use) {
             return false;
         }
