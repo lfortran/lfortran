@@ -3535,6 +3535,67 @@ TEST_CASE("FortranEvaluator Array 2") {
     CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
 }
 
+// A fixed-size array a cell declares with an initializer is initialized
+// statically, like a module variable (#13459).
+TEST_CASE("FortranEvaluator Array initializer") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("integer :: a(3) = [1, 2, 3]");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("a(3)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3);
+    r = e.evaluate2("sum(a)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+
+    r = e.evaluate2("integer :: b(3) = (/4, 5, 6/)");
+    CHECK(r.ok);
+    r = e.evaluate2("b(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 5);
+
+    r = e.evaluate2("integer :: c(4) = 7");
+    CHECK(r.ok);
+    r = e.evaluate2("sum(c)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 28);
+
+    r = e.evaluate2("real(8) :: d(2) = [1.5d0, 2.5d0]");
+    CHECK(r.ok);
+    r = e.evaluate2("d(1) + d(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r.result.f64 == 4.0);
+
+    r = e.evaluate2("character(len=2) :: s(2) = [\"ab\", \"cd\"]\ns(1) == \"ab\" .and. s(2) == \"cd\"");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(r.result.b);
+
+    // The array stays assignable after its static initialization.
+    r = e.evaluate2("a(1) = 10");
+    CHECK(r.ok);
+    r = e.evaluate2("sum(a)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 15);
+
+    // The declaration and a use of the array in a single cell.
+    r = e.evaluate2("integer :: f(2) = [8, 9]\nf(1) * f(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 72);
+}
+
 TEST_CASE("FortranEvaluator re-declaration 1") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -5111,6 +5172,103 @@ end program
     r = e2.evaluate2("sum(y)\n");
     REQUIRE(r.ok);
     REQUIRE(r.result.i32 == 15);
+}
+
+// An array of a derived type that a cell declares with a constant array
+// initializer keeps the initializer's element values rather than only the
+// components' defaults (#16945).
+TEST_CASE("FortranEvaluator derived type array constant initializer") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: arr_init_t\ninteger :: k\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_t) :: arr_init_a(2) = [arr_init_t(5), arr_init_t(6)]");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_a(1)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 5);
+    r = e.evaluate2("arr_init_a(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+
+    // A component default, overridden by the initializer.
+    r = e.evaluate2("type :: arr_init_d\ninteger :: k = 3, m = 4\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_d) :: arr_init_b(3) = [arr_init_d(7, 8), arr_init_d(9, 10), arr_init_d(11, 12)]");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_b(3)%m");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 12);
+    r = e.evaluate2("arr_init_b(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+
+    // A scalar structure constructor broadcast to every element.
+    r = e.evaluate2("type(arr_init_t) :: arr_init_s(3) = arr_init_t(15)");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_s(1)%k + arr_init_s(3)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 30);
+
+    // The array stays assignable after its static initialization.
+    r = e.evaluate2("arr_init_a(1)%k = 20");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_a(1)%k + arr_init_a(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 26);
+
+    // The type, the declaration and a use of it in a single cell.
+    r = e.evaluate2(R"(type :: arr_init_c
+integer :: k
+end type
+type(arr_init_c) :: arr_init_v(2) = [arr_init_c(13), arr_init_c(14)]
+arr_init_v(1)%k + arr_init_v(2)%k)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 27);
+
+    // A type with an allocatable component: the static data and the
+    // component's runtime setup compose, and it can be allocated later.
+    r = e.evaluate2("type :: arr_init_u\ninteger, allocatable :: x(:)\ninteger :: k = 1\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_u) :: arr_init_w(2) = [arr_init_u(k=5), arr_init_u(k=6)]");
+    CHECK(r.ok);
+    r = e.evaluate2("10 * arr_init_w(1)%k + arr_init_w(2)%k + merge(100, 0, allocated(arr_init_w(1)%x))");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 56);
+    r = e.evaluate2("allocate(arr_init_w(1)%x(3))");
+    CHECK(r.ok);
+    r = e.evaluate2("arr_init_w(1)%x = 7");
+    CHECK(r.ok);
+    r = e.evaluate2("sum(arr_init_w(1)%x) + arr_init_w(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 27);
+
+    // A type with array and character components.
+    r = e.evaluate2("type :: arr_init_e\ninteger :: a(2) = [1, 2]\ncharacter(len=3) :: s = \"abc\"\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(arr_init_e) :: arr_init_f(2) = [arr_init_e([3, 4], \"xyz\"), arr_init_e()]");
+    CHECK(r.ok);
+    r = e.evaluate2("1000 * arr_init_f(1)%a(1) + 100 * arr_init_f(1)%a(2) + 10 * arr_init_f(2)%a(1) + arr_init_f(2)%a(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3412);
+    r = e.evaluate2("merge(1, 0, arr_init_f(1)%s == \"xyz\") + merge(10, 0, arr_init_f(2)%s == \"abc\")");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 11);
 }
 
 TEST_CASE("FortranEvaluator the calls the kernel makes") {
