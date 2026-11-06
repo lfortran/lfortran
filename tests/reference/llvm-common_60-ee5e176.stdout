@@ -15,16 +15,10 @@ target datalayout = "..."
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @10 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@11 = private unnamed_addr constant [29 x i8] c"common_60_bump_all_real____0\00", align 1
-@12 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
-@13 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([41 x i8], [41 x i8]* @1, i32 0, i32 0), i32 24, i32 29, i32 24, i32 32 }]
-@14 = private unnamed_addr constant [114 x i8] c"Array size mismatch in subroutine '%s'. Tried to match size %lld of argument number %d, but expected size is %lld\00", align 1
-@15 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @12, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @13, i32 0, i32 0), i32 1 }]
-@16 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([114 x i8], [114 x i8]* @14, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @15, i32 0, i32 0), i32 1 }
-@17 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@18 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@19 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@20 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@11 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@12 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@13 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@14 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @common_60_bump(double* %x) {
 .entry:
@@ -178,13 +172,6 @@ else6:                                            ; preds = %do_loop.end
 ifcont7:                                          ; preds = %else6, %then5
   store double 1.000000e+00, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 1), align 4
   store double 7.000000e+00, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 2), align 4
-  br i1 false, label %then8, label %ifcont9
-
-then8:                                            ; preds = %ifcont7
-  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @16 to i8*), i8* getelementptr inbounds ([29 x i8], [29 x i8]* @11, i32 0, i32 0), i64 3, i32 1, i64 3)
-  unreachable
-
-ifcont9:                                          ; preds = %ifcont7
   store i32 3, i32* %call_arg_value, align 4
   call void @common_60_bump_all_real____0(double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i32 0), i32* %call_arg_value)
   %16 = load double, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 0), align 4
@@ -195,35 +182,35 @@ ifcont9:                                          ; preds = %ifcont7
   %21 = load double, double* getelementptr ([3 x double], [3 x double]* bitcast (i8* getelementptr inbounds ([28 x i8], [28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk, i32 0, i64 4) to [3 x double]*), i32 0, i64 2), align 4
   %22 = fcmp une double %21, 8.000000e+00
   %23 = or i1 %20, %22
-  br i1 %23, label %then10, label %else11
+  br i1 %23, label %then8, label %else9
 
-then10:                                           ; preds = %ifcont9
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
+then8:                                            ; preds = %ifcont7
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @12, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
-  br label %ifcont12
+  br label %ifcont10
 
-else11:                                           ; preds = %ifcont9
-  br label %ifcont12
+else9:                                            ; preds = %ifcont7
+  br label %ifcont10
 
-ifcont12:                                         ; preds = %else11, %then10
+ifcont10:                                         ; preds = %else9, %then8
   %24 = load i32, i32* getelementptr ([7 x i32], [7 x i32]* bitcast ([28 x i8]* @__module_file_common_block_common_60_blk_struct_instance_common_60_blk to [7 x i32]*), i32 0, i64 0), align 4
   %25 = icmp ne i32 %24, 0
-  br i1 %25, label %then13, label %else14
+  br i1 %25, label %then11, label %else12
 
-then13:                                           ; preds = %ifcont12
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @20, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0))
+then11:                                           ; preds = %ifcont10
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 1)
-  br label %ifcont15
+  br label %ifcont13
 
-else14:                                           ; preds = %ifcont12
-  br label %ifcont15
+else12:                                           ; preds = %ifcont10
+  br label %ifcont13
 
-ifcont15:                                         ; preds = %else14, %then13
+ifcont13:                                         ; preds = %else12, %then11
   br label %return
 
-return:                                           ; preds = %ifcont15
+return:                                           ; preds = %ifcont13
   br label %FINALIZE_SYMTABLE_common_60
 
 FINALIZE_SYMTABLE_common_60:                      ; preds = %return

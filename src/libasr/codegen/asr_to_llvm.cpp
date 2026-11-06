@@ -28546,10 +28546,12 @@ public:
         }
     }
 
-    // Total element count of an array type, as an i64. Each extent is clamped
-    // to zero first: in Fortran an extent of ub - lb + 1 <= 0 means the
+    // Total element count of an array type, as an i64. Every runtime extent is
+    // clamped to zero first: in Fortran an extent of ub - lb + 1 <= 0 means the
     // dimension has zero elements, so a negative runtime extent must make the
-    // total zero instead of contributing a negative factor to the product.
+    // total zero instead of contributing a negative factor to the product. A
+    // FixedSizeArray needs no clamp: the frontend already stores a non-positive
+    // declared extent as zero.
     llvm::Value* get_array_size_from_asr_type(ASR::ttype_t* type) {
         ASR::dimension_t* m_dims = nullptr;
         int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(type, m_dims));
@@ -28740,6 +28742,13 @@ public:
                     // dimension. An exact per-dimension match is only required
                     // for strict bounds checking and for the assignment target
                     // of a converted function call.
+                    //
+                    // `arr_cast->m_type` is the dummy argument's declared
+                    // shape: Call_t_body builds the cast target from the formal
+                    // parameter's dimensions with the call's arguments
+                    // substituted (and pass_array_by_data keeps an assumed-shape
+                    // dummy's extent deferred when it replaces it by a data
+                    // pointer), so a deferred extent stays absent here.
                     if (compiler_options.po.strict_bounds_checking || is_return_value) {
                         ASR::dimension_t* m_dims = nullptr;
                         int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims));

@@ -66,24 +66,16 @@ target datalayout = "..."
 @21 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
 @22 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @23 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
-@24 = private unnamed_addr constant [44 x i8] c"lcompilers_prif_get_integer(4)_integer____1\00", align 1
-@25 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([43 x i8], [43 x i8]* @1, i32 0, i32 0), i32 50, i32 9, i32 50, i32 19 }]
-@26 = private unnamed_addr constant [114 x i8] c"Array size mismatch in subroutine '%s'. Tried to match size %lld of argument number %d, but expected size is %lld\00", align 1
-@27 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @2, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @25, i32 0, i32 0), i32 1 }]
-@28 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([114 x i8], [114 x i8]* @26, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @27, i32 0, i32 0), i32 1 }
 @global_array_12 = private constant [1 x i64] [i64 1]
-@29 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@30 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
-@31 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([43 x i8], [43 x i8]* @1, i32 0, i32 0), i32 51, i32 9, i32 51, i32 12 }]
-@32 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @2, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @31, i32 0, i32 0), i32 1 }]
-@33 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([114 x i8], [114 x i8]* @26, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @32, i32 0, i32 0), i32 1 }
+@24 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@25 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
 @global_array_13 = private constant [1 x i64] [i64 1]
-@34 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@35 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
-@36 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@26 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@27 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
+@28 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @string_const_data = private constant [2 x i8] c"ok"
 @string_const = private global %string_descriptor { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data, i32 0, i32 0), i64 2 }
-@37 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@29 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @llvm.global_ctors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lfortran_coarray_init_coarrays_52_sub, i8* null }]
 
 define internal void @__lfortran_coarray_init_coarrays_52_sub() {
@@ -802,7 +794,7 @@ declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noa
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   %2 = call i8* @_lfortran_get_default_allocator()
-  %call_arg_value29 = alloca i8, align 1
+  %call_arg_value25 = alloca i8, align 1
   %call_arg_value3 = alloca i64, align 8
   %call_arg_value2 = alloca i32, align 4
   %call_arg_value1 = alloca i32, align 4
@@ -952,78 +944,64 @@ ifcont15:                                         ; preds = %else14, %then13
   store i64 0, i64* %call_arg_value3, align 8
   %41 = load i64, i64* %call_arg_value3, align 8
   call void @__module_prif_prif_sync_all(i32* %__libasr_created_variable_3, i32* %call_arg_value, i8* %40, i32* %call_arg_value1, %string_descriptor* %__libasr_created_variable_5, i32* %call_arg_value2, i64 %41)
-  br i1 false, label %then16, label %ifcont17
-
-then16:                                           ; preds = %ifcont15
-  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @28 to i8*), i8* getelementptr inbounds ([44 x i8], [44 x i8]* @24, i32 0, i32 0), i64 1, i32 2, i64 1)
-  unreachable
-
-ifcont17:                                         ; preds = %ifcont15
   store i32 1, i32* %call_arg_value, align 4
   store i64 0, i64* %call_arg_value3, align 8
   %42 = load i64, i64* %call_arg_value3, align 8
   %43 = call i32 @"lcompilers_prif_get_integer(4)_integer____1"(%prif_coarray_handle.8* @__module_coarrays_52_m_m__coarray_handle, i64* getelementptr inbounds ([1 x i64], [1 x i64]* @global_array_12, i32 0, i32 0), i32* %call_arg_value, i64 %42)
   %44 = icmp ne i32 %43, 100
-  br i1 %44, label %then18, label %else19
+  br i1 %44, label %then16, label %else17
 
-then18:                                           ; preds = %ifcont17
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @30, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @29, i32 0, i32 0))
+then16:                                           ; preds = %ifcont15
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 6)
-  br label %ifcont20
+  br label %ifcont18
 
-else19:                                           ; preds = %ifcont17
-  br label %ifcont20
+else17:                                           ; preds = %ifcont15
+  br label %ifcont18
 
-ifcont20:                                         ; preds = %else19, %then18
-  br i1 false, label %then21, label %ifcont22
-
-then21:                                           ; preds = %ifcont20
-  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @33 to i8*), i8* getelementptr inbounds ([44 x i8], [44 x i8]* @24, i32 0, i32 0), i64 1, i32 2, i64 1)
-  unreachable
-
-ifcont22:                                         ; preds = %ifcont20
+ifcont18:                                         ; preds = %else17, %then16
   store i32 1, i32* %call_arg_value, align 4
   store i64 0, i64* %call_arg_value3, align 8
   %45 = load i64, i64* %call_arg_value3, align 8
   %46 = call i32 @"lcompilers_prif_get_integer(4)_integer____1"(%prif_coarray_handle.8* @__cac_m__coarray_handle, i64* getelementptr inbounds ([1 x i64], [1 x i64]* @global_array_13, i32 0, i32 0), i32* %call_arg_value, i64 %45)
   %47 = icmp ne i32 %46, 500
-  br i1 %47, label %then23, label %else24
+  br i1 %47, label %then19, label %else20
 
-then23:                                           ; preds = %ifcont22
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @34, i32 0, i32 0))
+then19:                                           ; preds = %ifcont18
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0))
   call void @_lfortran_internal_alloc_finalize()
   call void @exit(i32 7)
-  br label %ifcont25
+  br label %ifcont21
 
-else24:                                           ; preds = %ifcont22
-  br label %ifcont25
+else20:                                           ; preds = %ifcont18
+  br label %ifcont21
 
-ifcont25:                                         ; preds = %else24, %then23
+ifcont21:                                         ; preds = %else20, %then19
   %48 = call i32 @lcompilers_prif_this_image()
   %49 = icmp eq i32 %48, 1
-  br i1 %49, label %then26, label %else27
+  br i1 %49, label %then22, label %else23
 
-then26:                                           ; preds = %ifcont25
+then22:                                           ; preds = %ifcont21
   %50 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @37, i32 0, i32 0), i8* %50, i32 2, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @36, i32 0, i32 0), i32 1)
-  br label %ifcont28
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0), i8* %50, i32 2, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0), i32 1)
+  br label %ifcont24
 
-else27:                                           ; preds = %ifcont25
-  br label %ifcont28
+else23:                                           ; preds = %ifcont21
+  br label %ifcont24
 
-ifcont28:                                         ; preds = %else27, %then26
-  store i8 0, i8* %call_arg_value29, align 1
+ifcont24:                                         ; preds = %else23, %then22
+  store i8 0, i8* %call_arg_value25, align 1
   store i32 0, i32* %call_arg_value, align 4
   %51 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_7, i32 0, i32 0
   %52 = load i8*, i8** %51, align 8
   store i32 0, i32* %call_arg_value1, align 4
   store i64 0, i64* %call_arg_value3, align 8
   %53 = load i64, i64* %call_arg_value3, align 8
-  call void @__module_prif_prif_stop(i8* %call_arg_value29, i32* %__libasr_created_variable_6, i32* %call_arg_value, i8* %52, i32* %call_arg_value1, i64 %53)
+  call void @__module_prif_prif_stop(i8* %call_arg_value25, i32* %__libasr_created_variable_6, i32* %call_arg_value, i8* %52, i32* %call_arg_value1, i64 %53)
   br label %return
 
-return:                                           ; preds = %ifcont28
+return:                                           ; preds = %ifcont24
   br label %FINALIZE_SYMTABLE_coarrays_52
 
 FINALIZE_SYMTABLE_coarrays_52:                    ; preds = %return

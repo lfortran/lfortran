@@ -1973,6 +1973,12 @@ inline bool is_assumed_size_array(ASR::ttype_t* x) {
 // than by shape. A deferred-shape (assumed-shape) dummy, and an assumed-size
 // dummy that declares no extent at all (`a(*)`), declare none and return
 // false.
+//
+// Call_t_body takes the ArrayPhysicalCast target of an array argument from the
+// formal parameter's dimensions, with the call's arguments substituted, and
+// pass_array_by_data keeps it deferred when it replaces an assumed-shape dummy
+// by a data pointer. The predicate on such a target therefore answers for the
+// dummy argument, not for the actual argument.
 inline bool has_explicit_dimension_bounds(ASR::ttype_t* x) {
     x = type_get_past_allocatable(type_get_past_pointer(x));
     if (!ASR::is_a<ASR::Array_t>(*x)) {

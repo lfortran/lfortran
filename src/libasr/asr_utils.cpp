@@ -13166,7 +13166,25 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                       bool valid_symbols = true;
                       for (size_t i = 0; i < dimension_.size(); i++) {
                           dimension_.p[i].loc = arg->base.loc;
-        
+
+                          // A deferred extent is part of the dummy's declared
+                          // shape, not a symbol that has to be reachable from
+                          // the caller: an explicit-shape dummy substitutes its
+                          // extent here, while an assumed-size `a(*)` and an
+                          // assumed-shape `a(:)` keep it deferred. Keep it for a
+                          // data-pointer cast, which carries no descriptor. A
+                          // descriptor cast still needs concrete extents to be
+                          // built, so it keeps the actual argument's shape.
+                          if (dimension_[i].m_length == nullptr &&
+                                  dimension_[i].m_start == nullptr) {
+                              if (cast_physical_type ==
+                                      ASR::array_physical_typeType::DescriptorArray) {
+                                  valid_symbols = false;
+                                  break;
+                              }
+                              continue;
+                          }
+
                           // 2. Safely extract the replaced memory (optimized or mutated)
                           ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
                           ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
