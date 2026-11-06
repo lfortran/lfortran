@@ -1175,6 +1175,39 @@ static void relink_procs(Allocator &al, SymbolTable *scope,
     n_procs = procs.size();
 }
 
+// A structure constructor or constant copied into `scope` names the derived
+// type it builds, which is still the original type. Points it at the copy that
+// `scope` resolves the name of the type to, so that it is the same type a
+// later cell declares an entity with.
+class RelinkStructConstructors
+    : public ASR::BaseWalkVisitor<RelinkStructConstructors>
+{
+    SymbolTable *scope;
+
+    void relink(ASR::symbol_t *&dt_sym) {
+        ASR::symbol_t *copy = scope->resolve_symbol(
+            ASRUtils::symbol_name(dt_sym));
+        if (copy != nullptr && ASR::is_a<ASR::Struct_t>(
+                *ASRUtils::symbol_get_past_external(copy))) {
+            dt_sym = copy;
+        }
+    }
+
+public:
+    RelinkStructConstructors(SymbolTable *scope) : scope(scope) {}
+
+    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+        relink(const_cast<ASR::StructConstructor_t&>(x).m_dt_sym);
+        ASR::BaseWalkVisitor<RelinkStructConstructors>
+            ::visit_StructConstructor(x);
+    }
+
+    void visit_StructConstant(const ASR::StructConstant_t &x) {
+        relink(const_cast<ASR::StructConstant_t&>(x).m_dt_sym);
+        ASR::BaseWalkVisitor<RelinkStructConstructors>::visit_StructConstant(x);
+    }
+};
+
 // The duplicated symbols still point into the scopes they were copied from: an
 // ExternalSymbol at the module it names, a generic procedure at the specific
 // procedures it resolves to. A later cell resolves a name and finds the copy,
@@ -1235,6 +1268,13 @@ static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
                     ASRUtils::symbol_name(v->m_type_declaration));
                 if (copy != nullptr) v->m_type_declaration = copy;
             }
+            // The value of a derived-type named constant, or a variable's
+            // initial value, is a structure constructor naming its type in
+            // the same way. A later cell that initializes a variable from
+            // the constant compares that type with the one it declares.
+            RelinkStructConstructors relink(scope);
+            if (v->m_symbolic_value) relink.visit_expr(*v->m_symbolic_value);
+            if (v->m_value) relink.visit_expr(*v->m_value);
         } else if (ASR::is_a<ASR::Struct_t>(*s)) {
             // An extended type names its parent type. Left pointing at the
             // original, a later cell reading an inherited component resolves
