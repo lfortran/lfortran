@@ -86,6 +86,8 @@ hipError_t hipDeviceGetAttribute(int *value, hipDeviceAttribute_t attr,
             cuda_attr = cudaDevAttrL2CacheSize; break;
         case hipDeviceAttributePageableMemoryAccess:
             cuda_attr = cudaDevAttrPageableMemoryAccess; break;
+        case hipDeviceAttributeConcurrentManagedAccess:
+            cuda_attr = cudaDevAttrConcurrentManagedAccess; break;
         default:
             // The PCI location: the emulated device has none.
             return fail(hipErrorInvalidValue);
@@ -108,6 +110,30 @@ hipError_t hipMalloc(void **ptr, size_t size) {
 
 hipError_t hipFree(void *ptr) {
     return from_cuda(cudaFree(ptr));
+}
+
+hipError_t hipMallocManaged(void **ptr, size_t size, unsigned int flags) {
+    if (flags != hipMemAttachGlobal) return fail(hipErrorInvalidValue);
+    return from_cuda(cudaMallocManaged(ptr, size, cudaMemAttachGlobal));
+}
+
+hipError_t hipMemPrefetchAsync(const void *ptr, size_t count, int device,
+        hipStream_t stream) {
+    if (stream) return fail(hipErrorInvalidResourceHandle);
+#if CUDART_VERSION >= 13000
+    struct cudaMemLocation location;
+    if (device == hipCpuDeviceId) {
+        location.type = cudaMemLocationTypeHost;
+        location.id = 0;
+    } else {
+        location.type = cudaMemLocationTypeDevice;
+        location.id = device;
+    }
+    return from_cuda(cudaMemPrefetchAsync(ptr, count, location, 0, 0));
+#else
+    return from_cuda(cudaMemPrefetchAsync(ptr, count,
+        device == hipCpuDeviceId ? cudaCpuDeviceId : device, 0));
+#endif
 }
 
 hipError_t hipMemcpy(void *dst, const void *src, size_t count,

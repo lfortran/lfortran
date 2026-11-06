@@ -47,6 +47,7 @@ typedef enum hipDeviceAttribute_t {
     hipDeviceAttributeIntegrated = 1001,
     hipDeviceAttributeL2CacheSize,
     hipDeviceAttributePageableMemoryAccess,
+    hipDeviceAttributeConcurrentManagedAccess,
     hipDeviceAttributePciBusId,
     hipDeviceAttributePciDeviceId,
     hipDeviceAttributePciDomainID
@@ -56,6 +57,12 @@ typedef enum hipDeviceAttribute_t {
 #define hipDeviceScheduleSpin 0x1
 #define hipDeviceScheduleYield 0x2
 #define hipDeviceScheduleBlockingSync 0x4
+
+// The only flag of hipMallocManaged: the memory is accessible from every
+// stream.
+#define hipMemAttachGlobal 0x01
+// The device hipMemPrefetchAsync names for the host.
+#define hipCpuDeviceId (-1)
 
 // Only the default stream (0) exists.
 typedef struct ihipStream_t *hipStream_t;
@@ -77,6 +84,9 @@ hipError_t hipDeviceSynchronize(void);
 hipError_t hipDeviceReset(void);
 hipError_t hipMalloc(void **ptr, size_t size);
 hipError_t hipFree(void *ptr);
+hipError_t hipMallocManaged(void **ptr, size_t size, unsigned int flags);
+hipError_t hipMemPrefetchAsync(const void *ptr, size_t count, int device,
+    hipStream_t stream);
 hipError_t hipMemcpy(void *dst, const void *src, size_t count,
     hipMemcpyKind kind);
 hipError_t hipMemcpyAsync(void *dst, const void *src, size_t count,
