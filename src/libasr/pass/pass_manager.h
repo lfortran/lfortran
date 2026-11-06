@@ -71,6 +71,7 @@
 #include <libasr/pass/gpu_launch_sync.h>
 #include <libasr/pass/gpu_sequential_unroll.h>
 #include <libasr/pass/gpu_residue_unroll.h>
+#include <libasr/pass/gpu_inline_loop_calls.h>
 #include <libasr/pass/gpu_integer_powers.h>
 #include <libasr/pass/gpu_device_guard_fold.h>
 #include <libasr/pass/gpu_loop_fusion.h>
@@ -166,6 +167,7 @@ namespace LCompilers {
             {"gpu_private_reduction_fusion", &pass_gpu_private_reduction_fusion},
             {"gpu_residue_unroll", &pass_gpu_residue_unroll},
             {"gpu_device_guard_fold", &pass_gpu_device_guard_fold},
+            {"gpu_inline_loop_calls", &pass_gpu_inline_loop_calls},
             {"gpu_time_skew", &pass_gpu_time_skew},
             {"gpu_index_set_split", &pass_gpu_index_set_split},
             {"gpu_loop_transforms", &pass_gpu_loop_transforms},
@@ -431,6 +433,10 @@ namespace LCompilers {
                 // the other intrinsics it reads are still intrinsics, and
                 // before gpu_device_heap lowers the `stop`s that are left.
                 "gpu_device_guard_fold",
+                // A kernel's call of a small pure function that runs a
+                // loop is inlined, so that gpu_vector_lanes sees the loop
+                // and can share it between the lanes of an iteration.
+                "gpu_inline_loop_calls",
                 "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",

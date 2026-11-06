@@ -108,17 +108,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     rt[((long)((unsigned int)((j__dc1) - (1))))] = (((float)j__dc1) * __gpu_sum_tmp);
 }
 
-__device__ inline float f_gpu_30(float* a, long __size_a_dim1, long __stride_a_dim1) {
-    float f{};
-    int i;
-    f = ((float)0);
-    const int __lfortran_end_0 = ((int)((long)((__size_a_dim1))));
-    for (i = 1; i <= __lfortran_end_0; i++) {
-        f = (f + a[(__stride_a_dim1 * ((long)((unsigned int)((i) - (1)))))]);
-    }
-    return f;
-}
-
 struct __ScalarArgs___lfortran_gpu_kernel_2 {
     long lo8;
     long __dim_z_0;
@@ -193,10 +182,30 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     }
     if (__gpu_lanes_n > 1) __syncwarp();
     __libasr_created__function_call_f = z + ((long)(((long)__lb_z_0)) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc2) - (__lb_z_1)))));
-    if ((__gpu_lane == 0)) {
-        t3[((long)((unsigned int)((j__dc2) - (1))))] = f_gpu_30(__libasr_created__function_call_f, (((((lo8 + ((long)1))) - (((long)__lb_z_0))) / (((long)1))) + 1), 1);
+    {
+        float __f_f;
+        int __f_i;
+        __f_f = ((float)0);
+        if ((__gpu_lanes > 1)) {
+            if ((__gpu_lane != 0)) {
+                __f_f =   0.00000000000000000e+00f;
+            }
+            const int __lfortran_end_0 = ((int)((long)((((((lo8 + ((long)1))) - (((long)__lb_z_0))) / (((long)1))) + 1))));
+            for (__f_i = (1 + (((int)__gpu_lane) * 1)); __f_i <= __lfortran_end_0; __f_i += (1 * ((int)__gpu_lanes))) {
+                __f_f = (__f_f + __libasr_created__function_call_f[((long)((((long)__f_i) + (((long)(1)) - ((long)1)))) - (1))]);
+            }
+            __f_f = __lfortran_lane_reduce<0>(__f_f, __gpu_lanes_n);
+        } else {
+            const int __lfortran_end_1 = ((int)((long)((((((lo8 + ((long)1))) - (((long)__lb_z_0))) / (((long)1))) + 1))));
+            for (__f_i = 1; __f_i <= __lfortran_end_1; __f_i++) {
+                __f_f = (__f_f + __libasr_created__function_call_f[((long)((((long)__f_i) + (((long)(1)) - ((long)1)))) - (1))]);
+            }
+        }
+        if ((__gpu_lane == 0)) {
+            t3[((long)((unsigned int)((j__dc2) - (1))))] = __f_f;
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
     }
-    if (__gpu_lanes_n > 1) __syncwarp();
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_3 {

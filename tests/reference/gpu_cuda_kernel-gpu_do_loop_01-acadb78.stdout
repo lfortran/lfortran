@@ -1,25 +1,38 @@
 #include <stdint.h>
 
-__device__ inline int triangle_gpu_53(int n) {
-    int s{};
-    int k;
-    s = 0;
-    for (k = 1; k <= n; k++) {
-        s = (s + k);
+// The combination of what the `lanes` lanes of an iteration hold,
+// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
+// largest. With one lane, the lane's own value.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce(T v, int lanes) {
+    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {
+        T w = __shfl_xor_sync(0xffffffffu, v, offset, lanes);
+        v = op == 0 ? v + w : op == 1 ? v * w
+            : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
     }
-    return s;
+    return v;
 }
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __gpu_lanes;
+};
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     int* __restrict__ lim,
-    int* __restrict__ r)
+    int* __restrict__ r,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
     int i__dc;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 20)) {
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 20)) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     i__dc = (__flat_idx + 1);
     {
         int j;
@@ -31,12 +44,18 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         for (j = i__dc; j >= 1; j -= 3) {
             t = (t + j);
         }
-        r[((int)(1) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        if ((__gpu_lane == 0)) {
+            r[((int)(1) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
         t = 0;
         for (j = 1; j <= i__dc; j += 4) {
             t = (t + j);
         }
-        r[((int)(2) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        if ((__gpu_lane == 0)) {
+            r[((int)(2) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
         t = 0;
         m = i__dc;
         const int __lfortran_end_0 = m;
@@ -44,8 +63,32 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             m = (m - 1);
             t = (t + 1);
         }
-        r[((int)(3) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
-        r[((int)(4) - (1)) + (9 * ((int)(i__dc) - (1)))] = triangle_gpu_53(i__dc);
+        if ((__gpu_lane == 0)) {
+            r[((int)(3) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
+        {
+            int __triangle_k;
+            int __triangle_s;
+            __triangle_s = 0;
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    __triangle_s = 0;
+                }
+                for (__triangle_k = (1 + (((int)__gpu_lane) * 1)); __triangle_k <= i__dc; __triangle_k += (1 * ((int)__gpu_lanes))) {
+                    __triangle_s = (__triangle_s + __triangle_k);
+                }
+                __triangle_s = __lfortran_lane_reduce<0>(__triangle_s, __gpu_lanes_n);
+            } else {
+                for (__triangle_k = 1; __triangle_k <= i__dc; __triangle_k++) {
+                    __triangle_s = (__triangle_s + __triangle_k);
+                }
+            }
+            if ((__gpu_lane == 0)) {
+                r[((int)(4) - (1)) + (9 * ((int)(i__dc) - (1)))] = __triangle_s;
+            }
+            if (__gpu_lanes_n > 1) __syncwarp();
+        }
         t = 0;
         int __lfortran_leave_0 = 0;
         for (j = 1; j <= 5; j++) {
@@ -66,21 +109,30 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
                 continue;
             }
         }
-        r[((int)(5) - (1)) + (9 * ((int)(i__dc) - (1)))] = (((t * 100) + (j * 10)) + k);
+        if ((__gpu_lane == 0)) {
+            r[((int)(5) - (1)) + (9 * ((int)(i__dc) - (1)))] = (((t * 100) + (j * 10)) + k);
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
         for (j = (i__dc + 1); j <= i__dc; j++) {
             t = (-(1));
         }
         for (k = 1; k >= 5; k--) {
             t = (-(1));
         }
-        r[((int)(6) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((j * 100) + k);
+        if ((__gpu_lane == 0)) {
+            r[((int)(6) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((j * 100) + k);
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
         s = ((((i__dc) % (2)) == 0) ? 2 : (-(2)));
         t = 0;
         const int __lfortran_end_1 = ((s > 0) ? 10 : 1);
         for (j = ((s > 0) ? 1 : 10); s > 0 ? j <= __lfortran_end_1 : j >= __lfortran_end_1; j += s) {
             t = (t + j);
         }
-        r[((int)(7) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        if ((__gpu_lane == 0)) {
+            r[((int)(7) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
         s = (1 + ((i__dc) % (3)));
         t = 0;
         const int __lfortran_step_2 = s;
@@ -88,13 +140,19 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             s = (s + 1);
             t = (t + j);
         }
-        r[((int)(8) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        if ((__gpu_lane == 0)) {
+            r[((int)(8) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
         t = 0;
         const int __lfortran_end_3 = lim[((int)(i__dc) - (1))];
         for (j = 1; j <= __lfortran_end_3; j++) {
             t = (t + j);
         }
-        r[((int)(9) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        if ((__gpu_lane == 0)) {
+            r[((int)(9) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
     }
 }
 
