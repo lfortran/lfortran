@@ -24649,7 +24649,9 @@ public:
             increment = 1;
         }
 
-        for ( int64_t j = start; j <= end; j += increment ) {
+        // A negative step counts down to the end
+        for ( int64_t j = start; increment > 0 ? j <= end : (increment < 0 && j >= end);
+                j += increment ) {
             loop_indices[curr_nesting_level] = j;
             for ( size_t i = 0; i < idl->n_values; i++ ) {
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
