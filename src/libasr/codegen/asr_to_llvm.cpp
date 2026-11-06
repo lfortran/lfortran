@@ -701,12 +701,6 @@ public:
     // placeholder. A later Function that owns the same link name may replace
     // that declare; the decision is this set, not LLVM type inequality.
     std::set<uint64_t> llvm_fn_from_bare_implicit_interface;
-    // Hashes of interface bodies (deftype Interface) whose instantiation
-    // created the LLVM function that owns their link name. An abstract
-    // interface has no link name of its own, but it is declared like any
-    // other interface body, so such a declare may be replaced by a later
-    // Function of that name (see instantiate_function).
-    std::set<uint64_t> llvm_fn_from_interface;
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
     // The constructs that contain each labeled statement of the procedure
@@ -11308,7 +11302,10 @@ public:
     }
 
     void instantiate_function(const ASR::Function_t &x){
-        if (is_dummy_procedure(x)) {
+        // An abstract interface names no procedure, so it has no link name
+        // to declare. Procedure pointers, dummy procedures and deferred
+        // bindings typed by it only use its FunctionType.
+        if (is_dummy_procedure(x) || ASRUtils::is_abstract_interface(x)) {
             return;
         }
         llvm::DIScope* debug_current_scope_copy = debug_current_scope;
@@ -11363,9 +11360,6 @@ public:
                 llvm_symtab_fn_names[fn_name] = h;
                 F = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, fn_name, module.get());
-                if (ftype->m_deftype == ASR::deftypeType::Interface) {
-                    llvm_fn_from_interface.insert(h);
-                }
                 // Compiler-generated helper functions (e.g.
                 // _lcompiler_optimization_exponent_*) are emitted identically
                 // in every compilation unit that uses them.  Use
@@ -11382,20 +11376,8 @@ public:
                 // the definition use the real signature. The set, not LLVM
                 // type inequality, decides whether the occupant is a
                 // placeholder.
-                bool replace_placeholder =
-                    llvm_fn_from_bare_implicit_interface.count(old_h)
-                    && F->isDeclaration();
-                // An interface body may also have claimed it with a declare
-                // that nothing uses yet, e.g. an abstract interface `func`
-                // (its name is not a global identifier) ahead of an external
-                // or a bind(c, name="func") procedure with another
-                // signature. Such a declare must not impose its signature on
-                // a procedure that has its own, so replace it as well.
-                bool replace_unused_interface =
-                    llvm_fn_from_interface.count(old_h)
-                    && F->isDeclaration() && F->use_empty()
-                    && F->getFunctionType() != function_type;
-                if (replace_placeholder || replace_unused_interface) {
+                if (llvm_fn_from_bare_implicit_interface.count(old_h)
+                        && F->isDeclaration()) {
                     llvm::Function* new_F = llvm::Function::Create(
                         function_type, llvm::Function::ExternalLinkage,
                         "", module.get());
@@ -11405,9 +11387,8 @@ public:
                             new_F, F->getType());
                         F->replaceAllUsesWith(cast);
                     }
-                    // Every procedure resolved to the replaced declare (each
-                    // external or interface of this name) now resolves to
-                    // the new one.
+                    // Every procedure resolved to the placeholder (each
+                    // external of this name) now resolves to the definition.
                     for (auto &entry : llvm_symtab_fn) {
                         if (entry.second == F) {
                             entry.second = new_F;
@@ -11417,10 +11398,6 @@ public:
                     F = new_F;
                     llvm_symtab_fn_names[fn_name] = h;
                     llvm_fn_from_bare_implicit_interface.erase(old_h);
-                    llvm_fn_from_interface.erase(old_h);
-                    if (ftype->m_deftype == ASR::deftypeType::Interface) {
-                        llvm_fn_from_interface.insert(h);
-                    }
                 }
             }
             // An interface to the procedure, such as the one an OpenMP

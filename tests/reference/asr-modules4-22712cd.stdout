@@ -107,6 +107,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    (.true.)
                                 ),
                             toml_ordered:
                                 (Struct
@@ -1141,6 +1142,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    (.true.)
                                 ),
                             toml_value:
                                 (Struct

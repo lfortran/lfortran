@@ -14737,7 +14737,7 @@ public:
                             false,                   
                             false,                   
                             nullptr,                 
-                            nullptr, nullptr         
+                            nullptr, nullptr, nullptr
                         )
                     );
                     
@@ -15345,7 +15345,7 @@ public:
             ASR::make_Function_t(al, value->base.loc, fn_scope, s2c(al, name),
                 &placeholder_type->base, nullptr, 0, nullptr, 0, nullptr, 0,
                 nullptr, ASR::accessType::Public, false, false, nullptr,
-                nullptr, nullptr));
+                nullptr, nullptr, nullptr));
         current_scope->add_symbol(name, placeholder);
         pending_proc_placeholders.push_back({name, placeholder, current_scope});
         forward_procedure_targets.insert(placeholder);
@@ -22873,7 +22873,8 @@ public:
         }
         ASR::symbol_t* iface = ASR::down_cast<ASR::symbol_t>(ASR::make_Function_t(
             al, loc, fn_scope, s2c(al, name), type, nullptr, 0, nullptr, 0,
-            nullptr, 0, return_var, access, false, false, nullptr, nullptr, nullptr));
+            nullptr, 0, return_var, access, false, false, nullptr, nullptr,
+            nullptr, nullptr));
         scope->add_symbol(name, iface);
         return iface;
     }

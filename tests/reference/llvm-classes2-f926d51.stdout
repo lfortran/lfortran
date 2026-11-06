@@ -17,8 +17,6 @@ target datalayout = "..."
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-declare float @func(%defs.point.3_class*)
-
 define float @__module_defs_r2d(%defs.point2d.5_class* %this) {
 .entry:
   %r2d = alloca float, align 4

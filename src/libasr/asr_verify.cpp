@@ -1321,6 +1321,12 @@ public:
         verify_frames_bound(x.m_symtab, x.m_body, x.n_body);
         if (check_string_length_arguments) verify_hidden_string_lengths(x);
         if (x.m_gpu) verify_gpu_kernel_layout(x);
+        require_id(!x.m_interface_body
+                || ASRUtils::get_FunctionType(x)->m_deftype
+                        == ASR::deftypeType::Interface,
+            "asr.verify.function.interface_body_is_interface",
+            "the interface body facts of function '" + std::string(x.m_name)
+            + "' require an interface");
 
         // Get the x parent symtab.
         SymbolTable *x_parent_symtab = x.m_symtab->parent;
