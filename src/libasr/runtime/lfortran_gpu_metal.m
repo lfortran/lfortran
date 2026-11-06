@@ -265,10 +265,10 @@ struct lfortran_gpu_kernel {
     unsigned char scalar_bytes[SCALAR_BYTES];
     size_t scalar_used;
     void *scalar_heap[MAX_ARGS];
-    // A buffer only the device holds, kept until the kernel is released so
-    // that the host can read part of it back, and used by every launch of
-    // this handle: the chunks of one launch share it, as they share the
-    // device heap state they are handed.
+    // The scratch buffer of the slot the last launch used, kept until the
+    // kernel is released so that the host can read part of it back: the
+    // chunks of one launch share it, as they share the device heap state
+    // they are handed.
     id<MTLBuffer> scratch_buffers[MAX_ARGS];
     // The pooled copy of a read-only buffer argument the last launch read,
     // kept for the next launch until the argument is set again.
@@ -1129,23 +1129,20 @@ static void order_after_dependences(lfortran_gpu_ctx *ctx,
 }
 
 // The scratch buffer of argument `slot` of the kernel `k`, with room for
-// `size` bytes. One larger than the pool keeps -- the device heap -- is made
-// for the handle, and kept by it for its later launches (the chunks of a
-// launch), which see what the earlier ones left there, like the slot buffer
-// of the CUDA runtime; it is released with the handle.
+// `size` bytes: the one the kernel keeps for the slot, grown when it is too
+// small, like the slot buffer of the CUDA runtime. A large one -- a device
+// heap arena, or the workspaces of a kernel with many threads -- is kept
+// too: making a new one at every launch costs the device more than the
+// kernel (a new buffer's pages are mapped for the device at its first use).
 static id<MTLBuffer> scratch_buffer(lfortran_gpu_kernel *k, int slot,
     size_t size)
 {
     lfortran_gpu_ctx *ctx = k->ctx;
-    if (size > POOLED_BUFFER_MAX) {
-        id<MTLBuffer> buffer = k->scratch_buffers[slot];
-        if (buffer && [buffer length] >= size) return buffer;
-        return tracked_buffer_alloc(ctx, size);
-    }
     id<MTLBuffer> buffer = source_registry[k->entry].scratch[slot];
     if (buffer && [buffer length] >= size) return buffer;
     size_t length = 256;
     while (length < size) length *= 2;
+    if (length > POOLED_BUFFER_MAX) length = size;
     buffer = tracked_buffer_alloc(ctx, length);
     source_registry[k->entry].scratch[slot] = buffer;
     return buffer;

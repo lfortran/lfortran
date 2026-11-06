@@ -12,8 +12,9 @@
 // The managed memory model of the Metal runtime (lfortran_gpu_metal.m): the
 // runtime replaces the program's allocator, which this test defines as a
 // program linked with the LFortran runtime library does, so that a large
-// allocation is used in place by the kernels. Run with LFORTRAN_GPU_PROFILE=1
-// and LFORTRAN_GPU_MEMORY=managed or copy.
+// allocation is used in place by the kernels; and the scratch buffers it
+// keeps for later launches. Run with LFORTRAN_GPU_PROFILE=1 and
+// LFORTRAN_GPU_MEMORY=managed or copy.
 
 typedef struct test_allocator {
     void* (*alloc)(void* context, int64_t size);
@@ -82,6 +83,16 @@ static const char kernel_source[] =
 "{\n"
 "    if (gid >= n) return;\n"
 "    b[gid] = 2.0f*a[gid];\n"
+"}\n"
+"\n"
+"kernel void stage(device float *out [[buffer(0)]],\n"
+"    device float *work [[buffer(1)]],\n"
+"    constant uint &n [[buffer(2)]],\n"
+"    uint gid [[thread_position_in_grid]])\n"
+"{\n"
+"    if (gid >= n) return;\n"
+"    work[gid * 4096u] = 3.0f*(float)gid;\n"
+"    out[gid] = work[gid * 4096u] + 1.0f;\n"
 "}\n";
 
 static void fail(const char *what) {
@@ -151,6 +162,21 @@ static void shift(float *b, const float *a, size_t n_b) {
     lfortran_gpu_release_kernel(k);
 }
 
+// out(i) = 3*(i - 1) + 1, through a scratch buffer of BIG floats.
+static void stage(float *out) {
+    lfortran_gpu_kernel *k = lfortran_gpu_load_kernel(ctx, "stage",
+        (int)strlen("stage"));
+    int grid[3] = {OUT_LEN / 256, 1, 1};
+    int block[3] = {256, 1, 1};
+    uint32_t n = OUT_LEN;
+    lfortran_gpu_set_buffer_arg(k, 0, out, OUT_LEN * sizeof(float),
+        LFORTRAN_GPU_WRITE_DISCARD);
+    lfortran_gpu_set_scratch_arg(k, 1, (size_t)BIG * sizeof(float));
+    lfortran_gpu_set_scalar_arg(k, 2, &n, sizeof(n));
+    lfortran_gpu_launch(ctx, k, grid, block);
+    lfortran_gpu_release_kernel(k);
+}
+
 static void check_gather(const char *what, const float *out, float scale_by,
     float offset_by)
 {
@@ -171,6 +197,7 @@ int main(void) {
         lfortran_gpu_register_metal_source("gather", kernel_source);
         lfortran_gpu_register_metal_source("scale", kernel_source);
         lfortran_gpu_register_metal_source("shift", kernel_source);
+        lfortran_gpu_register_metal_source("stage", kernel_source);
         ctx = lfortran_gpu_init();
         test_allocator *al = _lfortran_get_default_allocator();
         if (al->alloc == test_alloc) fail("the allocator was not replaced");
@@ -275,6 +302,18 @@ int main(void) {
         al->dealloc(al->context, d);
         lfortran_gpu_sync(ctx);
         check_gather("freed while pending", out, 1.0f, 0.0f);
+
+        // A large scratch buffer is kept for the later launches of the
+        // kernel, as a small one is.
+        stage(out);
+        lfortran_gpu_sync(ctx);
+        t0 = snapshot();
+        for (int it = 0; it < 3; it++) stage(out);
+        lfortran_gpu_sync(ctx);
+        t1 = snapshot();
+        check_gather("staged", out, 3.0f / STRIDE, 1.0f);
+        check_u64("scratch buffers made again",
+            t1.buffer_allocations - t0.buffer_allocations, 0);
 
         al->dealloc(al->context, b);
         al->dealloc(al->context, c);
