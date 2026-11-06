@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-array_op_same_element_section-abc64aa",
+    "cmd": "lfortran --pass=array_struct_temporary,array_op --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/array_op_same_element_section.f90",
+    "infile_hash": "184ffcd3a722b67ce6ef0672e5c7ac8a481d3db109003dde14d385d0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-array_op_same_element_section-abc64aa.f90",
+    "stdout_hash": "31b2ee113295c3200596aaf63e5ce00f2ec49e97246e93fc788f464e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

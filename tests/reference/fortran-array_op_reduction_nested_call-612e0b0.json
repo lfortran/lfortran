@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-array_op_reduction_nested_call-612e0b0",
+    "cmd": "lfortran --pass=array_struct_temporary,array_op --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/array_op_reduction_nested_call.f90",
+    "infile_hash": "2534af241628e5233c6aa6f23a8a47a8dd7504fc7b66a0665eb3f5bd",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-array_op_reduction_nested_call-612e0b0.f90",
+    "stdout_hash": "087535e4fbacca858fae91b5623c45f4abdccbf089d13498de97469b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

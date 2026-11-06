@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-array_op_reduction_elemental_call-a8e9f39",
+    "cmd": "lfortran --pass=array_struct_temporary,array_op --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/array_op_reduction_elemental_call.f90",
+    "infile_hash": "049efcf5e71cbf63aa62215fd8de10345a3bfc2ba940d5b7aa37e441",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-array_op_reduction_elemental_call-a8e9f39.f90",
+    "stdout_hash": "5d2088d376ed66820057fe82b13f149c3acda9726461391fca7ff70e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

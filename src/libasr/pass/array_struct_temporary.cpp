@@ -8,6 +8,7 @@
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pickle.h>
 #include <functional>
+#include <type_traits>
 
 #include <vector>
 #include <utility>
@@ -2194,6 +2195,19 @@ class ElementwiseSectionCollector:
                 }
             }
         }
+        if (ASRUtils::ElementwiseReduction::is_elemental_function_reference(expr)) {
+            ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(expr);
+            // A pure elemental function is invoked once per element, so its
+            // arguments are read in place as well
+            for (size_t i = 0; i < call->n_args; i++) {
+                if (call->m_args[i].m_value != nullptr &&
+                        ASRUtils::ElementwiseReduction::is_elementwise_operation(
+                            call->m_args[i].m_value)) {
+                    operations.insert(ASRUtils::get_past_array_physical_cast(
+                        call->m_args[i].m_value));
+                }
+            }
+        }
         ASR::BaseWalkVisitor<ElementwiseSectionCollector>::visit_expr(x);
     }
 
@@ -2210,7 +2224,8 @@ class ElementwiseSectionCollector:
 // loop evaluates element by element too, rather than into an array
 // temporary.
 void get_elementwise_sections_read_in_place(ASR::expr_t* value,
-        std::set<ASR::expr_t*>& sections, std::set<ASR::expr_t*>& operations) {
+        std::set<ASR::expr_t*>& sections, std::set<ASR::expr_t*>& operations,
+        bool whole_dimension = false) {
     std::set<ASR::expr_t*> operands;
     ElementwiseSectionCollector collector(operands, operations);
     collector.visit_expr(*value);
@@ -2224,8 +2239,13 @@ void get_elementwise_sections_read_in_place(ASR::expr_t* value,
         for (size_t i = 0; i < section->n_args && is_read_in_place; i++) {
             ASR::array_index_t& index = section->m_args[i];
             if (index.m_left == nullptr && index.m_step == nullptr) {
-                is_read_in_place = index.m_right != nullptr &&
-                    PassUtils::is_reevaluable_integer_expr(index.m_right);
+                // A whole dimension keeps the bounds of its base array, so
+                // the loop reads it at the same subscripts as the elementwise
+                // expression does; only a reduction operand may, since the
+                // loop writes none of its elements.
+                is_read_in_place = index.m_right != nullptr ?
+                    PassUtils::is_reevaluable_integer_expr(index.m_right) :
+                    whole_dimension;
                 continue;
             }
             // array_op converts a triplet to the loop index kind, which is
@@ -2246,43 +2266,118 @@ void get_elementwise_sections_read_in_place(ASR::expr_t* value,
 }
 
 void get_sections_read_in_place(ASR::IntrinsicArrayFunction_t* x,
-        std::set<ASR::expr_t*>& sections, std::set<ASR::expr_t*>& operations) {
+        std::set<ASR::expr_t*>& sections, std::set<ASR::expr_t*>& operations,
+        bool whole_dimension = false) {
     ASR::expr_t *array = nullptr, *vector_b = nullptr, *mask = nullptr;
     ASRUtils::ElementwiseReduction::get_operands(x, array, vector_b, mask);
     for (ASR::expr_t* operand: {array, vector_b, mask}) {
         if (operand != nullptr) {
-            get_elementwise_sections_read_in_place(operand, sections, operations);
+            get_elementwise_sections_read_in_place(operand, sections, operations,
+                whole_dimension);
         }
     }
 }
 
-// Only intrinsic elementwise operations carry the assignment's in-place
-// proof to their operands. A disjoint whole-array operation still prepares
-// its own arguments normally.
+// Records the elementwise arguments of an elemental function that the
+// assignment evaluates once per element, so that they are read in place
+// rather than copied into an array temporary.
+void add_elementwise_call_arguments_read_in_place(ASR::expr_t* value,
+        std::set<ASR::expr_t*>& operations) {
+    auto add = [&](ASR::expr_t* argument) {
+        if (argument != nullptr &&
+                ASRUtils::ElementwiseReduction::is_elementwise_operation(argument)) {
+            operations.insert(ASRUtils::get_past_array_physical_cast(argument));
+        }
+    };
+    if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value)) {
+        ASR::IntrinsicElementalFunction_t* f =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
+        for (size_t i = 0; i < f->n_args; i++) {
+            add(f->m_args[i]);
+        }
+    } else if (ASRUtils::ElementwiseReduction::is_elemental_function_reference(value)) {
+        ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(value);
+        for (size_t i = 0; i < call->n_args; i++) {
+            add(call->m_args[i].m_value);
+        }
+    }
+}
+
+// Collects the sections and the elementwise operations of the value of an
+// assignment that reads its target in place (see reads_target_only_in_place),
+// so that they are read element by element instead of being copied. A
+// disjoint whole-array operation still prepares its own arguments normally.
 void get_assignment_sections_read_in_place(ASR::expr_t* value,
-        std::set<ASR::expr_t*>& sections) {
+        std::set<ASR::expr_t*>& sections, std::set<ASR::expr_t*>& operations) {
     // Keep rank-one sections on the existing descriptor path, which can
     // expose contiguous columns more effectively than direct strided indexing.
-    if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value)) < 2) {
-        return;
-    }
+    bool keep_sections = ASRUtils::extract_n_dims_from_ttype(
+        ASRUtils::expr_type(value)) >= 2;
     value = ASRUtils::get_past_array_physical_cast(value);
     if (ASR::is_a<ASR::ArraySection_t>(*value)) {
-        std::set<ASR::expr_t*> operations;
-        get_elementwise_sections_read_in_place(value, sections, operations);
+        std::set<ASR::expr_t*> found_sections;
+        get_elementwise_sections_read_in_place(value, found_sections, operations);
+        if (keep_sections) {
+            sections.insert(found_sections.begin(), found_sections.end());
+        }
         return;
     }
+    add_elementwise_call_arguments_read_in_place(value, operations);
     ASRUtils::ElementwiseReduction::is_elementwise_operation_of(value,
         [&](ASR::expr_t* operand) {
-            get_assignment_sections_read_in_place(operand, sections);
+            get_assignment_sections_read_in_place(operand, sections, operations);
             return true;
-        }, false);
+        }, true, true);
 }
 
 bool is_scalar_reduction_actual(const ASR::FunctionCall_t& call,
     SymbolTable* scope);
 bool has_only_scalar_reduction_calls(ASR::expr_t* expression,
     SymbolTable* scope);
+bool contains_impure_function_reference(ASR::expr_t* value);
+
+// Whether the operand of the reduction `x` reads only stable storage through
+// sections the loop can index in place, so that it may be evaluated element
+// by element. A volatile or asynchronous variable, or one with a scoped
+// attribute, is not stable.
+bool reduction_operand_is_stable(ASR::IntrinsicArrayFunction_t* x,
+        SymbolTable* scope) {
+    class Reads: public ASR::BaseWalkVisitor<Reads> {
+        SymbolTable* scope;
+        void check_symbol(ASR::symbol_t* symbol) {
+            symbol = ASRUtils::symbol_get_past_external(symbol);
+            if (!ASR::is_a<ASR::Variable_t>(*symbol)) {
+                return;
+            }
+            auto* variable = ASR::down_cast<ASR::Variable_t>(symbol);
+            stable &= !variable->m_is_volatile && !variable->m_is_asynchronous;
+            for (auto* s = scope; s && stable; s = s->parent) {
+                stable &= !ASRUtils::has_scoped_variable_attribute(
+                    *variable, s, false);
+            }
+        }
+    public:
+        bool stable = true;
+        std::set<ASR::expr_t*> sections;
+        Reads(SymbolTable* scope): scope(scope) { visit_compile_time_value = false; }
+        void visit_Var(const ASR::Var_t& x) {
+            check_symbol(x.m_v);
+        }
+        void visit_ArraySection(const ASR::ArraySection_t& x) {
+            sections.insert(const_cast<ASR::expr_t*>(&x.base));
+            ASR::BaseWalkVisitor<Reads>::visit_ArraySection(x);
+        }
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+            check_symbol(x.m_m);
+            ASR::BaseWalkVisitor<Reads>::visit_StructInstanceMember(x);
+        }
+        void visit_ttype(const ASR::ttype_t& /*x*/) {}
+    } reads(scope);
+    reads.visit_expr(x->base);
+    std::set<ASR::expr_t*> sections, operations;
+    get_sections_read_in_place(x, sections, operations, true);
+    return reads.stable && reads.sections == sections;
+}
 
 // Replaces each reduction that array_op lowers into a loop, and that is an
 // operand of an expression evaluated once, using `hoist`. Only operands of
@@ -2296,6 +2391,9 @@ class ReductionOperandReplacer:
     std::function<void(ASR::expr_t**)> hoist;
     SymbolTable* scope;
     bool scalar_actuals_safe;
+    // Whether the expression being replaced references no effectful function,
+    // so that a reduction in a pure call's argument may be evaluated first.
+    bool expression_is_side_effect_free = false;
 
     ReductionOperandReplacer(std::function<void(ASR::expr_t**)> hoist_,
             SymbolTable* scope_, bool scalar_actuals_safe_):
@@ -2310,11 +2408,22 @@ class ReductionOperandReplacer:
                 auto* call = ASR::down_cast<ASR::FunctionCall_t>(x);
                 if (scalar_actuals_safe && is_scalar_reduction_actual(*call, scope)) {
                     hoist(&call->m_args[0].m_value);
+                    return;
+                }
+                // A reduction nested in an argument of a side-effect free
+                // call is evaluated once, like one in an intrinsic operation,
+                // as long as the expression has no other effect that the
+                // earlier evaluation could reorder against.
+                if (expression_is_side_effect_free) {
+                    ASR::BaseExprReplacer<ReductionOperandReplacer>::
+                        replace_FunctionCall(call);
                 }
                 return;
             }
             case ASR::exprType::IntrinsicArrayFunction: {
-                if (ASRUtils::ElementwiseReduction::is_lowered_to_loop(x)) {
+                if (ASRUtils::ElementwiseReduction::is_lowered_to_loop(x) &&
+                        reduction_operand_is_stable(
+                            ASR::down_cast<ASR::IntrinsicArrayFunction_t>(x), scope)) {
                     hoist(current_expr);
                 }
                 return;
@@ -2348,15 +2457,28 @@ class ContainsFunctionReference:
     public:
 
     bool found = false;
+    // Whether a reference to a function that is known to be side-effect
+    // free is not a reference at all: such a call has no effect and its
+    // value is the same wherever it is evaluated.
+    bool ignore_side_effect_free = false;
 
     ContainsFunctionReference() {
         visit_compile_time_value = false;
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-        if (x.m_value == nullptr) {
-            found = true;
+        if (x.m_value != nullptr) {
+            return;
         }
+        if (ignore_side_effect_free) {
+            ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(x.m_name);
+            if (ASR::is_a<ASR::Function_t>(*symbol) &&
+                    ASRUtils::is_side_effect_free_function(
+                        *ASR::down_cast<ASR::Function_t>(symbol))) {
+                return;
+            }
+        }
+        found = true;
     }
 
     void visit_ttype(const ASR::ttype_t& /*x*/) {}
@@ -2368,6 +2490,18 @@ bool contains_function_reference(ASR::expr_t* value) {
         return false;
     }
     ContainsFunctionReference check;
+    check.visit_expr(*value);
+    return check.found;
+}
+
+// Whether evaluating `value` references a function at run time that is not
+// known to be side-effect free.
+bool contains_impure_function_reference(ASR::expr_t* value) {
+    if (value == nullptr) {
+        return false;
+    }
+    ContainsFunctionReference check;
+    check.ignore_side_effect_free = true;
     check.visit_expr(*value);
     return check.found;
 }
@@ -2389,45 +2523,11 @@ bool is_scalar_reduction_actual(const ASR::FunctionCall_t& call,
     }
     auto* function = ASR::down_cast<ASR::Function_t>(symbol);
     if (!ASRUtils::is_side_effect_free_function(*function) ||
-            contains_function_reference(call.m_args[0].m_value)) {
+            contains_impure_function_reference(call.m_args[0].m_value)) {
         return false;
     }
-    class Reads: public ASR::BaseWalkVisitor<Reads> {
-        SymbolTable* scope;
-        void check_symbol(ASR::symbol_t* symbol) {
-            symbol = ASRUtils::symbol_get_past_external(symbol);
-            if (!ASR::is_a<ASR::Variable_t>(*symbol)) {
-                return;
-            }
-            auto* variable = ASR::down_cast<ASR::Variable_t>(symbol);
-            stable &= !variable->m_is_volatile && !variable->m_is_asynchronous;
-            for (auto* s = scope; s && stable; s = s->parent) {
-                stable &= !ASRUtils::has_scoped_variable_attribute(
-                    *variable, s, false);
-            }
-        }
-    public:
-        bool stable = true;
-        std::set<ASR::expr_t*> sections;
-        Reads(SymbolTable* scope): scope(scope) { visit_compile_time_value = false; }
-        void visit_Var(const ASR::Var_t& x) {
-            check_symbol(x.m_v);
-        }
-        void visit_ArraySection(const ASR::ArraySection_t& x) {
-            sections.insert(const_cast<ASR::expr_t*>(&x.base));
-            ASR::BaseWalkVisitor<Reads>::visit_ArraySection(x);
-        }
-        void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
-            check_symbol(x.m_m);
-            ASR::BaseWalkVisitor<Reads>::visit_StructInstanceMember(x);
-        }
-        void visit_ttype(const ASR::ttype_t& /*x*/) {}
-    } reads(scope);
-    reads.visit_expr(*call.m_args[0].m_value);
-    std::set<ASR::expr_t*> sections, operations;
-    get_sections_read_in_place(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
-        call.m_args[0].m_value), sections, operations);
-    return reads.stable && reads.sections == sections;
+    return reduction_operand_is_stable(ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
+        call.m_args[0].m_value), scope);
 }
 
 bool has_only_scalar_reduction_calls(ASR::expr_t* expression,
@@ -3139,6 +3239,50 @@ bool may_read_target_storage(ASR::expr_t* x, ASR::symbol_t* root,
     return finder.found;
 }
 
+// Whether a call of `fn` may read the storage of the assignment target
+// whose elements are reached only through `root` (see
+// get_unaliased_assignment_root). A dummy argument is checked by the caller
+// through its actual; a module variable, an associate name or a pointer that
+// the body reads is not, including through the functions it calls.
+bool function_may_read_target(ASR::Function_t* fn, ASR::symbol_t* root,
+        ASR::symbol_t* component, std::set<ASR::Function_t*>& visiting) {
+    if (!visiting.insert(fn).second) {
+        return true;
+    }
+    bool reads = false;
+    for (size_t i = 0; i < fn->n_body && !reads; i++) {
+        TargetStorageReadFinder finder(root, component);
+        finder.visit_stmt(*fn->m_body[i]);
+        reads = finder.found;
+    }
+    if (!reads) {
+        class Callees: public ASR::BaseWalkVisitor<Callees> {
+        public:
+            std::vector<ASR::FunctionCall_t*> calls;
+            void visit_ttype(const ASR::ttype_t& /*x*/) {}
+            void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+                calls.push_back(const_cast<ASR::FunctionCall_t*>(&x));
+                ASR::BaseWalkVisitor<Callees>::visit_FunctionCall(x);
+            }
+        } callees;
+        for (size_t i = 0; i < fn->n_body; i++) {
+            callees.visit_stmt(*fn->m_body[i]);
+        }
+        for (ASR::FunctionCall_t* call: callees.calls) {
+            ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(call->m_name);
+            if (!ASR::is_a<ASR::Function_t>(*symbol) ||
+                    function_may_read_target(
+                        ASR::down_cast<ASR::Function_t>(symbol), root,
+                        component, visiting)) {
+                reads = true;
+                break;
+            }
+        }
+    }
+    visiting.erase(fn);
+    return reads;
+}
+
 // See reads_target_only_in_place
 bool reads_target_in_place_operands_only(Allocator& al, ASR::expr_t* e,
         ASR::expr_t* target, ASR::expr_t* lhs_array_var, ASR::symbol_t* root,
@@ -3150,6 +3294,32 @@ bool reads_target_in_place_operands_only(Allocator& al, ASR::expr_t* e,
         !ASRUtils::is_array(ASRUtils::expr_type(
             ASR::down_cast<ASR::ArrayBroadcast_t>(d)->m_array)) ) {
         d = ASR::down_cast<ASR::ArrayBroadcast_t>(d)->m_array;
+    }
+    if( ASR::is_a<ASR::FunctionCall_t>(*d) ) {
+        // A pure elemental call is evaluated per element, so its result
+        // defines only the element it is assigned to as long as the callee
+        // reads no target storage and every actual reads the target only in
+        // place. Any other reference to a function may read anything.
+        if( !ASRUtils::ElementwiseReduction::is_elemental_function_reference(d) ) {
+            return false;
+        }
+        ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(d);
+        ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(call->m_name);
+        std::set<ASR::Function_t*> visiting;
+        if( function_may_read_target(ASR::down_cast<ASR::Function_t>(symbol),
+                root, component, visiting) ) {
+            return false;
+        }
+        for( size_t i = 0; i < call->n_args; i++ ) {
+            ASR::expr_t* actual = call->m_args[i].m_value;
+            if( actual != nullptr &&
+                    !reads_target_in_place_operands_only(al, actual, target,
+                        lhs_array_var, root, component, operands,
+                        dummies_sharing_actual) ) {
+                return false;
+            }
+        }
+        return true;
     }
     if( !ASRUtils::is_array(ASRUtils::expr_type(d)) ) {
         // A scalar operand is evaluated for every element, or once before
@@ -3169,9 +3339,14 @@ bool reads_target_in_place_operands_only(Allocator& al, ASR::expr_t* e,
         return reads_target_in_place_operands_only(al, x, target,
             lhs_array_var, root, component, operands, dummies_sharing_actual);
     };
+    // An elemental intrinsic function is evaluated per element as well, so
+    // each of its operands must read the target only in place, exactly as an
+    // intrinsic operation's operands must. A reference to a function is not:
+    // a pure function may still read the target through a module variable.
     return ASRUtils::ElementwiseReduction::is_elementwise_operation_of(
-            d, operand, false) ||
-        (!may_read_target_storage(d, root, component) &&
+            d, operand, true, false) ||
+        (!contains_function_reference(d) &&
+         !may_read_target_storage(d, root, component) &&
          !is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, d,
              dummies_sharing_actual));
 }
@@ -3197,7 +3372,7 @@ bool reads_target_only_in_place(Allocator& al, ASR::expr_t* target,
     }
     ASR::symbol_t* component = nullptr;
     ASR::symbol_t* root = get_unaliased_assignment_root(target, component);
-    if( root == nullptr || contains_function_reference(value) ) {
+    if( root == nullptr ) {
         return false;
     }
     ASR::expr_t* v = ASRUtils::get_past_array_physical_cast(value);
@@ -3789,7 +3964,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // whose callee may define them, rather than of a constructor.
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
         size_t x_n_args, ASR::expr_t **orig_args, const std::string& name_hint,
-        bool is_call, bool is_elemental_array_call=false) {
+        bool is_call, bool is_elemental_array_call=false,
+        bool into_section_target=false) {
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
@@ -3869,6 +4045,35 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                         x_m_args_vec.push_back(al, x_m_args[i]);
                         continue;
                     }
+                }
+            }
+            if (is_elemental_array_call && x_m_args[i].m_value != nullptr) {
+                // The loop that evaluates this call element by element
+                // indexes its array actuals through their base arrays, just
+                // as it does the operands of an elemental intrinsic.
+                ASR::expr_t* actual = x_m_args[i].m_value;
+                ASR::expr_t* operation = ASRUtils::get_past_array_physical_cast(actual);
+                if (sections_read_in_place.count(actual) > 0 ||
+                        sections_read_in_place.count(operation) > 0) {
+                    x_m_args_vec.push_back(al, x_m_args[i]);
+                    continue;
+                }
+                if (operations_read_in_place.count(operation) > 0) {
+                    visit_expr(*operation);
+                    ASR::call_arg_t call_arg;
+                    call_arg.loc = operation->base.loc;
+                    call_arg.m_value = operation;
+                    x_m_args_vec.push_back(al, call_arg);
+                    continue;
+                }
+                if (into_section_target &&
+                        ASRUtils::ElementwiseReduction::is_elementwise_operation(actual)) {
+                    // The call's result is computed into the section that the
+                    // statement assigns, one element at a time, so this actual
+                    // is read element by element as well.
+                    visit_expr(*actual);
+                    x_m_args_vec.push_back(al, x_m_args[i]);
+                    continue;
                 }
             }
             if( is_temporary_needed(x_m_args[i].m_value) ) {
@@ -3984,6 +4189,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 al, value->base.loc, temporary, value, nullptr, false, false)));
             *reduction = temporary;
         }, current_scope, has_only_scalar_reduction_calls(*expr, current_scope));
+        replacer.expression_is_side_effect_free =
+            !contains_impure_function_reference(*expr);
         replacer.current_expr = expr;
         replacer.replace_expr(*expr);
     }
@@ -4053,7 +4260,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             reads_target_only_in_place(al, xx.m_target, lhs_array_var,
                 xx.m_value, target_operands_read_in_place, dummies_sharing_actual) ) {
             assignments_reading_target_in_place.insert(&xx.base);
-            get_assignment_sections_read_in_place(xx.m_value, sections_read_in_place);
+            get_assignment_sections_read_in_place(xx.m_value, sections_read_in_place,
+                operations_read_in_place);
         }
         visit_expr(*xx.m_value);
         // Handle case where LHS is StructInstanceMember over an array
@@ -4691,7 +4899,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             // of an array assignment is, not evaluated into a temporary.
             // The loop indexes its sections through their base arrays.
             get_sections_read_in_place(&xx, sections_read_in_place,
-                operations_read_in_place);
+                operations_read_in_place, true);
             std::string name_hint = "_intrinsic_array_function_" +
                 ASRUtils::get_array_intrinsic_name(x.m_arr_intrinsic_id);
             Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
@@ -4760,9 +4968,23 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
         bool replaced_call_arg_copy = replaced_call_arg;
         replaced_call_arg = false;
+        bool into_section_target = false;
+        if constexpr (std::is_same_v<T, ASR::FunctionCall_t>) {
+            ASR::expr_t* call_expr = const_cast<ASR::expr_t*>(&x.base);
+            if (ASRUtils::ElementwiseReduction::is_elemental_function_reference(
+                    call_expr)) {
+                // The value of a section assignment is computed into the
+                // section pointer, so an elementwise actual is read in place
+                // per element.
+                auto target = exprs_with_target.find(call_expr);
+                into_section_target = target != exprs_with_target.end() &&
+                    target->second.second ==
+                        targetType::GeneratedTargetPointerForArraySection;
+            }
+        }
         traverse_call_args(x_m_args, x.m_args, x.n_args, orig_args,
             name_hint + ASRUtils::symbol_name(x.m_name), true,
-            is_elemental_array_call);
+            is_elemental_array_call, into_section_target);
         T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
@@ -6937,8 +7159,23 @@ class VerifySimplifierASROutput:
         visit_IO(x);
     }
 
-    void traverse_call_args(ASR::call_arg_t* m_args, size_t n_args, ASR::expr_t **orig_args = nullptr) {
+    void traverse_call_args(ASR::call_arg_t* m_args, size_t n_args,
+            ASR::expr_t **orig_args = nullptr, bool elemental = false) {
         for( size_t i = 0; i < n_args; i++ ) {
+            if (elemental && m_args[i].m_value != nullptr) {
+                // An elemental array call that the loop evaluates element by
+                // element keeps the sections and operations that ArgSimplifier
+                // left in place (see get_sections_read_in_place).
+                ASR::expr_t* actual = m_args[i].m_value;
+                ASR::expr_t* operation = ASRUtils::get_past_array_physical_cast(actual);
+                if (sections_read_in_place.count(actual) > 0 ||
+                        sections_read_in_place.count(operation) > 0 ||
+                        operations_read_in_place.count(operation) > 0 ||
+                        ASRUtils::ElementwiseReduction::is_elementwise_operation(actual)) {
+                    visit_expr(*actual);
+                    continue;
+                }
+            }
             if (orig_args &&
                 (m_args[i].m_value && !ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_physical_cast(m_args[i].m_value)))) {
                 ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
@@ -6966,7 +7203,8 @@ class VerifySimplifierASROutput:
         if (ASR::is_a<ASR::Function_t>(*sym)) {
             orig_args = ASR::down_cast<ASR::Function_t>(sym)->m_args;
         }
-        traverse_call_args(x.m_args, x.n_args, orig_args);
+        traverse_call_args(x.m_args, x.n_args, orig_args,
+            ASRUtils::is_elemental(x.m_name));
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
@@ -7018,7 +7256,7 @@ class VerifySimplifierASROutput:
             // An elementwise operand is read in place, element by element,
             // and so are its sections
             get_sections_read_in_place(const_cast<ASR::IntrinsicArrayFunction_t*>(&x),
-                sections_read_in_place, operations_read_in_place);
+                sections_read_in_place, operations_read_in_place, true);
             for (size_t i = 0; i < x.n_args; i++) {
                 if (x.m_args[i] != nullptr &&
                         ASRUtils::ElementwiseReduction::is_elementwise_operation(x.m_args[i])) {
