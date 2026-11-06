@@ -4915,3 +4915,21 @@ contains
         backspace(unit=99, iostat=cc1_io_nc_a(2))  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
     end subroutine
 end module
+
+module cc1_io_iomsg_scalar
+    type :: cc1_io_scalar_t
+        character(len=64) :: msgs(2)
+    end type
+contains
+    subroutine cc1_io_scalar_sub()
+        character(len=64) :: msgs(3)
+        type(cc1_io_scalar_t) :: x
+        integer :: ios
+        close(unit=99, iostat=ios, iomsg=msgs(1:2))  ! {Error} `iomsg` must be scalar
+        close(unit=99, iostat=ios, iomsg=x%msgs)  ! {Error} `iomsg` must be scalar
+        close(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
+        backspace(unit=99, iostat=ios, iomsg=msgs(1:2))  ! {Error} `iomsg` must be scalar
+        backspace(unit=99, iostat=ios, iomsg=x%msgs)  ! {Error} `iomsg` must be scalar
+        backspace(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
+    end subroutine
+end module
