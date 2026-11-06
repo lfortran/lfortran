@@ -559,38 +559,34 @@ public:
     };
 
     // Makes room for a droppable message, if more than the most droppable
-    // output waits, by dropping the oldest. Returns the bytes dropped; a
-    // notice of them, given with notify(), then takes their place. A first
-    // message that is partly sent is kept even when it alone is larger than
-    // the limit; while it is, every droppable message after it is dropped, so
-    // only the latest output published then waits behind it.
-    size_t make_room()
+    // output waits, by dropping the oldest and putting a notice of them,
+    // which `notice` builds, where the first of them was. The notice is
+    // droppable output itself, so a subscriber that never reads keeps one,
+    // which the next drop replaces, at the oldest gap. A first message that
+    // is partly sent is kept even when it alone is larger than the limit;
+    // while it is, every droppable message after it is dropped, so only the
+    // latest output published then waits behind it.
+    template <typename Notice>
+    void make_room(Notice notice)
     {
-        if (blocking || closed || queued <= droppable_limit) return 0;
-        size_t dropped = 0;
+        if (blocking || closed || queued <= droppable_limit) return;
+        size_t notice_at = 0;
+        bool dropped = false;
         // The first message may be partly sent already.
         auto out = outbox.begin() + (sent > 0 ? 1 : 0);
         for (auto in = out; in != outbox.end(); ++in) {
             if (!in->reliable && queued > droppable_limit - droppable_limit / 4) {
-                if (dropped == 0) notice_at = static_cast<size_t>(out - outbox.begin());
+                if (!dropped) notice_at = static_cast<size_t>(out - outbox.begin());
                 queued -= in->data.size();
-                dropped += in->data.size();
+                dropped = true;
                 continue;
             }
             if (out != in) *out = std::move(*in);
             ++out;
         }
         outbox.erase(out, outbox.end());
-        return dropped;
-    }
-
-    // Puts the notice of what make_room() dropped where it was dropped. The
-    // notice is droppable output itself, so a subscriber that never reads
-    // keeps one, which the next drop replaces, at the oldest gap.
-    void notify(const std::vector<std::string> &frames)
-    {
-        if (closed || notice_at > outbox.size()) return;
-        std::string data = encode_frames(frames);
+        if (!dropped) return;
+        std::string data = encode_frames(notice());
         queued += data.size();
         outbox.insert(outbox.begin() + notice_at, Outgoing{std::move(data), false});
     }
@@ -717,8 +713,6 @@ private:
     // The bytes in the outbox, those of reliable messages, and those of its
     // first message already sent
     size_t queued = 0, queued_reliable = 0, sent = 0;
-    // Where in the outbox make_room() last dropped messages
-    size_t notice_at = 0;
     static constexpr size_t droppable_limit = size_t(64) << 20;
 
     static std::string encode_frames(const std::vector<std::string> &frames)
@@ -2081,9 +2075,8 @@ private:
             ? Peer::Delivery::reliable : Peer::Delivery::droppable;
         for (auto &peer : iopub_.peers) {
             if (peer->ready()) {
-                if (delivery == Peer::Delivery::droppable && peer->make_room() > 0) {
-                    peer->notify(dropped_notice());
-                }
+                if (delivery == Peer::Delivery::droppable)
+                    peer->make_room([this] { return dropped_notice(); });
                 peer->send(frames, delivery);
                 // execute() pumps callbacks without returning to run().
                 // Make nonblocking progress without servicing new requests.
