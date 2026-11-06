@@ -5512,20 +5512,41 @@ public:
         idl->m_increment = replace_loop_var_in_expr(idl->m_increment, var_sym, value, int_type);
         for (size_t i = 0; i < idl->n_values; i++) {
             ASR::expr_t* val = idl->m_values[i];
-            if (ASR::is_a<ASR::ArrayItem_t>(*val)) {
-                ASR::ArrayItem_t* arr = ASR::down_cast<ASR::ArrayItem_t>(val);
-                for (size_t j = 0; j < arr->n_args; j++) {
-                    ASR::expr_t* idx = arr->m_args[j].m_right;
-                    if (idx) {
-                        arr->m_args[j].m_right = replace_loop_var_in_expr(
-                            idx, var_sym, value, int_type);
-                    }
-                }
-            } else if (ASR::is_a<ASR::ImpliedDoLoop_t>(*val)) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*val)) {
                 substitute_var_in_implied_do_loop(
                     ASR::down_cast<ASR::ImpliedDoLoop_t>(val), var_sym, value, int_type);
+            } else {
+                substitute_var_in_data_object(val, var_sym, value, int_type);
             }
         }
+    }
+
+    // Substitutes `value` for the DO variable `var_sym` in the subscripts of
+    // the data implied-DO object `object`, an array element or a structure
+    // component such as `a(i)%b(j)%c`. Returns whether a part of the object
+    // has a subscript list.
+    bool substitute_var_in_data_object(ASR::expr_t* object,
+                                       ASR::symbol_t* var_sym,
+                                       int64_t value,
+                                       ASR::ttype_t* int_type) {
+        if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+            ASR::ArrayItem_t* arr = ASR::down_cast<ASR::ArrayItem_t>(object);
+            for (size_t j = 0; j < arr->n_args; j++) {
+                ASR::expr_t* idx = arr->m_args[j].m_right;
+                if (idx) {
+                    arr->m_args[j].m_right = replace_loop_var_in_expr(
+                        idx, var_sym, value, int_type);
+                }
+            }
+            substitute_var_in_data_object(arr->m_v, var_sym, value, int_type);
+            return true;
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
+            return substitute_var_in_data_object(
+                ASR::down_cast<ASR::StructInstanceMember_t>(object)->m_v,
+                var_sym, value, int_type);
+        }
+        return false;
     }
 
     // An element of a local array that an implied-DO in a DATA statement of
@@ -5676,21 +5697,33 @@ public:
                     ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(duplicatedExpr);
                     substitute_var_in_implied_do_loop(nested_idl, loop_var_sym, loop_var, integer_type);
                     handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values, collected_indices, target_variable, local_elements);
-                } else if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)) {
-                    ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
-                    for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
-                        ASR::expr_t* index_expr = array_item_expr->m_args[arg_index].m_right;
-                        if (index_expr) {
-                            array_item_expr->m_args[arg_index].m_right =
-                                replace_loop_var_in_expr(index_expr, loop_var_sym,
-                                                        loop_var, integer_type);
-                        }
+                } else if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)
+                        || (ASR::is_a<ASR::StructInstanceMember_t>(*duplicatedExpr)
+                            && !ASRUtils::is_array(ASRUtils::expr_type(duplicatedExpr))
+                            && substitute_var_in_data_object(duplicatedExpr,
+                                loop_var_sym, loop_var, integer_type))) {
+                    // An array element such as `x(i)`, or a structure
+                    // component of one such as `a(i)%b%c`
+                    ASR::ArrayItem_t* array_item_expr = nullptr;
+                    if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)) {
+                        array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
+                        substitute_var_in_data_object(duplicatedExpr,
+                            loop_var_sym, loop_var, integer_type);
+                    } else if (collected_values) {
+                        diag.add(Diagnostic(
+                            "a structure component of an array element in a "
+                            "DATA implied do loop is only supported in a "
+                            "program or procedure so far",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {duplicatedExpr->base.loc})
+                            }));
+                        throw SemanticAbort();
                     }
                     ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
-                    if ((ASR::is_a<ASR::Real_t>(*array_item_expr->m_type))
+                    if ((ASR::is_a<ASR::Real_t>(*ASRUtils::expr_type(duplicatedExpr)))
                         && (value_index<(data_stmt_set->n_value)) &&
                         (AST::is_a<AST::BOZ_t>(*data_stmt_set->m_value[value_index]))) {
-                        current_variable_type_ = array_item_expr->m_type;
+                        current_variable_type_ = ASRUtils::expr_type(duplicatedExpr);
                     }
                     this->visit_expr(*data_stmt_set->m_value[value_index++]);
                     ASR::expr_t* value = ASRUtils::EXPR(tmp);
@@ -5746,7 +5779,7 @@ public:
                         ASR::Variable_t* arr_var = nullptr;
                         int64_t flat = 0;
                         ASR::expr_t* element_value = ASRUtils::expr_value(value);
-                        if (element_value && is_data_saved_local_owner(
+                        if (array_item_expr && element_value && is_data_saved_local_owner(
                                     ASRUtils::get_asr_owner(array_item_expr->m_v))
                                 && data_array_element_position(array_item_expr,
                                     arr_var, flat)) {
@@ -5755,7 +5788,7 @@ public:
                             continue;
                         }
                         emit_data_element_assignment(data_stmt,
-                            ASRUtils::EXPR((ASR::asr_t*) array_item_expr), value);
+                            duplicatedExpr, value);
                     }
                 } else {
                     diag.add(Diagnostic(
