@@ -24663,7 +24663,11 @@ public:
             var->m_name = s2c(al, unique_name);
             current_scope->add_symbol(unique_name, implicit_sym);
         };
-        if (is_body_visitor) {
+        // The body visitor also processes the declarations of a BLOCK, whose
+        // initializers and bounds must be evaluated at compile time just as
+        // in any other scoping unit (#16159, #16160).
+        if (is_body_visitor
+                && restricted_expr_context == RestrictedExprContext::None) {
             idl_nesting_level--;
             rename_implicit_idl_var();
             return;
