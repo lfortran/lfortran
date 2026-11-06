@@ -1554,7 +1554,8 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
-                if( !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type)) ) {
+                if( !ASRUtils::is_variable(a_iostat) ||
+                    !ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type)) ) {
                         diag.add(Diagnostic(
                             "`iostat` must be a variable of type, Integer or IntegerPointer",
                             Level::Error, Stage::Semantic, {
@@ -1574,7 +1575,7 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iomsg = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iomsg_type = ASRUtils::expr_type(a_iomsg);
-                if( a_iomsg->type != ASR::exprType::Var ||
+                if( !ASRUtils::is_variable(a_iomsg) ||
                     (!ASRUtils::is_character(*a_iomsg_type)) ) {
                         diag.add(Diagnostic(
                             "`iomsg` must be of type, String or StringPointer",
@@ -1583,6 +1584,14 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                if (ASRUtils::is_array(a_iomsg_type)) {
+                    diag.add(Diagnostic(
+                        "`iomsg` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else if( m_arg_str == std::string("status") ) {
                 if( a_status != nullptr ) {
                     diag.add(Diagnostic(
@@ -1695,7 +1704,7 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iostat = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* a_iostat_type = ASRUtils::expr_type(a_iostat);
-                if( a_iostat->type != ASR::exprType::Var ||
+                if( !ASRUtils::is_variable(a_iostat) ||
                     (!ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(a_iostat_type))) ) {
                         diag.add(Diagnostic(
                             "`iostat` must be a variable of type, Integer "
@@ -1717,10 +1726,18 @@ public:
                 this->visit_expr(*kwarg.m_value);
                 a_iomsg = ASRUtils::EXPR(tmp);
                 ASR::ttype_t *a_iomsg_type = ASRUtils::expr_type(a_iomsg);
-                if (a_iomsg->type != ASR::exprType::Var ||
+                if (!ASRUtils::is_variable(a_iomsg) ||
                     !ASRUtils::is_character(*ASRUtils::type_get_past_pointer(a_iomsg_type))) {
                     diag.add(Diagnostic(
                         "`iomsg` must be a variable of type Character",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (ASRUtils::is_array(a_iomsg_type)) {
+                    diag.add(Diagnostic(
+                        "`iomsg` must be scalar",
                         Level::Error, Stage::Semantic, {
                             Label("", {x.base.base.loc})
                         }));

@@ -4547,3 +4547,53 @@ contains
         call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
     end subroutine
 end module
+
+module cc1_io_named_constant
+    type :: cc1_io_nc_t
+        integer :: i
+        character(len=8) :: s
+    end type
+    character(len=*), parameter :: cc1_io_nc_c = "abcdef"
+    integer, parameter :: cc1_io_nc_a(2) = [1, 2]
+    type(cc1_io_nc_t), parameter :: cc1_io_nc_k = cc1_io_nc_t(1, "abc")
+contains
+    subroutine cc1_io_nc_sub()
+        integer :: ios, u
+        open(newunit=u, file="x", iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} Non-variable expression for `iomsg`
+        write(*, *, iostat=cc1_io_nc_k%i) 1  ! {Error} Non-variable expression for `iostat`
+        read(*, *, iostat=ios, iomsg=cc1_io_nc_k%s) u  ! {Error} Non-variable expression for `iomsg`
+        close(unit=99, iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} `iomsg` must be of type, String or StringPointer
+        backspace(unit=99, iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} `iomsg` must be a variable of type Character
+        backspace(unit=99, iostat=cc1_io_nc_k%i)  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
+        backspace(unit=99, iostat=ios, iomsg=cc1_io_nc_k%s)  ! {Error} `iomsg` must be a variable of type Character
+        backspace(unit=99, iostat=cc1_io_nc_a(2))  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
+    end subroutine
+end module
+
+module cc1_io_iomsg_scalar
+    type :: cc1_io_scalar_t
+        character(len=64) :: msgs(2)
+    end type
+contains
+    subroutine cc1_io_scalar_sub()
+        character(len=64) :: msgs(3)
+        type(cc1_io_scalar_t) :: x
+        integer :: ios
+        close(unit=99, iostat=ios, iomsg=msgs(1:2))  ! {Error} `iomsg` must be scalar
+        close(unit=99, iostat=ios, iomsg=x%msgs)  ! {Error} `iomsg` must be scalar
+        close(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
+        backspace(unit=99, iostat=ios, iomsg=msgs(1:2))  ! {Error} `iomsg` must be scalar
+        backspace(unit=99, iostat=ios, iomsg=x%msgs)  ! {Error} `iomsg` must be scalar
+        backspace(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
+    end subroutine
+end module
+
+module cc1_close_iostat_variable
+    integer, parameter :: cc1_close_iostat_fixed = 1
+contains
+    subroutine cc1_close_iostat_sub()
+        integer :: ios
+        close(unit=99, iostat=ios + 1)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
+        close(unit=99, iostat=cc1_close_iostat_fixed)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
+    end subroutine
+end module
