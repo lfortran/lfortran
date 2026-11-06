@@ -6640,6 +6640,7 @@ public:
         current_module_dependencies.clear(al);
         current_scope = v->m_symtab;
         current_module = v;
+        bind_external_declarations_to_cell_procedures(current_scope);
 
         // Instantiations need bodies too; transform_stmts skips declarations.
         for (size_t i=0; i<x.n_items; i++) {
@@ -6747,6 +6748,7 @@ public:
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
         record_procedure_references(current_scope, x.m_items, x.n_items);
+        bind_external_declarations_to_cell_procedures(current_scope);
         starting_m_body = x.m_items;
         starting_n_body = x.n_items;
         collect_labels();
@@ -7432,6 +7434,7 @@ public:
         ASR::Function_t* v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         record_procedure_references(current_scope, x.m_items, x.n_items);
+        bind_external_declarations_to_cell_procedures(current_scope);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
@@ -7521,6 +7524,7 @@ public:
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         record_procedure_references(current_scope, x.m_items, x.n_items);
+        bind_external_declarations_to_cell_procedures(current_scope);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
@@ -7633,6 +7637,7 @@ public:
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
         record_procedure_references(current_scope, x.m_items, x.n_items);
+        bind_external_declarations_to_cell_procedures(current_scope);
         if (entry_functions.find(to_lower(v->m_name)) != entry_functions.end()) {
             /*
                 Subroutine is parent of entry function.

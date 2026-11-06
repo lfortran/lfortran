@@ -4638,6 +4638,169 @@ if (g1() == g2()) error stop
     CHECK(e.evaluate2("if (g1() /= g2()) error stop").ok);
 }
 
+TEST_CASE("FortranEvaluator interface body to an earlier cell's function") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The first cell emits unqualified symbols, so the callee is declared
+    // by a later one, which qualifies them by its cell.
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 1
+end function
+)").ok);
+    REQUIRE(e.evaluate2(R"(integer function call_fn()
+    interface
+        integer function fn()
+        end function
+    end interface
+    call_fn = fn()
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("call_fn()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 1);
+
+    // The interface binds to the `fn` in scope when it is compiled: a later
+    // `fn` shadows it for new code only.
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 2
+end function
+)").ok);
+    r = e.evaluate2("call_fn()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 1);
+    REQUIRE(e.evaluate2(R"(integer function call_fn2()
+    interface
+        integer function fn()
+        end function
+    end interface
+    call_fn2 = fn()
+end function
+)").ok);
+    r = e.evaluate2("call_fn2()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 2);
+}
+
+TEST_CASE("FortranEvaluator interface body to an earlier cell's array function") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: dummy_d").ok);
+    REQUIRE(e.evaluate2(R"(real(8) function ext_d(x)
+real(8), intent(in) :: x(:)
+ext_d = sum(x) * 2
+end function
+)").ok);
+    REQUIRE(e.evaluate2(R"(subroutine host_d(r)
+real(8), intent(out) :: r
+interface
+real(8) function ext_d(x)
+real(8), intent(in) :: x(:)
+end function
+end interface
+real(8) :: a(3)
+a = [1.0d0, 2.0d0, 3.0d0]
+r = ext_d(a)
+end subroutine
+)").ok);
+    REQUIRE(e.evaluate2("real(8) :: rr_d").ok);
+    REQUIRE(e.evaluate2("call host_d(rr_d)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("rr_d");
+    REQUIRE(r.ok);
+    CHECK(r.result.f64 == 12.0);
+}
+
+TEST_CASE("FortranEvaluator interface body to an earlier cell's function as actual argument") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(real function ext_real(x)
+real, intent(in) :: x
+ext_real = 3 * x
+end function
+)").ok);
+    REQUIRE(e.evaluate2(R"(real function apply(f, x)
+interface
+real function f(x)
+real, intent(in) :: x
+end function
+end interface
+real, intent(in) :: x
+apply = f(x)
+end function
+)").ok);
+    REQUIRE(e.evaluate2(R"(real function host_arg()
+interface
+real function ext_real(x)
+real, intent(in) :: x
+end function
+real function apply(f, x)
+interface
+real function f(x)
+real, intent(in) :: x
+end function
+end interface
+real, intent(in) :: x
+end function
+end interface
+host_arg = apply(ext_real, 2.0)
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("host_arg()");
+    REQUIRE(r.ok);
+    CHECK(r.result.f32 == 6.0f);
+}
+
+TEST_CASE("FortranEvaluator interface body to a function of the same cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 5
+end function
+
+integer function call_fn()
+    interface
+        integer function fn()
+        end function
+    end interface
+    call_fn = fn()
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("call_fn()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 5);
+}
+
+TEST_CASE("FortranEvaluator external statement for an earlier cell's function") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.implicit_interface = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 7
+end function
+)").ok);
+    REQUIRE(e.evaluate2(R"(integer function call_fn()
+    integer, external :: fn
+    call_fn = fn()
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("call_fn()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 7);
+}
+
 TEST_CASE("FortranEvaluator old and new module side by side") {
     CompilerOptions cu;
     cu.interactive = true;

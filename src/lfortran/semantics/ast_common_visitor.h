@@ -7622,6 +7622,95 @@ public:
         return true;
     }
 
+    // Interactive evaluation compiles each cell as its own translation unit
+    // and qualifies the link names of the procedures that a cell after the
+    // first declares by that cell, see `ASRUtils::cell_prefix()`. An
+    // interface body or an EXTERNAL statement in `scope` declares an external
+    // procedure, which is bound by its plain link name, so declaring one that
+    // such a cell defines names a symbol that is never defined. The external
+    // procedure it means is the one of that name visible from the cell: drop
+    // the declaration, so that the name resolves to that procedure through
+    // the chain of cells, and record that `scope` accesses it.
+    void bind_external_declarations_to_cell_procedures(SymbolTable *scope) {
+        if (!compiler_options.interactive) return;
+        SymbolTable *tu = scope;
+        while (tu != nullptr && !ASRUtils::is_tu_scope(tu)) tu = tu->parent;
+        if (tu == nullptr) return;
+        ASR::Function_t *owner = nullptr;
+        if (scope->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner_sym)) {
+                owner = ASR::down_cast<ASR::Function_t>(owner_sym);
+            }
+        }
+        std::vector<std::pair<std::string, ASR::symbol_t*>> bindings;
+        for (auto &item : scope->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (!ASR::is_a<ASR::Function_t>(*sym)) continue;
+            ASR::Function_t *iface = ASR::down_cast<ASR::Function_t>(sym);
+            ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(iface);
+            if ((ftype->m_deftype != ASR::deftypeType::Interface
+                        && !ASRUtils::is_bare_implicit_interface(*ftype))
+                    || ftype->m_abi != ASR::abiType::Source
+                    || !ASRUtils::is_external_procedure_interface(ftype)) {
+                continue;
+            }
+            // A dummy procedure is not an external procedure.
+            bool is_dummy = false;
+            for (size_t i = 0; owner != nullptr && i < owner->n_args; i++) {
+                if (ASR::is_a<ASR::Var_t>(*owner->m_args[i]) &&
+                        ASR::down_cast<ASR::Var_t>(owner->m_args[i])->m_v == sym) {
+                    is_dummy = true;
+                }
+            }
+            if (is_dummy) continue;
+            ASR::symbol_t *proc = tu->resolve_symbol(item.first);
+            if (proc == nullptr || proc == sym || !ASR::is_a<ASR::Function_t>(*proc)) {
+                continue;
+            }
+            ASR::Function_t *impl = ASR::down_cast<ASR::Function_t>(proc);
+            SymbolTable *impl_scope = impl->m_symtab->parent;
+            if (ASRUtils::get_FunctionType(impl)->m_deftype
+                        != ASR::deftypeType::Implementation
+                    || !ASRUtils::is_tu_scope(impl_scope)
+                    || ASRUtils::cell_prefix(impl_scope).empty()) {
+                continue;
+            }
+            if (ASRUtils::is_bare_implicit_interface(*ftype)) {
+                // EXTERNAL gives no interface, only the type of a function
+                // when it is declared.
+                ASR::ttype_t *type = ftype->m_return_var_type;
+                ASR::ttype_t *impl_type
+                    = ASRUtils::get_FunctionType(impl)->m_return_var_type;
+                if (type != nullptr && (impl_type == nullptr
+                        || !ASRUtils::types_equal(type, impl_type,
+                            nullptr, nullptr))) {
+                    continue;
+                }
+            } else if (!ASRUtils::types_equal(impl->m_function_signature,
+                    iface->m_function_signature,
+                    ASRUtils::get_expr_from_sym(al, proc),
+                    ASRUtils::get_expr_from_sym(al, sym))) {
+                continue;
+            }
+            bindings.push_back({item.first, proc});
+        }
+        for (auto &binding : bindings) {
+            ASR::symbol_t *iface = scope->get_symbol(binding.first);
+            // A procedure pointer or dummy declared with the interface.
+            for (auto &item : scope->get_scope()) {
+                if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                    if (v->m_type_declaration == iface) {
+                        v->m_type_declaration = binding.second;
+                    }
+                }
+            }
+            scope->erase_symbol(binding.first);
+            procedure_references[scope->counter].insert(binding.first);
+        }
+    }
+
     bool is_pending_proc_placeholder(ASR::symbol_t *s) {
         s = ASRUtils::symbol_get_past_external(s);
         for (auto &placeholder : pending_proc_placeholders) {
