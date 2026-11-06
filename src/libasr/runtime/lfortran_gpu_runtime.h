@@ -85,6 +85,10 @@ typedef struct lfortran_gpu_kernel lfortran_gpu_kernel;
 // Elapsed time sums command-buffer intervals; busy time is their union, not
 // hardware occupancy. Copy counters exclude inline/scalar setBytes arguments.
 // Other backends return zeros, but snapshot_sync still synchronizes the runtime.
+// LFORTRAN_GPU_PROFILE=2 also times each kernel on the GPU, by committing every
+// launch in a command buffer of its own, which serializes the launches. With
+// either setting the runtime prints a report of the totals and of each kernel
+// at exit, to stderr or to the file LFORTRAN_GPU_PROFILE_FILE names.
 typedef struct lfortran_gpu_metal_telemetry {
     int gpu_timing_available;
     uint64_t completed_command_buffers;

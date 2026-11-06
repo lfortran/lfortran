@@ -82,11 +82,19 @@ typedef struct buffer_use {
 // runs in chunks encodes each chunk with its one kernel handle, so its
 // chunks share the buffer: what an earlier chunk leaves in it is live for
 // the later chunks and for the host to read back after the last one.
+//
+// With profiling on, each kernel also counts its launches, the bytes they
+// copy to the device and the host time they take until they are encoded;
+// with LFORTRAN_GPU_PROFILE=2 also the GPU time of its launches.
 static struct {
     const char *name;
     const char *source;
     id<MTLComputePipelineState> pipeline;
     id<MTLBuffer> scratch[MAX_ARGS];
+    uint64_t launches;
+    uint64_t h2d_bytes;
+    double host_seconds;
+    double gpu_seconds;
 } source_registry[MAX_KERNELS];
 static int n_registered = 0;
 
@@ -107,9 +115,18 @@ typedef struct pooled {
     uint64_t last_use;
 } pooled;
 
-static int gpu_profile_enabled(void) {
+// LFORTRAN_GPU_PROFILE=1 collects the telemetry; =2 also commits every
+// launch in a command buffer of its own, so that the GPU time of each
+// command buffer is the time of one kernel. That runs the launches one after
+// another, without the overlap of a concurrent encoder, and adds the cost of
+// a commit to each. Either prints a report at exit, to stderr or to the file
+// LFORTRAN_GPU_PROFILE_FILE names.
+static int gpu_profile_level(void) {
     const char *value = getenv("LFORTRAN_GPU_PROFILE");
-    return value != NULL && strcmp(value, "1") == 0;
+    if (value == NULL) return 0;
+    if (strcmp(value, "1") == 0) return 1;
+    if (strcmp(value, "2") == 0) return 2;
+    return 0;
 }
 
 static double telemetry_now(void) {
@@ -136,6 +153,11 @@ struct lfortran_gpu_ctx {
     // is the highest number the device has finished.
     uint64_t serial;
     int profile_enabled;
+    // LFORTRAN_GPU_PROFILE=2: one launch per command buffer, and the
+    // registry entry of the kernel each pending one runs.
+    int profile_kernels;
+    int open_entry;
+    int pending_entry[MAX_PENDING_COMMITS];
     _Atomic uint64_t completed;
     _Atomic uint64_t handled;
     _Atomic int failed;
@@ -227,6 +249,10 @@ static void telemetry_collect_command_buffer(lfortran_gpu_ctx *ctx,
             ctx->telemetry.gpu_timing_available = 0;
         } else {
             ctx->telemetry.gpu_elapsed_seconds += end - start;
+            if (ctx->profile_kernels) {
+                int entry = ctx->pending_entry[serial % MAX_PENDING_COMMITS];
+                source_registry[entry].gpu_seconds += end - start;
+            }
             double begin = start > ctx->telemetry.gpu_busy_cursor
                 ? start : ctx->telemetry.gpu_busy_cursor;
             if (end > begin) {
@@ -444,6 +470,78 @@ static int overlaps_dirty(void *host, size_t size) {
 
 // ------------------------------------------------------------ context ---
 
+static lfortran_gpu_ctx *profiled_ctx = NULL;
+static void retire_all(lfortran_gpu_ctx *ctx);
+
+static void print_profile(lfortran_gpu_ctx *ctx) {
+    // Only waits, and does not exit on a failed launch: the host arrays a
+    // dirty range belongs to may be gone already at exit.
+    retire_all(ctx);
+    const char *path = getenv("LFORTRAN_GPU_PROFILE_FILE");
+    FILE *out = path && *path ? fopen(path, "w") : NULL;
+    if (!out) out = stderr;
+    fprintf(out, "LFortran GPU profile (LFORTRAN_GPU_PROFILE=%d)\n",
+        ctx->profile_kernels ? 2 : 1);
+    if (ctx->telemetry.gpu_timing_available) {
+        fprintf(out, "gpu elapsed %.6f s, gpu busy %.6f s\n",
+            ctx->telemetry.gpu_elapsed_seconds,
+            ctx->telemetry.gpu_busy_seconds);
+    } else {
+        fprintf(out, "gpu timing unavailable\n");
+    }
+    fprintf(out, "jit %.6f s, dispatches %llu, commits %llu, host syncs %llu, "
+        "host waits %llu\n", ctx->telemetry.jit_seconds,
+        (unsigned long long)ctx->telemetry.dispatches,
+        (unsigned long long)ctx->telemetry.commits,
+        (unsigned long long)ctx->telemetry.host_syncs,
+        (unsigned long long)ctx->telemetry.host_waits);
+    fprintf(out, "h2d %llu bytes, d2h %llu bytes, buffer allocations %llu "
+        "(%llu bytes)\n",
+        (unsigned long long)ctx->telemetry.memcpy_h2d_bytes,
+        (unsigned long long)ctx->telemetry.memcpy_d2h_bytes,
+        (unsigned long long)ctx->telemetry.buffer_allocations,
+        (unsigned long long)ctx->telemetry.buffer_alloc_bytes);
+    // The kernels by GPU time, then by host time.
+    int order[MAX_KERNELS];
+    int n = 0;
+    for (int i = 0; i < n_registered; i++) {
+        if (source_registry[i].launches == 0) continue;
+        int j = n++;
+        while (j > 0 && (source_registry[order[j - 1]].gpu_seconds
+                    < source_registry[i].gpu_seconds
+                || (source_registry[order[j - 1]].gpu_seconds
+                        == source_registry[i].gpu_seconds
+                    && source_registry[order[j - 1]].host_seconds
+                        < source_registry[i].host_seconds))) {
+            order[j] = order[j - 1];
+            j--;
+        }
+        order[j] = i;
+    }
+    double total = 0.0;
+    for (int i = 0; i < n; i++) total += source_registry[order[i]].gpu_seconds;
+    fprintf(out, "%-12s %10s %12s %12s %7s %12s %14s  %s\n", "registry",
+        "launches", "gpu s", "gpu us/call", "gpu %", "host s", "h2d bytes",
+        "kernel");
+    for (int i = 0; i < n; i++) {
+        int e = order[i];
+        double gpu = source_registry[e].gpu_seconds;
+        fprintf(out, "%-12d %10llu %12.6f %12.3f %7.2f %12.6f %14llu  %s\n",
+            e, (unsigned long long)source_registry[e].launches, gpu,
+            gpu * 1e6 / (double)source_registry[e].launches,
+            total > 0.0 ? 100.0 * gpu / total : 0.0,
+            source_registry[e].host_seconds,
+            (unsigned long long)source_registry[e].h2d_bytes,
+            source_registry[e].name);
+    }
+    if (out != stderr) fclose(out);
+}
+
+static void print_profile_at_exit(void) {
+    if (profiled_ctx) print_profile(profiled_ctx);
+    profiled_ctx = NULL;
+}
+
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
     static lfortran_gpu_ctx *singleton = NULL;
     if (singleton) return singleton;
@@ -457,14 +555,21 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
     }
     singleton->queue = [singleton->device newCommandQueue];
     singleton->last_command_buffer = nil;
-    singleton->profile_enabled = gpu_profile_enabled();
+    int profile_level = gpu_profile_level();
+    singleton->profile_enabled = profile_level >= 1;
+    singleton->profile_kernels = profile_level == 2;
     singleton->telemetry.gpu_timing_available = singleton->profile_enabled;
+    if (singleton->profile_enabled) {
+        profiled_ctx = singleton;
+        atexit(print_profile_at_exit);
+    }
     return singleton;
 }
 
 void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     if (!ctx) return;
     sync_all(ctx);
+    if (ctx == profiled_ctx) print_profile_at_exit();
     for (int i = 0; i < n_entries; i++) {
         if (entries[i].used) remove_entry(i);
     }
@@ -737,7 +842,7 @@ static void wait_for_completion(lfortran_gpu_ctx *ctx,
 }
 
 // Waits for every launch made so far.
-static void wait_all(lfortran_gpu_ctx *ctx) {
+static void retire_all(lfortran_gpu_ctx *ctx) {
     commit_open(ctx);
     if (ctx->last_command_buffer) {
         wait_for_completion(ctx, ctx->last_command_buffer);
@@ -763,6 +868,11 @@ static void wait_all(lfortran_gpu_ctx *ctx) {
     for (int i = 0; i < MAX_PENDING_COMMITS; i++) {
         ctx->pending[i] = nil;
     }
+}
+
+// Waits for every launch made so far, and exits if one failed.
+static void wait_all(lfortran_gpu_ctx *ctx) {
+    retire_all(ctx);
     // A kernel that faulted or was stopped by the watchdog has not computed
     // its results, so the program cannot go on with what is in the buffers;
     // the CUDA runtime exits in this case too.
@@ -809,6 +919,7 @@ static void commit_open(lfortran_gpu_ctx *ctx) {
         ctx->pending[slot] = nil;
     }
     ctx->pending[slot] = cb;
+    ctx->pending_entry[slot] = ctx->open_entry;
     lfortran_gpu_ctx *c = ctx;
     [cb addCompletedHandler:^(id<MTLCommandBuffer> done) {
         NSError *error = [done error];
@@ -831,6 +942,8 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
 {
     lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
+    double started = ctx->profile_enabled ? telemetry_now() : 0.0;
+    uint64_t h2d_before = ctx->telemetry.memcpy_h2d_bytes;
 
     // The command buffer, its encoder and the buffers it holds on to are
     // autoreleased: without a pool of its own every launch would keep them
@@ -965,7 +1078,20 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         order_after_dependences(ctx, encoder, uses, n_uses);
         [encoder dispatchThreads:MTLSizeMake(total_threads, 1, 1)
             threadsPerThreadgroup:MTLSizeMake(threads_per_group, 1, 1)];
-        if (++ctx->n_encoded >= LAUNCHES_PER_COMMIT) commit_open(ctx);
+        ctx->n_encoded++;
+        if (ctx->profile_enabled) {
+            source_registry[k->entry].launches++;
+            source_registry[k->entry].h2d_bytes
+                += ctx->telemetry.memcpy_h2d_bytes - h2d_before;
+            source_registry[k->entry].host_seconds
+                += telemetry_now() - started;
+        }
+        if (ctx->profile_kernels) {
+            ctx->open_entry = k->entry;
+            commit_open(ctx);
+        } else if (ctx->n_encoded >= LAUNCHES_PER_COMMIT) {
+            commit_open(ctx);
+        }
     }
 }
 
