@@ -35,8 +35,9 @@ FINALIZE_SYMTABLE__lcompilers_real_i32:           ; preds = %return
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   %2 = call i8* @_lfortran_get_default_allocator()
-  %array_bound28 = alloca i32, align 4
   %array_bound24 = alloca i32, align 4
+  %__libasr_index_0_23 = alloca i32, align 4
+  %array_bound28 = alloca i32, align 4
   %array_bound9 = alloca i32, align 4
   %array_bound5 = alloca i32, align 4
   %array_bound1 = alloca i32, align 4
@@ -176,11 +177,9 @@ do_loop.body22:                                   ; preds = %do_loop.head35, %if
   br label %block.start
 
 block.start:                                      ; preds = %do_loop.body22
-  %36 = call i8* @llvm.stacksave()
-  %__libasr_index_0_23 = alloca i32, align 4
-  %37 = call i8* @_lfortran_get_default_allocator()
-  %38 = call i8* @_lfortran_malloc_alloc(i8* %37, i64 2000)
-  %39 = bitcast i8* %38 to [500 x float]*
+  %36 = call i8* @_lfortran_get_default_allocator()
+  %37 = call i8* @_lfortran_malloc_alloc(i8* %36, i64 2000)
+  %38 = bitcast i8* %37 to [500 x float]*
   br i1 true, label %then25, label %else26
 
 then25:                                           ; preds = %block.start
@@ -191,7 +190,7 @@ else26:                                           ; preds = %block.start
   br label %ifcont27
 
 ifcont27:                                         ; preds = %else26, %then25
-  %40 = load i32, i32* %array_bound24, align 4
+  %39 = load i32, i32* %array_bound24, align 4
   br i1 true, label %then29, label %else30
 
 then29:                                           ; preds = %ifcont27
@@ -202,65 +201,64 @@ else30:                                           ; preds = %ifcont27
   br label %ifcont31
 
 ifcont31:                                         ; preds = %else30, %then29
-  %41 = load i32, i32* %array_bound28, align 4
-  store i32 %40, i32* %__libasr_index_0_23, align 4
-  %42 = icmp sle i32 %40, %41
-  br i1 %42, label %do_loop.body32, label %do_loop.end34
+  %40 = load i32, i32* %array_bound28, align 4
+  store i32 %39, i32* %__libasr_index_0_23, align 4
+  %41 = icmp sle i32 %39, %40
+  br i1 %41, label %do_loop.body32, label %do_loop.end34
 
 do_loop.body32:                                   ; preds = %do_loop.head33, %ifcont31
-  %43 = load i32, i32* %__libasr_index_0_23, align 4
-  %44 = sext i32 %43 to i64
-  %45 = sub i64 %44, 1
-  %46 = mul i64 1, %45
-  %47 = add i64 0, %46
-  %48 = getelementptr [500 x float], [500 x float]* %39, i32 0, i64 %47
-  %49 = call float @_lcompilers_real_i32(i32* %i)
-  store float %49, float* %48, align 1
+  %42 = load i32, i32* %__libasr_index_0_23, align 4
+  %43 = sext i32 %42 to i64
+  %44 = sub i64 %43, 1
+  %45 = mul i64 1, %44
+  %46 = add i64 0, %45
+  %47 = getelementptr [500 x float], [500 x float]* %38, i32 0, i64 %46
+  %48 = call float @_lcompilers_real_i32(i32* %i)
+  store float %48, float* %47, align 1
   br label %do_loop.head33
 
 do_loop.head33:                                   ; preds = %do_loop.body32
-  %50 = load i32, i32* %__libasr_index_0_23, align 4
-  %51 = add nsw i32 %50, 1
-  store i32 %51, i32* %__libasr_index_0_23, align 4
-  %52 = icmp eq i32 %50, %41
-  br i1 %52, label %do_loop.end34, label %do_loop.body32
+  %49 = load i32, i32* %__libasr_index_0_23, align 4
+  %50 = add nsw i32 %49, 1
+  store i32 %50, i32* %__libasr_index_0_23, align 4
+  %51 = icmp eq i32 %49, %40
+  br i1 %51, label %do_loop.end34, label %do_loop.body32
 
 do_loop.end34:                                    ; preds = %do_loop.head33, %ifcont31
-  %53 = load float, float* %sum, align 4
-  %54 = getelementptr [500 x float], [500 x float]* %39, i32 0, i64 0
-  %55 = load float, float* %54, align 1
-  %56 = fadd float %53, %55
-  store float %56, float* %sum, align 4
+  %52 = load float, float* %sum, align 4
+  %53 = getelementptr [500 x float], [500 x float]* %38, i32 0, i64 0
+  %54 = load float, float* %53, align 1
+  %55 = fadd float %52, %54
+  store float %55, float* %sum, align 4
   br label %block.end
 
 block.end:                                        ; preds = %do_loop.end34
   br label %FINALIZE_SYMTABLE_block
 
 FINALIZE_SYMTABLE_block:                          ; preds = %block.end
-  %57 = icmp eq i8* %38, null
-  br i1 %57, label %free_done, label %free_nonnull
+  %56 = icmp eq i8* %37, null
+  br i1 %56, label %free_done, label %free_nonnull
 
 free_nonnull:                                     ; preds = %FINALIZE_SYMTABLE_block
-  call void @_lfortran_free_alloc(i8* %2, i8* %38)
+  call void @_lfortran_free_alloc(i8* %2, i8* %37)
   br label %free_done
 
 free_done:                                        ; preds = %free_nonnull, %FINALIZE_SYMTABLE_block
-  call void @llvm.stackrestore(i8* %36)
   br label %do_loop.head35
 
 do_loop.head35:                                   ; preds = %free_done
-  %58 = load i32, i32* %i, align 4
-  %59 = add nsw i32 %58, 1
-  store i32 %59, i32* %i, align 4
-  %60 = icmp eq i32 %58, 1000
-  br i1 %60, label %do_loop.end36, label %do_loop.body22
+  %57 = load i32, i32* %i, align 4
+  %58 = add nsw i32 %57, 1
+  store i32 %58, i32* %i, align 4
+  %59 = icmp eq i32 %57, 1000
+  br i1 %59, label %do_loop.end36, label %do_loop.body22
 
 do_loop.end36:                                    ; preds = %do_loop.head35, %ifcont21
-  %61 = load float, float* %sum, align 4
-  %62 = fsub float %61, 5.005000e+05
-  %63 = call float @llvm.fabs.f32(float %62)
-  %64 = fcmp ogt float %63, 0x3FB99999A0000000
-  br i1 %64, label %then37, label %else38
+  %60 = load float, float* %sum, align 4
+  %61 = fsub float %60, 5.005000e+05
+  %62 = call float @llvm.fabs.f32(float %61)
+  %63 = fcmp ogt float %62, 0x3FB99999A0000000
+  br i1 %63, label %then37, label %else38
 
 then37:                                           ; preds = %do_loop.end36
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
@@ -272,16 +270,16 @@ else38:                                           ; preds = %do_loop.end36
   br label %ifcont39
 
 ifcont39:                                         ; preds = %else38, %then37
-  %65 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %65, i32 2, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
+  %64 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %64, i32 2, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
   br label %return
 
 return:                                           ; preds = %ifcont39
   br label %FINALIZE_SYMTABLE_static_large_array
 
 FINALIZE_SYMTABLE_static_large_array:             ; preds = %return
-  %66 = icmp eq i8* %4, null
-  br i1 %66, label %free_done41, label %free_nonnull40
+  %65 = icmp eq i8* %4, null
+  br i1 %65, label %free_done41, label %free_nonnull40
 
 free_nonnull40:                                   ; preds = %FINALIZE_SYMTABLE_static_large_array
   call void @_lfortran_free_alloc(i8* %2, i8* %4)
@@ -308,9 +306,6 @@ declare void @exit(i32)
 declare i8* @llvm.stacksave() #0
 
 declare void @_lfortran_free_alloc(i8*, i8*)
-
-; Function Attrs: nounwind
-declare void @llvm.stackrestore(i8*) #0
 
 ; Function Attrs: nounwind readnone speculatable willreturn
 declare float @llvm.fabs.f32(float) #1
