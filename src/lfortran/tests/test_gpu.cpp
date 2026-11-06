@@ -1625,3 +1625,91 @@ TEST_CASE("GPU optional views preserve known contiguity without host copies") {
     }
 }
 #endif
+
+TEST_CASE("A scalar every iteration assigns first is not read back when "
+        "nothing reads it after the loop") {
+    // POT3D's set_boundary_points: `t` is assigned first in every iteration
+    // of both loops over `i`, so the second loop does not read the value the
+    // first leaves in it, and nothing after the second reads it either.
+    // Neither launch then needs the host to wait for `t`, which would copy
+    // back every array the launches wrote. With `local(t)` the program says
+    // so itself; it waits for the launches as often either way: once, for
+    // the check at the end.
+    auto syncs = [](const std::string &locality) {
+        std::string source = R"(
+program p
+    implicit none
+    integer, parameter :: nr = 50, np = 400
+    real(8) :: x(nr,2,np), s0(nr), s1(nr), dph(np)
+    real(8) :: t
+    integer :: it, i, k
+    x = 1
+    dph = 1
+    do it = 1, 10
+        do concurrent (k = 1:np, i = 1:nr)
+            x(i,1,k) = x(i,2,k) + 1
+        end do
+        do concurrent (i = 1:nr))" + locality + R"(
+            t = 0
+            do concurrent (k = 1:np) reduce(+:t)
+                t = t + x(i,1,k)*dph(k)
+            end do
+            s0(i) = t
+        end do
+        do concurrent (i = 1:nr))" + locality + R"(
+            t = 0
+            do concurrent (k = 1:np) reduce(+:t)
+                t = t + x(i,2,k)*dph(k)
+            end do
+            s1(i) = t
+        end do
+        do concurrent (k = 1:np, i = 1:nr)
+            x(i,2,k) = s0(i) + s1(i)
+        end do
+    end do
+    if (x(1,2,1) < 0) error stop
+end program
+)";
+        INFO(locality);
+        CompilerOptions options;
+        options.gpu_backend = "cuda";
+        options.po.gpu_offload_cuda = true;
+        options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        FortranEvaluator evaluator(options);
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = "gpu_assigned_first.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LFortran::source_offset(source.size()));
+        diag::Diagnostics diagnostics;
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        Allocator allocator(32 * 1024 * 1024);
+        PassManager passes;
+        std::string pass = "gpu_launch_sync", skip;
+        passes.parse_pass_arg(pass, skip);
+        options.po.pass_cumulative = true;
+        passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+        struct Syncs : public ASR::BaseWalkVisitor<Syncs> {
+            size_t launches = 0, syncs = 0;
+            void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &) {
+                launches++;
+            }
+            void visit_GpuSync(const ASR::GpuSync_t &) { syncs++; }
+        } counts;
+        auto *program = ASR::down_cast<ASR::Program_t>(
+            parsed.result->m_symtab->get_symbol("p"));
+        for (size_t i = 0; i < program->n_body; i++) {
+            counts.visit_stmt(*program->m_body[i]);
+        }
+        CHECK(counts.launches == 4);
+        return counts.syncs;
+    };
+    size_t local = syncs(" local(t)");
+    CHECK(local == 1);
+    CHECK(syncs("") == local);
+}

@@ -709,7 +709,260 @@ void gpu_collect_contained(SymbolTable *scope, std::set<std::string> &names) {
     }
 }
 
+// Whether the statements walked name the variable `v`, apart from the
+// parallel loop `skip`.
+class GpuNamesSymbol : public ASRUtils::BlockBodyWalkVisitor<GpuNamesSymbol> {
+public:
+    ASR::symbol_t *v;
+    const ASR::OMPRegion_t *skip;
+    bool found = false;
+    GpuNamesSymbol(ASR::symbol_t *v_, const ASR::OMPRegion_t *skip_ = nullptr)
+        : v(v_), skip(skip_) {}
+    void visit_Var(const ASR::Var_t &x) {
+        if (ASRUtils::symbol_get_past_external(x.m_v) == v) found = true;
+    }
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        if (&x == skip) return;
+        ASR::BaseWalkVisitor<GpuNamesSymbol>::visit_OMPRegion(x);
+    }
+};
+
+// Whether a statement holds an EXIT or a CYCLE, which can leave the
+// statements after it in its statement list for those after a loop.
+class GpuJumpFinder : public ASRUtils::BlockBodyWalkVisitor<GpuJumpFinder> {
+public:
+    bool found = false;
+    void visit_Cycle(const ASR::Cycle_t &) { found = true; }
+    void visit_Exit(const ASR::Exit_t &) { found = true; }
+};
+
+// What the statements that can run from some point on do with the value a
+// variable holds there: they may read it (Read), every way through them
+// replaces all of it before anything reads it (Replaced), or neither
+// (Kept: control may leave them with that value still held).
+enum class GpuValueUse { Kept, Read, Replaced };
+
+// Follows the statements that can run after the parallel loop `loop` to
+// tell whether one of them may read the value the loop leaves in `v`, a
+// variable no pointer can alias. The scan is conservative: a statement it
+// does not look inside reads `v` if it names it, a loop may run no trip,
+// and once an EXIT or CYCLE may have been passed, which can leave the
+// statements after it, no later assignment counts as replacing `v`.
+class GpuValueAfterLoop {
+public:
+    const ASR::OMPRegion_t &loop;
+    ASR::symbol_t *v;
+    bool jumped = false;
+
+    GpuValueAfterLoop(const ASR::OMPRegion_t &loop_, ASR::symbol_t *v_)
+        : loop(loop_), v(v_) {}
+
+    bool names(const ASR::stmt_t &s, const ASR::OMPRegion_t *skip = nullptr) {
+        GpuNamesSymbol n(v, skip);
+        n.visit_stmt(s);
+        return n.found;
+    }
+
+    bool names(ASR::expr_t *e) {
+        if (e == nullptr) return false;
+        GpuNamesSymbol n(v);
+        n.visit_expr(*e);
+        return n.found;
+    }
+
+    bool names(const ASR::do_loop_head_t &h) {
+        return names(h.m_v) || names(h.m_start) || names(h.m_end)
+            || names(h.m_increment);
+    }
+
+    // A statement list run from its start.
+    GpuValueUse run(ASR::stmt_t **stmts, size_t n) {
+        for (size_t i = 0; i < n; i++) {
+            GpuValueUse use = run(*stmts[i]);
+            if (use == GpuValueUse::Read) return use;
+            if (use == GpuValueUse::Replaced) {
+                return jumped ? GpuValueUse::Kept : use;
+            }
+            GpuJumpFinder jumps;
+            jumps.visit_stmt(*stmts[i]);
+            if (jumps.found) jumped = true;
+        }
+        return GpuValueUse::Kept;
+    }
+
+    // A loop's body: it reads the value the loop starts with if its first
+    // trip may; whatever it does, the loop may run no trip.
+    GpuValueUse run_loop_body(ASR::stmt_t **body, size_t n_body,
+            ASR::stmt_t **orelse, size_t n_orelse) {
+        if (run(body, n_body) == GpuValueUse::Read) return GpuValueUse::Read;
+        for (size_t i = 0; i < n_orelse; i++) {
+            if (names(*orelse[i])) return GpuValueUse::Read;
+        }
+        return GpuValueUse::Kept;
+    }
+
+    GpuValueUse run(const ASR::stmt_t &s) {
+        if (ASR::is_a<ASR::Assignment_t>(s)) {
+            const ASR::Assignment_t &a = *ASR::down_cast<ASR::Assignment_t>(&s);
+            if (a.m_overloaded == nullptr && ASR::is_a<ASR::Var_t>(*a.m_target)
+                    && ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(a.m_target)->m_v) == v) {
+                return names(a.m_value) ? GpuValueUse::Read
+                    : GpuValueUse::Replaced;
+            }
+        } else if (ASR::is_a<ASR::If_t>(s)) {
+            const ASR::If_t &x = *ASR::down_cast<ASR::If_t>(&s);
+            if (names(x.m_test)) return GpuValueUse::Read;
+            GpuValueUse body = run(x.m_body, x.n_body);
+            if (body == GpuValueUse::Read) return body;
+            GpuValueUse orelse = run(x.m_orelse, x.n_orelse);
+            if (orelse == GpuValueUse::Read) return orelse;
+            return body == GpuValueUse::Replaced
+                    && orelse == GpuValueUse::Replaced
+                ? GpuValueUse::Replaced : GpuValueUse::Kept;
+        } else if (ASR::is_a<ASR::DoLoop_t>(s)) {
+            const ASR::DoLoop_t &x = *ASR::down_cast<ASR::DoLoop_t>(&s);
+            if (names(x.m_head)) return GpuValueUse::Read;
+            return run_loop_body(x.m_body, x.n_body, x.m_orelse, x.n_orelse);
+        } else if (ASR::is_a<ASR::WhileLoop_t>(s)) {
+            const ASR::WhileLoop_t &x = *ASR::down_cast<ASR::WhileLoop_t>(&s);
+            if (names(x.m_test)) return GpuValueUse::Read;
+            return run_loop_body(x.m_body, x.n_body, x.m_orelse, x.n_orelse);
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(s)) {
+            const ASR::DoConcurrentLoop_t &x =
+                *ASR::down_cast<ASR::DoConcurrentLoop_t>(&s);
+            for (size_t i = 0; i < x.n_head; i++) {
+                if (names(x.m_head[i])) return GpuValueUse::Read;
+            }
+            // SHARED and LOCAL do not use the value; the body does.
+            for (size_t i = 0; i < x.n_reduction; i++) {
+                if (names(x.m_reduction[i].m_arg)) return GpuValueUse::Read;
+            }
+            return run_loop_body(x.m_body, x.n_body, nullptr, 0);
+        } else if (ASR::is_a<ASR::OMPRegion_t>(s)) {
+            const ASR::OMPRegion_t &x = *ASR::down_cast<ASR::OMPRegion_t>(&s);
+            for (size_t i = 0; i < x.n_clauses; i++) {
+                if (ASR::is_a<ASR::OMPShared_t>(*x.m_clauses[i])
+                        || ASR::is_a<ASR::OMPPrivate_t>(*x.m_clauses[i])) {
+                    continue;
+                }
+                GpuNamesSymbol n(v);
+                n.visit_omp_clause(*x.m_clauses[i]);
+                if (n.found) return GpuValueUse::Read;
+            }
+            return run_loop_body(x.m_body, x.n_body, nullptr, 0);
+        }
+        return names(s) ? GpuValueUse::Read : GpuValueUse::Kept;
+    }
+
+    // The statements of `stmts` that can run after `loop`, when one of
+    // them holds it, which `found` tells.
+    GpuValueUse after(ASR::stmt_t **stmts, size_t n, bool &found) {
+        found = false;
+        for (size_t i = 0; i < n; i++) {
+            GpuLoopFinder finder(&loop);
+            finder.visit_stmt(*stmts[i]);
+            if (!finder.found) continue;
+            found = true;
+            const ASR::stmt_t &s = *stmts[i];
+            GpuValueUse use = GpuValueUse::Kept;
+            bool inner = false;
+            if (&s == &loop.base) {
+                inner = true;
+            } else if (ASR::is_a<ASR::If_t>(s)) {
+                const ASR::If_t &x = *ASR::down_cast<ASR::If_t>(&s);
+                use = after(x.m_body, x.n_body, inner);
+                if (!inner) use = after(x.m_orelse, x.n_orelse, inner);
+            } else if (ASR::is_a<ASR::BlockCall_t>(s)) {
+                ASR::symbol_t *m = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(&s)->m_m);
+                if (ASR::is_a<ASR::Block_t>(*m)) {
+                    ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(m);
+                    use = after(b->m_body, b->n_body, inner);
+                }
+            } else if (ASR::is_a<ASR::AssociateBlockCall_t>(s)) {
+                ASR::symbol_t *m = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::AssociateBlockCall_t>(&s)->m_m);
+                if (ASR::is_a<ASR::AssociateBlock_t>(*m)) {
+                    ASR::AssociateBlock_t *b =
+                        ASR::down_cast<ASR::AssociateBlock_t>(m);
+                    use = after(b->m_body, b->n_body, inner);
+                }
+            } else if (ASR::is_a<ASR::DoLoop_t>(s)
+                    || ASR::is_a<ASR::WhileLoop_t>(s)) {
+                // A loop around `loop`: the rest of its body, then the
+                // next trips of it, or the statements after it.
+                ASR::stmt_t **body;
+                size_t n_body;
+                bool test_names;
+                if (ASR::is_a<ASR::DoLoop_t>(s)) {
+                    const ASR::DoLoop_t &x = *ASR::down_cast<ASR::DoLoop_t>(&s);
+                    body = x.m_body;
+                    n_body = x.n_body;
+                    test_names = names(x.m_head) || x.n_orelse > 0;
+                } else {
+                    const ASR::WhileLoop_t &x =
+                        *ASR::down_cast<ASR::WhileLoop_t>(&s);
+                    body = x.m_body;
+                    n_body = x.n_body;
+                    test_names = names(x.m_test) || x.n_orelse > 0;
+                }
+                use = after(body, n_body, inner);
+                if (inner && use == GpuValueUse::Kept) {
+                    if (test_names) return GpuValueUse::Read;
+                    if (run(body, n_body) == GpuValueUse::Read) {
+                        return GpuValueUse::Read;
+                    }
+                }
+            }
+            if (!inner) {
+                // Any other construct around `loop` can run its other
+                // statements after it.
+                if (names(s, &loop)) return GpuValueUse::Read;
+                GpuJumpFinder jumps;
+                jumps.visit_stmt(s);
+                if (jumps.found) jumped = true;
+            }
+            if (use != GpuValueUse::Kept) return use;
+            return run(stmts + i + 1, n - i - 1);
+        }
+        return GpuValueUse::Kept;
+    }
+};
+
 } // namespace
+
+bool gpu_value_read_after_loop(const ASR::OMPRegion_t &loop,
+        SymbolTable *scope, ASR::symbol_t *v) {
+    v = v ? ASRUtils::symbol_get_past_external(v) : nullptr;
+    if (v == nullptr || !ASR::is_a<ASR::Variable_t>(*v)) return true;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v);
+    // What a pointer may alias can be read without naming it.
+    if (var->m_target_attr || var->m_is_volatile
+            || ASRUtils::is_pointer(var->m_type)) {
+        return true;
+    }
+    ASR::symbol_t *proc = gpu_procedure_of(scope);
+    if (proc == nullptr) return true;
+    std::set<std::string> contained;
+    gpu_collect_contained(ASRUtils::symbol_symtab(proc), contained);
+    if (contained.count(var->m_name)) return true;
+    ASR::stmt_t **body;
+    size_t n_body;
+    if (ASR::is_a<ASR::Program_t>(*proc)) {
+        ASR::Program_t *p = ASR::down_cast<ASR::Program_t>(proc);
+        body = p->m_body;
+        n_body = p->n_body;
+    } else {
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(proc);
+        body = f->m_body;
+        n_body = f->n_body;
+    }
+    GpuValueAfterLoop scan(loop, v);
+    bool found;
+    GpuValueUse use = scan.after(body, n_body, found);
+    return !found || use == GpuValueUse::Read;
+}
 
 std::set<std::string> gpu_names_referenced_after_loop(
         const ASR::OMPRegion_t &loop, SymbolTable *scope, bool &everything) {
