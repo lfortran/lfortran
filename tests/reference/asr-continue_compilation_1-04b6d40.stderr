@@ -1898,6 +1898,12 @@ semantic error: an initialization expression cannot specify a value for allocata
 4515 |     type(cc1_alloc_component_t) :: cc1_alloc_component_v = cc1_alloc_component_t([1, 2])  ! {Error} an initialization expression cannot specify a value for allocatable component 'a' of a structure constructor
      |                                                                                  ^^^^^^ 
 
+semantic error: Variable 'cc1_char_len_nundef' is not declared
+    --> tests/errors/continue_compilation_1.f90:4578:19
+     |
+4578 |     character(len=cc1_char_len_nundef) :: c*4  ! {Error} Variable 'cc1_char_len_nundef' is not declared
+     |                   ^^^^^^^^^^^^^^^^^^^ 'cc1_char_len_nundef' is undeclared
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

@@ -29413,6 +29413,20 @@ public:
         // `character(len=*) :: c*4` declares `c` with length 4.
         bool has_entity_length = var_sym && (var_sym->m_length != nullptr
             || var_sym->m_sym == AST::DoubleAsterisk);
+        if (len_item && has_entity_length
+                && len_item->m_type == AST::kind_item_typeType::Value
+                && !is_funcCall_to_unresolved_genereicProcedure(len_item->m_value)) {
+            // The overridden type-spec length must still be a valid
+            // character length, even though its value is not used.
+            _processing_char_len = true;
+            visit_restricted_expr(*len_item->m_value,
+                RestrictedExprContext::CharacterLength);
+            ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+            check_specification_expr(len_expr,
+                RestrictedExprContext::CharacterLength);
+            _processing_char_len = false;
+            check_character_length_expr(len_expr, require_constant_length);
+        }
         if(len_item && !has_entity_length){ // Standard Fortran Declaration. `character(len=10) :: str`
             // Set length of the string -> [`:`, `*`, `expr`]
             switch (len_item->m_type) {
