@@ -4503,3 +4503,43 @@ subroutine cc_elem_calls_implicit()
     b = [1, 2, 3]
     call cc_elem_calls_ext(b)
 end subroutine
+
+module cc_elem_shapes_m
+    implicit none
+    type :: cc_elem_shapes_t
+        integer :: k
+    end type
+    interface assignment(=)
+        module procedure cc_elem_shapes_set
+    end interface
+contains
+    elemental integer function cc_elem_shapes_f(a, b)
+        integer, intent(in) :: a, b
+        cc_elem_shapes_f = a + b
+    end function
+
+    elemental subroutine cc_elem_shapes_s(x, y)
+        integer, intent(inout) :: x
+        integer, intent(in) :: y
+        x = x + y
+    end subroutine
+
+    elemental subroutine cc_elem_shapes_set(to, from)
+        type(cc_elem_shapes_t), intent(out) :: to
+        integer, intent(in) :: from
+        to%k = from
+    end subroutine
+
+    subroutine cc_elem_shapes_use()
+        integer :: a(3), b(4), m(2, 2), k
+        type(cc_elem_shapes_t) :: t
+        a = 1
+        b = 2
+        m = 3
+        k = 4
+        print *, cc_elem_shapes_f(a, m)
+        call cc_elem_shapes_s(k, a)
+        call cc_elem_shapes_s(a, b)
+        t = a
+    end subroutine
+end module

@@ -94,6 +94,29 @@ private:
     // 9.5.3.3.3 p3
     static bool output_no_repeated_vector_subscript(ASR::expr_t *actual,
         const ASR::Variable_t &dummy, diag::Diagnostics &diag);
+    // 15.8.2
+    static bool function_actuals_conform(const ASR::Function_t &f,
+        ASR::call_arg_t *args, size_t n_args, diag::Diagnostics &diag);
+    // 15.8.3
+    static bool subroutine_outputs_arrays(const ASR::Function_t &f,
+        ASR::call_arg_t *args, size_t n_args, diag::Diagnostics &diag);
+    // 15.8.3
+    static bool subroutine_inputs_conform(const ASR::Function_t &f,
+        ASR::call_arg_t *args, size_t n_args, diag::Diagnostics &diag);
+
+    static const ASR::Variable_t *dummy_variable(const ASR::Function_t &f,
+        size_t i);
+    static bool is_output(const ASR::Function_t &f, size_t i);
+    static bool may_be_absent(const ASR::Function_t &f, size_t i,
+        ASR::expr_t *actual);
+    static ASR::expr_t *shape_actual(const ASR::Function_t &f,
+        ASR::call_arg_t *args, size_t i);
+    static bool same_shape(ASR::expr_t *actual, ASR::expr_t *ref,
+        std::string &actual_label, std::string &ref_label);
+    static void add_shape_error(const std::string &message,
+        ASR::expr_t *actual, const std::string &actual_label,
+        ASR::expr_t *ref, const std::string &ref_label,
+        diag::Diagnostics &diag);
 };
 
 } // namespace LCompilers::LFortran

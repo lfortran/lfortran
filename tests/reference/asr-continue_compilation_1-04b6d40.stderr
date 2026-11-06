@@ -5441,6 +5441,42 @@ semantic error: elemental procedure 'cc_elem_calls_ext' needs an explicit interf
 4504 |     call cc_elem_calls_ext(b)
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^ put 'cc_elem_calls_ext' in a module or declare it in an interface block
 
+semantic error: the actual argument for dummy 'b' of elemental function 'cc_elem_shapes_f' must be a scalar or an array of the same shape as the other array arguments
+    --> tests/errors/continue_compilation_1.f90:4540:38
+     |
+4540 |         print *, cc_elem_shapes_f(a, m)
+     |                                      ^ rank 2
+     |
+4540 |         print *, cc_elem_shapes_f(a, m)
+     |                                   ~ rank 1
+
+semantic error: the actual argument for intent(inout) dummy 'x' of elemental subroutine 'cc_elem_shapes_s' must be an array of the same shape as the other output arrays, because another actual argument is an array
+    --> tests/errors/continue_compilation_1.f90:4541:31
+     |
+4541 |         call cc_elem_shapes_s(k, a)
+     |                               ^ a scalar
+     |
+4541 |         call cc_elem_shapes_s(k, a)
+     |                                  ~ an array
+
+semantic error: the actual argument for dummy 'y' of elemental subroutine 'cc_elem_shapes_s' must be a scalar or an array of the same shape as the other array arguments
+    --> tests/errors/continue_compilation_1.f90:4542:34
+     |
+4542 |         call cc_elem_shapes_s(a, b)
+     |                                  ^ extent 4 in dimension 1
+     |
+4542 |         call cc_elem_shapes_s(a, b)
+     |                               ~ extent 3 in dimension 1
+
+semantic error: the actual argument for intent(out) dummy 'to' of elemental subroutine 'cc_elem_shapes_set' must be an array of the same shape as the other output arrays, because another actual argument is an array
+    --> tests/errors/continue_compilation_1.f90:4543:9
+     |
+4543 |         t = a
+     |         ^ a scalar
+     |
+4543 |         t = a
+     |             ~ an array
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
