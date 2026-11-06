@@ -70,9 +70,28 @@ copy model, with the same table and the same contract:
 * lfortran_gpu_discard of a range a pending launch uses in place waits for
   the launch first, since the host frees the memory the kernel uses.
 
-The model is chosen when the runtime starts: LFORTRAN_GPU_MEMORY=copy or
-unified selects one, and auto (the default) selects unified on a device that
-is integrated with the host and can access its pageable memory.
+A device with memory of its own that the driver can share with the host page
+by page (CUDA managed memory on an NVIDIA GPU that supports concurrent
+managed access) has the managed memory model, a special case of the copy
+model too. The runtime replaces the program's allocator (the default
+allocator of lfortran_intrinsics.c), so that an allocation of at least
+MANAGED_MIN_BYTES, such as an allocatable array, is managed memory:
+
+* A range inside a managed allocation is used in place, as in the unified
+  model, and has no entry: the driver moves its pages to the device when a
+  kernel touches them, and back when the host does, one page at a time.
+  Nothing is copied at a launch, and lfortran_gpu_sync only waits.
+* The host does not change a range a pending launch reads before
+  lfortran_gpu_wait, as in the unified model.
+* Freeing managed memory waits for every launch first.
+* Smaller allocations, and memory the allocator did not make (stack and
+  static arrays), keep the copy model.
+
+The model is chosen at the first allocation the allocator could make managed
+or when the runtime starts, whichever is first: LFORTRAN_GPU_MEMORY=copy,
+unified or managed selects one, and auto (the default) selects unified on a
+device that is integrated with the host and can access its pageable memory,
+managed on an NVIDIA GPU with concurrent managed access, and copy otherwise.
 LFORTRAN_GPU_VERBOSE=1 prints the model chosen. In the unified memory model
 the runtime makes glibc keep freed memory mapped (keep_freed_memory_mapped);
 LFORTRAN_GPU_KEEP_MEMORY=0 leaves malloc as it is.
@@ -104,9 +123,138 @@ typedef struct resident {
     uint64_t last_use;
 } resident;
 
+// Ends the program with a message when `err` is an error.
+static void check(cudaError_t err, const char *what);
+
+enum { MEMORY_UNCHOSEN = -1, MEMORY_COPY, MEMORY_UNIFIED, MEMORY_MANAGED };
+static int memory_model = MEMORY_UNCHOSEN;
 // Whether kernels use host memory in place (the unified memory model)
 // rather than copies of it in device memory (the copy model).
 static int unified_memory = 0;
+
+// The smallest allocation the managed memory model makes managed memory:
+// making managed memory costs much more than malloc, and copying a smaller
+// range at a launch costs little.
+enum { MANAGED_MIN_BYTES = 1 << 20 };
+
+// The managed allocations, sorted by address.
+typedef struct managed_range {
+    char *base;
+    size_t size;
+    // No launch has used the allocation yet.
+    int fresh;
+} managed_range;
+static managed_range *managed = NULL;
+static size_t n_managed = 0, managed_capacity = 0;
+
+// The allocations are made and freed by host code, which may run on several
+// threads at once.
+#if defined(__GNUC__)
+static volatile int managed_lock_word = 0;
+static void managed_lock(void) {
+    while (__sync_lock_test_and_set(&managed_lock_word, 1)) {}
+}
+static void managed_unlock(void) {
+    __sync_lock_release(&managed_lock_word);
+}
+#else
+static void managed_lock(void) {}
+static void managed_unlock(void) {}
+#endif
+
+// The index of the first managed allocation that starts after `p`.
+static size_t managed_upper(const void *p) {
+    size_t lo = 0, hi = n_managed;
+    while (lo < hi) {
+        size_t mid = lo + (hi - lo)/2;
+        if ((const char *)p < managed[mid].base) hi = mid; else lo = mid + 1;
+    }
+    return lo;
+}
+
+// Whether the `size` bytes at `p` lie inside one managed allocation.
+static int managed_contains(const void *p, size_t size) {
+    if (n_managed == 0 || size == 0) return 0;
+    managed_lock();
+    size_t i = managed_upper(p);
+    int inside = i > 0 && (const char *)p + size
+        <= managed[i - 1].base + managed[i - 1].size;
+    managed_unlock();
+    return inside;
+}
+
+static int managed_record(void *p, size_t size) {
+    managed_lock();
+    if (n_managed == managed_capacity) {
+        size_t capacity = managed_capacity ? 2*managed_capacity : 64;
+        managed_range *grown = (managed_range *)realloc(managed,
+            capacity*sizeof(managed_range));
+        if (!grown) {
+            managed_unlock();
+            return 0;
+        }
+        managed = grown;
+        managed_capacity = capacity;
+    }
+    size_t i = managed_upper(p);
+    memmove(&managed[i + 1], &managed[i], (n_managed - i)*sizeof(managed_range));
+    managed[i].base = (char *)p;
+    managed[i].size = size;
+    managed[i].fresh = 1;
+    n_managed++;
+    managed_unlock();
+    return 1;
+}
+
+// Forgets the managed allocation that starts at `p` and returns its size, or
+// returns 0 if there is none.
+static size_t managed_forget(void *p) {
+    if (n_managed == 0 || !p) return 0;
+    managed_lock();
+    size_t i = managed_upper(p);
+    size_t size = 0;
+    if (i > 0 && managed[i - 1].base == (char *)p) {
+        size = managed[i - 1].size;
+        memmove(&managed[i - 1], &managed[i],
+            (n_managed - i)*sizeof(managed_range));
+        n_managed--;
+    }
+    managed_unlock();
+    return size;
+}
+
+// A launch is about to use the `size` bytes at `p`, inside a managed
+// allocation. The first launch that uses an allocation moves all of it to the
+// device in one go, which is several times faster than the page faults of
+// the kernel would (the host has usually just filled it). Later launches
+// leave the pages where they are: the host touches few of them in between,
+// and prefetching a range whose pages are on the device already costs more
+// than the faults it saves.
+static void managed_to_device(void *p, size_t size) {
+    managed_lock();
+    size_t i = managed_upper(p);
+    int fresh = i > 0 && managed[i - 1].fresh;
+    char *base = fresh ? managed[i - 1].base : NULL;
+    size_t length = fresh ? managed[i - 1].size : 0;
+    if (fresh) managed[i - 1].fresh = 0;
+    managed_unlock();
+    if (!fresh) return;
+    int device = 0;
+    check(cudaGetDevice(&device), "cudaGetDevice");
+    check(cudaMemPrefetchAsync(base, length, device, 0),
+        "cudaMemPrefetchAsync");
+    (void)size;
+}
+
+static size_t managed_size(void *p) {
+    if (n_managed == 0 || !p) return 0;
+    managed_lock();
+    size_t i = managed_upper(p);
+    size_t size = i > 0 && managed[i - 1].base == (char *)p
+        ? managed[i - 1].size : 0;
+    managed_unlock();
+    return size;
+}
 
 typedef struct slot_cache {
     void *buffers[MAX_ARGS];
@@ -385,8 +533,8 @@ static void* slot_buffer(slot_cache *cache, int idx, size_t size) {
 
 // The memory model of the device (see the comment at the top of this file),
 // from LFORTRAN_GPU_MEMORY and what the device reports.
-static int choose_unified_memory(int device) {
-    int integrated = 0, pageable = 0;
+static int choose_memory_model(int device) {
+    int integrated = 0, pageable = 0, concurrent = 0;
     if (cudaDeviceGetAttribute(&integrated, cudaDevAttrIntegrated, device)
             != cudaSuccess) {
         integrated = 0;
@@ -395,37 +543,55 @@ static int choose_unified_memory(int device) {
             device) != cudaSuccess) {
         pageable = 0;
     }
+    if (cudaDeviceGetAttribute(&concurrent,
+            cudaDevAttrConcurrentManagedAccess, device) != cudaSuccess) {
+        concurrent = 0;
+    }
     const char *value = getenv("LFORTRAN_GPU_MEMORY");
-    int unified;
+    int model;
     if (value == NULL || value[0] == '\0' || strcmp(value, "auto") == 0) {
-        unified = integrated && pageable;
+        if (integrated && pageable) {
+            model = MEMORY_UNIFIED;
+        } else {
+#ifdef LFORTRAN_GPU_HIP
+            // Managed memory on an AMD GPU moves pages on demand only with
+            // HSA_XNACK=1, which a separate GPU rarely runs with.
+            model = MEMORY_COPY;
+#else
+            model = concurrent ? MEMORY_MANAGED : MEMORY_COPY;
+#endif
+        }
     } else if (strcmp(value, "copy") == 0) {
-        unified = 0;
+        model = MEMORY_COPY;
     } else if (strcmp(value, "unified") == 0) {
         if (!pageable) {
             fprintf(stderr, "LFORTRAN_GPU_MEMORY=unified: the GPU cannot "
                 "access host memory (on an AMD GPU, set HSA_XNACK=1)\n");
             exit(1);
         }
-        unified = 1;
+        model = MEMORY_UNIFIED;
+    } else if (strcmp(value, "managed") == 0) {
+        model = MEMORY_MANAGED;
     } else {
         fprintf(stderr, "LFORTRAN_GPU_MEMORY=%s is not a memory model "
-            "(copy, unified or auto)\n", value);
+            "(copy, unified, managed or auto)\n", value);
         exit(1);
     }
     const char *verbose = getenv("LFORTRAN_GPU_VERBOSE");
     if (verbose != NULL && strcmp(verbose, "1") == 0) {
+        static const char *names[] = {"copy", "unified", "managed"};
         fprintf(stderr, "lfortran_gpu: %s memory model (the GPU is %s the "
-            "host and %s access its pageable memory)\n",
-            unified ? "unified" : "copy",
+            "host, %s access its pageable memory and %s managed memory "
+            "concurrently)\n", names[model],
             integrated ? "integrated with" : "separate from",
-            pageable ? "can" : "cannot");
+            pageable ? "can" : "cannot", concurrent ? "can access" :
+            "cannot access");
     }
 #ifdef LFORTRAN_GPU_HIP
     // An APU waits by blocking (lfortran_gpu_hip_block_while_waiting).
-    if (unified) lfortran_gpu_hip_block_while_waiting();
+    if (model == MEMORY_UNIFIED) lfortran_gpu_hip_block_while_waiting();
 #endif
-    return unified;
+    return model;
 }
 
 // In the unified memory model a kernel touches host memory through the
@@ -446,6 +612,99 @@ static void keep_freed_memory_mapped(void) {
 #endif
 }
 
+// The memory model, chosen on first use. Without a device it is the copy
+// model, and lfortran_gpu_init reports the error.
+static int current_memory_model(void) {
+    if (memory_model == MEMORY_UNCHOSEN) {
+        if (cudaSetDevice(0) != cudaSuccess) {
+            return MEMORY_COPY;
+        }
+        memory_model = choose_memory_model(0);
+        unified_memory = memory_model == MEMORY_UNIFIED;
+        if (unified_memory) keep_freed_memory_mapped();
+    }
+    return memory_model;
+}
+
+// The allocator of the program (lfortran_allocator_t in
+// lfortran_intrinsics.h, which the GPU runtime does not include: a program
+// links both).
+typedef struct host_allocator {
+    void* (*alloc)(void* context, int64_t size);
+    void* (*realloc_func)(void* context, void* ptr, int64_t new_size);
+    void  (*dealloc)(void* context, void* ptr);
+    void* context;
+} host_allocator;
+
+// The allocator the managed one replaced, which makes every allocation that
+// is not managed.
+static host_allocator previous_allocator;
+
+static void* managed_alloc(void *context, int64_t size) {
+    if (size >= MANAGED_MIN_BYTES
+            && current_memory_model() == MEMORY_MANAGED) {
+        void *p = NULL;
+        if (cudaMallocManaged(&p, (size_t)size, cudaMemAttachGlobal)
+                == cudaSuccess && p) {
+            if (managed_record(p, (size_t)size)) return p;
+            (void)cudaFree(p);
+        }
+    }
+    return previous_allocator.alloc(context, size);
+}
+
+static void managed_dealloc(void *context, void *ptr) {
+    if (managed_forget(ptr)) {
+        // A pending launch may still use the memory.
+        (void)cudaDeviceSynchronize();
+        (void)cudaFree(ptr);
+        return;
+    }
+    previous_allocator.dealloc(context, ptr);
+}
+
+static void* managed_realloc(void *context, void *ptr, int64_t size) {
+    size_t old = managed_size(ptr);
+    if (!old) return previous_allocator.realloc_func(context, ptr, size);
+    void *p = managed_alloc(context, size);
+    if (!p) return NULL;
+    memcpy(p, ptr, old < (size_t)size ? old : (size_t)size);
+    managed_dealloc(context, ptr);
+    return p;
+}
+
+#if defined(__GNUC__)
+// The program's allocator, which a program links from the LFortran runtime
+// library; a unit test of this file links none, so it is looked up rather
+// than referenced. A Mach-O link does not accept an undefined weak
+// reference, so on macOS the dynamic linker finds it.
+#if defined(__APPLE__)
+#include <dlfcn.h>
+static host_allocator *program_allocator(void) {
+    void *get = dlsym(RTLD_DEFAULT, "_lfortran_get_default_allocator");
+    return get ? ((host_allocator *(*)(void))get)() : NULL;
+}
+#else
+#ifdef __cplusplus
+extern "C"
+#endif
+host_allocator *_lfortran_get_default_allocator(void) __attribute__((weak));
+static host_allocator *program_allocator(void) {
+    return _lfortran_get_default_allocator
+        ? _lfortran_get_default_allocator() : NULL;
+}
+#endif
+
+__attribute__((constructor)) static void install_managed_allocator(void) {
+    host_allocator *a = program_allocator();
+    if (!a || a->alloc == managed_alloc) return;
+    previous_allocator = *a;
+    a->alloc = managed_alloc;
+    a->realloc_func = managed_realloc;
+    a->dealloc = managed_dealloc;
+}
+#endif
+
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
     static lfortran_gpu_ctx *singleton = NULL;
     if (singleton) return singleton;
@@ -454,8 +713,7 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
     // Without a device every launch would be skipped and the program would
     // continue with the values its loops never computed.
     check(cudaSetDevice(0), "cudaSetDevice");
-    unified_memory = choose_unified_memory(0);
-    if (unified_memory) keep_freed_memory_mapped();
+    current_memory_model();
     return singleton;
 }
 
@@ -468,6 +726,10 @@ void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     }
     memset(entries, 0, sizeof(entries));
     n_entries = 0;
+    // The reset frees the managed allocations too.
+    managed_lock();
+    n_managed = 0;
+    managed_unlock();
     cudaDeviceReset();
     free(ctx);
 }
@@ -610,6 +872,11 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         for (int i = 0; i < k->n_args; i++) {
             if (k->kind[i] != ARG_BUFFER || k->access[i] == LFORTRAN_GPU_READ)
                 continue;
+            if (managed_contains(k->buffer_host_ptrs[i], resident_sizes[i])) {
+                managed_to_device(k->buffer_host_ptrs[i], resident_sizes[i]);
+                k->buffer_device_ptrs[i] = k->buffer_host_ptrs[i];
+                continue;
+            }
             int discard = k->access[i] == LFORTRAN_GPU_WRITE_DISCARD
                 && lfortran_gpu_discard_allowed(i, k->buffer_host_ptrs,
                     k->buffer_sizes, is_buffer, k->n_args);
@@ -623,7 +890,11 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             size_t size = k->buffer_sizes[i];
             void *host = k->buffer_host_ptrs[i];
             void *d_ptr = NULL;
-            if (size > 0) {
+            if (size > 0 && managed_contains(host, size)) {
+                managed_to_device(host, size);
+                d_ptr = host;
+                reads_in_place = 1;
+            } else if (size > 0) {
                 d_ptr = dirty_resident(host, resident_sizes[i]);
                 if (!d_ptr && unified_memory
                         && size > UNIFIED_COPY_MAX_BYTES) {

@@ -180,6 +180,9 @@ cudaError_t cudaDeviceGetAttribute(int *value, cudaDeviceAttr attr,
         // memory model is the copy model, as on a GPU with memory of its own.
         case cudaDevAttrIntegrated: *value = 0; break;
         case cudaDevAttrPageableMemoryAccess: *value = 1; break;
+        // So that the default stays the copy model, as for unified memory;
+        // LFORTRAN_GPU_MEMORY=managed selects the managed one.
+        case cudaDevAttrConcurrentManagedAccess: *value = 0; break;
         default: return fail(cudaErrorInvalidValue);
     }
     return cudaSuccess;
@@ -251,6 +254,22 @@ cudaError_t cudaFree(void *ptr) {
     n_allocations--;
     stats.live_allocations = n_allocations;
     stats.frees++;
+    return cudaSuccess;
+}
+
+cudaError_t cudaMallocManaged(void **ptr, size_t size, unsigned int flags) {
+    if (flags != cudaMemAttachGlobal) return fail(cudaErrorInvalidValue);
+    return cudaMalloc(ptr, size);
+}
+
+cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count, int device,
+    cudaStream_t stream)
+{
+    (void)device;
+    if (stream != 0) return fail(cudaErrorInvalidResourceHandle);
+    if (count > 0 && !device_range(ptr, count)) {
+        return fail(cudaErrorInvalidValue);
+    }
     return cudaSuccess;
 }
 

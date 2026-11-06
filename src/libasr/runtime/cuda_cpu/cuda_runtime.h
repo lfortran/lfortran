@@ -51,8 +51,13 @@ typedef enum cudaDeviceAttr {
     cudaDevAttrWarpSize = 10,
     cudaDevAttrIntegrated = 18,
     cudaDevAttrL2CacheSize = 38,
-    cudaDevAttrPageableMemoryAccess = 88
+    cudaDevAttrPageableMemoryAccess = 88,
+    cudaDevAttrConcurrentManagedAccess = 89
 } cudaDeviceAttr;
+
+// The only flag of cudaMallocManaged: the memory is accessible from every
+// stream.
+#define cudaMemAttachGlobal 0x01
 
 // Only the default stream (0) exists.
 typedef struct lfortran_cuda_cpu_stream *cudaStream_t;
@@ -73,6 +78,14 @@ cudaError_t cudaDeviceSynchronize(void);
 cudaError_t cudaDeviceReset(void);
 cudaError_t cudaMalloc(void **ptr, size_t size);
 cudaError_t cudaFree(void *ptr);
+// Memory the host and the device both access: emulated device memory, which
+// is host memory.
+cudaError_t cudaMallocManaged(void **ptr, size_t size, unsigned int flags);
+// Moving managed memory between the host and the device does nothing: both
+// are host memory.
+#define cudaCpuDeviceId (-1)
+cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count, int device,
+    cudaStream_t stream);
 cudaError_t cudaMemcpy(void *dst, const void *src, size_t count,
     cudaMemcpyKind kind);
 cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count,
