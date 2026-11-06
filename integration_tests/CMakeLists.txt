@@ -3982,6 +3982,7 @@ RUN(NAME test_endfile_02 LABELS gfortran llvm)
 RUN(NAME test_endfile_03 LABELS gfortran llvm)
 RUN(NAME endfile_iomsg_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME iostat_array_component_01 LABELS gfortran llvm)
+RUN(NAME iomsg_component_01 LABELS gfortran llvm)
 
 RUN(NAME class_01 LABELS gfortran llvm)
 RUN(NAME class_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
