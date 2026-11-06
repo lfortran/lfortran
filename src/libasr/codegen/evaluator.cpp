@@ -1143,11 +1143,16 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     // SROA runs before the vectorizer, so a fixed-size local array that the
     // vectorized loop then accesses keeps its stack slot. Simplifying once
     // more promotes it and exposes the reductions the vectorizer built.
+    // The loop passes after the last GVN also leave loads of memory that
+    // was set from constants, such as the values a loop starts from; GVN
+    // forwards them, so the horizontal reduction pass can see the
+    // components that stay zero across the loop.
     if (!late_functions.empty()) {
 #if LLVM_VERSION_MAJOR >= 17
         llvm::FunctionPassManager LateFPM;
         LateFPM.addPass(llvm::SROAPass(llvm::SROAOptions(
             llvm::SROAOptions::ModifyCFG)));
+        LateFPM.addPass(llvm::GVNPass());
         LateFPM.addPass(llvm::InstCombinePass());
         LateFPM.addPass(llvm::SimplifyCFGPass());
         for (llvm::Function *f : late_functions) {
@@ -1161,6 +1166,7 @@ void LLVMEvaluator::opt(llvm::Module &m) {
         late.add(llvm::createTargetTransformInfoWrapperPass(
             TM->getTargetIRAnalysis()));
         late.add(llvm::createSROAPass());
+        late.add(llvm::createGVNPass());
         late.add(llvm::createInstructionCombiningPass());
         late.add(llvm::createCFGSimplificationPass());
         late.doInitialization();
