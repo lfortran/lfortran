@@ -3510,6 +3510,7 @@ RUN(NAME associate_60 LABELS llvm) # gfortran skips the temporary for associate 
 RUN(NAME associate_61 LABELS llvm) # gfortran aliases a parenthesized (expression) selector instead of copying it, and rejects the (str(2:4)) selector
 RUN(NAME associate_62 LABELS gfortran llvm)
 RUN(NAME associate_63 LABELS gfortran llvm)
+RUN(NAME associate_64 LABELS gfortran llvm)
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
