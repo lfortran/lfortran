@@ -444,8 +444,40 @@ static int overlaps_dirty(void *host, size_t size) {
 
 // ------------------------------------------------------------ context ---
 
+static lfortran_gpu_ctx *singleton = NULL;
+static int telemetry_at_exit_registered = 0;
+
+// With LFORTRAN_GPU_PROFILE=1 the telemetry is printed when the runtime
+// shuts down or the program ends. The snapshot does not sync, which could
+// end the program from an exit handler: the host syncs before a procedure
+// that launches returns, but after a `stop` the numbers may leave out the
+// launches still pending.
+static void print_telemetry(lfortran_gpu_ctx *ctx) {
+    lfortran_gpu_metal_telemetry t;
+    lfortran_gpu_metal_telemetry_snapshot(ctx, &t);
+    char elapsed[32] = "n/a", busy[32] = "n/a";
+    if (t.gpu_timing_available) {
+        snprintf(elapsed, sizeof(elapsed), "%.3fs", t.gpu_elapsed_seconds);
+        snprintf(busy, sizeof(busy), "%.3fs", t.gpu_busy_seconds);
+    }
+    fprintf(stderr, "lfortran_gpu: commits=%llu completed=%llu "
+        "dispatches=%llu host_syncs=%llu host_waits=%llu h2d=%.1fMB "
+        "d2h=%.1fMB allocs=%llu alloc=%.1fMB gpu_elapsed=%s gpu_busy=%s "
+        "jit=%.3fs\n",
+        (unsigned long long)t.commits,
+        (unsigned long long)t.completed_command_buffers,
+        (unsigned long long)t.dispatches,
+        (unsigned long long)t.host_syncs, (unsigned long long)t.host_waits,
+        t.memcpy_h2d_bytes / 1e6, t.memcpy_d2h_bytes / 1e6,
+        (unsigned long long)t.buffer_allocations, t.buffer_alloc_bytes / 1e6,
+        elapsed, busy, t.jit_seconds);
+}
+
+static void print_telemetry_at_exit(void) {
+    if (singleton) print_telemetry(singleton);
+}
+
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
-    static lfortran_gpu_ctx *singleton = NULL;
     if (singleton) return singleton;
     singleton = (lfortran_gpu_ctx*)calloc(1, sizeof(lfortran_gpu_ctx));
     singleton->device = MTLCreateSystemDefaultDevice();
@@ -459,12 +491,20 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
     singleton->last_command_buffer = nil;
     singleton->profile_enabled = gpu_profile_enabled();
     singleton->telemetry.gpu_timing_available = singleton->profile_enabled;
+    if (singleton->profile_enabled && !telemetry_at_exit_registered) {
+        telemetry_at_exit_registered = 1;
+        atexit(print_telemetry_at_exit);
+    }
     return singleton;
 }
 
 void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     if (!ctx) return;
     sync_all(ctx);
+    // A later lfortran_gpu_init makes a new context; the exit handler no
+    // longer prints this one.
+    if (ctx == singleton) singleton = NULL;
+    if (ctx->profile_enabled) print_telemetry(ctx);
     for (int i = 0; i < n_entries; i++) {
         if (entries[i].used) remove_entry(i);
     }

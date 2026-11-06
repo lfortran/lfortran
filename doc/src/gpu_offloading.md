@@ -937,6 +937,23 @@ leaves in a scratch buffer is still there for the later chunks and for the
 host to read back. Between launches, what a launch leaves in a scratch
 buffer is dead.
 
+### Metal telemetry
+
+With `LFORTRAN_GPU_PROFILE=1` the Metal runtime collects telemetry -- the
+command buffers committed and completed, the dispatches, the host syncs and
+waits, the bytes copied each way, the device buffers made and their bytes,
+the time the device spent running the command buffers (their sum and their
+union), and the time spent compiling kernels -- which
+`lfortran_gpu_metal_telemetry_snapshot` returns, and which is printed to
+standard error when the program ends (or `lfortran_gpu_shutdown` runs):
+
+```
+lfortran_gpu: commits=8 completed=8 dispatches=23 host_syncs=8 host_waits=8 h2d=12.6MB d2h=4.2MB allocs=5 alloc=2.6MB gpu_elapsed=0.001s gpu_busy=0.001s jit=0.007s
+```
+
+The device times are `n/a` when Metal does not report them. The numbers
+may leave out launches still pending when the program ends with `stop`.
+
 ### Where the host waits
 
 The `gpu_launch_sync` pass, which runs just before `device_launch_expand`,

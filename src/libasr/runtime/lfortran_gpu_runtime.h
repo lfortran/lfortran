@@ -79,8 +79,10 @@ typedef struct lfortran_gpu_ctx    lfortran_gpu_ctx;
 typedef struct lfortran_gpu_kernel lfortran_gpu_kernel;
 
 // Optional Metal telemetry collected by the runtime when command buffers are
-// retired on the host. It is opt-in via LFORTRAN_GPU_PROFILE=1. The snapshot
-// is cumulative and non-blocking; timings include only retired command buffers.
+// retired on the host. It is opt-in via LFORTRAN_GPU_PROFILE=1, which also
+// prints it to stderr when the runtime shuts down or the program ends. The
+// snapshot is cumulative and non-blocking; timings include only retired
+// command buffers.
 // Use snapshot_sync at measurement boundaries before subtracting snapshots.
 // Elapsed time sums command-buffer intervals; busy time is their union, not
 // hardware occupancy. Copy counters exclude inline/scalar setBytes arguments.
