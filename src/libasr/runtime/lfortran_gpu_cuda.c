@@ -55,7 +55,7 @@ default stream ordering every copy and launch:
 
 That is the copy memory model, which every device has. A device that shares
 the host's memory and can access what the host allocated (an APU such as the
-AMD MI300A with HSA_XNACK=1) has the unified memory model too, where a kernel
+AMD MI300A with XNACK on) has the unified memory model too, where a kernel
 uses host memory in place and nothing is copied. It is a special case of the
 copy model, with the same table and the same contract:
 
@@ -568,8 +568,11 @@ static int choose_memory_model(int device) {
             model = MEMORY_UNIFIED;
         } else {
 #ifdef LFORTRAN_GPU_HIP
-            // Managed memory on an AMD GPU moves pages on demand only with
-            // HSA_XNACK=1, which a separate GPU rarely runs with.
+            // With XNACK on, managed memory on a separate AMD GPU moves pages
+            // on demand, but its speed varied from 5 to 1,380 GB/s between
+            // identical runs of a STREAM triad on an MI210; the copy model
+            // runs it at about 1 TB/s. With XNACK off a kernel reads the
+            // managed pages the host touched from host memory, at 7 GB/s.
             model = MEMORY_COPY;
 #else
             model = concurrent ? MEMORY_MANAGED : MEMORY_COPY;
@@ -580,7 +583,8 @@ static int choose_memory_model(int device) {
     } else if (strcmp(value, "unified") == 0) {
         if (!pageable) {
             fprintf(stderr, "LFORTRAN_GPU_MEMORY=unified: the GPU cannot "
-                "access host memory (on an AMD GPU, set HSA_XNACK=1)\n");
+                "access host memory (on an AMD GPU, XNACK must be on: "
+                "HSA_XNACK=1)\n");
             exit(1);
         }
         model = MEMORY_UNIFIED;
@@ -716,6 +720,15 @@ __attribute__((constructor)) static void install_managed_allocator(void) {
     a->alloc = managed_alloc;
     a->realloc_func = managed_realloc;
     a->dealloc = managed_dealloc;
+}
+#endif
+
+#ifdef LFORTRAN_GPU_HIP
+// Before the program, and so before any HIP call (the HIP runtime starts at
+// the first one): an APU such as the MI300A can then run in the unified
+// model without the user setting HSA_XNACK=1.
+__attribute__((constructor)) static void enable_xnack(void) {
+    lfortran_gpu_hip_enable_xnack();
 }
 #endif
 

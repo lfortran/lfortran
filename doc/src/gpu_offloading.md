@@ -843,7 +843,7 @@ through its run path.
 A GPU with memory of its own -- every discrete GPU, NVIDIA's and AMD's -- runs
 a kernel on copies of the host's arrays in device memory: the *copy model*
 above. A GPU that shares the host's memory and can access what the host
-allocated, such as the AMD MI300A with `HSA_XNACK=1`, can also run a kernel on
+allocated, such as the AMD MI300A with XNACK on, can also run a kernel on
 the host's arrays where they are: the *unified model*. On an MI300A a kernel
 runs at the same speed either way, but the copies cost: a copy between host
 and device memory runs at about 58 GB/s there, while the kernels run at about
@@ -914,9 +914,20 @@ The runtime selects the model at the first allocation it could make managed,
 or when it starts. `LFORTRAN_GPU_MEMORY=copy`, `unified` or `managed` selects
 one; `auto`, the default, selects the unified model on a GPU that reports
 that it is integrated with the host and can access its pageable memory (on
-AMD, an APU run with `HSA_XNACK=1`), the managed model on an NVIDIA GPU with
-concurrent managed access, and the copy model otherwise (on a separate AMD
-GPU too, where managed memory moves pages on demand only with `HSA_XNACK=1`).
+AMD, an APU with XNACK on), the managed model on an NVIDIA GPU with
+concurrent managed access, and the copy model otherwise. A separate AMD GPU
+keeps the copy model: with XNACK off a kernel reads the managed pages the host
+touched from host memory (a STREAM triad ran at 7 GB/s on an MI210), and with
+it on its speed varied from 5 to 1,380 GB/s between identical runs.
+
+XNACK is what lets an AMD GPU serve its page faults, and so access memory the
+host allocated. ROCm turns it on for a process run with `HSA_XNACK=1`, and
+reads the variable once, when the HIP runtime starts. The HIP runtime of
+LFortran sets `HSA_XNACK=1` before the program starts unless the user set it,
+so an MI300A runs in the unified model by default and `HSA_XNACK=0` keeps
+XNACK off (and the copy model). A GPU or kernel that cannot serve the page
+faults keeps XNACK off whatever the variable says. Programs the program
+starts inherit the variable.
 `unified` on a GPU that cannot access host memory is an error.
 `LFORTRAN_GPU_VERBOSE=1` prints the model selected. The CPU emulation reports
 a separate device that can access host memory but not managed memory
@@ -1137,7 +1148,7 @@ with a `stop` before that.
   (`--gpu=cuda`), and `integration_tests -b hip` on an AMD GPU
   (`--gpu=hip`). There are no `cuda_cpu` and `hip` labels. The memory models
   are tested by running a backend with `LFORTRAN_GPU_MEMORY=copy` and
-  `unified`: the CPU emulation in either, an AMD APU with `HSA_XNACK=1` in
+  `unified`: the CPU emulation in either, an AMD APU with XNACK on in
   either, and a discrete GPU in the copy model.
 * Compiling is not enough: an offloaded loop can compile and still compute the
   wrong values. Integration tests therefore check their results in the program,
