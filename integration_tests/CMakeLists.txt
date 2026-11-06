@@ -3280,6 +3280,7 @@ RUN(NAME derived_types_252 LABELS gfortran llvm) # element of an array component
 RUN(NAME derived_types_253 LABELS gfortran llvm) # scalar component of an element of an array component, a%x(2)%u (#13629)
 RUN(NAME derived_types_254 LABELS gfortran llvm) # pointer array component of a component, a%b%p, passed to an explicit-shape dummy (#16887)
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
+RUN(NAME derived_types_vector_subscript_01 LABELS gfortran llvm) # vector subscript then component, c(idx)%n and z(idx)%re (#16913)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)
