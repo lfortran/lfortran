@@ -4893,3 +4893,25 @@ subroutine cc1_continuation_ampersand_location()
         & 2
     i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
 end subroutine
+
+module cc1_io_named_constant
+    type :: cc1_io_nc_t
+        integer :: i
+        character(len=8) :: s
+    end type
+    character(len=*), parameter :: cc1_io_nc_c = "abcdef"
+    integer, parameter :: cc1_io_nc_a(2) = [1, 2]
+    type(cc1_io_nc_t), parameter :: cc1_io_nc_k = cc1_io_nc_t(1, "abc")
+contains
+    subroutine cc1_io_nc_sub()
+        integer :: ios, u
+        open(newunit=u, file="x", iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} Non-variable expression for `iomsg`
+        write(*, *, iostat=cc1_io_nc_k%i) 1  ! {Error} Non-variable expression for `iostat`
+        read(*, *, iostat=ios, iomsg=cc1_io_nc_k%s) u  ! {Error} Non-variable expression for `iomsg`
+        close(unit=99, iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} `iomsg` must be of type, String or StringPointer
+        backspace(unit=99, iostat=ios, iomsg=cc1_io_nc_c(1:3))  ! {Error} `iomsg` must be a variable of type Character
+        backspace(unit=99, iostat=cc1_io_nc_k%i)  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
+        backspace(unit=99, iostat=ios, iomsg=cc1_io_nc_k%s)  ! {Error} `iomsg` must be a variable of type Character
+        backspace(unit=99, iostat=cc1_io_nc_a(2))  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
+    end subroutine
+end module
