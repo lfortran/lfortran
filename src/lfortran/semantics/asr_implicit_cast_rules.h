@@ -702,6 +702,10 @@ public:
 
       if( !ASRUtils::is_array(source_type) ) {
           dest_type = dest_type2;
+      } else {
+          // The converted value is not itself a pointer, even when the
+          // entity it is converted for (e.g. an associate name) is one.
+          dest_type = ASRUtils::type_get_past_pointer(dest_type);
       }
       if( ASRUtils::is_array(source_type) && !ASRUtils::is_array(dest_type) ) {
           ASR::dimension_t* m_dims = nullptr;
