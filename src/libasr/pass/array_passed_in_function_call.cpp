@@ -363,7 +363,10 @@ public:
         if (ASR::is_a<ASR::ArrayConstructor_t>(*value) &&
                !PassUtils::is_args_contains_allocatable(value)) {
             ASR::ArrayConstructor_t* arr_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(value);
-            value_m_dims->m_length = ASRUtils::get_ArrayConstructor_size(al, arr_constructor);
+            ASR::expr_t* constructor_size = ASRUtils::get_ArrayConstructor_size(al, arr_constructor);
+            if( constructor_size != nullptr ) {
+                value_m_dims->m_length = constructor_size;
+            }
         }
 
         /*
@@ -855,8 +858,11 @@ public:
                 ASR::dimension_t allocate_dim;
                 allocate_dim.loc = loc;
                 allocate_dim.m_start = index_one;
+                // The statements that count its elements, if it needs
+                // any, go before the allocation.
+                ASRUtils::ArraySizeStatements size_stmts{current_body, current_scope};
                 allocate_dim.m_length = ASRUtils::get_ArrayConstructor_size(al,
-                    ASR::down_cast<ASR::ArrayConstructor_t>(value));
+                    ASR::down_cast<ASR::ArrayConstructor_t>(value), &size_stmts);
                 allocate_dims.push_back(al, allocate_dim);
                 break;
             }

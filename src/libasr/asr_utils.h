@@ -2279,15 +2279,36 @@ ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type
 ASR::expr_t* get_expr_size_expr(ASR::expr_t* x, bool inside_binop = false);
 ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
-ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);
+// Where the size of an array constructor can be computed with statements:
+// they are appended to `body`, and the variables they need are added to
+// `scope`. The number of elements of an implied-do loop whose values have
+// sizes that depend on its variable, as in [((j, j = i, n), i = 1, m)], is
+// the sum of those sizes over the values of the variable, which only a loop
+// can compute in general.
+struct ArraySizeStatements {
+    Vec<ASR::stmt_t*>* body;
+    SymbolTable* scope;
+};
 
-// The sum of `term` over the `trip_count` values that the implied-do loop
-// `idl` gives its variable, in the type of `trip_count`. `term` may depend on
-// the variable, but only linearly, as the trip count of a loop nested in
-// `idl` does when its bounds are linear in the variable: the sum is then
-// trip_count * (term(first value) + term(last value)) / 2.
-ASR::expr_t* get_ImpliedDoLoop_sum(Allocator& al, ASR::ImpliedDoLoop_t* idl,
-    ASR::expr_t* term, ASR::expr_t* trip_count);
+// The number of elements of `implied_doloop`. Without `stmts`, nullptr if it
+// can only be computed with statements. With `clamp`, every trip count is
+// taken as max(0, trip count), as the sizes summed by a loop must be.
+ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop,
+    ArraySizeStatements* stmts = nullptr, bool clamp = false);
+
+// Appends to `stmts`
+//     count = 0
+//     do var = start, end, step
+//         count = count + iteration_size
+//     end do
+// for the implied-do loop `idl` and returns `count`, a new variable of type
+// `count_type`. `iteration_size` gives the number of elements of one
+// iteration, in `count_type`, and may append statements to the loop body it
+// is given.
+ASR::expr_t* count_ImpliedDoLoop_elements(Allocator& al,
+    ASR::ImpliedDoLoop_t* idl, ASR::ttype_t* count_type,
+    ArraySizeStatements& stmts,
+    const std::function<ASR::expr_t*(ArraySizeStatements&)>& iteration_size);
 
 // The extent (end - start)/step + 1 of a section triplet, in the type
 // `size_type`.
@@ -2295,7 +2316,10 @@ ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
     ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step,
     ASR::ttype_t* size_type);
 
-ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x);
+// The number of elements of `x`; `stmts` and `clamp` as for
+// get_ImpliedDoLoop_size.
+ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x,
+    ArraySizeStatements* stmts = nullptr, bool clamp = false);
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
