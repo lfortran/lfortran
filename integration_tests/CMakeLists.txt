@@ -4768,6 +4768,7 @@ RUN(NAME dead_array_store_01 LABELS gfortran llvm)
 RUN(NAME dead_array_store_02 LABELS gfortran llvm)
 RUN(NAME dead_array_store_03 LABELS gfortran llvm
         EXTRAFILES dead_array_store_03_pending.f90)
+RUN(NAME dead_array_store_04 LABELS gfortran llvm)
 
 RUN(NAME finalization_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME finalization_02 LABELS gfortran llvm EXTRA_ARGS -g GFORTRAN_ARGS -g)
