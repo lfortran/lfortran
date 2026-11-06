@@ -2127,6 +2127,44 @@ static inline void repeat_list_add(Vec<ast_t*> &v, Allocator &al,
         /*body*/ STMTS(body), \
         /*n_body*/ body.size(), trivia_cast(trivia), nullptr)
 
+// Splits `word`, a word of an OpenMP directive name, into the keywords it is
+// made of and appends them to `words`: blanks between the keywords of a
+// directive name are optional, so `enddo` is `end do` and `endparalleldo` is
+// `end parallel do`. Text from a `(` on (`critical(name)`) stays with the last
+// keyword. `end` is accepted only at the start of the first word, as
+// `allow_end` says. Returns false, appending nothing, if `word` is not made of
+// directive-name keywords only.
+static inline bool split_omp_directive_word(const std::string &word,
+        bool allow_end, std::vector<std::string> &words) {
+    // `taskloop` comes before its prefix `task`
+    static const std::string keywords[] = {"distribute", "critical",
+        "parallel", "sections", "taskloop", "atomic", "master", "single",
+        "target", "teams", "task", "do"};
+    std::string name = word.substr(0, word.find('('));
+    std::vector<std::string> parts;
+    size_t pos = 0;
+    if (allow_end && LCompilers::startswith(name, "end")) {
+        parts.push_back("end");
+        pos = 3;
+    }
+    while (pos < name.size()) {
+        const std::string *keyword = nullptr;
+        for (const std::string &k : keywords) {
+            if (name.compare(pos, k.size(), k) == 0) {
+                keyword = &k;
+                break;
+            }
+        }
+        if (keyword == nullptr) return false;
+        parts.push_back(*keyword);
+        pos += keyword->size();
+    }
+    if (parts.empty()) return false;
+    parts.back() += word.substr(name.size());
+    words.insert(words.end(), parts.begin(), parts.end());
+    return true;
+}
+
 static inline ast_t* OMP_PRAGMA2(Allocator &al,
         Location &loc, std::string omp_str) {
     std::string lower_text = LCompilers::to_lower(omp_str);
@@ -2145,7 +2183,14 @@ static inline ast_t* OMP_PRAGMA2(Allocator &al,
                 LCompilers::s2c(al, omp_str), nullptr);
         }
     }
-    std::vector<std::string> omp_stmt = LCompilers::string_split_avoid_parentheses(omp_str);
+    std::vector<std::string> words = LCompilers::string_split_avoid_parentheses(omp_str);
+    // Spell the directive name with blanks between its keywords
+    std::vector<std::string> omp_stmt(words.begin(), words.begin() + 1);
+    size_t j = 1;
+    while (j < words.size() && split_omp_directive_word(words[j], j == 1, omp_stmt)) {
+        j++;
+    }
+    omp_stmt.insert(omp_stmt.end(), words.begin() + j, words.end());
     size_t i = 1;
     bool m_end = false;
     std::string construct_name = omp_stmt[i++];
