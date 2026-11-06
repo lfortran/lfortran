@@ -116,6 +116,22 @@ namespace LCompilers::LanguageServerProtocol {
         return _exit;
     }
 
+    auto BaseLspLanguageServer::join() -> void
+    {
+        // NOTE: The listener only returns once it observes the stop signal, and
+        // the "exit" notification may not have been handled yet when the input
+        // stream ends. exit() is idempotent, so call it here to guarantee the
+        // thread can be joined rather than left joinable and terminated by the
+        // destructor of its std::thread.
+        exit();
+        if (listener.joinable()) {
+            listener.join();
+            logger.debug()
+                << "Incoming-message listener terminated."
+                << std::endl;
+        }
+    }
+
     auto BaseLspLanguageServer::initializeParams() const
     -> const InitializeParams &
     {

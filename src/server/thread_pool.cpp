@@ -113,8 +113,15 @@ namespace LCompilers::LLanguageServer::Threading {
     }
 
     auto ThreadPool::join() -> void {
-        std::unique_lock<std::recursive_mutex> lock(workerMutex);
-        for (std::thread &worker : workers) {
+        // NOTE: workerMutex is released before joining: a task that is still
+        // running may call numThreads() while collecting telemetry, and that
+        // needs the same mutex. Holding it here would deadlock the join.
+        std::vector<std::thread> threads;
+        {
+            std::unique_lock<std::recursive_mutex> lock(workerMutex);
+            threads.swap(workers);
+        }
+        for (std::thread &worker : threads) {
             if (worker.joinable()) {
                 worker.join();
                 logger.debug() << "Terminated thread." << std::endl;

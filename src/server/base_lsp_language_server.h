@@ -48,6 +48,7 @@ namespace LCompilers::LanguageServerProtocol {
     class BaseLspLanguageServer : public LspLanguageServer {
     public:
         auto isTerminated() const -> bool override;
+        auto join() -> void override;
     protected:
         BaseLspLanguageServer(
             ls::MessageQueue &incomingMessages,
