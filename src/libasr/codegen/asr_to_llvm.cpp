@@ -16844,10 +16844,11 @@ public:
             }
             } // end else (rank >= 1)
         } else if (
-            m_new == ASR::array_physical_typeType::PointerArray &&
+            (m_new == ASR::array_physical_typeType::PointerArray ||
+             m_new == ASR::array_physical_typeType::UnboundedPointerArray) &&
             m_old == ASR::array_physical_typeType::AssumedRankArray) {
-            
-            tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(arr_type, arg));
+            // Both are pointers to the first element of the array data.
+            tmp =llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(arr_type, arg));
             tmp = llvm_utils->create_ptr_gep2(data_type, tmp, arr_descr->get_offset(arr_type, arg));
         } else if (
             m_new == ASR::array_physical_typeType::FixedSizeArray &&
