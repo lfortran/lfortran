@@ -93,8 +93,11 @@ values in its private scalars, except for these statements:
   of the device heap. The other lanes wait for it, and then take every
   private scalar it assigned from the first lane (GpuLaneBroadcast).
   Consecutive single statements run together.
-* A loop or `if` that holds a distributed loop runs on every lane, which go
-  through it together; what is inside is rewritten in turn.
+* A loop, `if` or block that holds a distributed loop runs on every lane,
+  which go through it together; what is inside is rewritten in turn. A
+  block that holds none is a statement like any other: it runs on every
+  lane, or on the first alone, without its own locals, which are gone
+  after it, to hand on to the others.
 
 A kernel is rewritten only if it has a loop to distribute, and only if all
 of the following holds of every single statement: it does not return (a
@@ -637,13 +640,34 @@ public:
     bool associates = false;
     // A statement this pass does not know.
     bool unknown = false;
-    // The private scalars it may assign.
+    // The private scalars it may assign, but for the locals of the blocks
+    // inside it: Fortran gives such a local no value when its block starts,
+    // so each run of the block, on each lane, has its own, and none is left
+    // after the block.
     std::set<ASR::symbol_t*> scalars;
     // The status buffers of the stops it records.
     std::set<ASR::symbol_t*> statuses;
     std::set<ASR::symbol_t*> blocks;
+    // The scopes of those blocks.
+    std::set<SymbolTable*> block_scopes;
 
     explicit Effects(const KernelInfo &k_) : k(k_) {}
+
+    // Whether `s` is a local of a block inside the statements walked, with
+    // no value kept from one run of the block to the next.
+    bool block_local(ASR::symbol_t *s) const {
+        if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+        if (v->m_storage == ASR::storage_typeType::Save
+                || v->m_symbolic_value || v->m_value) {
+            return false;
+        }
+        return block_scopes.count(v->m_parent_symtab) > 0;
+    }
+
+    void assigns_scalar(ASR::symbol_t *s) {
+        if (!block_local(s)) scalars.insert(s);
+    }
 
     void target(ASR::expr_t *e) {
         ASR::symbol_t *r = root_of(e);
@@ -652,7 +676,7 @@ public:
             return;
         }
         if (ASR::is_a<ASR::Var_t>(*e) && k.private_scalar(r)) {
-            scalars.insert(r);
+            assigns_scalar(r);
         } else if (k.shared(r)) {
             shared_effect = true;
         } else {
@@ -735,6 +759,7 @@ public:
         ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
         if (!blocks.insert(b).second) return;
         ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        block_scopes.insert(block->m_symtab);
         for (size_t i = 0; i < block->n_body; i++) {
             visit_stmt(*block->m_body[i]);
         }
@@ -767,7 +792,7 @@ public:
             if (r == nullptr) continue;
             if (ASR::is_a<ASR::Var_t>(*args[i].m_value)
                     && k.private_scalar(r)) {
-                scalars.insert(r);
+                assigns_scalar(r);
             } else if (!k.shared(r) && !k.private_scalar(r)) {
                 private_array = true;
             }
@@ -1062,11 +1087,9 @@ public:
             roles[body[i]] = r;
             if (r == Role::Distribute || r == Role::Recurse) any = true;
         }
-        // Where lanes share out only reductions, `distributed` is set only
-        // where a loop is distributed (role): a block that only holds
-        // statements to recurse into distributes nothing, and a kernel
+        // `distributed` is set where a loop is distributed (role): a
+        // statement is recursed into only when it holds one, so a kernel
         // with nothing distributed keeps one lane per iteration.
-        if (k.independent_loops) distributed |= any;
         return any;
     }
 
@@ -1602,8 +1625,8 @@ private:
     Role role(ASR::stmt_t *s, std::vector<Frame> &frames) {
         switch (s->type) {
             case ASR::stmtType::BlockCall:
-                nested_decide(s, frames);
-                return Role::Recurse;
+                if (nested_decide(s, frames)) return Role::Recurse;
+                break;
             case ASR::stmtType::Return:
             case ASR::stmtType::Exit:
             case ASR::stmtType::Cycle:

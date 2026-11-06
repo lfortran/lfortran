@@ -5681,6 +5681,13 @@ filename = "../integration_tests/gpu_metal_636.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
+# The lanes of a SIMD-group on Metal (gpu_vector_lanes.cpp): a kernel that
+# has no loop to share out keeps one thread per iteration, and a block that
+# holds none runs on the first lane, handing on what lives on after it.
+[[test]]
+filename = "../integration_tests/gpu_lanes_blocks_01.f90"
+gpu_metal_kernel = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
