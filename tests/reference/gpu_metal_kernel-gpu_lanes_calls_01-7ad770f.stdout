@@ -1,0 +1,163 @@
+#include <metal_stdlib>
+using namespace metal;
+
+inline int _lcompilers_ibits_i32_gpu_29(int x_gpu, int y_gpu, int z_gpu) {
+    int _lcompilers_ibits_i32_gpu{};
+    _lcompilers_ibits_i32_gpu = ((x_gpu >> ((int)y_gpu)) & ((1 << ((int)z_gpu)) - 1));
+    return _lcompilers_ibits_i32_gpu;
+}
+
+inline int _lcompilers_optimization_modulo_i32_gpu_30(int a_gpu, int p_gpu) {
+    int _lcompilers_optimization_modulo_i32_gpu{};
+    _lcompilers_optimization_modulo_i32_gpu = ((a_gpu) % (((int)p_gpu)));
+    if (((int)((_lcompilers_optimization_modulo_i32_gpu != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i32_gpu < 0) && (((int)p_gpu) > 0))) || ((int)((_lcompilers_optimization_modulo_i32_gpu > 0) && (((int)p_gpu) < 0)))))))) {
+        _lcompilers_optimization_modulo_i32_gpu = (_lcompilers_optimization_modulo_i32_gpu + ((int)p_gpu));
+    }
+    return _lcompilers_optimization_modulo_i32_gpu;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __gpu_lanes_gpu;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device int* codes_gpu [[buffer(0)]],
+    device int* w_gpu [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+{
+    int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
+    int __flat_idx_gpu;
+    int d_gpu;
+    const int k_gpu = 512;
+    int r__dc_gpu;
+    if ((((0 * 0) + __thread_id) >= 40)) {
+        return;
+    }
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    r__dc_gpu = (__flat_idx_gpu + 1);
+    for (d_gpu = (1 + (((int)__gpu_lane) * 1)); d_gpu <= k_gpu; d_gpu += (1 * ((int)__gpu_lanes_gpu))) {
+        codes_gpu[((int)(d_gpu) - (1)) + (512 * ((int)(r__dc_gpu) - (1)))] = _lcompilers_ibits_i32_gpu_29(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i32_gpu_30((d_gpu - 1), 4)), 8);
+    }
+    if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+}
+
+inline int _lcompilers_ibits_i321_gpu_32(int x_gpu, int y_gpu, int z_gpu) {
+    int _lcompilers_ibits_i321_gpu{};
+    _lcompilers_ibits_i321_gpu = ((x_gpu >> ((int)y_gpu)) & ((1 << ((int)z_gpu)) - 1));
+    return _lcompilers_ibits_i321_gpu;
+}
+
+inline int _lcompilers_optimization_modulo_i321_gpu_33(int a_gpu, int p_gpu) {
+    int _lcompilers_optimization_modulo_i321_gpu{};
+    _lcompilers_optimization_modulo_i321_gpu = ((a_gpu) % (((int)p_gpu)));
+    if (((int)((_lcompilers_optimization_modulo_i321_gpu != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i321_gpu < 0) && (((int)p_gpu) > 0))) || ((int)((_lcompilers_optimization_modulo_i321_gpu > 0) && (((int)p_gpu) < 0)))))))) {
+        _lcompilers_optimization_modulo_i321_gpu = (_lcompilers_optimization_modulo_i321_gpu + ((int)p_gpu));
+    }
+    return _lcompilers_optimization_modulo_i321_gpu;
+}
+
+kernel void __lfortran_gpu_kernel_1(
+    device int* total_gpu [[buffer(0)]],
+    device int* w_gpu [[buffer(1)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx_gpu;
+    const int k_gpu = 512;
+    int r__dc1_gpu;
+    if ((((0 * 0) + __thread_id) >= 40)) {
+        return;
+    }
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    r__dc1_gpu = (__flat_idx_gpu + 1);
+    {
+        int d_gpu;
+        {
+            int __gpu_loop_end_gpu;
+            int __gpu_loop_group_gpu;
+            int s_gpu;
+            s_gpu = 0;
+            __gpu_loop_end_gpu = k_gpu;
+            d_gpu = 1;
+            if ((__gpu_loop_end_gpu >= 1)) {
+                for (__gpu_loop_group_gpu = 1; __gpu_loop_group_gpu <= (__gpu_loop_end_gpu - 15); __gpu_loop_group_gpu += 16) {
+                    d_gpu = __gpu_loop_group_gpu;
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 1);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 2);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 3);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 4);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 5);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 6);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 7);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 8);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 9);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 10);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 11);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 12);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 13);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 14);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                    d_gpu = (__gpu_loop_group_gpu + 15);
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                }
+                for (d_gpu = __gpu_loop_group_gpu; d_gpu <= __gpu_loop_end_gpu; d_gpu++) {
+                    s_gpu = (s_gpu + _lcompilers_ibits_i321_gpu_32(w_gpu[((int)((((d_gpu - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1_gpu) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d_gpu - 1), 4)), 8));
+                }
+            }
+            total_gpu[((int)(r__dc1_gpu) - (1))] = s_gpu;
+        }
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_2 {
+    long offset_gpu;
+    int __gpu_lanes_gpu;
+};
+
+kernel void __lfortran_gpu_kernel_2(
+    device float* o_gpu [[buffer(0)]],
+    device float* q_gpu [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_2& __scalar_args [[buffer(2)]],
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+{
+    long offset_gpu = __scalar_args.offset_gpu;
+    int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
+    int __flat_idx_gpu;
+    int d_gpu;
+    const int k_gpu = 512;
+    int r__dc2_gpu;
+    if ((((0 * 0) + __thread_id) >= 40)) {
+        return;
+    }
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    r__dc2_gpu = (__flat_idx_gpu + 1);
+    {
+        long position_gpu;
+        position_gpu = (offset_gpu + ((long)(r__dc2_gpu - 1)));
+        for (d_gpu = (1 + (((int)__gpu_lane) * 1)); d_gpu <= k_gpu; d_gpu += (1 * ((int)__gpu_lanes_gpu))) {
+            o_gpu[((int)(d_gpu) - (1)) + (512 * ((int)(r__dc2_gpu) - (1)))] = ((((float)2) * q_gpu[((int)(d_gpu) - (1)) + (512 * ((int)(r__dc2_gpu) - (1)))]) + ((float)position_gpu));
+        }
+        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+    }
+}
+

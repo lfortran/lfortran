@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_calls_01-3ff65c0",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_calls_01.f90",
+    "infile_hash": "64a16bfba6339d0f89e19006120213e5daf7ff6f3ad4f67920e68960",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_calls_01-3ff65c0.stdout",
+    "stdout_hash": "ac95c95b805a4b30f073a91acaa42aed7c2d23a367b20326f13c92a5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

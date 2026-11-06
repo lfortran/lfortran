@@ -5688,6 +5688,14 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_lanes_blocks_01.f90"
 gpu_metal_kernel = true
 
+# The lanes share loops out that call functions the compiler implements
+# intrinsics with (`modulo`, `ibits`, `int`), which are not declared pure
+# but have no effect besides their value.
+[[test]]
+filename = "../integration_tests/gpu_lanes_calls_01.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true

@@ -1,0 +1,139 @@
+#include <stdint.h>
+
+// The combination of what the `lanes` lanes of an iteration hold,
+// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
+// largest. With one lane, the lane's own value.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce(T v, int lanes) {
+    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {
+        T w = __shfl_xor_sync(0xffffffffu, v, offset, lanes);
+        v = op == 0 ? v + w : op == 1 ? v * w
+            : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+    }
+    return v;
+}
+
+__device__ inline int _lcompilers_ibits_i32_gpu_29(int x, int y, int z) {
+    int _lcompilers_ibits_i32{};
+    _lcompilers_ibits_i32 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i32;
+}
+
+__device__ inline int _lcompilers_optimization_modulo_i32_gpu_30(int a, int p) {
+    int _lcompilers_optimization_modulo_i32{};
+    _lcompilers_optimization_modulo_i32 = ((a) % (((int)p)));
+    if (((int)((_lcompilers_optimization_modulo_i32 != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i32 < 0) && (((int)p) > 0))) || ((int)((_lcompilers_optimization_modulo_i32 > 0) && (((int)p) < 0)))))))) {
+        _lcompilers_optimization_modulo_i32 = (_lcompilers_optimization_modulo_i32 + ((int)p));
+    }
+    return _lcompilers_optimization_modulo_i32;
+}
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    int* __restrict__ codes,
+    int* __restrict__ w)
+{
+    int __flat_idx;
+    int d;
+    const int k = 512;
+    int r__dc;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 40)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    r__dc = (__flat_idx + 1);
+    for (d = 1; d <= k; d++) {
+        codes[((int)(d) - (1)) + (512 * ((int)(r__dc) - (1)))] = _lcompilers_ibits_i32_gpu_29(w[((int)((((d - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc) - (1)))], (8 * _lcompilers_optimization_modulo_i32_gpu_30((d - 1), 4)), 8);
+    }
+}
+
+__device__ inline int _lcompilers_ibits_i321_gpu_32(int x, int y, int z) {
+    int _lcompilers_ibits_i321{};
+    _lcompilers_ibits_i321 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i321;
+}
+
+__device__ inline int _lcompilers_optimization_modulo_i321_gpu_33(int a, int p) {
+    int _lcompilers_optimization_modulo_i321{};
+    _lcompilers_optimization_modulo_i321 = ((a) % (((int)p)));
+    if (((int)((_lcompilers_optimization_modulo_i321 != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i321 < 0) && (((int)p) > 0))) || ((int)((_lcompilers_optimization_modulo_i321 > 0) && (((int)p) < 0)))))))) {
+        _lcompilers_optimization_modulo_i321 = (_lcompilers_optimization_modulo_i321 + ((int)p));
+    }
+    return _lcompilers_optimization_modulo_i321;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __gpu_lanes;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    int* __restrict__ total,
+    int* __restrict__ w,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+{
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+    int __flat_idx;
+    const int k = 512;
+    int r__dc1;
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 40)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+    r__dc1 = (__flat_idx + 1);
+    {
+        int d;
+        {
+            int s;
+            s = 0;
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    s = 0;
+                }
+                for (d = (1 + (((int)__gpu_lane) * 1)); d <= k; d += (1 * ((int)__gpu_lanes))) {
+                    s = (s + _lcompilers_ibits_i321_gpu_32(w[((int)((((d - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d - 1), 4)), 8));
+                }
+                s = __lfortran_lane_reduce<0>(s, __gpu_lanes_n);
+            } else {
+                for (d = 1; d <= k; d++) {
+                    s = (s + _lcompilers_ibits_i321_gpu_32(w[((int)((((d - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1) - (1)))], (8 * _lcompilers_optimization_modulo_i321_gpu_33((d - 1), 4)), 8));
+                }
+            }
+            if ((__gpu_lane == 0)) {
+                total[((int)(r__dc1) - (1))] = s;
+            }
+            if (__gpu_lanes_n > 1) __syncwarp();
+        }
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_2 {
+    long offset;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_2(
+    float* __restrict__ o,
+    float* __restrict__ q,
+    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+{
+    long offset = __scalar_args.offset;
+    int __flat_idx;
+    int d;
+    const int k = 512;
+    int r__dc2;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 40)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    r__dc2 = (__flat_idx + 1);
+    {
+        long position;
+        position = (offset + ((long)(r__dc2 - 1)));
+        for (d = 1; d <= k; d++) {
+            o[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))] = ((((float)2) * q[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))]) + ((float)position));
+        }
+    }
+}
+

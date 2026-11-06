@@ -50,8 +50,11 @@ values in its private scalars, except for these statements:
   is multiplied by the lanes), and the lanes wait for each other after it.
   A loop is distributed when its iterations are independent, which this
   pass checks rather than assumes:
-  - its body has only assignments, `if`, loops, calls of pure procedures,
-    and the `stop` handling of gpu_offload_stop.h;
+  - its body has only assignments, `if`, loops, calls of pure procedures
+    (or of functions that have no effect besides their value, as the
+    compiler's own implementations of intrinsic functions, which are not
+    declared pure: side_effect_free), and the `stop` handling of
+    gpu_offload_stop.h;
   - every array it assigns an element of is shared by the lanes (a kernel
     argument, a workspace, what a pointer points to), and is assigned at
     one subscript list only, which has the loop variable, plus or minus
@@ -252,7 +255,9 @@ bool overlapping(const std::vector<ASR::symbol_t*> &a,
     return true;
 }
 
-bool pure_callee(ASR::symbol_t *name, bool intrinsics_pure = false) {
+bool side_effect_free(ASR::Function_t *f, std::set<ASR::Function_t*> &seen);
+
+bool pure_callee(ASR::symbol_t *name, std::set<ASR::Function_t*> &seen) {
     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(name);
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*s)) {
         s = ASRUtils::symbol_get_past_external(
@@ -261,13 +266,92 @@ bool pure_callee(ASR::symbol_t *name, bool intrinsics_pure = false) {
     if (!ASR::is_a<ASR::Function_t>(*s)) return false;
     ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
     ASR::FunctionType_t *t = ASRUtils::get_FunctionType(f);
-    // The implementation of an intrinsic function (`mod`, `abs`, ...), which
-    // the compiler generates as a function that is not marked pure.
-    if (intrinsics_pure
-            && std::string(f->m_name).rfind("_lcompilers_", 0) == 0) {
-        return true;
+    return t->m_pure || t->m_elemental || side_effect_free(f, seen);
+}
+
+bool pure_callee(ASR::symbol_t *name) {
+    std::set<ASR::Function_t*> seen;
+    return pure_callee(name, seen);
+}
+
+// Whether a call of `f` has no effect but its value, although `f` is not
+// declared pure: every dummy is `intent(in)`, and its body only assigns its
+// own variables, calls only procedures of the same kind, and does nothing
+// else (no input or output, no stop). The compiler's own implementations of
+// intrinsic functions (`mod`, `modulo`, `abs`, ...) are such functions.
+bool side_effect_free(ASR::Function_t *f, std::set<ASR::Function_t*> &seen) {
+    if (!seen.insert(f).second) return true;
+    ASR::FunctionType_t *t = ASRUtils::get_FunctionType(f);
+    if (t->m_deftype != ASR::deftypeType::Implementation
+            || f->m_return_var == nullptr) {
+        return false;
     }
-    return t->m_pure || t->m_elemental;
+    for (size_t i = 0; i < f->n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*f->m_args[i])) return false;
+        ASR::symbol_t *a = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*a)
+                || ASR::down_cast<ASR::Variable_t>(a)->m_intent
+                    != ASR::intentType::In) {
+            return false;
+        }
+    }
+    class Body : public ASR::BaseWalkVisitor<Body> {
+    public:
+        ASR::Function_t *f;
+        std::set<ASR::Function_t*> &seen;
+        bool ok = true;
+        Body(ASR::Function_t *f_, std::set<ASR::Function_t*> &seen_)
+            : f(f_), seen(seen_) {}
+        bool own(ASR::expr_t *e) {
+            ASR::symbol_t *r = root_of(e);
+            if (r == nullptr || !ASR::is_a<ASR::Variable_t>(*r)) return false;
+            for (SymbolTable *st = ASR::down_cast<ASR::Variable_t>(r)
+                    ->m_parent_symtab; st != nullptr; st = st->parent) {
+                if (st == f->m_symtab) return true;
+            }
+            return false;
+        }
+        void visit_stmt(const ASR::stmt_t &x) {
+            switch (x.type) {
+                case ASR::stmtType::Assignment: {
+                    auto *a = ASR::down_cast<ASR::Assignment_t>(&x);
+                    if (a->m_overloaded || !own(a->m_target)) ok = false;
+                    break;
+                }
+                case ASR::stmtType::DoLoop: {
+                    auto *d = ASR::down_cast<ASR::DoLoop_t>(&x);
+                    if (d->m_head.m_v && !own(d->m_head.m_v)) ok = false;
+                    break;
+                }
+                case ASR::stmtType::If:
+                case ASR::stmtType::WhileLoop:
+                case ASR::stmtType::Exit:
+                case ASR::stmtType::Cycle:
+                case ASR::stmtType::Return:
+                    break;
+                default:
+                    ok = false;
+                    return;
+            }
+            BaseWalkVisitor::visit_stmt(x);
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            if (!pure_callee(x.m_name, seen)) ok = false;
+            BaseWalkVisitor::visit_FunctionCall(x);
+        }
+        void visit_IntrinsicImpureFunction(
+                const ASR::IntrinsicImpureFunction_t &) {
+            ok = false;
+        }
+        void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &) {
+            ok = false;
+        }
+    } body(f, seen);
+    for (size_t i = 0; i < f->n_body && body.ok; i++) {
+        body.visit_stmt(*f->m_body[i]);
+    }
+    return body.ok;
 }
 
 // Whether `e` reads the variable `s`.
@@ -800,7 +884,7 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        if (!pure_callee(x.m_name, !k.independent_loops)) shared_effect = true;
+        if (!pure_callee(x.m_name)) shared_effect = true;
         call_args(x.m_name, x.m_args, x.n_args);
         BaseWalkVisitor::visit_FunctionCall(x);
     }
@@ -1818,7 +1902,7 @@ private:
             public:
                 bool found = false;
                 void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-                    if (!pure_callee(x.m_name, true)) found = true;
+                    if (!pure_callee(x.m_name)) found = true;
                     BaseWalkVisitor::visit_FunctionCall(x);
                 }
                 void visit_GpuAtomicFetchAdd(
