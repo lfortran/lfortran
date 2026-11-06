@@ -2493,14 +2493,21 @@ class ASRTextSerializationVisitorVisitor(ASDLVisitor):
     def make_visitor(self, name, fields):
         serialized_fields = [field for field in fields if field.type != "location"]
         optional = [f for f in serialized_fields if f.opt and f.type in products]
+        # An absent optional product field is omitted only when every later
+        # one is absent too (written as nil otherwise), so that the reader
+        # can match a positional form that omits a trailing run of them.
+        written = {}
+        for i, field in enumerate(optional):
+            written[field.name] = "(%s)" % " || ".join(
+                "x.m_%s != nullptr" % f.name for f in optional[i:])
         field_count = str(len(serialized_fields) - len(optional))
         for field in optional:
-            field_count += " + (x.m_%s != nullptr)" % field.name
+            field_count += " + %s" % written[field.name]
         self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
         self.emit('self().begin_form("%s", %s);' % (name, field_count), 2)
         for field in serialized_fields:
             if field in optional:
-                self.emit("if (x.m_%s) {" % field.name, 2)
+                self.emit("if %s {" % written[field.name], 2)
             self.emit('self().begin_field("%s");' % field.name, 2)
             self.visitField(field, name)
             if field in optional:

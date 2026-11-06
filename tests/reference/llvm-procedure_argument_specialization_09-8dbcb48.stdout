@@ -27,8 +27,6 @@ target datalayout = "..."
 @serialization_info = private unnamed_addr constant [3 x i8] c"R8\00", align 1
 @12 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-declare double @fun(double*)
-
 define double @__module_procedure_argument_specialization_09_integ_integrate(double (double*)* %f, double* %a, double* %b, i32* %n) {
 .entry:
   %call_arg_value = alloca double, align 8

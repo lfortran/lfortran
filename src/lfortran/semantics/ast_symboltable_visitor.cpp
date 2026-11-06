@@ -2112,7 +2112,7 @@ public:
                                    proc_interface->m_access,
                                    proc_interface->m_deterministic,
                                    proc_interface->m_side_effect_free,
-                                   nullptr, nullptr,
+                                   nullptr, nullptr, nullptr,
                                    // A `module procedure` body is written by
                                    // the user; its name location comes from
                                    // the interface declaration.
@@ -4279,6 +4279,38 @@ public:
         }
     }
 
+    // Record in ASR that the interface body `item` of an abstract interface
+    // block declares no procedure: its name has no link name.
+    void mark_abstract_interface_body(const AST::interface_item_t &item) {
+        if (!AST::is_a<AST::InterfaceProc_t>(item)) {
+            return;
+        }
+        AST::program_unit_t *proc = AST::down_cast<AST::InterfaceProc_t>(
+            &item)->m_proc;
+        char *name = nullptr;
+        if (AST::is_a<AST::Subroutine_t>(*proc)) {
+            name = AST::down_cast<AST::Subroutine_t>(proc)->m_name;
+        } else if (AST::is_a<AST::Function_t>(*proc)) {
+            name = AST::down_cast<AST::Function_t>(proc)->m_name;
+        }
+        if (name == nullptr) {
+            return;
+        }
+        ASR::symbol_t *sym = current_scope->get_symbol(to_lower(name));
+        if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) {
+            return;
+        }
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym);
+        if (ASRUtils::get_FunctionType(f)->m_deftype
+                != ASR::deftypeType::Interface) {
+            return;
+        }
+        ASR::interface_body_t *body = al.make_new<ASR::interface_body_t>();
+        body->loc = proc->base.loc;
+        body->m_abstract = true;
+        f->m_interface_body = body;
+    }
+
     void visit_Interface(const AST::Interface_t &x) {
         // C1637 (J3/26-007r1): the interface-stmt of an interface-block that
         // is a requirement-specification shall specify ABSTRACT or DEFERRED.
@@ -4309,8 +4341,13 @@ public:
         } else if (AST::is_a<AST::InterfaceHeader_t>(*x.m_header) ||
                    AST::is_a<AST::AbstractInterfaceHeader_t>(*x.m_header)) {
             std::vector<std::string> proc_names;
+            bool is_abstract = AST::is_a<AST::AbstractInterfaceHeader_t>(
+                *x.m_header);
             for (size_t i = 0; i < x.n_items; i++) {
                 visit_interface_item(*x.m_items[i]);
+                if (is_abstract) {
+                    mark_abstract_interface_body(*x.m_items[i]);
+                }
             }
         } else if (AST::is_a<AST::DeferredInterfaceHeader_t>(*x.m_header)) {
             // DEFERRED INTERFACE (R1503, J3/26-007r1): each interface body of

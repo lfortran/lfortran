@@ -111,6 +111,7 @@
                                     .false.
                                     .true.
                                     ()
+                                    (.true.)
                                 ),
                             bitset_type:
                                 (Struct

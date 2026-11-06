@@ -11506,7 +11506,8 @@ ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
         a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
-        m_side_effect_free, m_c_header, nullptr, m_start_name, m_end_name);
+        m_side_effect_free, m_c_header, nullptr, nullptr, m_start_name,
+        m_end_name);
 }
 
 void cast_to_wider_kind(Allocator& al, ASR::expr_t*& a, ASR::expr_t*& b) {

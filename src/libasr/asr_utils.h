@@ -1525,6 +1525,12 @@ static inline bool is_bare_implicit_interface(ASR::symbol_t *v) {
     return is_bare_implicit_interface(*ASR::down_cast<ASR::Function_t>(f2));
 }
 
+// True if `x` is an interface body of an abstract interface block. Its name
+// has no link name and it is never a call target.
+static inline bool is_abstract_interface(const ASR::Function_t &x) {
+    return x.m_interface_body != nullptr && x.m_interface_body->m_abstract;
+}
+
 // True if `t`, past pointer and allocatable, is the opaque procedure type.
 static inline bool is_opaque_procedure_type(ASR::ttype_t *t) {
     if (t == nullptr) {

@@ -11,7 +11,7 @@ unit
 symbol
     = Program(symbol_table symtab, identifier name, identifier* dependencies, stmt* body, identifier? global_init, location start_name, location end_name)
     | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, identifier? global_init, location start_name, location end_name)
-    | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, gpu_kernel_layout? gpu, location start_name, location end_name)
+    | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, gpu_kernel_layout? gpu, interface_body? interface_body, location start_name, location end_name)
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | ExternalSymbol(symbol_table parent_symtab, identifier name, symbol external, identifier module_name, identifier* scope_names, identifier original_name, access access)
@@ -390,6 +390,12 @@ gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 -- dimension from its arguments for them.
 gpu_launch_dimension = (symbol start_parameter, symbol end_parameter)
 gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions, symbol? lanes)
+-- Facts about a Function that is an interface body (deftype Interface).
+-- `abstract`: the body is in an abstract interface block. Its name is not a
+-- global identifier: it only names the characteristics of procedure pointers,
+-- dummy procedures and deferred bindings, has no link name and is never a
+-- call target. Absent means the body names an existing procedure.
+interface_body = (bool abstract)
 reduction_expr = (reduction_op op, expr arg)
 tbind = Bind(string lang, string name)
 -- A comparison, by DebugCheckArrayBounds, of the extents of two of its
