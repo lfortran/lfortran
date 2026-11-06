@@ -383,25 +383,20 @@ jobs:
             pixi run -e wasm-build node -v
 
       # Phase 1: Native build. This is Quick's only Linux GCC Release (NDEBUG)
-      # build, so it uses -Werror and the LSP/runtime-stacktrace options of
-      # Exhaustive's "Check Release build": the Debug builds cannot catch
-      # warnings such as variables used only in assertions.
+      # build, so it runs the release recipe, which Exhaustive's "Check Release
+      # build" also runs, with -Werror: the Debug builds cannot catch warnings
+      # such as variables used only in assertions.
       - name: Build native LFortran
         shell: bash -e {0}
         run: |
             set -x
             export CXXFLAGS="-Werror"
             export CFLAGS="-Werror"
-            pixi run -e llvm11 build \
-                -DCMAKE_BUILD_TYPE=Release \
-                -DWITH_LSP=yes \
-                -DWITH_STACKTRACE=no \
-                -DWITH_RUNTIME_STACKTRACE=yes \
-                -DWITH_INTERNAL_ALLOC_CHECK=no \
+            pixi run -e llvm11 build-release \
                 -DCMAKE_C_COMPILER_LAUNCHER=ccache \
                 -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
             mkdir -p src/bin/asset_dir
-            cp build/llvm11/src/runtime/*.mod src/bin/asset_dir
+            cp build/release/src/runtime/*.mod src/bin/asset_dir
             # Keep the compiler cache and the Pixi environments, which live
             # in the workspace.
             git clean -dfx -e src/bin/asset_dir -e .ccache -e .pixi
