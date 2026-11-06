@@ -2861,4 +2861,22 @@ TEST_CASE("GPU lanes share the parts of a split sum one part at a time") {
     CHECK(launches["split"].reductions == 2);
 }
 
+TEST_CASE("GPU lanes sum along columns while stepping an index of their own") {
+    // gpu_lanes_columns_02, with --fast: the sums of both procedures step a
+    // second index into another array, and the lanes share them out at any
+    // launch size (above the 1024 iterations other kernels get lanes up
+    // to): the strided sum, and the branch of the quantized product that
+    // sums at once, whose other branch shares out its groups.
+    std::string source = read_project_file(
+        "integration_tests/gpu_lanes_columns_02.f90");
+    auto launches = gpu_launch_summaries(source, "gpu_lanes_columns_02.f90",
+        "gpu_lanes_columns_02_m");
+    REQUIRE(launches.count("strided"));
+    CHECK(launches["strided"].lanes_cap > 1024);
+    CHECK(launches["strided"].reductions == 1);
+    REQUIRE(launches.count("packed"));
+    CHECK(launches["packed"].lanes_cap > 1024);
+    CHECK(launches["packed"].reductions >= 1);
+}
+
 #endif

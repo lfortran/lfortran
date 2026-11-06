@@ -1298,9 +1298,12 @@ Metal and on an NVIDIA GPU; a device's capabilities say how many, see
   first, and a loop whose body is one more such loop shares out the pairs
   of iterations of both.
 * A loop that accumulates into private scalars -- the inner product of a
-  matrix-vector product, the forces on one body -- by one statement each,
-  `s = s op e` (`+`, `-`, `*`, `max`, `min`), and otherwise only assigns
-  scalars of its own in every iteration, is shared out as well where the
+  matrix-vector product, the forces on one body -- by statements
+  `s = s op e` (`+`, `-`, `*`, `max`, `min`, one operation per scalar),
+  and otherwise only assigns scalars of its own in every iteration and
+  integers it adds constants to (the second index of an array statement
+  whose sections start at different subscripts), in statements, blocks or
+  loops of its body, is shared out as well where the
   lanes can combine values (`lane_reductions`: an NVIDIA GPU, whose warps
   run them, and Metal, for values of 4 bytes): the lanes but the first
   start every accumulator at the identity, and after the loop every lane
