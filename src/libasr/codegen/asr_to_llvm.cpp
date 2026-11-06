@@ -28589,9 +28589,21 @@ public:
     // would then accept a too-small actual argument.
     void emit_sequence_assoc_size_check(ASR::symbol_t* m_name,
             ASR::expr_t* arg_expr, llvm::Value* actual_size,
-            llvm::Value* dummy_size, size_t arg_index) {
+            llvm::Value* dummy_size, size_t arg_index,
+            bool dummy_has_deferred_extent) {
+        // An assumed-size dummy has exactly the actual argument's element
+        // count, so a zero-element actual gives a zero-size dummy even when
+        // the dummy declares other extents. Only a nonempty actual must not be
+        // smaller than the declared extents.
+        llvm::Value* required_size = dummy_size;
+        if (dummy_has_deferred_extent) {
+            llvm::Value* zero = llvm::ConstantInt::get(
+                llvm_utils->getIntType(8), llvm::APInt(64, 0));
+            required_size = builder->CreateSelect(
+                builder->CreateICmpEQ(actual_size, zero), zero, dummy_size);
+        }
         llvm_utils->generate_runtime_error(
-                builder->CreateICmpSLT(actual_size, dummy_size),
+                builder->CreateICmpSLT(actual_size, required_size),
                 "Array size mismatch in subroutine '%s'. Tried to match size %lld of argument number %d, but expected size is %lld",
                 {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                 infile,
@@ -28814,7 +28826,8 @@ public:
                     } else if (ASRUtils::has_explicit_dimension_bounds(arr_cast->m_type)) {
                         emit_sequence_assoc_size_check(m_name, arg_expr,
                             arr_descr->get_array_size(arr_type, arg, nullptr, 8),
-                            get_array_size_from_asr_type(arr_cast->m_type), i);
+                            get_array_size_from_asr_type(arr_cast->m_type), i,
+                            ASRUtils::has_deferred_dimension_bound(arr_cast->m_type));
                     }
                     // Else the dummy declares no extent in its type: it is
                     // assumed-shape, or an assumed-size dummy that declares no
@@ -28843,6 +28856,13 @@ public:
                                     // actual argument above.
                                     llvm::Value* pointer_length = builder->CreateSExtOrTrunc(
                                         tmp, llvm_utils->getIntType(8));
+                                    // Fortran standard: negative extent means
+                                    // zero size, as in the descriptor branch.
+                                    llvm::Value* zero_i64 = llvm::ConstantInt::get(
+                                        llvm_utils->getIntType(8), llvm::APInt(64, 0));
+                                    pointer_length = builder->CreateSelect(
+                                        builder->CreateICmpSLT(pointer_length, zero_i64),
+                                        zero_i64, pointer_length);
                                     llvm_utils->generate_runtime_error(builder->CreateICmpNE(fixed_length, pointer_length),
                                             "Array shape mismatch in subroutine '%s'\n\n"
                                             "Tried to match size %lld of dimension %d of argument number %d, but expected size is %lld\n",
@@ -28875,7 +28895,8 @@ public:
                         emit_sequence_assoc_size_check(m_name, arg_expr,
                             llvm::ConstantInt::get(llvm_utils->getIntType(8),
                                 ASRUtils::get_fixed_size_of_array(fixed_size_type)),
-                            get_array_size_from_asr_type(arr_cast->m_type), i);
+                            get_array_size_from_asr_type(arr_cast->m_type), i,
+                            ASRUtils::has_deferred_dimension_bound(arr_cast->m_type));
                     }
                     // Else, as for a descriptor actual argument above, the
                     // dummy declares no extent in its type (assumed-shape, or an

@@ -2001,6 +2001,24 @@ inline bool has_explicit_dimension_bounds(ASR::ttype_t* x) {
     return false;
 }
 
+// Whether at least one extent is deferred, e.g. the last one of an assumed-size
+// dummy `a(n, *)`. Such a dummy has exactly the actual argument's element
+// count (F2023 15.5.2.12p6), so its explicit extents are a lower bound only for
+// a nonempty actual argument: a zero-element actual gives a zero-size dummy.
+inline bool has_deferred_dimension_bound(ASR::ttype_t* x) {
+    x = type_get_past_allocatable(type_get_past_pointer(x));
+    if (!ASR::is_a<ASR::Array_t>(*x)) {
+        return false;
+    }
+    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x);
+    for (size_t i = 0; i < array_t->n_dims; i++) {
+        if (array_t->m_dims[i].m_length == nullptr) {
+            return true;
+        }
+    }
+    return false;
+}
+
 inline bool is_array_t(ASR::ttype_t* const x){
     return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(x));
 }
