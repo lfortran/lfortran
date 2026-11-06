@@ -397,11 +397,20 @@ bool mentions(ASR::expr_t *e, ASR::symbol_t *s) {
 enum class Access { None, Read, Write };
 
 // The first access of `s` in body[from, to): a write when the first
-// statement that names it assigns it without reading it first.
+// statement that names it assigns it without reading it first. A block runs
+// its statements in turn, so the first access in it is the first access.
 Access first_access(ASR::stmt_t **body, size_t from, size_t to,
         ASR::symbol_t *s) {
     for (size_t i = from; i < to; i++) {
         ASR::stmt_t *x = body[i];
+        if (ASR::is_a<ASR::BlockCall_t>(*x)) {
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(x)->m_m));
+            Access a = first_access(block->m_body, 0, block->n_body, s);
+            if (a != Access::None) return a;
+            continue;
+        }
         if (ASR::is_a<ASR::Assignment_t>(*x)) {
             auto *a = ASR::down_cast<ASR::Assignment_t>(x);
             if (ASR::is_a<ASR::Var_t>(*a->m_target)
@@ -932,6 +941,13 @@ public:
         nested.push_back(x.m_name ? x.m_name : "");
         BaseWalkVisitor::visit_WhileLoop(x);
         nested.pop_back();
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+            ASRUtils::symbol_get_past_external(x.m_m));
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
     }
 };
 
@@ -2126,8 +2142,14 @@ private:
                         const ASR::GpuAtomicFetchAdd_t &) {
                     found = true;
                 }
-                void visit_BlockCall(const ASR::BlockCall_t &) {
-                    found = true;
+                // The statements of a block (BaseWalkVisitor does not go
+                // into them).
+                void visit_BlockCall(const ASR::BlockCall_t &x) {
+                    ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                        ASRUtils::symbol_get_past_external(x.m_m));
+                    for (size_t i = 0; i < block->n_body; i++) {
+                        visit_stmt(*block->m_body[i]);
+                    }
                 }
             } impure;
             for (size_t i = 0; i < d->n_body; i++) {
