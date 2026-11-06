@@ -6502,6 +6502,7 @@ bool calls_intrinsic(llvm::Function &f, const std::string &name) {
 } // namespace
 
 TEST_CASE("LLVM double precision reciprocal square roots with Newton steps in IR") {
+#ifdef HAVE_TARGET_X86
     // x86 with AVX-512: two Newton steps, 1/sqrt(x) = z/4, so the sum of the
     // cubes is multiplied by (1/4)**3 once, after the loop.
     {
@@ -6518,6 +6519,19 @@ TEST_CASE("LLVM double precision reciprocal square roots with Newton steps in IR
         llvm::raw_string_ostream os(err);
         CHECK(!llvm::verifyFunction(f, &os));
     }
+#else
+    // Without the x86 target the estimate intrinsic is not available, so the
+    // function is left as it is.
+    {
+        LCompilers::LLVMEvaluator e;
+        std::unique_ptr<llvm::Module> m = e.parse_module(rsqrt_sum_dp_ir, "");
+        llvm::Function &f = *m->getFunction("rsqrt_sum_dp");
+        CHECK(!LCompilers::expand_reciprocal_sqrt(f,
+            llvm::Triple("x86_64-unknown-linux-gnu")));
+        CHECK(!calls_intrinsic(f, "llvm.x86.avx512.rsqrt14.pd.512"));
+        CHECK(!has_factor(*block_named(f, "exit"), 0.015625));
+    }
+#endif
     // Without the AVX-512 features the estimate is not available, so the
     // function is left as it is.
     {
