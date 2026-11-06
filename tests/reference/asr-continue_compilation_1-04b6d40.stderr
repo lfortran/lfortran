@@ -5519,6 +5519,42 @@ semantic error: `iostat` must be a variable of type, Integer  or IntegerPointer
 4569 |         backspace(unit=99, iostat=cc1_io_nc_a(2))  ! {Error} `iostat` must be a variable of type, Integer  or IntegerPointer
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4582:9
+     |
+4582 |         close(unit=99, iostat=ios, iomsg=msgs(1:2))  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4583:9
+     |
+4583 |         close(unit=99, iostat=ios, iomsg=x%msgs)  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4584:9
+     |
+4584 |         close(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4585:9
+     |
+4585 |         backspace(unit=99, iostat=ios, iomsg=msgs(1:2))  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4586:9
+     |
+4586 |         backspace(unit=99, iostat=ios, iomsg=x%msgs)  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `iomsg` must be scalar
+    --> tests/errors/continue_compilation_1.f90:4587:9
+     |
+4587 |         backspace(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

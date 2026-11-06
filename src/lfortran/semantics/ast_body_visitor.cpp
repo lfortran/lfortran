@@ -1583,6 +1583,14 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                if (ASRUtils::is_array(a_iomsg_type)) {
+                    diag.add(Diagnostic(
+                        "`iomsg` must be scalar",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
             } else if( m_arg_str == std::string("status") ) {
                 if( a_status != nullptr ) {
                     diag.add(Diagnostic(
@@ -1721,6 +1729,14 @@ public:
                     !ASRUtils::is_character(*ASRUtils::type_get_past_pointer(a_iomsg_type))) {
                     diag.add(Diagnostic(
                         "`iomsg` must be a variable of type Character",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if (ASRUtils::is_array(a_iomsg_type)) {
+                    diag.add(Diagnostic(
+                        "`iomsg` must be scalar",
                         Level::Error, Stage::Semantic, {
                             Label("", {x.base.base.loc})
                         }));
