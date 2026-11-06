@@ -2221,7 +2221,8 @@ ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 // A null `body` stands for a place that cannot hold statements, such as the
 // dimensions of an array type. Such a sum is then the closed form
 // n * (f(first) + f(last)) / 2 of the n sizes f(var), which is exact if
-// f(var) is linear in the variable and never negative.
+// f(var) is linear in the variable and never negative, and at least the
+// sum if f(var) is convex in it.
 struct ArraySizeStatements {
     Vec<ASR::stmt_t*>* body;
     SymbolTable* scope;

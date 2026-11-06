@@ -5806,7 +5806,7 @@ static bool implied_do_loop_bound_value(ASR::expr_t* e,
 
 // The most iterations, nested loops included, of the implied-do loops whose
 // elements are counted at compile time for the size of an array type.
-static constexpr uint64_t implied_do_loop_size_count_limit = 1u << 20;
+static constexpr uint64_t implied_do_loop_size_count_limit = 1u << 16;
 
 // Adds to `count` the number of elements of the array constructor value
 // `value`, with the variables of the enclosing implied-do loops taking
@@ -6204,7 +6204,11 @@ ASR::asr_t* make_ArraySize_t_util(
             // that depend on its variable are counted here if its bounds
             // are known at compile time; a type cannot hold the statements
             // that count them at run time, so their number is estimated
-            // otherwise.
+            // otherwise. The estimate clamps every trip count at zero: the
+            // inner sizes are then convex in the outer variable if they
+            // are linear in it before clamping, and the closed form is
+            // their exact sum or more. It can be less for other inner
+            // sizes, such as `i / 2`, `i * (n - i)` or a stepped loop.
             std::map<ASR::symbol_t*, int64_t> values;
             uint64_t iterations = implied_do_loop_size_count_limit;
             int64_t count = 0;
@@ -6213,7 +6217,7 @@ ASR::asr_t* make_ArraySize_t_util(
             }
             ArraySizeStatements no_statements{nullptr, nullptr};
             constructor_size = get_ArrayConstructor_size(al,
-                array_constructor, &no_statements);
+                array_constructor, &no_statements, true);
         }
         return &(constructor_size->base);
     } else {

@@ -12,6 +12,9 @@ program implied_do_loops58
     integer :: d1(size([((j, j = 1, i), i = 1, 3)]))
     integer :: d2(size([((j, j = i, 3), i = 0, 3)]))
     integer :: d3(size([((j, j = 1, i * i), i = 1, 4)]))
+    ! Too many iterations to count at compile time: the size is estimated,
+    ! as for run-time bounds, and is at least the 80200 elements.
+    integer :: d4(size([((j, j = i, 400), i = 1, 800)]))
 
     if (size([((j, j = i, 2), i = 0, 2)]) /= 6) error stop 1
     call check([((j, j = i, 2), i = 0, 2)], [0, 1, 2, 1, 2, 2])
@@ -86,19 +89,28 @@ program implied_do_loops58
     if (size(d1) /= 6) error stop 20
     if (size(d2) /= 10) error stop 21
     if (size(d3) /= 30) error stop 22
-    call automatic(3)
+    if (size(d4) < 80200) error stop 28
+    d4(:80200) = [((j, j = i, 400), i = 1, 800)]
+    if (d4(80200) /= 400 .or. sum(int(d4(:80200), 8)) /= 21413400_8) error stop 29
+    call automatic(3, 5)
     if (size(nest(3)) /= 6) error stop 25
     call check(nest(3), [1, 1, 2, 1, 2, 3])
 
 contains
 
-    subroutine automatic(n)
-        integer, intent(in) :: n
+    subroutine automatic(n, m)
+        integer, intent(in) :: n, m
         integer :: i, j
         integer :: a(size([((j, j = 1, i), i = 1, n)]))
         integer :: b(size([((j, j = i, n), i = 0, n)]))
+        ! The inner trip counts are zero for i > n: the estimated size is
+        ! at least the 6 elements.
+        integer :: c(size([((j, j = i, n), i = 1, m)]))
         if (size(a) /= 6) error stop 23
         if (size(b) /= 10) error stop 24
+        if (size(c) < 6) error stop 30
+        c(:6) = [((j, j = i, n), i = 1, m)]
+        if (any(c(:6) /= [1, 2, 3, 2, 3, 3])) error stop 31
     end subroutine
 
     function nest(n) result(res)
