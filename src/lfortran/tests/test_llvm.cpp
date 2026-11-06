@@ -2895,6 +2895,40 @@ TEST_CASE("FortranEvaluator derived type constructor initializer") {
     CHECK(r.result.i32 == 2);
 }
 
+// A component inherited from a parent type declared in an earlier cell than
+// the extended type, read through a variable declared in yet another cell.
+TEST_CASE("FortranEvaluator parent component of an extended type from earlier cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: point_16952\ninteger :: x, y\nend type");
+    REQUIRE(r.ok);
+    r = e.evaluate2(R"(type, extends(point_16952) :: p3_16952
+integer :: z = 9
+end type
+)");
+    REQUIRE(r.ok);
+    r = e.evaluate2("type(p3_16952) :: q_16952");
+    REQUIRE(r.ok);
+    r = e.evaluate2("q_16952%z");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+    r = e.evaluate2("q_16952%x = 4\nq_16952%y = 5");
+    REQUIRE(r.ok);
+    r = e.evaluate2("q_16952%x");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 4);
+    r = e.evaluate2("q_16952%x + q_16952%y");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+}
+
 // The same, with the type and the declaration in one cell and the use in
 // another.
 TEST_CASE("FortranEvaluator derived type initializer in one cell") {
@@ -2989,6 +3023,67 @@ TEST_CASE("FortranEvaluator derived type initializer string and nested component
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
     CHECK(r.result.i32 == 11);
+}
+
+// A derived-type named constant declared in an earlier cell initializes a
+// variable of the same type in a later cell. The value of the constant names
+// the type it was constructed with, which must be the same type a later cell
+// declares from (#16953).
+TEST_CASE("FortranEvaluator derived type parameter from an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: param_point\ninteger :: x, y\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(param_point), parameter :: param_cp = param_point(7, 8)");
+    CHECK(r.ok);
+    r = e.evaluate2("type(param_point) :: param_pc = param_cp");
+    CHECK(r.ok);
+    r = e.evaluate2("param_pc%x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 7);
+    r = e.evaluate2("param_pc%y");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 8);
+
+    // A constant whose value has a component of another derived type.
+    r = e.evaluate2("type :: param_inner\ninteger :: k\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type :: param_outer\ntype(param_inner) :: inner\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(param_outer), parameter :: param_co = param_outer(param_inner(12))");
+    CHECK(r.ok);
+    r = e.evaluate2("type(param_outer) :: param_po = param_co");
+    CHECK(r.ok);
+    r = e.evaluate2("param_po%inner%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 12);
+}
+
+// The same with the type, the constant and the variable in one cell.
+TEST_CASE("FortranEvaluator derived type parameter in one cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(type :: param_cell_point
+integer :: x, y
+end type
+type(param_cell_point), parameter :: param_cell_cp = param_cell_point(7, 8)
+type(param_cell_point) :: param_cell_pc = param_cell_cp)");
+    CHECK(r.ok);
+    r = e.evaluate2("param_cell_pc%x * 10 + param_cell_pc%y");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 78);
 }
 
 #ifndef __EMSCRIPTEN__
