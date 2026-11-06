@@ -7776,7 +7776,10 @@ public:
                 } else {
                     ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
                         ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr, llvm_var_name));
-                    if (compiler_options.separate_compilation) {
+                    if (compiler_options.separate_compilation
+                            || compiler_options.interactive) {
+                        // Other translation units (or later interactive
+                        // cells) reference the descriptor by name.
                         llvm::cast<llvm::GlobalVariable>(ptr)->setLinkage(llvm::GlobalValue::ExternalLinkage);
                     }
                 }
@@ -7883,6 +7886,13 @@ public:
                     }
                     ptr = llvm_utils->declare_global_string(str, initial_string_value,
                         is_const, desc_name, string_linkage, data_name);
+                    if (compiler_options.interactive) {
+                        // Later cells declare the descriptor as an external
+                        // global and look it up by name. Its storage can stay
+                        // private: only the descriptor points at it.
+                        llvm::cast<llvm::GlobalVariable>(ptr)->setLinkage(
+                            llvm::GlobalValue::ExternalLinkage);
+                    }
                     if (needs_common_linkage_for_global(x)) {
                         llvm::GlobalVariable* data = module->getNamedGlobal(data_name);
                         // Common linkage applies to the C-visible storage, not
