@@ -1183,8 +1183,10 @@ TEST_CASE("A private map feeds an ordered reduction without a workspace") {
 }
 
 TEST_CASE("Private reduction fusion retains escaping mutated and reused maps") {
+    // A map that the forwarding pass recomputes at its reads keeps no
+    // workspace, which is what the escaping copy and the section fold are.
     auto check = [](const std::string &extent, const std::string &consumer,
-            const std::string &attributes = "") {
+            const std::string &attributes = "", size_t workspaces = 1) {
         INFO(extent << " / " << consumer << " / " << attributes);
         std::string source = R"(
 subroutine map(input,x,y,saved)
@@ -1227,15 +1229,15 @@ end subroutine
             if (!ASRUtils::is_device_kernel(entry.second)) continue;
             auto* kernel = ASR::down_cast<ASR::Function_t>(entry.second);
             REQUIRE(kernel->m_gpu != nullptr);
-            CHECK(kernel->m_gpu->n_workspaces == 1);
+            CHECK(kernel->m_gpu->n_workspaces == workspaces);
             kernels++;
         }
         CHECK(kernels == 1);
     };
-    check("size(x)", "saved(:,n)=codes\ny(1,n)=sum(codes*x)");
+    check("size(x)", "saved(:,n)=codes\ny(1,n)=sum(codes*x)", "", 0);
     check("size(x)", "codes(1)=codes(1)+1\ny(1,n)=sum(codes*x)");
     check("size(x)", "do concurrent(integer :: m=1:2)\ny(m,n)=sum(codes*x)\nend do");
-    check("size(x)+4", "y(1,n)=sum(codes(:size(x))*x)");
+    check("size(x)+4", "y(1,n)=sum(codes(:size(x))*x)", "", 0);
     check("size(x)", "y(1,n)=sum(codes*x)", ", target");
     check("size(x)", "y(1,n)=sum(codes*x)", ", volatile");
     check("size(x)", "y(1,n)=sum(codes*x)+sum(codes*x)");

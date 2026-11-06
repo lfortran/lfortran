@@ -15,6 +15,12 @@ namespace LCompilers {
     void pass_gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
                               const PassOptions &pass_options);
 
+    // Forwards a block-private full-domain map into the statements that
+    // read its elements at subscripts computed there, so that no private
+    // array is stored per thread.
+    void pass_gpu_private_map_forwarding(Allocator &al,
+        ASR::TranslationUnit_t &unit, const PassOptions &pass_options);
+
     // Eliminates a single-use private map into its full-domain ordered
     // scalar fold after shared reduction lowering, before device storage.
     void pass_gpu_private_reduction_fusion(Allocator &al,

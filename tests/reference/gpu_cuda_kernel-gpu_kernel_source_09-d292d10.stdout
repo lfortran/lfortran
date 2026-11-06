@@ -15,17 +15,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 {
     int __flat_idx;
     int j__dc;
-    int k;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc = (__flat_idx + 1);
     {
-        float small[6000];
-        for (k = 1; k <= 6000; k++) {
-            small[((int)(k) - (1))] = ((float)(k + j__dc));
-        }
         {
             int __libasr_index_0_;
             int __libasr_index_0_1;
@@ -40,35 +35,29 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + 4000 - 1); __libasr_index_0_2++) {
                 q[((int)(__libasr_index_0_2) - (1))].c = ((float)2);
             }
-            y[((int)(j__dc) - (1))] = ((small[((int)(6000) - (1))] + q[((int)(4000) - (1))].a) + q[((int)(1) - (1))].c);
+            y[((int)(j__dc) - (1))] = ((((float)(6000 + j__dc)) + q[((int)(4000) - (1))].a) + q[((int)(1) - (1))].c);
         }
     }
 }
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    float* __restrict__ y,
-    float* __restrict__ __workspace_1)
+    float* __restrict__ y)
 {
     int __flat_idx;
     int j__dc1;
-    int k;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc1 = (__flat_idx + 1);
     {
-        float* large = ((20000) > 0) ? (__workspace_1 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * 20000) : nullptr;
-        for (k = 1; k <= 20000; k++) {
-            large[((int)(k) - (1))] = ((float)(k + j__dc1));
-        }
         {
             int __libasr_index_0_;
             aggregate q;
             for (__libasr_index_0_ = 1; __libasr_index_0_ <= ((120000 - 1) + 1); __libasr_index_0_++) {
                 q.a[((int)(__libasr_index_0_) - (1))] = ((float)j__dc1);
             }
-            y[((int)(j__dc1) - (1))] = ((large[((int)(20000) - (1))] + q.a[((int)(1) - (1))]) + q.a[((int)(120000) - (1))]);
+            y[((int)(j__dc1) - (1))] = ((((float)(20000 + j__dc1)) + q.a[((int)(1) - (1))]) + q.a[((int)(120000) - (1))]);
         }
     }
 }
@@ -114,23 +103,17 @@ __device__ inline float read_value_gpu_49(aggregate q) {
 
 extern "C" __global__ void __lfortran_gpu_kernel_3(
     aggregate* __restrict__ shared,
-    float* __restrict__ y,
-    float* __restrict__ __workspace_2)
+    float* __restrict__ y)
 {
     int __flat_idx;
     int j__dc3;
-    int k;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc3 = (__flat_idx + 1);
     {
-        float* large = ((20000) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * 20000) : nullptr;
-        for (k = 1; k <= 20000; k++) {
-            large[((int)(k) - (1))] = ((float)(k + j__dc3));
-        }
-        y[((int)(j__dc3) - (1))] = (large[((int)(20000) - (1))] + read_value_gpu_49(shared[((int)(j__dc3) - (1))]));
+        y[((int)(j__dc3) - (1))] = (((float)(20000 + j__dc3)) + read_value_gpu_49(shared[((int)(j__dc3) - (1))]));
     }
 }
 

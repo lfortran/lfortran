@@ -2258,6 +2258,739 @@ public:
     }
 };
 
+
+// Forwards a block-private, full-domain map into the statements of the same
+// BLOCK that read its elements at subscripts computed there. A private map
+// such as `codes(1:k)` written by one concurrent loop and read element by
+// element afterwards (after array_op turned the slices into loops) needs no
+// storage of its own: each read recomputes the element it reads. The array,
+// its store and its per-thread device storage disappear, which is what makes
+// the consuming fold a plain loop over the map's element expression.
+class PrivateMapForwarding {
+    Allocator &al;
+    LoopFusion &fusion;
+
+    static ASR::symbol_t *variable(ASR::expr_t *e) {
+        if (!e || !ASR::is_a<ASR::Var_t>(*e)) return nullptr;
+        auto *s = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(e)->m_v);
+        return ASR::is_a<ASR::Variable_t>(*s) ? s : nullptr;
+    }
+
+    // The statement a node is, for comparing against a walked statement.
+    static ASR::stmt_t *stmt_of(ASR::Assignment_t *a) {
+        return a ? &a->base : nullptr;
+    }
+
+    static ASR::stmt_t *stmt_of(ASR::If_t *i) {
+        return i ? &i->base : nullptr;
+    }
+
+    static bool one(ASR::expr_t *e) {
+        return !e || (ASR::is_a<ASR::IntegerConstant_t>(*e)
+            && ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n == 1);
+    }
+
+    // An expression that may be recomputed where it is read: no impure or
+    // array-valued intrinsic and no call that may be impure or is not
+    // elemental.
+    static bool pure_expr(ASR::expr_t *e) {
+        struct Check : public ASR::BaseWalkVisitor<Check> {
+            bool ok = true;
+            void visit_IntrinsicImpureFunction(
+                    const ASR::IntrinsicImpureFunction_t &) {
+                ok = false;
+            }
+            void visit_IntrinsicImpureSubroutine(
+                    const ASR::IntrinsicImpureSubroutine_t &) {
+                ok = false;
+            }
+            void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &) {
+                ok = false;
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+                if (!ASR::is_a<ASR::Function_t>(*s)) {
+                    ok = false;
+                    return;
+                }
+                auto *ft = ASRUtils::get_FunctionType(
+                    ASR::down_cast<ASR::Function_t>(s));
+                if (!ft->m_pure && !ft->m_elemental) ok = false;
+                ASR::BaseWalkVisitor<Check>::visit_FunctionCall(x);
+            }
+        } c;
+        c.visit_expr(*e);
+        return c.ok;
+    }
+
+    // The bound expression an array is declared with: an extent temporary
+    // that is never assigned stands for its symbolic value, and `max(0, n)`
+    // is the guard a pointer array carries for an empty extent.
+    static ASR::expr_t *extent(ASR::expr_t *e,
+            const std::set<ASR::symbol_t*> &assigned) {
+        for (int depth = 0; e && depth < 4; depth++) {
+            if (ASR::is_a<ASR::Var_t>(*e)) {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*s) || assigned.count(s)) {
+                    return e;
+                }
+                auto *v = ASR::down_cast<ASR::Variable_t>(s);
+                ASR::expr_t *next = v->m_symbolic_value
+                    ? v->m_symbolic_value : v->m_value;
+                if (!next) return e;
+                e = next;
+                continue;
+            }
+            if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) break;
+            auto *f = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+            if (static_cast<ASRUtils::IntrinsicElementalFunctions>(
+                        f->m_intrinsic_id)
+                    != ASRUtils::IntrinsicElementalFunctions::Max
+                    || f->n_args != 2) break;
+            ASR::expr_t *zero = nullptr;
+            ASR::expr_t *other = nullptr;
+            for (size_t i = 0; i < 2; i++) {
+                if (ASR::is_a<ASR::IntegerConstant_t>(*f->m_args[i])) {
+                    auto *c = ASR::down_cast<ASR::IntegerConstant_t>(
+                        f->m_args[i]);
+                    if (c->m_n == 0) zero = f->m_args[i];
+                } else {
+                    other = f->m_args[i];
+                }
+            }
+            if (!zero || !other) break;
+            e = other;
+        }
+        return e;
+    }
+
+    bool stable(ASR::expr_t *e, SymbolTable *scope) {
+        std::set<ASR::symbol_t*> symbols;
+        gpu_collect_symbols(e, symbols);
+        for (auto *s : symbols) {
+            if (gpu_may_be_aliased(s, fusion.address_taken)) return false;
+            if (!ASR::is_a<ASR::Variable_t>(*s)) continue;
+            auto *v = ASR::down_cast<ASR::Variable_t>(s);
+            for (auto *st = scope; st; st = st->parent) {
+                if (ASRUtils::has_scoped_variable_attribute(*v, st, false)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // The variable a target designator assigns, through any subscripting
+    // and component selection: `z%f_(k, j)` assigns `z`, the symbol reads
+    // of `z%f_` are collected under.
+    static ASR::symbol_t *assigned_variable(ASR::expr_t *e) {
+        while (e) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else {
+                break;
+            }
+        }
+        return variable(e);
+    }
+
+    // Every variable a statement list assigns, or passes to a call.
+    static void collect_written(ASR::stmt_t **body, size_t n,
+            std::set<ASR::symbol_t*> &out) {
+        for (size_t i = 0; i < n; i++) {
+            ASR::stmt_t *s = body[i];
+            if (ASR::is_a<ASR::Assignment_t>(*s)) {
+                auto *a = ASR::down_cast<ASR::Assignment_t>(s);
+                if (auto *v = assigned_variable(a->m_target)) out.insert(v);
+            } else if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+                auto *l = ASR::down_cast<ASR::DoLoop_t>(s);
+                if (auto *v = variable(l->m_head.m_v)) out.insert(v);
+                collect_written(l->m_body, l->n_body, out);
+            } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*s)) {
+                auto *l = ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+                for (size_t h = 0; h < l->n_head; h++) {
+                    if (auto *v = variable(l->m_head[h].m_v)) out.insert(v);
+                }
+                collect_written(l->m_body, l->n_body, out);
+            } else if (ASR::is_a<ASR::If_t>(*s)) {
+                auto *b = ASR::down_cast<ASR::If_t>(s);
+                collect_written(b->m_body, b->n_body, out);
+                collect_written(b->m_orelse, b->n_orelse, out);
+            } else if (ASR::is_a<ASR::BlockCall_t>(*s)) {
+                auto *sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
+                if (ASR::is_a<ASR::Block_t>(*sym)) {
+                    auto *b = ASR::down_cast<ASR::Block_t>(sym);
+                    collect_written(b->m_body, b->n_body, out);
+                }
+            } else {
+                std::set<ASR::symbol_t*> refs;
+                gpu_collect_symbols(body + i, 1, refs);
+                out.insert(refs.begin(), refs.end());
+            }
+        }
+    }
+
+    // A condition a statement runs under, with the polarity of an ELSE.
+    struct Guard {
+        ASR::expr_t *condition;
+        bool positive;
+    };
+
+    static Guard guard_of(ASR::expr_t *e, bool positive) {
+        if (e && ASR::is_a<ASR::LogicalNot_t>(*e)) {
+            return {ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg, !positive};
+        }
+        return {e, positive};
+    }
+
+    // Whether every condition of `need` holds in `have`.
+    static bool implies(const std::vector<Guard> &have,
+            const std::vector<Guard> &need) {
+        for (auto &n : need) {
+            bool found = false;
+            for (auto &h : have) {
+                if (h.positive == n.positive && h.condition && n.condition
+                        && PassUtils::same_expression(
+                            h.condition, n.condition)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) return false;
+        }
+        return true;
+    }
+
+    // Element reads of `array` in a statement list, or any other use of it.
+    struct Reader : public ASR::BaseWalkVisitor<Reader> {
+        ASR::symbol_t *array;
+        ASR::stmt_t *skip;
+        std::vector<Guard> guards;
+        std::vector<ASR::ArrayItem_t*> reads;
+        std::vector<std::vector<Guard>> read_guards;
+        std::vector<ASR::ArrayBound_t*> bounds;
+        bool other_use = false;
+
+        Reader(ASR::symbol_t *a, ASR::stmt_t *k) : array(a), skip(k) {}
+
+        void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+            if (variable(x.m_v) != array) {
+                ASR::BaseWalkVisitor<Reader>::visit_ArrayItem(x);
+                return;
+            }
+            if (x.n_args != 1 || x.m_args[0].m_left
+                    || x.m_args[0].m_step) {
+                other_use = true;
+            } else {
+                reads.push_back(const_cast<ASR::ArrayItem_t*>(&x));
+                read_guards.push_back(guards);
+            }
+        }
+
+        void visit_Var(const ASR::Var_t &x) {
+            if (ASRUtils::symbol_get_past_external(x.m_v) == array) {
+                other_use = true;
+            }
+        }
+
+        // `lbound`/`ubound` of the map is a bound of the loop the read runs
+        // in, not a use of its values.
+        void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+            if (variable(x.m_v) == array) {
+                bounds.push_back(const_cast<ASR::ArrayBound_t*>(&x));
+                return;
+            }
+            ASR::BaseWalkVisitor<Reader>::visit_ArrayBound(x);
+        }
+
+        void visit_If(const ASR::If_t &x) {
+            if (x.m_test) visit_expr(*x.m_test);
+            guards.push_back(guard_of(x.m_test, true));
+            for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
+            guards.back() = guard_of(x.m_test, false);
+            for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
+            guards.pop_back();
+        }
+
+        // A BLOCK's statements are in its own scope, not in the call.
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+            if (!ASR::is_a<ASR::Block_t>(*b)) {
+                other_use = true;
+                return;
+            }
+            auto *blk = ASR::down_cast<ASR::Block_t>(b);
+            for (size_t i = 0; i < blk->n_body; i++) {
+                visit_stmt(*blk->m_body[i]);
+            }
+        }
+
+        void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &) {
+            other_use = true;
+        }
+
+        // Any subscript of an assigned target that reads the array makes the
+        // map's element per-iteration dependent in a way we do not lower.
+        void visit_Assignment(const ASR::Assignment_t &x) {
+            if (reinterpret_cast<const ASR::stmt_t*>(&x) == skip) return;
+            Target t;
+            t.array = array;
+            t.use = &other_use;
+            if (x.m_target) t.visit_expr(*x.m_target);
+            if (x.m_value) visit_expr(*x.m_value);
+            if (x.m_overloaded) visit_stmt(*x.m_overloaded);
+        }
+
+        struct Target : public ASR::BaseWalkVisitor<Target> {
+            ASR::symbol_t *array;
+            bool *use;
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                if (variable(x.m_v) == array) {
+                    *use = true;
+                    return;
+                }
+                ASR::BaseWalkVisitor<Target>::visit_ArrayItem(x);
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                if (ASRUtils::symbol_get_past_external(x.m_v) == array) {
+                    *use = true;
+                }
+            }
+        };
+    };
+
+    void scan(ASR::stmt_t **body, size_t n, Reader &r) {
+        for (size_t i = 0; i < n; i++) r.visit_stmt(*body[i]);
+    }
+
+    // Whether a statement is the map store `array(index) = value`.
+    static ASR::Assignment_t *map_store(ASR::stmt_t *s,
+            ASR::symbol_t *array, ASR::symbol_t *index) {
+        if (!s || !ASR::is_a<ASR::Assignment_t>(*s)) return nullptr;
+        auto *a = ASR::down_cast<ASR::Assignment_t>(s);
+        if (a->m_overloaded || a->m_realloc_lhs
+                || !ASR::is_a<ASR::ArrayItem_t>(*a->m_target)) return nullptr;
+        auto *item = ASR::down_cast<ASR::ArrayItem_t>(a->m_target);
+        if (variable(item->m_v) != array || item->n_args != 1
+                || item->m_args[0].m_left || item->m_args[0].m_step
+                || variable(item->m_args[0].m_right) != index) return nullptr;
+        return a;
+    }
+
+    void find_stores(ASR::stmt_t **body, size_t n, ASR::symbol_t *index,
+            std::set<ASR::symbol_t*> &arrays) {
+        for (size_t k = 0; k < n; k++) {
+            if (!ASR::is_a<ASR::Assignment_t>(*body[k])) continue;
+            auto *a = ASR::down_cast<ASR::Assignment_t>(body[k]);
+            if (!ASR::is_a<ASR::ArrayItem_t>(*a->m_target)) continue;
+            auto *item = ASR::down_cast<ASR::ArrayItem_t>(a->m_target);
+            ASR::symbol_t *v = variable(item->m_v);
+            if (!v || v == index || item->n_args != 1
+                    || item->m_args[0].m_left || item->m_args[0].m_step
+                    || variable(item->m_args[0].m_right) != index) continue;
+            arrays.insert(v);
+        }
+        // A map written under an IF is forwarded once the maps written
+        // beside it are gone.
+        if (!arrays.empty()) return;
+        for (size_t k = 0; k < n; k++) {
+            if (!ASR::is_a<ASR::If_t>(*body[k])) continue;
+            auto *branch = ASR::down_cast<ASR::If_t>(body[k]);
+            find_stores(branch->m_body, branch->n_body, index, arrays);
+        }
+    }
+
+    // The one store of `array` in a statement list, at the loop's index,
+    // which may sit under IF statements. Reports the IFs around it, or null
+    // when the store is at the top level.
+    ASR::Assignment_t *find_store(ASR::stmt_t **body, size_t n,
+            ASR::symbol_t *array, ASR::symbol_t *index,
+            std::vector<ASR::If_t*> &parents, std::vector<Guard> &guards) {
+        ASR::Assignment_t *found = nullptr;
+        for (size_t k = 0; k < n; k++) {
+            ASR::Assignment_t *a = map_store(body[k], array, index);
+            if (a) {
+                if (found) return nullptr;
+                found = a;
+                continue;
+            }
+            if (ASR::is_a<ASR::If_t>(*body[k])) {
+                auto *branch = ASR::down_cast<ASR::If_t>(body[k]);
+                std::vector<ASR::If_t*> inner = parents;
+                std::vector<Guard> inner_guards = guards;
+                inner.push_back(branch);
+                inner_guards.push_back(guard_of(branch->m_test, true));
+                ASR::Assignment_t *a2 = find_store(branch->m_body,
+                    branch->n_body, array, index, inner, inner_guards);
+                if (a2) {
+                    if (found) return nullptr;
+                    found = a2;
+                    parents = inner;
+                    guards = inner_guards;
+                }
+                // A store in an ELSE would need the negated condition, and is
+                // not this pattern.
+                if (branch->n_orelse) {
+                    if (map_store_in(branch->m_orelse, branch->n_orelse,
+                                array, index)) return nullptr;
+                }
+            }
+        }
+        return found;
+    }
+
+    static bool map_store_in(ASR::stmt_t **body, size_t n,
+            ASR::symbol_t *array, ASR::symbol_t *index) {
+        for (size_t k = 0; k < n; k++) {
+            if (map_store(body[k], array, index)) return true;
+            if (ASR::is_a<ASR::If_t>(*body[k])) {
+                auto *branch = ASR::down_cast<ASR::If_t>(body[k]);
+                if (map_store_in(branch->m_body, branch->n_body, array, index)
+                        || map_store_in(branch->m_orelse, branch->n_orelse,
+                            array, index)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Removes a statement from the list of the IF that holds it, and the IF
+    // itself once its body is empty, with no ELSE.
+    void drop_store(ASR::stmt_t **loop_body, size_t &loop_n,
+            std::vector<ASR::If_t*> &parents, ASR::Assignment_t *store) {
+        ASR::stmt_t **body = parents.empty() ? loop_body : parents.back()->m_body;
+        size_t &n = parents.empty()
+            ? loop_n : parents.back()->n_body;
+        for (size_t k = 0; k < n; k++) {
+            if (body[k] == stmt_of(store)) {
+                for (size_t j = k; j + 1 < n; j++) body[j] = body[j + 1];
+                n--;
+                break;
+            }
+        }
+        for (size_t p = parents.size(); p-- > 0; ) {
+            ASR::If_t *branch = parents[p];
+            if (branch->n_body != 0 || branch->n_orelse != 0) break;
+            if (!branch->m_test || !pure_expr(branch->m_test)) break;
+            ASR::stmt_t **holder = p == 0 ? loop_body
+                : parents[p - 1]->m_body;
+            size_t &hn = p == 0 ? loop_n : parents[p - 1]->n_body;
+            for (size_t k = 0; k < hn; k++) {
+                if (holder[k] == stmt_of(branch)) {
+                    for (size_t j = k; j + 1 < hn; j++) holder[j] = holder[j + 1];
+                    hn--;
+                    break;
+                }
+            }
+        }
+    }
+
+    bool try_forward(SymbolTable *scope, ASR::stmt_t **body, size_t &n,
+            ASR::stmt_t **root, size_t &root_n, size_t i) {
+        ASR::expr_t *end = nullptr;
+        ASR::symbol_t *index = nullptr;
+        ASR::stmt_t **loop_body = nullptr;
+        size_t loop_n = 0;
+        if (ASR::is_a<ASR::DoConcurrentLoop_t>(*body[i])) {
+            auto *l = ASR::down_cast<ASR::DoConcurrentLoop_t>(body[i]);
+            if (l->n_head != 1 || l->n_local || l->n_shared || l->n_reduction)
+                return false;
+            if (!one(l->m_head[0].m_start) || !one(l->m_head[0].m_increment))
+                return false;
+            end = l->m_head[0].m_end;
+            index = variable(l->m_head[0].m_v);
+            loop_body = l->m_body;
+            loop_n = l->n_body;
+        } else if (ASR::is_a<ASR::DoLoop_t>(*body[i])) {
+            auto *l = ASR::down_cast<ASR::DoLoop_t>(body[i]);
+            if (!one(l->m_head.m_start) || !one(l->m_head.m_increment))
+                return false;
+            end = l->m_head.m_end;
+            index = variable(l->m_head.m_v);
+            loop_body = l->m_body;
+            loop_n = l->n_body;
+        } else {
+            return false;
+        }
+        if (!index || !end) return false;
+
+        // The arrays this loop stores at its own index. One of them is
+        // forwarded now; another one waits for the next round.
+        std::set<ASR::symbol_t*> arrays;
+        find_stores(loop_body, loop_n, index, arrays);
+        if (arrays.empty()) return false;
+        ASR::symbol_t *array = *arrays.begin();
+
+        std::vector<ASR::If_t*> parents;
+        std::vector<Guard> guards;
+        ASR::Assignment_t *store = find_store(loop_body, loop_n, array,
+            index, parents, guards);
+        if (!store) {
+            return false;
+        }
+        ASR::expr_t *value = store->m_value;
+
+        // A local, rank-one array of exactly the loop's extent.
+        std::set<ASR::symbol_t*> written;
+        collect_written(body, n, written);
+        if (ASRUtils::symbol_parent_symtab(array) != scope) {
+            return false;
+        }
+        auto *v = ASR::down_cast<ASR::Variable_t>(array);
+        if (v->m_intent != ASR::intentType::Local
+                || v->m_storage != ASR::storage_typeType::Default
+                || v->m_symbolic_value || v->m_value
+                || gpu_may_be_aliased(array, fusion.address_taken)
+                || !ASR::is_a<ASR::Array_t>(*v->m_type)) {
+            return false;
+        }
+        auto *type = ASR::down_cast<ASR::Array_t>(v->m_type);
+        if (type->n_dims != 1 || !one(type->m_dims[0].m_start)
+                || !PassUtils::same_expression(
+                    extent(type->m_dims[0].m_length, written), end)) {
+            return false;
+        }
+
+        // The map's value is pure and recomputable from its own index.
+        if (!pure_expr(value)) {
+            return false;
+        }
+        if (!gpu_calls_self_contained(value)) {
+            return false;
+        }
+        if (!stable(value, scope)) {
+            return false;
+        }
+        std::set<ASR::symbol_t*> value_symbols;
+        gpu_collect_symbols(value, value_symbols);
+        if (value_symbols.count(array)) {
+            return false;
+        }
+
+        // Nothing the value reads may be assigned in the block.
+        written.erase(array);
+        for (auto *sym : value_symbols) {
+            if (sym == index || sym == array) continue;
+            if (written.count(sym)) {
+                return false;
+            }
+        }
+
+        // No read of the map before its store, here or in the loop.
+        Reader before(array, nullptr);
+        scan(body, i, before);
+        if (before.other_use || !before.reads.empty()) {
+            return false;
+        }
+        size_t top = parents.empty() ? 0 : SIZE_MAX;
+        for (size_t k = 0; k < loop_n; k++) {
+            if (parents.empty()) {
+                if (loop_body[k] == stmt_of(store)) {
+                    top = k;
+                    break;
+                }
+            } else if (loop_body[k] == stmt_of(parents.front())) {
+                top = k;
+                break;
+            }
+        }
+        if (top == SIZE_MAX) return false;
+        Reader early(array, stmt_of(store));
+        for (size_t k = 0; k < top; k++) early.visit_stmt(*loop_body[k]);
+        if (early.other_use || !early.reads.empty() || !early.bounds.empty()) {
+            return false;
+        }
+        if (!parents.empty()) {
+            Reader in_if(array, stmt_of(store));
+            scan(parents.back()->m_body, parents.back()->n_body, in_if);
+            if (in_if.other_use || !in_if.reads.empty()
+                    || !in_if.bounds.empty()) {
+                return false;
+            }
+        }
+
+        // Every later read is an element read under the store's conditions.
+        Reader late(array, stmt_of(store));
+        scan(loop_body + top, loop_n - top, late);
+        if (late.other_use) {
+            return false;
+        }
+        Reader after(array, nullptr);
+        scan(body + i + 1, n - i - 1, after);
+        if (after.other_use) {
+            return false;
+        }
+        // Every use in the block must be one of the reads replaced below:
+        // the same map may be named before the loop or in another branch.
+        Reader everywhere(array, stmt_of(store));
+        scan(root, root_n, everywhere);
+        if (everywhere.other_use) {
+            return false;
+        }
+        std::vector<ASR::ArrayItem_t*> reads = late.reads;
+        std::vector<std::vector<Guard>> read_guards = late.read_guards;
+        std::vector<ASR::ArrayBound_t*> bounds = late.bounds;
+        reads.insert(reads.end(), after.reads.begin(), after.reads.end());
+        read_guards.insert(read_guards.end(), after.read_guards.begin(),
+            after.read_guards.end());
+        bounds.insert(bounds.end(), after.bounds.begin(), after.bounds.end());
+        if (reads.empty()) {
+            return false;
+        }
+        std::set<ASR::expr_t*> covered;
+        for (auto *item : reads) covered.insert(&item->base);
+        for (auto *b : bounds) covered.insert(&b->base);
+        if (everywhere.reads.size() + everywhere.bounds.size()
+                != covered.size()) {
+            return false;
+        }
+        for (auto *item : everywhere.reads) {
+            if (!covered.count(&item->base)) return false;
+        }
+        for (auto *b : everywhere.bounds) {
+            if (!covered.count(&b->base)) return false;
+        }
+        for (auto &g : read_guards) {
+            if (!implies(g, guards)) {
+                return false;
+            }
+        }
+
+        // Recompute every read before anything is changed.
+        std::map<ASR::expr_t*, ASR::expr_t*> replacements;
+        for (auto *item : reads) {
+            GpuDuplicator dup(al, scope);
+            dup.value_map[index] = item->m_args[0].m_right;
+            ASR::expr_t *copy = dup.duplicate_expr(value);
+            if (!dup.ok || copy == nullptr) {
+                return false;
+            }
+            replacements[&item->base] = copy;
+        }
+        for (auto *b : bounds) {
+            if (!b->m_dim || !ASR::is_a<ASR::IntegerConstant_t>(*b->m_dim)
+                    || ASR::down_cast<ASR::IntegerConstant_t>(b->m_dim)->m_n
+                        != 1) {
+                return false;
+            }
+            if (b->m_bound == ASR::arrayboundType::LBound) {
+                replacements[&b->base] = ASRUtils::EXPR(
+                    ASR::make_IntegerConstant_t(al, b->base.base.loc, 1,
+                        b->m_type));
+            } else if (b->m_bound == ASR::arrayboundType::UBound) {
+                GpuDuplicator dup(al, scope);
+                ASR::expr_t *copy = dup.duplicate_expr(end);
+                if (!dup.ok || copy == nullptr) {
+                    return false;
+                }
+                replacements[&b->base] = copy;
+            } else {
+                return false;
+            }
+        }
+
+        auto replace = [&](ASR::stmt_t **b, size_t count) {
+            gpu_replace_exprs(b, count, [&](ASR::expr_t *e) -> ASR::expr_t* {
+                auto it = replacements.find(e);
+                return it == replacements.end() ? nullptr : it->second;
+            });
+        };
+        if (loop_n > top + 1) {
+            replace(loop_body + top + 1, loop_n - top - 1);
+        }
+        replace(body + i + 1, n - i - 1);
+        if (!parents.empty() && store) {
+            ASR::stmt_t **inner = parents.back()->m_body;
+            size_t inn = parents.back()->n_body;
+            for (size_t k = 0; k < inn; k++) {
+                if (inner[k] == stmt_of(store)) {
+                    replace(inner + k + 1, inn - k - 1);
+                    break;
+                }
+            }
+        }
+
+        // Drop the store, and the loop if it held nothing else.
+        drop_store(loop_body, loop_n, parents, store);
+        if (ASR::is_a<ASR::DoConcurrentLoop_t>(*body[i])) {
+            ASR::down_cast<ASR::DoConcurrentLoop_t>(body[i])->n_body = loop_n;
+        } else {
+            ASR::down_cast<ASR::DoLoop_t>(body[i])->n_body = loop_n;
+        }
+        if (loop_n == 0) {
+            for (size_t k = i; k + 1 < n; k++) body[k] = body[k + 1];
+            n--;
+        }
+
+        // The array is gone when nothing refers to it any more.
+        struct References : public ASR::BaseWalkVisitor<References> {
+            ASR::symbol_t *array;
+            bool found = false;
+            void visit_Var(const ASR::Var_t &x) {
+                if (ASRUtils::symbol_get_past_external(x.m_v) == array) {
+                    found = true;
+                }
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+                if (!ASR::is_a<ASR::Block_t>(*b)) return;
+                auto *blk = ASR::down_cast<ASR::Block_t>(b);
+                for (size_t k = 0; k < blk->n_body; k++) {
+                    visit_stmt(*blk->m_body[k]);
+                }
+            }
+        } refs;
+        refs.array = array;
+        for (size_t k = 0; k < n; k++) refs.visit_stmt(*body[k]);
+        if (!refs.found) scope->erase_symbol(v->m_name);
+        return true;
+    }
+
+public:
+    PrivateMapForwarding(Allocator &al_, LoopFusion &fusion_)
+        : al(al_), fusion(fusion_) {}
+
+    // `root` is the statement list of the block whose symbol table is
+    // `scope`: a map may be named anywhere in it, not only beside its loop.
+    void list(SymbolTable *scope, ASR::stmt_t **body, size_t &n,
+            ASR::stmt_t **root, size_t &root_n) {
+        for (size_t i = 0; i < n; i++) {
+            ASR::stmt_t *s = body[i];
+            if (ASR::is_a<ASR::BlockCall_t>(*s)) {
+                auto *symbol = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
+                if (!ASR::is_a<ASR::Block_t>(*symbol)) continue;
+                auto *block = ASR::down_cast<ASR::Block_t>(symbol);
+                list(block->m_symtab, block->m_body, block->n_body,
+                    block->m_body, block->n_body);
+            } else if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+                auto *loop = ASR::down_cast<ASR::DoLoop_t>(s);
+                list(scope, loop->m_body, loop->n_body, root, root_n);
+            } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*s)) {
+                auto *loop = ASR::down_cast<ASR::DoConcurrentLoop_t>(s);
+                list(scope, loop->m_body, loop->n_body, root, root_n);
+            } else if (ASR::is_a<ASR::If_t>(*s)) {
+                auto *branch = ASR::down_cast<ASR::If_t>(s);
+                list(scope, branch->m_body, branch->n_body, root, root_n);
+                list(scope, branch->m_orelse, branch->n_orelse, root, root_n);
+            }
+        }
+        for (size_t i = 0; i < n; ) {
+            if (!try_forward(scope, body, n, root, root_n, i)) {
+                i++;
+            }
+        }
+    }
+};
+
 } // namespace
 
 void gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
@@ -2309,6 +3042,34 @@ void pass_gpu_private_reduction_fusion(Allocator &al, ASR::TranslationUnit_t &un
                 auto *fn = ASR::down_cast<ASR::Function_t>(entry.second);
                 if (ASRUtils::is_device_only_function(*fn)) {
                     private_fusion.list(fn->m_symtab, fn->m_body, fn->n_body);
+                }
+                visit(fn->m_symtab);
+            } else if (ASR::is_a<ASR::Module_t>(*entry.second)) {
+                visit(ASR::down_cast<ASR::Module_t>(entry.second)->m_symtab);
+            }
+        }
+    };
+    visit(unit.m_symtab);
+    PassUtils::UpdateDependenciesVisitor update(al);
+    update.visit_TranslationUnit(unit);
+}
+
+
+void pass_gpu_private_map_forwarding(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options) {
+    if (gpu_device_selected(pass_options) == GpuDevice::None
+            || !gpu_loop_transform_enabled(pass_options, GpuLoopFuse)) return;
+    GpuRarelyRun rarely_run;
+    LoopFusion fusion(al, pass_options, rarely_run);
+    gpu_collect_address_taken(unit, fusion.address_taken);
+    PrivateMapForwarding forwarding(al, fusion);
+    std::function<void(SymbolTable*)> visit = [&](SymbolTable *scope) {
+        for (auto &entry : scope->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*entry.second)) {
+                auto *fn = ASR::down_cast<ASR::Function_t>(entry.second);
+                if (ASRUtils::is_device_only_function(*fn)) {
+                    forwarding.list(fn->m_symtab, fn->m_body, fn->n_body,
+                        fn->m_body, fn->n_body);
                 }
                 visit(fn->m_symtab);
             } else if (ASR::is_a<ASR::Module_t>(*entry.second)) {
