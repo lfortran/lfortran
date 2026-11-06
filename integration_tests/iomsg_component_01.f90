@@ -39,18 +39,21 @@ program iomsg_component_01
     if (e%ierr == 0) error stop 3
     if (len_trim(e%serr) == 0) error stop 4
 
+    errs(2)%ierr = 0
     errs(2)%serr = ""
     backspace(unit=99, iostat=errs(2)%ierr, iomsg=errs(2)%serr)
     if (errs(2)%ierr == 0) error stop 5
     if (len_trim(errs(2)%serr) == 0) error stop 6
 
     msgs = ""
+    ios = 0
     backspace(unit=99, iostat=ios, iomsg=msgs(2))
     if (ios == 0) error stop 7
     if (len_trim(msgs(2)) == 0) error stop 8
     if (len_trim(msgs(1)) /= 0 .or. len_trim(msgs(3)) /= 0) error stop 9
 
     line = ""
+    ios = 0
     backspace(unit=99, iostat=ios, iomsg=line(1:40))
     if (ios == 0) error stop 10
     if (len_trim(line) == 0) error stop 11
