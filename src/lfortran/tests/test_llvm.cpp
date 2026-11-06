@@ -6354,10 +6354,11 @@ TEST_CASE("FortranEvaluator internal assumed-shape procedure as an actual proced
     cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     FortranEvaluator e(cu);
     // An earlier cell defines a procedure whose dummy procedure has an
-    // assumed-shape dummy; that cell's code passes it a descriptor. A later
-    // cell passes an internal procedure as the actual argument. The internal
-    // procedure is specialized by array_by_data, but the actual argument has
-    // to stay the descriptor original, which matches the dummy's interface.
+    // assumed-shape dummy; array_by_data compiles that cell's procedure to
+    // take the dummy procedure by data. A later cell passes an internal
+    // procedure as the actual argument, which array_by_data specializes and
+    // passes by data. The later cell has to declare the earlier procedure
+    // with the same by-data dummy that its own cell compiled.
     REQUIRE(e.evaluate2(R"(subroutine apply_16946(f, r)
 interface
 real(8) function f(x)
@@ -6385,16 +6386,35 @@ end subroutine
     REQUIRE(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
     CHECK(r.result.f64 == 3.0);
+}
+
+TEST_CASE("FortranEvaluator earlier top-level assumed-shape procedure as an actual procedure argument") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
     // A top-level procedure of an earlier cell passed as the actual
-    // argument has to be passed by data, too: its specialization is the one
-    // that cell defined.
+    // argument to an earlier cell's procedure has to be passed by data:
+    // both cells compiled their procedures with by-data interfaces.
+    REQUIRE(e.evaluate2(R"(subroutine apply_t_16946(f, r)
+interface
+real(8) function f(x)
+real(8), intent(in) :: x(:)
+end function
+end interface
+real(8), intent(out) :: r
+r = f([1.0d0, 2.0d0])
+end subroutine
+)").ok);
     REQUIRE(e.evaluate2(R"(real(8) function twice_16946(x)
 real(8), intent(in) :: x(:)
 twice_16946 = 2.0d0 * sum(x)
 end function
 )").ok);
-    REQUIRE(e.evaluate2("call apply_16946(twice_16946, rr_16946)").ok);
-    r = e.evaluate2("rr_16946");
+    REQUIRE(e.evaluate2("real(8) :: rt_16946").ok);
+    REQUIRE(e.evaluate2("call apply_t_16946(twice_16946, rt_16946)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate2("rt_16946");
     REQUIRE(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
     CHECK(r.result.f64 == 6.0);
