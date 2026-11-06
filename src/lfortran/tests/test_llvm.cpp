@@ -8260,14 +8260,22 @@ end module
         }
     }
     REQUIRE(orbit != nullptr);
-    CHECK(calls_intrinsic_like(*orbit, "hadd"));
+    bool reduced = calls_intrinsic_like(*orbit, "hadd");
+#if LLVM_VERSION_MAJOR == 11
+    // The SLP vectorizer of LLVM 11 gathers the components of the pair
+    // vectors with the transpose the pass matches. Other versions vectorize
+    // this loop differently and the pass leaves it alone.
+    CHECK(reduced);
+#endif
     bool masked = false;
     for (llvm::BasicBlock &bb : *orbit) {
         for (llvm::Instruction &i : bb) {
             masked = masked || i.getOpcode() == llvm::Instruction::And;
         }
     }
-    CHECK(!masked);
+    if (reduced) {
+        CHECK(!masked);
+    }
 }
 #endif
 #endif // __EMSCRIPTEN__
