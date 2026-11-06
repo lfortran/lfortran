@@ -6,7 +6,9 @@ program gpu_lanes_reduce_02
 ! minimum, a difference, an accumulator that starts from a value and an
 ! integer sum, over inner loops whose lengths do not divide into the lanes.
 ! The values are small integers and powers of two, so every order of the
-! operations gives the same bits, which are compared exactly. The last loop
+! operations gives the same bits, which are compared exactly. The factors
+! of the product come from a table rather than from `2.0**k`, which the
+! device evaluates with `pow` and need not give exactly. The last loop
 ! has more iterations than a launch gives lanes to, and runs the inner loop
 ! as it was on one thread per iteration. Metal combines no 8-byte values, so
 ! an integer(8) accumulator stays on one lane per iteration. Nor is a loop
@@ -16,6 +18,7 @@ use, intrinsic :: iso_fortran_env, only: int64
 implicit none
 integer, parameter :: m = 37, n = 101, big = 3000
 real :: a(n, m), x(n), s(m), y(n), p(m), mx(m), mn(m), d(m), e(big)
+real, parameter :: f(3) = [0.5, 1.0, 2.0]
 real :: t, u, r, dx, ref
 integer :: i, j, k(m), c, kb(big)
 integer(int64) :: l(m), c8
@@ -49,7 +52,7 @@ do concurrent (j = 1:m) local(t, u, r, dx, i, c)
     dx = 100
     c = 3
     do i = 1, n
-        t = t*2.0**(mod(i + j, 3) - 1)
+        t = t*f(mod(i + j, 3) + 1)
         u = max(u, a(i, j)*i)
         r = min(a(i, j) - i, r)
         dx = dx - a(i, j)
@@ -91,7 +94,7 @@ do j = 1, m
     if (s(j) /= sum(a(:, j))) error stop "column sum"
     ref = 1
     do i = 1, n
-        ref = ref*2.0**(mod(i + j, 3) - 1)
+        ref = ref*f(mod(i + j, 3) + 1)
     end do
     if (p(j) /= ref) error stop "product"
     if (mx(j) /= maxval(a(:, j)*[(i, i = 1, n)])) error stop "max"
