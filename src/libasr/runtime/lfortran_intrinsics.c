@@ -17316,7 +17316,31 @@ typedef struct {
     int64_t n_elems;    // Number of elements
     int64_t elem_idx;   // Current element index
     bool is_array;      // True if reading from character array
+    char *iomsg;        // IOMSG= variable, or NULL
+    int64_t iomsg_len;
 } nml_reader_t;
+
+// Report a namelist input error. With IOSTAT= the error code is returned and
+// the IOMSG= variable, if present, is assigned the message; otherwise the
+// program stops.
+static void nml_read_error(nml_reader_t *reader, int32_t *iostat, int32_t code,
+                           const char *format, ...) {
+    char msg[512];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(msg, sizeof(msg), format, args);
+    va_end(args);
+    if (iostat) {
+        *iostat = code;
+        if (reader->iomsg && reader->iomsg_len > 0) {
+            _lfortran_copy_str_and_pad(reader->iomsg, reader->iomsg_len,
+                msg, (int64_t)strlen(msg), 1);
+        }
+        return;
+    }
+    fprintf(stderr, "Runtime Error: %s\n", msg);
+    exit(1);
+}
 
 // Helper to read a line from a buffer (internal file)
 static int64_t nml_getline_from_buffer(char **line_buf, size_t *line_len,
@@ -17771,26 +17795,20 @@ static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_pt
             if (repeat_count <= 0) {
                 internal_free(token);
                 internal_free(*line_buf);
-                if (iostat) {
-                    *iostat = 5014;  // LFORTRAN_IOSTAT_NML_INVALID_REPEAT
-                    return 1;
-                } else {
-                    fprintf(stderr, "Runtime Error: Invalid repeat count %d in namelist\n", repeat_count);
-                    exit(1);
-                }
+                // LFORTRAN_IOSTAT_NML_INVALID_REPEAT
+                nml_read_error(reader, iostat, 5014,
+                    "Invalid repeat count %d in namelist", repeat_count);
+                return 1;
             }
             // Check that repeat count doesn't overflow array bounds
             if (enforce_bounds && it->value_idx + repeat_count > it->total_size) {
                 internal_free(token);
                 internal_free(*line_buf);
-                if (iostat) {
-                    *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
-                    return 1;
-                } else {
-                    fprintf(stderr, "Runtime Error: Repeat count %d would exceed array bounds in namelist\n",
-                            repeat_count);
-                    exit(1);
-                }
+                // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
+                nml_read_error(reader, iostat, 5015,
+                    "Repeat count %d would exceed array bounds in namelist",
+                    repeat_count);
+                return 1;
             }
             // Repeat count found - assign same value multiple times
             for (int r = 0; r < repeat_count && it->item_idx < it->n_items; r++) {
@@ -17868,13 +17886,9 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
 
     if (!found_group) {
         internal_free(line_buf);
-        if (iostat) {
-            *iostat = 5010;
-            return;
-        } else {
-            fprintf(stderr, "Runtime Error: Namelist group '%s' not found\n", group->group_name);
-            exit(1);
-        }
+        nml_read_error(reader, iostat, 5010,
+            "Namelist group '%s' not found", group->group_name);
+        return;
     }
 
     // Parse name=value pairs
@@ -17882,11 +17896,7 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
         token = read_token_nml(reader, &line_buf, &line_ptr, &line_len, &read_len);
         if (!token) {
             internal_free(line_buf);
-            if (iostat) *iostat = 5011;
-            else {
-                fprintf(stderr, "Runtime Error: Unexpected end of namelist\n");
-                exit(1);
-            }
+            nml_read_error(reader, iostat, 5011, "Unexpected end of namelist");
             return;
         }
 
@@ -17932,13 +17942,9 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
         if (!item && derived_count == 0) {
             internal_free(name);
             internal_free(line_buf);
-            if (iostat) {
-                *iostat = 5012;
-                return;
-            } else {
-                fprintf(stderr, "Runtime Error: Unknown variable '%s' in namelist\n", base_name);
-                exit(1);
-            }
+            nml_read_error(reader, iostat, 5012,
+                "Unknown variable '%s' in namelist", base_name);
+            return;
         }
         internal_free(name);
 
@@ -17947,11 +17953,7 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
         if (!token || strcmp(token, "=") != 0) {
             internal_free(token);
             internal_free(line_buf);
-            if (iostat) *iostat = 5013;
-            else {
-                fprintf(stderr, "Runtime Error: Expected '=' in namelist\n");
-                exit(1);
-            }
+            nml_read_error(reader, iostat, 5013, "Expected '=' in namelist");
             return;
         }
         internal_free(token);
@@ -17977,15 +17979,11 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
             if (n_indices > 0) {
                 value_idx = calculate_array_offset(indices, n_indices, item);
                 if (value_idx < 0) {
-                    // Array index out of bounds
+                    // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
                     internal_free(line_buf);
-                    if (iostat) {
-                        *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
-                        return;
-                    } else {
-                        fprintf(stderr, "Runtime Error: Array index out of bounds in namelist '%s'\n", base_name);
-                        exit(1);
-                    }
+                    nml_read_error(reader, iostat, 5015,
+                        "Array index out of bounds in namelist '%s'", base_name);
+                    return;
                 }
                 total_size = value_idx + 1;  // Only set one element
             }
@@ -18021,8 +18019,13 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
 LFORTRAN_API void _lfortran_namelist_read(
     int32_t unit_num,
     int32_t *iostat,
+    char *iomsg,
+    int64_t iomsg_len,
     lfortran_nml_group_t *group)
 {
+    nml_reader_t reader = {0};
+    reader.iomsg = iomsg;
+    reader.iomsg_len = iomsg_len;
     bool unit_file_bin;
     int access_id;
     int decimal_mode;
@@ -18030,13 +18033,9 @@ LFORTRAN_API void _lfortran_namelist_read(
     FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access, NULL, NULL, NULL, NULL, &decimal_mode, NULL, NULL, NULL);
 
     if (filep && !read_access) {
-        if (iostat) {
-            *iostat = 5002;
-            return;
-        } else {
-            fprintf(stderr, "Runtime Error: Read not allowed on unit %d\n", unit_num);
-            exit(1);
-        }
+        nml_read_error(&reader, iostat, 5002,
+            "Read not allowed on unit %d", unit_num);
+        return;
     }
 
     if (!filep) {
@@ -18045,20 +18044,16 @@ LFORTRAN_API void _lfortran_namelist_read(
     }
 
     if (unit_file_bin) {
-        if (iostat) {
-            *iostat = 5001;
-            return;
-        } else {
-            fprintf(stderr, "Runtime Error: Namelist I/O requires formatted file\n");
-            exit(1);
-        }
+        nml_read_error(&reader, iostat, 5001,
+            "Namelist I/O requires formatted file");
+        return;
     }
 
-    nml_reader_t reader = {0};
     reader.fp = filep;
     namelist_read_impl(&reader, iostat, group);
     if (iostat && provided_stdin(filep) && stdin_status) {
         *iostat = input_end_status(filep);
+        _lfortran_set_read_iomsg(*iostat, iomsg, iomsg_len);
     }
 }
 
@@ -18066,9 +18061,13 @@ LFORTRAN_API void _lfortran_namelist_read_str(
     const char *data,
     int64_t data_len,
     int32_t *iostat,
+    char *iomsg,
+    int64_t iomsg_len,
     lfortran_nml_group_t *group)
 {
     nml_reader_t reader = {0};
+    reader.iomsg = iomsg;
+    reader.iomsg_len = iomsg_len;
     reader.data = data;
     reader.data_len = data_len;
     reader.offset = 0;
@@ -18081,9 +18080,13 @@ LFORTRAN_API void _lfortran_namelist_read_str_array(
     int64_t elem_len,
     int64_t n_elems,
     int32_t *iostat,
+    char *iomsg,
+    int64_t iomsg_len,
     lfortran_nml_group_t *group)
 {
     nml_reader_t reader = {0};
+    reader.iomsg = iomsg;
+    reader.iomsg_len = iomsg_len;
     reader.data = data;
     reader.elem_len = elem_len;
     reader.n_elems = n_elems;
