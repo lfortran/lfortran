@@ -3414,6 +3414,67 @@ TEST_CASE("FortranEvaluator Array 2") {
     CHECK(r.result.type == FortranEvaluator::EvalResult::statement);
 }
 
+// A fixed-size array a cell declares with an initializer is initialized
+// statically, like a module variable (#13459).
+TEST_CASE("FortranEvaluator Array initializer") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("integer :: a(3) = [1, 2, 3]");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::none);
+    r = e.evaluate2("a(3)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3);
+    r = e.evaluate2("sum(a)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+
+    r = e.evaluate2("integer :: b(3) = (/4, 5, 6/)");
+    CHECK(r.ok);
+    r = e.evaluate2("b(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 5);
+
+    r = e.evaluate2("integer :: c(4) = 7");
+    CHECK(r.ok);
+    r = e.evaluate2("sum(c)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 28);
+
+    r = e.evaluate2("real(8) :: d(2) = [1.5d0, 2.5d0]");
+    CHECK(r.ok);
+    r = e.evaluate2("d(1) + d(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r.result.f64 == 4.0);
+
+    r = e.evaluate2("character(len=2) :: s(2) = [\"ab\", \"cd\"]\ns(1) == \"ab\" .and. s(2) == \"cd\"");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(r.result.b);
+
+    // The array stays assignable after its static initialization.
+    r = e.evaluate2("a(1) = 10");
+    CHECK(r.ok);
+    r = e.evaluate2("sum(a)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 15);
+
+    // The declaration and a use of the array in a single cell.
+    r = e.evaluate2("integer :: f(2) = [8, 9]\nf(1) * f(2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 72);
+}
+
 TEST_CASE("FortranEvaluator re-declaration 1") {
     CompilerOptions cu;
     cu.interactive = true;

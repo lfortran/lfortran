@@ -220,6 +220,11 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
 
         void visit_Variable(const ASR::Variable_t &x) {
             ASR::symbol_t* asr_owner = ASRUtils::get_asr_owner(&(x.base));
+            // A variable of a module, or a global an interactive cell declares
+            // directly in its translation unit, is initialized statically:
+            // there is no body to put assignments into.
+            bool is_static_global = (asr_owner && ASR::is_a<ASR::Module_t>(*asr_owner))
+                || ASRUtils::is_tu_scope(x.m_parent_symtab);
             ASR::expr_t* symbolic_value = x.m_symbolic_value;
             if( symbolic_value && ASR::is_a<ASR::Cast_t>(*symbolic_value) ) {
                 symbolic_value = ASR::down_cast<ASR::Cast_t>(symbolic_value)->m_arg;
@@ -243,14 +248,14 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
                    (ASR::is_a<ASR::Cast_t>(*x.m_symbolic_value) && ASR::is_a<ASR::ArrayReshape_t>(*symbolic_value)) ||
                    ASR::is_a<ASR::ArrayConstructor_t>(*symbolic_value) ||
                    can_lower_struct_array_broadcast)) ||
-                 (asr_owner && ASR::is_a<ASR::Module_t>(*asr_owner) &&
+                 (is_static_global &&
                   (ASR::is_a<ASR::ArrayConstant_t>(*symbolic_value) ||
                    ASR::is_a<ASR::ArrayConstructor_t>(*symbolic_value) ||
                    ASR::is_a<ASR::ArrayBroadcast_t>(*symbolic_value) ||
                    ASR::is_a<ASR::ArrayReshape_t>(*symbolic_value))) ||
-                (x.m_storage == ASR::storage_typeType::Save &&
-                (ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) ||
-                 ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))))) {
+                (x.m_storage == ASR::storage_typeType::Save && asr_owner &&
+                (ASR::is_a<ASR::Function_t>(*asr_owner) ||
+                 ASR::is_a<ASR::Block_t>(*asr_owner)))) {
                 return ;
             }
 
