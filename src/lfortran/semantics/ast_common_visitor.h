@@ -19587,10 +19587,12 @@ public:
                     return b;
                 }
                 for (size_t i = 0; i < g->n_procs; i++) {
-                    std::string name = ASRUtils::symbol_name(g->m_procs[i]);
+                    std::string name = ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(g->m_procs[i]));
                     bool found = false;
                     for (size_t j = 0; j < pg->n_procs && !found; j++) {
-                        found = name == ASRUtils::symbol_name(pg->m_procs[j]);
+                        found = name == ASRUtils::symbol_name(
+                            ASRUtils::symbol_get_past_external(pg->m_procs[j]));
                     }
                     if (!found) {
                         return b;

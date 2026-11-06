@@ -5286,24 +5286,35 @@ public:
                 }
                 auto [m_procs, n_procs] = generic_procs(generic);
                 for (size_t i = 0; i < n_procs; i++) {
-                    std::string proc_name = ASRUtils::symbol_name(m_procs[i]);
+                    ASR::symbol_t *specific = ASRUtils::symbol_get_past_external(m_procs[i]);
+                    std::string proc_name = ASRUtils::symbol_name(specific);
                     if (!proc_names.insert(proc_name).second) {
                         continue;
                     }
                     ASR::symbol_t *proc = resolve_and_copy_type_bound_proc(clss, proc_name);
-                    ASR::symbol_t *specific = ASRUtils::symbol_get_past_external(m_procs[i]);
                     // A binding of `clss` named like the specific but not
                     // overriding it (the specific is private and not
-                    // accessible here) leaves the generic with the specific.
+                    // accessible here) leaves the generic with the specific,
+                    // a binding of another module, imported into the module
+                    // of `clss`.
                     if (proc && ASR::is_a<ASR::StructMethodDeclaration_t>(*proc) &&
                             ASR::is_a<ASR::StructMethodDeclaration_t>(*specific) &&
                             !ASRUtils::binding_overrides(
                                 ASR::down_cast<ASR::StructMethodDeclaration_t>(proc),
                                 ASR::down_cast<ASR::StructMethodDeclaration_t>(specific))) {
+                        proc = ASRUtils::import_class_procedure(al, specific->base.loc,
+                            specific, clss->m_symtab->parent);
+                        if (ASR::is_a<ASR::ExternalSymbol_t>(*proc)) {
+                            ASR::down_cast<ASR::ExternalSymbol_t>(proc)->m_access
+                                = ASR::accessType::Private;
+                            ASRUtils::insert_module_dependency(proc, al,
+                                current_module_dependencies);
+                        }
+                    } else if (proc == nullptr
+                            || !ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
                         proc = m_procs[i];
                     }
-                    procs.push_back(al, proc && ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)
-                        ? proc : m_procs[i]);
+                    procs.push_back(al, proc);
                 }
             }
             if (own_generic == nullptr) {
