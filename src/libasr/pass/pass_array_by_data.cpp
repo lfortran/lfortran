@@ -756,6 +756,57 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
         }
     }
 
+    // The duplicated body of a copied procedure still names the symbols
+    // declared in the original: the ExternalSymbols of its scope and the
+    // components and types declared in it. Return the symbol of the copy
+    // that has the same path of names from the procedure down to `sym`. A
+    // symbol not declared in a copied procedure is returned unchanged.
+    ASR::symbol_t* symbol_in_copy(ASR::symbol_t* sym) {
+        std::vector<std::string> path;
+        SymbolTable* scope = nullptr;
+        for (ASR::symbol_t* s = sym; scope == nullptr; ) {
+            path.push_back(ASRUtils::symbol_name(s));
+            SymbolTable* parent = ASRUtils::symbol_parent_symtab(s);
+            if (parent == nullptr || parent->asr_owner == nullptr ||
+                    !ASR::is_a<ASR::symbol_t>(*parent->asr_owner)) {
+                return sym;
+            }
+            s = ASR::down_cast<ASR::symbol_t>(parent->asr_owner);
+            auto it = v.proc2newproc.find(s);
+            if (it != v.proc2newproc.end()) {
+                scope = ASRUtils::symbol_symtab(it->second.first);
+                if (scope == nullptr || (scope != current_scope &&
+                        !ASRUtils::is_parent(scope, current_scope))) {
+                    return sym;
+                }
+            }
+        }
+        for (size_t i = path.size(); i > 0; i--) {
+            ASR::symbol_t* resolved = scope->get_symbol(path[i - 1]);
+            if (resolved == nullptr) {
+                return sym;
+            }
+            if (i == 1) {
+                return resolved;
+            }
+            scope = ASRUtils::symbol_symtab(resolved);
+            if (scope == nullptr) {
+                return sym;
+            }
+        }
+        return sym;
+    }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t* x) {
+        x->m_m = symbol_in_copy(x->m_m);
+        ASR::BaseExprReplacer<EditProcedureReplacer>::replace_StructInstanceMember(x);
+    }
+
+    void replace_StructConstructor(ASR::StructConstructor_t* x) {
+        x->m_dt_sym = symbol_in_copy(x->m_dt_sym);
+        ASR::BaseExprReplacer<EditProcedureReplacer>::replace_StructConstructor(x);
+    }
+
     // The interface of a cast made at a call site of the copied procedure
     // is a symbol of that procedure, so the copy casts to its own copy.
     void replace_FunctionPointerCast(ASR::FunctionPointerCast_t* x) {
