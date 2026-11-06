@@ -2015,9 +2015,9 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         // (the unit tests exercise that path), so a procedure without a name
         // location is only dropped when its name is one the compiler itself
         // generates.
-        static bool keep_for_a_later_unit(ASR::asr_t* owner,
+        static bool keep_for_a_later_unit(SymbolTable* scope,
                 ASR::symbol_t* sym) {
-            if (owner == nullptr || sym == nullptr) {
+            if (scope == nullptr || sym == nullptr) {
                 return false;
             }
             if (!ASR::is_a<ASR::Function_t>(*sym)) {
@@ -2028,10 +2028,11 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                     && ASRUtils::is_compiler_generated_name(fn->m_name)) {
                 return false;
             }
-            if (ASR::is_a<ASR::TranslationUnit_t>(*owner)) {
+            if (ASRUtils::is_tu_scope(scope)) {
                 return true;
             }
-            if (ASR::is_a<ASR::symbol_t>(*owner)) {
+            ASR::asr_t* owner = scope->asr_owner;
+            if (owner != nullptr && ASR::is_a<ASR::symbol_t>(*owner)) {
                 ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(owner);
                 return ASR::is_a<ASR::Module_t>(*owner_sym);
             }
@@ -2089,7 +2090,7 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                         continue;
                     }
                     if (skip_removal && keep_for_a_later_unit(
-                            current_scope->asr_owner, item.second)) {
+                            current_scope, item.second)) {
                         // Separate compilation or an interactive cell: another
                         // unit or a later cell can link to this user-written
                         // module or top-level procedure, so its descriptor
