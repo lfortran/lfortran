@@ -1,0 +1,13 @@
+{
+    "basename": "asr-continue_compilation_ambiguous_generic-5d140b0",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/continue_compilation_ambiguous_generic.f90",
+    "infile_hash": "fae30fef914bbd992a94be164ab6f35c4c65c5c390b063155432c4c7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-continue_compilation_ambiguous_generic-5d140b0.stderr",
+    "stderr_hash": "437c403aaf5657da583b1c10b39dad8e5007c1cf022d5545ead503fc",
+    "returncode": 1
+}

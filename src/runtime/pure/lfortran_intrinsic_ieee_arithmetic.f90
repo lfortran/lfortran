@@ -135,6 +135,10 @@ module lfortran_intrinsic_ieee_arithmetic
         module procedure spieee_real_i64, dpieee_real_i64
     end interface
 
+    ! In the IEEE_SUPPORT_* inquiries below, X is optional only in the
+    ! single precision specific, which also answers a reference without X:
+    ! two specifics whose only real argument is optional would not be
+    ! distinguishable (F2018 C1514).
     interface ieee_support_denormal
         module procedure spieee_support_denormal, dpieee_support_denormal
     end interface
@@ -756,7 +760,7 @@ module lfortran_intrinsic_ieee_arithmetic
 
     pure function dpieee_support_denormal(x) result(r)
         use iso_fortran_env, only: real64
-        real(real64), intent(in), optional :: x
+        real(real64), intent(in) :: x
         logical :: r
         r = .true.
     end function
@@ -771,7 +775,7 @@ module lfortran_intrinsic_ieee_arithmetic
 
     pure function dpieee_support_divide(x) result(r)
         use iso_fortran_env, only: real64
-        real(real64), intent(in), optional :: x
+        real(real64), intent(in) :: x
         logical :: r
         r = .true.
     end function
@@ -786,7 +790,7 @@ module lfortran_intrinsic_ieee_arithmetic
 
     pure function dpieee_support_sqrt(x) result(r)
         use iso_fortran_env, only: real64
-        real(real64), intent(in), optional :: x
+        real(real64), intent(in) :: x
         logical :: r
         r = .true.
     end function
@@ -802,7 +806,7 @@ module lfortran_intrinsic_ieee_arithmetic
 
     pure function dpieee_support_standard(x) result(r)
         use iso_fortran_env, only: real64
-        real(real64), intent(in), optional :: x
+        real(real64), intent(in) :: x
         logical :: r
         r = .true.
     end function
@@ -818,7 +822,7 @@ module lfortran_intrinsic_ieee_arithmetic
 
     pure function dpieee_support_io(x) result(r)
         use iso_fortran_env, only: real64
-        real(real64), intent(in), optional :: x
+        real(real64), intent(in) :: x
         logical :: r
         r = .true.
     end function
@@ -837,7 +841,7 @@ module lfortran_intrinsic_ieee_arithmetic
     pure function dpieee_support_rounding(round_value, x) result(r)
         use iso_fortran_env, only: real64
         type(ieee_round_type), intent(in) :: round_value
-        real(real64), intent(in), optional :: x
+        real(real64), intent(in) :: x
         logical :: r
         r = .true.
     end function

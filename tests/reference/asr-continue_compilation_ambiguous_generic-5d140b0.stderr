@@ -1,0 +1,49 @@
+semantic error: ambiguous interfaces in generic interface 'amb_g1' for 'amb_sa' and 'amb_sb'
+  --> tests/errors/continue_compilation_ambiguous_generic.f90:12:9
+   |
+12 |         module procedure amb_sa, amb_sb  ! {Error} ambiguous interfaces in generic interface 'amb_g1' for 'amb_sa' and 'amb_sb'
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'amb_sa' and 'amb_sb' are not distinguishable by their arguments
+
+semantic error: ambiguous interfaces in generic interface 'amb_g2' for 'amb_ta' and 'amb_tb'
+  --> tests/errors/continue_compilation_ambiguous_generic.f90:17:9
+   |
+17 |         module procedure amb_tb  ! {Error} ambiguous interfaces in generic interface 'amb_g2' for 'amb_ta' and 'amb_tb'
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'amb_tb' is not distinguishable from 'amb_ta' by its arguments
+   |
+16 |         module procedure amb_ta
+   |         ~~~~~~~~~~~~~~~~~~~~~~~~ 'amb_ta' is specified here
+
+semantic error: ambiguous interfaces in generic interface 'amb_g3' for 'amb_ua' and 'amb_ub'
+  --> tests/errors/continue_compilation_ambiguous_generic.f90:21:9
+   |
+21 |         module procedure amb_ua, amb_ub  ! {Error} ambiguous interfaces in generic interface 'amb_g3' for 'amb_ua' and 'amb_ub'
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'amb_ua' and 'amb_ub' are not distinguishable by their arguments
+
+semantic error: ambiguous interfaces in generic interface 'amb_g4' for 'amb_va' and 'amb_vb'
+  --> tests/errors/continue_compilation_ambiguous_generic.f90:25:9
+   |
+25 |         module procedure amb_va, amb_vb  ! {Error} ambiguous interfaces in generic interface 'amb_g4' for 'amb_va' and 'amb_vb'
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'amb_va' and 'amb_vb' are not distinguishable by their arguments
+
+semantic error: ambiguous interfaces in generic interface 'amb_g5' for 'amb_wa' and 'amb_wb'
+  --> tests/errors/continue_compilation_ambiguous_generic.f90:29:9
+   |
+29 |         module procedure amb_wa, amb_wb  ! {Error} ambiguous interfaces in generic interface 'amb_g5' for 'amb_wa' and 'amb_wb'
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'amb_wa' and 'amb_wb' are not distinguishable by their arguments
+
+semantic error: ambiguous interfaces in generic interface 'amb_g6' for 'amb_ext_a' and 'amb_ext_b'
+  --> tests/errors/continue_compilation_ambiguous_generic.f90:41:9 - 43:22
+   |
+41 |            subroutine amb_ext_b(y)  ! {Error} ambiguous interfaces in generic interface 'amb_g6' for 'amb_ext_a' and 'amb_ext_b'
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+43 |            end subroutine
+   | ...^^^^^^^^^^^^^^^^^^^^^^ 'amb_ext_b' is not distinguishable from 'amb_ext_a' by its arguments
+   |
+38 |            subroutine amb_ext_a(x)
+   |            ~~~~~~~~~~~~~~~~~~~~~~~...
+...
+   |
+40 |            end subroutine
+   | ...~~~~~~~~~~~~~~~~~~~~~~ 'amb_ext_a' is specified here
