@@ -35,6 +35,11 @@ static const char telemetry_kernel_source[] =
 static void fail(const char *message);
 static void check_u64(const char *name, uint64_t got, uint64_t want);
 
+// LFORTRAN_GPU_PROFILE=2 commits every launch in a command buffer of its
+// own, and waits for the oldest pending one at each commit past the first
+// few: the commits and waits then follow the launches.
+static int profile_kernels = 0;
+
 // The chunks of a launch that runs in chunks launch one kernel handle once
 // each, handing over only the bounds of the chunk again
 // (device_launch_expand.cpp): the read-only `wide`, too large to go into the
@@ -135,12 +140,13 @@ static void expect_phase_counts(const lfortran_gpu_metal_telemetry *telemetry,
     uint64_t h2d_bytes, uint64_t d2h_bytes, uint64_t buffer_allocations,
     uint64_t buffer_alloc_bytes)
 {
+    if (profile_kernels) commits = launches;
     check_u64("dispatches", telemetry->dispatches, launches);
     check_u64("commits", telemetry->commits, commits);
     check_u64("completed_command_buffers", telemetry->completed_command_buffers,
         commits);
     check_u64("host_syncs", telemetry->host_syncs, syncs);
-    check_u64("host_waits", telemetry->host_waits, waits);
+    if (!profile_kernels) check_u64("host_waits", telemetry->host_waits, waits);
     check_u64("memcpy_h2d_bytes", telemetry->memcpy_h2d_bytes, h2d_bytes);
     check_u64("memcpy_d2h_bytes", telemetry->memcpy_d2h_bytes, d2h_bytes);
     check_true("buffer allocation bounds",
@@ -230,8 +236,9 @@ int main(void)
         }
 
         const char *profile_env = getenv("LFORTRAN_GPU_PROFILE");
-        const int profile_enabled =
-            profile_env != NULL && strcmp(profile_env, "1") == 0;
+        profile_kernels = profile_env != NULL && strcmp(profile_env, "2") == 0;
+        const int profile_enabled = profile_kernels
+            || (profile_env != NULL && strcmp(profile_env, "1") == 0);
         lfortran_gpu_metal_telemetry start = {0};
         lfortran_gpu_metal_telemetry_snapshot(ctx, &start);
         check_u64("start dispatches", start.dispatches, 0);
@@ -290,10 +297,14 @@ int main(void)
         lfortran_gpu_metal_telemetry_snapshot_sync(ctx, &end);
         if (profile_enabled) {
             check_u64("final dispatches", end.dispatches, TOTAL_LAUNCHES);
-            check_u64("final commits", end.commits, 6);
-            check_u64("final completed", end.completed_command_buffers, 6);
+            const uint64_t commits = profile_kernels ? TOTAL_LAUNCHES : 6;
+            check_u64("final commits", end.commits, commits);
+            check_u64("final completed", end.completed_command_buffers,
+                commits);
             check_u64("final host syncs", end.host_syncs, 4);
-            check_u64("final host waits", end.host_waits, 4);
+            if (!profile_kernels) {
+                check_u64("final host waits", end.host_waits, 4);
+            }
             check_u64("final memcpy h2d", end.memcpy_h2d_bytes,
                 phase1_h2d + phase2_h2d + phase3_h2d);
             check_u64("final memcpy d2h", end.memcpy_d2h_bytes,
@@ -346,7 +357,7 @@ int main(void)
         printf("RESULT profile=%s final_sum=%.0f dispatches=%llu commits=%llu completed=%llu "
                "syncs=%llu waits=%llu h2d=%llu d2h=%llu timing=%d gpu_elapsed=%.6f "
                "gpu_busy=%.6f jit=%.6f\n",
-            profile_enabled ? "on" : "off", sum,
+            profile_kernels ? "kernels" : profile_enabled ? "on" : "off", sum,
             (unsigned long long)end.dispatches,
             (unsigned long long)end.commits,
             (unsigned long long)end.completed_command_buffers,

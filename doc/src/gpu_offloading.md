@@ -1135,6 +1135,38 @@ procedure's stop. And an error of a kernel (a fault, the watchdog) is
 reported where the host next waits, and not at all when the program ends
 with a `stop` before that.
 
+### Profiling the Metal runtime
+
+The Metal runtime reports where a program's GPU time goes when the
+environment variable `LFORTRAN_GPU_PROFILE` is set:
+
+* `LFORTRAN_GPU_PROFILE=1` counts dispatches, committed command buffers, host
+  syncs and waits, the bytes copied to and from the device, the device
+  buffers allocated, the time spent compiling kernels, and the GPU time of
+  the command buffers (their sum, and their union). For each kernel it counts
+  the launches, the bytes they copy to the device, and the host time they
+  take in `lfortran_gpu_launch` until they are encoded: the copies of their
+  arguments, the buffers allocated for them, and any sync they need.
+* `LFORTRAN_GPU_PROFILE=2` also times each kernel on the GPU. Every launch is
+  then committed in a command buffer of its own, and the GPU time of that
+  command buffer (`GPUEndTime - GPUStartTime`) is the kernel's. That runs the
+  launches one after another, without the overlap a concurrent encoder
+  allows, and adds a commit to each launch; for a kernel that takes a few
+  microseconds the time is an upper bound.
+
+At exit, or at `lfortran_gpu_shutdown`, the runtime waits for the launches
+still pending and prints the totals and a table of the kernels, sorted by GPU
+time, to stderr, or to the file `LFORTRAN_GPU_PROFILE_FILE` names. A kernel is
+named by its entry point, `__lfortran_gpu_kernel_<n>_<id>`. The totals are
+also available to C code through `lfortran_gpu_metal_telemetry_snapshot`
+(`lfortran_gpu_runtime.h`). To get the cost of one step of a program, such as
+one generated token, run it for two numbers of steps and subtract the
+reports.
+
+```bash
+LFORTRAN_GPU_PROFILE=2 LFORTRAN_GPU_PROFILE_FILE=profile.txt ./a.out
+```
+
 ## Testing
 
 * Every entry of the unsupported list has a test for the error, and a test that
