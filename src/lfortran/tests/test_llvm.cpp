@@ -6347,3 +6347,94 @@ end module)";
     CHECK_FALSE(diagnostics.has_error());
     CHECK(asr->m_symtab->get_symbol("alloc_component_assignment_m") != nullptr);
 }
+
+TEST_CASE("FortranEvaluator internal assumed-shape procedure as an actual procedure argument") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // An earlier cell defines a procedure whose dummy procedure has an
+    // assumed-shape dummy; that cell's code passes it a descriptor. A later
+    // cell passes an internal procedure as the actual argument. The internal
+    // procedure is specialized by array_by_data, but the actual argument has
+    // to stay the descriptor original, which matches the dummy's interface.
+    REQUIRE(e.evaluate2(R"(subroutine apply_16946(f, r)
+interface
+real(8) function f(x)
+real(8), intent(in) :: x(:)
+end function
+end interface
+real(8), intent(out) :: r
+r = f([1.0d0, 2.0d0])
+end subroutine
+)").ok);
+    REQUIRE(e.evaluate2(R"(subroutine host_16946(r)
+real(8), intent(out) :: r
+call apply_16946(inner, r)
+contains
+real(8) function inner(x)
+real(8), intent(in) :: x(:)
+inner = sum(x)
+end function
+end subroutine
+)").ok);
+    REQUIRE(e.evaluate2("real(8) :: rr_16946").ok);
+    REQUIRE(e.evaluate2("call host_16946(rr_16946)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate2("rr_16946");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r.result.f64 == 3.0);
+    // A top-level procedure of an earlier cell passed as the actual
+    // argument has to be passed by data, too: its specialization is the one
+    // that cell defined.
+    REQUIRE(e.evaluate2(R"(real(8) function twice_16946(x)
+real(8), intent(in) :: x(:)
+twice_16946 = 2.0d0 * sum(x)
+end function
+)").ok);
+    REQUIRE(e.evaluate2("call apply_16946(twice_16946, rr_16946)").ok);
+    r = e.evaluate2("rr_16946");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r.result.f64 == 6.0);
+}
+
+TEST_CASE("FortranEvaluator module procedure taking a procedure argument") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2(R"(module m_16946
+implicit none
+contains
+subroutine apply_m_16946(f, r)
+interface
+real(8) function f(x)
+real(8), intent(in) :: x(:)
+end function
+end interface
+real(8), intent(out) :: r
+r = f([1.0d0, 2.0d0, 3.0d0])
+end subroutine
+end module
+)").ok);
+    REQUIRE(e.evaluate2(R"(subroutine host_m_16946(r)
+use m_16946
+real(8), intent(out) :: r
+call apply_m_16946(inner, r)
+contains
+real(8) function inner(x)
+real(8), intent(in) :: x(:)
+inner = sum(x)
+end function
+end subroutine
+)").ok);
+    REQUIRE(e.evaluate2("real(8) :: rm_16946").ok);
+    REQUIRE(e.evaluate2("call host_m_16946(rm_16946)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r
+        = e.evaluate2("rm_16946");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r.result.f64 == 6.0);
+}

@@ -480,9 +480,24 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
             // out the same as they did then.
             for (SymbolTable* s = x.m_symtab->parent; s != nullptr; s = s->parent) {
                 if( !ASRUtils::is_tu_scope(s) ) continue;
+                if( ASR::is_a<ASR::TranslationUnit_t>(*s->asr_owner) ) {
+                    // The earlier cell's own procedures and the ones nested
+                    // in them, as that cell specialised them. A dummy
+                    // procedure whose interface was specialised takes its
+                    // actual argument by data, so a procedure this cell
+                    // passes to it has to be the specialisation as well.
+                    const ASR::TranslationUnit_t& tu =
+                        *ASR::down_cast2<ASR::TranslationUnit_t>(s->asr_owner);
+                    std::deque<ASR::Function_t*> functions;
+                    visit_SymbolContainingFunctions(tu, functions);
+                    while( functions.size() > 0 ) {
+                        ASR::Function_t* function = functions.front();
+                        functions.pop_front();
+                        visit_SymbolContainingFunctions(*function, functions);
+                    }
+                }
                 for (auto &a : s->get_scope()) {
-                    if( ASR::is_a<ASR::Module_t>(*a.second) ||
-                        ASR::is_a<ASR::Function_t>(*a.second) ) {
+                    if( ASR::is_a<ASR::Module_t>(*a.second) ) {
                         this->visit_symbol(*a.second);
                     }
                 }
@@ -890,6 +905,27 @@ class EditProcedureVisitor: public ASR::CallReplacerOnExpressionsVisitor<EditPro
                 }
             }
         }
+    }
+
+    void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
+        // In interactive mode the earlier cells' procedures were specialised
+        // again in this cell (see PassArrayByDataProcedureVisitor). Edit them
+        // the same way their own cell did, so that this cell declares them
+        // with the signature that cell compiled: a dummy procedure whose
+        // interface was specialised takes its actual argument by data.
+        for (SymbolTable* s = x.m_symtab->parent; s != nullptr; s = s->parent) {
+            if( !ASRUtils::is_tu_scope(s) ) continue;
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = s;
+            for (auto &a : s->get_scope()) {
+                if( ASR::is_a<ASR::Module_t>(*a.second) ||
+                    ASR::is_a<ASR::Function_t>(*a.second) ) {
+                    this->visit_symbol(*a.second);
+                }
+            }
+            current_scope = current_scope_copy;
+        }
+        ASR::CallReplacerOnExpressionsVisitor<EditProcedureVisitor>::visit_TranslationUnit(x);
     }
 
     void visit_Module(const ASR::Module_t& x) {
@@ -2186,6 +2222,15 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         }
 
         void visit_TranslationUnit(const ASR::TranslationUnit_t& x) {
+            // The earlier interactive cells' procedures were specialised
+            // again in this cell; drop their descriptor originals the way
+            // their own cell did.
+            for (SymbolTable* s = x.m_symtab->parent; s != nullptr; s = s->parent) {
+                if( ASRUtils::is_tu_scope(s) &&
+                        ASR::is_a<ASR::TranslationUnit_t>(*s->asr_owner) ) {
+                    visit_Unit(*ASR::down_cast2<ASR::TranslationUnit_t>(s->asr_owner));
+                }
+            }
             visit_Unit(x);
         }
 
