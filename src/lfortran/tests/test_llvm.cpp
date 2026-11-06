@@ -2656,6 +2656,37 @@ r
     CHECK(r.result.f32 == 3);
 }
 
+TEST_CASE("c_long_double is the kind of C long double of the target") {
+    CHECK(LCompilers::get_c_long_double_kind("x86_64-unknown-linux-gnu") == 10);
+    CHECK(LCompilers::get_c_long_double_kind("x86_64-apple-darwin") == 10);
+    CHECK(LCompilers::get_c_long_double_kind("i686-w64-windows-gnu") == 10);
+    CHECK(LCompilers::get_c_long_double_kind("x86_64-pc-windows-msvc") == 8);
+    CHECK(LCompilers::get_c_long_double_kind("aarch64-unknown-linux-gnu") == 16);
+    CHECK(LCompilers::get_c_long_double_kind("aarch64-apple-darwin") == 8);
+    CHECK(LCompilers::get_c_long_double_kind("arm64-apple-macosx14.0.0") == 8);
+    CHECK(LCompilers::get_c_long_double_kind("aarch64-pc-windows-msvc") == 8);
+
+    // The intrinsic module gives the kind of the target it is used for
+    for (int kind : {8, 10, 16}) {
+        CompilerOptions cu;
+        cu.interactive = true;
+        cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        cu.po.c_long_double_kind = kind;
+        FortranEvaluator e(cu);
+        LCompilers::Result<FortranEvaluator::EvalResult>
+        r = e.evaluate2("use iso_c_binding, only: ld => c_long_double, c_long_double_complex");
+        CHECK(r.ok);
+        r = e.evaluate2("ld");
+        CHECK(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == kind);
+        r = e.evaluate2("c_long_double_complex");
+        CHECK(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == (kind == 8 ? 8 : -1));
+    }
+}
+
 TEST_CASE("FortranEvaluator character result") {
     CompilerOptions cu;
     cu.interactive = true;

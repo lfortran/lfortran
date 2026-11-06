@@ -535,6 +535,8 @@ namespace LCompilers::CommandLineInterface {
         compiler_options.prescan = !opts.arg_no_prescan;
         // set openmp in pass options
         compiler_options.po.openmp = compiler_options.openmp;
+        compiler_options.po.c_long_double_kind
+            = LCompilers::get_c_long_double_kind(compiler_options.target);
         // The passes need to know too: a module compiled into an object file
         // of its own is defined there, so a translation unit that only uses
         // it must not define anything of the module itself.

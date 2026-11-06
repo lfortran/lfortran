@@ -3,6 +3,7 @@
 #include <windows.h>
 #endif
 
+#include <cfloat>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -256,6 +257,31 @@ Platform get_platform()
 #else
     return Platform::Linux;
 #endif
+}
+
+int get_c_long_double_kind(const std::string &target_triple)
+{
+    std::string arch = target_triple.substr(0, target_triple.find('-'));
+    bool x86 = arch == "x86_64" || arch == "amd64"
+        || (arch.size() == 4 && arch[0] == 'i' && endswith(arch, "86"));
+    if (x86) {
+        // 80-bit x87 extended precision, except for MSVC where it is double
+        return endswith(target_triple, "-msvc") ? 8 : 10;
+    }
+    if (arch == "aarch64" || arch == "arm64") {
+        // Apple and Windows use double, the others IEEE quadruple precision
+        bool apple = target_triple.find("-apple") != std::string::npos
+            || target_triple.find("-darwin") != std::string::npos
+            || target_triple.find("-macos") != std::string::npos;
+        bool windows = target_triple.find("-windows") != std::string::npos;
+        return (apple || windows) ? 8 : 16;
+    }
+    // The host, which is also the default target
+    switch (LDBL_MANT_DIG) {
+        case 53: return 8;
+        case 113: return 16;
+        default: return 10;
+    }
 }
 
 // Platform-specific initialization
