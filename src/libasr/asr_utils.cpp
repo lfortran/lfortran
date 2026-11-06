@@ -4439,13 +4439,13 @@ bool select_type_bound_proc(ASR::symbol_t* method, const Vec<ASR::call_arg_t>& a
     if (pass_idx == 0) {
         return select_func_subrout(proc, args, loc, err);
     }
-    std::vector<ASR::call_arg_t> reordered(args.p + 1, args.p + args.n);
-    if (reordered.size() < pass_idx) {
-        ASR::call_arg_t absent;
-        absent.loc = args[0].loc;
-        absent.m_value = nullptr;
-        reordered.resize(pass_idx, absent);
+    // Omitting an optional dummy that precedes the passed-object dummy is
+    // not supported by the call construction (`insert_self_arg`), so such a
+    // specific does not match.
+    if (args.n - 1 < pass_idx) {
+        return false;
     }
+    std::vector<ASR::call_arg_t> reordered(args.p + 1, args.p + args.n);
     reordered.insert(reordered.begin() + pass_idx, args[0]);
     Vec<ASR::call_arg_t> args_reordered;
     args_reordered.from_pointer_n(reordered.data(), reordered.size());
