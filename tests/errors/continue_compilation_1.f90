@@ -4933,3 +4933,13 @@ contains
         backspace(unit=99, iostat=ios, iomsg=msgs)  ! {Error} `iomsg` must be scalar
     end subroutine
 end module
+
+module cc1_close_iostat_variable
+    integer, parameter :: cc1_close_iostat_fixed = 1
+contains
+    subroutine cc1_close_iostat_sub()
+        integer :: ios
+        close(unit=99, iostat=ios + 1)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
+        close(unit=99, iostat=cc1_close_iostat_fixed)  ! {Error} `iostat` must be a variable of type, Integer or IntegerPointer
+    end subroutine
+end module
