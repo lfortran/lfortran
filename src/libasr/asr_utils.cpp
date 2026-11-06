@@ -5802,8 +5802,11 @@ static ASR::expr_t* triplet_extent(Allocator &al, const Location &a_loc,
 
 // The value of the integer expression `e`, with the variables of the
 // enclosing implied-do loops taking their `values`, if it is known at
-// compile time.
-static bool implied_do_loop_bound_value(ASR::expr_t* e,
+// compile time. Besides constants and these variables, `e` may use
+// `+ - * / **`, unary minus, integer conversions, elemental intrinsics of
+// integers with a compile-time value (such as `min`, `max`, `mod` or
+// `abs`) and elements of named constant arrays.
+static bool implied_do_loop_bound_value(Allocator& al, ASR::expr_t* e,
         const std::map<ASR::symbol_t*, int64_t>& values, int64_t& value) {
     if( is_value_constant(e, value) ||
             is_value_constant(expr_value(e), value) ) {
@@ -5821,10 +5824,10 @@ static bool implied_do_loop_bound_value(ASR::expr_t* e,
         case ASR::exprType::Cast: {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(e);
             return cast->m_kind == ASR::cast_kindType::IntegerToInteger &&
-                implied_do_loop_bound_value(cast->m_arg, values, value);
+                implied_do_loop_bound_value(al, cast->m_arg, values, value);
         }
         case ASR::exprType::IntegerUnaryMinus: {
-            if( !implied_do_loop_bound_value(
+            if( !implied_do_loop_bound_value(al,
                     ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg,
                     values, value) ) {
                 return false;
@@ -5835,8 +5838,8 @@ static bool implied_do_loop_bound_value(ASR::expr_t* e,
         case ASR::exprType::IntegerBinOp: {
             ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(e);
             int64_t left = 0, right = 0;
-            if( !implied_do_loop_bound_value(binop->m_left, values, left) ||
-                    !implied_do_loop_bound_value(binop->m_right, values, right) ) {
+            if( !implied_do_loop_bound_value(al, binop->m_left, values, left) ||
+                    !implied_do_loop_bound_value(al, binop->m_right, values, right) ) {
                 return false;
             }
             switch( binop->m_op ) {
@@ -5850,8 +5853,75 @@ static bool implied_do_loop_bound_value(ASR::expr_t* e,
                     value = left / right;
                     return true;
                 }
+                case ASR::binopType::Pow: {
+                    if( right < 0 || right > 64 ) {
+                        return false;
+                    }
+                    value = 1;
+                    for( int64_t k = 0; k < right; k++ ) {
+                        value = int64_t(uint64_t(value) * uint64_t(left));
+                    }
+                    return true;
+                }
                 default: return false;
             }
+        }
+        case ASR::exprType::IntrinsicElementalFunction: {
+            ASR::IntrinsicElementalFunction_t* f =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
+            eval_intrinsic_function eval =
+                IntrinsicElementalFunctionRegistry::get_eval_function(
+                    f->m_intrinsic_id);
+            if( eval == nullptr || !is_integer(*f->m_type) ) {
+                return false;
+            }
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, f->n_args);
+            for( size_t i = 0; i < f->n_args; i++ ) {
+                int64_t arg = 0;
+                if( f->m_args[i] == nullptr ||
+                        !is_integer(*expr_type(f->m_args[i])) ||
+                        !implied_do_loop_bound_value(al, f->m_args[i],
+                            values, arg) ) {
+                    return false;
+                }
+                args.push_back(al, EXPR(ASR::make_IntegerConstant_t(al,
+                    e->base.loc, arg, expr_type(f->m_args[i]))));
+            }
+            // `eval_Mod` divides by its second argument unchecked.
+            if( (f->m_intrinsic_id == static_cast<int64_t>(
+                        IntrinsicElementalFunctions::Mod) ||
+                    f->m_intrinsic_id == static_cast<int64_t>(
+                        IntrinsicElementalFunctions::Modulo)) &&
+                    (args.size() != 2 || ASR::down_cast<ASR::IntegerConstant_t>(
+                        args[1])->m_n == 0) ) {
+                return false;
+            }
+            diag::Diagnostics diag;
+            ASR::expr_t* result = eval(al, e->base.loc, f->m_type, args, diag);
+            return result != nullptr && !diag.has_error() &&
+                is_value_constant(result, value);
+        }
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(e);
+            Vec<ASR::array_index_t> indices;
+            indices.reserve(al, item->n_args);
+            for( size_t i = 0; i < item->n_args; i++ ) {
+                ASR::array_index_t index = item->m_args[i];
+                int64_t index_value = 0;
+                if( index.m_left != nullptr || index.m_step != nullptr ||
+                        index.m_right == nullptr ||
+                        !implied_do_loop_bound_value(al, index.m_right,
+                            values, index_value) ) {
+                    return false;
+                }
+                index.m_right = EXPR(ASR::make_IntegerConstant_t(al,
+                    e->base.loc, index_value, expr_type(index.m_right)));
+                indices.push_back(al, index);
+            }
+            ASR::expr_t* element = fold_ArrayItem_value(al, item->m_v,
+                indices.p, indices.size());
+            return element != nullptr && is_value_constant(element, value);
         }
         default:
             return false;
@@ -5866,13 +5936,13 @@ static constexpr uint64_t implied_do_loop_size_count_limit = 1u << 16;
 // `value`, with the variables of the enclosing implied-do loops taking
 // their `values`, if it is known at compile time and the loops have at
 // most `iterations` iterations.
-static bool count_constructor_elements(ASR::expr_t* value,
+static bool count_constructor_elements(Allocator& al, ASR::expr_t* value,
         std::map<ASR::symbol_t*, int64_t>& values, uint64_t& iterations,
         int64_t& count) {
     if( ASR::is_a<ASR::ArrayConstructor_t>(*value) ) {
         ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(value);
         for( size_t i = 0; i < ac->n_args; i++ ) {
-            if( !count_constructor_elements(ac->m_args[i], values,
+            if( !count_constructor_elements(al, ac->m_args[i], values,
                     iterations, count) ) {
                 return false;
             }
@@ -5894,9 +5964,9 @@ static bool count_constructor_elements(ASR::expr_t* value,
     ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
     int64_t start = 0, end = 0, step = 1;
     if( !ASR::is_a<ASR::Var_t>(*idl->m_var) ||
-            !implied_do_loop_bound_value(idl->m_start, values, start) ||
-            !implied_do_loop_bound_value(idl->m_end, values, end) ||
-            (idl->m_increment && !implied_do_loop_bound_value(
+            !implied_do_loop_bound_value(al, idl->m_start, values, start) ||
+            !implied_do_loop_bound_value(al, idl->m_end, values, end) ||
+            (idl->m_increment && !implied_do_loop_bound_value(al,
                 idl->m_increment, values, step)) || step == 0 ) {
         return false;
     }
@@ -5918,7 +5988,7 @@ static bool count_constructor_elements(ASR::expr_t* value,
     for( uint64_t trip = 0; trip < trips; trip++ ) {
         values[var] = int64_t(uint64_t(start) + trip * uint64_t(step));
         for( size_t i = 0; i < idl->n_values; i++ ) {
-            if( !count_constructor_elements(idl->m_values[i], values,
+            if( !count_constructor_elements(al, idl->m_values[i], values,
                     iterations, count) ) {
                 return false;
             }
@@ -6266,7 +6336,7 @@ ASR::asr_t* make_ArraySize_t_util(
             std::map<ASR::symbol_t*, int64_t> values;
             uint64_t iterations = implied_do_loop_size_count_limit;
             int64_t count = 0;
-            if( count_constructor_elements(a_v, values, iterations, count) ) {
+            if( count_constructor_elements(al, a_v, values, iterations, count) ) {
                 return ASR::make_IntegerConstant_t(al, a_loc, count, a_type);
             }
             ArraySizeStatements no_statements{nullptr, nullptr};

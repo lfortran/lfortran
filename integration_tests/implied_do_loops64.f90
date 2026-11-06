@@ -15,6 +15,16 @@ program implied_do_loops64
     ! Too many iterations to count at compile time: the size is estimated,
     ! as for run-time bounds, and is at least the 80200 elements.
     integer :: d4(size([((j, j = i, 400), i = 1, 800)]))
+    ! Literal bounds with intrinsics and named constant array elements are
+    ! counted at compile time too.
+    integer, parameter :: n3 = 3, sz(3) = [2, 5, 1]
+    integer :: d5(size([((j, j = 1, min(i, n3)), i = 1, 5)]))
+    integer :: d6(size([((j, j = 1, mod(i, 3)), i = 1, 6)]))
+    integer :: d7(size([((j, j = 1, sz(i)), i = 1, 3)]))
+    integer :: d8(size([((j, j = max(i, 2), 4), i = 1, 4)]))
+    integer :: d9(size([((j, j = 1, abs(i)), i = -3, 3)]))
+    integer :: d10(size([((j, j = 1, modulo(i, 3)), i = -2, 2)]))
+    integer :: d11(size([((j, j = 1, i**2), i = 1, 4)]))
 
     if (size([((j, j = i, 2), i = 0, 2)]) /= 6) error stop 1
     call check([((j, j = i, 2), i = 0, 2)], [0, 1, 2, 1, 2, 2])
@@ -92,6 +102,27 @@ program implied_do_loops64
     if (size(d4) < 80200) error stop 28
     d4(:80200) = [((j, j = i, 400), i = 1, 800)]
     if (d4(80200) /= 400 .or. sum(int(d4(:80200), 8)) /= 21413400_8) error stop 29
+    if (size(d5) /= 12) error stop 32
+    d5 = [((j, j = 1, min(i, n3)), i = 1, 5)]
+    if (any(d5 /= [1, 1, 2, 1, 2, 3, 1, 2, 3, 1, 2, 3])) error stop 33
+    if (size(d6) /= 6) error stop 34
+    d6 = [((j, j = 1, mod(i, 3)), i = 1, 6)]
+    if (any(d6 /= [1, 1, 2, 1, 1, 2])) error stop 35
+    if (size(d7) /= 8) error stop 36
+    d7 = [((j, j = 1, sz(i)), i = 1, 3)]
+    if (any(d7 /= [1, 2, 1, 2, 3, 4, 5, 1])) error stop 37
+    if (size(d8) /= 9) error stop 38
+    d8 = [((j, j = max(i, 2), 4), i = 1, 4)]
+    if (any(d8 /= [2, 3, 4, 2, 3, 4, 3, 4, 4])) error stop 39
+    if (size(d9) /= 12) error stop 40
+    d9 = [((j, j = 1, abs(i)), i = -3, 3)]
+    if (any(d9 /= [1, 2, 3, 1, 2, 1, 1, 1, 2, 1, 2, 3])) error stop 41
+    if (size(d10) /= 6) error stop 42
+    d10 = [((j, j = 1, modulo(i, 3)), i = -2, 2)]
+    if (any(d10 /= [1, 1, 2, 1, 1, 2])) error stop 43
+    if (size(d11) /= 30) error stop 44
+    d11 = [((j, j = 1, i**2), i = 1, 4)]
+    if (sum(d11) /= 192) error stop 45
     call automatic(3, 5)
     if (size(nest(3)) /= 6) error stop 25
     call check(nest(3), [1, 1, 2, 1, 2, 3])
