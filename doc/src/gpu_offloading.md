@@ -791,6 +791,12 @@ emulation and registers in its place; the emulated `cudaLaunchKernel` runs the
 blocks one after another, and the threads of a block one after another, so a
 `__syncthreads()` cannot be honoured and stops the program. The emulated
 device reports a 64 MiB L2 cache.
+The runtime builds against the CUDA runtime API of CUDA 12 and of CUDA 13,
+which differ where the runtime prefetches managed memory
+(`cudaMemPrefetchAsync` takes a `cudaMemLocation` in CUDA 13). The emulation
+provides the CUDA 13 API, so `--gpu=cuda_cpu` builds the runtime as a CUDA 13
+toolkit does; it provides the CUDA 12 API when `CUDART_VERSION` is defined
+below 13000, which the `test_gpu_cuda_api_state_cuda12*` unit tests do.
 The CUDA runtime keeps the same table and orders copies and launches
 on one stream. It keeps scratch buffers, and upload buffers for read-only
 ranges below 64 KiB, per kernel and argument slot, reusing their capacity and deferring replaced allocations until
