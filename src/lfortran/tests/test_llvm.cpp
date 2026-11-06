@@ -6333,6 +6333,9 @@ a = reshape([1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0], [2, 3])
         REQUIRE(r.ok);
         CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
         CHECK(r.result.f64 == 12.0);
+    }
+}
+
 namespace {
 
 // sum(1/sqrt(i)**3, i = 1, n) in single precision, with fast math.
