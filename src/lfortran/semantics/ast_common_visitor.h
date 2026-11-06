@@ -14,6 +14,7 @@
 #include <lfortran/utils.h>
 #include <lfortran/semantics/comptime_eval.h>
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
+#include <lfortran/semantics/elemental_checks.h>
 #include <libasr/pass/instantiate_template.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/runtime/lfortran_float128_quadmath.h>
@@ -10962,21 +10963,10 @@ public:
                 }
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
                 if (sym_type->m_type == AST::decl_typeType::TypeProcedure
-                        && (is_pointer || is_argument)) {
-                    // A procedure pointer or a dummy procedure shall not be
-                    // elemental.
-                    ASR::ttype_t *proc_type = ASRUtils::type_get_past_pointer(type);
-                    if (ASR::is_a<ASR::FunctionType_t>(*proc_type)
-                            && ASR::down_cast<ASR::FunctionType_t>(
-                                proc_type)->m_elemental) {
-                        diag.add(Diagnostic(std::string(is_pointer
-                                ? "procedure pointer '" : "dummy procedure '")
-                            + sym + "' cannot have an elemental interface",
-                            Level::Error, Stage::Semantic, {
-                                Label("", {x.m_syms[i].loc})
-                            }));
-                        throw SemanticAbort();
-                    }
+                        && (is_pointer || is_argument)
+                        && !ElementalChecks::not_dummy_interface(sym, type,
+                            is_pointer, x.m_syms[i].loc, diag)) {
+                    throw SemanticAbort();
                 }
                 if (sym_type->m_type == AST::decl_typeType::TypeProcedure
                         && !is_pointer && !is_argument && !is_derived_type
@@ -11672,15 +11662,6 @@ public:
                                     : "procedure pointer '")
                                     + to_lower(s.m_name) + "'",
                                 s.m_initializer->base.loc);
-                            continue;
-                        }
-                        if (is_nonintrinsic_elemental_procedure(init_sym)
-                                && check_elemental_procedure_target(ASRUtils::EXPR(
-                                    ASR::make_Var_t(al, s.m_initializer->base.loc,
-                                        init_sym)))) {
-                            if (!compiler_options.continue_compilation) {
-                                throw SemanticAbort();
-                            }
                             continue;
                         }
                         bool is_pending_placeholder = false;
@@ -15417,40 +15398,6 @@ public:
         }
     }
 
-    // Whether `target`, the procedure that a procedure pointer is given, is
-    // a nonintrinsic elemental procedure, which cannot be the target of a
-    // procedure pointer (Fortran 2018 C1031) nor its initial target (C1519).
-    // A specific intrinsic function is allowed even though it is elemental.
-    static bool is_nonintrinsic_elemental_procedure(ASR::symbol_t* target) {
-        if (target == nullptr) {
-            return false;
-        }
-        target = ASRUtils::symbol_get_past_external(target);
-        return ASR::is_a<ASR::Function_t>(*target)
-            && !ASRUtils::is_intrinsic_symbol(target)
-            && ASRUtils::get_FunctionType(ASR::down_cast<ASR::Function_t>(
-                target))->m_elemental;
-    }
-
-    // If the procedure designator `value` designates a nonintrinsic
-    // elemental procedure, reports it and returns true.
-    bool check_elemental_procedure_target(ASR::expr_t* value) {
-        if (value == nullptr || !ASR::is_a<ASR::Var_t>(*value)) {
-            return false;
-        }
-        ASR::symbol_t* target = ASR::down_cast<ASR::Var_t>(value)->m_v;
-        if (!is_nonintrinsic_elemental_procedure(target)) {
-            return false;
-        }
-        diag.add(Diagnostic("nonintrinsic elemental procedure '"
-                + std::string(ASRUtils::symbol_name(target))
-                + "' cannot be a procedure pointer target",
-            Level::Error, Stage::Semantic, {
-                Label("a procedure pointer target shall not be a "
-                    "nonintrinsic elemental procedure", {value->base.loc})}));
-        return true;
-    }
-
     // If `value`, the value of the component `member` in a structure
     // constructor of an initialization, names an internal procedure, reports
     // it and returns the `null()` to continue with instead, for the context
@@ -15989,8 +15936,8 @@ public:
                             arg->base.loc});
                     continue;
                 }
-                if (!forward_target && (check_elemental_procedure_target(arg)
-                        || !procedure_component_value_matches(member_var, arg))) {
+                if (!forward_target
+                        && !procedure_component_value_matches(member_var, arg)) {
                     if (!compiler_options.continue_compilation) {
                         throw SemanticAbort();
                     }

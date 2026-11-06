@@ -17,7 +17,27 @@ public:
         const std::string &proc_name, diag::Diagnostics &diag,
         const CompilerOptions &compiler_options);
 
+    // Uses of elemental procedures in the body and declarations of a unit;
+    // contained procedures are checked on their own.
+    static void check_body(const ASR::Function_t &f, diag::Diagnostics &diag,
+        const CompilerOptions &compiler_options);
+    static void check_body(const ASR::Program_t &p, diag::Diagnostics &diag,
+        const CompilerOptions &compiler_options);
+    static void check_body(const ASR::Module_t &m, diag::Diagnostics &diag,
+        const CompilerOptions &compiler_options);
+
+    // C1517
+    static bool not_dummy_interface(const std::string &name,
+        ASR::ttype_t *type, bool is_pointer, const Location &loc,
+        diag::Diagnostics &diag);
+
 private:
+    class BodyWalk;
+
+    static void check_scope(const SymbolTable &scope, ASR::stmt_t **body,
+        size_t n_body, diag::Diagnostics &diag,
+        const CompilerOptions &compiler_options);
+
     // C15100
     static bool dummy_not_allocatable(const ASR::Variable_t &v,
         const std::string &proc_name, diag::Diagnostics &diag);
@@ -61,6 +81,19 @@ private:
     static bool result_derived_type_params(const ASR::Function_t &f,
         const ASR::Variable_t &r, const std::string &proc_name,
         diag::Diagnostics &diag);
+    static bool is_nonintrinsic_elemental(ASR::symbol_t *sym);
+    // C1031, C1519
+    static bool not_pointer_target(ASR::expr_t *value,
+        diag::Diagnostics &diag);
+    // C1533
+    static bool not_actual_argument(ASR::expr_t *actual,
+        diag::Diagnostics &diag);
+    // 15.4.2.2
+    static bool explicit_interface(const ASR::symbol_t &proc,
+        const SymbolTable &scope, const Location &loc, diag::Diagnostics &diag);
+    // 9.5.3.3.3 p3
+    static bool output_no_repeated_vector_subscript(ASR::expr_t *actual,
+        const ASR::Variable_t &dummy, diag::Diagnostics &diag);
 };
 
 } // namespace LCompilers::LFortran

@@ -5950,8 +5950,7 @@ public:
             }
             ASR::expr_t* target = ASRUtils::EXPR(
                 ASR::make_Var_t(al, value.loc, value.procedure));
-            if (check_elemental_procedure_target(target)
-                    || !procedure_component_value_matches(value.member, target)) {
+            if (!procedure_component_value_matches(value.member, target)) {
                 deferred_value_mismatch = true;
             }
         }
@@ -5986,10 +5985,6 @@ public:
             }
             ASR::expr_t *init_expr = ASRUtils::EXPR(
                 ASR::make_Var_t(al, item.loc, proc_sym));
-            if (check_elemental_procedure_target(init_expr)) {
-                init_mismatch = true;
-                continue;
-            }
             ASR::symbol_t *iface = item.var->m_type_declaration;
             if (!is_pending_proc_placeholder(proc_sym)
                     && !(iface && is_pending_proc_placeholder(iface))

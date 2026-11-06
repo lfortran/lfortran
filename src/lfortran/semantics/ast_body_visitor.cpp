@@ -4304,7 +4304,6 @@ public:
         }
         is_invalid = check_procedure_component_of_constant(value,
             "a pointer assignment target") || is_invalid;
-        is_invalid = check_elemental_procedure_target(value) || is_invalid;
         // With --continue-compilation, drop the reported statement.
         if (is_invalid) {
             throw SemanticAbort();
@@ -6662,6 +6661,7 @@ public:
         scope_data.clear();
 
         transform_stmts(body, x.n_items, x.m_items);
+        ElementalChecks::check_body(*v, diag, compiler_options);
         // We have to visit unit_decl_2 because in the example, the Template is directly inside the module and
         // Template is a unit_decl_2
 
@@ -6772,6 +6772,7 @@ public:
         v->n_body = body.size();
 
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
+        ElementalChecks::check_body(*v, diag, compiler_options);
 
         for (size_t i=0; i<x.n_contains; i++) {
             try {
@@ -7405,6 +7406,7 @@ public:
 
         master_function->m_body = master_function_body.p;
         master_function->n_body = master_function_body.size();
+        ElementalChecks::check_body(*master_function, diag, compiler_options);
 
         master_function->m_dependencies = current_function_dependencies.p;
         master_function->n_dependencies = current_function_dependencies.size();
@@ -7473,6 +7475,7 @@ public:
         }
         current_function_deterministic = old_deterministic;
         current_function_side_effect_free = old_side_effect_free;
+        ElementalChecks::check_body(*v, diag, compiler_options);
         for (size_t i=0; i<x.n_contains; i++) {
             try {
                 visit_program_unit(*x.m_contains[i]);
@@ -7585,6 +7588,7 @@ public:
         current_function_side_effect_free = old_side_effect_free;
 
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
+        ElementalChecks::check_body(*v, diag, compiler_options);
 
         for (size_t i=0; i<x.n_contains; i++) {
             try {
@@ -7688,6 +7692,7 @@ public:
         current_function_side_effect_free = old_side_effect_free;
 
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope, compiler_options.po.default_integer_kind);
+        ElementalChecks::check_body(*v, diag, compiler_options);
 
         for (size_t i=0; i<x.n_contains; i++) {
             try {
