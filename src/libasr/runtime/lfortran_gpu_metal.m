@@ -1,6 +1,10 @@
 #import <Metal/Metal.h>
 #import <Foundation/Foundation.h>
 #include "lfortran_gpu_runtime.h"
+#include <dlfcn.h>
+#include <malloc/malloc.h>
+#include <mach/vm_page_size.h>
+#include <os/lock.h>
 #include <sched.h>
 #include <stdatomic.h>
 #include <mach/mach_time.h>
@@ -48,6 +52,45 @@ Launches are asynchronous, and the device keeps what a kernel writes.
   runs the launches as if in order. At most MAX_PENDING_COMMITS committed
   command buffers are pending: a host that launches faster than the GPU
   runs waits for it there.
+
+That is the copy memory model, the same as the CUDA runtime's
+(lfortran_gpu_cuda.c). An Apple GPU shares the host's memory, but a kernel
+can only use host memory that a Metal buffer covers, which must be whole
+pages, and making a buffer over a large range is cheap while the first
+launch that uses a new one maps its pages for the device (about 10 ms for
+1.4 GB). So the Metal runtime has the managed memory model of the CUDA
+runtime, a special case of the copy model: it replaces the program's
+allocator (the default allocator of lfortran_intrinsics.c), so that an
+allocation of at least MANAGED_MIN_BYTES, such as an allocatable array, is
+made of whole pages (`managed`, sorted by address):
+
+* A range inside such an allocation is used in place and has no entry: the
+  first launch that uses the allocation makes a buffer over its pages
+  without copying them, which the allocation keeps until it is freed, and
+  the kernel is handed that buffer at the offset of the range. Nothing is
+  copied at a launch, and lfortran_gpu_sync copies nothing back for it.
+* The host does not change or free a range a pending launch reads before
+  lfortran_gpu_wait (or lfortran_gpu_sync), which the compiler places where
+  the host next may (gpu_launch_sync.cpp), so lfortran_gpu_wait waits for
+  every launch when one that reads host memory in place may be pending. The
+  host does not access a range a pending launch writes before the sync, as
+  in the copy model.
+* A range a launch only reads of at most MANAGED_COPY_READ_MAX bytes is
+  still copied, so that the host may change it without waiting, unless a
+  pending launch writes the allocation in place: the host bytes are not
+  current then. A range a launch only reads that overlaps one it writes is
+  copied too, so that the kernel reads it as the host holds it, as in the
+  copy model; the runtime waits first for pending launches that write the
+  allocation.
+* Freeing an allocation waits for the launches that use it first.
+* Smaller allocations, memory the allocator did not make (stack and static
+  arrays) and an allocation the device cannot map keep the copy model.
+
+The model is chosen at the first allocation the allocator could make
+managed, or when the runtime starts, whichever is first:
+LFORTRAN_GPU_MEMORY=copy or managed selects one, and auto (the default)
+selects managed on a GPU that shares the host's memory (every Apple GPU) and
+copy otherwise. LFORTRAN_GPU_VERBOSE=1 prints the model chosen.
 */
 
 // A read-only argument up to this size is copied into the encoder.
@@ -56,6 +99,12 @@ static const size_t INLINE_BYTES_MAX = 4096;
 // as the device heap, is released with the kernel handle that holds it.
 static const size_t POOLED_BUFFER_MAX = (size_t)16 * 1024 * 1024;
 enum { POOL_MAX = 128, MAX_RESIDENT = 1024, HASH_SIZE = 4096 };
+// The smallest allocation the managed memory model makes of whole pages:
+// copying a smaller range at a launch costs little.
+enum { MANAGED_MIN_BYTES = 1 << 20 };
+// In the managed memory model, a range a launch only reads is copied when it
+// is at most this many bytes and no pending launch writes it.
+static const size_t MANAGED_COPY_READ_MAX = 64 * 1024;
 // Launches encoded into one command buffer before it is committed, and how
 // many committed command buffers may be pending: a host that launches faster
 // than the device runs waits for the oldest. Few pending launches keep the
@@ -182,6 +231,9 @@ struct lfortran_gpu_ctx {
     uint64_t lru_clock;
     // How many times the host has synced.
     uint64_t n_syncs;
+    // The serial of the last command buffer with a launch that reads host
+    // memory in place (the managed memory model).
+    uint64_t in_place_read;
     // The device buffers the dispatches since the last barrier of the open
     // encoder read and write.
     void *reads[MAX_TRACKED];
@@ -468,6 +520,269 @@ static int overlaps_dirty(void *host, size_t size) {
     return 0;
 }
 
+// -------------------------------------------------- managed memory ---
+
+enum { MEMORY_UNCHOSEN = -1, MEMORY_COPY, MEMORY_MANAGED };
+static int memory_model = MEMORY_UNCHOSEN;
+
+// The context of the program, once lfortran_gpu_init has made it.
+static lfortran_gpu_ctx *singleton = NULL;
+
+static void wait_all(lfortran_gpu_ctx *ctx);
+
+// An allocation made of whole pages (the managed memory model).
+typedef struct managed_range {
+    char *base;
+    // The bytes the program asked for, and the whole pages they take.
+    size_t size;
+    size_t length;
+    // The id<MTLBuffer> over the pages, retained, from the first launch
+    // that uses the allocation on; NULL before.
+    void *buffer;
+    // The serials of the last command buffers that use the allocation and
+    // that write it.
+    uint64_t last_use;
+    uint64_t last_write;
+    // The device cannot make a buffer over it: the copy model.
+    int unmapped;
+} managed_range;
+
+static managed_range *managed = NULL;
+static size_t n_managed = 0, managed_capacity = 0;
+// Threads of an OpenMP program allocate concurrently.
+static os_unfair_lock managed_lock = OS_UNFAIR_LOCK_INIT;
+
+static int memory_model_of_device(void) {
+#if defined(__arm64__) || defined(__aarch64__)
+    // Every GPU of an Apple silicon Mac shares the host's memory.
+    return MEMORY_MANAGED;
+#else
+    id<MTLDevice> device = MTLCreateSystemDefaultDevice();
+    return device && [device hasUnifiedMemory] ? MEMORY_MANAGED
+        : MEMORY_COPY;
+#endif
+}
+
+// The memory model, chosen on first use (with managed_lock held, or before
+// any thread is started).
+static int current_memory_model(void) {
+    if (memory_model != MEMORY_UNCHOSEN) return memory_model;
+    const char *value = getenv("LFORTRAN_GPU_MEMORY");
+    int model;
+    if (value == NULL || value[0] == '\0' || strcmp(value, "auto") == 0) {
+        model = memory_model_of_device();
+    } else if (strcmp(value, "copy") == 0) {
+        model = MEMORY_COPY;
+    } else if (strcmp(value, "managed") == 0) {
+        model = MEMORY_MANAGED;
+    } else {
+        fprintf(stderr, "LFORTRAN_GPU_MEMORY=%s is not a memory model of "
+            "the Metal runtime (copy, managed or auto)\n", value);
+        exit(1);
+    }
+    const char *verbose = getenv("LFORTRAN_GPU_VERBOSE");
+    if (verbose != NULL && strcmp(verbose, "1") == 0) {
+        fprintf(stderr, "lfortran_gpu: %s memory model\n",
+            model == MEMORY_MANAGED ? "managed" : "copy");
+    }
+    memory_model = model;
+    return model;
+}
+
+// The index of the first managed allocation that starts after `p`.
+static size_t managed_upper(const void *p) {
+    size_t lo = 0, hi = n_managed;
+    while (lo < hi) {
+        size_t mid = lo + (hi - lo)/2;
+        if ((const char *)p < managed[mid].base) hi = mid; else lo = mid + 1;
+    }
+    return lo;
+}
+
+// The managed allocation that holds the `size` bytes at `p`, or NULL.
+static managed_range *managed_holding(const void *p, size_t size) {
+    size_t i = managed_upper(p);
+    if (i == 0) return NULL;
+    managed_range *r = &managed[i - 1];
+    if ((const char *)p + size > r->base + r->size) return NULL;
+    return r;
+}
+
+static int managed_record(void *p, size_t size, size_t length) {
+    os_unfair_lock_lock(&managed_lock);
+    if (n_managed == managed_capacity) {
+        size_t capacity = managed_capacity ? 2*managed_capacity : 64;
+        managed_range *grown = (managed_range *)realloc(managed,
+            capacity*sizeof(managed_range));
+        if (!grown) {
+            os_unfair_lock_unlock(&managed_lock);
+            return 0;
+        }
+        managed = grown;
+        managed_capacity = capacity;
+    }
+    size_t i = managed_upper(p);
+    memmove(&managed[i + 1], &managed[i],
+        (n_managed - i)*sizeof(managed_range));
+    managed_range r = {(char *)p, size, length, NULL, 0, 0, 0};
+    managed[i] = r;
+    n_managed++;
+    os_unfair_lock_unlock(&managed_lock);
+    return 1;
+}
+
+// Removes the managed allocation at `p` from the table into `out`; 0 when
+// there is none.
+static int managed_forget(void *p, managed_range *out) {
+    os_unfair_lock_lock(&managed_lock);
+    size_t i = managed_upper(p);
+    int found = i > 0 && managed[i - 1].base == (char *)p;
+    if (found) {
+        *out = managed[i - 1];
+        memmove(&managed[i - 1], &managed[i],
+            (n_managed - i)*sizeof(managed_range));
+        n_managed--;
+    }
+    os_unfair_lock_unlock(&managed_lock);
+    return found;
+}
+
+// The size of the managed allocation at `p`, or 0.
+static size_t managed_size(void *p) {
+    os_unfair_lock_lock(&managed_lock);
+    size_t i = managed_upper(p);
+    size_t size = i > 0 && managed[i - 1].base == (char *)p
+        ? managed[i - 1].size : 0;
+    os_unfair_lock_unlock(&managed_lock);
+    return size;
+}
+
+// The buffer over the managed allocation that holds the `size` bytes at
+// `host`, made at its first use, and the offset of the range in it, with the
+// serial of the last command buffer that writes it; nil when the range is
+// not in one the device can map. With `serial` nonzero the command buffer
+// `serial` uses the allocation, and writes it when `write` is set.
+static id<MTLBuffer> managed_buffer(lfortran_gpu_ctx *ctx, void *host,
+    size_t size, uint64_t serial, int write, size_t *offset,
+    uint64_t *last_write)
+{
+    if (n_managed == 0 || size == 0) return nil;
+    id<MTLBuffer> buffer = nil;
+    os_unfair_lock_lock(&managed_lock);
+    managed_range *r = managed_holding(host, size);
+    if (r && !r->unmapped && !r->buffer) {
+        // The device maps the pages at the first launch that uses the
+        // buffer, so it is kept as long as the allocation.
+        id<MTLBuffer> made = [ctx->device newBufferWithBytesNoCopy:r->base
+            length:r->length options:MTLResourceStorageModeShared
+            deallocator:nil];
+        if (made) {
+            r->buffer = (__bridge_retained void *)made;
+        } else {
+            r->unmapped = 1;
+        }
+    }
+    if (r && r->buffer) {
+        buffer = (__bridge id<MTLBuffer>)r->buffer;
+        *offset = (size_t)((char *)host - r->base);
+        if (last_write) *last_write = r->last_write;
+        if (serial != 0) {
+            r->last_use = serial;
+            if (write) r->last_write = serial;
+        }
+    }
+    os_unfair_lock_unlock(&managed_lock);
+    return buffer;
+}
+
+// The allocator of the program (lfortran_allocator_t in
+// lfortran_intrinsics.h, which the GPU runtime does not include: a program
+// links both).
+typedef struct host_allocator {
+    void* (*alloc)(void* context, int64_t size);
+    void* (*realloc_func)(void* context, void* ptr, int64_t new_size);
+    void  (*dealloc)(void* context, void* ptr);
+    void* context;
+} host_allocator;
+
+// The allocator the managed one replaced, which makes every allocation that
+// is not managed.
+static host_allocator previous_allocator;
+
+static void* managed_alloc(void *context, int64_t size) {
+    if (size >= MANAGED_MIN_BYTES) {
+        os_unfair_lock_lock(&managed_lock);
+        int model = current_memory_model();
+        os_unfair_lock_unlock(&managed_lock);
+        if (model == MEMORY_MANAGED) {
+            // Memory free() releases too, as memory from malloc, should C
+            // code free it.
+            size_t page = vm_page_size;
+            size_t length = ((size_t)size + page - 1) / page * page;
+            void *p = NULL;
+            if (posix_memalign(&p, page, length) == 0 && p) {
+                if (managed_record(p, (size_t)size, length)) return p;
+                free(p);
+            }
+        }
+    }
+    return previous_allocator.alloc(context, size);
+}
+
+static void managed_dealloc(void *context, void *ptr) {
+    managed_range r;
+    if (ptr && managed_forget(ptr, &r)) {
+        if (r.buffer) {
+            // A pending launch may still use the memory.
+            if (singleton && r.last_use > atomic_load_explicit(
+                    &singleton->completed, memory_order_acquire)) {
+                wait_all(singleton);
+            }
+            CFRelease(r.buffer);
+        }
+        free(ptr);
+        return;
+    }
+    previous_allocator.dealloc(context, ptr);
+}
+
+static void* managed_realloc(void *context, void *ptr, int64_t size) {
+    if (!ptr) return managed_alloc(context, size);
+    size_t old = managed_size(ptr);
+    if (!old) {
+        // An allocation that grows past MANAGED_MIN_BYTES becomes managed
+        // too: the previous allocator is malloc, whose blocks malloc_size
+        // knows.
+        size_t have = size >= MANAGED_MIN_BYTES ? malloc_size(ptr) : 0;
+        if (have == 0) return previous_allocator.realloc_func(context, ptr,
+            size);
+        void *p = managed_alloc(context, size);
+        if (!p) return NULL;
+        memcpy(p, ptr, have < (size_t)size ? have : (size_t)size);
+        previous_allocator.dealloc(context, ptr);
+        return p;
+    }
+    void *p = managed_alloc(context, size);
+    if (!p) return NULL;
+    memcpy(p, ptr, old < (size_t)size ? old : (size_t)size);
+    managed_dealloc(context, ptr);
+    return p;
+}
+
+// The program's allocator, which a program links from the LFortran runtime
+// library; a unit test of this file links none, so it is looked up rather
+// than referenced (a Mach-O link does not accept an undefined weak
+// reference).
+__attribute__((constructor)) static void install_managed_allocator(void) {
+    void *get = dlsym(RTLD_DEFAULT, "_lfortran_get_default_allocator");
+    host_allocator *a = get ? ((host_allocator *(*)(void))get)() : NULL;
+    if (!a || a->alloc == managed_alloc) return;
+    previous_allocator = *a;
+    a->alloc = managed_alloc;
+    a->realloc_func = managed_realloc;
+    a->dealloc = managed_dealloc;
+}
+
 // ------------------------------------------------------------ context ---
 
 static lfortran_gpu_ctx *profiled_ctx = NULL;
@@ -543,7 +858,6 @@ static void print_profile_at_exit(void) {
 }
 
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
-    static lfortran_gpu_ctx *singleton = NULL;
     if (singleton) return singleton;
     singleton = (lfortran_gpu_ctx*)calloc(1, sizeof(lfortran_gpu_ctx));
     singleton->device = MTLCreateSystemDefaultDevice();
@@ -563,6 +877,9 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
         profiled_ctx = singleton;
         atexit(print_profile_at_exit);
     }
+    os_unfair_lock_lock(&managed_lock);
+    current_memory_model();
+    os_unfair_lock_unlock(&managed_lock);
     return singleton;
 }
 
@@ -578,6 +895,7 @@ void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     ctx->device = nil;
     ctx->queue = nil;
     ctx->last_command_buffer = nil;
+    if (ctx == singleton) singleton = NULL;
     free(ctx);
 }
 
@@ -937,6 +1255,20 @@ static void commit_open(lfortran_gpu_ctx *ctx) {
     ctx->last_command_buffer = cb;
 }
 
+// Whether buffer argument `idx` of `k` overlaps one the kernel may write.
+static int overlaps_written_arg(const lfortran_gpu_kernel *k, int idx) {
+    for (int j = 0; j < k->n_args; j++) {
+        if (j == idx || k->kind[j] != ARG_BUFFER
+                || k->access[j] == LFORTRAN_GPU_READ) {
+            continue;
+        }
+        if (overlaps(k->ptrs[idx], k->sizes[idx], k->ptrs[j], k->sizes[j])) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
@@ -949,10 +1281,43 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     // autoreleased: without a pool of its own every launch would keep them
     // until the program ends.
     @autoreleasepool {
+        int is_buffer[MAX_ARGS];
+        for (int i = 0; i < k->n_args; i++) {
+            is_buffer[i] = k->kind[i] == ARG_BUFFER;
+        }
+        // The ranges in managed allocations the kernel uses in place (the
+        // managed memory model), and their offsets in the buffers.
+        id<MTLBuffer> in_place[MAX_ARGS];
+        size_t in_place_offset[MAX_ARGS];
+        int copies_written = 0;
+        for (int i = 0; i < k->n_args; i++) {
+            in_place[i] = nil;
+            if (!is_buffer[i] || k->sizes[i] == 0) continue;
+            uint64_t last_write = 0;
+            id<MTLBuffer> buffer = managed_buffer(ctx, k->ptrs[i],
+                k->sizes[i], 0, 0, &in_place_offset[i], &last_write);
+            if (!buffer) continue;
+            int overlap = k->access[i] == LFORTRAN_GPU_READ
+                && overlaps_written_arg(k, i);
+            if (k->access[i] == LFORTRAN_GPU_READ
+                    && (k->sizes[i] <= MANAGED_COPY_READ_MAX || overlap)) {
+                // A copy, unless a pending launch writes the allocation
+                // and the kernel need not read it as the host holds it.
+                if (completed_by_device(ctx, last_write)) continue;
+                if (overlap) {
+                    copies_written = 1;
+                    continue;
+                }
+            }
+            in_place[i] = buffer;
+        }
+        // A copy of what a pending launch writes in place needs the launch
+        // to be done.
+        if (copies_written) wait_all(ctx);
         // The host bytes of a range that overlaps one the device holds
         // newer values for are not current: get them back first.
         for (int i = 0; i < k->n_args; i++) {
-            if (k->kind[i] == ARG_BUFFER
+            if (is_buffer[i] && !in_place[i]
                     && overlaps_dirty(k->ptrs[i], k->sizes[i])) {
                 sync_all(ctx);
                 break;
@@ -963,17 +1328,13 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         // ready may have to sync, which leaves nothing dirty: then they are
         // made ready again.
         id<MTLBuffer> written[MAX_ARGS];
-        int is_buffer[MAX_ARGS];
-        for (int i = 0; i < k->n_args; i++) {
-            is_buffer[i] = k->kind[i] == ARG_BUFFER;
-        }
         for (uint64_t syncs = ctx->n_syncs - 1; syncs != ctx->n_syncs;) {
             syncs = ctx->n_syncs;
             for (int i = 0; i < k->n_args; i++) {
                 written[i] = nil;
                 if (k->kind[i] != ARG_BUFFER
                         || k->access[i] == LFORTRAN_GPU_READ
-                        || k->sizes[i] == 0) {
+                        || k->sizes[i] == 0 || in_place[i]) {
                     continue;
                 }
                 int discard = k->access[i] == LFORTRAN_GPU_WRITE_DISCARD
@@ -1008,6 +1369,19 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             uses[n_uses++].write = 1;
         }
         for (int i = 0; i < k->n_args; i++) {
+            if (!in_place[i]) continue;
+            int write = k->access[i] != LFORTRAN_GPU_READ;
+            size_t offset;
+            managed_buffer(ctx, k->ptrs[i], k->sizes[i], serial, write,
+                &offset, NULL);
+            release_read_buffer(k, i);
+            [encoder setBuffer:in_place[i] offset:in_place_offset[i]
+                atIndex:i];
+            uses[n_uses].buffer = (__bridge void *)in_place[i];
+            uses[n_uses++].write = write;
+            if (!write) ctx->in_place_read = serial;
+        }
+        for (int i = 0; i < k->n_args; i++) {
             switch (k->kind[i]) {
                 case ARG_BUFFER: {
                     if (k->sizes[i] == 0) {
@@ -1017,7 +1391,10 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                         [encoder setBuffer:nil offset:0 atIndex:i];
                         break;
                     }
-                    if (k->access[i] != LFORTRAN_GPU_READ) break;
+                    if (k->access[i] != LFORTRAN_GPU_READ
+                            || in_place[i]) {
+                        break;
+                    }
                     id<MTLBuffer> buffer = dirty_resident(k->ptrs[i],
                         k->sizes[i]);
                     if (buffer) {
@@ -1100,10 +1477,12 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
     sync_all(ctx);
 }
 
-// A launch copies what its kernel only reads, so the host may change it at
-// once: there is nothing to wait for.
+// A launch copies what its kernel only reads, except a range in a managed
+// allocation that it reads in place: the host may change that once the
+// launches that read it are done.
 void lfortran_gpu_wait(lfortran_gpu_ctx* ctx) {
-    (void)ctx;
+    if (!ctx || completed_by_device(ctx, ctx->in_place_read)) return;
+    wait_all(ctx);
 }
 
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {

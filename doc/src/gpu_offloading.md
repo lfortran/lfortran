@@ -939,6 +939,35 @@ the CPU and the GPU of an APU share the power of their socket, and on an
 MI300A a host thread spinning while a kernel streams through memory made the
 kernel 3-5% slower.
 
+An Apple GPU shares the host's memory, but a kernel can only use memory a
+Metal buffer covers, which must be whole pages; making a buffer over a range
+the host allocated (`newBufferWithBytesNoCopy`) costs about 0.1 ms, while
+the first launch that uses a new buffer maps its pages for the GPU (about
+10 ms for 1.4 GB). So the Metal runtime has the managed model, chosen as on
+CUDA (`LFORTRAN_GPU_MEMORY=copy` or `managed`; `auto` selects managed on a
+GPU that shares the host's memory, every Apple GPU, and copy otherwise):
+
+* The runtime replaces the program's allocator, so that an allocation of at
+  least 1 MiB takes whole pages. The first launch that uses it makes a
+  buffer over its pages, kept until the allocation is freed, and a range in
+  it is handed to the kernel in place, at its offset in that buffer: nothing
+  is copied in at a launch or back at a sync. Freeing the allocation waits
+  for the launches that use it, and forgets the buffer, so an allocation
+  made later at the same address gets a buffer of its own.
+* A range a launch only reads of at most 64 KiB is still copied, unless a
+  pending launch writes the allocation in place, and so is a range that
+  overlaps one the same launch writes, so that the kernel reads it as the
+  host holds it; the runtime first waits for pending launches that write
+  the allocation.
+* `lfortran_gpu_wait` waits for every launch when one that reads host
+  memory in place may be pending, and returns at once otherwise.
+* Smaller allocations, memory the allocator does not make (stack and static
+  arrays), and an allocation the device cannot map keep the copy model.
+
+Decoding a 27B-parameter language model whose weights are allocatable
+arrays, the copy model copied 28.8 GB of weights into fresh buffers for
+every token; the managed model copies none of them.
+
 The Metal runtime encodes the launches one after another into one compute
 encoder and commits its command buffer every 64 launches and at every wait:
 encoding a dispatch costs the host about 2 us, committing a command buffer
