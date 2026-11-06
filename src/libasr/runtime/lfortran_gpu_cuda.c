@@ -30,12 +30,20 @@ default stream ordering every copy and launch:
   entry is dirty, a later launch handed the same range uses the same memory
   without a copy, and lfortran_gpu_sync copies every dirty entry back.
 * A buffer the kernel only reads is copied in, before the launch on the
-  stream, into memory the argument slot of its kernel keeps; the stream
-  orders that copy after every earlier launch that read the memory. When it
-  is a dirty range, the kernel reads the resident memory instead. A later
-  launch of the same kernel handle that is not handed the buffer again (the
-  next chunk of a launch that runs in chunks) reads what the first one
-  copied, as long as no other handle has used that memory since.
+  stream; the stream orders that copy after every earlier launch that read
+  the memory. When it is a dirty range, the kernel reads the resident memory
+  instead. A range of at least KEEP_READ_MIN_BYTES gets an entry that keeps
+  the copy (`fresh`) until the next lfortran_gpu_wait or lfortran_gpu_sync:
+  the host does not change a range a launch since the last wait reads before
+  it waits (gpu_launch_sync.cpp places the waits), so later launches that read
+  the range, such as the iterations of a time loop, use the copy without
+  copying again. A smaller range is copied into memory the argument slot of
+  its kernel keeps; a later launch of the same kernel handle that is not
+  handed the buffer again (the next chunk of a launch that runs in chunks)
+  reads what the first one copied, as long as no other handle has used that
+  memory since.
+* An entry that no launch has used since the wait before the last one, and
+  that is not dirty, is forgotten at a wait, and its device memory freed.
 * A range that overlaps a dirty one without being the same range makes the
   runtime sync first.
 * A scratch buffer, which only the device holds, is the memory its argument
@@ -72,6 +80,10 @@ LFORTRAN_GPU_KEEP_MEMORY=0 leaves malloc as it is.
 
 enum { MAX_RESIDENT = 1024, MAX_DEFERRED = 4096 };
 
+// In the copy model, a range a launch only reads keeps its copy in device
+// memory until the next wait when it is at least this many bytes.
+static const size_t KEEP_READ_MIN_BYTES = 64 * 1024;
+
 // In the unified memory model, a range a launch only reads is copied when it
 // is at most this many bytes, and used in place otherwise.
 static const size_t UNIFIED_COPY_MAX_BYTES = 64 * 1024;
@@ -85,6 +97,11 @@ typedef struct resident {
     int used;
     // `device` is `host` itself: the unified memory model.
     int in_place;
+    // `device` holds a copy of the host bytes made since the last wait, which
+    // the host has not changed since (the copy model).
+    int fresh;
+    // The wait period (n_waits) in which a launch last used the entry.
+    uint64_t last_use;
 } resident;
 
 // Whether kernels use host memory in place (the unified memory model)
@@ -116,6 +133,9 @@ static int n_entries = 0;
 static void *deferred_free[MAX_DEFERRED];
 static int n_deferred = 0;
 static uint64_t n_syncs = 0;
+// The waits and syncs so far: the host may change what launches read only
+// between them.
+static uint64_t n_waits = 0;
 
 // Kernel code declares this function with C linkage, and a unit test
 // compiles this file as C++ next to such a declaration.
@@ -213,10 +233,13 @@ static void remove_entry(int i) {
     memset(&entries[i], 0, sizeof(resident));
 }
 
+static void end_wait_period(void);
+
 static void sync_all(void) {
     n_syncs++;
     pending_in_place_reads = 0;
     check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
+    end_wait_period();
     for (int i = 0; i < n_entries; i++) {
         if (!entries[i].used || !entries[i].dirty) continue;
         if (!entries[i].in_place) {
@@ -247,6 +270,7 @@ static resident* entry_for(void *host, size_t size) {
     if (i >= 0 && entries[i].size != size) {
         if (entries[i].dirty) sync_all();
         entries[i].size = size;
+        entries[i].fresh = 0;
     }
     if (i < 0) {
         for (int j = 0; j < n_entries; j++) {
@@ -264,7 +288,23 @@ static resident* entry_for(void *host, size_t size) {
         entries[i].size = size;
         entries[i].used = 1;
     }
+    entries[i].last_use = n_waits;
     return &entries[i];
+}
+
+// After a wait the host may change any range, so no copy is fresh. An entry
+// unused in the last two wait periods that holds nothing the host lacks is
+// forgotten: the program may have freed its host range.
+static void end_wait_period(void) {
+    for (int i = 0; i < n_entries; i++) {
+        resident *e = &entries[i];
+        if (!e->used) continue;
+        e->fresh = 0;
+        if (!e->dirty && e->last_use + 1 < n_waits) {
+            remove_entry(i);
+        }
+    }
+    n_waits++;
 }
 
 // In the unified memory model: the entry `e` uses its host range in place.
@@ -291,12 +331,33 @@ static void* resident_for_write(void *host, size_t size, int discard) {
         free_later(e->device);
         e->device = device_alloc(size);
         e->capacity = size;
+        e->fresh = 0;
     }
-    if (!discard) {
+    if (!discard && !e->fresh) {
         check(cudaMemcpyAsync(e->device, host, size, cudaMemcpyHostToDevice,
             0), "cudaMemcpyAsync H2D");
     }
     e->dirty = 1;
+    e->fresh = 0;
+    return e->device;
+}
+
+// In the copy model: device memory that holds the host range, which a
+// launch only reads, copied in unless the copy made since the last wait is
+// there already.
+static void* kept_read(void *host, size_t size) {
+    resident *e = entry_for(host, size);
+    if (!e->device || e->capacity < size) {
+        free_later(e->device);
+        e->device = device_alloc(size);
+        e->capacity = size;
+        e->fresh = 0;
+    }
+    if (!e->fresh) {
+        check(cudaMemcpyAsync(e->device, host, size, cudaMemcpyHostToDevice,
+            0), "cudaMemcpyAsync H2D");
+        e->fresh = 1;
+    }
     return e->device;
 }
 
@@ -568,6 +629,9 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                         && size > UNIFIED_COPY_MAX_BYTES) {
                     d_ptr = use_in_place(entry_for(host, size));
                     reads_in_place = 1;
+                } else if (!d_ptr && !unified_memory
+                        && size >= KEEP_READ_MIN_BYTES) {
+                    d_ptr = kept_read(host, size);
                 }
                 if (d_ptr) {
                     k->copied[i] = 0;
@@ -646,7 +710,9 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
 }
 
 void lfortran_gpu_wait(lfortran_gpu_ctx* ctx) {
-    if (!ctx || !pending_in_place_reads) return;
+    if (!ctx) return;
+    end_wait_period();
+    if (!pending_in_place_reads) return;
     pending_in_place_reads = 0;
     check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
 }

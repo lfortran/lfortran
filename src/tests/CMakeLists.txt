@@ -22,6 +22,8 @@ add_test(NAME test_gpu_cuda_api_state_discard_fill
     COMMAND test_gpu_cuda_api_state discard-fill)
 add_test(NAME test_gpu_cuda_api_state_read_once
     COMMAND test_gpu_cuda_api_state read-once)
+add_test(NAME test_gpu_cuda_api_state_keep_reads
+    COMMAND test_gpu_cuda_api_state keep-reads)
 add_test(NAME test_gpu_cuda_api_state_failed_free
     COMMAND test_gpu_cuda_api_state failed-free)
 set_tests_properties(test_gpu_cuda_api_state_failed_free PROPERTIES

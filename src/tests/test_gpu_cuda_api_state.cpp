@@ -314,6 +314,58 @@ static int read_once()
     return 0;
 }
 
+// In the copy model a range of at least KEEP_READ_MIN_BYTES that launches
+// only read keeps its copy in device memory until the next wait: the
+// launches of a time loop, which hand the buffer over every time, copy it in
+// once. After lfortran_gpu_wait or lfortran_gpu_sync the host may have
+// changed it, and the next launch copies it again. An entry no launch used
+// in two wait periods is forgotten and its memory freed.
+static int keep_reads()
+{
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    lfortran_gpu_register_kernel("keep_reads", entry(read_once_entry));
+    std::vector<int32_t> a(KEEP_READ_MIN_BYTES / sizeof(int32_t) * 2);
+    for (size_t i = 0; i < a.size(); i++) a[i] = 1;
+    std::array<int32_t, 8> out{};
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    auto h2d = []() { return stats().async_copies[cudaMemcpyHostToDevice]; };
+    auto launch = [&](int32_t chunk) {
+        auto *k = lfortran_gpu_load_kernel(ctx, "keep_reads", 10);
+        lfortran_gpu_set_buffer_arg(k, 0, out.data(), sizeof(out),
+            LFORTRAN_GPU_WRITE);
+        lfortran_gpu_set_buffer_arg(k, 1, a.data(), a.size() * sizeof(int32_t),
+            LFORTRAN_GPU_READ);
+        lfortran_gpu_set_scalar_arg(k, 2, &chunk, sizeof(chunk));
+        lfortran_gpu_launch(ctx, k, grid, block);
+        lfortran_gpu_release_kernel(k);
+    };
+    auto start = h2d();
+    for (int32_t i = 0; i < 3; i++) launch(i);
+    printf("keep reads: %llu uploads for 3 launches\n", h2d() - start);
+    require(h2d() - start == 2, "a kept range is uploaded once");
+    lfortran_gpu_wait(ctx);
+    for (size_t i = 0; i < a.size(); i++) a[i] = 2;
+    launch(3);
+    require(h2d() - start == 3, "after a wait the range is uploaded again");
+    lfortran_gpu_sync(ctx);
+    require(out[0] == 64 && out[2] == 66 && out[3] == 131,
+        "every launch reads the values the host last wrote");
+    for (size_t i = 0; i < a.size(); i++) a[i] = 3;
+    launch(4);
+    lfortran_gpu_sync(ctx);
+    require(out[4] == 196, "after a sync the range is uploaded again");
+    auto allocations = stats().live_allocations;
+    lfortran_gpu_wait(ctx);
+    lfortran_gpu_wait(ctx);
+    lfortran_gpu_sync(ctx);
+    require(stats().live_allocations < allocations,
+        "an unused entry frees its memory");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    return 0;
+}
+
 // A deferred free that fails stops the program with the CUDA error, here
 // for memory that is not a device allocation.
 static int failed_free()
@@ -464,6 +516,9 @@ int main(int argc, char **argv)
     if (argc == 2 && strcmp(argv[1], "read-once") == 0) {
         return read_once();
     }
+    if (argc == 2 && strcmp(argv[1], "keep-reads") == 0) {
+        return keep_reads();
+    }
     if (argc == 2 && strcmp(argv[1], "failed-free") == 0) {
         return failed_free();
     }
@@ -484,7 +539,11 @@ int main(int argc, char **argv)
         "frees=%llu, first sync after launch=%lld\n", s.launches, s.mallocs,
         s.frees, sync_launches.empty() ? -1LL
             : sync_launches.front());
-    require(s.launches == 201 && s.mallocs == 6031 && s.frees == 4110,
+    // With a scratch buffer the read-back syncs once more, and the entry of
+    // `output`, which no launch has used in the two wait periods before, is
+    // forgotten there and its memory freed.
+    require(s.launches == 201 && s.mallocs == 6031
+        && s.frees == (scratch ? 4111u : 4110u),
         "per-slot reuse and deferred replacement counts");
     require(sync_launches.size() == (scratch ? 4 : 3)
         && sync_launches.front() == 200 && sync_launches[1] == 201,
