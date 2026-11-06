@@ -80,12 +80,14 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 
     # One `cuda` label selects a test for every mode of the CUDA device code:
     # the `cuda` backend runs it natively on an NVIDIA GPU, `cuda_cpu` in the
-    # CPU emulation, and `hip` on an AMD GPU.
-    if ("cuda_cpu" IN_LIST labels OR "hip" IN_LIST labels)
-        message(FATAL_ERROR "${name}: use the `cuda` label, there are no `cuda_cpu` and `hip` labels")
+    # CPU emulation, `hip` on an AMD GPU, and `hip_cpu` in the CPU emulation
+    # of HIP.
+    if ("cuda_cpu" IN_LIST labels OR "hip" IN_LIST labels
+            OR "hip_cpu" IN_LIST labels)
+        message(FATAL_ERROR "${name}: use the `cuda` label, there are no `cuda_cpu`, `hip` and `hip_cpu` labels")
     endif()
     set(label_backend ${LFORTRAN_BACKEND})
-    if (LFORTRAN_BACKEND STREQUAL "cuda_cpu" OR LFORTRAN_BACKEND STREQUAL "hip")
+    if (LFORTRAN_BACKEND MATCHES "^(cuda_cpu|hip|hip_cpu)$")
         set(label_backend cuda)
     endif()
 
@@ -273,8 +275,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:--gpu=metal ${extra_args}>)
             target_link_options(${name} PUBLIC --gpu=metal)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
-        elseif (LFORTRAN_BACKEND STREQUAL "cuda" OR LFORTRAN_BACKEND STREQUAL "cuda_cpu"
-                OR LFORTRAN_BACKEND STREQUAL "hip")
+        elseif (LFORTRAN_BACKEND MATCHES "^(cuda|cuda_cpu|hip|hip_cpu)$")
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:--gpu=${LFORTRAN_BACKEND} ${extra_args}>)
             target_link_options(${name} PUBLIC --gpu=${LFORTRAN_BACKEND})
@@ -6679,7 +6680,7 @@ endif()
 RUN(NAME gpu_separate_compilation_01 LABELS gfortran llvm metal cuda EXTRAFILES gpu_separate_compilation_01_mod.f90 EXTRA_ARGS --separate-compilation)
 # Only the module's own compilation needs the fallback for its loop that
 # prints: the program that uses it compiles none of the module's loops.
-if (LFORTRAN_BACKEND MATCHES "^(metal|cuda|cuda_cpu|hip)$")
+if (LFORTRAN_BACKEND MATCHES "^(metal|cuda|cuda_cpu|hip|hip_cpu)$")
     set_source_files_properties(gpu_separate_compilation_01_mod.f90
         PROPERTIES COMPILE_OPTIONS "--gpu-allow-cpu-fallback")
 endif()
