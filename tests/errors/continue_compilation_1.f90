@@ -4770,3 +4770,13 @@ contains
         print *, yi
     end subroutine
 end module
+
+! A derived-type array initializer must have the same shape as the declared
+! array.
+module cc1_dt_initializer_shape
+    implicit none
+    type :: cc1_dt_shape_t
+        integer :: a
+    end type
+    type(cc1_dt_shape_t) :: cc1_xt(3) = [cc1_dt_shape_t(1), cc1_dt_shape_t(2)]  ! {Error} different shape for array initialization on dimension 1 (3 and 2)
+end module
