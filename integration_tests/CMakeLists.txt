@@ -5358,6 +5358,7 @@ RUN(NAME data_implied_do_08 LABELS gfortran llvm)
 RUN(NAME data_implied_do_09 LABELS gfortran llvm)
 RUN(NAME data_implied_do_10 LABELS gfortran llvm)
 RUN(NAME data_implied_do_11 LABELS gfortran llvm)
+RUN(NAME data_implied_do_12 LABELS gfortran llvm)
 
 RUN(NAME save_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME save_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
