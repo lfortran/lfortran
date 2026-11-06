@@ -45,6 +45,11 @@ contains
     a(n, 1) = 5.0_c_float
     a(1, 2) = 6.0_c_float
   end subroutine
+  subroutine bindc_assumed_size_count(n, a) bind(c)
+    integer, intent(in) :: n
+    real(c_float), intent(in) :: a(n, *)
+    if (size(a, 1) /= n) error stop "size(a, 1)"
+  end subroutine
   subroutine bindc_no_extent(a) bind(c)
     real(c_float), intent(inout) :: a(*)
     a(1) = 7.0_c_float
@@ -60,14 +65,17 @@ end subroutine
 
 program sequence_assoc_02
   use sequence_assoc_02_mod
-  use sequence_assoc_02_bindc_mod, only: bindc_assumed_size, bindc_no_extent
+  use sequence_assoc_02_bindc_mod, only: bindc_assumed_size, bindc_no_extent, &
+      bindc_assumed_size_count
   use iso_c_binding, only: c_float
   implicit none
   real, allocatable :: b(:,:)
   real :: c(4, 2)
   real :: z(0, 0)
   real(c_float) :: x(6)
+  real(c_float) :: x30(3, 0), x40(4, 0)
   real(c_float), allocatable :: xa(:)
+  real(c_float), allocatable :: xa30(:,:)
   real, allocatable :: empty(:), empty_2d(:,:)
   integer :: i, j, k, l
   allocate(b(4, 2))
@@ -122,5 +130,11 @@ program sequence_assoc_02
   if (abs(xa(4) - 6.0_c_float) > 1.0e-5) error stop "bind(c) allocatable a(1, 2)"
   call bindc_no_extent(x)
   if (abs(x(1) - 7.0_c_float) > 1.0e-5) error stop "bind(c) a(*)"
+  ! A zero-element actual argument gives a zero-size assumed-size dummy, even
+  ! though the dummy declares its first extent (F2023 15.5.2.12p6).
+  call bindc_assumed_size_count(3, x30)
+  call bindc_assumed_size_count(4, x40)
+  allocate(xa30(3, 0))
+  call bindc_assumed_size_count(3, xa30)
   print *, "pass"
 end program
