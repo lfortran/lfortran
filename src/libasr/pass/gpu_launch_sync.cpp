@@ -180,7 +180,68 @@ public:
     std::set<ASR::symbol_t*> blocks_seen;
     // Inside one of the expressions above.
     int inside = 0;
+    // When set, what a local pointer of this procedure is associated with
+    // counts only once the pointer itself is counted (`finish`): what
+    // another procedure can reach through a pointer, rather than what a
+    // pointer of this procedure may point to.
+    SymbolTable *routine = nullptr;
+    std::map<ASR::symbol_t*, std::vector<ASR::expr_t*>> local_targets;
     explicit PointerReach(std::set<ASR::symbol_t*> &vars_) : vars(vars_) {}
+
+    // A pointer, or associate name, that only this procedure can name
+    // (unless a procedure contained in it does, see `finish`).
+    bool local_pointer(ASR::symbol_t *p) const {
+        if (routine == nullptr || p == nullptr
+                || !ASR::is_a<ASR::Variable_t>(*p)) {
+            return false;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(p);
+        return v->m_intent == ASR::intentType::Local
+            && v->m_storage != ASR::storage_typeType::Save
+            && enclosing_routine(v->m_parent_symtab) == routine;
+    }
+
+    // Counts what the local pointers that are counted are associated with,
+    // and the variables of this procedure that a procedure contained in it
+    // names, which a call of that procedure may reach.
+    void finish() {
+        if (routine == nullptr) return;
+        for (auto &item : routine->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            HostNames names(routine, vars);
+            names.visit_symbol(*item.second);
+        }
+        std::set<ASR::symbol_t*> done;
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (auto &item : local_targets) {
+                if (vars.count(item.first) == 0
+                        || !done.insert(item.first).second) {
+                    continue;
+                }
+                for (ASR::expr_t *value : item.second) reached(value);
+                changed = true;
+            }
+        }
+    }
+
+    // The variables of `routine` a procedure contained in it names.
+    class HostNames : public ASR::BaseWalkVisitor<HostNames> {
+    public:
+        SymbolTable *routine;
+        std::set<ASR::symbol_t*> &vars;
+        HostNames(SymbolTable *routine_, std::set<ASR::symbol_t*> &vars_)
+            : routine(routine_), vars(vars_) {}
+        void visit_Var(const ASR::Var_t &x) {
+            ASR::symbol_t *v = ASRUtils::symbol_get_past_external(x.m_v);
+            if (ASR::is_a<ASR::Variable_t>(*v) && enclosing_routine(
+                    ASR::down_cast<ASR::Variable_t>(v)->m_parent_symtab)
+                        == routine) {
+                vars.insert(v);
+            }
+        }
+    };
 
     void visit_Var(const ASR::Var_t &x) {
         if (inside > 0) {
@@ -195,6 +256,13 @@ public:
     }
     void visit_Associate(const ASR::Associate_t &x) {
         visit_expr(*x.m_target);
+        ASR::symbol_t *p = ASR::is_a<ASR::Var_t>(*x.m_target)
+            ? ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_target)->m_v) : nullptr;
+        if (local_pointer(p)) {
+            local_targets[p].push_back(x.m_value);
+            return;
+        }
         reached(x.m_value);
     }
     // A frame refers to the variable: the procedures it is handed to can
@@ -250,6 +318,12 @@ public:
     }
     void visit_IntrinsicImpureFunction(
             const ASR::IntrinsicImpureFunction_t &x) {
+        // Asking whether an array is allocated associates nothing with it.
+        if (x.m_impure_intrinsic_id == static_cast<int64_t>(
+                ASRUtils::IntrinsicImpureFunctions::Allocated)) {
+            BaseWalkVisitor::visit_IntrinsicImpureFunction(x);
+            return;
+        }
         inside++;
         BaseWalkVisitor::visit_IntrinsicImpureFunction(x);
         inside--;
@@ -288,9 +362,10 @@ class RoutineSync {
 public:
     RoutineSync(Allocator &al_, SymbolTable *routine_,
             const PointerTargets &pointers_,
-            const std::set<ASR::symbol_t*> &reached_)
+            const std::set<ASR::symbol_t*> &reached_,
+            const std::set<ASR::symbol_t*> &escaped_)
         : al(al_), routine(routine_), pointers(pointers_),
-          reached(reached_) {}
+          reached(reached_), escaped(escaped_) {}
 
     // The new body of the routine.
     Vec<ASR::stmt_t*> run(ASR::stmt_t **body, size_t n_body,
@@ -330,6 +405,9 @@ private:
     const PointerTargets &pointers;
     // What the procedure may associate a pointer with (PointerReach).
     const std::set<ASR::symbol_t*> &reached;
+    // Of those, what other procedures can reach through a pointer: not
+    // what only pointers that no other procedure can name point to.
+    const std::set<ASR::symbol_t*> &escaped;
     // Which procedures may act outside the program.
     std::map<ASR::Function_t*, bool> outside;
     // What calls of procedures with a known body access.
@@ -421,7 +499,7 @@ private:
         if (acc.everything) return true;
         for (const Path &w : paths) {
             if (acc.globals && (reachable_elsewhere(w.root, routine)
-                        || reached.count(w.root) > 0)
+                        || escaped.count(w.root) > 0)
                     && !out_of_reach(w.root)) {
                 return true;
             }
@@ -1764,7 +1842,12 @@ void place_syncs(Allocator &al, SymbolTable *scope, ASR::stmt_t **&body,
     std::set<ASR::symbol_t*> reached;
     PointerReach reach(reached);
     for (size_t i = 0; i < n_body; i++) reach.visit_stmt(*body[i]);
-    RoutineSync sync(al, scope, targets, reached);
+    std::set<ASR::symbol_t*> escaped;
+    PointerReach escape(escaped);
+    escape.routine = scope;
+    for (size_t i = 0; i < n_body; i++) escape.visit_stmt(*body[i]);
+    escape.finish();
+    RoutineSync sync(al, scope, targets, reached, escaped);
     Vec<ASR::stmt_t*> result = sync.run(body, n_body, loc);
     body = result.p;
     n_body = result.n;

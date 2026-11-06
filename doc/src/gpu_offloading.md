@@ -1078,7 +1078,10 @@ its elements, and neither does disassociating a pointer (`nullify`) or
 storing the address of a variable in the frame of a contained procedure. A call accesses its actual arguments, and may access every
 variable that a pointer may point to or that another procedure can reach (a
 module variable, a variable of a procedure this one is contained in, a
-`target`); a call to a procedure contained in this one may access anything.
+`target`, a variable a pointer that another procedure can name may point
+to: not one only a local pointer of this procedure points to, such as the
+pointer the compiler makes for a section it hands to a procedure); a call to
+a procedure contained in this one may access anything.
 Of a derived-type value it is handed, a call whose callee's body is known
 accesses only the components the body names. A call of a procedure whose
 body is known, launches nothing and has no pointer, target or procedure

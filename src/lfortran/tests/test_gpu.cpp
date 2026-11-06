@@ -2150,6 +2150,47 @@ end program
     CHECK(gpu_sync_trace(source, "", "sync_nullify") == "[L|][L|]S");
 }
 
+TEST_CASE("GPU launches are not waited for because a local pointer "
+        "points to their arrays") {
+    // Handing `x(:, 2)` to `show` makes a local pointer to the section,
+    // which no other procedure can name, and asking whether `x` is
+    // allocated associates no pointer with it: `note` cannot reach `x`, and
+    // the host waits for the launch only before `print`.
+    const std::string source = R"(
+module sync_escape_m
+implicit none
+integer :: total = 0
+contains
+subroutine show(v)
+    real, intent(in) :: v(:)
+    total = total + int(v(1))
+end subroutine
+subroutine note(k)
+    integer, intent(in) :: k
+    total = total + k
+end subroutine
+end module
+program sync_escape
+use sync_escape_m
+implicit none
+real, allocatable :: x(:, :)
+integer :: i, j
+allocate(x(100, 4))
+x = 1
+call show(x(:, 2))
+do concurrent (i = 1:100, j = 1:4)
+    x(i, j) = 2*x(i, j)
+end do
+if (allocated(x)) call note(3)
+do concurrent (i = 1:100, j = 1:4)
+    x(i, j) = x(i, j) + 1
+end do
+print *, x(1, 1), total
+end program
+)";
+    CHECK(gpu_sync_trace(source, "", "sync_escape") == "C[L|][C|][L|]S");
+}
+
 #endif
 
 TEST_CASE("A scalar every iteration assigns first is not read back when "
