@@ -5384,14 +5384,12 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
         loop_var_sym = ASR::down_cast<ASR::Var_t>(implied_doloop->m_var)->m_v;
     }
     bool inner_depends_on_var = (loop_var_sym != nullptr &&
-        implied_doloop_size_ != nullptr && d == nullptr &&
+        implied_doloop_size_ != nullptr &&
         expr_references_symbol(implied_doloop_size_, loop_var_sym));
 
     if (inner_depends_on_var) {
-        ASR::expr_t* two = make_ConstantWithKind(
-            make_IntegerConstant_t, make_Integer_t, 2, kind, loc);
-        ASR::expr_t* arith_sum = to_size_type(builder.Div(
-            builder.Mul(implied_doloop_size, builder.Add(start, end)), two));
+        ASR::expr_t* arith_sum = to_size_type(get_ImpliedDoLoop_sum(al,
+            implied_doloop, implied_doloop_size_, implied_doloop_size));
         if (const_elements > 0) {
             ASR::expr_t* const_total = builder.Mul(
                 make_ConstantWithKind(make_IntegerConstant_t,
@@ -6735,6 +6733,43 @@ public:
     }
 };
 
+}
+
+ASR::expr_t* get_ImpliedDoLoop_sum(Allocator& al, ASR::ImpliedDoLoop_t* idl,
+        ASR::expr_t* term, ASR::expr_t* trip_count) {
+    const Location& loc = idl->base.base.loc;
+    ASRUtils::ASRBuilder builder(al, loc);
+    ASR::ttype_t* sum_type = expr_type(trip_count);
+    ASR::ttype_t* var_type = expr_type(idl->m_var);
+    auto convert = [&](ASR::expr_t* e, ASR::ttype_t* type) {
+        return extract_kind_from_ttype_t(expr_type(e)) ==
+            extract_kind_from_ttype_t(type) ? e : builder.i2i_t(e, type);
+    };
+    ASR::expr_t* first = convert(idl->m_start, var_type);
+    ASR::expr_t* last = nullptr;
+    if (idl->m_increment == nullptr) {
+        last = convert(idl->m_end, var_type);
+    } else {
+        // start + (trip_count - 1) * increment
+        ASR::expr_t* one = make_ConstantWithType(make_IntegerConstant_t,
+            1, sum_type, loc);
+        last = convert(builder.Add(convert(idl->m_start, sum_type),
+            builder.Mul(builder.Sub(trip_count, one),
+                convert(idl->m_increment, sum_type))), var_type);
+    }
+    ASR::symbol_t* var = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
+    auto term_at = [&](ASR::expr_t* value) {
+        ExprStmtDuplicator duplicator(al);
+        ASR::expr_t* term_value = duplicator.duplicate_expr(term);
+        ImpliedDoLoopVarSubstituter substituter(var, value);
+        substituter.current_expr = &term_value;
+        substituter.replace_expr(term_value);
+        return convert(term_value, sum_type);
+    };
+    ASR::expr_t* two = make_ConstantWithType(make_IntegerConstant_t,
+        2, sum_type, loc);
+    return builder.Div(builder.Mul(trip_count,
+        builder.Add(term_at(first), term_at(last))), two);
 }
 
 // Whether the bounds and steps of `idl` and of the loops nested in it are

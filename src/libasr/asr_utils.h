@@ -2281,6 +2281,14 @@ ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 
 ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied_doloop);
 
+// The sum of `term` over the `trip_count` values that the implied-do loop
+// `idl` gives its variable, in the type of `trip_count`. `term` may depend on
+// the variable, but only linearly, as the trip count of a loop nested in
+// `idl` does when its bounds are linear in the variable: the sum is then
+// trip_count * (term(first value) + term(last value)) / 2.
+ASR::expr_t* get_ImpliedDoLoop_sum(Allocator& al, ASR::ImpliedDoLoop_t* idl,
+    ASR::expr_t* term, ASR::expr_t* trip_count);
+
 // The extent (end - start)/step + 1 of a section triplet, in the type
 // `size_type`.
 ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
