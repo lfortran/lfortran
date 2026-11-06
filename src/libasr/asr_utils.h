@@ -2287,12 +2287,13 @@ static inline bool is_named_from(ASR::symbol_t* sym, SymbolTable* scope) {
 // Returns a symbol that names the definition of `sym` from `scope`: `sym` or
 // its definition when named from there, an existing import of the definition,
 // or a new ExternalSymbol added to `scope` under a name that is free at this
-// point and starts with `name_prefix` and ends with `name_suffix`. Returns
-// `sym` unchanged when it cannot be imported because no module or derived
-// type owns its definition.
+// point, is not `reserved_name` and starts with `name_prefix` and ends with
+// `name_suffix`. Returns `sym` unchanged when it cannot be imported because
+// no module or derived type owns its definition.
 ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         SymbolTable* scope, ASR::accessType access=ASR::accessType::Private,
-        const std::string &name_prefix="", const std::string &name_suffix="");
+        const std::string &name_prefix="", const std::string &name_suffix="",
+        const std::string &reserved_name="");
 
 // The argument and result types of a procedure type can reference module
 // symbols named only where its interface is declared, for example the getter
@@ -2344,8 +2345,12 @@ ASR::ttype_t* import_procedure_type(Allocator &al,
 // or a pass building a temporary from an existing expression -- would
 // otherwise leave the variable naming a type nothing in its scope can reach.
 // Import it here, once, rather than at every one of those producers.
+// `declared_name` is the name of the variable about to be declared in
+// `scope`, which the import must not take: an associate name can be spelled
+// like a type that is not accessible under that name.
 ASR::symbol_t* import_type_declaration(Allocator &al,
-        ASR::symbol_t* type_declaration, SymbolTable* scope);
+        ASR::symbol_t* type_declaration, SymbolTable* scope,
+        const std::string &declared_name="");
 
 void set_cptr_type_declaration(ASR::ttype_t* type,
         ASR::symbol_t* type_declaration);

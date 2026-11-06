@@ -9662,7 +9662,8 @@ ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t member) {
 
 ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         SymbolTable* scope, ASR::accessType access,
-        const std::string &name_prefix, const std::string &name_suffix) {
+        const std::string &name_prefix, const std::string &name_suffix,
+        const std::string &reserved_name) {
     if (is_named_from(sym, scope)) return sym;
     ASR::symbol_t* definition = symbol_get_past_external(sym);
     if (definition == nullptr || symbol_parent_symtab(definition) == nullptr) {
@@ -9688,7 +9689,8 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         return sym;
     }
     std::string local_name = name_prefix + name + name_suffix;
-    for (int i = 1; scope->resolve_symbol(local_name) != nullptr; i++) {
+    for (int i = 1; scope->resolve_symbol(local_name) != nullptr ||
+            local_name == reserved_name; i++) {
         local_name = name_prefix + name + name_suffix + std::to_string(i);
     }
     ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
@@ -9714,7 +9716,8 @@ ASR::ttype_t* import_procedure_type(Allocator &al,
 }
 
 ASR::symbol_t* import_type_declaration(Allocator &al,
-        ASR::symbol_t* type_declaration, SymbolTable* scope) {
+        ASR::symbol_t* type_declaration, SymbolTable* scope,
+        const std::string &declared_name) {
     if (type_declaration == nullptr || scope == nullptr) {
         return type_declaration;
     }
@@ -9740,7 +9743,8 @@ ASR::symbol_t* import_type_declaration(Allocator &al,
             !ASR::is_a<ASR::Function_t>(*definition)) {
         return type_declaration;
     }
-    return import_symbol(al, type_declaration, scope, ASR::accessType::Public);
+    return import_symbol(al, type_declaration, scope, ASR::accessType::Public,
+        "", "", declared_name);
 }
 
 void set_cptr_type_declaration(ASR::ttype_t* type,
@@ -9773,7 +9777,7 @@ ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     ASR::codimension_t* a_codims, size_t n_codims,
     ASR::symbol_t* a_common_block) {
     a_type_declaration = import_type_declaration(
-        al, a_type_declaration, a_parent_symtab);
+        al, a_type_declaration, a_parent_symtab, a_name);
     a_type = import_procedure_type(al, a_type, a_parent_symtab);
     set_cptr_type_declaration(a_type, a_type_declaration);
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
