@@ -1331,7 +1331,7 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
-        if (next_is(cur, "interface")) {
+        if (next_is(cur, "interface") || is_abstract_interface(cur)) {
             lex_interface(cur);
             return true;
         }
@@ -2167,7 +2167,17 @@ struct FixedFormRecursiveDescent {
         }
     }
 
+    // `ABSTRACT INTERFACE` has no generic specification, so the statement
+    // must end right after the keywords
+    bool is_abstract_interface(unsigned char *cur) {
+        const std::string header = "abstractinterface";
+        return next_is(cur, header) && next_is_eos(cur + header.size());
+    }
+
     void lex_interface(unsigned char *&cur) {
+        if (is_abstract_interface(cur)) {
+            push_token_advance(cur, "abstract");
+        }
         push_token_advance(cur, "interface");
         tokenize_line(cur);
 
