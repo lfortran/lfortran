@@ -2230,6 +2230,29 @@ namespace LCompilers {
         }, [](){});
     }
 
+    llvm::Value* LLVMUtils::ensure_array_descriptor_on_heap(ASR::expr_t* expr, ASR::ttype_t* array_type,
+        llvm::Type* desc_type, llvm::Value* desc_ptr) {
+        llvm::Value* desc = CreateLoad2(desc_type->getPointerTo(), desc_ptr);
+        llvm::Value* desc_is_null = builder->CreateICmpEQ(
+            builder->CreatePtrToInt(desc, llvm::Type::getInt64Ty(context)),
+            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+        create_if_else(desc_is_null, [&]() {
+            llvm::Value* new_desc = arr_api->allocate_descriptor_on_heap(desc_type);
+            if (ASRUtils::is_character(*array_type)) {
+                llvm::Type* str_desc_type = get_type_from_ttype_t_util(
+                    expr, ASRUtils::extract_type(array_type), module);
+                llvm::Value* str_desc = allocate_string_descriptor_on_heap(str_desc_type);
+                builder->CreateStore(str_desc, arr_api->get_pointer_to_data(desc_type, new_desc));
+            } else {
+                llvm::Type* data_type = get_el_type(
+                    expr, ASRUtils::extract_type(array_type), module);
+                arr_api->reset_is_allocated_flag(desc_type, new_desc, data_type);
+            }
+            builder->CreateStore(new_desc, desc_ptr);
+        }, [](){});
+        return CreateLoad2(desc_type->getPointerTo(), desc_ptr);
+    }
+
 
     llvm::Value *LLVMUtils::CreateLoad2([[maybe_unused]] llvm::Type *t, llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR >= 8
@@ -4084,31 +4107,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 ASR::Allocatable_t* alloc_type = ASR::down_cast<ASR::Allocatable_t>(asr_src_type);
                 llvm::Type* llvm_type = get_type_from_ttype_t_util(src_expr, alloc_type->m_type, module);
                 if( ASRUtils::is_array(alloc_type->m_type) ) {// non-primitive type
-                    auto ensure_dest_array_descriptor = [&]() {
-                        llvm::Value* dest_descr_ptr = dest;
-                        llvm::Value* dest_descr = CreateLoad2(llvm_type->getPointerTo(), dest_descr_ptr);
-                        llvm::Value* desc_is_null = builder->CreateICmpEQ(
-                            builder->CreatePtrToInt(dest_descr, llvm::Type::getInt64Ty(context)),
-                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
-                        create_if_else(desc_is_null, [&]() {
-                            llvm::Value* new_descr = arr_api->allocate_descriptor_on_heap(llvm_type);
-                            if (ASRUtils::is_character(*alloc_type->m_type)) {
-                                llvm::Type* llvm_str_desc_type = get_type_from_ttype_t_util(
-                                    src_expr, ASRUtils::extract_type(alloc_type->m_type), module);
-                                llvm::Value* str_desc = allocate_string_descriptor_on_heap(llvm_str_desc_type);
-                                builder->CreateStore(str_desc, arr_api->get_pointer_to_data(llvm_type, new_descr));
-                            } else {
-                                llvm::Type* llvm_data_type = get_el_type(
-                                    src_expr, ASRUtils::extract_type(alloc_type->m_type), module);
-                                arr_api->reset_is_allocated_flag(llvm_type, new_descr, llvm_data_type);
-                            }
-                            builder->CreateStore(new_descr, dest_descr_ptr);
-                        }, [](){});
-                        dest = CreateLoad2(llvm_type->getPointerTo(), dest_descr_ptr);
-                    };
                     src = CreateLoad2(llvm_type->getPointerTo(), src);
                     if (ASRUtils::is_character(*alloc_type->m_type)) {
-                        ensure_dest_array_descriptor();
+                        dest = ensure_array_descriptor_on_heap(src_expr, alloc_type->m_type, llvm_type, dest);
                         llvm::Type* llvm_array_type = get_type_from_ttype_t_util(src_expr,
                             ASRUtils::type_get_past_allocatable_pointer(alloc_type->m_type), module);
                         llvm::Type* llvm_str_desc_type = get_type_from_ttype_t_util(
@@ -4143,7 +4144,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         arr_api->fill_array_details(src_expr, nullptr, src, dest,
                             alloc_type->m_type, alloc_type->m_type, module, true);
                     } else {
-                        ensure_dest_array_descriptor();
+                        dest = ensure_array_descriptor_on_heap(src_expr, alloc_type->m_type, llvm_type, dest);
                         deepcopy(src_expr, src, dest,
                                 alloc_type->m_type, ASRUtils::type_get_past_allocatable(asr_dest_type),
                                 module, false, finalize_dest);
