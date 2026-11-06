@@ -23782,11 +23782,14 @@ public:
             llvm::Value* var_ptr = tmp;
             ptr_loads = ptr_loads_copy;
 
-            // For equivalenced scalars (Pointer-typed Var), var_ptr is a
-            // pointer to the pointer. Load it to get the actual data address.
+            // For a scalar pointer Var (an equivalenced one, for example),
+            // var_ptr is a pointer to the pointer. Load it to get the actual
+            // data address. A pointer string is its own string descriptor,
+            // like a non-pointer string.
             if (ASR::is_a<ASR::Var_t>(*val_expr) &&
                 ASR::is_a<ASR::Pointer_t>(*ASRUtils::type_get_past_array(expr_type_full)) &&
-                !ASRUtils::is_array(expr_type_full)) {
+                !ASRUtils::is_array(expr_type_full) &&
+                !ASR::is_a<ASR::String_t>(*val_type)) {
                 llvm::Type* llvm_val_type = llvm_utils->get_type_from_ttype_t_util(
                     val_expr, val_type, module.get());
                 var_ptr = llvm_utils->CreateLoad2(llvm_val_type->getPointerTo(), var_ptr);
