@@ -124,6 +124,9 @@ def client(request: pytest.FixtureRequest, capfd: pytest.CaptureFixture) -> Iter
         "--parent-process-id", str(os.getpid()),
         "--log-level", config["LFortran"]["log"]["level"],
         "--log-path", server_log_path,
+        # Without --enable-logging the server only writes to stderr and the
+        # log file printed below on failure stays empty.
+        "--enable-logging",
         "--timeout-ms", str(config["LFortran"]["timeoutMs"]),
         "--num-request-threads", "1",
         "--num-worker-threads", "1",

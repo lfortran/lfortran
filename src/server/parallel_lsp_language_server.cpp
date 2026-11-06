@@ -156,11 +156,13 @@ namespace LCompilers::LanguageServerProtocol {
     }
 
     auto ParallelLspLanguageServer::join() -> void {
-        if (listener.joinable()) {
-            listener.join();
-            logger.debug()
-                << "Incoming-message listener terminated."
-                << std::endl;
+        // NOTE: The cron thread grows the thread pools, so it must terminate
+        // before they are joined, otherwise it could spawn workers that nobody
+        // joins.
+        BaseLspLanguageServer::join();
+        if (cron.joinable()) {
+            cron.join();
+            logger.debug() << "Cron thread terminated." << std::endl;
         }
         requestPool.join();
         logger.debug() << "Request thread-pool terminated." << std::endl;
