@@ -1,16 +1,9 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_end_0;
-};
-
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __restrict__ x,
-    float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    float* __restrict__ y)
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __do_loop_end;
     int __flat_idx;
     float b0;
     float b1;
@@ -20,7 +13,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int j;
     const int nc = 5;
     float twox;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 16)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -29,10 +22,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     b1 =   0.00000000000000000e+00f;
     b2 =   0.00000000000000000e+00f;
     twox = (  2.00000000000000000e+00f * x[((int)(i__dc) - (1))]);
-    __do_loop_end = nc;
-    j = (1 - 1);
-    while (((j + 1) <= __do_loop_end)) {
-        j = (j + 1);
+    for (j = 1; j <= nc; j++) {
         b2 = b1;
         b1 = b0;
         b0 = (((twox * b1) - b2) + cs[((int)(((nc - j) + 1)) - (1))]);

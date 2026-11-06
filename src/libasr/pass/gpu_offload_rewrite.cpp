@@ -1,5 +1,6 @@
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
+#include <libasr/casting_utils.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/codegen/gpu_utils.h>
@@ -26,9 +27,10 @@ static void push_argument(const Location &loc, Vec<ASR::call_arg_t> &args,
 void gpu_struct_member_extent_arguments(Allocator &al, const Location &loc,
         SymbolTable *kernel_scope, const std::string &name, ASR::Struct_t *st,
         const std::function<ASR::expr_t*(ASR::symbol_t*)> &host_member,
-        Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args) {
+        int offset_kind, Vec<ASR::expr_t*> &kernel_args,
+        Vec<ASR::call_arg_t> &call_args) {
     ASR::ttype_t *int_type_sz = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+        ASR::make_Integer_t(al, loc, offset_kind));
     auto parameter = [&](const std::string &parameter_name) {
         ASR::symbol_t *sym = gpu_new_variable(al, loc, kernel_scope,
             parameter_name, ASRUtils::duplicate_type(al, int_type_sz),
@@ -77,6 +79,10 @@ void gpu_struct_member_data_arguments(Allocator &al, const Location &loc,
         const std::function<ASR::symbol_t*(ASR::Struct_t*)>
             &element_declaration,
         Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args) {
+    // No kernel argument reaching here hands over a deferred-length string
+    // component: gpu_entity_decline (gpu_offload.cpp) declines those loops
+    // first, at every site that makes a kernel argument of a host entity.
+    LCOMPILERS_ASSERT(!gpu_struct_hands_over_deferred_length_string(st));
     for (auto &component : gpu_decomposed_components(st)) {
         std::string data_name = GpuNames::member_data(name, component.name());
         ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(
@@ -164,8 +170,9 @@ ASR::expr_t* gpu_array_size_from_type(Allocator &al,
         begin = (size_t)d - 1;
         end = begin + 1;
     }
-    ASR::ttype_t *int_t = ASRUtils::TYPE(ASR::make_Integer_t(al,
-        sz->base.base.loc, 4));
+    // The extents keep the kinds they were declared with; the replacement
+    // must have the kind of the `size` it replaces.
+    ASR::ttype_t *size_type = sz->m_type;
     ASR::expr_t *acc = nullptr;
     for (size_t d = begin; d < end; d++) {
         ASR::expr_t *len = arr->m_dims[d].m_length;
@@ -174,8 +181,10 @@ ASR::expr_t* gpu_array_size_from_type(Allocator &al,
         dup.success = true;
         ASR::expr_t *one = dup.duplicate_expr(len);
         if (!one || !dup.success) return nullptr;
+        one = CastingUtil::perform_casting(one, size_type, al,
+            sz->base.base.loc);
         acc = acc ? ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
-            sz->base.base.loc, acc, ASR::binopType::Mul, one, int_t,
+            sz->base.base.loc, acc, ASR::binopType::Mul, one, size_type,
             nullptr)) : one;
     }
     return acc;

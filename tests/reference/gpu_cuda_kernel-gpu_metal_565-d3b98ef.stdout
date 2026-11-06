@@ -1,0 +1,56 @@
+#include <stdint.h>
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int k;
+    int m;
+    int n;
+    int __loop_start_0;
+    int __loop_end_0;
+    int __loop_start_1;
+    int __loop_end_1;
+    int __tiled;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    int* __restrict__ c,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int m = __scalar_args.m;
+    int __loop_start_0 = __scalar_args.__loop_start_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __loop_start_1 = __scalar_args.__loop_start_1;
+    int __loop_end_1 = __scalar_args.__loop_end_1;
+    int __tiled = __scalar_args.__tiled;
+    int __flat_idx;
+    int __ordinal;
+    int __tiles;
+    int i__dc;
+    int j__dc;
+    if ((__tiled == 0)) {
+        if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0)) * (((__loop_end_1 >= __loop_start_1)) ? (((__loop_end_1 - __loop_start_1) + 1)) : (0))))) {
+            return;
+        }
+        __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+        i__dc = ((__flat_idx - ((__flat_idx / ((__loop_end_1 - __loop_start_1) + 1)) * ((__loop_end_1 - __loop_start_1) + 1))) + __loop_start_1);
+        __flat_idx = (__flat_idx / ((__loop_end_1 - __loop_start_1) + 1));
+        j__dc = (__flat_idx + __loop_start_0);
+    } else {
+        __flat_idx = blockIdx.x;
+        __tiles = ((((__loop_end_1 - __loop_start_1) + 1) + 31) >> 5);
+        __ordinal = (((__flat_idx - ((__flat_idx / __tiles) * __tiles)) << 5) + (threadIdx.x & 31));
+        if ((__ordinal >= ((__loop_end_1 - __loop_start_1) + 1))) {
+            return;
+        }
+        i__dc = (__ordinal + __loop_start_1);
+        __flat_idx = (__flat_idx / __tiles);
+        __ordinal = ((__flat_idx << 3) + (threadIdx.x >> 5));
+        if ((__ordinal >= ((__loop_end_0 - __loop_start_0) + 1))) {
+            return;
+        }
+        j__dc = (__ordinal + __loop_start_0);
+    }
+    if ((j__dc == m)) {
+        c[((int)(i__dc) - (1))] = i__dc;
+    }
+}
+

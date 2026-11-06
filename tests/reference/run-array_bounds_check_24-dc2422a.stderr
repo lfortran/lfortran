@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in subroutine 'bindc_assumed_size'
+
+Tried to match size 2 of dimension 1 of argument number 2, but expected size is 3
+
+  --> tests/errors/array_bounds_check_24.f90:21:32
+   |
+21 |     call bindc_assumed_size(3, y)
+   |                                ^

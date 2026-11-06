@@ -197,7 +197,7 @@ namespace LCompilers {
 
         llvm::Type* SimpleCMODescriptor::get_array_type
         (ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Type* el_type,
-        bool get_pointer) {
+        bool get_pointer, ASR::symbol_t* type_declaration) {
             int n_dims = ASRUtils::extract_n_dims_from_ttype(m_type_);
             if (n_dims == 0) {
                 // Assumed-rank callee parameter: use CFI_MAX_RANK (15) as
@@ -207,7 +207,8 @@ namespace LCompilers {
                 // and asr_to_llvm.cpp polymorphic descriptor handling).
                 n_dims = 15;
             }
-            std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr);
+            std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr,
+                type_declaration);
             if (ASRUtils::is_character(*m_type_)) {
                 ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(m_type_));
                 if (str_type->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
@@ -244,6 +245,7 @@ namespace LCompilers {
             llvm::StructType* new_array_type = llvm::StructType::create(
                 context, array_type_vec, "array." + std::to_string(n_dims));
             tkr2array[array_key] = std::make_pair(new_array_type, el_type);
+            array_descriptor_types.insert(new_array_type);
             if( get_pointer ) {
                 return tkr2array[array_key].first->getPointerTo();
             }
@@ -279,7 +281,12 @@ namespace LCompilers {
             llvm::StructType* new_type = llvm::StructType::create(
                 context, array_type_vec, "array." + std::to_string(n_dims));
             rank_array_cache[key] = new_type;
+            array_descriptor_types.insert(new_type);
             return new_type;
+        }
+
+        bool SimpleCMODescriptor::is_array_descriptor_type(llvm::Type* type) {
+            return array_descriptor_types.find(type) != array_descriptor_types.end();
         }
 
         llvm::Value* SimpleCMODescriptor::allocate_descriptor_on_heap(
@@ -396,7 +403,7 @@ namespace LCompilers {
             llvm::Value* first_ptr = get_pointer_to_data(arr_ty, arr);
             llvm::Value* arr_first = nullptr;
 
-            if( !co.stack_arrays ) {
+            if( !co.po.stack_arrays ) {
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
                 builder->CreateStore(builder->CreateMul(
@@ -413,7 +420,7 @@ namespace LCompilers {
             builder->CreateStore(arr_first, first_ptr);
         }
 
-        void SimpleCMODescriptor::fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
+        void SimpleCMODescriptor::fill_array_details(ASR::expr_t* src_expr, ASR::symbol_t* dest_type_declaration,
             llvm::Value* source, llvm::Value* destination,
             ASR::ttype_t* source_type, ASR::ttype_t* destination_type, llvm::Module* module, bool ignore_data) {
             if( !ignore_data ) {
@@ -422,7 +429,7 @@ namespace LCompilers {
             }
 
             llvm::Type *source_array_type = llvm_utils->get_type_from_ttype_t_util(src_expr, source_type, module);
-            llvm::Type *dest_array_type = llvm_utils->get_type_from_ttype_t_util(dest_expr, destination_type, module);
+            llvm::Type *dest_array_type = llvm_utils->get_type_from_ttype_t_util(destination_type, dest_type_declaration, module);
 
             llvm::Value* source_offset_val = this->get_offset(source_array_type, source);
             builder->CreateStore(source_offset_val, this->get_offset(dest_array_type, destination, false));
@@ -1069,8 +1076,10 @@ namespace LCompilers {
                             llvm::Value* data_ptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
                                 llvm_utils->create_gep2(type, full_array, 1));
                             llvm::Value* element_ptr = llvm_utils->get_polymorphic_array_data_ptr(data_ptr, idx, vptr);
-                            // Allocate temp wrapper on stack, fill with vptr + element ptr
-                            llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(*builder, type);
+                            // Allocate temp wrapper in the entry block, so that
+                            // an access in a loop reuses it, fill with vptr +
+                            // element ptr
+                            llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(type);
                             builder->CreateStore(vptr, builder->CreateBitCast(
                                 temp_wrapper, llvm_utils->vptr_type->getPointerTo()));
                             builder->CreateStore(element_ptr,
@@ -1101,8 +1110,9 @@ namespace LCompilers {
                                 llvm::Type* data_field_type = class_type->getStructElementType(1);
                                 llvm::Value* data_ptr = llvm_utils->CreateLoad2(data_field_type, data_field_ptr);
 
-                                // Allocate temp wrapper on stack
-                                llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(*builder, class_type);
+                                // Allocate temp wrapper in the entry block, so that
+                                // an access in a loop reuses it
+                                llvm::Value* temp_wrapper = llvm_utils->CreateAlloca(class_type);
 
                                 // Store vptr in field 0 (same for both cases)
                                 builder->CreateStore(vptr, llvm_utils->create_gep2(class_type, temp_wrapper, 0));
@@ -1282,7 +1292,8 @@ namespace LCompilers {
                                                   ASR::ttype_t* asr_data_type,
                                                   llvm::Type* result_desc_type,
                                                   llvm::Value* order,
-                                                  ASR::expr_t* order_expr) {
+                                                  ASR::expr_t* order_expr,
+                                                  llvm::Value* result) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             llvm::Type* result_type;
             if (result_desc_type) {
@@ -1296,14 +1307,26 @@ namespace LCompilers {
                 }
                 result_type = get_array_type_for_rank(llvm_data_type, result_rank);
             }
-            llvm::Value* reshaped = create_descriptor_alloca(result_type, "reshaped");
+            llvm::Value* reshaped = result ? result :
+                create_descriptor_alloca(result_type, "reshaped");
 
             // Deep copy data from array to reshaped.
             llvm::Value* num_elements = this->get_array_size(arr_type, array, nullptr, 4);
+            if (result) {
+                llvm::Value* result_elements = this->get_array_size(result_type, result, nullptr, 4);
+                num_elements = builder->CreateSelect(
+                    builder->CreateICmpSLT(num_elements, result_elements),
+                    num_elements, result_elements);
+            }
 
             llvm::Value* first_ptr = this->get_pointer_to_data(result_type, reshaped);
-            llvm::Value* arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
-            builder->CreateStore(arr_first, first_ptr);
+            llvm::Value* arr_first;
+            if (result) {
+                arr_first = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), first_ptr);
+            } else {
+                arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
+                builder->CreateStore(arr_first, first_ptr);
+            }
 
             llvm::Value* ptr2firstptr = this->get_pointer_to_data(arr_type, array);
 
@@ -1855,11 +1878,10 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::internal_to_cfi(
                 llvm::Type* internal_type, llvm::Value* internal_desc,
-                llvm::Type* el_type, int n_dims, uint64_t elem_size,
+                llvm::Type* el_type, int n_dims, llvm::Value* elem_size_val,
                 int8_t type_code, int cfi_attr) {
             llvm::StructType* cfi_type = get_cfi_type(el_type, n_dims);
             llvm::Value* cfi = llvm_utils->CreateAlloca(cfi_type);
-            llvm::Value* elem_size_val = llvm::ConstantInt::get(context, llvm::APInt(64, elem_size));
 
             // Copy base_addr, adjusting by offset.
             // Guard: if base_addr is NULL (unallocated/disassociated),
@@ -1886,7 +1908,7 @@ namespace LCompilers {
             // elem_len: use elem_size (the CFI element size), not the
             // internal descriptor's elem_len. For characters, the internal
             // elem_len is sizeof(string_descriptor)=16, but CFI needs the
-            // actual character length (e.g. 1).
+            // character length in bytes (len * kind).
             builder->CreateStore(elem_size_val,
                 llvm_utils->create_gep2(cfi_type, cfi, CFI_FIELD_ELEM_LEN));
 
@@ -2018,7 +2040,79 @@ namespace LCompilers {
                     llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
             }
 
+            // Characters: wrap the CFI data in a string_descriptor
+            if (el_type == llvm_utils->string_descriptor) {
+                builder->CreateStore(
+                    llvm_utils->CreateAlloca(el_type, nullptr, "cfi_str_desc"),
+                    llvm_utils->create_gep2(internal_type, internal, FIELD_BASE_ADDR));
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), elem_size),
+                    llvm_utils->create_gep2(internal_type, internal, FIELD_ELEM_LEN));
+                cfi_to_internal_string(internal_type, el_type, cfi_desc, n_dims,
+                    internal);
+            }
+
             return internal;
+        }
+
+        void SimpleCMODescriptor::cfi_to_internal_string(
+                llvm::Type* internal_type, llvm::Type* str_desc_type,
+                llvm::Value* cfi_desc, int n_dims,
+                llvm::Value* internal_desc) {
+            llvm::StructType* cfi_type = get_cfi_type(str_desc_type, n_dims);
+            llvm::Value* cfi_ptr = builder->CreateBitCast(
+                cfi_desc, cfi_type->getPointerTo());
+            llvm::Type* i64 = llvm::Type::getInt64Ty(context);
+
+            llvm::Value* data = llvm_utils->CreateLoad2(
+                llvm::Type::getInt8Ty(context)->getPointerTo(),
+                llvm_utils->create_gep2(cfi_type, cfi_ptr, CFI_FIELD_BASE_ADDR));
+            llvm::Value* elem_len = llvm_utils->CreateLoad2(i64,
+                llvm_utils->create_gep2(cfi_type, cfi_ptr, CFI_FIELD_ELEM_LEN));
+
+            // An unallocated array may not have its string_descriptor yet
+            llvm_utils->ensure_string_descriptor_on_heap(
+                internal_type, internal_desc, str_desc_type);
+            llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                str_desc_type->getPointerTo(),
+                llvm_utils->create_gep2(internal_type, internal_desc, FIELD_BASE_ADDR));
+            builder->CreateStore(data,
+                llvm_utils->create_gep2(str_desc_type, str_desc, 0));
+            builder->CreateStore(elem_len,
+                llvm_utils->create_gep2(str_desc_type, str_desc, 1));
+
+            builder->CreateStore(llvm::ConstantInt::get(i64, 0),
+                llvm_utils->create_gep2(internal_type, internal_desc, FIELD_OFFSET));
+
+            // Guard the stride division against a zero-length character
+            llvm::Value* divisor = builder->CreateSelect(
+                builder->CreateICmpEQ(elem_len, llvm::ConstantInt::get(i64, 0)),
+                llvm::ConstantInt::get(i64, 1), elem_len);
+            llvm::Value* src_dim_arr = llvm_utils->create_gep2(
+                cfi_type, cfi_ptr, CFI_FIELD_DIMS);
+            src_dim_arr = llvm_utils->create_gep2(
+                llvm::ArrayType::get(dim_des, n_dims), src_dim_arr, 0);
+            llvm::Value* dst_dim_arr =
+                get_pointer_to_dimension_descriptor_array(internal_type, internal_desc);
+            for (int r = 0; r < n_dims; r++) {
+                llvm::Value* src_dim = llvm_utils->create_ptr_gep2(
+                    dim_des, src_dim_arr, r);
+                llvm::Value* dst_dim = llvm_utils->create_ptr_gep2(
+                    dim_des, dst_dim_arr, r);
+                llvm::Value* lb = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_LOWER_BOUND));
+                builder->CreateStore(lb,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_LOWER_BOUND));
+                llvm::Value* ext = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_EXTENT));
+                builder->CreateStore(ext,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_EXTENT));
+                llvm::Value* stride = llvm_utils->CreateLoad2(index_type,
+                    llvm_utils->create_gep2(dim_des, src_dim, DIM_STRIDE));
+                stride = builder->CreateSDiv(stride, divisor);
+                builder->CreateStore(stride,
+                    llvm_utils->create_gep2(dim_des, dst_dim, DIM_STRIDE));
+            }
         }
 
         int32_t get_formatted_read_type_code(ASR::ttype_t* val_type,

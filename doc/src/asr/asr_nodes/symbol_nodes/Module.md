@@ -81,6 +81,7 @@ particular **Module** came from.
         :contiguous_attr false
         :bindc_name nil
         :is_volatile false
+        :is_asynchronous false
         :is_protected false
         :pass_attr :NotMethod
         :self_argument nil

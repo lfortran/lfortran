@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit_interface_external_definition_03-4c93491",
+    "cmd": "lfortran --show-asr --implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/implicit_interface_external_definition_03.f90",
+    "infile_hash": "709253689a615b5726a6e00ecb13dd97087c11c4d6cc76ac2d198761",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit_interface_external_definition_03-4c93491.stderr",
+    "stderr_hash": "e6da22a662bf4a07f18964adb68058a2f7e63a0a28c1899c11df63eb",
+    "returncode": 2
+}

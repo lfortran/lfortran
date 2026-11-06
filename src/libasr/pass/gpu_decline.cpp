@@ -35,10 +35,13 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
         case GpuDevice::Metal:
             caps.name = "Metal";
             // The Metal Shading Language has `float`, `half` and `bfloat`
-            // but no 64-bit floating point type, and the emitter has no
-            // 64-bit integer of its own either.
-            caps.max_integer_kind = 4;
+            // but no 64-bit floating point type. Its `long` is a 64-bit
+            // integer, so integer(8) values are computed in their own width.
             caps.max_real_kind = 4;
+            // Metal kernels number their iterations, and compute element
+            // offsets, in 32 bits; 64-bit indexing is a separate design
+            // (#16569, #16578). An integer(8) loop index is not taken yet.
+            caps.max_index_kind = 4;
             // Metal shaders have neither variable-length arrays nor a heap,
             // so a device function cannot declare a local whose extent is
             // only known once the kernel runs.
@@ -55,6 +58,10 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // a macOS virtual machine 64 KiB (65,472 bytes build, 65,520 are
             // rejected with "Compilation failed").
             caps.thread_stack_bytes = 64 * 1024;
+            // A launch of more than huge(0) iterations, which a nest of
+            // integer(4) loops can have, runs in chunks the kernel numbers
+            // in 32 bits.
+            caps.chunked_launches = true;
             break;
         case GpuDevice::Cuda:
             caps.name = "CUDA";
@@ -73,6 +80,7 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // A warp: one warp loads one contiguous 128-byte line of a
             // `float` array, and a block of 256 threads covers 8 of them.
             caps.tile_width = 32;
+            caps.chunked_launches = true;
             break;
         case GpuDevice::None:
             break;
@@ -81,7 +89,27 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
 }
 
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
-    return gpu_device_capabilities(gpu_device_selected(pass_options));
+    GpuDeviceCapabilities caps = gpu_device_capabilities(
+        gpu_device_selected(pass_options));
+    if (pass_options.descriptor_index_64
+            && caps.offsets_follow_descriptor_index_64()) {
+        caps.offset_kind = 8;
+    }
+    if (caps.device == GpuDevice::Cuda && !pass_options.gpu_offload_hip) {
+        // On an H100 PCIe a dot product of 2**27 elements read at 1.63 TB/s
+        // with 2**16 threads and at 1.22 TB/s with 2**17; a 2-norm and a
+        // maximum lost 40% with 2**17.
+        caps.reduction_threads = 65536;
+    }
+    if (pass_options.gpu_offload_hip) {
+        // ROCm's device compiler does not unroll a loop whose trip count it
+        // does not know, so a thread waits for each load of such a loop
+        // before it issues the next. Four at a time made a matrix-vector
+        // product (a thread per row, a loop over the columns) 3x faster on
+        // an MI300A, and n-body 18%; eight made other kernels slower.
+        caps.sequential_loop_unroll_factor = 4;
+    }
+    return caps;
 }
 
 bool GpuDeviceCapabilities::has_scalar_type(ASR::ttype_t *t) const {
@@ -161,6 +189,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return "the loop has no index";
         case GpuDeclineReason::IncompleteLoopHead:
             return "the loop head is incomplete";
+        case GpuDeclineReason::LoopIndexKind:
+            return "the loop index is " + type_name + ", but the gpu "
+                "numbers the iterations of a loop in a narrower integer";
         case GpuDeclineReason::StridedLoop:
             return "the loop has a stride the gpu index arithmetic "
                 "cannot express";

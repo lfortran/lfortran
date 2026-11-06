@@ -33,13 +33,25 @@ contained in this one may access anything.
 
 namespace AccessPaths {
 
-// A variable and a chain of components.
+// A variable and a chain of components. A path with no root is whatever a
+// pointer may point to: it overlaps every root a pointer may point into
+// (`same_storage_root`), and another procedure may reach it
+// (`reachable_elsewhere`). A path rooted at a pointer variable, whose
+// target the procedure does not resolve (a module, host-associated or dummy
+// pointer with no `=>` here), means the same; `may_point_anywhere` tests
+// for both. A default-constructed `Path` is a pointee as well, so callers
+// use a path only when `path_of` filled it.
 struct Path {
     ASR::symbol_t *root = nullptr;
     std::vector<ASR::symbol_t*> members;
     // Only the bytes of the value itself, not the data of its allocatable
     // or pointer components.
     bool shallow = false;
+
+    // Whatever a pointer may point to.
+    static Path pointee() {
+        return Path();
+    }
 
     bool operator<(const Path &o) const {
         return std::tie(root, members, shallow)
@@ -66,11 +78,19 @@ inline bool is_pointer_variable(ASR::symbol_t *s) {
         && ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(s)->m_type);
 }
 
+// Whether a path with root `root` is whatever a pointer may point to: no
+// root (`Path::pointee()`), or a pointer variable.
+inline bool may_point_anywhere(ASR::symbol_t *root) {
+    return root == nullptr || is_pointer_variable(root);
+}
+
 // A root a pointer may point into, or that another procedure can reach.
 inline bool aliasable(ASR::symbol_t *s) {
-    if (s == nullptr || !ASR::is_a<ASR::Variable_t>(*s)) return true;
+    if (may_point_anywhere(s) || !ASR::is_a<ASR::Variable_t>(*s)) {
+        return true;
+    }
     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-    if (v->m_target_attr || is_pointer_variable(s)) return true;
+    if (v->m_target_attr) return true;
     SymbolTable *scope = v->m_parent_symtab;
     if (scope == nullptr || scope->asr_owner == nullptr) return true;
     if (ASR::is_a<ASR::unit_t>(*scope->asr_owner)) return true;
@@ -78,13 +98,9 @@ inline bool aliasable(ASR::symbol_t *s) {
     return ASR::is_a<ASR::Module_t>(*owner);
 }
 
-// A root another procedure may access: one a pointer may point into, or a
-// variable that is not a local or dummy argument of `routine` -- a module
-// variable, or a variable of the procedure `routine` is contained in, which
-// the procedures contained there access by host association.
-inline bool reachable_elsewhere(ASR::symbol_t *s, SymbolTable *routine) {
-    if (aliasable(s)) return true;
-    SymbolTable *scope = ASR::down_cast<ASR::Variable_t>(s)->m_parent_symtab;
+// The scope of the procedure (or program) that `scope` is part of, past the
+// `block` and `associate` constructs it may be the scope of.
+inline SymbolTable *enclosing_routine(SymbolTable *scope) {
     while (scope != nullptr && scope->asr_owner != nullptr
             && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
             && (ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(
@@ -93,14 +109,23 @@ inline bool reachable_elsewhere(ASR::symbol_t *s, SymbolTable *routine) {
                     *ASR::down_cast<ASR::symbol_t>(scope->asr_owner)))) {
         scope = scope->parent;
     }
-    return scope != routine;
+    return scope;
+}
+
+// A root another procedure may access: one a pointer may point into, or a
+// variable that is not a local or dummy argument of `routine` -- a module
+// variable, or a variable of the procedure `routine` is contained in, which
+// the procedures contained there access by host association.
+inline bool reachable_elsewhere(ASR::symbol_t *s, SymbolTable *routine) {
+    if (aliasable(s)) return true;
+    return enclosing_routine(
+        ASR::down_cast<ASR::Variable_t>(s)->m_parent_symtab) != routine;
 }
 
 inline bool same_storage_root(ASR::symbol_t *a, ASR::symbol_t *b) {
     if (a == b) return true;
-    bool pa = a == nullptr || is_pointer_variable(a);
-    bool pb = b == nullptr || is_pointer_variable(b);
-    return (pa && aliasable(b)) || (pb && aliasable(a));
+    return (may_point_anywhere(a) && aliasable(b))
+        || (may_point_anywhere(b) && aliasable(a));
 }
 
 // Whether components `from` on of `members` stay within the bytes of the
@@ -278,6 +303,32 @@ inline bool path_of(const PointerTargets &pointers, ASR::expr_t *e, Path &path,
                 subscripts, depth + 1);
         default:
             return false;
+    }
+}
+
+// The variable a designator names part of, past its subscripts and
+// components; nullptr for anything else.
+inline ASR::symbol_t *designator_base(ASR::expr_t *e) {
+    while (true) {
+        switch (e->type) {
+            case ASR::exprType::Var:
+                return ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+            case ASR::exprType::StructInstanceMember:
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+                break;
+            case ASR::exprType::ArrayItem:
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                break;
+            case ASR::exprType::ArraySection:
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                break;
+            case ASR::exprType::ArrayPhysicalCast:
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+                break;
+            default:
+                return nullptr;
+        }
     }
 }
 

@@ -1,0 +1,554 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+target datalayout = "..."
+
+%string_descriptor = type { i8*, i64 }
+
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data = private constant [29 x i8] c"All unit numbers are utilized"
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([29 x i8], [29 x i8]* @string_const_data, i32 0, i32 0), i64 29 }
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@string_const_data.1 = private constant [7 x i8] c"scratch"
+@string_const.2 = private global %string_descriptor { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @string_const_data.1, i32 0, i32 0), i64 7 }
+@string_const_data.3 = private constant [9 x i8] c"formatted"
+@string_const.4 = private global %string_descriptor { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @string_const_data.3, i32 0, i32 0), i64 9 }
+@4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@5 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
+@6 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.5 = private constant [4 x i8] c"(i0)"
+@string_const.6 = private global %string_descriptor { i8* getelementptr inbounds ([4 x i8], [4 x i8]* @string_const_data.5, i32 0, i32 0), i64 4 }
+@serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
+@8 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@9 = private unnamed_addr constant [4 x i8] c"yes\00", align 1
+@10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@11 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
+@string_const_data.7 = private constant [7 x i8] c"scratch"
+@string_const.8 = private global %string_descriptor { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @string_const_data.7, i32 0, i32 0), i64 7 }
+@string_const_data.9 = private constant [9 x i8] c"formatted"
+@string_const.10 = private global %string_descriptor { i8* getelementptr inbounds ([9 x i8], [9 x i8]* @string_const_data.9, i32 0, i32 0), i64 9 }
+@string_const_data.11 = private constant [6 x i8] c"stream"
+@string_const.12 = private global %string_descriptor { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @string_const_data.11, i32 0, i32 0), i64 6 }
+@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@13 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
+@14 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@15 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.13 = private constant [3 x i8] c"(a)"
+@string_const.14 = private global %string_descriptor { i8* getelementptr inbounds ([3 x i8], [3 x i8]* @string_const_data.13, i32 0, i32 0), i64 3 }
+@serialization_info.15 = private unnamed_addr constant [12 x i8] c"S-DESC-K1-3\00", align 1
+@string_const_data.16 = private constant [3 x i8] c"abc"
+@string_const.17 = private global %string_descriptor { i8* getelementptr inbounds ([3 x i8], [3 x i8]* @string_const_data.16, i32 0, i32 0), i64 3 }
+@16 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@17 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@18 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
+@19 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@20 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
+@21 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@22 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.18 = private constant [3 x i8] c"(a)"
+@string_const.19 = private global %string_descriptor { i8* getelementptr inbounds ([3 x i8], [3 x i8]* @string_const_data.18, i32 0, i32 0), i64 3 }
+@serialization_info.20 = private unnamed_addr constant [12 x i8] c"S-DESC-K1-2\00", align 1
+@string_const_data.21 = private constant [2 x i8] c"de"
+@string_const.22 = private global %string_descriptor { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.21, i32 0, i32 0), i64 2 }
+@23 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@24 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@25 = private unnamed_addr constant [8 x i8] c"%s %d%s\00", align 1
+@26 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.23 = private constant [2 x i8] c"ok"
+@string_const.24 = private global %string_descriptor { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.23, i32 0, i32 0), i64 2 }
+@27 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define internal i32 @_lcompilers_int_i322(i32* %a) {
+.entry:
+  %_lcompilers_int_i322 = alloca i32, align 4
+  %0 = load i32, i32* %a, align 1
+  store i32 %0, i32* %_lcompilers_int_i322, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE__lcompilers_int_i322
+
+FINALIZE_SYMTABLE__lcompilers_int_i322:           ; preds = %return
+  %1 = load i32, i32* %_lcompilers_int_i322, align 4
+  ret i32 %1
+}
+
+define weak_odr i32 @__module_lfortran_intrinsic_custom_get_valid_newunit() {
+.entry:
+  %0 = alloca i1, align 1
+  %1 = alloca i1, align 1
+  %2 = alloca i1, align 1
+  %3 = alloca i1, align 1
+  %lun = alloca i32, align 4
+  %lun_max = alloca i32, align 4
+  store i32 -10, i32* %lun_max, align 4
+  %lun_min = alloca i32, align 4
+  store i32 -1000, i32* %lun_min, align 4
+  %opened = alloca i32, align 4
+  %unit = alloca i32, align 4
+  store i32 -10, i32* %lun, align 4
+  br i1 true, label %do_loop.body, label %do_loop.end
+
+do_loop.body:                                     ; preds = %do_loop.head, %.entry
+  %4 = load i32, i32* %lun, align 4
+  call void @_lfortran_inquire(i8* null, i64 0, i1* %3, i32 %4, i1* %2, i64* null, i64* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i1* %1, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i1* %0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0)
+  %5 = load i1, i1* %2, align 1
+  %6 = zext i1 %5 to i32
+  store i32 %6, i32* %opened, align 4
+  %7 = load i32, i32* %opened, align 4
+  %8 = xor i32 %7, 1
+  %9 = icmp ne i32 %8, 0
+  br i1 %9, label %then, label %else
+
+then:                                             ; preds = %do_loop.body
+  %10 = load i32, i32* %lun, align 4
+  store i32 %10, i32* %unit, align 4
+  br label %return
+
+unreachable_after_return:                         ; No predecessors!
+  br label %ifcont
+
+else:                                             ; preds = %do_loop.body
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %unreachable_after_return
+  br label %do_loop.head
+
+do_loop.head:                                     ; preds = %ifcont
+  %11 = load i32, i32* %lun, align 4
+  %12 = add nsw i32 %11, -1
+  store i32 %12, i32* %lun, align 4
+  %13 = icmp eq i32 %11, -1000
+  br i1 %13, label %do_loop.end, label %do_loop.body
+
+do_loop.end:                                      ; preds = %do_loop.head, %.entry
+  %14 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %14, i32 29, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 1)
+  br label %return
+
+return:                                           ; preds = %do_loop.end, %then
+  br label %FINALIZE_SYMTABLE_get_valid_newunit
+
+FINALIZE_SYMTABLE_get_valid_newunit:              ; preds = %return
+  %15 = load i32, i32* %unit, align 4
+  ret i32 %15
+}
+
+define weak_odr void @__module_lfortran_intrinsic_custom_newunit_int_4(i32* %unit) {
+.entry:
+  %call_arg_value = alloca i32, align 4
+  %0 = call i32 @__module_lfortran_intrinsic_custom_get_valid_newunit()
+  store i32 %0, i32* %call_arg_value, align 4
+  %1 = call i32 @_lcompilers_int_i322(i32* %call_arg_value)
+  store i32 %1, i32* %unit, align 1
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_newunit_int_4
+
+FINALIZE_SYMTABLE_newunit_int_4:                  ; preds = %return
+  ret void
+}
+
+declare void @_lfortran_inquire(i8*, i64, i1*, i32, i1*, i64*, i64*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i32*, i32*, i1*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i32*, i32*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i1*, i8*, i64, i8*, i64, i8*, i64, i8*, i64)
+
+declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
+
+declare void @_lcompilers_print_error(i8*, ...)
+
+declare void @_lfortran_internal_alloc_finalize()
+
+declare void @exit(i32)
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %2 = alloca i1, align 1
+  %3 = alloca i1, align 1
+  %4 = alloca i1, align 1
+  %5 = alloca i1, align 1
+  %stringFormat_desc20 = alloca %string_descriptor, align 8
+  %6 = alloca i64, align 8
+  %7 = alloca i32*, align 8
+  %8 = alloca i1, align 1
+  %9 = alloca i1, align 1
+  %10 = alloca i1, align 1
+  %__lfortran_inquire_pos16 = alloca i64, align 8
+  %11 = alloca i1, align 1
+  %12 = alloca i1, align 1
+  %13 = alloca i1, align 1
+  %14 = alloca i1, align 1
+  %15 = alloca i1, align 1
+  %stringFormat_desc10 = alloca %string_descriptor, align 8
+  %16 = alloca i64, align 8
+  %17 = alloca i32*, align 8
+  %18 = alloca i1, align 1
+  %19 = alloca i1, align 1
+  %20 = alloca i1, align 1
+  %__lfortran_inquire_pos = alloca i64, align 8
+  %21 = alloca i1, align 1
+  %22 = alloca i32, align 4
+  %23 = alloca i32, align 4
+  %stringFormat_desc = alloca %string_descriptor, align 8
+  %24 = call i8* @_lfortran_get_default_allocator()
+  %25 = alloca i64, align 8
+  %26 = alloca i32*, align 8
+  %27 = alloca i1, align 1
+  %28 = alloca i1, align 1
+  %29 = alloca i1, align 1
+  %30 = alloca i1, align 1
+  %lfortran_iomsg2 = alloca %string_descriptor, align 8
+  %lfortran_iomsg1 = alloca %string_descriptor, align 8
+  %lfortran_iomsg = alloca %string_descriptor, align 8
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %i = alloca i32, align 4
+  store %string_descriptor zeroinitializer, %string_descriptor* %lfortran_iomsg, align 8
+  %31 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 1
+  store i64 0, i64* %31, align 8
+  %32 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
+  %33 = call i8* @_lfortran_get_default_allocator()
+  %34 = call i8* @_lfortran_malloc_alloc(i8* %33, i64 1)
+  store i8* %34, i8** %32, align 8
+  store %string_descriptor zeroinitializer, %string_descriptor* %lfortran_iomsg1, align 8
+  %35 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg1, i32 0, i32 1
+  store i64 0, i64* %35, align 8
+  %36 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg1, i32 0, i32 0
+  %37 = call i8* @_lfortran_get_default_allocator()
+  %38 = call i8* @_lfortran_malloc_alloc(i8* %37, i64 1)
+  store i8* %38, i8** %36, align 8
+  store %string_descriptor zeroinitializer, %string_descriptor* %lfortran_iomsg2, align 8
+  %39 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg2, i32 0, i32 1
+  store i64 0, i64* %39, align 8
+  %40 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg2, i32 0, i32 0
+  %41 = call i8* @_lfortran_get_default_allocator()
+  %42 = call i8* @_lfortran_malloc_alloc(i8* %41, i64 1)
+  store i8* %42, i8** %40, align 8
+  %op = alloca i32, align 4
+  %p = alloca i32, align 4
+  %p8 = alloca i64, align 8
+  %u = alloca i32, align 4
+  %v = alloca i32, align 4
+  call void @__module_lfortran_intrinsic_custom_newunit_int_4(i32* %u)
+  %43 = load i32, i32* %u, align 4
+  %44 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  %45 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
+  %46 = call i64 @_lfortran_open(i32 %43, i8* null, i64 0, i8* %44, i64 7, i8* %45, i64 9, i8* null, i64 0, i8* null, i64 0, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0)
+  store i32 1, i32* %i, align 4
+  br i1 true, label %do_loop.body, label %do_loop.end
+
+do_loop.body:                                     ; preds = %do_loop.head, %.entry
+  %47 = load i32, i32* %u, align 4
+  call void @_lfortran_inquire(i8* null, i64 0, i1* %30, i32 %47, i1* %29, i64* null, i64* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i1* %28, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i1* %27, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0)
+  %48 = load i1, i1* %29, align 1
+  %49 = zext i1 %48 to i32
+  store i32 %49, i32* %op, align 4
+  %50 = load i32, i32* %op, align 4
+  %51 = xor i32 %50, 1
+  %52 = icmp ne i32 %51, 0
+  br i1 %52, label %then, label %else
+
+then:                                             ; preds = %do_loop.body
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 1)
+  br label %ifcont
+
+else:                                             ; preds = %do_loop.body
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  %53 = load i32, i32* %u, align 4
+  store i32* null, i32** %26, align 8
+  %54 = load i32*, i32** %26, align 8
+  %55 = call i32 @_lfortran_get_decimal_mode(i32 %53)
+  %56 = call i32 @_lfortran_get_sign_mode(i32 %53)
+  %57 = call i32 @_lfortran_get_round_mode(i32 %53)
+  %58 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
+  %59 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %24, i8* %58, i64 4, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %25, i32 0, i32 0, i32 %55, i32 %56, i32 %57, i32 0, i32 0, i32 0, i8** null, i32* %i)
+  %60 = load i64, i64* %25, align 8
+  %61 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %59, i8** %61, align 8
+  %62 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %60, i64* %62, align 8
+  %63 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %64 = load i8*, i8** %63, align 8
+  %65 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %66 = load i64, i64* %65, align 8
+  call void (i32, i32*, i8*, i64, ...) @_lfortran_file_write(i32 %53, i32* %54, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i64 4, i8* %64, i64 %66, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0), i64 1)
+  %67 = icmp eq i8* %59, null
+  br i1 %67, label %free_done, label %free_nonnull
+
+free_nonnull:                                     ; preds = %ifcont
+  call void @_lfortran_free_alloc(i8* %24, i8* %59)
+  br label %free_done
+
+free_done:                                        ; preds = %free_nonnull, %ifcont
+  br label %do_loop.head
+
+do_loop.head:                                     ; preds = %free_done
+  %68 = load i32, i32* %i, align 4
+  %69 = add nsw i32 %68, 1
+  store i32 %69, i32* %i, align 4
+  %70 = icmp eq i32 %68, 1000
+  br i1 %70, label %do_loop.end, label %do_loop.body
+
+do_loop.end:                                      ; preds = %do_loop.head, %.entry
+  %71 = load i32, i32* %u, align 4
+  call void @_lfortran_rewind(i32 %71, i32* null, i8* null, i64 0)
+  store i32 1, i32* %i, align 4
+  br i1 true, label %do_loop.body1, label %do_loop.end6
+
+do_loop.body1:                                    ; preds = %do_loop.head5, %do_loop.end
+  %72 = load i32, i32* %u, align 4
+  store i32 0, i32* %23, align 4
+  call void @_lfortran_connect_unit_for_read(i32 %72, i32 0, i32* null)
+  call void @_lfortran_read_int32(i32* %p, i32 %72, i32* null)
+  call void @_lfortran_empty_read(i32 %72, i32* %23, i32 0)
+  %73 = load i32, i32* %p, align 4
+  %74 = load i32, i32* %i, align 4
+  %75 = icmp ne i32 %73, %74
+  br i1 %75, label %then2, label %else3
+
+then2:                                            ; preds = %do_loop.body1
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 2)
+  br label %ifcont4
+
+else3:                                            ; preds = %do_loop.body1
+  br label %ifcont4
+
+ifcont4:                                          ; preds = %else3, %then2
+  br label %do_loop.head5
+
+do_loop.head5:                                    ; preds = %ifcont4
+  %76 = load i32, i32* %i, align 4
+  %77 = add nsw i32 %76, 1
+  store i32 %77, i32* %i, align 4
+  %78 = icmp eq i32 %76, 1000
+  br i1 %78, label %do_loop.end6, label %do_loop.body1
+
+do_loop.end6:                                     ; preds = %do_loop.head5, %do_loop.end
+  %79 = load i32, i32* %u, align 4
+  call void @_lfortran_close(i32 %79, i8* null, i64 0, i32* null)
+  call void @__module_lfortran_intrinsic_custom_newunit_int_4(i32* %v)
+  %80 = load i32, i32* %v, align 4
+  %81 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
+  %82 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
+  %83 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.12, i32 0, i32 0), align 8
+  %84 = call i64 @_lfortran_open(i32 %80, i8* null, i64 0, i8* %81, i64 7, i8* %82, i64 9, i8* %83, i64 6, i8* null, i64 0, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0)
+  br label %__lfortran_inquire.start
+
+__lfortran_inquire.start:                         ; preds = %do_loop.end6
+  %85 = load i32, i32* %v, align 4
+  call void @_lfortran_inquire(i8* null, i64 0, i1* %20, i32 %85, i1* %19, i64* null, i64* %__lfortran_inquire_pos, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i1* %18, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i1* %21, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0)
+  %86 = load i64, i64* %__lfortran_inquire_pos, align 8
+  %87 = trunc i64 %86 to i32
+  store i32 %87, i32* %p, align 4
+  br label %__lfortran_inquire.end
+
+__lfortran_inquire.end:                           ; preds = %__lfortran_inquire.start
+  br label %FINALIZE_SYMTABLE___lfortran_inquire
+
+FINALIZE_SYMTABLE___lfortran_inquire:             ; preds = %__lfortran_inquire.end
+  %88 = load i32, i32* %p, align 4
+  %89 = icmp ne i32 %88, 1
+  br i1 %89, label %then7, label %else8
+
+then7:                                            ; preds = %FINALIZE_SYMTABLE___lfortran_inquire
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @13, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 3)
+  br label %ifcont9
+
+else8:                                            ; preds = %FINALIZE_SYMTABLE___lfortran_inquire
+  br label %ifcont9
+
+ifcont9:                                          ; preds = %else8, %then7
+  %90 = load i32, i32* %v, align 4
+  store i32* null, i32** %17, align 8
+  %91 = load i32*, i32** %17, align 8
+  %92 = call i32 @_lfortran_get_decimal_mode(i32 %90)
+  %93 = call i32 @_lfortran_get_sign_mode(i32 %90)
+  %94 = call i32 @_lfortran_get_round_mode(i32 %90)
+  %95 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.14, i32 0, i32 0), align 8
+  %96 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %24, i8* %95, i64 3, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @serialization_info.15, i32 0, i32 0), i64* %16, i32 0, i32 0, i32 %92, i32 %93, i32 %94, i32 0, i32 0, i32 0, i8** null, %string_descriptor* @string_const.17)
+  %97 = load i64, i64* %16, align 8
+  %98 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc10, i32 0, i32 0
+  store i8* %96, i8** %98, align 8
+  %99 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc10, i32 0, i32 1
+  store i64 %97, i64* %99, align 8
+  %100 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc10, i32 0, i32 0
+  %101 = load i8*, i8** %100, align 8
+  %102 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc10, i32 0, i32 1
+  %103 = load i64, i64* %102, align 8
+  call void (i32, i32*, i8*, i64, ...) @_lfortran_file_write(i32 %90, i32* %91, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @16, i32 0, i32 0), i64 4, i8* %101, i64 %103, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @15, i32 0, i32 0), i64 1)
+  %104 = icmp eq i8* %96, null
+  br i1 %104, label %free_done12, label %free_nonnull11
+
+free_nonnull11:                                   ; preds = %ifcont9
+  call void @_lfortran_free_alloc(i8* %24, i8* %96)
+  br label %free_done12
+
+free_done12:                                      ; preds = %free_nonnull11, %ifcont9
+  %105 = load i32, i32* %v, align 4
+  call void @_lfortran_inquire(i8* null, i64 0, i1* %15, i32 %105, i1* %14, i64* null, i64* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i1* %13, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i1* %12, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0)
+  %106 = load i1, i1* %14, align 1
+  %107 = zext i1 %106 to i32
+  store i32 %107, i32* %op, align 4
+  %108 = load i32, i32* %op, align 4
+  %109 = xor i32 %108, 1
+  %110 = icmp ne i32 %109, 0
+  br i1 %110, label %then13, label %else14
+
+then13:                                           ; preds = %free_done12
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 4)
+  br label %ifcont15
+
+else14:                                           ; preds = %free_done12
+  br label %ifcont15
+
+ifcont15:                                         ; preds = %else14, %then13
+  br label %__lfortran_inquire1.start
+
+__lfortran_inquire1.start:                        ; preds = %ifcont15
+  %111 = load i32, i32* %v, align 4
+  call void @_lfortran_inquire(i8* null, i64 0, i1* %10, i32 %111, i1* %9, i64* null, i64* %__lfortran_inquire_pos16, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i1* %8, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i1* %11, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0)
+  %112 = load i64, i64* %__lfortran_inquire_pos16, align 8
+  %113 = trunc i64 %112 to i32
+  store i32 %113, i32* %p, align 4
+  br label %__lfortran_inquire1.end
+
+__lfortran_inquire1.end:                          ; preds = %__lfortran_inquire1.start
+  br label %FINALIZE_SYMTABLE___lfortran_inquire1
+
+FINALIZE_SYMTABLE___lfortran_inquire1:            ; preds = %__lfortran_inquire1.end
+  %114 = load i32, i32* %p, align 4
+  %115 = icmp ne i32 %114, 5
+  br i1 %115, label %then17, label %else18
+
+then17:                                           ; preds = %FINALIZE_SYMTABLE___lfortran_inquire1
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @20, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 5)
+  br label %ifcont19
+
+else18:                                           ; preds = %FINALIZE_SYMTABLE___lfortran_inquire1
+  br label %ifcont19
+
+ifcont19:                                         ; preds = %else18, %then17
+  %116 = load i32, i32* %v, align 4
+  store i32* null, i32** %7, align 8
+  %117 = load i32*, i32** %7, align 8
+  %118 = call i32 @_lfortran_get_decimal_mode(i32 %116)
+  %119 = call i32 @_lfortran_get_sign_mode(i32 %116)
+  %120 = call i32 @_lfortran_get_round_mode(i32 %116)
+  %121 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.19, i32 0, i32 0), align 8
+  %122 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...) @_lcompilers_string_format_fortran(i8* %24, i8* %121, i64 3, i8* getelementptr inbounds ([12 x i8], [12 x i8]* @serialization_info.20, i32 0, i32 0), i64* %6, i32 0, i32 0, i32 %118, i32 %119, i32 %120, i32 0, i32 0, i32 0, i8** null, %string_descriptor* @string_const.22)
+  %123 = load i64, i64* %6, align 8
+  %124 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 0
+  store i8* %122, i8** %124, align 8
+  %125 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 1
+  store i64 %123, i64* %125, align 8
+  %126 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 0
+  %127 = load i8*, i8** %126, align 8
+  %128 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 1
+  %129 = load i64, i64* %128, align 8
+  call void (i32, i32*, i8*, i64, ...) @_lfortran_file_write(i32 %116, i32* %117, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @23, i32 0, i32 0), i64 4, i8* %127, i64 %129, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i64 1)
+  %130 = icmp eq i8* %122, null
+  br i1 %130, label %free_done22, label %free_nonnull21
+
+free_nonnull21:                                   ; preds = %ifcont19
+  call void @_lfortran_free_alloc(i8* %24, i8* %122)
+  br label %free_done22
+
+free_done22:                                      ; preds = %free_nonnull21, %ifcont19
+  %131 = load i32, i32* %v, align 4
+  call void @_lfortran_inquire(i8* null, i64 0, i1* %5, i32 %131, i1* %4, i64* null, i64* %p8, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i1* %3, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i32* null, i32* null, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i1* %2, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0, i8* null, i64 0)
+  %132 = load i64, i64* %p8, align 8
+  %133 = icmp ne i64 %132, 8
+  br i1 %133, label %then23, label %else24
+
+then23:                                           ; preds = %free_done22
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([8 x i8], [8 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i32 6, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 6)
+  br label %ifcont25
+
+else24:                                           ; preds = %free_done22
+  br label %ifcont25
+
+ifcont25:                                         ; preds = %else24, %then23
+  %134 = load i32, i32* %v, align 4
+  call void @_lfortran_close(i32 %134, i8* null, i64 0, i32* null)
+  %135 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.24, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @27, i32 0, i32 0), i8* %135, i32 2, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0), i32 1)
+  br label %return
+
+return:                                           ; preds = %ifcont25
+  br label %FINALIZE_SYMTABLE_inquire_18
+
+FINALIZE_SYMTABLE_inquire_18:                     ; preds = %return
+  br label %Finalize_Variable_lfortran_iomsg
+
+Finalize_Variable_lfortran_iomsg:                 ; preds = %FINALIZE_SYMTABLE_inquire_18
+  %136 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg, i32 0, i32 0
+  %137 = load i8*, i8** %136, align 8
+  call void @_lfortran_free_alloc(i8* %24, i8* %137)
+  br label %Finalize_Variable_lfortran_iomsg1
+
+Finalize_Variable_lfortran_iomsg1:                ; preds = %Finalize_Variable_lfortran_iomsg
+  %138 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg1, i32 0, i32 0
+  %139 = load i8*, i8** %138, align 8
+  call void @_lfortran_free_alloc(i8* %24, i8* %139)
+  br label %Finalize_Variable_lfortran_iomsg2
+
+Finalize_Variable_lfortran_iomsg2:                ; preds = %Finalize_Variable_lfortran_iomsg1
+  %140 = getelementptr %string_descriptor, %string_descriptor* %lfortran_iomsg2, i32 0, i32 0
+  %141 = load i8*, i8** %140, align 8
+  call void @_lfortran_free_alloc(i8* %24, i8* %141)
+  call void @_lfortran_internal_alloc_finalize()
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lfortran_malloc_alloc(i8*, i64)
+
+declare i8* @_lfortran_get_default_allocator()
+
+declare i64 @_lfortran_open(i32, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i32*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i32*, i8*, i64, i8*, i64, i8*, i64, i8*, i64, i8*, i64)
+
+declare i32 @_lfortran_get_decimal_mode(i32)
+
+declare i32 @_lfortran_get_sign_mode(i32)
+
+declare i32 @_lfortran_get_round_mode(i32)
+
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...)
+
+declare void @_lfortran_file_write(i32, i32*, i8*, i64, ...)
+
+declare void @_lfortran_free_alloc(i8*, i8*)
+
+declare void @_lfortran_rewind(i32, i32*, i8*, i64)
+
+declare void @_lfortran_connect_unit_for_read(i32, i32, i32*)
+
+declare void @_lfortran_read_int32(i32*, i32, i32*)
+
+declare void @_lfortran_empty_read(i32, i32*, i32)
+
+declare void @_lfortran_close(i32, i8*, i64, i32*)
+
+; Function Attrs: nounwind
+declare i8* @llvm.stacksave() #0
+
+attributes #0 = { nounwind }

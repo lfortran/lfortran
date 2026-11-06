@@ -2,7 +2,6 @@
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
     float a;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
@@ -11,10 +10,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     float a = __scalar_args.a;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i__dc;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 1000)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);

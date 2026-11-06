@@ -1,0 +1,65 @@
+semantic error: interface mismatch in procedure pointer assignment
+ --> tests/errors/procedure_pointer_result_mismatch_01.f90:7:5
+  |
+7 |     p => g  ! {Error} the result of the target is real(8), not real(4)
+  |     ^    ^ the result of the target is real(8), but the pointer is a function of type real(4)
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:18:5
+   |
+18 |     ip => s  ! {Error} the target is a subroutine
+   |     ^^    ^ the target is a subroutine, but the pointer is a function of type integer(4)
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:30:5
+   |
+30 |     h%f => g  ! {Error} the result of the target is integer(4), not real(4)
+   |     ^^^    ^ the result of the target is integer(4), but the pointer is a function of type real(4)
+
+semantic error: the procedure 'p' is referenced as a function, but it has no type
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:43:9
+   |
+43 |     y = p(1)  ! {Error} `p` has no implicit type
+   |         ^^^^ help: declare the type of its result, e.g. with 'procedure(integer), pointer :: p'
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:54:5
+   |
+54 |     cp => cf3  ! {Error} the result of the target is character(len=3), not character(len=5)
+   |     ^^    ^^^ the result of the target is character(len=3), but the pointer is a function of type character(len=5)
+
+semantic error: the procedure 'p' is referenced as a function, but it has no type
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:67:9
+   |
+67 |     y = p(1)  ! {Error} `p` has no implicit type
+   |         ^^^^ help: declare the type of its result, e.g. with 'procedure(integer), pointer :: p'
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:78:5
+   |
+78 |     p => total  ! {Error} `x` of the target is assumed-shape
+   |     ^    ^^^^^ the pointer has an implicit interface, but the dummy argument 'x' of the target is assumed-shape, which requires an explicit interface
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:79:5
+   |
+79 |     p => opt  ! {Error} `y` of the target is optional
+   |     ^    ^^^ the pointer has an implicit interface, but the dummy argument 'y' of the target is optional, which requires an explicit interface
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:94:5
+   |
+94 |     p => vol  ! {Error} `x` of the target is volatile
+   |     ^    ^^^ the pointer has an implicit interface, but the dummy argument 'x' of the target is volatile, which requires an explicit interface
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:95:5
+   |
+95 |     p => coa  ! {Error} `x` of the target is a coarray
+   |     ^    ^^^ the pointer has an implicit interface, but the dummy argument 'x' of the target is a coarray, which requires an explicit interface
+
+semantic error: interface mismatch in procedure pointer assignment
+  --> tests/errors/procedure_pointer_result_mismatch_01.f90:96:5
+   |
+96 |     p => chn  ! {Error} result length is not a constant expression
+   |     ^    ^^^ the pointer has an implicit interface, but the result of the target has a character length that is not a constant expression, which requires an explicit interface

@@ -31,9 +31,13 @@ symbol
     | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies, intent intent,
                expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration,
                abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr,
-               string? bindc_name, bool is_volatile, bool is_protected, pass_attr pass_attr, identifier? self_argument,
-               codimension* codims, symbol? common_block)
-    | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
+               string? bindc_name, bool is_volatile, bool is_asynchronous, bool is_protected, pass_attr pass_attr,
+               identifier? self_argument, codimension* codims, symbol? common_block)
+    -- A scoped redeclaration of a host/use-associated variable. This is a
+    -- declaration reference, not a runtime access rewritten by expression
+    -- lowering; the canonical entity's declaration is not modified.
+    | ScopedVariableAttribute(symbol_table parent_symtab, identifier name, symbol variable, bool is_volatile, bool is_asynchronous)
+    | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass, access access)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
@@ -82,7 +86,7 @@ stmt
     -- F2018 10.2.2.3). Every other association has NoPointerBounds.
     | Associate(expr target, expr value, pointer_bounds_form form)
     | Cycle(identifier? stmt_name)
-    | ExplicitDeallocate(expr* vars)
+    | ExplicitDeallocate(expr* vars, expr? stat, expr? errmsg)
     | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body)
     | OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body, exec_target exec_target)
@@ -139,10 +143,32 @@ stmt
     -- element of the array overwritten[i], an actual argument of the launch,
     -- before it reads any of them: what the host holds there need not reach
     -- the device.
-    | GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch, expr? stop_status, stmt* stop_replay, expr* overwritten, expr* overwritten_if)
+    -- `chunk_dimensions` is empty when the launch always runs its kernel
+    -- once, and otherwise lists the dimensions of the iteration space a
+    -- launch of more iterations than the chunk limit splits into chunks,
+    -- in the order the kernel numbers the iterations, fastest-varying first
+    -- (see gpu_launch_dimension). Every chunk covers the other dimensions
+    -- whole: their extents are constants, whose product is
+    -- `chunk_fixed_iterations` (1 when there are none, and 0 when
+    -- `chunk_dimensions` is empty). `first_chunk_parameter` is the kernel
+    -- parameter a launch with chunk dimensions sets to 1 when it runs as one
+    -- or for its first chunk, and to 0 for the later chunks, whatever it
+    -- passes for it in `args`, so that only the threads of the first one
+    -- start the accumulators of its reductions, or nil when the kernel has
+    -- none to start. It is not a bound parameter of a chunk dimension.
+    | GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch, expr? stop_status, stmt* stop_replay, expr* overwritten, expr* overwritten_if, gpu_launch_dimension* chunk_dimensions, int chunk_fixed_iterations, symbol? first_chunk_parameter)
     | GpuSync()
+    -- Waits for the launched GPU work to finish, without copying anything
+    -- back: the host may then change what the kernels only read.
+    | GpuWait()
     | GpuLaneBarrier()
     | GpuDiscard(expr* vars)
+    -- Makes the Reference member `reference` (a StructInstanceMember of a
+    -- frame object) refer to `variable`, a designator whose type is the
+    -- referenced type: a Var, or a StructInstanceMember of a Reference member
+    -- (to pass a reference on to the frame of a nested host). Only the
+    -- address is stored: nothing is copied.
+    | BindReference(expr reference, expr variable)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -223,7 +249,7 @@ expr
     | ArrayBound(expr v, expr? dim, ttype type, arraybound bound, expr? value)
     | ArrayTranspose(expr matrix, ttype type, expr? value)
     | ArrayPack(expr array, expr mask, expr? vector, ttype type, expr? value)
-    | ArrayReshape(expr array, expr shape, expr? pad, expr? order, ttype type, expr? value)
+    | ArrayReshape(expr array, expr shape, expr? pad, expr? order, ttype type, expr? value, expr? result)
     | ArrayBroadcast(expr array, expr shape, ttype type, expr? value)
     | BitCast(expr source, expr mold, expr? size, ttype type, expr? value)
     | FunctionPointerCast(expr arg, symbol? to, ttype type, expr? value)
@@ -245,6 +271,14 @@ expr
     | DictItem(expr a, expr key, expr? default, ttype type, expr? value)
     | CLoc(expr arg, ttype type, expr? value)
     | PointerToCPtr(expr arg, ttype type, expr? value)
+    -- The address, as a type(c_ptr), of the frame that the internal
+    -- procedure `procedure` (a frame entry) takes through its last dummy
+    -- argument, a type(c_ptr) value dummy, instead of a frame dummy: the
+    -- frame of the instance of its host that evaluates this expression, or
+    -- a null pointer when the procedure needs no frame. It only exists
+    -- before the nested_vars pass, which replaces it (see
+    -- specialize_frame_arguments.cpp).
+    | FrameAddress(symbol procedure, ttype type, expr? value)
     | GetPointer(expr arg, ttype type, expr? value)
     | ListItem(expr a, expr pos, ttype type, expr? value)
     | TupleItem(expr a, expr pos, ttype type, expr? value)
@@ -290,6 +324,12 @@ ttype
     | TypeParameter(identifier param, deferred_type_attr deferred_attr, bool is_class)
     | Array(ttype type, dimension* dims, array_physical_type physical_type, memory_space memory_space)
     | FunctionType(ttype* arg_types, ttype? return_var_type, abi abi, deftype deftype, string? bindc_name, bool elemental, bool pure, bool module, bool inline, bool static, symbol* restrictions, bool is_restriction, exec_space exec_space)
+    -- The address of a variable of type `type`, held by a member of a frame
+    -- created by the nested_vars pass. A StructInstanceMember of such a member
+    -- designates the variable itself and has type `type`. It is never
+    -- allocated, deallocated, finalized, copied or default-initialized with
+    -- the object that contains it.
+    | Reference(ttype type)
 
 cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | IntegerToInteger | RealToComplex | IntegerToComplex | IntegerToLogical | RealToLogical | StringToLogical | StringToInteger | StringToList | ComplexToLogical | ComplexToComplex | ComplexToReal | ComplexToInteger | LogicalToInteger | LogicalToLogical | RealToString | IntegerToString | LogicalToString | StringToString | UnsignedIntegerToInteger | UnsignedIntegerToUnsignedInteger | UnsignedIntegerToReal | UnsignedIntegerToLogical | IntegerToUnsignedInteger | RealToUnsignedInteger | CPtrToUnsignedInteger | UnsignedIntegerToCPtr | IntegerToSymbolicExpression | ListToArray | StringToArray | PointerToInteger | ClassToStruct | ClassToClass | ClassToIntrinsic
 -- The effective deferred-type-attr (F2028 draft J3/26-007r1 R1617) of a
@@ -299,7 +339,14 @@ cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | Integer
 -- `NonExtensible` is a plain `deferred type ::` with no attribute.
 deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
-storage_type = Default | Save | Parameter | Threadprivate
+-- Caller-provided storage for a function result lowered to a dummy argument.
+-- A Variable of HostAssociated storage has no storage of its own: it denotes
+-- the variable designated by its symbolic_value, a StructInstanceMember of a
+-- member of the frame dummy argument of its procedure (or of the frame slot
+-- of its host in a thunk, see nested_vars), bound on entry before
+-- any other declaration of the procedure is evaluated, like a dummy argument
+-- associated by reference. Its type is that of the designated variable.
+storage_type = Default | Save | Parameter | Threadprivate | ResultArgument | HostAssociated
 -- How a CommonBlock view provides the block's storage: a Tentative view
 -- gives no initial value, an Initialized one gives initial values (even all
 -- zero ones) through its variables, and an External one (in a module read
@@ -334,8 +381,14 @@ gpu_argument_kind = GpuArray | GpuStruct | GpuClass | GpuMemberData | GpuMemberO
 -- this buffer where either of them is written (gpu_kernel_abi.cpp).
 gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension, bool written, bool noalias)
 gpu_workspace_dimension = (expr extent, symbol? parameter)
-gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size)
+gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size, expr? allocation_if, symbol? allocation_parameter, bool allocation_on_true)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
+-- A dimension of the iteration space of a GpuKernelLaunch that the launch
+-- may split into chunks, each run as a launch of its kernel over a box of
+-- the space: the kernel parameters that hold its bounds, which each launch
+-- sets to the bounds of its box. The launch reads the bounds of the whole
+-- dimension from its arguments for them.
+gpu_launch_dimension = (symbol start_parameter, symbol end_parameter)
 gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions, symbol? lanes)
 reduction_expr = (reduction_op op, expr arg)
 tbind = Bind(string lang, string name)
@@ -357,7 +410,7 @@ array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | F
 string_physical_type = DescriptorString | CChar
 string_length_kind = AssumedLength | DeferredLength | ExpressionLength | ImplicitLength
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift | LBitRShift
-reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX | ReduceIAND | ReduceIOR | ReduceIEOR
+reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX | ReduceIAND | ReduceIOR | ReduceIEOR | ReduceAND | ReduceOR | ReduceEQV | ReduceNEQV
 logicalbinop = And | Or | Xor | NEqv | Eqv
 cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
 integerboz = Binary | Hex | Octal | Decimal

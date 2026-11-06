@@ -1,23 +1,15 @@
 #include <stdint.h>
 
 __device__ inline float vla_fill_gpu_9(int m, float v, float* tmp) {
-    float s;
-    int __do_loop_end;
-    int __do_loop_end1;
+    float s{};
     int __gpu_sum_k;
     float __gpu_sum_res;
     int k;
-    __do_loop_end = m;
-    k = (1 - 1);
-    while (((k + 1) <= __do_loop_end)) {
-        k = (k + 1);
+    for (k = 1; k <= m; k++) {
         tmp[((int)(k) - (1))] = v;
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
-    __do_loop_end1 = m;
-    __gpu_sum_k = (1 - 1);
-    while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
-        __gpu_sum_k = (__gpu_sum_k + 1);
+    for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, m); __gpu_sum_k++) {
         __gpu_sum_res = (__gpu_sum_res + tmp[((int)(__gpu_sum_k) - (1))]);
     }
     s = __gpu_sum_res;
@@ -43,7 +35,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __flat_idx;
     int i__dc;
-    float* tmp = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent);
+    float* tmp = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }

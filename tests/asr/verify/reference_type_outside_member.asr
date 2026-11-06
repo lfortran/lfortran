@@ -1,0 +1,49 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "reference_type_outside_member" (Program
+        (SymbolTable
+          1
+          {
+            "r" (Variable
+              1
+              "r"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Reference
+                (Integer
+                  4
+                )
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false false
+              false
+              :NotMethod
+              nil
+              []
+              nil
+            )
+          }
+        )
+        "reference_type_outside_member"
+        []
+        [
+        ]
+        nil
+      )
+    }
+  )
+  []
+  nil
+)

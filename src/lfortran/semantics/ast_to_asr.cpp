@@ -32,7 +32,9 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
-        LCompilers::LocationManager &lm);
+        std::set<ASR::symbol_t*> &getter_functions,
+        LCompilers::LocationManager &lm,
+        const std::map<std::string, ASR::ttype_t*> *interactive_implicit_types);
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
@@ -47,6 +49,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
         std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        std::set<ASR::symbol_t*> &getter_functions,
         LCompilers::LocationManager &lm);
 
 void load_rtlib() {
@@ -57,7 +60,8 @@ void load_rtlib() {
 Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
     SymbolTable *symbol_table, bool symtab_only,
-    CompilerOptions &compiler_options, LCompilers::LocationManager &lm)
+    CompilerOptions &compiler_options, LCompilers::LocationManager &lm,
+    std::map<std::string, ASR::ttype_t*> *interactive_implicit_types)
 {
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
     std::map<uint64_t, std::vector<std::string>> external_procedures_mapping;
@@ -67,11 +71,14 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> entry_functions;
     std::map<std::string, std::vector<int>> entry_function_arguments_mapping;
     std::map<uint32_t, std::vector<ASR::stmt_t*>> data_structure;
+    std::set<ASR::symbol_t*> getter_functions;
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
         compiler_options, implicit_mapping,
         external_procedures_mapping, explicit_intrinsic_procedures_mapping, instantiate_types,
-        instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure, lm);
+        instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure,
+        getter_functions, lm,
+        interactive_implicit_types);
     if (res.ok) {
         unit = res.result;
     } else {
@@ -102,7 +109,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(*tu);
 #if defined(WITH_LFORTRAN_ASSERT)
-    if (!asr_verify(*tu, true, diagnostics)) {
+    // After a reported error the ASR can hold the bad code, so skip verify.
+    if (!diagnostics.has_error() && !asr_verify(*tu, true, diagnostics)) {
         return Error();
     };
 #endif
@@ -112,7 +120,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             implicit_mapping,
             external_procedures_mapping, explicit_intrinsic_procedures_mapping, instantiate_types,
             instantiate_symbols, entry_functions, entry_function_arguments_mapping,
-            data_structure, lm
+            data_structure, getter_functions, lm
         );
         if (res.ok) {
             tu = res.result;
@@ -139,10 +147,13 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             outfile.close();
         }
 #if defined(WITH_LFORTRAN_ASSERT)
-        if (!asr_verify(*tu, true, diagnostics)) {
+        if (!diagnostics.has_error() && !asr_verify(*tu, true, diagnostics)) {
             return Error();
         };
 #endif
+    }
+    if (interactive_implicit_types) {
+        *interactive_implicit_types = implicit_mapping[get_hash(&tu->base.base)];
     }
     return tu;
 }

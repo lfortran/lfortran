@@ -1,0 +1,5 @@
+runtime error: allocate with source= requires an allocated/associated source expression
+  --> tests/errors/allocate_04.f90:11:27
+   |
+11 |    allocate(obj, source = h%comp)
+   |                           ^^^^^^ source expression is not allocated/associated

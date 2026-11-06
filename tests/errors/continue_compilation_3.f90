@@ -475,3 +475,14 @@ end function
 subroutine ts_13216()
     print *, undefined_toplevel_subroutine_13216
 end subroutine
+
+module cc3_stale_dep_14817
+contains
+    subroutine g_14817(i)
+        integer, intent(in) :: i
+    end subroutine
+    subroutine s_14817(d)
+        real, intent(in) :: d
+        call g_14817(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `real(4)`
+    end subroutine
+end module

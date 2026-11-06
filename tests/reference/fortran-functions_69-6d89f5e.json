@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-functions_69-6d89f5e",
+    "cmd": "lfortran --pass=subroutine_from_function --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/../integration_tests/functions_69.f90",
+    "infile_hash": "7fe628882480284838cff4cb99f11951492e840bbbf0704f39242334",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-functions_69-6d89f5e.f90",
+    "stdout_hash": "4fe179c0ed98ce40befc659c6ed0b519c989ef6927833f05a2f7c456",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

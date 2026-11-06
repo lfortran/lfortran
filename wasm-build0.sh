@@ -17,6 +17,7 @@ unset CC CXX AR RANLIB NM CFLAGS CXXFLAGS LDFLAGS
 
 # Build lfortran binary only; skip the runtime cmake sub-project.
 # Debug + Ninja: this compiler is only used to emit runtime .mod files.
+# zlib only reads gzip-compressed GFortran .mod files, which it never does.
 cmake -S . -B asset_dir -G Ninja \
     -DCMAKE_BUILD_TYPE=Debug \
     -DWITH_LLVM=no \
@@ -27,6 +28,7 @@ cmake -S . -B asset_dir -G Ninja \
     -DWITH_XEUS=no \
     -DWITH_LSP=no \
     -DWITH_KOKKOS=no \
+    -DWITH_ZLIB=no \
     -DCMAKE_PREFIX_PATH="$CONDA_PREFIX"
 
 cmake --build asset_dir --target lfortran

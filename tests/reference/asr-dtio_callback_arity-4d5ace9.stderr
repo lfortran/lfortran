@@ -1,0 +1,5 @@
+ASR verify pass error: StringFormat::m_dtio_bindings callback 'cb' must be a subroutine with seven dummy arguments
+ --> tests/asr/verify/dtio_callback_arity.asr:1:1
+  |
+1 | (TranslationUnit (SymbolTable 0 {
+  | ^ failed here

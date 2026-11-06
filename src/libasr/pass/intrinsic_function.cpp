@@ -39,6 +39,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
     // The scope the replaced expression stands in, so a helper that names
     // something only visible there can be built there.
     SymbolTable* caller_scope = nullptr;
+    bool in_device = false;
 
     ReplaceIntrinsicFunctions(Allocator& al_, SymbolTable* global_scope_,
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions>& func2intrinsicid_, bool& in_debugcheck_, bool &in_ttype_,
@@ -67,12 +68,32 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
             *current_expr = x->m_value;
             return;
         }
+        // Keep the intrinsic identity in device code: host runtime
+        // instantiation would leave a call with no device implementation.
+        if (in_device && ASRUtils::is_real(*x->m_type) &&
+                x->m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::Log)) {
+            ASR::BaseExprReplacer<ReplaceIntrinsicFunctions>
+                ::replace_IntrinsicElementalFunction(x);
+            return;
+        }
         // If inside DebugCheckArrayBounds and not inside a type
         // Then keep the IntrinsicElementalFunction because its arguments are used to find ArraySize
         // `storage_size` is a scalar, so it is lowered there too: the
         // backend cannot evaluate it.
         if (in_debugcheck && !in_ttype && x->m_intrinsic_id != static_cast<int64_t>(
                 ASRUtils::IntrinsicElementalFunctions::StorageSize)) return;
+        // In a type, an integer maximum, such as the extent max(0, n) of an
+        // explicit-shape array, stays an intrinsic, which the code
+        // generators lower. The type can be copied into a scope (a caller
+        // that sizes the result of a procedure from it) that would not see
+        // a procedure instantiated for it here.
+        if (in_ttype && ASRUtils::is_intrinsic_max(*x)
+                && ASRUtils::is_integer(*x->m_type)) {
+            ASR::BaseExprReplacer<ReplaceIntrinsicFunctions>
+                ::replace_IntrinsicElementalFunction(x);
+            return;
+        }
 
         Vec<ASR::call_arg_t> new_args; new_args.reserve(al, x->n_args);
         // Replace any IntrinsicElementalFunctions in the argument first:
@@ -191,6 +212,14 @@ class ReplaceIntrinsicFunctionsVisitor : public ASR::CallReplacerOnExpressionsVi
             // Intrinsic implementations require concrete specialization types.
         }
 
+        void visit_Function(const ASR::Function_t& x) {
+            bool saved = replacer.in_device;
+            replacer.in_device = ASRUtils::is_device_only_function(x);
+            ASR::CallReplacerOnExpressionsVisitor<
+                ReplaceIntrinsicFunctionsVisitor>::visit_Function(x);
+            replacer.in_device = saved;
+        }
+
         // Don't replace inside DebugCheckArrayBounds, the arguments for elemental functions might be arrays
         void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& x) {
             bool in_debugcheck_copy = in_debugcheck;
@@ -292,7 +321,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             Vec<ASR::stmt_t*> if_body;
             if_body.reserve(al, 2);
             if_body.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
-                al, loc, to_be_deallocated.p, to_be_deallocated.size())));
+                al, loc, to_be_deallocated.p, to_be_deallocated.size(), nullptr, nullptr)));
             if_body.push_back(al, allocate_stmt);
             ASR::stmt_t* if_ = ASRUtils::STMT(ASR::make_If_t(al, loc_, nullptr, test_expr,
                                 if_body.p, if_body.size(), else_, else_n));

@@ -4,6 +4,7 @@ over FortranEvaluator::execute()."""
 import argparse
 import os
 from pathlib import Path
+import queue
 import subprocess
 import sys
 import time
@@ -59,21 +60,170 @@ def check(client, code, expected):
     return messages
 
 
+def waiter_command(waiter, *paths):
+    command = " ".join('"%s"' % path.as_posix()
+                       for path in (Path(sys.executable), waiter, *paths))
+    if os.name == "nt":
+        # cmd /c removes the outer quotes before parsing the quoted paths.
+        command = '"' + command + '"'
+    return command
+
+
+def streaming_code(gate, partial=False):
+    first = ("write(*,'(a)',advance='no')" if partial else "print '(a)',")
+    command = waiter_command(gate.with_name("wait.py"), gate)
+    argument = " // &\n".join("    '" + command[i:i+60].replace("'", "''") + "'"
+        for i in range(0, len(command), 60))
+    return ("program streaming_gate%s\n" % ("_partial" if partial else "") +
+            first + " 'before-gate'\n"
+            "call execute_command_line( &\n" + argument + ")\n"
+            "print '(a)', 'after-gate'\nend program")
+
+
+def check_streaming(client, directory, partial=False):
+    gate = directory / "release"
+    # No READ or display hook may flush the first PRINT for us.
+    code = streaming_code(gate, partial)
+    expected = "before-gate" + ("" if partial else "\n")
+    msg_id = client.execute(code, allow_stdin=False)
+    text = ""
+    seen = []
+    try:
+        deadline = time.monotonic() + 10
+        while expected not in text:
+            try:
+                msg = client.get_iopub_msg(timeout=max(0.1, deadline - time.monotonic()))
+            except queue.Empty:
+                raise AssertionError("output did not arrive before gate release: %r" % seen)
+            if msg["parent_header"].get("msg_id") != msg_id:
+                continue
+            seen.append(msg)
+            assert msg["msg_type"] != "error", msg
+            assert not (msg["msg_type"] == "status" and
+                        msg["content"]["execution_state"] == "idle"), msg
+            if msg["msg_type"] == "stream":
+                text += msg["content"]["text"]
+            assert time.monotonic() < deadline, "output did not arrive before gate release"
+        assert text == expected, text
+    finally:
+        gate.touch()
+        if sys.exc_info()[0] is not None:
+            # Reap the command-line waiter before deleting its gate.
+            try:
+                reply = client.get_shell_msg(timeout=5)
+                print("released gate after failure; execute_reply:", reply["content"])
+            except queue.Empty:
+                pass
+    while True:
+        msg = client.get_iopub_msg(timeout=30)
+        if msg["parent_header"].get("msg_id") != msg_id:
+            continue
+        if msg["msg_type"] == "stream":
+            text += msg["content"]["text"]
+        if msg["msg_type"] == "status" and msg["content"]["execution_state"] == "idle":
+            break
+    assert text == expected + "after-gate\n", text
+    reply = client.get_shell_msg(timeout=30)
+    assert reply["parent_header"]["msg_id"] == msg_id, reply
+    assert reply["content"]["status"] == "ok", reply
+    gate.unlink()
+
+
+def check_transport_progress(client, directory):
+    import zmq
+
+    gate = directory / "transport-release"
+    waiting = directory / "transport-waiting"
+    waiter = directory / "transport-wait.py"
+    waiter.write_text("import sys, time\nfrom pathlib import Path\n"
+                      "Path(sys.argv[2]).touch()\n"
+                      "while not Path(sys.argv[1]).exists(): time.sleep(0.01)\n")
+    subscriber = client.context.socket(zmq.SUB)
+    subscriber.setsockopt(zmq.RCVHWM, 1)
+    subscriber.setsockopt(zmq.RCVBUF, 65536)
+    subscriber.setsockopt(zmq.SUBSCRIBE, b"")
+    subscriber.connect("tcp://127.0.0.1:%d" % client.iopub_port)
+    session = client.session.clone()
+    msg_id = None
+    try:
+        time.sleep(0.3)
+        command = waiter_command(waiter, gate, waiting)
+        argument = " // &\n".join("    '" + command[i:i+60].replace("'", "''") + "'"
+            for i in range(0, len(command), 60))
+        code = ("program transport_progress\ninteger :: j\n"
+                "do j=1,1024\nprint '(a)', repeat('x',4095)\nend do\n"
+                "print '(a)', 'TRANSPORT-END'\n"
+                "call execute_command_line( &\n" + argument + ")\nend program")
+        msg_id = client.execute(code, allow_stdin=False)
+        deadline = time.monotonic() + 30
+        while not waiting.exists() and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert waiting.exists(), "cell did not reach transport gate"
+        # Let capture pumping reach the end while this subscriber is paused.
+        time.sleep(2)
+        text = ""
+        deadline = time.monotonic() + 10
+        while "TRANSPORT-END\n" not in text and time.monotonic() < deadline:
+            if not subscriber.poll(100):
+                continue
+            _, parts = session.feed_identities(subscriber.recv_multipart())
+            msg = session.deserialize(parts)
+            if msg["parent_header"].get("msg_id") != msg_id:
+                continue
+            assert msg["msg_type"] != "error", msg
+            assert not (msg["msg_type"] == "status" and
+                        msg["content"]["execution_state"] == "idle"), msg
+            if msg["msg_type"] == "stream":
+                text += msg["content"]["text"]
+        assert text == ("x" * 4095 + "\n") * 1024 + "TRANSPORT-END\n", (
+            "queued output stalled before gate release", len(text))
+    finally:
+        gate.touch()
+        try:
+            if msg_id is not None:
+                reply = client.get_shell_msg(timeout=15)
+                assert reply["parent_header"]["msg_id"] == msg_id, reply
+                assert reply["content"]["status"] == "ok", reply
+        finally:
+            subscriber.close(linger=0)
+            for path in (gate, waiting, waiter):
+                path.unlink(missing_ok=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lfortran", required=True)
+    parser.add_argument("--streaming-only", action="store_true")
+    parser.add_argument("--mode", choices=("normal", "fast", "f23"), default="normal")
     args = parser.parse_args()
+    assert args.streaming_only or args.mode == "normal", "modes apply to the focused streaming checks"
+    adapters = [False, True] if builtin_stop_kernel(args.lfortran) else [False]
+    for managed in adapters:
+        run_kernel(args.lfortran, managed, args.streaming_only, args.mode)
+        if args.streaming_only:
+            continue
+        for code, status, shown in [("if (.true.) stop", 0, ""), ("stop 3", 3, "STOP 3"),
+                ("error stop", 1, "ERROR STOP")]:
+            check_stop_flushes(args.lfortran, code, status, shown, managed)
+
+
+def run_kernel(lfortran, managed, streaming_only=False, mode="normal"):
     directory = Path.cwd() / ("kernel-evaluation-" + uuid.uuid4().hex)
     directory.mkdir(mode=0o700)
     connection = directory / "connection.json"
     log = directory / "kernel.log"
+    waiter = directory / "wait.py"
+    waiter.write_text("import sys, time\nfrom pathlib import Path\n"
+                      "while not Path(sys.argv[1]).exists(): time.sleep(0.01)\n")
     client = None
     process = None
     try:
         write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
         with log.open("wb") as output:
+            options = {"normal": [], "fast": ["--fast"], "f23": ["--std=f23"]}[mode]
             process = subprocess.Popen(
-                [args.lfortran, "kernel", "-f", str(connection)],
+                [lfortran] + options + ["kernel", "-f", str(connection)] +
+                (["--managed"] if managed else []),
                 stdin=subprocess.DEVNULL, stdout=output, stderr=output,
                 preexec_fn=limit_open_files if os.name == "posix" else None,
             )
@@ -81,6 +231,16 @@ def main():
             client.load_connection_file()
             client.start_channels()
             client.wait_for_ready(timeout=30)
+            check_streaming(client, directory)
+            check_streaming(client, directory, partial=True)
+            if managed:
+                check_transport_progress(client, directory)
+            if streaming_only:
+                client.shutdown()
+                process.wait(timeout=15)
+                assert process.returncode == 0, process.returncode
+                print(("built-in" if managed else "default") + " streaming " + mode + ": passed")
+                return
             check(client, "integer :: n\nn=41", [])
             check(client, "n+1", ["42"])
             check(client, ".true.", ["True"])
@@ -98,15 +258,19 @@ def main():
                     assert any(m["msg_type"] == "stream" and m["content"]["text"]
                                for m in messages), (magic, messages)
             messages = check(client, "use lfortran_display; "
+                             "print *, 'before-display'; "
                              "call display_data('text/html','<b>hello</b>'); "
                              "call clear_output()", [])
             assert any(m["msg_type"] == "display_data" and
                        m["content"]["data"]["text/html"] == "<b>hello</b>"
                        for m in messages), messages
             assert any(m["msg_type"] == "clear_output" for m in messages), messages
+            kinds = [m["msg_type"] for m in messages]
+            assert kinds.index("stream") < kinds.index("display_data") < kinds.index("clear_output")
             check(client, "program unavailable\ninteger :: i,ios\n"
                   "read(*,*,iostat=ios) i\nif(ios<=0) error stop\nend program", [])
-            for code in ("n+1", "call display_data('text/html', '<b>silent</b>')"):
+            for code in ("n+1", "print *, 'silent stream'",
+                         "call display_data('text/html', '<b>silent</b>')"):
                 reply, messages = execute(client, code, silent=True)
                 assert reply["status"] == "ok", reply
                 assert not any(m["msg_type"] in ("execute_result", "stream",
@@ -127,12 +291,125 @@ def main():
             messages = check(client, "print *, 'a', achar(200), 'b'", [])
             assert any(m["msg_type"] == "stream" and "\ufffd" in m["content"]["text"]
                        for m in messages), messages
+            # All of a cell's stdout, however long, and its stderr.
+            messages = check(client, "program long_output\ninteger :: i\n"
+                             "do i = 1, 3000\nprint '(a)', repeat('x', 39)\nend do\n"
+                             "write(0, '(a)') 'to stderr'\nend program", [])
+            streams = {"stdout": "", "stderr": ""}
+            for m in messages:
+                if m["msg_type"] == "stream":
+                    streams[m["content"]["name"]] += m["content"]["text"]
+            assert streams["stdout"] == ("x" * 39 + "\n") * 3000, len(streams["stdout"])
+            assert streams["stderr"] == "to stderr\n", streams["stderr"]
+            messages = check(client,
+                "program utf8_chunks\nuse iso_fortran_env, only: error_unit\n"
+                "print '(a)', repeat('x',4095)//achar(226)//achar(130)//achar(172)\n"
+                "write(error_unit,'(a)') repeat('y',4094)//achar(240)//achar(159)//achar(152)//achar(128)\n"
+                "end program", [])
+            streams = {"stdout": "", "stderr": ""}
+            for msg in messages:
+                if msg["msg_type"] == "stream":
+                    streams[msg["content"]["name"]] += msg["content"]["text"]
+            assert streams["stdout"] == "x" * 4095 + "\u20ac\n", streams["stdout"]
+            assert streams["stderr"] == "y" * 4094 + "\U0001f600\n", streams["stderr"]
             # Cells must not leak file descriptors (MAX_OPEN_FILES).
             for i in range(100):
                 check(client, "%d + 1" % i, [str(i + 1)])
             client.shutdown()
             process.wait(timeout=15)
             assert process.returncode == 0, process.returncode
+            print(("built-in" if managed else "default") + " native kernel: passed")
+    except BaseException:
+        if log.exists():
+            print(log.read_text(errors="replace"))
+        raise
+    finally:
+        if client:
+            client.stop_channels()
+        if process and process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=10)
+        connection.unlink(missing_ok=True)
+        (directory / "release").unlink(missing_ok=True)
+        waiter.unlink(missing_ok=True)
+        log.unlink(missing_ok=True)
+        directory.rmdir()
+
+
+def builtin_stop_kernel(lfortran):
+    """True when `lfortran kernel --managed` is the built-in kernel.
+
+    That kernel flushes its subscribers from an atexit handler, so stdout
+    written before STOP is delivered. A Xeus kernel publishes the same text
+    but does not flush it before the process ends. Builds from before the
+    flag existed have no built-in kernel to ask.
+    """
+    help_text = subprocess.run(
+        [lfortran, "kernel", "--help"],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    ).stdout
+    return "--managed" in help_text
+
+
+def check_stop_flushes(lfortran, stop, status, shown, managed):
+    """STOP and ERROR STOP end the kernel with their exit status. On the
+    built-in kernel, preceding output and STOP diagnostics are delivered.
+    On Windows, STOP must call the host exit() so the atexit flush runs."""
+    directory = Path.cwd() / ("kernel-stop-" + uuid.uuid4().hex)
+    directory.mkdir(mode=0o700)
+    connection = directory / "connection.json"
+    log = directory / "kernel.log"
+    client = None
+    process = None
+    try:
+        write_connection_file(fname=str(connection), key=uuid.uuid4().hex.encode("ascii"))
+        command = [lfortran, "kernel", "-f", str(connection)]
+        if managed:
+            command.append("--managed")
+        with log.open("wb") as output:
+            process = subprocess.Popen(
+                command,
+                stdin=subprocess.DEVNULL, stdout=output, stderr=output,
+            )
+            client = BlockingKernelClient(connection_file=str(connection))
+            client.load_connection_file()
+            client.start_channels()
+            client.wait_for_ready(timeout=30)
+            msg_id = client.execute(
+                "print *, 'before-stop'\n" + stop + "\nprint *, 'after-stop'")
+            texts = []
+            deadline = time.monotonic() + 20
+            exited = None
+            while time.monotonic() < deadline:
+                if process.poll() is not None and exited is None:
+                    exited = time.monotonic()
+                # The process exiting does not by itself deliver the last
+                # messages, so keep reading briefly after it goes.
+                if exited is not None and time.monotonic() > exited + 1:
+                    break
+                try:
+                    msg = client.get_iopub_msg(timeout=0.2)
+                except queue.Empty:
+                    continue
+                except Exception:
+                    if exited is not None:
+                        break
+                    raise
+                parent = (msg.get("parent_header") or {}).get("msg_id")
+                if parent != msg_id or msg["msg_type"] != "stream":
+                    continue
+                texts.append(msg["content"].get("text", ""))
+            code = process.wait(timeout=10)
+            blob = "".join(texts)
+            assert code == status, (code, status, blob, log.read_text(errors="replace"))
+            if managed:
+                assert "before-stop" in blob, blob
+                assert shown in blob, (stop, blob)
+                assert "after-stop" not in blob, blob
     except BaseException:
         if log.exists():
             print(log.read_text(errors="replace"))

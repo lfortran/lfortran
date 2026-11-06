@@ -314,10 +314,17 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         const Location &loc, SymbolTable *scope, std::string new_name,
         ASR::ttype_t *arg_type, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
+    // A pointer actual (for example an ASSOCIATE name) is passed to the
+    // generated helper by value: the helper and the C library function it
+    // calls both take the target's value type, and codegen loads the pointer
+    // when it converts the actual argument to the dummy. Keeping the Pointer
+    // wrapper here used to make codegen build an array descriptor for the
+    // scalar and pass it where the C function expects a value.
+    ASR::ttype_t *value_arg_type = ASRUtils::type_get_past_pointer(arg_type);
     std::string c_func_name;
-    switch (arg_type->type) {
+    switch (value_arg_type->type) {
         case ASR::ttypeType::Complex : {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 4) {
+            if (ASRUtils::extract_kind_from_ttype_t(value_arg_type) == 4) {
                 c_func_name = "_lfortran_c" + new_name;
             } else {
                 c_func_name = "_lfortran_z" + new_name;
@@ -325,10 +332,10 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
             break;
         }
         default : {
-            c_func_name = real_c_func_name(new_name, arg_type);
+            c_func_name = real_c_func_name(new_name, value_arg_type);
         }
     }
-    new_name = "_lcompilers_" + new_name + "_" + type_to_str_python_expr(arg_type, new_args[0].m_value);
+    new_name = "_lcompilers_" + new_name + "_" + type_to_str_python_expr(value_arg_type, new_args[0].m_value);
 
     declare_basic_variables(new_name);
     if (scope->get_symbol(new_name)) {
@@ -336,7 +343,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
         return b.Call(s, new_args, expr_type(f->m_return_var));
     }
-    fill_func_arg("x", arg_type);
+    fill_func_arg("x", value_arg_type);
     auto result = declare(new_name, ASRUtils::extract_type(return_type), ReturnVar);
 
     {
@@ -344,7 +351,7 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         Vec<ASR::expr_t*> args_1;
         {
             args_1.reserve(al, 1);
-            ASR::expr_t *arg = b.Variable(fn_symtab_1, "x", arg_type,
+            ASR::expr_t *arg = b.Variable(fn_symtab_1, "x", value_arg_type,
                 ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
             args_1.push_back(al, arg);
         }
@@ -743,8 +750,16 @@ namespace MathIntrinsicFunction{
     static inline ASR::expr_t* instantiate_functions(Allocator &al, const Location &loc,
             SymbolTable *scope, std::string lcompiler_name, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/) {
-        std::string c_func_name = real_c_func_name(lcompiler_name, arg_types[0]);
-        std::string new_name = "_lcompilers_" + lcompiler_name + "_"+ type_to_str_python_expr(arg_types[0], new_args[0].m_value);
+        // See UnaryIntrinsicFunction::instantiate_functions: the helper and
+        // its C interface take the value types, with pointer actuals (such as
+        // ASSOCIATE names) loaded by codegen at the call.
+        Vec<ASR::ttype_t*> value_arg_types;
+        value_arg_types.reserve(al, arg_types.size());
+        for (size_t i = 0; i < arg_types.size(); i++) {
+            value_arg_types.push_back(al, ASRUtils::type_get_past_pointer(arg_types[i]));
+        }
+        std::string c_func_name = real_c_func_name(lcompiler_name, value_arg_types[0]);
+        std::string new_name = "_lcompilers_" + lcompiler_name + "_"+ type_to_str_python_expr(value_arg_types[0], new_args[0].m_value);
 
         declare_basic_variables(new_name);
         if (scope->get_symbol(new_name)) {
@@ -752,10 +767,10 @@ namespace MathIntrinsicFunction{
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var));
         }
-        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("x", value_arg_types[0]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, arg_types.size(), arg_types);
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, value_arg_types.size(), value_arg_types);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
@@ -2196,7 +2211,9 @@ namespace Shiftr {
             return nullptr;
         }
         int64_t val;
-        if (kind == 1) {                       // For logical shift val1 is treated as unsigned
+        if (val2 == k_val) {
+            val = 0;
+        } else if (kind == 1) {                // For logical shift val1 is treated as unsigned
             val = (uint8_t) val1 >> val2;
         } else if(kind == 2) {
             val = (uint16_t) val1 >> val2;
@@ -2217,9 +2234,15 @@ namespace Shiftr {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = shiftr(x, y)
-        * r = x >> y
+        * r = x >> y, or 0 if y == bit_size(x)
         */
-        body.push_back(al, b.Assignment(result, b.LBitRshift(args[0], b.i2i_t(args[1], arg_types[0]), arg_types[0])));
+        int64_t bit_size = 8 * extract_kind_from_ttype_t(arg_types[0]);
+        ASR::expr_t *shift = b.i2i_t(args[1], arg_types[0]);
+        body.push_back(al, b.If(b.GtE(shift, b.i_t(bit_size, arg_types[0])), {
+            b.Assignment(result, b.i_t(0, return_type))
+        }, {
+            b.Assignment(result, b.LBitRshift(args[0], shift, arg_types[0]))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2238,6 +2261,10 @@ namespace Rshift {
 
     static ASR::expr_t *eval_Rshift(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        if (!ASR::is_a<ASR::IntegerConstant_t>(*args[0]) ||
+                !ASR::is_a<ASR::IntegerConstant_t>(*args[1])) {
+            return nullptr;
+        }
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int kind = ASRUtils::extract_kind_from_ttype_t(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_type);
@@ -2252,7 +2279,9 @@ namespace Rshift {
             ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
             return nullptr;
         }
-        int64_t val = val1 >> val2;
+        // val1 is sign-extended to 64 bits, so shifting by 63 gives all
+        // sign bits for every kind
+        int64_t val = val1 >> std::min<int64_t>(val2, 63);
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
 
@@ -2265,9 +2294,15 @@ namespace Rshift {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = rshift(x, y)
-        * r = x >> y
+        * r = x >> y, or x >> (bit_size(x) - 1) if y == bit_size(x)
         */
-        body.push_back(al, b.Assignment(result, b.BitRshift(args[0], args[1], arg_types[0])));
+        int64_t bit_size = 8 * extract_kind_from_ttype_t(arg_types[0]);
+        ASR::expr_t *shift = b.i2i_t(args[1], arg_types[0]);
+        body.push_back(al, b.If(b.GtE(shift, b.i_t(bit_size, arg_types[0])), {
+            b.Assignment(result, b.BitRshift(args[0], b.i_t(bit_size - 1, arg_types[0]), arg_types[0]))
+        }, {
+            b.Assignment(result, b.BitRshift(args[0], shift, arg_types[0]))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2296,7 +2331,7 @@ namespace Shiftl {
             ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
             return nullptr;
         }
-        int64_t val = val1 << val2;
+        int64_t val = val2 == k_val ? 0 : (int64_t)((uint64_t) val1 << val2);
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
 
@@ -2309,9 +2344,15 @@ namespace Shiftl {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = shiftl(x, y)
-        * r = x << y
+        * r = x << y, or 0 if y == bit_size(x)
         */
-        body.push_back(al, b.Assignment(result, b.BitLshift(args[0], b.i2i_t(args[1], arg_types[0]), arg_types[0])));
+        int64_t bit_size = 8 * extract_kind_from_ttype_t(arg_types[0]);
+        ASR::expr_t *shift = b.i2i_t(args[1], arg_types[0]);
+        body.push_back(al, b.If(b.GtE(shift, b.i_t(bit_size, arg_types[0])), {
+            b.Assignment(result, b.i_t(0, return_type))
+        }, {
+            b.Assignment(result, b.BitLshift(args[0], shift, arg_types[0]))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -2509,7 +2550,7 @@ namespace Ishft {
                 val = (uint64_t) val1 >> val2;
             }
         } else {
-            val = val1 << val2;
+            val = (int64_t)((uint64_t) val1 << val2);
         }
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
@@ -2523,7 +2564,9 @@ namespace Ishft {
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = ishft(x, y)
-        * if ( y <= 0) {
+        * if (y >= bit_size(x) .or. y <= -bit_size(x)) {
+        *   r = 0
+        * } else if ( y <= 0) {
         *   r = x >> ( -1 * y)
         * } else {
         *   r = x << y
@@ -2542,10 +2585,16 @@ namespace Ishft {
             if_shift = b.LBitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]);
             else_shift = b.BitLshift(args[0], arg_2, arg_types[0]);
         }
-        body.push_back(al, b.If(b.LtE(arg_2, b.i_t(0, arg_types[0])), {
-            b.Assignment(result, if_shift)
+        int64_t bit_size = 8 * ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        body.push_back(al, b.If(b.Or(b.GtE(arg_2, b.i_t(bit_size, arg_types[0])),
+                b.LtE(arg_2, b.i_t(-bit_size, arg_types[0]))), {
+            b.Assignment(result, b.i_t(0, return_type))
         }, {
-            b.Assignment(result, else_shift)
+            b.If(b.LtE(arg_2, b.i_t(0, arg_types[0])), {
+                b.Assignment(result, if_shift)
+            }, {
+                b.Assignment(result, else_shift)
+            })
         }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -4269,11 +4318,24 @@ namespace Ibset {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t result;
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if ( val2 < 0 ) {
             diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be non-negative", {loc}, "");
+            return nullptr;
         }
-        result = val1 | (int64_t{1} << val2);
+        if ( val2 >= 8 * kind ) {
+            diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be less than bit_size(i)", {loc}, "");
+            return nullptr;
+        }
+        int64_t result = val1 | (int64_t{1} << val2);
+        // Sign-extend the bit pattern from the result's declared integer kind.
+        if (kind == 1) {
+            result = checked_bit_pattern_cast<int8_t>(result);
+        } else if (kind == 2) {
+            result = checked_bit_pattern_cast<int16_t>(result);
+        } else if (kind == 4) {
+            result = checked_bit_pattern_cast<int32_t>(result);
+        }
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
     }
 
@@ -8139,6 +8201,78 @@ namespace Max {
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+    static inline bool is_zero(ASR::expr_t* e) {
+        int64_t value = -1;
+        return ASR::is_a<ASR::IntegerConstant_t>(*e)
+            && ASRUtils::extract_value(e, value) && value == 0;
+    }
+
+    // The length `x` if `extent` is the extent max(0, x) that create_extent
+    // makes, possibly converted to another kind, or a local initialized on
+    // entry with it (see ASRUtils::is_entry_initialized_local); otherwise
+    // nullptr.
+    static inline ASR::expr_t* get_clamped_length(ASR::expr_t* extent) {
+        while (ASR::is_a<ASR::Cast_t>(*extent)) {
+            extent = ASR::down_cast<ASR::Cast_t>(extent)->m_arg;
+        }
+        if (ASR::is_a<ASR::Var_t>(*extent)) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(extent)->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                return nullptr;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            return ASRUtils::is_entry_initialized_local(*v)
+                ? get_clamped_length(v->m_symbolic_value) : nullptr;
+        }
+        if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*extent)) {
+            return nullptr;
+        }
+        ASR::IntrinsicElementalFunction_t* max =
+            ASR::down_cast<ASR::IntrinsicElementalFunction_t>(extent);
+        if (!ASRUtils::is_intrinsic_max(*max) || max->n_args != 2) {
+            return nullptr;
+        }
+        if (is_zero(max->m_args[0])) {
+            return max->m_args[1];
+        }
+        return is_zero(max->m_args[1]) ? max->m_args[0] : nullptr;
+    }
+
+    // The extent of an explicit-shape dimension whose length `ub - lb + 1`
+    // is `length`: max(0, length) (Fortran 2018, 8.5.8.2). A length that
+    // cannot be negative, the size of an array or such an extent, is the
+    // extent itself.
+    static inline ASR::expr_t* create_extent(Allocator &al,
+            ASR::expr_t* length) {
+        ASR::expr_t* past_cast = length;
+        while (ASR::is_a<ASR::Cast_t>(*past_cast)) {
+            past_cast = ASR::down_cast<ASR::Cast_t>(past_cast)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArraySize_t>(*past_cast)
+                || get_clamped_length(length) != nullptr) {
+            return length;
+        }
+        const Location &loc = length->base.loc;
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(length));
+        int64_t value = 0;
+        ASR::expr_t* length_value = ASRUtils::expr_value(length);
+        if (length_value != nullptr
+                && ASRUtils::extract_value(length_value, value)) {
+            if (value >= 0) {
+                return length;
+            }
+            return EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type));
+        }
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 2);
+        args.push_back(al, EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type)));
+        args.push_back(al, length);
+        return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicElementalFunctions::Max),
+            args.p, args.size(), 0, type, nullptr));
     }
 
 }  // namespace Max

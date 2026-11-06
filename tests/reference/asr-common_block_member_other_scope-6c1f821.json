@@ -2,7 +2,7 @@
     "basename": "asr-common_block_member_other_scope-6c1f821",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/common_block_member_other_scope.asr",
-    "infile_hash": "72d281ab08161327b7b9a768faf72397a4fee01f1c70d4dba04b5fc2",
+    "infile_hash": "10f4dce4c0707d1f64e0370a7f66b4748ec0af80ee6b987e9cefb605",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

@@ -28,8 +28,7 @@ host -- where the host next needs that, and nowhere else:
 
 * before a host statement that may read or write, allocate or free storage a
   pending launch may write: a read would see stale values, and the copy back
-  at the next wait would undo a write. Storage a launch only reads needs no
-  wait: the runtime copies it when the launch is made;
+  at the next wait would undo a write;
 * before a statement that acts outside the program -- input/output, `stop`,
   a call to a procedure that is not pure -- while a launch whose kernel can
   stop is pending, so that a stop the kernel recorded ends the program first,
@@ -39,6 +38,14 @@ host -- where the host next needs that, and nowhere else:
 * before `return`, `goto` and the end of the procedure, when a launch is
   pending: what the caller sees is complete;
 * before any statement this pass does not know.
+
+Storage a launch only reads the runtime may hand the kernel in place (the
+unified and managed memory models), so a GpuWait -- wait for the launches
+that read host memory in place, copying nothing back -- goes before a host
+statement that may change or free storage a pending launch reads, at the
+end of a `block` whose locals a pending launch reads, and where any GpuSync
+would go. Accesses are not split into reads and writes: a statement that
+may access such storage, other than by evaluating an expression, waits.
 
 After every GpuSync, the stops each pending launch may have recorded are
 replayed (GpuKernelLaunch.stop_replay, see gpu_offload_stop.h), in launch
@@ -61,8 +68,14 @@ struct State {
     bool reachable = true;
     // Any launch may be pending.
     bool any = false;
-    // What the pending launches may write, sorted.
+    // What the pending launches may write, sorted; `Path::pointee()` for a
+    // write through a pointer that may point to anything, and a path rooted
+    // at the pointer for one that the procedure never associates
+    // (`may_point_anywhere` holds for both).
     std::vector<Path> written;
+    // What the launches since the last wait may read and not write, sorted,
+    // in the same form as `written`.
+    std::vector<Path> read;
     // The pending launches that may have recorded a stop, in launch order.
     std::vector<ASR::GpuKernelLaunch_t*> stops;
 
@@ -75,12 +88,21 @@ struct State {
     void clear() {
         any = false;
         written.clear();
+        read.clear();
         stops.clear();
     }
 
+    static void add_path(std::vector<Path> &paths, const Path &p) {
+        auto it = std::lower_bound(paths.begin(), paths.end(), p);
+        if (it == paths.end() || !(*it == p)) paths.insert(it, p);
+    }
+
     void add_written(const Path &p) {
-        auto it = std::lower_bound(written.begin(), written.end(), p);
-        if (it == written.end() || !(*it == p)) written.insert(it, p);
+        add_path(written, p);
+    }
+
+    void add_read(const Path &p) {
+        add_path(read, p);
     }
 
     void add_stop(ASR::GpuKernelLaunch_t *launch) {
@@ -97,12 +119,13 @@ struct State {
         }
         any = any || o.any;
         for (const Path &p : o.written) add_written(p);
+        for (const Path &p : o.read) add_read(p);
         for (ASR::GpuKernelLaunch_t *l : o.stops) add_stop(l);
     }
 
     bool operator==(const State &o) const {
         return reachable == o.reachable && any == o.any
-            && written == o.written && stops == o.stops;
+            && written == o.written && read == o.read && stops == o.stops;
     }
 };
 
@@ -135,11 +158,127 @@ bool launches(ASR::stmt_t **body, size_t n_body) {
     return f.found;
 }
 
+// The variables a statement of a procedure may associate a pointer with:
+// whatever the value of a `=>` names (an associate name, and a pointer
+// component of a structure constructor, are bound that way too), the actual
+// arguments of a call whose dummy may be a target or a pointer, the
+// arguments of an intrinsic subroutine or function (`move_alloc`), what
+// `c_loc` takes, and the selector of `select type`. Their subscripts are
+// counted too. A dummy that is neither a pointer nor a target leaves no
+// pointer associated with its actual argument once the procedure returns
+// (every pointer associated with it becomes undefined), unless the procedure
+// is not Fortran (`bind(c)`).
+class PointerReach : public ASR::BaseWalkVisitor<PointerReach> {
+public:
+    std::set<ASR::symbol_t*> &vars;
+    std::set<ASR::symbol_t*> blocks_seen;
+    // Inside one of the expressions above.
+    int inside = 0;
+    explicit PointerReach(std::set<ASR::symbol_t*> &vars_) : vars(vars_) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (inside > 0) {
+            vars.insert(ASRUtils::symbol_get_past_external(x.m_v));
+        }
+    }
+    void reached(const ASR::expr_t *e) {
+        if (e == nullptr) return;
+        inside++;
+        visit_expr(*e);
+        inside--;
+    }
+    void visit_Associate(const ASR::Associate_t &x) {
+        visit_expr(*x.m_target);
+        reached(x.m_value);
+    }
+    void visit_SelectType(const ASR::SelectType_t &x) {
+        reached(x.m_selector);
+        BaseWalkVisitor::visit_SelectType(x);
+    }
+    // Whether a call of `name` with `n_args` arguments may leave a pointer
+    // associated with its argument `i`.
+    static bool may_keep(ASR::symbol_t *name, size_t n_args, size_t i) {
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
+        if (!ASR::is_a<ASR::Function_t>(*callee)) return true;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(callee);
+        if (ASRUtils::get_FunctionType(fn)->m_abi == ASR::abiType::BindC
+                || fn->n_args != n_args || fn->m_args[i] == nullptr
+                || !ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+            return true;
+        }
+        ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*dummy)) return true;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(dummy);
+        return v->m_target_attr || ASRUtils::is_pointer(v->m_type);
+    }
+    void call(ASR::symbol_t *name, ASR::call_arg_t *args, size_t n_args,
+            ASR::expr_t *dt) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (!args[i].m_value) continue;
+            if (dt != nullptr || may_keep(name, n_args, i)) {
+                reached(args[i].m_value);
+            } else {
+                visit_expr(*args[i].m_value);
+            }
+        }
+        reached(dt);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        call(x.m_name, x.m_args, x.n_args, x.m_dt);
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        call(x.m_name, x.m_args, x.n_args, x.m_dt);
+    }
+    void visit_IntrinsicImpureSubroutine(
+            const ASR::IntrinsicImpureSubroutine_t &x) {
+        inside++;
+        BaseWalkVisitor::visit_IntrinsicImpureSubroutine(x);
+        inside--;
+    }
+    void visit_IntrinsicImpureFunction(
+            const ASR::IntrinsicImpureFunction_t &x) {
+        inside++;
+        BaseWalkVisitor::visit_IntrinsicImpureFunction(x);
+        inside--;
+    }
+    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+        inside++;
+        BaseWalkVisitor::visit_StructConstructor(x);
+        inside--;
+    }
+    void visit_PointerToCPtr(const ASR::PointerToCPtr_t &x) {
+        reached(x.m_arg);
+    }
+    void visit_GetPointer(const ASR::GetPointer_t &x) {
+        reached(x.m_arg);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks_seen.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks_seen.insert(b).second) return;
+        ASR::AssociateBlock_t *block = ASR::down_cast<ASR::AssociateBlock_t>(
+            b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
 class RoutineSync {
 public:
     RoutineSync(Allocator &al_, SymbolTable *routine_,
-            const PointerTargets &pointers_)
-        : al(al_), routine(routine_), pointers(pointers_) {}
+            const PointerTargets &pointers_,
+            const std::set<ASR::symbol_t*> &reached_)
+        : al(al_), routine(routine_), pointers(pointers_),
+          reached(reached_) {}
 
     // The new body of the routine.
     Vec<ASR::stmt_t*> run(ASR::stmt_t **body, size_t n_body,
@@ -176,6 +315,8 @@ private:
     Allocator &al;
     SymbolTable *routine;
     const PointerTargets &pointers;
+    // What the procedure may associate a pointer with (PointerReach).
+    const std::set<ASR::symbol_t*> &reached;
     // Which procedures may act outside the program.
     std::map<ASR::Function_t*, bool> outside;
     std::vector<SymbolTable*> blocks;
@@ -192,8 +333,9 @@ private:
     std::vector<Loop> loops;
     std::vector<ASR::expr_t*> status_buffers;
     std::vector<ASR::symbol_t*> status_symbols;
-    // How many waits have been placed, in either mode.
+    // How many GpuSync and GpuWait have been placed, in either mode.
     size_t n_syncs = 0;
+    size_t n_waits = 0;
 
     // Waits for every pending launch, and replays the stops they recorded.
     void sync(State &s, bool emit, Vec<ASR::stmt_t*> *out,
@@ -212,38 +354,136 @@ private:
         s.clear();
     }
 
+    // Waits for the launches that read host memory in place, which leaves
+    // what the pending launches write on the device.
+    void wait(State &s, bool emit, Vec<ASR::stmt_t*> *out,
+            const Location &loc) {
+        n_waits++;
+        if (emit) {
+            out->push_back(al, ASRUtils::STMT(ASR::make_GpuWait_t(al, loc)));
+        }
+        s.read.clear();
+    }
+
+    // Whether `root` is a target local of a `block` (or `associate`) that
+    // no pointer can point into: nothing in the procedure associates a
+    // pointer with it or hands it to another procedure, and only the
+    // construct can name it.
+    bool out_of_reach(ASR::symbol_t *root) const {
+        if (root == nullptr || !ASR::is_a<ASR::Variable_t>(*root)) {
+            return false;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(root);
+        return v->m_target_attr && !is_pointer_variable(root)
+            && v->m_intent == ASR::intentType::Local
+            && v->m_storage != ASR::storage_typeType::Save
+            && v->m_parent_symtab != routine
+            && enclosing_routine(v->m_parent_symtab) == routine
+            && reached.count(root) == 0;
+    }
+
+    bool may_overlap(const Path &a, const Path &b) const {
+        if (a.root != b.root
+                && (out_of_reach(a.root) || out_of_reach(b.root))) {
+            return false;
+        }
+        // Generated associations can take the address of non-TARGET storage.
+        // That is a body-local alias fact, not a change to the dummy's ABI.
+        if ((may_point_anywhere(a.root) && reached.count(b.root) > 0)
+                || (may_point_anywhere(b.root) && reached.count(a.root) > 0)) {
+            return true;
+        }
+        return overlap(a, b);
+    }
+
     bool conflicts(const Accesses &acc, const State &s) {
-        if (s.written.empty()) return false;
+        return conflicts(acc, s.written);
+    }
+
+    // Whether `acc` may access storage one of `paths` names.
+    bool conflicts(const Accesses &acc, const std::vector<Path> &paths) {
+        if (paths.empty()) return false;
         if (acc.everything) return true;
-        for (const Path &w : s.written) {
-            if (acc.globals && reachable_elsewhere(w.root, routine)) {
+        for (const Path &w : paths) {
+            if (acc.globals && (reachable_elsewhere(w.root, routine)
+                        || reached.count(w.root) > 0)
+                    && !out_of_reach(w.root)) {
                 return true;
             }
             for (const Path &a : acc.paths) {
-                if (overlap(a, w)) return true;
+                if (may_overlap(a, w)) return true;
             }
         }
         return false;
     }
 
-    // Waits before a statement with these accesses when it needs to.
+    // Whether evaluating an expression with these accesses may change what
+    // a pending launch reads: only through a procedure it calls.
+    bool expression_changes_read(const Accesses &acc, const State &s) {
+        if (!acc.everything && !acc.globals) return false;
+        return conflicts(acc, s.read);
+    }
+
+    // Waits before a statement with these accesses when it needs to. The
+    // accesses of a statement (`statement`) may change what they access;
+    // those of an expression only read it, except through the procedures
+    // it calls.
     void before(const Accesses &acc, State &s, bool emit,
-            Vec<ASR::stmt_t*> *out, const Location &loc) {
+            Vec<ASR::stmt_t*> *out, const Location &loc,
+            bool statement = false) {
         if (conflicts(acc, s) || (acc.observable && !s.stops.empty())) {
             sync(s, emit, out, loc);
+        } else if (statement ? conflicts(acc, s.read)
+                : expression_changes_read(acc, s)) {
+            wait(s, emit, out, loc);
         }
+    }
+
+    // Whether `scope` has unsaved storage a pointer may point to, including
+    // storage reached through compiler-generated associations.
+    bool has_target_locals(SymbolTable *scope) const {
+        for (auto &item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                item.second);
+            if ((v->m_target_attr || reached.count(item.second) > 0)
+                    && v->m_storage != ASR::storage_typeType::Save
+                    && !out_of_reach(item.second)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Tells the runtime to forget what pending launches write into the
     // locals of `scope`, which end here.
     void discard_locals(SymbolTable *scope, State &s, bool emit,
             Vec<ASR::stmt_t*> *out, const Location &loc) {
+        // A local a pending launch reads in place ends too: its storage
+        // must outlive the read.
+        for (const Path &p : s.read) {
+            if ((may_point_anywhere(p.root) && has_target_locals(scope))
+                    || (!may_point_anywhere(p.root)
+                        && ASR::is_a<ASR::Variable_t>(*p.root)
+                        && ASR::down_cast<ASR::Variable_t>(p.root)
+                            ->m_parent_symtab == scope)) {
+                wait(s, emit, out, loc);
+                break;
+            }
+        }
         Vec<ASR::expr_t*> vars;
         vars.reserve(al, 1);
         std::vector<Path> kept;
         bool must_sync = false;
         for (const Path &p : s.written) {
-            bool local = p.root != nullptr
+            if (may_point_anywhere(p.root) && has_target_locals(scope)) {
+                // What a pointer may point to: a target local of `scope`
+                // too.
+                must_sync = true;
+            }
+            // A write through a local pointer is not into the pointer's
+            // own storage.
+            bool local = !may_point_anywhere(p.root)
                 && ASR::is_a<ASR::Variable_t>(*p.root)
                 && ASR::down_cast<ASR::Variable_t>(p.root)->m_parent_symtab
                     == scope
@@ -317,9 +557,13 @@ private:
         if (entry.any && !launches(body, n_body)) {
             // A loop that launches nothing and waits in its first
             // iteration waits before it instead, once.
-            size_t placed = n_syncs;
+            size_t placed = n_syncs, placed_waits = n_waits;
             process_body(body, n_body, entry, false, nullptr);
-            if (n_syncs != placed) sync(entry, emit, out, loc);
+            if (n_syncs != placed) {
+                sync(entry, emit, out, loc);
+            } else if (n_waits != placed_waits) {
+                wait(entry, emit, out, loc);
+            }
         }
         State head = entry;
         for (int iteration = 0; ; iteration++) {
@@ -331,6 +575,7 @@ private:
             back.join(loops.back().at_cycle);
             if (test != nullptr && back.reachable
                     && (conflicts(test_acc, back)
+                        || expression_changes_read(test_acc, back)
                         || (test_acc.observable && !back.stops.empty()))) {
                 loops.back().sync_at_back_edge = true;
             }
@@ -396,6 +641,12 @@ private:
             if (v) c.visit_expr(*v);
         }
         std::vector<Path> writes;
+        // What it only reads, which the runtime may hand it in place.
+        std::vector<Path> reads;
+        // The launch writes a buffer this pass cannot follow.
+        bool opaque = false;
+        // It reads one.
+        bool opaque_read = false;
         for (size_t i = 0; i < layout.n_buffers; i++) {
             const ASR::gpu_kernel_argument_t &e = layout.m_buffers[i];
             ASR::expr_t *arg = x.m_args[e.m_argument_index].m_value;
@@ -404,7 +655,28 @@ private:
             Path p;
             std::vector<ASR::expr_t*> subscripts;
             if (!path_of(pointers, arg, p, &subscripts)) {
-                acc.everything = true;
+                if (!is_pointer_variable(designator_base(arg))) {
+                    // Not a designator this pass follows: the host may
+                    // access anything for it, and the kernel may write
+                    // anything there, so the launch is waited for at once.
+                    // Unreachable today: launch buffers are designators
+                    // that `path_of` follows.
+                    acc.everything = true;
+                    if (e.m_written) opaque = true;
+                    else opaque_read = true;
+                    continue;
+                }
+                // Through a pointer that may point to anything. The host
+                // evaluates the subscripts, and accesses the data only when
+                // it copies it: a later launch handed the storage itself
+                // sees what this kernel writes there, as for a resolved
+                // path (lfortran_gpu_runtime.h).
+                for (ASR::expr_t *sub : subscripts) c.visit_expr(*sub);
+                if (handling != GpuBufferHandling::Storage) {
+                    acc.everything = true;
+                }
+                if (e.m_written) writes.push_back(Path::pointee());
+                else reads.push_back(Path::pointee());
                 continue;
             }
             for (ASR::expr_t *sub : subscripts) c.visit_expr(*sub);
@@ -426,6 +698,7 @@ private:
                 acc.paths.push_back(q);
             }
             if (e.m_written) writes.push_back(p);
+            else reads.push_back(p);
         }
         before(acc, s, emit, out, loc);
         if (x.m_stop_status != nullptr) {
@@ -448,7 +721,13 @@ private:
         if (emit) out->push_back(al, &x.base);
         s.any = true;
         for (const Path &p : writes) s.add_written(p);
+        for (const Path &p : reads) s.add_read(p);
         if (x.m_stop_status != nullptr) s.add_stop(&x);
+        if (opaque) {
+            sync(s, emit, out, loc);
+        } else if (opaque_read) {
+            wait(s, emit, out, loc);
+        }
     }
 
     // Deallocating storage a pending launch writes does not need the
@@ -487,6 +766,10 @@ private:
             }
             case ASR::stmtType::GpuSync: {
                 sync(s, emit, out, loc);
+                return s;
+            }
+            case ASR::stmtType::GpuWait: {
+                wait(s, emit, out, loc);
                 return s;
             }
             case ASR::stmtType::If: {
@@ -692,7 +975,7 @@ private:
                 Accesses acc;
                 AccessCollector c(acc, routine, pointers, outside);
                 c.visit_stmt(*x);
-                before(acc, s, emit, out, loc);
+                before(acc, s, emit, out, loc, true);
                 if (emit) out->push_back(al, x);
                 return s;
             }
@@ -713,7 +996,7 @@ private:
                 Accesses acc;
                 AccessCollector c(acc, routine, pointers, outside);
                 c.visit_stmt(*x);
-                before(acc, s, emit, out, loc);
+                before(acc, s, emit, out, loc, true);
                 if (emit) out->push_back(al, x);
                 return s;
             }
@@ -759,7 +1042,10 @@ void place_syncs(Allocator &al, SymbolTable *scope, ASR::stmt_t **&body,
     PointerTargets targets;
     PointerCollector collector(targets);
     for (size_t i = 0; i < n_body; i++) collector.visit_stmt(*body[i]);
-    RoutineSync sync(al, scope, targets);
+    std::set<ASR::symbol_t*> reached;
+    PointerReach reach(reached);
+    for (size_t i = 0; i < n_body; i++) reach.visit_stmt(*body[i]);
+    RoutineSync sync(al, scope, targets, reached);
     Vec<ASR::stmt_t*> result = sync.run(body, n_body, loc);
     body = result.p;
     n_body = result.n;

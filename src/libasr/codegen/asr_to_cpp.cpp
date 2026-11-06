@@ -9,6 +9,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/pass/unused_functions.h>
+#include <libasr/pass/nested_vars.h>
 
 
 namespace LCompilers {
@@ -198,11 +199,55 @@ public:
         }
     }
 
-    std::string generate_templates_for_arrays(std::string v_name) {
+    std::string generate_template_parameter(std::string v_name, bool is_array=false) {
         std::string typename_T = "T" + std::to_string(template_number);
         template_for_Kokkos += "typename " + typename_T + ", ";
         template_number += 1;
-        return typename_T + "* " + v_name;
+        return typename_T + (is_array ? "* " : " ") + v_name;
+    }
+
+    std::string convert_procedure_actual(ASR::expr_t* actual, ASR::expr_t* dummy,
+                                        const std::string& value) {
+        if (!ASR::is_a<ASR::Var_t>(*actual)
+                || !ASR::is_a<ASR::Function_t>(
+                    *ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(actual)->m_v))
+                || !ASR::is_a<ASR::Var_t>(*dummy)) {
+            return value;
+        }
+        ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(dummy)->m_v);
+        if (ASR::is_a<ASR::Variable_t>(*symbol)) {
+            ASR::Function_t* iface = get_dummy_procedure_interface(
+                ASR::down_cast<ASR::Variable_t>(symbol));
+            if (iface && ASRUtils::get_FunctionType(*iface)->m_abi == ASR::abiType::Source) {
+                std::string args = current_scope->get_unique_name("args");
+                // The actual's emitted name may come from an enclosing scope.
+                if (args == value) {
+                    args = current_scope->get_unique_name(args + "_");
+                }
+                // Delay specialization of array templates until the callback is invoked.
+                return "[](auto&&... " + args + ") -> decltype(auto) { return "
+                    + value + "(" + args + "...); }";
+            }
+        }
+        return value;
+    }
+
+    // The C++ type of a Var of the variable that the frame member `member`
+    // refers to: only scalars of intrinsic numeric or logical type are
+    // supported so far.
+    std::string designator_type(const ASR::Variable_t &member) {
+        ASR::ttype_t* t = ASR::down_cast<ASR::Reference_t>(member.m_type)->m_type;
+        if (ASRUtils::is_allocatable_or_pointer(t) || ASRUtils::is_array(t) ||
+                !(ASRUtils::is_integer(*t) || ASRUtils::is_real(*t) ||
+                ASRUtils::is_complex(*t) || ASRUtils::is_logical(*t))) {
+            throw unsupported_reference_member(member);
+        }
+        if (ASRUtils::is_logical(*t)) {
+            return "bool";
+        }
+        return CUtils::get_c_type_from_ttype_t(t, false);
     }
 
     std::string convert_variable_decl(const ASR::Variable_t &v, DeclarationOptions* decl_options=nullptr)
@@ -210,6 +255,28 @@ public:
         if (v.m_storage == ASR::storage_typeType::Threadprivate) {
             throw CodeGenError("threadprivate variables are not supported by the cpp backend",
                 v.base.base.loc);
+        }
+        LCOMPILERS_ASSERT(!ASRUtils::is_host_associated(v));
+        if (ASRUtils::is_reference(v.m_type)) {
+            // A member of Reference type holds the address of the variable
+            // that it designates (see visit_StructInstanceMember).
+            return designator_type(v) + " *" + std::string(v.m_name);
+        }
+        if (ASR::is_a<ASR::StructType_t>(*v.m_type) &&
+                ASRUtils::is_frame_type(v.m_type_declaration)) {
+            return convert_frame_decl(v);
+        }
+        if (ASRUtils::is_frame_type(v.m_type_declaration) ||
+                ASRUtils::is_frame_slot_type(v.m_type_declaration)) {
+            // A frame slot (see nested_vars): the slots of a thunk pool, or
+            // the current-frame slot, which the thunks of procedure values
+            // in a main program, of defined input/output and of interfaces
+            // that depend on host variables read
+            throw CodeGenError("host association through a procedure value "
+                "(an internal procedure used as an actual argument, as a "
+                "procedure pointer target or for defined input/output) or in "
+                "an interface that refers to host variables is not supported "
+                "by the cpp backend yet", v.base.base.loc);
         }
         bool use_static;
         bool use_templates_for_arrays;
@@ -229,6 +296,42 @@ public:
                         v.m_intent == ASRUtils::intent_unspecified
                         );
         ASR::ttype_t* v_m_type = ASRUtils::type_get_past_array(v.m_type);
+        if (ASR::is_a<ASR::FunctionType_t>(*v_m_type)) {
+            ASR::Function_t* iface = nullptr;
+            if (v.m_type_declaration) {
+                ASR::symbol_t* td = ASRUtils::symbol_get_past_external(v.m_type_declaration);
+                if (td && ASR::is_a<ASR::Function_t>(*td)) {
+                    iface = ASR::down_cast<ASR::Function_t>(td);
+                }
+            }
+            if (!iface) {
+                diag.codegen_error_label("Procedure variable '"
+                    + std::string(v.m_name)
+                    + "' has no interface. Add explicit interface.",
+                    {v.base.base.loc}, "");
+                throw Abort();
+            }
+            if (use_templates_for_arrays && ASRUtils::is_arg_dummy(v.m_intent)
+                    && ASRUtils::get_FunctionType(*iface)->m_abi == ASR::abiType::Source) {
+                return generate_template_parameter(v.m_name);
+            }
+            std::string ret = "void ";
+            if (iface->m_return_var) {
+                ASR::Variable_t* rv = ASRUtils::EXPR2VAR(iface->m_return_var);
+                ret = get_return_var_type(rv);
+            }
+            std::string params;
+            for (size_t i=0; i<iface->n_args; i++) {
+                ASR::Variable_t* arg = ASRUtils::EXPR2VAR(iface->m_args[i]);
+                CPPDeclarationOptions inner_opts;
+                inner_opts.use_static = false;
+                inner_opts.use_templates_for_arrays = true;
+                params += convert_variable_decl(*arg, &inner_opts);
+                if (i < iface->n_args-1) params += ", ";
+            }
+            sub = ret + "(*" + std::string(v.m_name) + ")(" + params + ")";
+            return sub;
+        }
         bool is_array = ASRUtils::is_array(v.m_type);
         bool dummy = ASRUtils::is_arg_dummy(v.m_intent);
 
@@ -240,7 +343,7 @@ public:
             std::string dims = convert_dims(n_dims, m_dims, size); \
             if( is_array ) { \
                 if( use_templates_for_arrays ) { \
-                    sub += generate_templates_for_arrays(std::string(v.m_name)); \
+                    sub += generate_template_parameter(std::string(v.m_name), true); \
                 } else { \
                     generate_array_decl(sub, std::string(v.m_name), type_name, dims, \
                                         encoded_type_name, m_dims, n_dims, size, \
@@ -447,7 +550,45 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         current_scope = current_scope_copy;
     }
 
+    // Declares at file scope the frame types (see nested_vars) that `scope`
+    // declares.
+    void declare_frame_types(SymbolTable &scope) {
+        for (auto &item : scope.get_scope()) {
+            if (!ASRUtils::is_frame_type(item.second)) {
+                continue;
+            }
+            ASR::Struct_t* frame_type = ASR::down_cast<ASR::Struct_t>(item.second);
+            std::string body;
+            CPPDeclarationOptions decl_options;
+            decl_options.use_static = false;
+            decl_options.use_templates_for_arrays = false;
+            for (size_t i = 0; i < frame_type->n_members; i++) {
+                ASR::symbol_t* member = frame_type->m_symtab->get_symbol(
+                    frame_type->m_members[i]);
+                body += "    " + convert_variable_decl(
+                    *ASR::down_cast<ASR::Variable_t>(member), &decl_options) + ";\n";
+            }
+            array_types_decls += "\nstruct " + std::string(frame_type->m_name)
+                + " {\n" + body + "};\n";
+        }
+    }
+
+    // The declaration of the frame `v` (see nested_vars), which a Var of it
+    // designates by its address, as in the C backend.
+    std::string convert_frame_decl(const ASR::Variable_t &v) {
+        std::string type_name = "struct " + std::string(ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(v.m_type_declaration)));
+        if (ASRUtils::is_arg_dummy(v.m_intent)) {
+            return type_name + "* " + std::string(v.m_name);
+        }
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        std::string value_name = std::string(v.m_name) + "_value";
+        return type_name + " " + value_name + ";\n" + indent + type_name + "* "
+            + std::string(v.m_name) + " = &" + value_name;
+    }
+
     void visit_Program(const ASR::Program_t &x) {
+        declare_frame_types(*x.m_symtab);
         // Generate code for nested subroutines and functions first:
         std::string contains;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -685,10 +826,18 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
     }
 
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        // A RangePolicy runs one index with unit step; any other DO
+        // CONCURRENT runs as nested loops.
+        int64_t step = 0;
+        if (x.n_head != 1 || !ASRUtils::extract_value(
+                ASRUtils::expr_value(x.m_head[0].m_increment), step)
+                || step != 1) {
+            BaseCCPPVisitor<ASRToCPPVisitor>::visit_DoConcurrentLoop(x);
+            return;
+        }
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "Kokkos::parallel_for(";
         out += "Kokkos::RangePolicy<Kokkos::DefaultExecutionSpace>(";
-        LCOMPILERS_ASSERT(x.n_head == 1);
         visit_expr(*x.m_head[0].m_start);
         out += src + ", ";
         visit_expr(*x.m_head[0].m_end);
@@ -698,10 +847,14 @@ Kokkos::View<T*> from_std_vector(const std::vector<T> &v)
         out += ", KOKKOS_LAMBDA(const long " + std::string(loop_var->m_name)
                 + ") {\n";
         indentation_level += 1;
+        // A CYCLE ends the call of the lambda for this iteration.
+        construct_frames.push_back({nullptr, true, false, "", ""});
+        construct_frames.back().is_lambda = true;
         for (size_t i=0; i<x.n_body; i++) {
             this->visit_stmt(*x.m_body[i]);
             out += src;
         }
+        construct_frames.pop_back();
         out += indent + "});\n";
         indentation_level -= 1;
         src = out;
@@ -741,6 +894,9 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
 {
     co.po.always_run = true;
     pass_unused_functions(al, asr, co.po);
+    // Internal procedures reach the variables of their host through a
+    // frame, which the visitor lowers.
+    pass_nested_vars(al, asr, co.po);
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);

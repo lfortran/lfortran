@@ -453,6 +453,10 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("node_to_return = ( ASR::asr_t* ) ((CommonBlock_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
+        self.emit("case ASR::symbolType::ScopedVariableAttribute: {", 3)
+        self.emit("node_to_return = (ASR::asr_t*)sym;", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
         self.emit("}", 2)
         self.emit("}", 1)
         self.emit("static inline const ASR::symbol_t *symbol_get_past_external_(ASR::symbol_t *f) {", 1)
@@ -1391,6 +1395,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "array_index" or
             field.type == "array_extent_check" or
             field.type == "alloc_arg" or
+            field.type == "reduction_expr" or
             field.type == "case_stmt" or
             field.type == "type_stmt" or
             field.type == "rank_stmt" or
@@ -1404,6 +1409,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     field.type != "array_index" and
                     field.type != "array_extent_check" and
                     field.type != "alloc_arg" and
+                    field.type != "reduction_expr" and
                     field.type != "dimension" and
                     field.type != "do_loop_head"):
                     pointer_char = '*'
@@ -1448,6 +1454,12 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    }", level)
                     self.emit("    alloc_arg_copy.m_codims = codims_copy.p;", level)
                     self.emit("    m_%s.push_back(al, alloc_arg_copy);"%(field.name), level)
+                elif field.type == "reduction_expr":
+                    self.emit("    ASR::reduction_expr_t reduction_copy;", level)
+                    self.emit("    reduction_copy.loc = x->m_%s[i].loc;"%(field.name), level)
+                    self.emit("    reduction_copy.m_op = x->m_%s[i].m_op;"%(field.name), level)
+                    self.emit("    reduction_copy.m_arg = self().duplicate_expr(x->m_%s[i].m_arg);"%(field.name), level)
+                    self.emit("    m_%s.push_back(al, reduction_copy);"%(field.name), level)
                 elif field.type == "array_index":
                     self.emit("    ASR::array_index_t array_index_copy;", level)
                     self.emit("    array_index_copy.loc = x->m_%s[i].loc;"%(field.name), level)

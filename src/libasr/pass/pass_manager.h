@@ -16,7 +16,6 @@
     #include <lpython/utils.h>
 #endif
 
-#include <libasr/pass/replace_do_loops.h>
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/while_else.h>
 #include <libasr/pass/replace_init_expr.h>
@@ -34,8 +33,7 @@
 #include <libasr/pass/replace_symbolic.h>
 #include <libasr/pass/replace_intrinsic_function.h>
 #include <libasr/pass/replace_intrinsic_subroutine.h>
-#include <libasr/pass/replace_fma.h>
-#include <libasr/pass/loop_unroll.h>
+#include <libasr/pass/loop_fusion.h>
 #include <libasr/pass/replace_sign_from_value.h>
 #include <libasr/pass/replace_class_constructor.h>
 #include <libasr/pass/unused_functions.h>
@@ -44,13 +42,14 @@
 #include <libasr/pass/replace_for_all.h>
 #include <libasr/pass/replace_init_expr.h>
 #include <libasr/pass/replace_select_case.h>
-#include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
 #include <libasr/pass/array_by_data.h>
 #include <libasr/pass/list_expr.h>
 #include <libasr/pass/create_subroutine_from_function.h>
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/nested_vars.h>
+#include <libasr/pass/specialize_procedure_arguments.h>
+#include <libasr/pass/specialize_frame_arguments.h>
 #include <libasr/pass/unique_symbols.h>
 #include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/pass/array_struct_temporary.h>
@@ -70,6 +69,7 @@
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_launch_sync.h>
+#include <libasr/pass/gpu_sequential_unroll.h>
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_time_skew.h>
 #include <libasr/pass/gpu_index_set_split.h>
@@ -78,6 +78,7 @@
 #include <libasr/pass/gpu_vector_lanes.h>
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/gpu_device_workspace.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_struct_component_args.h>
 #include <libasr/pass/gpu_device_heap.h>
 #include <libasr/pass/gpu_kernel_abi.h>
@@ -107,7 +108,6 @@ namespace LCompilers {
         std::vector<std::string> _skip_passes, _c_skip_passes;
         std::map<std::string, pass_function> _passes_db = {
             {"replace_with_compile_time_values", &pass_replace_with_compile_time_values},
-            {"do_loops", &pass_replace_do_loops},
             {"while_else", &pass_while_else},
             {"global_stmts", &pass_wrap_global_stmts},
             {"implied_do_loops", &pass_replace_implied_do_loops},
@@ -122,14 +122,12 @@ namespace LCompilers {
             {"class_constructor", &pass_replace_class_constructor},
             {"unused_functions", &pass_unused_functions},
             {"div_to_mul", &pass_replace_div_to_mul},
-            {"fma", &pass_replace_fma},
+            {"loop_fusion", &pass_loop_fusion},
             {"sign_from_value", &pass_replace_sign_from_value},
             {"inline_function_calls", &pass_inline_function_calls},
-            {"loop_unroll", &pass_loop_unroll},
             {"dead_code_removal", &pass_dead_code_removal},
             {"forall", &pass_replace_for_all},
             {"select_case", &pass_replace_select_case},
-            {"loop_vectorise", &pass_loop_vectorise},
             {"array_dim_intrinsics_update", &pass_update_array_dim_intrinsic_calls},
             {"pass_list_expr", &pass_list_expr},
             {"pass_array_by_data", &pass_array_by_data},
@@ -139,6 +137,8 @@ namespace LCompilers {
             {"global_init", &pass_global_init},
             {"global_init_wire", &pass_global_init_wire},
             {"nested_vars", &pass_nested_vars},
+            {"specialize_procedure_arguments", &pass_specialize_procedure_arguments},
+            {"specialize_frame_arguments", &pass_specialize_frame_arguments},
             {"where", &pass_replace_where},
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"dtio_callbacks", &pass_dtio_callbacks},
@@ -154,7 +154,9 @@ namespace LCompilers {
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
             {"gpu_launch_sync", &pass_gpu_launch_sync},
+            {"gpu_sequential_unroll", &pass_gpu_sequential_unroll},
             {"gpu_loop_fusion", &pass_gpu_loop_fusion},
+            {"gpu_private_reduction_fusion", &pass_gpu_private_reduction_fusion},
             {"gpu_time_skew", &pass_gpu_time_skew},
             {"gpu_index_set_split", &pass_gpu_index_set_split},
             {"gpu_loop_transforms", &pass_gpu_loop_transforms},
@@ -171,6 +173,7 @@ namespace LCompilers {
             {"intent_out_deallocate", &pass_intent_out_deallocate},
             {"promote_allocatable_to_nonallocatable", &pass_promote_allocatable_to_nonallocatable},
             {"gpu_device_allocatable", &pass_promote_device_allocatable},
+            {"gpu_struct_component_copies", &pass_gpu_struct_component_copies},
             {"conditional_expr", &pass_replace_conditional_expr},
             {"array_struct_temporary", &pass_array_struct_temporary},
             {"function_result_scope", &pass_function_result_scope},
@@ -225,6 +228,9 @@ namespace LCompilers {
                         passes.push_back(_with_optimization_passes[i]);
                 }
             }
+            // The verifier options for the ASR after each pass
+            ASRVerifyOptions verify_options;
+            verify_options.check_external = true;
             for (size_t i = 0; i < passes.size(); i++) {
                 // TODO: rework the whole pass manager: construct the passes
                 // ahead of time (not at the last minute), and remove this much
@@ -249,8 +255,11 @@ namespace LCompilers {
 #if defined(WITH_LFORTRAN_ASSERT)
                 verify_after_pass = true;
 #endif
+                if (passes[i] == "nested_vars") {
+                    verify_options.nested_vars = true;
+                }
                 if (verify_after_pass &&
-                        !asr_verify(*asr, true, diagnostics)) {
+                        !asr_verify(*asr, verify_options, diagnostics)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException(
                         "pass=" + passes[i],
@@ -310,6 +319,9 @@ namespace LCompilers {
                 // initializer here, which the passes below lower like any
                 // other procedure body.
                 "global_init",
+                // The bounds and the extent (never negative) of every
+                // explicit-shape array are fixed on entry here, before any
+                // pass below copies its type or sizes a temporary from it.
                 "function_call_in_declaration",
                 // Each defined output procedure that a formatted output
                 // statement uses gets a callback with the fixed interface
@@ -364,13 +376,34 @@ namespace LCompilers {
                 // Every pass that can create a startup initializer has run,
                 // so the calls that make them run can be put in now.
                 "global_init_wire",
+                // An intent(out) dummy is finalized, deallocated and
+                // default-initialized on entry only when it is present.  The
+                // pass guards that with `present()`, so it runs while an
+                // optional dummy is still optional; the pass after it turns
+                // the dummy into a required one and `present()` into its
+                // presence argument.
+                "intent_out_deallocate",
                 "transform_optional_argument_functions",
                 "select_case",
+                // With --fast, a call that passes an internal procedure to a
+                // procedure of this file whose dummy only calls it becomes a
+                // direct call of a copy of that procedure in the host, so
+                // nested_vars below needs no procedure value for it.
+                "specialize_procedure_arguments",
+                // With --fast, a procedure of this file whose dummy
+                // procedures are only called or passed on gets a copy that
+                // takes each as a code pointer and the address of a frame,
+                // so that nested_vars below passes an internal procedure to
+                // it with the frame of its host instead of a thunk.
+                "specialize_frame_arguments",
                 "nested_vars",
                 "class_constructor",
                 "pass_list_expr",
                 "where",
                 "array_op",
+                // A block-private map read once by an ordered scalar fold
+                // needs only a scalar, not a per-thread device workspace.
+                "gpu_private_reduction_fusion",
                 "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",
@@ -397,6 +430,10 @@ namespace LCompilers {
                 // on the device heap, and every `stop` of device code is
                 // lowered, once nothing else can add one.
                 "gpu_device_heap",
+                // Heap images own their whole-value copies. Locals still
+                // backed by separate component storage copy only values,
+                // never the opaque host descriptors in the struct layout.
+                "gpu_struct_component_copies",
                 // A run-time sized local of a device routine becomes an
                 // argument its callers give it, up to the kernel, where the
                 // host sizes it before the launch.
@@ -406,7 +443,8 @@ namespace LCompilers {
                 "gpu_kernel_storage",
                 // A device routine's address spaces are settled here, once
                 // every array of device code has the type it is emitted
-                // with, and before the code generators read those types.
+                // with. Decomposed component buffers needing specialization
+                // become explicit array arguments with their storage's space.
                 "gpu_memory_space",
                 // Lay out each kernel, now that shared lowering has given it
                 // the shape the device code generators see.
@@ -427,7 +465,8 @@ namespace LCompilers {
                 // change the physical type of an array, and before its copy
                 // loops are lowered.
                 "string_format_array_args",
-                "do_loops",
+                // The short loops of Metal device code are unrolled.
+                "gpu_sequential_unroll",
                 "while_else",
                 // Every call the passes above can create is in place, so each
                 // character dummy gets its hidden length argument here, and
@@ -435,18 +474,16 @@ namespace LCompilers {
                 "string_length_arguments",
                 "unused_functions",
                 "unique_symbols",
-                "intent_out_deallocate",
             };
             _optimization_passes = {
                 "replace_with_compile_time_values",
-                "loop_vectorise",
                 "dead_code_removal",
                 "unused_functions",
                 "sign_from_value",
                 "div_to_mul",
-                "fma",
                 "inline_function_calls",
-                "promote_allocatable_to_nonallocatable"
+                "promote_allocatable_to_nonallocatable",
+                "loop_fusion"
             };
 
             // These are re-write passes which are already handled
@@ -460,7 +497,6 @@ namespace LCompilers {
                 "replace_with_compile_time_values",
                 "pass_list_expr",
                 "print_list_tuple",
-                "do_loops",
                 "select_case",
                 "inline_function_calls",
                 // Only the LLVM backend formats and transfers arrays
@@ -478,8 +514,16 @@ namespace LCompilers {
         void parse_pass_arg(std::string& arg_pass, std::string& skip_pass) {
             _user_defined_passes.clear();
             _skip_passes.clear();
-            _skip_passes.insert(_skip_passes.end(),passes_to_skip_with_llvm.begin(), passes_to_skip_with_llvm.end());
             _parse_pass_arg(arg_pass, _user_defined_passes);
+            // A pass that --pass names runs even if the backend skips it in
+            // its own pipeline.
+            for (const std::string &pass: passes_to_skip_with_llvm) {
+                if (std::find(_user_defined_passes.begin(),
+                        _user_defined_passes.end(), pass)
+                        == _user_defined_passes.end()) {
+                    _skip_passes.push_back(pass);
+                }
+            }
             _parse_pass_arg(skip_pass, _skip_passes);
         }
 
@@ -528,6 +572,9 @@ namespace LCompilers {
                 passes = _passes;
             }
             size_t pass_cnt_asr_dump = 0, pass_cnt_fortran_dump = 0;
+            // The verifier options for the ASR after each pass
+            ASRVerifyOptions verify_options;
+            verify_options.check_external = true;
             for (size_t i = 0; i < passes.size(); i++) {
                 // TODO: rework the whole pass manager: construct the passes
                 // ahead of time (not at the last minute), and remove this much
@@ -585,8 +632,11 @@ namespace LCompilers {
 #if defined(WITH_LFORTRAN_ASSERT)
                 verify_after_pass = true;
 #endif
+                if (passes[i] == "nested_vars") {
+                    verify_options.nested_vars = true;
+                }
                 if (verify_after_pass &&
-                        !asr_verify(*asr, true, diagnostics)) {
+                        !asr_verify(*asr, verify_options, diagnostics)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException(
                         "pass=" + passes[i],
@@ -615,6 +665,24 @@ namespace LCompilers {
             if( std::find(_skip_passes.begin(), _skip_passes.end(), pass_name)
                     == _skip_passes.end() ) {
                 _skip_passes.push_back(pass_name);
+            }
+        }
+
+        // The LLVM backend prints arrays and derived types itself, so it
+        // skips the passes that lower these prints into per-item prints. A
+        // pass that --pass names still runs (see parse_pass_arg).
+        void skip_llvm_backend_passes() {
+            for (const std::string pass: {"print_arr", "print_struct_type"}) {
+                if (std::find(passes_to_skip_with_llvm.begin(),
+                        passes_to_skip_with_llvm.end(), pass)
+                        == passes_to_skip_with_llvm.end()) {
+                    passes_to_skip_with_llvm.push_back(pass);
+                }
+                if (std::find(_user_defined_passes.begin(),
+                        _user_defined_passes.end(), pass)
+                        == _user_defined_passes.end()) {
+                    skip_pass(pass);
+                }
             }
         }
 

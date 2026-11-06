@@ -58,7 +58,7 @@ INVALID_BOOLEAN_FIELD = re.compile(
 )
 DECLARATION_BOOLEAN_FIELD = re.compile(
     r":(value_attr|target_attr|contiguous_attr|"
-    r"is_volatile|is_protected)\s+(true|false)"
+    r"is_volatile|is_asynchronous|is_protected)\s+(true|false)"
 )
 PRESENCE_FIELD = re.compile(r":presence\s+:(Required|Optional)")
 INTENT_FIELD = re.compile(

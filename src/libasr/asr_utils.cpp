@@ -23,6 +23,151 @@ namespace LCompilers {
 
     namespace ASRUtils  {
 
+class EntryInitializerReference : public ASR::BaseWalkVisitor<EntryInitializerReference>
+{
+public:
+    SymbolTable* scope;
+    const ASR::Variable_t* undefined = nullptr;
+    std::unordered_set<const ASR::Variable_t*> metadata_seen;
+
+    EntryInitializerReference(SymbolTable* scope_) : scope(scope_) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t* sym = symbol_get_past_external(x.m_v);
+        if (undefined != nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) return;
+        const ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+        // COMMON storage and host-associated views are established on entry.
+        if (v->m_parent_symtab == scope &&
+                v->m_intent == ASR::intentType::Local &&
+                v->m_storage != ASR::storage_typeType::Parameter &&
+                has_own_storage(*v) &&
+                !is_entry_initialized_local(*v)) {
+            undefined = v;
+        }
+    }
+
+    // Inquiries need no element values, but a deferred descriptor and the
+    // selectors of a designator must already be established on entry.
+    void visit_metadata(ASR::expr_t* expr) {
+        if (undefined || !expr) return;
+        switch (expr->type) {
+            case ASR::exprType::Var: {
+                ASR::symbol_t* sym = symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(expr)->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) return;
+                const ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                if (v->m_parent_symtab != scope ||
+                        v->m_intent != ASR::intentType::Local ||
+                        v->m_storage == ASR::storage_typeType::Parameter ||
+                        !has_own_storage(*v) ||
+                        !metadata_seen.insert(v).second) return;
+                if (is_pointer(v->m_type) || is_allocatable(v->m_type)) {
+                    if (is_pointer_association_initializer(v->m_symbolic_value)) {
+                        visit_metadata(v->m_symbolic_value);
+                    } else {
+                        undefined = v;
+                    }
+                    return;
+                }
+                ASR::dimension_t* dims;
+                size_t n_dims = extract_dimensions_from_ttype(v->m_type, dims);
+                for (size_t i = 0; i < n_dims; i++) {
+                    if (dims[i].m_start) visit_expr(*dims[i].m_start);
+                    if (dims[i].m_length) visit_expr(*dims[i].m_length);
+                }
+                if (is_character(*type_get_past_array(v->m_type))) {
+                    ASR::String_t* type = get_string_type(v->m_type);
+                    if (type->m_len) visit_expr(*type->m_len);
+                }
+                return;
+            }
+            case ASR::exprType::ArrayPhysicalCast:
+                visit_metadata(ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_arg);
+                return;
+            case ASR::exprType::StringPhysicalCast:
+                visit_metadata(ASR::down_cast<ASR::StringPhysicalCast_t>(expr)->m_arg);
+                return;
+            case ASR::exprType::ArraySection: {
+                const auto& x = *ASR::down_cast<ASR::ArraySection_t>(expr);
+                visit_metadata(x.m_v);
+                for (size_t i = 0; i < x.n_args; i++) visit_array_index(x.m_args[i]);
+                return;
+            }
+            case ASR::exprType::ArrayItem: {
+                const auto& x = *ASR::down_cast<ASR::ArrayItem_t>(expr);
+                visit_metadata(x.m_v);
+                for (size_t i = 0; i < x.n_args; i++) visit_array_index(x.m_args[i]);
+                return;
+            }
+            case ASR::exprType::StringSection: {
+                const auto& x = *ASR::down_cast<ASR::StringSection_t>(expr);
+                visit_metadata(x.m_arg);
+                if (x.m_start) visit_expr(*x.m_start);
+                if (x.m_end) visit_expr(*x.m_end);
+                if (x.m_step) visit_expr(*x.m_step);
+                return;
+            }
+            case ASR::exprType::StructInstanceMember: {
+                const auto& x = *ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+                if (is_pointer(x.m_type) || is_allocatable(x.m_type)) {
+                    visit_expr(*x.m_v);
+                } else {
+                    visit_metadata(x.m_v);
+                }
+                return;
+            }
+            default:
+                visit_expr(*expr);
+        }
+    }
+
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        visit_metadata(x.m_v);
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+            return;
+        }
+        visit_metadata(x.m_v);
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_StringLen(const ASR::StringLen_t &x) {
+        if (x.m_value) {
+            visit_expr(*x.m_value);
+        } else {
+            visit_metadata(x.m_arg);
+        }
+    }
+
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+        if (x.m_arr_intrinsic_id == static_cast<int64_t>(IntrinsicArrayFunctions::Shape)) {
+            if (x.m_value) {
+                visit_expr(*x.m_value);
+            } else {
+                visit_metadata(x.m_args[0]);
+            }
+        } else {
+            ASR::BaseWalkVisitor<EntryInitializerReference>::visit_IntrinsicArrayFunction(x);
+        }
+    }
+
+    void visit_TypeInquiry(const ASR::TypeInquiry_t & /*x*/) {}
+};
+
+const ASR::Variable_t* undefined_local_on_entry(ASR::expr_t* expr, SymbolTable* scope) {
+    EntryInitializerReference reference(scope);
+    if (expr) reference.visit_expr(*expr);
+    return reference.undefined;
+}
+
 
 /**
  * @param string_expr string to be casted
@@ -1751,6 +1896,111 @@ ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
         a_overloaded, a_realloc_lhs, a_move, a_new_target, a_new_allocation);
 }
 
+static ASR::ttype_t* do_loop_control_type(ASR::expr_t* e) {
+    return ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(e));
+}
+
+static bool same_do_loop_control_type(ASR::ttype_t* a, ASR::ttype_t* b) {
+    return a->type == b->type
+        && ASRUtils::extract_kind_from_ttype_t(a)
+            == ASRUtils::extract_kind_from_ttype_t(b);
+}
+
+ASR::do_loop_head_t normalize_do_loop_head(Allocator &al,
+        const Location &loc, const ASR::do_loop_head_t &head) {
+    ASR::do_loop_head_t result = head;
+    if (!result.m_v) {
+        LCOMPILERS_ASSERT(!result.m_start && !result.m_end
+            && !result.m_increment);
+        return result;
+    }
+    ASR::ttype_t* v_type = do_loop_control_type(result.m_v);
+    for (ASR::expr_t** e : {&result.m_start, &result.m_end,
+            &result.m_increment}) {
+        if (*e && !same_do_loop_control_type(do_loop_control_type(*e),
+                v_type)) {
+            *e = CastingUtil::perform_casting(*e, v_type, al, (*e)->base.loc);
+        }
+    }
+    if (!result.m_increment) {
+        if (ASRUtils::is_integer(*v_type)) {
+            result.m_increment = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, 1, v_type));
+        } else if (ASRUtils::is_unsigned_integer(*v_type)) {
+            result.m_increment = ASRUtils::EXPR(
+                ASR::make_UnsignedIntegerConstant_t(al, loc, 1, v_type));
+        } else if (ASRUtils::is_real(*v_type)) {
+            result.m_increment = ASRUtils::EXPR(ASR::make_RealConstant_t(
+                al, loc, 1.0, v_type));
+        }
+    }
+    return result;
+}
+
+bool is_normalized_do_loop_head(const ASR::do_loop_head_t &head,
+        std::string &reason) {
+    if (!head.m_v) {
+        if (head.m_start || head.m_end || head.m_increment) {
+            reason = "a counted DO loop head must have a DO variable";
+            return false;
+        }
+        return true;
+    }
+    ASR::ttype_t* v_type = do_loop_control_type(head.m_v);
+    if (ASRUtils::is_array(v_type)) {
+        reason = "the DO variable must be a scalar";
+        return false;
+    }
+    std::pair<ASR::expr_t*, const char*> controls[] = {
+        {head.m_start, "start"}, {head.m_end, "end"},
+        {head.m_increment, "increment"}};
+    for (auto &control : controls) {
+        if (!control.first) {
+            reason = std::string("the ") + control.second
+                + " expression of a counted DO loop head is missing";
+            return false;
+        }
+        ASR::ttype_t* type = do_loop_control_type(control.first);
+        if (ASRUtils::is_array(type)
+                || !same_do_loop_control_type(type, v_type)) {
+            reason = std::string("the ") + control.second
+                + " expression of a DO loop head must have the type of the"
+                " DO variable (" + ASRUtils::type_to_str_with_kind(v_type, head.m_v)
+                + "), not " + ASRUtils::type_to_str_with_kind(type, control.first);
+            return false;
+        }
+    }
+    return true;
+}
+
+ASR::asr_t* make_DoLoop_t_util(Allocator &al, const Location &a_loc,
+        char* a_name, const ASR::do_loop_head_t &a_head,
+        ASR::stmt_t** a_body, size_t n_body,
+        ASR::stmt_t** a_orelse, size_t n_orelse) {
+    return ASR::make_DoLoop_t(al, a_loc, a_name,
+        normalize_do_loop_head(al, a_loc, a_head), a_body, n_body, a_orelse, n_orelse);
+}
+
+ASR::asr_t* make_DoConcurrentLoop_t_util(Allocator &al, const Location &a_loc,
+        ASR::do_loop_head_t* a_head, size_t n_head,
+        ASR::expr_t** a_shared, size_t n_shared,
+        ASR::expr_t** a_local, size_t n_local,
+        ASR::reduction_expr_t* a_reduction, size_t n_reduction,
+        ASR::stmt_t** a_body, size_t n_body) {
+    for (size_t i = 0; i < n_head; i++) {
+        a_head[i] = normalize_do_loop_head(al, a_loc, a_head[i]);
+    }
+    return ASR::make_DoConcurrentLoop_t(al, a_loc, a_head, n_head,
+        a_shared, n_shared, a_local, n_local, a_reduction, n_reduction,
+        a_body, n_body);
+}
+
+ASR::asr_t* make_ForAllSingle_t_util(Allocator &al, const Location &a_loc,
+        const ASR::do_loop_head_t &a_head, ASR::stmt_t* a_assign_stmt) {
+    return ASR::make_ForAllSingle_t(al, a_loc,
+        normalize_do_loop_head(al, a_loc, a_head), a_assign_stmt);
+}
+
 void set_intrinsic(ASR::symbol_t* sym) {
     switch( sym->type ) {
         case ASR::symbolType::Module: {
@@ -2511,8 +2761,14 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             matched_func_name = ASRUtils::symbol_name(a_name);
                             ASR::ttype_t *return_type = nullptr;
+                            // The passed object of a type-bound operator is not
+                            // in a_args, so the shape comes from both operands.
+                            Vec<ASR::call_arg_t> operands;
+                            operands.reserve(al, 2);
+                            operands.push_back(al, ASR::call_arg_t{ left->base.loc, left });
+                            operands.push_back(al, ASR::call_arg_t{ right->base.loc, right });
                             ASR::expr_t* first_array_arg =
-                                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+                                ASRUtils::find_first_array_arg_if_elemental(func, operands);
                             if( first_array_arg != nullptr ) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -2563,6 +2819,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                           ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                                            }
                                         }
+                                       ASRUtils::set_function_result_lbounds_to_one(al, ret_dims, n_ret_dims);
                                     }
                                 }
                             }
@@ -2680,6 +2937,7 @@ void process_overloaded_unary_function(ASR::symbol_t* proc, ASR::expr_t* operand
                                ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                             }
                         }
+                       ASRUtils::set_function_result_lbounds_to_one(al, ret_dims, n_ret_dims);
                     }
                 }
             }
@@ -3145,6 +3403,42 @@ bool struct_needs_finalization(ASR::symbol_t* struct_sym) {
         visited);
 }
 
+bool struct_has_character_member(ASR::Struct_t* struct_type) {
+    std::set<ASR::Struct_t*> seen;
+    while (struct_type != nullptr) {
+        if (!seen.insert(struct_type).second) {
+            return false;
+        }
+        for (size_t i = 0; i < struct_type->n_members; i++) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                struct_type->m_symtab->get_symbol(struct_type->m_members[i]));
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::ttype_t* member_type = ASRUtils::symbol_type(sym);
+            if (ASRUtils::is_character(*member_type)) {
+                return true;
+            }
+            ASR::ttype_t* member_base_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(member_type));
+            if (ASR::is_a<ASR::StructType_t>(*member_base_type)
+                    && var->m_type_declaration != nullptr) {
+                ASR::Struct_t* nested = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(var->m_type_declaration));
+                if (struct_has_character_member(nested)) {
+                    return true;
+                }
+            }
+        }
+        struct_type = struct_type->m_parent
+            ? ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_type->m_parent))
+            : nullptr;
+    }
+    return false;
+}
+
 bool is_finalizable_function_result(ASR::ttype_t* type,
         ASR::symbol_t* struct_sym) {
     if (type == nullptr || ASRUtils::is_array(type) ||
@@ -3606,12 +3900,18 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             matched_func_name = ASRUtils::symbol_name(a_name);
                             ASR::ttype_t *return_type = nullptr;
-                            if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                                func->n_args >= 1 &&
-                                ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+                            // The passed object of a type-bound operator is not
+                            // in a_args, so the shape comes from both operands.
+                            Vec<ASR::call_arg_t> operands;
+                            operands.reserve(al, 2);
+                            operands.push_back(al, ASR::call_arg_t{ left->base.loc, left });
+                            operands.push_back(al, ASR::call_arg_t{ right->base.loc, right });
+                            ASR::expr_t* first_array_arg =
+                                ASRUtils::find_first_array_arg_if_elemental(func, operands);
+                            if( first_array_arg != nullptr ) {
                                 ASR::dimension_t* array_dims;
                                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                                ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                                ASRUtils::expr_type(first_array_arg), array_dims);
                                 Vec<ASR::dimension_t> new_dims;
                                 new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
                                 return_type = ASRUtils::duplicate_type(al,
@@ -3661,6 +3961,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                         }
                                         new_dims.push_back(al, new_dim);
                                     }
+                                    ASRUtils::set_function_result_lbounds_to_one(al, new_dims.p, new_dims.size());
                                     bool for_type = true;
                                     for (size_t k = 0; k < new_dims.size(); k++) {
                                         if (new_dims[k].m_length && ASR::is_a<ASR::ArraySize_t>(*new_dims[k].m_length)) {
@@ -3804,6 +4105,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                             ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                                          }
                                         }
+                                        ASRUtils::set_function_result_lbounds_to_one(al, ret_dims, n_ret_dims);
                                      }
                                 }
                             }
@@ -4873,8 +5175,11 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
         // TODO: Construct appropriate return type here
         // For now simply coping the type from expr1
         if (ASRUtils::is_simd_array(expr1)) {
+            // The broadcast is an ordinary array of the target's constant
+            // shape, which is cast to the SIMD target below.
             // TODO: Make this more general; do not check for SIMDArray
-            ret_type = ASRUtils::duplicate_type(al, expr1_type);
+            ret_type = ASRUtils::duplicate_type(al, expr1_type, nullptr,
+                ASR::array_physical_typeType::FixedSizeArray, true);
         } else {
             ret_type = expr1_type;
         }
@@ -4967,12 +5272,30 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     ASR::expr_t* end = implied_doloop->m_end;
     ASR::expr_t* d = implied_doloop->m_increment;
     ASR::expr_t* implied_doloop_size = nullptr;
-    int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end));
-    start = builder.i2i_t(start, ASRUtils::expr_type(end));
+    // A bound of the loop may be integer(8): the trip count is computed in
+    // the widest kind of the bounds, as in get_triplet_extent, and only then
+    // converted to a default integer, the kind of every size that
+    // get_ArrayConstructor_size adds to it.
+    int kind = 4;
+    for( ASR::expr_t* e: {start, end, d} ) {
+        if( e ) {
+            kind = std::max(kind, ASRUtils::extract_kind_from_ttype_t(
+                ASRUtils::expr_type(e)));
+        }
+    }
+    ASR::ttype_t* bound_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+    ASR::ttype_t* size_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+    auto to_size_type = [&](ASR::expr_t* e) {
+        return kind == 4 ? e : builder.i2i_t(e, size_type);
+    };
+    start = builder.i2i_t(start, bound_type);
+    if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(end)) != kind ) {
+        end = builder.i2i_t(end, bound_type);
+    }
     if( d == nullptr ) {
         implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
     } else {
-        d = builder.i2i_t(d, ASRUtils::expr_type(end));
+        d = builder.i2i_t(d, bound_type);
         implied_doloop_size = builder.Add(builder.Div(
             builder.Sub(end, start), d),
             make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
@@ -5013,26 +5336,27 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
     if (inner_depends_on_var) {
         ASR::expr_t* two = make_ConstantWithKind(
             make_IntegerConstant_t, make_Integer_t, 2, kind, loc);
-        ASR::expr_t* arith_sum = builder.Div(
-            builder.Mul(implied_doloop_size, builder.Add(start, end)), two);
+        ASR::expr_t* arith_sum = to_size_type(builder.Div(
+            builder.Mul(implied_doloop_size, builder.Add(start, end)), two));
         if (const_elements > 0) {
             ASR::expr_t* const_total = builder.Mul(
                 make_ConstantWithKind(make_IntegerConstant_t,
-                    make_Integer_t, const_elements, kind, loc),
-                implied_doloop_size);
+                    make_Integer_t, const_elements, 4, loc),
+                to_size_type(implied_doloop_size));
             implied_doloop_size = builder.Add(arith_sum, const_total);
         } else {
             implied_doloop_size = arith_sum;
         }
     } else {
+        implied_doloop_size = to_size_type(implied_doloop_size);
         if( const_elements > 0 ) {
             if( implied_doloop_size_ == nullptr ) {
                 implied_doloop_size_ = make_ConstantWithKind(make_IntegerConstant_t,
-                    make_Integer_t, const_elements, kind, loc);
+                    make_Integer_t, const_elements, 4, loc);
             } else {
                 implied_doloop_size_ = builder.Add(
                     make_ConstantWithKind(make_IntegerConstant_t,
-                        make_Integer_t, const_elements, kind, loc),
+                        make_Integer_t, const_elements, 4, loc),
                     implied_doloop_size_);
             }
         }
@@ -5041,6 +5365,33 @@ ASR::expr_t* get_ImpliedDoLoop_size(Allocator& al, ASR::ImpliedDoLoop_t* implied
         }
     }
     return implied_doloop_size;
+}
+
+ASR::expr_t* get_triplet_extent(Allocator& al, const Location& loc,
+        ASR::expr_t* start, ASR::expr_t* end, ASR::expr_t* step,
+        ASR::ttype_t* size_type) {
+    // A bound of the triplet may be integer(8): the extent is computed in
+    // the widest kind of the triplet and only then converted.
+    ASRUtils::ASRBuilder builder(al, loc);
+    int kind = 4;
+    for( ASR::expr_t* e: {start, end, step} ) {
+        kind = std::max(kind, ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(e)));
+    }
+    ASR::ttype_t* triplet_type = ASRUtils::TYPE(
+        ASR::make_Integer_t(al, loc, kind));
+    auto in_kind = [&](ASR::expr_t* e) {
+        return ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(e)) == kind ? e
+            : builder.i2i_t(e, triplet_type);
+    };
+    ASR::expr_t* extent = builder.Add(builder.Div(
+        builder.Sub(in_kind(end), in_kind(start)), in_kind(step)),
+        make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
+    if( kind != ASRUtils::extract_kind_from_ttype_t(size_type) ) {
+        extent = builder.i2i_t(extent, size_type);
+    }
+    return extent;
 }
 
 ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x) {
@@ -5112,9 +5463,8 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
                 if( d == nullptr ) {
                     continue;
                 }
-                ASR::expr_t* dim_size = builder.Add(builder.Div(
-                    builder.Sub(end, start), d),
-                    make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, 4, loc));
+                ASR::expr_t* dim_size = get_triplet_extent(al, loc, start,
+                    end, d, int_type);
                 if( array_section_size == nullptr ) {
                     array_section_size = dim_size;
                 } else {
@@ -5661,8 +6011,12 @@ ASR::asr_t* make_ArraySize_t_util(
             if( a_dim == nullptr ) {
                 ASR::asr_t* size = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
                 for( size_t i = 0; i < n_dims; i++ ) {
+                    // The declared extents keep their own kind, which need
+                    // not be the kind `a_type` of the size asked for.
                     size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
-                        ASR::binopType::Mul, m_dims[i].m_length, a_type, nullptr);
+                        ASR::binopType::Mul, CastingUtil::perform_casting(
+                            m_dims[i].m_length, a_type, al, a_loc),
+                        a_type, nullptr);
                 }
                 return size;
             } else if( is_dimension_constant ) {
@@ -6617,6 +6971,7 @@ std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Enum: return "Enum";
         case ASR::symbolType::Union: return "Union";
         case ASR::symbolType::Variable: return "Variable";
+        case ASR::symbolType::ScopedVariableAttribute: return "ScopedVariableAttribute";
         case ASR::symbolType::StructMethodDeclaration: return "StructMethodDeclaration";
         case ASR::symbolType::AssociateBlock: return "AssociateBlock";
         case ASR::symbolType::Block: return "Block";
@@ -6977,6 +7332,9 @@ char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::Variable: {
             return ASR::down_cast<ASR::Variable_t>(f)->m_name;
         }
+        case ASR::symbolType::ScopedVariableAttribute: {
+            return ASR::down_cast<ASR::ScopedVariableAttribute_t>(f)->m_name;
+        }
         case ASR::symbolType::ExternalSymbol: {
             return ASR::down_cast<ASR::ExternalSymbol_t>(f)->m_name;
         }
@@ -7190,6 +7548,11 @@ std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
         case ASR::ttypeType::Pointer: {
             return type_to_str_fortran_symbol(ASRUtils::type_get_past_pointer(
                         const_cast<ASR::ttype_t*>(t)), struct_sym, show_kind) + " pointer";
+        }
+        case ASR::ttypeType::Reference: {
+            return type_to_str_fortran_symbol(
+                ASR::down_cast<ASR::Reference_t>(t)->m_type, struct_sym,
+                show_kind) + " reference";
         }
         case ASR::ttypeType::Allocatable: {
             return type_to_str_fortran_symbol(ASRUtils::type_get_past_allocatable(
@@ -7462,6 +7825,9 @@ SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Variable: {
             return ASR::down_cast<ASR::Variable_t>(f)->m_parent_symtab;
         }
+        case ASR::symbolType::ScopedVariableAttribute: {
+            return ASR::down_cast<ASR::ScopedVariableAttribute_t>(f)->m_parent_symtab;
+        }
         case ASR::symbolType::ExternalSymbol: {
             return ASR::down_cast<ASR::ExternalSymbol_t>(f)->m_parent_symtab;
         }
@@ -7546,6 +7912,9 @@ SymbolTable *symbol_symtab(const ASR::symbol_t *f)
             return nullptr;
             //throw LCompilersException("Variable does not have a symtab");
         }
+        case ASR::symbolType::ScopedVariableAttribute: {
+            return nullptr;
+        }
         case ASR::symbolType::ExternalSymbol: {
             return nullptr;
             //throw LCompilersException("ExternalSymbol does not have a symtab");
@@ -7586,6 +7955,25 @@ std::string cell_prefix(const SymbolTable *s) {
     }
     if (depth == 1) return "";
     return "__cell" + std::to_string(depth) + "_";
+}
+
+bool has_scoped_variable_attribute(const ASR::Variable_t &variable,
+        const SymbolTable *scope, bool include_nested) {
+    for (const auto &item: scope->get_scope()) {
+        ASR::symbol_t *s = item.second;
+        if (ASR::is_a<ASR::ScopedVariableAttribute_t>(*s)) {
+            auto *attribute = ASR::down_cast<ASR::ScopedVariableAttribute_t>(s);
+            if (ASRUtils::symbol_get_past_external(
+                    attribute->m_variable)
+                    == &variable.base &&
+                    (attribute->m_is_volatile || attribute->m_is_asynchronous)) {
+                return true;
+            }
+        } else if (SymbolTable *nested = include_nested ? symbol_symtab(s) : nullptr) {
+            if (has_scoped_variable_attribute(variable, nested)) return true;
+        }
+    }
+    return false;
 }
 
 ASR::symbol_t *import_type_bound_specific(Allocator &al, SymbolTable *scope,
@@ -7834,6 +8222,11 @@ bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
     }
 }
 
+bool is_intrinsic_max(const ASR::IntrinsicElementalFunction_t &f) {
+    return f.m_intrinsic_id
+        == static_cast<int64_t>(IntrinsicElementalFunctions::Max);
+}
+
 bool is_value_constant(ASR::expr_t *a_value) {
     if( a_value == nullptr ) {
         return false;
@@ -7966,22 +8359,50 @@ bool is_value_constant(ASR::expr_t *a_value) {
         } case ASR::exprType::StructConstructor: {
             ASR::StructConstructor_t* struct_type_constructor =
                 ASR::down_cast<ASR::StructConstructor_t>(a_value);
-            bool is_constant = true;
-            for( size_t i = 0; i < struct_type_constructor->n_args; i++ ) {
-                if( struct_type_constructor->m_args[i].m_value ) {
-                    is_constant = is_constant &&
-                                (is_value_constant(
-                                    struct_type_constructor->m_args[i].m_value) ||
-                                is_value_constant(
-                                    ASRUtils::expr_value(
-                                        struct_type_constructor->m_args[i].m_value)));
+            // The arguments hold the members of the parent types first.
+            std::vector<ASR::symbol_t*> members;
+            std::vector<ASR::Struct_t*> struct_chain;
+            ASR::symbol_t* dt_sym = struct_type_constructor->m_dt_sym ?
+                symbol_get_past_external(struct_type_constructor->m_dt_sym) : nullptr;
+            while( dt_sym && ASR::is_a<ASR::Struct_t>(*dt_sym) ) {
+                ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(dt_sym);
+                struct_chain.push_back(st);
+                dt_sym = st->m_parent ? symbol_get_past_external(st->m_parent) : nullptr;
+            }
+            for( auto it = struct_chain.rbegin(); it != struct_chain.rend(); ++it ) {
+                for( size_t j = 0; j < (*it)->n_members; j++ ) {
+                    members.push_back((*it)->m_symtab->get_symbol((*it)->m_members[j]));
                 }
             }
-            return is_constant;
+            for( size_t i = 0; i < struct_type_constructor->n_args; i++ ) {
+                ASR::symbol_t* member = i < members.size() ? members[i] : nullptr;
+                if( !is_constant_struct_component_value(member,
+                        struct_type_constructor->m_args[i].m_value) ) {
+                    return false;
+                }
+            }
+            return true;
         } default: {
             return false;
         }
     }
+}
+
+bool is_constant_struct_component_value(ASR::symbol_t* member,
+        ASR::expr_t* value) {
+    if( value == nullptr ) {
+        return true;
+    }
+    if( member ) {
+        member = symbol_get_past_external(member);
+    }
+    if( member && ASR::is_a<ASR::Variable_t>(*member) &&
+            is_allocatable(ASR::down_cast<ASR::Variable_t>(member)->m_type) ) {
+        ASR::expr_t* folded = expr_value(value);
+        return ASR::is_a<ASR::PointerNullConstant_t>(*value) ||
+            (folded && ASR::is_a<ASR::PointerNullConstant_t>(*folded));
+    }
+    return is_value_constant(value) || is_value_constant(expr_value(value));
 }
 
 void update_common_block_role(ASR::CommonBlock_t *block) {
@@ -8187,14 +8608,16 @@ std::string type_encode_dims(size_t n_dims, ASR::dimension_t* m_dims )
 }
 
 std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep,
-    bool encode_dimensions_, bool set_dimensional_hint, ASR::expr_t* expr)
+    bool encode_dimensions_, bool set_dimensional_hint, ASR::expr_t* expr,
+    ASR::symbol_t* type_declaration)
 {
     bool is_dimensional = false;
     std::string res = "";
     switch (t->type) {
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            res = get_type_code(array_t->m_type, use_underscore_sep, false, false, expr);
+            res = get_type_code(array_t->m_type, use_underscore_sep, false, false, expr,
+                type_declaration);
             if( encode_dimensions_ ) {
                 encode_dimensions(array_t->n_dims, res, use_underscore_sep);
                 return res;
@@ -8299,8 +8722,9 @@ std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep,
         }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(t);
-            if ( expr != nullptr ) {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr));
+            if ( expr != nullptr || type_declaration != nullptr ) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(expr != nullptr
+                    ? ASRUtils::get_struct_sym_from_struct_expr(expr) : type_declaration);
                 res = symbol_name(sym);
                 if (sym != nullptr && !res.empty() && res[0] != '~' &&
                         ASR::is_a<ASR::Struct_t>(*sym)) {
@@ -8328,8 +8752,9 @@ std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep,
             break;
         }
         case ASR::ttypeType::UnionType: {
-            if ( expr != nullptr ) {
-                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(expr));
+            if ( expr != nullptr || type_declaration != nullptr ) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(expr != nullptr
+                    ? ASRUtils::get_union_sym_from_union_expr(expr) : type_declaration);
                 res = symbol_name(sym);
             } else {
                 res = "UnionType";
@@ -8352,6 +8777,15 @@ std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep,
                                                   encode_dimensions_, set_dimensional_hint) + "_";
             }
             return "Allocatable[" + get_type_code(p->m_type, use_underscore_sep,
+                                              encode_dimensions_, set_dimensional_hint) + "]";
+        }
+        case ASR::ttypeType::Reference: {
+            ASR::Reference_t* p = ASR::down_cast<ASR::Reference_t>(t);
+            if( use_underscore_sep ) {
+                return "Reference_" + get_type_code(p->m_type, use_underscore_sep,
+                                                  encode_dimensions_, set_dimensional_hint) + "_";
+            }
+            return "Reference[" + get_type_code(p->m_type, use_underscore_sep,
                                               encode_dimensions_, set_dimensional_hint) + "]";
         }
         case ASR::ttypeType::SymbolicExpression: {
@@ -8492,6 +8926,10 @@ std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::symbol_t* stru
         case ASR::ttypeType::Allocatable: {
             ASR::Allocatable_t* p = ASR::down_cast<ASR::Allocatable_t>(t);
             return "Allocatable[" + type_to_str_python_symbol(p->m_type, struct_sym) + "]";
+        }
+        case ASR::ttypeType::Reference: {
+            ASR::Reference_t* p = ASR::down_cast<ASR::Reference_t>(t);
+            return "Reference[" + type_to_str_python_symbol(p->m_type, struct_sym) + "]";
         }
         case ASR::ttypeType::TypeParameter: {
             ASR::TypeParameter_t *p = ASR::down_cast<ASR::TypeParameter_t>(t);
@@ -8898,7 +9336,9 @@ size_t extract_dimensions_from_ttype(ASR::ttype_t *x,
         case ASR::ttypeType::Set:
         case ASR::ttypeType::CPtr:
         case ASR::ttypeType::TypeParameter:
-        case ASR::ttypeType::FunctionType: {
+        case ASR::ttypeType::FunctionType:
+        // A reference is an address, not the array it may refer to.
+        case ASR::ttypeType::Reference: {
             n_dims = 0;
             m_dims = nullptr;
             break;
@@ -9356,7 +9796,7 @@ ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
     ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
     bool a_value_attr, bool a_target_attr, bool a_contiguous_attr,
-    char* a_bindc_name, bool a_is_volatile, bool a_is_protected,
+    char* a_bindc_name, bool a_is_volatile, bool a_is_asynchronous, bool a_is_protected,
     ASR::pass_attrType a_pass_attr, char* a_self_argument,
     ASR::codimension_t* a_codims, size_t n_codims,
     ASR::symbol_t* a_common_block) {
@@ -9367,8 +9807,8 @@ ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
         n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
-        a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected,
-        a_pass_attr, a_self_argument, a_codims, n_codims, a_common_block
+        a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_asynchronous,
+        a_is_protected, a_pass_attr, a_self_argument, a_codims, n_codims, a_common_block
     );
 }
 
@@ -9410,7 +9850,13 @@ ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
         }
     }
 
-    if( !override_physical_type ) {
+    if( !override_physical_type && type && ASRUtils::is_character(*type) &&
+            is_argument && abi == ASR::abiType::BindC &&
+            (is_dimension_star || ASRUtils::is_fixed_size_array(m_dims, n_dims)) ) {
+        // A bind(C) dummy array of strings of known or assumed size is one
+        // C character buffer.
+        physical_type = ASR::array_physical_typeType::StringArraySinglePointer;
+    } else if( !override_physical_type ) {
         if( abi == ASR::abiType::BindC ) {
             if( ASRUtils::is_fixed_size_array(m_dims, n_dims) && !is_argument ) {
                 // bind(C) module/global fixed-size arrays use inline storage
@@ -9545,14 +9991,13 @@ ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             if (dims == nullptr) {
                 dimsp = duplicate_dimensions(al, tnew->m_dims, tnew->n_dims);
                 dimsn = tnew->n_dims;
-                // UnboundedPointerArray cannot be reconstructed by
-                // make_Array_t_util auto-detection (it needs the
-                // is_dimension_star && is_argument flags only available during
-                // semantic analysis). Preserve it when duplicating with the
-                // same dimensions.
-                if (!override_physical_type &&
-                    tnew->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) {
-                    physical_type = ASR::array_physical_typeType::UnboundedPointerArray;
+                // A duplicate with the same dimensions is the same type, so
+                // it keeps the physical type, which the dimensions alone do
+                // not determine: an explicit-shape dummy and a local of the
+                // same shape differ in it, and UnboundedPointerArray needs
+                // flags only semantics has.
+                if (!override_physical_type) {
+                    physical_type = tnew->m_physical_type;
                     override_physical_type = true;
                 }
             }
@@ -9647,6 +10092,12 @@ ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             }
             return ASRUtils::TYPE(ASR::make_Pointer_t(al, ptr->base.base.loc,
                 ASRUtils::type_get_past_allocatable(dup_type)));
+        }
+        case ASR::ttypeType::Reference: {
+            ASR::Reference_t* ref = ASR::down_cast<ASR::Reference_t>(t);
+            return ASRUtils::TYPE(ASR::make_Reference_t(al, ref->base.base.loc,
+                duplicate_type(al, ref->m_type, dims, physical_type,
+                    override_physical_type)));
         }
         case ASR::ttypeType::Allocatable: {
             ASR::Allocatable_t* alloc_ = ASR::down_cast<ASR::Allocatable_t>(t);
@@ -9877,6 +10328,11 @@ ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR::ttype_t* t, 
             ASR::ttype_t* dup_type = duplicate_type_without_dims(al, ptr->m_type, loc);
             return ASRUtils::TYPE(ASR::make_Pointer_t(al, ptr->base.base.loc,
                 ASRUtils::type_get_past_allocatable(dup_type)));
+        }
+        case ASR::ttypeType::Reference: {
+            ASR::Reference_t* ref = ASR::down_cast<ASR::Reference_t>(t);
+            return ASRUtils::TYPE(ASR::make_Reference_t(al, ref->base.base.loc,
+                duplicate_type_without_dims(al, ref->m_type, loc)));
         }
         case ASR::ttypeType::Allocatable: {
             ASR::Allocatable_t* alloc_ = ASR::down_cast<ASR::Allocatable_t>(t);
@@ -10177,6 +10633,11 @@ bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, ASR::exp
                 std::string right_param = right_tp->m_param;
                 return left_param == right_param;
             }
+            case (ASR::ttypeType::Reference) : {
+                return types_equal(ASR::down_cast<ASR::Reference_t>(a)->m_type,
+                    ASR::down_cast<ASR::Reference_t>(b)->m_type, a_expr, b_expr,
+                    check_for_dimensions);
+            }
             case (ASR::ttypeType::Integer) : {
                 ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(a);
                 ASR::Integer_t *b2 = ASR::down_cast<ASR::Integer_t>(b);
@@ -10380,6 +10841,12 @@ bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 std::string left_param = left_tp->m_param;
                 std::string right_param = right_tp->m_param;
                 return left_param == right_param;
+            }
+            case (ASR::ttypeType::Reference) : {
+                return types_equal_with_substitution(
+                    ASR::down_cast<ASR::Reference_t>(a)->m_type,
+                    ASR::down_cast<ASR::Reference_t>(b)->m_type, subs, a_expr,
+                    b_expr, check_for_dimensions);
             }
             case (ASR::ttypeType::Integer) : {
                 ASR::Integer_t *a2 = ASR::down_cast<ASR::Integer_t>(a);
@@ -10855,7 +11322,7 @@ ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* struct_sym,
             nullptr, nullptr, nullptr, 0);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
-            al, struct_sym->base.loc, new_sym, false);
+            al, struct_sym->base.loc, new_sym, true);
         ASR::down_cast<ASR::Struct_t>(new_sym)->m_struct_signature = sig;
         scope->add_symbol(struct_name, new_sym);
         return new_sym;
@@ -11233,11 +11700,14 @@ ASR::expr_t* compute_length_from_start_end_step(Allocator& al,
 }
 
 bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vector<size_t>& v) {
-    // BindC interfaces already pass array by data pointer so we don't need to track
+    // bind(C) procedures keep their C interface
+    if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
+        return false;
+    }
+    // BindPython interfaces already pass array by data pointer so we don't need to track
     // them and use extra variables for their dimensional information. Only those functions
     // need to be tracked which by default pass arrays by using descriptors.
-    if ((ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC
-         || ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython)
+    if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindPython
         && (ASRUtils::is_declaration_deftype(ASRUtils::get_FunctionType(x)->m_deftype)
             || ASRUtils::get_FunctionType(x)->m_bindc_name)) {
         return false;
@@ -12579,11 +13049,19 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // `ASR::FunctionParam_t`.
                 ASR::expr_t* arg_expr = arg;
                 ASR::expr_t* orig_arg_expr = func->m_args[i];
-                if (ASR::is_a<ASR::FunctionParam_t>(*arg_expr)) {
+                // A FunctionParam can also be a dummy argument of the
+                // procedure whose signature contains the call (such as the
+                // frame of its host, see nested_vars), which need not be one
+                // of the callee's.
+                if (ASR::is_a<ASR::FunctionParam_t>(*arg_expr) &&
+                        (size_t) ASR::down_cast<ASR::FunctionParam_t>(arg_expr)->m_param_number
+                            < func->n_args) {
                     ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(arg_expr);
                     arg_expr = func->m_args[func_param->m_param_number];
-                } 
-                if (ASR::is_a<ASR::FunctionParam_t>(*orig_arg_expr)) {
+                }
+                if (ASR::is_a<ASR::FunctionParam_t>(*orig_arg_expr) &&
+                        (size_t) ASR::down_cast<ASR::FunctionParam_t>(orig_arg_expr)->m_param_number
+                            < func->n_args) {
                     ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(orig_arg_expr);
                     orig_arg_expr = func->m_args[func_param->m_param_number];
                 }
@@ -12645,7 +13123,7 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                                         ASR::storage_typeType::Default, pointer_type, nullptr,
                                         ASR::abiType::Source, ASR::accessType::Public,
                                         ASR::presenceType::Required, false,
-                                        false, false, nullptr, false, false,
+                                        false, false, nullptr, false, false, false,
                                         ASR::pass_attrType::NotMethod, nullptr);
 
                         ASR::symbol_t* cast_sym = ASR::down_cast<ASR::symbol_t>(cast_);
@@ -12746,6 +13224,11 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     cast_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (ASRUtils::is_pointer(physical_cast_type) &&
                            orig_arg_array_t->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
+                    // A pointer actual keeps its own extents: leaving the
+                    // dimensions empty keeps the actual argument's dimensions
+                    // in the cast target, so the target is not the dummy's
+                    // declared shape. A deferred-shape pointer stays deferred,
+                    // for which the size gate emits no check (pre-existing).
                     dimensions = nullptr;
                 } else if (ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims)) {
                     dimensions = &dimension_;
@@ -12778,7 +13261,25 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                       bool valid_symbols = true;
                       for (size_t i = 0; i < dimension_.size(); i++) {
                           dimension_.p[i].loc = arg->base.loc;
-        
+
+                          // A deferred extent is part of the dummy's declared
+                          // shape, not a symbol that has to be reachable from
+                          // the caller: an explicit-shape dummy substitutes its
+                          // extent here, while an assumed-size `a(*)` and an
+                          // assumed-shape `a(:)` keep it deferred. Keep it for a
+                          // data-pointer cast, which carries no descriptor. A
+                          // descriptor cast still needs concrete extents to be
+                          // built, so it keeps the actual argument's shape.
+                          if (dimension_[i].m_length == nullptr &&
+                                  dimension_[i].m_start == nullptr) {
+                              if (cast_physical_type ==
+                                      ASR::array_physical_typeType::DescriptorArray) {
+                                  valid_symbols = false;
+                                  break;
+                              }
+                              continue;
+                          }
+
                           // 2. Safely extract the replaced memory (optimized or mutated)
                           ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
                           ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
@@ -12801,8 +13302,17 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                             }
                           }
                         } else {
-                        dimensions = nullptr;
-                    }
+                            // The dummy's extent cannot be carried into the
+                            // cast target, which therefore keeps the actual
+                            // argument's dimensions. When a substituted extent
+                            // references a symbol the caller cannot see,
+                            // codegen compares the actual with itself; when the
+                            // extent is deferred and the target is a descriptor
+                            // (a fixed-size actual passed to an assumed-shape
+                            // dummy), the cast is not a checked cast form, so
+                            // codegen emits no check. Both are pre-existing.
+                            dimensions = nullptr;
+                        }
                 }
 
                 //TO DO : Add appropriate errors in 'asr_uttils.h'.
@@ -12900,6 +13410,36 @@ void insert_self_arg(
     n_args = new_args.size();
 }
 
+// The type of a function reference whose result is an explicit-shape array
+// with a constant length below zero, which the actual arguments can give
+// (`f(-3)` for a result `r(n)`), has the extent zero there.
+static ASR::ttype_t* clamp_constant_result_extents(Allocator &al,
+        ASR::ttype_t* type) {
+    if (!ASR::is_a<ASR::Array_t>(*type)) {
+        return type;
+    }
+    ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(type);
+    Vec<ASR::dimension_t> dims;
+    dims.reserve(al, array->n_dims);
+    bool clamped = false;
+    for (size_t i = 0; i < array->n_dims; i++) {
+        ASR::dimension_t dim = array->m_dims[i];
+        ASR::expr_t* value = dim.m_length ? ASRUtils::expr_value(dim.m_length) : nullptr;
+        int64_t length = 0;
+        if (value && ASRUtils::extract_value(value, length) && length < 0) {
+            dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                dim.m_length->base.loc, 0, ASRUtils::expr_type(dim.m_length)));
+            clamped = true;
+        }
+        dims.push_back(al, dim);
+    }
+    if (!clamped) {
+        return type;
+    }
+    return ASRUtils::TYPE(ASR::make_Array_t(al, type->base.loc, array->m_type,
+        dims.p, dims.size(), array->m_physical_type, array->m_memory_space));
+}
+
 ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
@@ -12949,7 +13489,7 @@ ASR::asr_t* make_FunctionCall_t_util(
     }
 
     return ASR::make_FunctionCall_t(al, a_loc, a_name, a_original_name,
-            a_args, n_args, a_type, a_value, a_dt);
+            a_args, n_args, clamp_constant_result_extents(al, a_type), a_value, a_dt);
 }
 
 ASR::asr_t* make_SubroutineCall_t_util(
@@ -13321,6 +13861,20 @@ ASR::expr_t* struct_base_lending_shape(ASR::ArrayItem_t* x) {
         }
         root = section->m_v;
     }
+    if( ASR::is_a<ASR::ArrayItem_t>(*root) ) {
+        // The chain bottoms out in an element selection of its own, as in
+        // `a%x(2)%u(2)`: `a%x(2)` reads one element of the component `x`
+        // out of every element of `a`, and the subscripts of the whole
+        // reference then select out of that array. The reference carries
+        // the shape only if that inner selection itself lends the shape
+        // of its base.
+        ASR::ArrayItem_t* root_item = ASR::down_cast<ASR::ArrayItem_t>(root);
+        if( !ASRUtils::is_array(root_item->m_type) ||
+            struct_base_lending_shape(root_item) == nullptr ) {
+            return nullptr;
+        }
+        return base;
+    }
     if( !ASR::is_a<ASR::Var_t>(*root) &&
         !ASR::is_a<ASR::StructInstanceMember_t>(*root) ) {
         return nullptr;
@@ -13379,16 +13933,18 @@ ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR::ttype
     if( ASRUtils::is_array(type) && !ASRUtils::is_assumed_rank_array(type) ) {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
-        // A pointer to an array must have deferred shape, so drop the
-        // dimensions if any of them still carries a length. Checking only
-        // whether some dimension is empty is not enough: an assumed-size
-        // array such as `a(1, *)` has an empty last dimension but an
-        // explicit first one.
-        for( size_t i = 0; i < n_dims; i++ ) {
-            if( m_dims[i].m_length != nullptr ) {
-                type = ASRUtils::duplicate_type_with_empty_dims(al, type);
-                break;
-            }
+        // A pointer to an array must be a descriptor with deferred shape,
+        // so drop the dimensions if any of them still carries a length or
+        // if the array is not a descriptor. Checking only whether some
+        // dimension is empty is not enough: an assumed-size array such as
+        // `a(1, *)` has an empty last dimension but an explicit first one,
+        // and `a(*)` has no length at all but is not a descriptor.
+        bool needs_descriptor = !ASRUtils::is_array_physically_descriptor(type);
+        for( size_t i = 0; i < n_dims && !needs_descriptor; i++ ) {
+            needs_descriptor = m_dims[i].m_length != nullptr;
+        }
+        if( needs_descriptor ) {
+            type = ASRUtils::duplicate_type_with_empty_dims(al, type);
         }
     }
 
@@ -13643,7 +14199,7 @@ bool struct_needs_member_init(ASR::Struct_t* s,
     return false;
 }
 
-bool needs_struct_array_member_init(ASR::expr_t* expr,
+bool needs_struct_array_member_init(ASR::symbol_t* type_declaration,
         ASR::ttype_t* type) {
     if (!is_array(type)) {
         return false;
@@ -13652,8 +14208,7 @@ bool needs_struct_array_member_init(ASR::expr_t* expr,
     if (!ASR::is_a<ASR::StructType_t>(*el_type) || is_class_type(el_type)) {
         return false;
     }
-    ASR::symbol_t* struct_sym = symbol_get_past_external(
-        get_struct_sym_from_struct_expr(expr));
+    ASR::symbol_t* struct_sym = symbol_get_past_external(type_declaration);
     if (struct_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
         return false;
     }
@@ -14014,6 +14569,15 @@ void ReplaceWithFunctionParamVisitor::replace_Var(ASR::Var_t* x) {
         *current_expr = ASRUtils::EXPR(ASR::make_FunctionParam_t(
                             al, m_args[arg_idx]->base.loc, arg_idx,
                             t_, nullptr));
+    } else if (ASR::is_a<ASR::Variable_t>(*x->m_v) &&
+            is_entry_initialized_local(*ASR::down_cast<ASR::Variable_t>(x->m_v))) {
+        // A local initialized on entry (e.g. the extent of an
+        // explicit-shape dummy) stands for its initializer, which is
+        // given in terms of the arguments.
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        *current_expr = duplicator.duplicate_expr(
+            ASR::down_cast<ASR::Variable_t>(x->m_v)->m_symbolic_value);
+        replace_expr(*current_expr);
     } else if (ASRUtils::expr_value((ASR::expr_t*)x)){//  Replace Constant args
         *current_expr = ASRUtils::expr_value((ASR::expr_t*)x); 
     }
@@ -14081,6 +14645,16 @@ void SymbolDuplicator::duplicate_symbol(ASR::symbol_t* symbol,
         return;
     }
     switch( symbol->type ) {
+        case ASR::symbolType::ScopedVariableAttribute: {
+            auto *attribute = ASR::down_cast<ASR::ScopedVariableAttribute_t>(symbol);
+            new_symbol = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_ScopedVariableAttribute_t(al, symbol->base.loc,
+                    destination_symtab, attribute->m_name,
+                    attribute->m_variable,
+                    attribute->m_is_volatile, attribute->m_is_asynchronous));
+            new_symbol_name = attribute->m_name;
+            break;
+        }
         case ASR::symbolType::Variable: {
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(symbol);
             new_symbol = duplicate_Variable(variable, destination_symtab);
@@ -14200,7 +14774,7 @@ ASR::symbol_t* SymbolDuplicator::duplicate_Variable(ASR::Variable_t* variable,
             m_type, variable->m_type_declaration, variable->m_abi, variable->m_access,
             variable->m_presence, variable->m_value_attr, variable->m_target_attr,
             variable->m_contiguous_attr, variable->m_bindc_name, variable->m_is_volatile,
-            variable->m_is_protected, variable->m_pass_attr, variable->m_self_argument,
+            variable->m_is_asynchronous, variable->m_is_protected, variable->m_pass_attr, variable->m_self_argument,
             variable->m_codims, variable->n_codims
         ));
 }
@@ -14267,10 +14841,50 @@ void SymbolDuplicator::fixup_type_declarations_in_scope(SymbolTable *new_scope,
                 return;
             }
         }
+        void visit_ScopedVariableAttribute(const ASR::ScopedVariableAttribute_t &x) {
+            SymbolTable *parent = ASRUtils::symbol_parent_symtab(x.m_variable);
+            for (auto &s: scopes) {
+                if (parent != s.first) continue;
+                ASR::symbol_t *copy = s.second->get_symbol(
+                    ASRUtils::symbol_name(x.m_variable));
+                if (copy != nullptr && copy->type == x.m_variable->type) {
+                    const_cast<ASR::ScopedVariableAttribute_t&>(x).m_variable = copy;
+                }
+                return;
+            }
+        }
     };
     copied_scopes.push_back({orig_scope, new_scope});
     RetargetToCopies retarget(copied_scopes);
     for (auto &item : new_scope->get_scope()) {
+        // The name in the scope of a component of a derived type of the
+        // scope refers to the component of the copy of the type
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(
+                item.second);
+            ASR::asr_t *owner = ASRUtils::symbol_parent_symtab(
+                e->m_external)->asr_owner;
+            if (owner != nullptr && ASR::is_a<ASR::symbol_t>(*owner) &&
+                    ASR::is_a<ASR::Struct_t>(*ASR::down_cast<ASR::symbol_t>(owner)) &&
+                    ASRUtils::symbol_parent_symtab(ASR::down_cast<ASR::symbol_t>(
+                        owner)) == orig_scope) {
+                ASR::symbol_t *type_copy = new_scope->get_symbol(
+                    ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(owner)));
+                if (type_copy != nullptr && ASR::is_a<ASR::Struct_t>(*type_copy)) {
+                    ASR::symbol_t *member = ASR::down_cast<ASR::Struct_t>(
+                        type_copy)->m_symtab->get_symbol(ASRUtils::symbol_name(
+                            e->m_external));
+                    if (member != nullptr) {
+                        e->m_external = member;
+                    }
+                }
+            }
+            continue;
+        }
+        if (ASR::is_a<ASR::ScopedVariableAttribute_t>(*item.second)) {
+            retarget.visit_symbol(*item.second);
+            continue;
+        }
         if (ASR::is_a<ASR::Variable_t>(*item.second)) {
             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
             if (copied_scopes.size() > 1) {
@@ -14291,9 +14905,12 @@ void SymbolDuplicator::fixup_type_declarations_in_scope(SymbolTable *new_scope,
             continue;
         }
         SymbolTable *new_nested = nullptr;
+        // A derived type of the scope can declare a component with
+        // another derived type of the scope
         if (ASR::is_a<ASR::Block_t>(*item.second) ||
                 ASR::is_a<ASR::AssociateBlock_t>(*item.second) ||
-                ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::is_a<ASR::Function_t>(*item.second) ||
+                ASR::is_a<ASR::Struct_t>(*item.second)) {
             new_nested = ASRUtils::symbol_symtab(item.second);
         }
         ASR::symbol_t *orig_sym = orig_scope->get_symbol(item.first);
@@ -14495,7 +15112,7 @@ ASR::symbol_t* SymbolDuplicator::duplicate_StructMethodDeclaration(
         structMethod->m_name, structMethod->m_self_argument,
         structMethod->m_proc_name, structMethod->m_proc,
         structMethod->m_abi, structMethod->m_is_deferred,
-        structMethod->m_is_nopass));
+        structMethod->m_is_nopass, structMethod->m_access));
 }
 
 ASR::symbol_t* SymbolDuplicator::duplicate_Namelist(ASR::Namelist_t* namelist,

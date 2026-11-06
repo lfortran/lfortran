@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_discard_guard_extremes-186b374",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_discard_guard_extremes.f90",
+    "infile_hash": "64c9f7f2d32b725e5adaaeaa83f554fd0011a1284ca8cf881eebf4b8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_discard_guard_extremes-186b374.stdout",
+    "stdout_hash": "795c007ede5724dc4328b92e9588cb23acbdf897df18491c3bfe2530",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

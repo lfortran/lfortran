@@ -1,7 +1,7 @@
 #include <stdint.h>
 
 __device__ inline float twice_gpu_11(float v) {
-    float twice;
+    float twice{};
     twice = (((float)2) * v);
     return twice;
 }
@@ -16,7 +16,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __lb_z_0;
     int __dim_z_1;
     int __lb_z_1;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
@@ -31,10 +30,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __dim_z_0 = __scalar_args.__dim_z_0;
     int __lb_z_0 = __scalar_args.__lb_z_0;
     int __lb_z_1 = __scalar_args.__lb_z_1;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i__dc;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 8)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);

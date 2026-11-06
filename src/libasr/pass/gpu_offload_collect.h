@@ -687,8 +687,10 @@ public:
                 ASR::ttype_t *inner =
                     ASRUtils::type_get_past_allocatable(mem_type);
                 if (ASR::is_a<ASR::Array_t>(*inner)) {
+                    // Host launch arguments must retain the original member,
+                    // not a BLOCK alias later retargeted to the device copy.
                     alloc_members[struct_name][mem_name] =
-                        {x.m_m, mem_type};
+                        {mem, mem_type};
                 } else {
                     has_non_alloc_access.insert(struct_name);
                 }

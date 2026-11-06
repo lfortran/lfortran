@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.gpu_kernel_launch.component_fit_is_block]: GpuKernelLaunch::m_component_fit must be a Block
-   --> tests/asr/verify/gpu_kernel_launch_component_fit_not_block.asr:112:18
+   --> tests/asr/verify/gpu_kernel_launch_component_fit_not_block.asr:113:18
     |
-112 |                 (GpuKernelLaunch
+113 |                 (GpuKernelLaunch
     |                  ^^^^^^^^^^^^^^^ failed here

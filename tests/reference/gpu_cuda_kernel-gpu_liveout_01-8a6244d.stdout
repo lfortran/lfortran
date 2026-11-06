@@ -25,15 +25,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     k = __gpu_buf_k[((int)(1) - (1))];
     last = __gpu_buf_last[((int)(1) - (1))];
     {
-        int __gpu_frame;
+        long __gpu_frame;
         int __gpu_frame_i__dc;
-        if ((i__dc < (1 + 0))) {
-            __gpu_frame = ((i__dc - ((1 + 0) - ((1 + (1 - 1)) / 1))) * 1);
-            if ((__gpu_frame < 1)) {
-                if ((__gpu_frame < 0)) {
-                    __gpu_frame_i__dc = (1 + __gpu_frame);
+        if ((((long)i__dc) < (((long)1) + ((long)0)))) {
+            __gpu_frame = ((((long)i__dc) - ((((long)1) + ((long)0)) - ((((long)1) + (((long)1) - ((long)1))) / ((long)1)))) * ((long)1));
+            if ((__gpu_frame < ((long)1))) {
+                if ((__gpu_frame < ((long)0))) {
+                    __gpu_frame_i__dc = ((int)(((long)1) + __gpu_frame));
                 } else {
-                    __gpu_frame_i__dc = (((100 + 1) - 1) + (__gpu_frame - 0));
+                    __gpu_frame_i__dc = ((int)(((((long)100) + ((long)1)) - ((long)1)) + (__gpu_frame - ((long)0))));
                 }
                 k = (__gpu_frame_i__dc * 10);
                 __gpu_buf_k[((int)(1) - (1))] = k;

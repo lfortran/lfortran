@@ -1,0 +1,60 @@
+#include <stdint.h>
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_start_1;
+    int __loop_end_1;
+    int __loop_start_2;
+    int __loop_end_2;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    int* __restrict__ a,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+{
+    int __loop_start_1 = __scalar_args.__loop_start_1;
+    int __loop_end_1 = __scalar_args.__loop_end_1;
+    int __loop_start_2 = __scalar_args.__loop_start_2;
+    int __loop_end_2 = __scalar_args.__loop_end_2;
+    int __flat_idx;
+    int i__dc;
+    int j__dc;
+    int k__dc;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((10 * (((__loop_end_1 >= __loop_start_1)) ? (((__loop_end_1 - __loop_start_1) + 1)) : (0))) * (((__loop_end_2 >= __loop_start_2)) ? (((__loop_end_2 - __loop_start_2) + 1)) : (0))))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = ((__flat_idx - ((__flat_idx / ((10 - 1) + 1)) * ((10 - 1) + 1))) + 1);
+    __flat_idx = (__flat_idx / ((10 - 1) + 1));
+    j__dc = ((__flat_idx - ((__flat_idx / ((__loop_end_1 - __loop_start_1) + 1)) * ((__loop_end_1 - __loop_start_1) + 1))) + __loop_start_1);
+    __flat_idx = (__flat_idx / ((__loop_end_1 - __loop_start_1) + 1));
+    k__dc = (__flat_idx + __loop_start_2);
+    a[((int)(i__dc) - (1)) + (10 * ((int)(j__dc) - (1))) + ((10 * 10) * ((int)(k__dc) - (1)))] = (((100 * i__dc) + (10 * j__dc)) + k__dc);
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __loop_start_1;
+    int __loop_end_1;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    int* __restrict__ b,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+{
+    int __loop_start_1 = __scalar_args.__loop_start_1;
+    int __loop_end_1 = __scalar_args.__loop_end_1;
+    int __flat_idx;
+    int i__dc1;
+    int j__dc1;
+    int k__dc1;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((10 * (((__loop_end_1 >= __loop_start_1)) ? (((__loop_end_1 - __loop_start_1) + 1)) : (0))) * 4))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc1 = ((__flat_idx - ((__flat_idx / ((10 - 1) + 1)) * ((10 - 1) + 1))) + 1);
+    __flat_idx = (__flat_idx / ((10 - 1) + 1));
+    j__dc1 = ((__flat_idx - ((__flat_idx / ((__loop_end_1 - __loop_start_1) + 1)) * ((__loop_end_1 - __loop_start_1) + 1))) + __loop_start_1);
+    __flat_idx = (__flat_idx / ((__loop_end_1 - __loop_start_1) + 1));
+    k__dc1 = (__flat_idx + 1);
+    b[((int)(i__dc1) - (1)) + (10 * ((int)(j__dc1) - (1))) + ((10 * 10) * ((int)(k__dc1) - (1)))] = (((100 * i__dc1) + (10 * j__dc1)) + k__dc1);
+}
+

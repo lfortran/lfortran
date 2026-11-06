@@ -41,6 +41,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -71,6 +72,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                     NotMethod
                                                     ()
                                                     []
@@ -94,6 +96,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                     NotMethod
@@ -163,6 +166,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -173,7 +177,32 @@
                                     (SymbolTable
                                         3
                                         {
-                                            
+                                            ~implicit_interface_mess_3_return_var_name:
+                                                (Variable
+                                                    3
+                                                    ~implicit_interface_mess_3_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
                                         })
                                     ~implicit_interface_mess_3
                                     (FunctionType
@@ -194,7 +223,7 @@
                                     []
                                     []
                                     []
-                                    ()
+                                    (Var 3 ~implicit_interface_mess_3_return_var_name)
                                     Private
                                     .false.
                                     .false.

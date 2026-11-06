@@ -9,7 +9,6 @@ __device__ inline void maybe_set_gpu_9(float& x, int i) {
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __dim_a_0;
     int __lb_a_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
@@ -18,12 +17,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int __lb_a_0 = __scalar_args.__lb_a_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     float __gpu_before;
     int i__dc;
     float x;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 100000)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);

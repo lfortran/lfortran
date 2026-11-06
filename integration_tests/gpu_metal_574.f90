@@ -21,10 +21,11 @@ end function
 ! through another procedure of the host.
 pure integer function u(k)
     integer, intent(in) :: k
-    call w()
+    call w(u)
 contains
-    pure subroutine w()
-        u = 3*k + v()
+    pure subroutine w(value)
+        integer, intent(out) :: value
+        value = 3*k + v()
     end subroutine
     pure integer function v()
         v = k

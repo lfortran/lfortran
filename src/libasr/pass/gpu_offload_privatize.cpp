@@ -14,6 +14,7 @@
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_visitor.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/symbol_expr_substitution.h>
 
 namespace LCompilers {
@@ -262,7 +263,8 @@ private:
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
         return ASR::is_a<ASR::Integer_t>(*v->m_type)
             && v->m_intent == ASR::intentType::Local
-            && !v->m_is_volatile && v->m_common_block == nullptr
+            && !v->m_is_volatile && !v->m_is_asynchronous
+            && v->m_common_block == nullptr
             && !reachable_elsewhere(s, access.procedure())
             && host_associated.count(s) == 0;
     }
@@ -464,9 +466,12 @@ private:
 
     bool is_upper_bound(size_t d, ASR::expr_t *e) {
         int64_t s = 0, l = 0, v = 0;
-        ASR::expr_t *length = arr->m_dims[d].m_length;
+        ASR::expr_t *length = ASRUtils::Max::get_clamped_length(
+            arr->m_dims[d].m_length);
+        if (length == nullptr) length = arr->m_dims[d].m_length;
         // A dummy that cannot change still has the value used on entry
-        // when the automatic array's shape was established.
+        // when the automatic array's shape was established. The extent is
+        // max(0, length), which a loop from 1 to `length` runs over.
         if (length && ASR::is_a<ASR::Var_t>(*length) &&
                 ASR::is_a<ASR::Variable_t>(
                     *ASR::down_cast<ASR::Var_t>(length)->m_v) &&
@@ -476,7 +481,7 @@ private:
                     ASR::down_cast<ASR::Var_t>(length)->m_v)->m_intent
                     == ASR::intentType::In &&
                 constant(arr->m_dims[d].m_start, s) && s == 1 &&
-                PassUtils::same_expression(arr->m_dims[d].m_length, e)) {
+                PassUtils::same_expression(length, e)) {
             return true;
         }
         return constant(arr->m_dims[d].m_start, s)
@@ -977,7 +982,8 @@ GpuOffloadVisitor::iteration_array_candidates(
                 v->m_intent != ASR::intentType::Local ||
                 v->m_storage != ASR::storage_typeType::Default ||
                 v->m_symbolic_value || v->m_value ||
-                v->m_is_volatile || v->m_common_block || v->n_codims > 0 ||
+                v->m_is_volatile || v->m_is_asynchronous ||
+                v->m_common_block || v->n_codims > 0 ||
                 reachable_elsewhere(sym, proc_scope) ||
                 host_associated.count(sym)) {
             continue;
@@ -1166,13 +1172,14 @@ bool GpuOffloadVisitor::privatize_iteration_arrays(
                 dimension = ASRUtils::EXPR(ASR::make_Var_t(al,
                     v->base.base.loc, ASR::down_cast<ASR::Var_t>(extent)->m_v));
             };
-            ASR::ttype_t *index_type = ASRUtils::TYPE(
-                ASR::make_Integer_t(al, loc, 4));
+            // In the kind the device computes element offsets in, so that
+            // the bounds of the local are those of the array.
+            ASR::ttype_t *shape_type = index_type(loc);
             capture(array->m_dims[d].m_length,
-                b.ArraySize(source, b.i32(d + 1), index_type));
+                b.ArraySize(source, b.i32(d + 1), shape_type));
             capture(array->m_dims[d].m_start,
                 ASRUtils::EXPR(ASR::make_ArrayBound_t(al, v->base.base.loc,
-                    source, b.i32(d + 1), index_type, ASR::arrayboundType::LBound,
+                    source, b.i32(d + 1), shape_type, ASR::arrayboundType::LBound,
                     nullptr)));
         }
         ASR::symbol_t *local = gpu_new_variable(al, v->base.base.loc,

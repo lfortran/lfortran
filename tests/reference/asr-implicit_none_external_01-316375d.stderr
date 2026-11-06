@@ -1,0 +1,59 @@
+semantic error: duplicate implicit none statement
+  --> tests/errors/implicit_none_external_01.f90:68:1
+   |
+68 | implicit none (external)
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: procedure 'foo' is not explicitly declared
+ --> tests/errors/implicit_none_external_01.f90:8:1
+  |
+8 | call foo()
+  | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'foo' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:15:1
+   |
+15 | call foo()
+   | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'foo' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:24:1
+   |
+24 | call foo()
+   | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'g' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:31:5
+   |
+31 | x = g(2.0)
+   |     ^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'f' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:32:5
+   |
+32 | x = f(1.0)
+   |     ^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'd' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:38:5
+   |
+38 | x = d(1.0)
+   |     ^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'foo' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:49:1
+   |
+49 | call foo()
+   | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'foo' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:69:1
+   |
+69 | call foo()
+   | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'
+
+semantic error: procedure 'foo' is not explicitly declared
+  --> tests/errors/implicit_none_external_01.f90:77:1
+   |
+77 | call foo()
+   | ^^^^^^^^^^ help: declare it with the EXTERNAL attribute or give it an explicit interface, as required by 'implicit none (external)'

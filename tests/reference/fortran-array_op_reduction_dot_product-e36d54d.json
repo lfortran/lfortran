@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-array_op_reduction_dot_product-e36d54d",
+    "cmd": "lfortran --pass=array_struct_temporary,array_op --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/array_op_reduction_dot_product.f90",
+    "infile_hash": "75d105a3abb2d8c65e151e203a1b52da8a73d642e04f14b7bf910294",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-array_op_reduction_dot_product-e36d54d.f90",
+    "stdout_hash": "96ea15a1db062d431972f6c9d6c68a672481ebe8240c6226a98a9e5c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

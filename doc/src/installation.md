@@ -78,12 +78,28 @@ pixi run -e llvm11 integration_tests -j8 > integration.log 2>&1
 pixi run -e llvm11 integration_tests -b gfortran -j8 > gfortran.log 2>&1
 ```
 
+The `llvm11` Pixi environment also provisions Kokkos for generated C++ tests
+and sets `LFORTRAN_KOKKOS_DIR` to that environment's prefix.
+
 The `gfortran` backend honors `FC` when set, otherwise it uses `gfortran`.
 On macOS ARM, the `llvm11` environment sets `FC="gfortran -B/usr/bin/"` to
 select Xcode's assembler and linker. Recent GFortran emits M1/LSE instructions
 that the LLVM 11 environment's bundled Clang assembler rejects by default.
 This tool selection does not pass GFortran-specific flags to LFortran or
 change the LLVM version used for reference outputs.
+
+Native test environments include Kokkos 4.4.01 for the C++ backend. Inside
+the selected Pixi environment, set `LFORTRAN_KOKKOS_DIR="$CONDA_PREFIX"`.
+For an uninstalled development build, also set
+`LFORTRAN_RUNTIME_LIBRARY_HEADER_DIR="$LFORTRAN_BUILD_DIR/src/libasr/runtime"`.
+The packaged Kokkos enables OpenMP, so C++ compilation must enable OpenMP too.
+On macOS, Xcode Clang accepts `-Xpreprocessor -fopenmp`, with
+`-I"$CONDA_PREFIX/include"` and `-L"$CONDA_PREFIX/lib" -lomp`.
+The C++ driver's `--openmp` currently passes `-fopenmp`, which Xcode Clang
+rejects; to validate generated C++ on that platform, emit it with
+`--backend=cpp --show-cpp` and compile/link it explicitly with these flags,
+the runtime header directory, and `-lkokkoscontainers -lkokkoscore`.
+Keep `-Wl,-rpath,"$CONDA_PREFIX/lib"` when linking against the Pixi libraries.
 
 The integration task uses Make from the selected environment. The runner is
 currently intended for Unix-like shells; use WSL
@@ -103,6 +119,12 @@ targets without deleting other builds, local changes, or installed dependencies.
 Set `CMAKE_BUILD_PARALLEL_LEVEL` to limit build parallelism. Keep the same Pixi
 entry points as dependencies/build details evolve in `pixi.toml` and the scripts,
 rather than maintaining a separate list of packages or CMake flags.
+
+`pixi.toml` pins every package to an exact version, except zlib and zstd,
+whose versions differ between LLVM versions, so local builds and CI use the
+same direct dependencies. When you change a dependency, pin it to an exact
+version. CI builds the platform compilers with the same environments and
+`build` task (see [Compiler caches](#compiler-caches)).
 
 Use the Pixi workflow for builds and tests; it supplies the declared
 project dependencies without separate system/global package installation.
@@ -173,6 +195,17 @@ The shared native compiler workflow has two explicit coverage roles:
 Full LLVM-WASM, no-LLVM and MLIR suites belong directly to Quick on every event.
 They are not declared in Exhaustive or its shared compiler workflow, so there
 are no duplicate or skipped Exhaustive copies of these jobs.
+
+To build and test the MLIR backend locally with the MLIR release that Quick
+uses:
+
+```sh
+pixi run -e mlir build -DWITH_MLIR=yes
+pixi run -e mlir integration_tests -b mlir -j8 > mlir.log 2>&1
+```
+
+Use `pixi run -e mlir rebuild` after source edits. This configuration has its
+own `build/mlir` directory; reference tests still require `llvm11`.
 
 The full LLVM-WASM suite runs in two parallel jobs that build the same
 compiler: `Test LLVM 19 WASM` runs the WASI backend (`llvm_wasm`, wasmtime)
@@ -251,7 +284,9 @@ exercise the runtime-enabled Release LLVM 11/19 and macOS LLVM 22 profiles;
 success with the former disabled-runtime flags is not evidence for this change.
 
 The distinct Kokkos/out-of-source and custom-install configurations run
-full suites. Standalone C++ builds, documentation/kernel tests, the
+full suites. The out-of-source job also removes the Prefix `shell` from its
+environment and checks that CMake runs `build0.sh` with Bash, which is how
+builds without Pixi work. Standalone C++ builds, documentation/kernel tests, the
 Docker build/tests, JupyterLite and source packaging remain additional checks.
 
 PRs do not run the Exhaustive workflow at all. For a rare, explicitly
@@ -282,8 +317,23 @@ caches when it closes.
 
 Keep compiler inputs identical between commits. The version comes from
 `git describe` and changes with every commit, so it must not appear in build
-paths: `ci/build.sh` unpacks the versioned source tarball into the fixed
-`lfortran-src/` directory before building.
+paths: `ci/source_tarball.sh` unpacks the versioned source tarball into the
+fixed `lfortran-src/` directory, which the platform builds compile into the
+fixed `build/<environment>/` directory.
+
+The platform builds use the same Pixi environments and `build` task as local
+development. `.github/actions/build-platform` installs and activates
+`llvm<version>` (`prefix-dev/setup-pixi`), creates the source tarball, and
+builds it with
+`LFORTRAN_SOURCE_DIR=lfortran-src pixi run -e llvm<version> build
+-DLFORTRAN_BUILD_ALL=no -DWITH_LSP=yes -DWITH_XEUS=yes`, so the release tarball
+itself is tested. `ci/check_build.sh` then installs it and runs the unit,
+Jupyter kernel and notebook checks. The Pixi environments are not cached:
+each one is about 0.7 GB compressed and would evict compiler caches. Pixi keeps
+the package files' modification times, so ccache's default compiler check
+still hits after every fresh installation. `pixi.toml` pins the compilers, so
+they change only with a deliberate `pixi.toml` update, which invalidates the
+compiler caches once.
 
 The action appends a timestamp to every saved key, so each save on `main` adds
 a new copy. After every Quick or Exhaustive run on `main`,
@@ -349,6 +399,15 @@ the PRIF smoke test and integration tests keep their existing image settings.
 The missing-tool installer uses the same `fpm=0.12.0` pin as the application
 harness. A failed installed tool or unit test is an error, not a reason to
 skip coverage or reinstall speculatively.
+
+Linux OpenCoarrays references use the separate Pixi `coarray-reference`
+environment, not the runner's Fortran compiler or Caffeine's LFortran toolchain.
+It owns GNU Fortran 13 and OpenMPI 5.0.6: OpenCoarrays currently rejects
+OpenMPI with GNU Fortran >=14 because of the changed coarray ABI.
+The `opencoarrays-configure`, `opencoarrays-build`, `opencoarrays-install`,
+`caf` and `cafrun` tasks keep configuration, compilation and execution in that
+same environment. The harness still owns reference selection and test metadata;
+the shared workflow installs Pixi without eagerly installing this environment.
 
 Only the Linux **GFortran/OpenCoarrays reference validation** is source-dependent
 in Quick. The shared workflow supplies `LFORTRAN_COARRAY_BASE` (the PR base SHA
@@ -578,32 +637,33 @@ make install
 This will install `lfortran` into `inst/bin`.  It assumes that c++ and cc are available, which on Linux
 are typically the GNU C++/C compilers.
 
-### Build From Git
+### Build From Git Without Pixi
 
-We assume you have C++ compilers installed, as well as `git` and `wget`.
-In Ubuntu, you can also install `binutils-dev` for stacktraces.
+The [Pixi workflow](#pixi-recommended) builds from Git with every dependency
+installed for you. To build from Git with dependencies you provide yourself,
+install the packages that `pixi.toml` lists for the `build` feature and the
+`llvm<N>` feature of the LLVM version you want, at the pinned versions, with
+your package manager. These include Python, CMake, Ninja, `re2c`, `bison`,
+`zlib`, `zstd-static` and `llvmdev`; on Linux also a C/C++ compiler and
+`libunwind` (LLVM 12 and newer). In Ubuntu, you can also install `binutils-dev`
+for stacktraces.
 
-If you do not have Conda installed, you can do so on Linux (and similarly on
-other platforms):
-```bash
-wget --no-check-certificate https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-bash miniconda.sh -b -p $HOME/conda_root
-export PATH="$HOME/conda_root/bin:$PATH"
-```
 Clone the LFortran git repository:
 ```
 git clone https://github.com/lfortran/lfortran.git
 cd lfortran
 ```
-Then prepare the environment:
-```bash
-conda env create -f environment_linux.yml
-conda activate lf
-```
-Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`):
+Generate files that are needed for the build (this step depends on `re2c`, `bison` and `python`; run
+`PYTHON=python3 ./build0.sh` if your system only provides `python3`):
 ```bash
 ./build0.sh
 ```
+Configuring CMake with `-DLFORTRAN_BUILD_ALL=yes` (as `build1.sh` does) runs
+`build0.sh` itself, with the Prefix [`shell`](https://github.com/prefix-dev/shell)
+when it is installed and otherwise with Bash, so a build without Pixi needs
+only Bash. Pass `-DLFORTRAN_SHELL=/path/to/bash` to choose explicitly. CMake
+runs the generators with the first `python3` or `python` found on `PATH`;
+pass `-DLFORTRAN_PYTHON=/path/to/python` to choose explicitly.
 Now you can use our script `./build1.sh` to build in Debug mode:
 ```bash
 ./build1.sh
@@ -630,12 +690,10 @@ See [how to run tests](#tests) to make sure all tests pass
 
 Install Visual Studio (MSVC), for example the version 2022, you can download the
 Community version for free from: https://visualstudio.microsoft.com/downloads/.
+Install [Pixi](https://pixi.sh/) and Git.
 
-Install miniforge using the Windows installer from https://github.com/conda-forge/miniforge.
-
-Launch the Miniforge Prompt from the Desktop.
-
-In the shell, initialize the MSVC compiler using:
+Open the x64 Native Tools Command Prompt, or initialize the MSVC compiler in a
+`cmd.exe` shell using:
 
 ```
 call "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\Tools\VsDevCmd" -arch=x64
@@ -652,29 +710,20 @@ Now you can download and build LFortran:
 ```
 git clone https://github.com/lfortran/lfortran.git
 cd lfortran
-conda env create -f environment_win.yml
-conda activate lf
-build0.bat
-build1.bat
+pixi run -e llvm11 build > build.log 2>&1
 ```
 
 If everything compiled, then you can use LFortran as follows:
 ```
-inst\bin\lfortran examples/expr2.f90
+pixi run -e llvm11 start examples/expr2.f90
 expr2.exe
-inst\bin\lfortran
+pixi run -e llvm11 start
 ```
-And so on.
+And so on. The executable is `build\llvm11\src\bin\lfortran.exe`.
 
 Note: LFortran currently uses the MSVC's linker program (`link`), which is only
 available when the MSVC bat script above is ran. If you forget to activate it,
 LFortran's linking will fail.
-
-Note: the miniforge shell seems to be running some version of `git-bash`
-(although it is `cmd.exe`), which has some unix-like filesystem mounted in
-`/usr` and several commands available such as `ls`, `which`, `git`, `vim`.  For
-this reason the Conda build `environment_win.yml` contains everything needed,
-including `git`.
 
 ### Build from Git on Windows with WSL
 * In windows search "turn windows features on or off".
@@ -685,15 +734,8 @@ including `git`.
 
 * Go to Microsoft store and download Ubuntu (20.04 or 22.04 or 24.04), and launch it.
 
-* Now setup LFortran by running the following commands.
-
-  ```bash
-  wget  https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniconda.sh
-  bash miniconda.sh -b -p $HOME/conda_root
-  echo "export PATH=$HOME/conda_root/bin:$PATH" >> ~/.bashrc
-  ```
-
-* After that restart the Ubuntu terminal.
+* Install [Pixi](https://pixi.sh/) in the Ubuntu terminal, following its Linux
+  instructions, and restart the terminal.
 
 * Now clone the LFortran git repository (you should clone it inside a linux owned directory like `~` or  any of its sub-directories).
 
@@ -703,67 +745,41 @@ including `git`.
   cd lfortran
   ```
 
-* Run the following
+* Build LFortran. Pixi provides the compilers and every other dependency.
 
   ```bash
-  conda env create -f environment_linux.yml
-  conda init bash
-  ```
-
-* Restart Ubuntu terminal again
-
-  ```bash
-  conda activate lf
-  sudo apt update
-  sudo apt-get install build-essential
-  sudo apt-get install zlib1g-dev libzstd-dev
-  sudo apt install clang
-  ```
-
-* Run the following commands
-
-  ```bash
-  conda activate lf
-  ./build0.sh
-  cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
-  make -j8
+  pixi run -e llvm11 build > build.log 2>&1
   ```
 
 * If everything compiles, you can use LFortran as follows
 
   ```bash
-  ./src/bin/lfortran ./examples/expr2.f90
+  pixi run -e llvm11 start ./examples/expr2.f90
   ./expr2.out
   ```
 
 * Run an interactive prompt
 
   ```bash
-  ./src/bin/lfortran
+  pixi run -e llvm11 start
   ```
 
 See [how to run tests](#tests) to make sure all tests pass
 
 ### Enabling the Jupyter Kernel
 
-To install the Jupyter kernel, install the following Conda packages also:
+A build with LLVM has a Jupyter kernel (`lfortran kernel -f FILE`), LFortran's
+own implementation of the protocol, which needs no other library; its
+kernelspec is installed with LFortran. To use the Xeus kernel instead, enable
+it by `-DWITH_XEUS=yes` and install into the environment's prefix. The Pixi
+environments already provide Xeus, `xeus-zmq`, `nlohmann_json` and Jupyter.
+For example, on Linux or macOS:
 ```
-conda install xeus=6.0.0 xeus-zmq=4.0.0 nlohmann_json
+pixi shell -e llvm11
+pixi run -e llvm11 build -DWITH_XEUS=yes -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX"
+cmake --build build/llvm11 --target install
 ```
-and enable the kernel by `-DWITH_XEUS=yes` and install into `$CONDA_PREFIX`. For
-example:
-```
-cmake \
-    -DCMAKE_BUILD_TYPE=Debug \
-    -DWITH_LLVM=yes \
-    -DWITH_XEUS=yes \
-    -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-    -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
-    .
-cmake --build . -j4 --target install
-```
-To use it, install Jupyter (`conda install jupyter`) and test that the LFortran
-kernel was found:
+Test that the LFortran kernel was found:
 ```
 jupyter kernelspec list --json
 ```
@@ -806,9 +822,11 @@ The build steps are the same as when building from git:
 ./build1.sh
 ```
 
-As of 2025-11-10, the environment passes the CI tests, provided you tell it where to install the Jupyter kernel:
+To run the CI platform build checks, tell it where to install the Jupyter kernel:
 ```bash
-LFORTRAN_CMAKE_GENERATOR=Ninja CONDA_PREFIX=$(pwd) JUPYTER_PATH=$(pwd)/share/jupyter bash ci/build.sh
+shell ci/source_tarball.sh
+LFORTRAN_SOURCE_DIR=lfortran-src ./build1.sh build -DLFORTRAN_BUILD_ALL=no -DWITH_LSP=yes -DWITH_XEUS=yes -DCMAKE_INSTALL_PREFIX=$(pwd)
+JUPYTER_PATH=$(pwd)/share/jupyter WIN=0 shell ci/check_build.sh build
 ```
 (take note that the Nix shell does not use conda)
 
@@ -826,10 +844,11 @@ translator (requires Python).
 
 The instructions from git are to be used when developing LFortran itself.
 
-### Note for users who do not use Conda
+### Note for users who do not use Pixi
 
-Following are the dependencies necessary for installing this
-repository in development mode,
+`pixi.toml` lists the exact versions of every dependency. Following are the
+minimum dependencies necessary for installing this repository in development
+mode,
 
 - [Bison - 3.5.1](https://ftp.gnu.org/gnu/bison/bison-3.5.1.tar.xz)
 - [LLVM - 11.0.1](https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/llvm-11.0.1.src.tar.xz)

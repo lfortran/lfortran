@@ -52,17 +52,59 @@ struct OwnedDirectory {
 
 TEST_CASE("CUDA architecture selection configures only the native device compiler")
 {
-    CHECK(cuda_device_compiler_command("nvcc", false, "")
+    CHECK(cuda_device_compiler_command("nvcc", false, false, "")
         == "nvcc -arch=native");
-    CHECK(cuda_device_compiler_command("nvcc", false, "native")
+    CHECK(cuda_device_compiler_command("nvcc", false, false, "native")
         == "nvcc -arch=native");
-    CHECK(cuda_device_compiler_command("nvcc", false, "sm_120")
+    CHECK(cuda_device_compiler_command("nvcc", false, false, "sm_120")
         == "nvcc -arch=sm_120");
-    CHECK(cuda_device_compiler_command("nvcc -ccbin=g++", false, "sm_90")
-        == "nvcc -ccbin=g++ -arch=sm_90");
-    CHECK(cuda_device_compiler_command("clang++", true, "") == "clang++");
-    CHECK(cuda_device_compiler_command("clang++", true, "native") == "clang++");
-    CHECK(cuda_device_compiler_command("clang++", true, "sm_120") == "clang++");
+    CHECK(cuda_device_compiler_command("nvcc -ccbin=g++", false, false,
+        "sm_90") == "nvcc -ccbin=g++ -arch=sm_90");
+    CHECK(cuda_device_compiler_command("clang++", true, false, "")
+        == "clang++");
+    CHECK(cuda_device_compiler_command("clang++", true, false, "native")
+        == "clang++");
+    CHECK(cuda_device_compiler_command("clang++", true, false, "sm_120")
+        == "clang++");
+}
+
+TEST_CASE("HIP architecture selection uses the offload architecture option")
+{
+    CHECK(cuda_device_compiler_command("hipcc", false, true, "")
+        == "hipcc --offload-arch=native");
+    CHECK(cuda_device_compiler_command("hipcc", false, true, "gfx942")
+        == "hipcc --offload-arch=gfx942");
+    CHECK(cuda_device_compiler_command("amdclang++ -x hip", false, true,
+        "gfx90a") == "amdclang++ -x hip --offload-arch=gfx90a");
+}
+
+TEST_CASE("HIP headers and libraries are found next to the real HIP driver")
+{
+    OwnedDirectory workdir(fs::path(cuda_link_helpers_fixture::plain_archive).parent_path(),
+        "hip_toolkit_dirs");
+    fs::path rocm = workdir.path / "rocm-9.9.9";
+    fs::create_directories(rocm / "bin");
+    fs::create_directories(rocm / "include" / "hip");
+    fs::create_directories(rocm / "lib");
+    std::ofstream(rocm / "bin" / "hipcc") << "#!/bin/sh\n";
+    std::ofstream(rocm / "include" / "hip" / "hip_runtime_api.h") << "\n";
+    // A link to the driver elsewhere, as /usr/bin/hipcc is to the ROCm
+    // installation it belongs to.
+    fs::create_directories(workdir.path / "usr" / "bin");
+    fs::create_symlink(rocm / "bin" / "hipcc",
+        workdir.path / "usr" / "bin" / "hipcc");
+
+    std::string include_dir, lib_dir;
+    REQUIRE(hip_toolkit_dirs((workdir.path / "usr" / "bin" / "hipcc").string()
+        + " -O2", include_dir, lib_dir));
+    CHECK(fs::equivalent(include_dir, rocm / "include"));
+    CHECK(fs::equivalent(lib_dir, rocm / "lib"));
+
+    fs::remove(rocm / "include" / "hip" / "hip_runtime_api.h");
+    CHECK_FALSE(hip_toolkit_dirs((rocm / "bin" / "hipcc").string(),
+        include_dir, lib_dir));
+    CHECK_FALSE(hip_toolkit_dirs((workdir.path / "missing").string(),
+        include_dir, lib_dir));
 }
 
 TEST_CASE("CUDA toolkit headers are found next to the device compiler")

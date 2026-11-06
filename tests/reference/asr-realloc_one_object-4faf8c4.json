@@ -2,12 +2,12 @@
     "basename": "asr-realloc_one_object-4faf8c4",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/realloc_one_object.asr",
-    "infile_hash": "b8307073e7811f5b1e86b6c65676774e446b534580ae6d2ab582e899",
+    "infile_hash": "58138f120b5fcdfa7529bfc6f41f4addde6c3ad5a2e58b9a38a12cd7",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-realloc_one_object-4faf8c4.stderr",
-    "stderr_hash": "4d484b05cc4173fdb834e27ae6dc2bee694c2cd2fd1fb76122cc8db7",
+    "stderr_hash": "37503fc148b9696d28d79b8ec93a3d7a10a5f11e7fa939c4801d0724",
     "returncode": 2
 }

@@ -41,6 +41,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_f90 = is_included("ast_f90")
     ast_fixed_form = is_included("ast_fixed_form")
     ast_f90_fixed_form = is_included("ast_f90_fixed_form")
+    fmt = is_included("fmt")
     ast_cpp = is_included("ast_cpp")
     ast_cpp_hip = is_included("ast_cpp_hip")
     ast_openmp = is_included("ast_openmp")
@@ -73,7 +74,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     document_symbols = is_included("document_symbols")
     syntax_only_cc = is_included("syntax_only_cc")
     show_asr_with_cc = is_included("show_asr_with_cc")
-    asr_use_loop_variable_after_loop = is_included("asr_use_loop_variable_after_loop")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
     asr_json = is_included("asr_json")
@@ -123,9 +123,9 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 run_cmd("lfortran -c {}".format(extrafile_))
         return True
 
-    optimization_passes = ["flip_sign", "div_to_mul", "fma", "sign_from_value",
-                           "inline_function_calls", "loop_unroll",
-                           "dead_code_removal"]
+    optimization_passes = ["flip_sign", "div_to_mul", "sign_from_value",
+                           "inline_function_calls",
+                           "dead_code_removal", "loop_fusion"]
 
     if pass_ is not None and not fortran:
         pass_list = pass_.split(",")
@@ -143,7 +143,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "array_struct_temporary", "coarray",
                         "parallel_canonicalize", "parallel_dispatch",
                         "function_call_in_declaration",
-                        "string_length_arguments", "dead_array_store"] and
+                        "string_length_arguments", "dead_array_store",
+                        "intrinsic_function"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     if update_reference:
@@ -313,6 +314,18 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             verify_hash,
             extra_args)
 
+    if fmt:
+        # Format the file with the fmt subcommand. The source form is selected
+        # by `options`, which are passed after the subcommand.
+        run_test(
+            filename,
+            "fmt",
+            "lfortran fmt --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
     if lookup_name:
         run_test(
             filename,
@@ -436,15 +449,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
-    if asr_use_loop_variable_after_loop:
-        run_test(
-            filename,
-            "asr",
-            "lfortran --show-asr --use-loop-variable-after-loop --no-color {infile} -o {outfile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
 
     if asr_implicit_argument_casting:
         run_test(

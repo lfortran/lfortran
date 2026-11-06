@@ -1,5 +1,5 @@
 ASR verify pass error: OMPOverwrite may only be a clause of a parallel loop assigned to the device
-   --> tests/asr/verify/omp_overwrite_host_region.asr:166:12
+   --> tests/asr/verify/omp_overwrite_host_region.asr:171:12
     |
-166 |           (OMPRegion
+171 |           (OMPRegion
     |            ^^^^^^^^^ failed here

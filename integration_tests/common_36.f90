@@ -2,6 +2,10 @@ program common_36
 implicit none
 integer :: arr(5)
 integer :: i
+integer :: icc1
+common icc1
+! The bounds of a dummy are evaluated when the procedure is entered
+icc1 = 6
 do i = 1, 5
     arr(i) = i * 10
 end do
@@ -15,7 +19,6 @@ common icc1
 integer :: arr(n:icc1)
 integer :: i
 
-icc1 = 6
 ! arr(n:icc1) means arr(2:6), length 5
 do i = n, icc1
     if (arr(i) /= (i - n + 1) * 10) error stop

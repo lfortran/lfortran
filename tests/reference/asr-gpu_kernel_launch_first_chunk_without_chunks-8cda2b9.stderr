@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.gpu_kernel_launch.first_chunk_without_chunks]: only a GpuKernelLaunch with chunk dimensions can have a first chunk parameter
+   --> tests/asr/verify/gpu_kernel_launch_first_chunk_without_chunks.asr:113:18
+    |
+113 |                 (GpuKernelLaunch
+    |                  ^^^^^^^^^^^^^^^ failed here

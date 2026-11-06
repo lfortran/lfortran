@@ -36,27 +36,84 @@ bool GpuOffloadVisitor::is_int_literal(ASR::expr_t *e, int64_t value) {
     return ASR::down_cast<ASR::IntegerConstant_t>(v)->m_n == value;
 }
 
-ASR::expr_t *GpuOffloadVisitor::int32_const(const Location &loc, int64_t n) {
+namespace {
+
+ASR::expr_t *gpu_int_const(Allocator &al, const Location &loc, int64_t n,
+        int kind) {
     ASR::ttype_t *int_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+        ASR::make_Integer_t(al, loc, kind));
     return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n,
         int_type, ASR::integerbozType::Decimal));
 }
 
-// The loop counters generated below are integer(4); a section bound
-// of another integer kind has to be converted before it can be
-// combined with them.
-ASR::expr_t *GpuOffloadVisitor::to_int32(const Location &loc, ASR::expr_t *e) {
+// `e` converted to integer(kind), if it is of another kind.
+ASR::expr_t *gpu_to_int_kind(Allocator &al, const Location &loc,
+        ASR::expr_t *e, int kind) {
     ASR::ttype_t *t = ASRUtils::extract_type(ASRUtils::expr_type(e));
     if (ASR::is_a<ASR::Integer_t>(*t)
-            && ASR::down_cast<ASR::Integer_t>(t)->m_kind == 4) {
+            && ASR::down_cast<ASR::Integer_t>(t)->m_kind == kind) {
         return e;
     }
     ASR::ttype_t *int_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+        ASR::make_Integer_t(al, loc, kind));
     return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, e,
         ASR::cast_kindType::IntegerToInteger, int_type, nullptr,
         nullptr));
+}
+
+} // namespace
+
+ASR::expr_t *GpuOffloadVisitor::int32_const(const Location &loc, int64_t n) {
+    return gpu_int_const(al, loc, n, 4);
+}
+
+ASR::expr_t *GpuOffloadVisitor::to_int32(const Location &loc, ASR::expr_t *e) {
+    return gpu_to_int_kind(al, loc, e, 4);
+}
+
+// The type the element loops this pass builds for an array expression in
+// a kernel count in, and in which they compute the extents and subscripts
+// of its sections: the kind the dialect computes element offsets in
+// (GpuDeviceCapabilities::offset_kind). With 64-bit offsets a section's
+// bounds, stride and extent need not fit integer(4): a lower bound beyond
+// huge(0), or a stride of 2**32 + 1.
+ASR::ttype_t *GpuOffloadVisitor::index_type(const Location &loc) {
+    return ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+        device_caps.offset_kind));
+}
+
+ASR::expr_t *GpuOffloadVisitor::index_const(const Location &loc, int64_t n) {
+    return gpu_int_const(al, loc, n, device_caps.offset_kind);
+}
+
+// A section bound of another integer kind has to be converted before it
+// can be combined with the loop counters, which are of index_type.
+ASR::expr_t *GpuOffloadVisitor::to_index_kind(const Location &loc,
+        ASR::expr_t *e) {
+    return gpu_to_int_kind(al, loc, e, device_caps.offset_kind);
+}
+
+// A loop bound or index term of another integer kind in index_type, like
+// to_index_kind, except that an lbound/ubound inquiry is made again in
+// index_type rather than converted, since its integer(4) result may
+// already have lost the bound, and a literal just changes its kind.
+// A missing bound (the step of a loop without one) stays missing.
+ASR::expr_t *GpuOffloadVisitor::bound_to_index_kind(const Location &loc,
+        ASR::expr_t *e) {
+    if (e == nullptr || ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(e)) == device_caps.offset_kind) {
+        return e;
+    }
+    if (ASR::is_a<ASR::ArrayBound_t>(*e)) {
+        ASR::ArrayBound_t *b = ASR::down_cast<ASR::ArrayBound_t>(e);
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, b->m_v,
+            b->m_dim, index_type(loc), b->m_bound, nullptr));
+    }
+    if (ASR::is_a<ASR::IntegerConstant_t>(*e)) {
+        return index_const(loc,
+            ASR::down_cast<ASR::IntegerConstant_t>(e)->m_n);
+    }
+    return to_index_kind(loc, e);
 }
 
 // Number of elements of a section dimension `lo:hi:step`, which is
@@ -66,41 +123,42 @@ ASR::expr_t *GpuOffloadVisitor::to_int32(const Location &loc, ASR::expr_t *e) {
 ASR::expr_t *GpuOffloadVisitor::section_extent(const Location &loc,
         const ASR::array_index_t &d) {
     if (is_int_literal(d.m_left, 1) && is_int_literal(d.m_step, 1)) {
-        return d.m_right;
+        // 32-bit offsets leave the bound in its own kind.
+        return device_caps.offset_kind == 4
+            ? d.m_right : to_index_kind(loc, d.m_right);
     }
-    ASR::ttype_t *int_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+    ASR::ttype_t *int_type = index_type(loc);
     ASR::expr_t *span = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
-        loc, to_int32(loc, d.m_right), ASR::binopType::Sub,
-        to_int32(loc, d.m_left), int_type, nullptr));
+        loc, to_index_kind(loc, d.m_right), ASR::binopType::Sub,
+        to_index_kind(loc, d.m_left), int_type, nullptr));
     if (!is_int_literal(d.m_step, 1)) {
         span = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, span,
-            ASR::binopType::Div, to_int32(loc, d.m_step), int_type,
+            ASR::binopType::Div, to_index_kind(loc, d.m_step), int_type,
             nullptr));
     }
     return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, span,
-        ASR::binopType::Add, int32_const(loc, 1), int_type, nullptr));
+        ASR::binopType::Add, index_const(loc, 1), int_type, nullptr));
 }
 
 // Array index of the `counter`-th element (counter = 1..extent) of a
 // section dimension `lo:hi:step`, which is lo + (counter - 1)*step.
+// The counter is of index_type.
 ASR::expr_t *GpuOffloadVisitor::section_index(const Location &loc,
         const ASR::array_index_t &d, ASR::expr_t *counter) {
     if (is_int_literal(d.m_left, 1) && is_int_literal(d.m_step, 1)) {
         return counter;
     }
-    ASR::ttype_t *int_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+    ASR::ttype_t *int_type = index_type(loc);
     ASR::expr_t *offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
-        loc, counter, ASR::binopType::Sub, int32_const(loc, 1),
+        loc, counter, ASR::binopType::Sub, index_const(loc, 1),
         int_type, nullptr));
     if (!is_int_literal(d.m_step, 1)) {
         offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-            offset, ASR::binopType::Mul, to_int32(loc, d.m_step),
+            offset, ASR::binopType::Mul, to_index_kind(loc, d.m_step),
             int_type, nullptr));
     }
     return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-        to_int32(loc, d.m_left), ASR::binopType::Add, offset,
+        to_index_kind(loc, d.m_left), ASR::binopType::Add, offset,
         int_type, nullptr));
 }
 
@@ -199,9 +257,13 @@ ASR::expr_t *GpuOffloadVisitor::declare_temp_array(const Location &loc,
 
 // The target of `asgn` when its value reads the target's storage
 // through a designator that is not element-for-element identical to
-// it, and nullptr otherwise. See the comment above
-// gpu_designator_base for why such an assignment needs a temporary.
-ASR::expr_t *GpuOffloadVisitor::self_aliasing_target(ASR::Assignment_t *asgn) {
+// it, or through an operand of TRANSPOSE or MATMUL, and nullptr
+// otherwise; `in_non_elemental` tells whether the value calls TRANSPOSE
+// or MATMUL anywhere, the aliased read inside its operand or not. See
+// the comment above gpu_designator_base for why such an assignment
+// needs a temporary.
+ASR::expr_t *GpuOffloadVisitor::self_aliasing_target(ASR::Assignment_t *asgn,
+        bool *in_non_elemental) {
     ASR::expr_t *target = asgn->m_target;
     while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*target)) {
         target = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
@@ -216,6 +278,9 @@ ASR::expr_t *GpuOffloadVisitor::self_aliasing_target(ASR::Assignment_t *asgn) {
     checker.base = base;
     checker.target = target;
     checker.visit_expr(*asgn->m_value);
+    if (in_non_elemental) {
+        *in_non_elemental = checker.aliased && checker.has_non_elemental;
+    }
     return checker.aliased ? target : nullptr;
 }
 
@@ -257,8 +322,7 @@ bool GpuOffloadVisitor::alias_temp_is_fixed_size(ASR::expr_t *target) {
 // `ubound(base,dim+1) - lbound(base,dim+1) + 1`.
 ASR::expr_t *GpuOffloadVisitor::whole_dim_extent(const Location &loc,
         ASR::expr_t *base, size_t dim) {
-    ASR::ttype_t *int_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+    ASR::ttype_t *int_type = index_type(loc);
     ASRUtils::ExprStmtDuplicator dup(al);
     ASR::array_index_t whole;
     whole.loc = loc;
@@ -268,7 +332,7 @@ ASR::expr_t *GpuOffloadVisitor::whole_dim_extent(const Location &loc,
     whole.m_right = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
         dup.duplicate_expr(base), int32_const(loc, dim + 1), int_type,
         ASR::arrayboundType::UBound, nullptr));
-    whole.m_step = int32_const(loc, 1);
+    whole.m_step = index_const(loc, 1);
     return section_extent(loc, whole);
 }
 
@@ -321,11 +385,15 @@ bool GpuOffloadVisitor::alias_temp_extents(ASR::expr_t *target,
     for (size_t i = 0; i < at->n_dims; i++) {
         // The whole target is assigned, so the temporary has its shape
         // exactly; an extent the type does not spell out is read off the
-        // target's bounds.
+        // target's bounds. The temporary's declaration takes its own copy
+        // of the extent: the target's declaration may be the host's,
+        // which remapping the temporary into the kernel must not reach.
+        // The copy records its origin, so that a host-computed extent of
+        // a BLOCK local target replaces it too (copy_bound).
         ASR::expr_t *extent = at->m_dims[i].m_length
             ? at->m_dims[i].m_length : whole_dim_extent(loc, target, i);
         extents.push_back(al, extent);
-        sizes.push_back(al, extent);
+        sizes.push_back(al, copy_bound(extent));
     }
     return true;
 }
@@ -588,8 +656,17 @@ void GpuOffloadVisitor::materialize_runtime_alias_in_body(
         }
         ASR::Assignment_t *asgn =
             ASR::down_cast<ASR::Assignment_t>(stmt);
-        ASR::expr_t *target = self_aliasing_target(asgn);
-        if (!target || alias_temp_is_fixed_size(target)) {
+        // A TRANSPOSE or MATMUL is lowered before the fixed-size
+        // temporaries are made (materialize_aliased_assignments),
+        // together with the rest of its statement, such as the other
+        // operand of `v(:,m) = matmul(a, w(:,m)) + v(3:1:-1,m)`. So an
+        // aliased assignment that calls one gets its temporary here,
+        // whatever its size.
+        bool in_non_elemental = false;
+        ASR::expr_t *target = self_aliasing_target(asgn,
+            &in_non_elemental);
+        if (!target || (alias_temp_is_fixed_size(target)
+                && !in_non_elemental)) {
             new_body.push_back(al, stmt);
             continue;
         }
@@ -615,9 +692,9 @@ void GpuOffloadVisitor::materialize_runtime_alias_in_body(
             for (size_t i = 0; i < extents.n; i++) {
                 ASR::array_index_t idx;
                 idx.loc = loc;
-                idx.m_left = int32_const(loc, 1);
+                idx.m_left = index_const(loc, 1);
                 idx.m_right = dup.duplicate_expr(extents[i]);
-                idx.m_step = int32_const(loc, 1);
+                idx.m_step = index_const(loc, 1);
                 args.push_back(al, idx);
             }
             return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc,
@@ -641,6 +718,9 @@ void GpuOffloadVisitor::materialize_runtime_alias_in_body(
         scope->add_symbol(block_name, block_sym);
         if (scope == current_scope) {
             kernel_blocks.push_back(block_sym);
+        }
+        if (in_non_elemental) {
+            non_elemental_alias_blocks.insert(block_sym);
         }
         new_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
             al, loc, -1, block_sym)));
@@ -760,9 +840,9 @@ void GpuOffloadVisitor::materialize_aliased_in_body(
                 for (size_t i = 0; i < extents.n; i++) {
                     ASR::array_index_t idx;
                     idx.loc = loc;
-                    idx.m_left = int32_const(loc, 1);
+                    idx.m_left = index_const(loc, 1);
                     idx.m_right = extents[i];
-                    idx.m_step = int32_const(loc, 1);
+                    idx.m_step = index_const(loc, 1);
                     args.push_back(al, idx);
                 }
                 return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc,
@@ -1161,8 +1241,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
         }
 
         Location loc = stmt->base.loc;
-        ASR::ttype_t *int_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t *int_type = index_type(loc);
 
         // Create loop variable(s) in the containing function/program
         // scope, not in any enclosing AssociateBlock scope.
@@ -1236,7 +1315,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
             ASR::do_loop_head_t head;
             head.loc = loc;
             head.m_v = loop_vars[ri];
-            head.m_start = int32_const(loc, 1);
+            head.m_start = index_const(loc, 1);
             head.m_end = section_extent(loc, as->m_args[dim]);
             head.m_increment = nullptr;
 
@@ -1248,7 +1327,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
                 body.push_back(al, inner_body[0]);
             }
             loop_stmt = ASRUtils::STMT(
-                ASR::make_DoLoop_t(al, loc, nullptr,
+                ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                     head, body.p, body.n, nullptr, 0));
         }
         new_body.push_back(al, loop_stmt);
@@ -1452,8 +1531,7 @@ ASR::stmt_t* GpuOffloadVisitor::build_section_copy_loops(const Location &loc,
         SymbolTable *var_scope, ASR::ArraySection_t *as,
         const std::vector<int> &range_dims, ASR::expr_t *tmp,
         bool to_temp) {
-    ASR::ttype_t *int_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+    ASR::ttype_t *int_type = index_type(loc);
     std::vector<ASR::expr_t*> counters(range_dims.size());
     for (size_t ri = 0; ri < range_dims.size(); ri++) {
         std::string name = var_scope->get_unique_name("__gpu_gather_i");
@@ -1513,13 +1591,13 @@ ASR::stmt_t* GpuOffloadVisitor::build_section_copy_loops(const Location &loc,
         ASR::do_loop_head_t head;
         head.loc = loc;
         head.m_v = counters[k];
-        head.m_start = int32_const(loc, 1);
+        head.m_start = index_const(loc, 1);
         head.m_end = section_extent(loc, as->m_args[range_dims[k]]);
         head.m_increment = nullptr;
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         body.push_back(al, inner);
-        inner = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+        inner = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
             head, body.p, body.n, nullptr, 0));
     }
     return inner;
@@ -1600,8 +1678,7 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
     // extent, or that part would not be contiguous;
     // offloadable_before_rewrites declines a loop in which such an
     // extent changes with the iteration.
-    ASR::ttype_t *int_type = ASRUtils::TYPE(
-        ASR::make_Integer_t(al, loc, 4));
+    ASR::ttype_t *int_type = index_type(loc);
     ASRUtils::ExprStmtDuplicator dup(al);
     Vec<ASR::expr_t*> extents;
     extents.reserve(al, range_dims.size());
@@ -1613,7 +1690,7 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
         int64_t n = 0;
         ASR::expr_t *extent;
         if (const_section_extent(as->m_args[d], n)) {
-            extent = int32_const(loc, (int)n);
+            extent = index_const(loc, n);
             extents.push_back(al, extent);
         } else {
             extent = section_extent(loc, as->m_args[d]);
@@ -1632,7 +1709,7 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
                     loc, dup.duplicate_expr(as->m_v),
                     int32_const(loc, d + 1), int_type,
                     ASR::arrayboundType::UBound, nullptr));
-                whole.m_step = int32_const(loc, 1);
+                whole.m_step = index_const(loc, 1);
                 extents.push_back(al, section_extent(loc, whole));
                 partial = true;
             } else {
@@ -1641,9 +1718,9 @@ bool GpuOffloadVisitor::gather_strided_section_arg(const Location &loc,
         }
         ASR::array_index_t idx;
         idx.loc = loc;
-        idx.m_left = int32_const(loc, 1);
+        idx.m_left = index_const(loc, 1);
         idx.m_right = dup.duplicate_expr(extent);
-        idx.m_step = int32_const(loc, 1);
+        idx.m_step = index_const(loc, 1);
         part.push_back(al, idx);
     }
     ASR::ttype_t *elem_type = ASRUtils::extract_type(
@@ -2253,7 +2330,7 @@ bool GpuOffloadVisitor::gather_strided_sections_in_stmt(ASR::stmt_t *stmt,
             Vec<ASR::stmt_t*> body;
             body.reserve(al, inner.size());
             for (ASR::stmt_t *s : inner) body.push_back(al, s);
-            return {ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
+            return {ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 head, body.p, body.n, nullptr, 0))};
         };
         for (size_t i = 0; i < call.n_args; i++) {
@@ -2947,8 +3024,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
         ASR::Array_t *target_arr =
             ASR::down_cast<ASR::Array_t>(target_type);
         Location loc = stmt->base.loc;
-        ASR::ttype_t *int_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
+        ASR::ttype_t *int_type = index_type(loc);
         size_t n_dims = target_arr->n_dims;
         std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> bounds;
         find_array_section_all_bounds(asgn->m_target, bounds);
@@ -2993,7 +3069,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
             head.m_increment = nullptr;
             if (loop_nest == nullptr) {
                 loop_nest = ASRUtils::STMT(
-                    ASR::make_DoLoop_t(al, loc, nullptr,
+                    ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                         head, innermost_body.p,
                         innermost_body.n, nullptr, 0));
             } else {
@@ -3001,7 +3077,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
                 outer_body.reserve(al, 1);
                 outer_body.push_back(al, loop_nest);
                 loop_nest = ASRUtils::STMT(
-                    ASR::make_DoLoop_t(al, loc, nullptr,
+                    ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                         head, outer_body.p, outer_body.n,
                         nullptr, 0));
             }

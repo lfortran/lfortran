@@ -140,6 +140,20 @@ static void discard_fill_entry(void **args)
     out[1] = value + 1;
 }
 
+// out[chunk] = chunk + the sum of the 64 read-only values.
+static void read_once_entry(void **args)
+{
+    unit_launch();
+    int32_t *out = arg<int32_t *>(args, 0);
+    int32_t *in = arg<int32_t *>(args, 1);
+    int32_t chunk = arg<int32_t>(args, 2);
+    live(out, 8 * sizeof(int32_t));
+    live(in, 64 * sizeof(int32_t));
+    int32_t sum = 0;
+    for (int i = 0; i < 64; i++) sum += in[i];
+    out[chunk] = chunk + sum;
+}
+
 static kernel_func_t entry(void (*thunk)(void **))
 {
     return (kernel_func_t)thunk;
@@ -241,6 +255,117 @@ static int discard_fill()
     return 0;
 }
 
+// The chunks of a launch that runs in chunks launch one kernel handle once
+// each, handing over only their bounds again (device_launch_expand.cpp): a
+// read-only buffer is copied in at the first chunk only, and again once it
+// is set again, or once another handle of the kernel has filled the memory
+// of its slot in between.
+static int read_once()
+{
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    lfortran_gpu_register_kernel("read_once", entry(read_once_entry));
+    std::array<int32_t, 64> a, b;
+    for (int i = 0; i < 64; i++) {
+        a[i] = i + 1;
+        b[i] = 1000;
+    }
+    const int32_t sum_a = 64 * 65 / 2, sum_b = 64 * 1000;
+    std::array<int32_t, 8> out{}, other{};
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    auto h2d = []() { return stats().async_copies[cudaMemcpyHostToDevice]; };
+    auto *k = lfortran_gpu_load_kernel(ctx, "read_once", 9);
+    lfortran_gpu_set_buffer_arg(k, 0, out.data(), sizeof(out),
+        LFORTRAN_GPU_WRITE);
+    lfortran_gpu_set_buffer_arg(k, 1, a.data(), sizeof(a), LFORTRAN_GPU_READ);
+    for (int32_t chunk = 0; chunk < 3; chunk++) {
+        lfortran_gpu_set_scalar_arg(k, 2, &chunk, sizeof(chunk));
+        lfortran_gpu_launch(ctx, k, grid, block);
+    }
+    printf("read once: %llu uploads for 3 launches\n", h2d());
+    require(h2d() == 2, "the chunks upload each buffer once");
+    lfortran_gpu_set_buffer_arg(k, 1, a.data(), sizeof(a), LFORTRAN_GPU_READ);
+    int32_t chunk = 3;
+    lfortran_gpu_set_scalar_arg(k, 2, &chunk, sizeof(chunk));
+    lfortran_gpu_launch(ctx, k, grid, block);
+    require(h2d() == 3, "a buffer set again is uploaded again");
+    // Another handle of the kernel fills the slot memory with `b`.
+    auto *k2 = lfortran_gpu_load_kernel(ctx, "read_once", 9);
+    lfortran_gpu_set_buffer_arg(k2, 0, other.data(), sizeof(other),
+        LFORTRAN_GPU_WRITE);
+    lfortran_gpu_set_buffer_arg(k2, 1, b.data(), sizeof(b), LFORTRAN_GPU_READ);
+    chunk = 0;
+    lfortran_gpu_set_scalar_arg(k2, 2, &chunk, sizeof(chunk));
+    lfortran_gpu_launch(ctx, k2, grid, block);
+    require(h2d() == 5, "another handle uploads its own buffers");
+    chunk = 4;
+    lfortran_gpu_set_scalar_arg(k, 2, &chunk, sizeof(chunk));
+    lfortran_gpu_launch(ctx, k, grid, block);
+    require(h2d() == 6, "a slot another handle filled is uploaded again");
+    lfortran_gpu_sync(ctx);
+    for (int32_t i = 0; i < 5; i++) {
+        require(out[i] == i + sum_a, "every launch reads its own buffer");
+    }
+    require(other[0] == sum_b, "the other handle reads its own buffer");
+    lfortran_gpu_release_kernel(k);
+    lfortran_gpu_release_kernel(k2);
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    return 0;
+}
+
+// In the copy model a range of at least KEEP_READ_MIN_BYTES that launches
+// only read keeps its copy in device memory until the next wait: the
+// launches of a time loop, which hand the buffer over every time, copy it in
+// once. After lfortran_gpu_wait or lfortran_gpu_sync the host may have
+// changed it, and the next launch copies it again. An entry no launch used
+// in two wait periods is forgotten and its memory freed.
+static int keep_reads()
+{
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    lfortran_gpu_register_kernel("keep_reads", entry(read_once_entry));
+    std::vector<int32_t> a(KEEP_READ_MIN_BYTES / sizeof(int32_t) * 2);
+    for (size_t i = 0; i < a.size(); i++) a[i] = 1;
+    std::array<int32_t, 8> out{};
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    auto h2d = []() { return stats().async_copies[cudaMemcpyHostToDevice]; };
+    auto launch = [&](int32_t chunk) {
+        auto *k = lfortran_gpu_load_kernel(ctx, "keep_reads", 10);
+        lfortran_gpu_set_buffer_arg(k, 0, out.data(), sizeof(out),
+            LFORTRAN_GPU_WRITE);
+        lfortran_gpu_set_buffer_arg(k, 1, a.data(), a.size() * sizeof(int32_t),
+            LFORTRAN_GPU_READ);
+        lfortran_gpu_set_scalar_arg(k, 2, &chunk, sizeof(chunk));
+        lfortran_gpu_launch(ctx, k, grid, block);
+        lfortran_gpu_release_kernel(k);
+    };
+    auto start = h2d();
+    for (int32_t i = 0; i < 3; i++) launch(i);
+    printf("keep reads: %llu uploads for 3 launches\n", h2d() - start);
+    require(h2d() - start == 2, "a kept range is uploaded once");
+    lfortran_gpu_wait(ctx);
+    for (size_t i = 0; i < a.size(); i++) a[i] = 2;
+    launch(3);
+    require(h2d() - start == 3, "after a wait the range is uploaded again");
+    lfortran_gpu_sync(ctx);
+    require(out[0] == 64 && out[2] == 66 && out[3] == 131,
+        "every launch reads the values the host last wrote");
+    for (size_t i = 0; i < a.size(); i++) a[i] = 3;
+    launch(4);
+    lfortran_gpu_sync(ctx);
+    require(out[4] == 196, "after a sync the range is uploaded again");
+    auto allocations = stats().live_allocations;
+    lfortran_gpu_wait(ctx);
+    lfortran_gpu_wait(ctx);
+    lfortran_gpu_sync(ctx);
+    require(stats().live_allocations < allocations,
+        "an unused entry frees its memory");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    return 0;
+}
+
 // A deferred free that fails stops the program with the CUDA error, here
 // for memory that is not a device allocation.
 static int failed_free()
@@ -252,6 +377,166 @@ static int failed_free()
     lfortran_gpu_sync(ctx);
     fprintf(stderr, "a failed cudaFree was ignored\n");
     return 1;
+}
+
+// The unified memory model (LFORTRAN_GPU_MEMORY=unified): a kernel uses a
+// range it writes, and a range it only reads that is larger than
+// UNIFIED_COPY_MAX_BYTES, in place; a smaller range it only reads is still
+// copied. No launch waits for its kernel: before the host changes a range a
+// launch reads in place, lfortran_gpu_wait waits for it, and returns at
+// once when no pending launch reads host memory in place. Discarding a
+// range a pending launch writes in place waits for it, since the host frees
+// that memory. Nothing is ever copied back.
+static int32_t unified_out[2];
+static int32_t unified_small[4];
+static std::vector<int32_t> unified_large(64 * 1024);
+
+static void unified_entry(void **args)
+{
+    unit_launch();
+    int32_t *out = arg<int32_t *>(args, 0);
+    int32_t *small = arg<int32_t *>(args, 1);
+    int32_t *large = arg<int32_t *>(args, 2);
+    int32_t sequence = arg<int32_t>(args, 3);
+    require(out == unified_out, "a written range is used in place");
+    require(small != unified_small, "a small read-only range is copied");
+    live(small, sizeof(unified_small));
+    require(large == nullptr || large == unified_large.data(),
+        "a large read-only range is used in place");
+    out[0] = small[0] + (large ? large[unified_large.size() - 1] : 0)
+        + sequence;
+}
+
+// CTest runs this case with LFORTRAN_GPU_MEMORY=unified.
+static int unified_memory_model()
+{
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    require(unified_memory, "LFORTRAN_GPU_MEMORY=unified selects the model");
+    lfortran_gpu_register_kernel("unified", entry(unified_entry));
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    unified_small[0] = 10;
+    unified_large.back() = 100;
+    for (int32_t sequence = 1; sequence <= 2; sequence++) {
+        size_t syncs = sync_launches.size();
+        auto *k = lfortran_gpu_load_kernel(ctx, "unified", 7);
+        lfortran_gpu_set_buffer_arg(k, 0, unified_out, sizeof(unified_out),
+            LFORTRAN_GPU_WRITE);
+        lfortran_gpu_set_buffer_arg(k, 1, unified_small,
+            sizeof(unified_small), LFORTRAN_GPU_READ);
+        // Only the first launch reads the large range.
+        lfortran_gpu_set_buffer_arg(k, 2, unified_large.data(),
+            sequence == 1 ? unified_large.size() * sizeof(int32_t) : 0,
+            LFORTRAN_GPU_READ);
+        lfortran_gpu_set_scalar_arg(k, 3, &sequence, sizeof(sequence));
+        lfortran_gpu_launch(ctx, k, grid, block);
+        lfortran_gpu_release_kernel(k);
+        require(sync_launches.size() == syncs, "a launch does not wait");
+        lfortran_gpu_wait(ctx);
+        require(sync_launches.size() == syncs + (sequence == 1 ? 1 : 0),
+            "only a launch that reads host memory in place is waited for");
+        lfortran_gpu_wait(ctx);
+        require(sync_launches.size() == syncs + (sequence == 1 ? 1 : 0),
+            "a second wait has nothing to wait for");
+        // The host may now change what the launch only reads.
+        unified_small[0] = 20;
+        unified_large.back() = 200;
+        if (sequence == 1) {
+            lfortran_gpu_sync(ctx);
+            require(unified_out[0] == 10 + 100 + 1,
+                "the kernel read the large range before the host changed it");
+        }
+    }
+    size_t syncs = sync_launches.size();
+    lfortran_gpu_discard(ctx, unified_out, sizeof(unified_out));
+    require(sync_launches.size() == syncs + 1,
+        "discarding a range a pending launch writes in place waits");
+    lfortran_gpu_sync(ctx);
+    printf("unified memory: out=%d, uploads=%llu, readbacks=%llu, "
+        "allocations=%llu\n", unified_out[0],
+        stats().async_copies[cudaMemcpyHostToDevice],
+        stats().copies[cudaMemcpyDeviceToHost], stats().mallocs);
+    require(unified_out[0] == 20 + 2, "the last launch's value is in place");
+    require(stats().async_copies[cudaMemcpyHostToDevice] == 2,
+        "only the small read-only range is uploaded, at each launch");
+    require(stats().copies[cudaMemcpyDeviceToHost] == 0,
+        "nothing is copied back");
+    require(stats().mallocs == 1, "device memory only for the small copy");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    return 0;
+}
+
+// The managed memory model (LFORTRAN_GPU_MEMORY=managed): an allocation of
+// at least MANAGED_MIN_BYTES is managed memory, which a kernel uses in place,
+// and the first launch that uses it prefetches all of it to the device; later
+// launches do not. The prefetch is the cudaMemPrefetchAsync of the version of
+// the CUDA runtime API the runtime is compiled against (CUDART_VERSION):
+// CTest runs this case against the emulated CUDA 13 API and, in
+// test_gpu_cuda_api_state_cuda12, against the CUDA 12 one.
+static void *host_alloc(void *, int64_t size)
+{
+    return malloc((size_t)size);
+}
+
+static void *host_realloc(void *, void *ptr, int64_t size)
+{
+    return realloc(ptr, (size_t)size);
+}
+
+static void host_dealloc(void *, void *ptr)
+{
+    free(ptr);
+}
+
+static void managed_entry(void **args)
+{
+    unit_launch();
+    int32_t *data = arg<int32_t *>(args, 0);
+    int32_t sequence = arg<int32_t>(args, 1);
+    data[0] += sequence;
+}
+
+// CTest runs this case with LFORTRAN_GPU_MEMORY=managed.
+static int managed_memory_model()
+{
+    // A unit test links no program allocator for the managed one to replace.
+    previous_allocator = {host_alloc, host_realloc, host_dealloc, nullptr};
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    require(memory_model == MEMORY_MANAGED,
+        "LFORTRAN_GPU_MEMORY=managed selects the model");
+    auto *data = (int32_t *)managed_alloc(nullptr, MANAGED_MIN_BYTES);
+    require(data != nullptr && managed_contains(data, MANAGED_MIN_BYTES),
+        "a large allocation is managed memory");
+    data[0] = 10;
+    lfortran_gpu_register_kernel("managed", entry(managed_entry));
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    for (int32_t sequence = 1; sequence <= 2; sequence++) {
+        auto *k = lfortran_gpu_load_kernel(ctx, "managed", 7);
+        lfortran_gpu_set_buffer_arg(k, 0, data, sizeof(int32_t),
+            LFORTRAN_GPU_WRITE);
+        lfortran_gpu_set_scalar_arg(k, 1, &sequence, sizeof(sequence));
+        lfortran_gpu_launch(ctx, k, grid, block);
+        lfortran_gpu_release_kernel(k);
+        require(stats().device_prefetches == 1,
+            "the first launch that uses the allocation prefetches it");
+    }
+    lfortran_gpu_sync(ctx);
+    require(data[0] == 10 + 1 + 2, "the kernels wrote the memory in place");
+    require(stats().host_prefetches == 0, "nothing is prefetched to the host");
+    require(stats().async_copies[cudaMemcpyHostToDevice] == 0
+        && stats().copies[cudaMemcpyDeviceToHost] == 0,
+        "managed memory is not copied");
+    unsigned long long frees = stats().frees;
+    managed_dealloc(nullptr, data);
+    require(stats().frees == frees + 1, "managed memory is freed");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    // Only once every check passed, since CTest matches this line.
+    printf("managed memory passed on the CUDA runtime API %d: device "
+        "prefetches=%llu\n", CUDART_VERSION, stats().device_prefetches);
+    return 0;
 }
 
 // Without a device the runtime stops at initialization: it must not skip
@@ -300,11 +585,23 @@ int main(int argc, char **argv)
     if (argc == 2 && strcmp(argv[1], "discard-fill") == 0) {
         return discard_fill();
     }
+    if (argc == 2 && strcmp(argv[1], "read-once") == 0) {
+        return read_once();
+    }
+    if (argc == 2 && strcmp(argv[1], "keep-reads") == 0) {
+        return keep_reads();
+    }
     if (argc == 2 && strcmp(argv[1], "failed-free") == 0) {
         return failed_free();
     }
     if (argc == 2 && strcmp(argv[1], "no-device") == 0) {
         return no_device();
+    }
+    if (argc == 2 && strcmp(argv[1], "unified") == 0) {
+        return unified_memory_model();
+    }
+    if (argc == 2 && strcmp(argv[1], "managed") == 0) {
+        return managed_memory_model();
     }
     if (argc == 2 && strcmp(argv[1], "resident") == 0) {
         return resident_table_order(output_access);
@@ -317,7 +614,11 @@ int main(int argc, char **argv)
         "frees=%llu, first sync after launch=%lld\n", s.launches, s.mallocs,
         s.frees, sync_launches.empty() ? -1LL
             : sync_launches.front());
-    require(s.launches == 201 && s.mallocs == 6031 && s.frees == 4110,
+    // With a scratch buffer the read-back syncs once more, and the entry of
+    // `output`, which no launch has used in the two wait periods before, is
+    // forgotten there and its memory freed.
+    require(s.launches == 201 && s.mallocs == 6031
+        && s.frees == (scratch ? 4111u : 4110u),
         "per-slot reuse and deferred replacement counts");
     require(sync_launches.size() == (scratch ? 4 : 3)
         && sync_launches.front() == 200 && sync_launches[1] == 201,

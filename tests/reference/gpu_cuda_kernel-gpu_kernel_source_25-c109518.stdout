@@ -34,7 +34,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __lb___gpu_next_q_0;
     int __dim_q_0;
     int __lb_q_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
@@ -45,10 +44,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __gpu_bound = __scalar_args.__gpu_bound;
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i__dc1;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 3)) ? (((__loop_end_0 - 3) + 1)) : (0)))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 15)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -66,7 +64,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
     int __lb___gpu_next_q_0;
     int __dim_q_0;
     int __lb_q_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_2(
@@ -77,10 +74,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     int __gpu_bound = __scalar_args.__gpu_bound;
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i__dc1;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 3)) ? (((__loop_end_0 - 3) + 1)) : (0)))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 15)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -97,7 +93,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
     int __lb___gpu_next_q_0;
     int __dim_q_0;
     int __lb_q_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_3(
@@ -107,10 +102,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
 {
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i__dc1;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 3)) ? (((__loop_end_0 - 3) + 1)) : (0)))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 15)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -123,7 +117,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_4 {
     int __lb_flux_0;
     int __dim_q_0;
     int __lb_q_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_4(
@@ -133,11 +126,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
 {
     int __lb_flux_0 = __scalar_args.__lb_flux_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i__dc;
     const int n = 20;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 20)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -148,7 +140,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
 }
 
 __device__ inline float dflux_gpu_29(float* f, int __1f, int i) {
-    float r;
+    float r{};
     r = (f[((int)(i) - (1))] - f[((int)((i - 1)) - (1))]);
     return r;
 }
@@ -158,7 +150,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_5 {
     int __lb_flux_0;
     int __dim_q_0;
     int __lb_q_0;
-    int __loop_end_0;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_5(
@@ -168,10 +159,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_5(
 {
     int __dim_flux_0 = __scalar_args.__dim_flux_0;
     int __lb_q_0 = __scalar_args.__lb_q_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i__dc1;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 3)) ? (((__loop_end_0 - 3) + 1)) : (0)))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 15)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);

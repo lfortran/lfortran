@@ -8,20 +8,21 @@ them knows anything about a particular application. Each proves that what it
 does preserves the meaning of the program, and leaves the loops as they are
 when it cannot.
 
-They run for `--gpu=cuda` and `--gpu=cuda_cpu` (on by default), right after
-the dispatch has assigned the loops (the pass `gpu_loop_transforms`, which
-runs `gpu_loop_fusion`, `gpu_time_skew`, then `gpu_index_set_split`, before
-`gpu_offload`; each of the three can also be run on its own with `--pass`),
-so their output is ordinary `do concurrent` nests and host code that the
-rest of the offload pipeline lowers as it lowers any other; Metal keeps its
-loops as written. `--gpu-loop-transforms` selects them: `all` (the
-default), `none`, or a comma separated list of `fuse`, `swap`, `split`,
-`jam` and `skew` (`swap` only applies to loops that are fused); any other
-value is an error. The
-choices that depend on the size of the device's last-level cache ask the
-runtime for it (`lfortran_gpu_cache_bytes`, the L2 size on CUDA) unless
-`--gpu-cache-bytes=N` states it (the tests use a small value to exercise
-the paths for large problems on small ones).
+They run for `--gpu=cuda`, `--gpu=cuda_cpu` and `--gpu=hip` (on by default),
+right after the dispatch has assigned the loops (the pass
+`gpu_loop_transforms`, which runs `gpu_loop_fusion`, `gpu_time_skew`, then
+`gpu_index_set_split`, before `gpu_offload`; each of the three can also be run
+on its own with `--pass`), so their output is ordinary `do concurrent` nests
+and host code that the rest of the offload pipeline lowers as it lowers any
+other; Metal keeps its loops as written. `--gpu-loop-transforms` selects them:
+`all` (the default), `none`, or a comma separated list of `fuse`, `swap`,
+`split`, `jam` and `skew` (`swap` only applies to loops that are fused); any
+other value is an error. The choices that depend on the size of the device's
+last-level cache ask the runtime for it (`lfortran_gpu_cache_bytes`: the L2
+size on CUDA, and on HIP the largest cache the kernel driver lists for the
+GPU, the 256 MiB Infinity Cache of an MI300) unless `--gpu-cache-bytes=N`
+states it (the tests use a small value to exercise the paths for large
+problems on small ones).
 
 The measurements quoted below are of Formal's 2D advection-diffusion
 example (`--solver workspace --order 4`, the `split` kernel: per Runge-Kutta
@@ -54,6 +55,25 @@ evaluated (the second operand of a logical operator, an argument of
 `merge`).
 
 ## Producer-consumer fusion (`fuse`, `gpu_loop_fusion.cpp`)
+
+### Private map into an ordered scalar fold
+
+After shared reduction lowering, `gpu_private_reduction_fusion` also runs
+for Metal. A block-local rank-one map used only by one additive scalar fold
+over the identical full unit-stride domain can be replaced by a typed scalar
+assignment before each fold update. This preserves the producer's evaluation
+count, the scalar rounding boundary and the fold's addition order; it does
+not introduce SIMD reduction or reassociation. `--gpu-loop-transforms=none`
+disables it.
+
+The array must not escape, alias other storage, be volatile or have another
+reader or writer. A partial-domain fold, conditional multi-output producer,
+or row loop reusing the map keeps the original storage. In particular this
+does not yet eliminate arrays shared by grouped reductions and conditional
+weight materialization in a projection. No backend-specific pattern or
+application name is involved.
+
+### Time-step fusion
 
 Two adjacent parallel loops, a producer that assigns arrays element by
 element and a consumer that reads them at constant offsets, become one loop
@@ -282,7 +302,7 @@ reaches 1.22 TB/s of DRAM bandwidth at 60% occupancy, the plain one 1.36
 TB/s at 70%). Both nests are generated, and the host picks the jammed one
 when the launch's iterations times the bytes an iteration names (one
 element of every array of the body) fit in the last-level cache, which the
-runtime reports (`lfortran_gpu_cache_bytes`, the L2 size on CUDA).
+runtime reports (`lfortran_gpu_cache_bytes`).
 
 Effect (2048²): 0.149 s to 0.133 s. The stage kernel goes from 29 µs to
 24.7 µs, with 37% fewer instructions; it now runs at the L2 bandwidth
@@ -324,9 +344,8 @@ do while (t0 < n)                 ! s iterations of the nest at a time
 ```
 
 and then sets the DO variables to the values the original nest leaves in
-them (the last iteration's, or one step past it with
-`--use-loop-variable-after-loop`), so that the result does not depend on
-the run-time choice between the skewed and the original loop.
+them (one step past the last iteration's), so that the result does not
+depend on the run-time choice between the skewed and the original loop.
 
 The window is computed in `integer(8)`, whatever the kinds of the loop
 indices, and is a part of the loop's rows, so its ends convert exactly to

@@ -1,6 +1,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/gpu_affine.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_index_set_split.h>
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_loop_utils.h>
@@ -423,8 +424,8 @@ public:
                 || !has_test(inner->m_body, inner->n_body, 0)) {
             return nullptr;
         }
-        // The constants and the frame's arithmetic are built in the kind
-        // of the indices, which must then be one for the whole nest.
+        // The frame's values are converted to the kind of the indices,
+        // which must then be one for the whole nest.
         ASR::ttype_t *index_type = ASRUtils::expr_type(nest.starts[0]);
         int index_kind = ASRUtils::extract_kind_from_ttype_t(index_type);
         for (size_t d = 0; d < rank; d++) {
@@ -463,7 +464,7 @@ public:
             ASR::symbol_t *f = ASRUtils::symbol_get_past_external(call->m_name);
             return ASR::is_a<ASR::Function_t>(*f) && gpu_function_inlinable(
                 ASR::down_cast<ASR::Function_t>(f));
-        });
+        }, gpu_device_capabilities(pass_options).offset_kind);
         auto rollback = [&]() -> ASR::stmt_t* {
             inl.rollback();
             for (auto it = added.rbegin(); it != added.rend(); ++it) {
@@ -633,8 +634,18 @@ public:
         Location loc = stmt->base.loc;
         ASRUtils::ASRBuilder bld(al, loc);
         ASRUtils::ExprStmtDuplicator ed(al);
-        auto c = [&](int64_t x) {
-            return bld.i_t(x, ASRUtils::duplicate_type(al, index_type));
+        // The frame's arithmetic is done in integer(8): its rows, counts
+        // and extents do not fit the kind of the indices when the domain
+        // lies near its ends or is longer than its largest value. Only the
+        // indices it computes, which lie in the domain, and the bounds of
+        // the nest are converted back to that kind.
+        auto c = [&](int64_t x) { return bld.i_t(x, bld.int_type(8)); };
+        auto wide = [&](ASR::expr_t *x) {
+            return index_kind == 8 ? x : bld.i2i_t(x, bld.int_type(8));
+        };
+        auto narrow = [&](ASR::expr_t *x) {
+            return index_kind == 8 ? x
+                : bld.i2i_t(x, ASRUtils::duplicate_type(al, index_type));
         };
         auto add = [&](ASR::expr_t *x, ASR::expr_t *y) {
             return gpu_int_add(al, x, y);
@@ -650,8 +661,12 @@ public:
             return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, x,
                 ASR::binopType::Div, y, ASRUtils::expr_type(x), nullptr));
         };
-        auto lo_e = [&](size_t d) { return ed.duplicate_expr(nest.starts[d]); };
-        auto hi_e = [&](size_t d) { return ed.duplicate_expr(nest.ends[d]); };
+        auto lo_e = [&](size_t d) {
+            return wide(ed.duplicate_expr(nest.starts[d]));
+        };
+        auto hi_e = [&](size_t d) {
+            return wide(ed.duplicate_expr(nest.ends[d]));
+        };
         // extent(d) = hi - lo + 1
         auto extent = [&](size_t d) { return add(sub(hi_e(d), lo_e(d)), c(1)); };
         // Iterations of the interior's outer dimension one thread runs one
@@ -672,10 +687,12 @@ public:
         };
         // The bounds of the domain.
         auto dom_lo = [&](size_t d) {
-            return windowed && d == 0 ? ed.duplicate_expr(win.start) : lo_e(d);
+            return windowed && d == 0 ? wide(ed.duplicate_expr(win.start))
+                : lo_e(d);
         };
         auto dom_hi = [&](size_t d) {
-            return windowed && d == 0 ? ed.duplicate_expr(win.end) : hi_e(d);
+            return windowed && d == 0 ? wide(ed.duplicate_expr(win.end))
+                : hi_e(d);
         };
         // On a window wl .. wh (the bounds of the nest) of the outer
         // dimension, host variables hold the rows of the interior in it,
@@ -696,10 +713,8 @@ public:
         };
         ASR::symbol_t *ws_sym = nullptr, *we_sym = nullptr;
         if (windowed) {
-            ws_sym = new_index("__gpu_window_start",
-                ASRUtils::symbol_type(nest.vars[0]));
-            we_sym = new_index("__gpu_window_end",
-                ASRUtils::symbol_type(nest.vars[0]));
+            ws_sym = new_index("__gpu_window_start", bld.int_type(8));
+            we_sym = new_index("__gpu_window_end", bld.int_type(8));
         }
         auto window_rows = [&](int64_t jm) {
             ASR::expr_t *ws = bld.Var(ws_sym), *we = bld.Var(we_sym);
@@ -743,8 +758,7 @@ public:
 
         // The frame: one index t over the iterations outside the interior,
         // mapped to indices of their own.
-        ASR::symbol_t *tsym = new_index("__gpu_frame",
-            ASRUtils::expr_type(nest.starts[0]));
+        ASR::symbol_t *tsym = new_index("__gpu_frame", bld.int_type(8));
         auto t = [&]() { return bld.Var(tsym); };
         std::vector<ASR::symbol_t*> fvars;
         for (size_t d = 0; d < rank; d++) {
@@ -753,7 +767,7 @@ public:
                 ASRUtils::symbol_type(nest.vars[d])));
         }
         auto assign = [&](size_t d, ASR::expr_t *val) {
-            return bld.Assignment(bld.Var(fvars[d]), val);
+            return bld.Assignment(bld.Var(fvars[d]), narrow(val));
         };
 
         // The statements of the nest, for a given jam; empty when a copy
@@ -843,20 +857,21 @@ public:
             };
             // With a jam, an interior iteration of the outer dimension
             // stands for `jam` rows: the last one is is + rows / jam - 1.
+            // The rows fit the kind of the indices (rows_fit, below).
             std::vector<ASR::expr_t*> ms, me;
             for (size_t d = 0; d < rank; d++) {
-                ms.push_back(d == 0 ? first_row() : is(d));
+                ms.push_back(narrow(d == 0 ? first_row() : is(d)));
                 if (d == 0 && jm > 1) {
-                    me.push_back(sub(add(is(0), div(add(sub(ie(0, jm), is(0)),
-                        c(1)), c(jm))), c(1)));
+                    me.push_back(narrow(sub(add(is(0), div(add(sub(ie(0, jm),
+                        is(0)), c(1)), c(jm))), c(1))));
                 } else {
-                    me.push_back(ie(d, jm));
+                    me.push_back(narrow(ie(d, jm)));
                 }
             }
+            auto index = [&](size_t d) { return wide(bld.Var(nest.vars[d])); };
             // t = (v0 - first row) * width + (v1 - interior start)
-            ASR::expr_t *tv = mul(sub(bld.Var(nest.vars[0]), first_row()),
-                width());
-            if (rank == 2) tv = add(tv, sub(bld.Var(nest.vars[1]), is(1)));
+            ASR::expr_t *tv = mul(sub(index(0), first_row()), width());
+            if (rank == 2) tv = add(tv, sub(index(1), is(1)));
             std::vector<ASR::stmt_t*> frame_part = {bld.Assignment(t(), tv),
                 bld.If(bld.Lt(t(), ed.duplicate_expr(count_e)), run, {})};
             // Copy r runs row is + (v0 - is) * jam + r. The rows are
@@ -869,8 +884,8 @@ public:
                 GpuDuplicator dr(al, scope);
                 dr.added = &added;
                 if (jm > 1) {
-                    dr.value_map[nest.vars[0]] = add(add(is(0), mul(sub(
-                        bld.Var(nest.vars[0]), is(0)), c(jm))), c(r));
+                    dr.value_map[nest.vars[0]] = narrow(add(add(is(0),
+                        mul(sub(index(0), is(0)), c(jm))), c(r)));
                 }
                 Vec<ASR::stmt_t*> copy;
                 dr.duplicate_body(bp, bn, copy);
@@ -880,7 +895,7 @@ public:
             }
             Vec<ASR::stmt_t*> mbody;
             mbody.reserve(al, 1);
-            mbody.push_back(al, bld.If(bld.Lt(bld.Var(nest.vars[0]), is(0)),
+            mbody.push_back(al, bld.If(bld.Lt(index(0), is(0)),
                 frame_part, interior_part));
             std::vector<ASR::symbol_t*> privates(fvars.begin(), fvars.end());
             privates.push_back(tsym);
@@ -895,10 +910,39 @@ public:
             ASR::expr_t *n = nullptr;
             for (size_t d = 0; d < rank; d++) {
                 ASR::expr_t *x = extent(d);
-                if (index_kind != 8) x = bld.i2i_t(x, bld.int_type(8));
                 n = n ? bld.Mul(n, x) : x;
             }
             return n;
+        };
+        // Whether the rows of the split nest, which are values of its
+        // outer index, fit the kind of the indices. The first row is
+        // is(0) - ceil(count / width) and the last at least is(0) - 1, with
+        // is(0) >= lo, the start of the nest (of the window when there is
+        // one), the frame at most a0 + b0 + jam - 1 bands of extent(1)
+        // iterations and at most extent(0) rows of a1 + b1 strips: they fit
+        // when lo - ceil(((a0 + b0 + jam - 1) * extent(1)
+        // + extent(0) * (a1 + b1)) / width) is in the kind. Otherwise, near
+        // the lowest value of the kind, the original nest runs.
+        auto rows_fit = [&](int64_t jm) {
+            int64_t lowest = -(int64_t(1) << (8 * index_kind - 1));
+            ASR::expr_t *above_lowest = sub(lo_e(0), c(lowest));
+            ASR::expr_t *rows = c(a[0] + b[0] + jm - 1);
+            if (rank == 2) {
+                // max(width, 1): the condition is also evaluated where the
+                // nest has no interior.
+                auto w = [&]() {
+                    auto inner = [&]() {
+                        return sub(extent(1), c(a[1] + b[1]));
+                    };
+                    return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                        bld.Gt(inner(), c(1)), inner(), c(1),
+                        bld.int_type(8), nullptr));
+                };
+                ASR::expr_t *count = add(mul(rows, extent(1)),
+                    mul(extent(0), c(a[1] + b[1])));
+                rows = div(add(count, sub(w(), c(1))), w());
+            }
+            return bld.GtE(above_lowest, rows);
         };
         // Split only when the domain has an interior, and is large enough:
         // on a small one the launch takes as long as its slowest thread,
@@ -914,6 +958,7 @@ public:
                     + (d == 0 ? jm - 1 : 0)));
                 cond = cond ? bld.And(cond, t1) : t1;
             }
+            if (index_kind < 8) cond = bld.And(cond, rows_fit(jm));
             if (pass_options.gpu_split_min_iterations > 0) {
                 cond = bld.And(cond, bld.GtE(iterations(),
                     bld.i64(pass_options.gpu_split_min_iterations)));

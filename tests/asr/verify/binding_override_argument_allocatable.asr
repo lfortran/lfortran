@@ -19,6 +19,7 @@
                     :Source
                     true
                     true
+                    :Public
                   )
                 }
               )
@@ -67,6 +68,7 @@
                     false
                     false
                     nil
+                    false
                     false
                     false
                     :NotMethod
@@ -124,6 +126,7 @@
                     :Source
                     false
                     true
+                    :Public
                   )
                 }
               )
@@ -170,6 +173,7 @@
                     false
                     false
                     nil
+                    false
                     false
                     false
                     :NotMethod

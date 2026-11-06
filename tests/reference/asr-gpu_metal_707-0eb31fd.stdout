@@ -1,0 +1,2538 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            __lfortran_gpu_kernel_0:
+                (Function
+                    (SymbolTable
+                        4
+                        {
+                            __flat_idx:
+                                (Variable
+                                    4
+                                    __flat_idx
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __loop_end_0:
+                                (Variable
+                                    4
+                                    __loop_end_0
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __loop_end_1:
+                                (Variable
+                                    4
+                                    __loop_end_1
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __loop_end_2:
+                                (Variable
+                                    4
+                                    __loop_end_2
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __loop_start_0:
+                                (Variable
+                                    4
+                                    __loop_start_0
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __loop_start_1:
+                                (Variable
+                                    4
+                                    __loop_start_1
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __loop_start_2:
+                                (Variable
+                                    4
+                                    __loop_start_2
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __ordinal:
+                                (Variable
+                                    4
+                                    __ordinal
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __tiled:
+                                (Variable
+                                    4
+                                    __tiled
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __tiles:
+                                (Variable
+                                    4
+                                    __tiles
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            b:
+                                (Variable
+                                    4
+                                    b
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i__dc:
+                                (Variable
+                                    4
+                                    i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            j__dc:
+                                (Variable
+                                    4
+                                    j__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            k__dc:
+                                (Variable
+                                    4
+                                    k__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            m:
+                                (Variable
+                                    4
+                                    m
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            n:
+                                (Variable
+                                    4
+                                    n
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    __lfortran_gpu_kernel_0
+                    (FunctionType
+                        [(Array
+                            (Integer 4)
+                            [((IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 4 (Integer 4) Decimal))
+                            ((IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 4 (Integer 4) Decimal))]
+                            FixedSizeArray
+                            Global
+                        )
+                        (Integer 4)
+                        (Integer 4)
+                        (Integer 4)
+                        (Integer 4)
+                        (Integer 4)
+                        (Integer 4)
+                        (Integer 4)
+                        (Integer 4)
+                        (Integer 4)]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Kernel
+                    )
+                    []
+                    [(Var 4 b)
+                    (Var 4 m)
+                    (Var 4 n)
+                    (Var 4 __loop_start_0)
+                    (Var 4 __loop_end_0)
+                    (Var 4 __loop_start_1)
+                    (Var 4 __loop_end_1)
+                    (Var 4 __loop_start_2)
+                    (Var 4 __loop_end_2)
+                    (Var 4 __tiled)]
+                    [(If
+                        ()
+                        (IntegerCompare
+                            (Var 4 __tiled)
+                            Eq
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(If
+                            ()
+                            (IntegerCompare
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (GpuBlockIndex
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (GpuBlockSize
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (GpuThreadIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                GtE
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (IfExp
+                                            (IntegerCompare
+                                                (Var 4 __loop_end_0)
+                                                GtE
+                                                (Var 4 __loop_start_0)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 4 __loop_end_0)
+                                                    Sub
+                                                    (Var 4 __loop_start_0)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (IfExp
+                                            (IntegerCompare
+                                                (Var 4 __loop_end_1)
+                                                GtE
+                                                (Var 4 __loop_start_1)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 4 __loop_end_1)
+                                                    Sub
+                                                    (Var 4 __loop_start_1)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Mul
+                                    (IfExp
+                                        (IntegerCompare
+                                            (Var 4 __loop_end_2)
+                                            GtE
+                                            (Var 4 __loop_start_2)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 4 __loop_end_2)
+                                                Sub
+                                                (Var 4 __loop_start_2)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Return)]
+                            []
+                        )
+                        (Assignment
+                            (Var 4 __flat_idx)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (GpuBlockIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Mul
+                                    (GpuBlockSize
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (GpuThreadIndex
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 4 i__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 4 __flat_idx)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 4 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 4 __loop_end_1)
+                                                    Sub
+                                                    (Var 4 __loop_start_1)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 4 __loop_end_1)
+                                                Sub
+                                                (Var 4 __loop_start_1)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (Var 4 __loop_start_1)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 4 __flat_idx)
+                            (IntegerBinOp
+                                (Var 4 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 4 __loop_end_1)
+                                        Sub
+                                        (Var 4 __loop_start_1)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 4 j__dc)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Var 4 __flat_idx)
+                                    Sub
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 4 __flat_idx)
+                                            Div
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (Var 4 __loop_end_2)
+                                                    Sub
+                                                    (Var 4 __loop_start_2)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 4 __loop_end_2)
+                                                Sub
+                                                (Var 4 __loop_start_2)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (Var 4 __loop_start_2)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 4 __flat_idx)
+                            (IntegerBinOp
+                                (Var 4 __flat_idx)
+                                Div
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 4 __loop_end_2)
+                                        Sub
+                                        (Var 4 __loop_start_2)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        [(Assignment
+                            (Var 4 __flat_idx)
+                            (GpuBlockIndex
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 4 __tiles)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 4 __loop_end_1)
+                                            Sub
+                                            (Var 4 __loop_start_1)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 31 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                BitRShift
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 4 __ordinal)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 4 __flat_idx)
+                                        Sub
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 4 __flat_idx)
+                                                Div
+                                                (Var 4 __tiles)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Mul
+                                            (Var 4 __tiles)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    BitLShift
+                                    (IntegerConstant 5 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (IntegerBinOp
+                                    (GpuThreadIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    BitAnd
+                                    (IntegerConstant 31 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (IntegerCompare
+                                (Var 4 __ordinal)
+                                GtE
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 4 __loop_end_1)
+                                        Sub
+                                        (Var 4 __loop_start_1)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Return)]
+                            []
+                        )
+                        (Assignment
+                            (Var 4 i__dc)
+                            (IntegerBinOp
+                                (Var 4 __ordinal)
+                                Add
+                                (Var 4 __loop_start_1)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 4 __flat_idx)
+                            (IntegerBinOp
+                                (Var 4 __flat_idx)
+                                Div
+                                (Var 4 __tiles)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 4 __tiles)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Var 4 __loop_end_2)
+                                            Sub
+                                            (Var 4 __loop_start_2)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                BitRShift
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 4 __ordinal)
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 4 __flat_idx)
+                                        Sub
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 4 __flat_idx)
+                                                Div
+                                                (Var 4 __tiles)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Mul
+                                            (Var 4 __tiles)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    BitLShift
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (IntegerBinOp
+                                    (GpuThreadIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    BitRShift
+                                    (IntegerConstant 5 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (If
+                            ()
+                            (IntegerCompare
+                                (Var 4 __ordinal)
+                                GtE
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Var 4 __loop_end_2)
+                                        Sub
+                                        (Var 4 __loop_start_2)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(Return)]
+                            []
+                        )
+                        (Assignment
+                            (Var 4 j__dc)
+                            (IntegerBinOp
+                                (Var 4 __ordinal)
+                                Add
+                                (Var 4 __loop_start_2)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )
+                        (Assignment
+                            (Var 4 __flat_idx)
+                            (IntegerBinOp
+                                (Var 4 __flat_idx)
+                                Div
+                                (Var 4 __tiles)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                    )
+                    (Assignment
+                        (Var 4 k__dc)
+                        (IntegerBinOp
+                            (Var 4 __flat_idx)
+                            Add
+                            (Var 4 __loop_start_0)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 4 b)
+                            [(()
+                            (Var 4 i__dc)
+                            ())
+                            (()
+                            (Var 4 j__dc)
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                            .false.
+                        )
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            gpu_metal_707:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            __gpu_iteration_count:
+                                (Variable
+                                    2
+                                    __gpu_iteration_count
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_launch_threads:
+                                (Variable
+                                    2
+                                    __gpu_launch_threads
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_loop_end:
+                                (Variable
+                                    2
+                                    __gpu_loop_end
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_loop_end1:
+                                (Variable
+                                    2
+                                    __gpu_loop_end1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_loop_end2:
+                                (Variable
+                                    2
+                                    __gpu_loop_end2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_loop_start:
+                                (Variable
+                                    2
+                                    __gpu_loop_start
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_loop_start1:
+                                (Variable
+                                    2
+                                    __gpu_loop_start1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_tile_threads:
+                                (Variable
+                                    2
+                                    __gpu_tile_threads
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_tiled:
+                                (Variable
+                                    2
+                                    __gpu_tiled
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i__dc:
+                                (Variable
+                                    2
+                                    i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            j:
+                                (Variable
+                                    2
+                                    j
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            j__dc:
+                                (Variable
+                                    2
+                                    j__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            k:
+                                (Variable
+                                    2
+                                    k
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            k__dc:
+                                (Variable
+                                    2
+                                    k__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            m:
+                                (Variable
+                                    2
+                                    m
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    gpu_metal_707
+                    []
+                    [(Assignment
+                        (Var 2 n)
+                        (TypeInquiry
+                            Huge
+                            (Integer 4)
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Integer 4)
+                            (IntegerConstant 2147483647 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 m)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (ArrayBroadcast
+                            (IntegerConstant 7 (Integer 4) Decimal)
+                            (ArrayConstant
+                                8
+                                [4, 4]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 16 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                64
+                                [7, 7, 7, ...., 7, 7, 7]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 16 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __gpu_loop_end)
+                        (Var 2 m)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __gpu_loop_start)
+                        (IntegerUnaryMinus
+                            (Var 2 n)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __gpu_loop_end1)
+                        (Var 2 n)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __gpu_loop_start1)
+                        (IntegerUnaryMinus
+                            (Var 2 n)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __gpu_loop_end2)
+                        (Var 2 n)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Cast
+                                        (Var 2 __gpu_loop_end)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
+                                        ()
+                                    )
+                                    GtE
+                                    (Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (Cast
+                                        (Var 2 __gpu_loop_end1)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
+                                        ()
+                                    )
+                                    GtE
+                                    (Cast
+                                        (Var 2 __gpu_loop_start)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            And
+                            (IntegerCompare
+                                (Cast
+                                    (Var 2 __gpu_loop_end2)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
+                                    ()
+                                )
+                                GtE
+                                (Cast
+                                    (Var 2 __gpu_loop_start1)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(If
+                            ()
+                            (IntegerCompare
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Cast
+                                            (Var 2 __gpu_loop_end)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
+                                        Sub
+                                        (Cast
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            (IntegerConstant 1 (Integer 8) Decimal)
+                                            ()
+                                        )
+                                        (Integer 8)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    ()
+                                )
+                                Gt
+                                (IntegerBinOp
+                                    (IntegerConstant 9223372036854775807 (Integer 8) Decimal)
+                                    Div
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Cast
+                                                (Var 2 __gpu_loop_end1)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            Sub
+                                            (Cast
+                                                (Var 2 __gpu_loop_start)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            (Integer 8)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        ()
+                                    )
+                                    (Integer 8)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(ErrorStop
+                                (StringConstant
+                                    "a gpu kernel launch has more than 9223372036854775807 iterations"
+                                    (String 1 (IntegerConstant 64 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                            []
+                        )
+                        (If
+                            ()
+                            (IntegerCompare
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Cast
+                                                (Var 2 __gpu_loop_end)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            Sub
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                (IntegerConstant 1 (Integer 8) Decimal)
+                                                ()
+                                            )
+                                            (Integer 8)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        ()
+                                    )
+                                    Mul
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Cast
+                                                (Var 2 __gpu_loop_end1)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            Sub
+                                            (Cast
+                                                (Var 2 __gpu_loop_start)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            (Integer 8)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        ()
+                                    )
+                                    (Integer 8)
+                                    ()
+                                )
+                                Gt
+                                (IntegerBinOp
+                                    (IntegerConstant 9223372036854775807 (Integer 8) Decimal)
+                                    Div
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Cast
+                                                (Var 2 __gpu_loop_end2)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            Sub
+                                            (Cast
+                                                (Var 2 __gpu_loop_start1)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            (Integer 8)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        ()
+                                    )
+                                    (Integer 8)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            [(ErrorStop
+                                (StringConstant
+                                    "a gpu kernel launch has more than 9223372036854775807 iterations"
+                                    (String 1 (IntegerConstant 64 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 __gpu_iteration_count)
+                        (IfExp
+                            (LogicalBinOp
+                                (LogicalBinOp
+                                    (IntegerCompare
+                                        (Cast
+                                            (Var 2 __gpu_loop_end)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
+                                        GtE
+                                        (Cast
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            (IntegerConstant 1 (Integer 8) Decimal)
+                                            ()
+                                        )
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    And
+                                    (IntegerCompare
+                                        (Cast
+                                            (Var 2 __gpu_loop_end1)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
+                                        GtE
+                                        (Cast
+                                            (Var 2 __gpu_loop_start)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (Cast
+                                        (Var 2 __gpu_loop_end2)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
+                                        ()
+                                    )
+                                    GtE
+                                    (Cast
+                                        (Var 2 __gpu_loop_start1)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Cast
+                                                (Var 2 __gpu_loop_end)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            Sub
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                (IntegerConstant 1 (Integer 8) Decimal)
+                                                ()
+                                            )
+                                            (Integer 8)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        ()
+                                    )
+                                    Mul
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Cast
+                                                (Var 2 __gpu_loop_end1)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            Sub
+                                            (Cast
+                                                (Var 2 __gpu_loop_start)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            (Integer 8)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        ()
+                                    )
+                                    (Integer 8)
+                                    ()
+                                )
+                                Mul
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (Cast
+                                            (Var 2 __gpu_loop_end2)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
+                                        Sub
+                                        (Cast
+                                            (Var 2 __gpu_loop_start1)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
+                                        (Integer 8)
+                                        ()
+                                    )
+                                    Add
+                                    (IntegerConstant 1 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    ()
+                                )
+                                (Integer 8)
+                                ()
+                            )
+                            (IntegerConstant 0 (Integer 8) Decimal)
+                            (Integer 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __gpu_tile_threads)
+                        (IfExp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (Var 2 __gpu_iteration_count)
+                                    Gt
+                                    (IntegerConstant 0 (Integer 8) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                And
+                                (IntegerCompare
+                                    (Var 2 __gpu_iteration_count)
+                                    LtE
+                                    (IntegerConstant 9007199254740991 (Integer 8) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (IfExp
+                                                    (IntegerCompare
+                                                        (Cast
+                                                            (Var 2 __gpu_loop_end1)
+                                                            IntegerToInteger
+                                                            (Integer 8)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        GtE
+                                                        (Cast
+                                                            (Var 2 __gpu_loop_start)
+                                                            IntegerToInteger
+                                                            (Integer 8)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        (Logical 4)
+                                                        ()
+                                                    )
+                                                    (IntegerBinOp
+                                                        (IntegerBinOp
+                                                            (Cast
+                                                                (Var 2 __gpu_loop_end1)
+                                                                IntegerToInteger
+                                                                (Integer 8)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            Sub
+                                                            (Cast
+                                                                (Var 2 __gpu_loop_start)
+                                                                IntegerToInteger
+                                                                (Integer 8)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (Integer 8)
+                                                            ()
+                                                        )
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                                        (Integer 8)
+                                                        ()
+                                                    )
+                                                    (IntegerConstant 0 (Integer 8) Decimal)
+                                                    (Integer 8)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 31 (Integer 8) Decimal)
+                                                (Integer 8)
+                                                ()
+                                            )
+                                            Div
+                                            (IntegerConstant 32 (Integer 8) Decimal)
+                                            (Integer 8)
+                                            ()
+                                        )
+                                        Mul
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (IfExp
+                                                    (IntegerCompare
+                                                        (Cast
+                                                            (Var 2 __gpu_loop_end2)
+                                                            IntegerToInteger
+                                                            (Integer 8)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        GtE
+                                                        (Cast
+                                                            (Var 2 __gpu_loop_start1)
+                                                            IntegerToInteger
+                                                            (Integer 8)
+                                                            ()
+                                                            ()
+                                                        )
+                                                        (Logical 4)
+                                                        ()
+                                                    )
+                                                    (IntegerBinOp
+                                                        (IntegerBinOp
+                                                            (Cast
+                                                                (Var 2 __gpu_loop_end2)
+                                                                IntegerToInteger
+                                                                (Integer 8)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            Sub
+                                                            (Cast
+                                                                (Var 2 __gpu_loop_start1)
+                                                                IntegerToInteger
+                                                                (Integer 8)
+                                                                ()
+                                                                ()
+                                                            )
+                                                            (Integer 8)
+                                                            ()
+                                                        )
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                                        (Integer 8)
+                                                        ()
+                                                    )
+                                                    (IntegerConstant 0 (Integer 8) Decimal)
+                                                    (Integer 8)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 7 (Integer 8) Decimal)
+                                                (Integer 8)
+                                                ()
+                                            )
+                                            Div
+                                            (IntegerConstant 8 (Integer 8) Decimal)
+                                            (Integer 8)
+                                            ()
+                                        )
+                                        (Integer 8)
+                                        ()
+                                    )
+                                    Mul
+                                    (IntegerConstant 256 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    ()
+                                )
+                                Mul
+                                (IfExp
+                                    (IntegerCompare
+                                        (Cast
+                                            (Var 2 __gpu_loop_end)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            ()
+                                            ()
+                                        )
+                                        GtE
+                                        (Cast
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            IntegerToInteger
+                                            (Integer 8)
+                                            (IntegerConstant 1 (Integer 8) Decimal)
+                                            ()
+                                        )
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (IntegerBinOp
+                                        (IntegerBinOp
+                                            (Cast
+                                                (Var 2 __gpu_loop_end)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            )
+                                            Sub
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToInteger
+                                                (Integer 8)
+                                                (IntegerConstant 1 (Integer 8) Decimal)
+                                                ()
+                                            )
+                                            (Integer 8)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        (Integer 8)
+                                        ()
+                                    )
+                                    (IntegerConstant 0 (Integer 8) Decimal)
+                                    (Integer 8)
+                                    ()
+                                )
+                                (Integer 8)
+                                ()
+                            )
+                            (Var 2 __gpu_iteration_count)
+                            (Integer 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __gpu_tiled)
+                        (IfExp
+                            (LogicalBinOp
+                                (LogicalBinOp
+                                    (IntegerCompare
+                                        (Var 2 __gpu_iteration_count)
+                                        Gt
+                                        (IntegerConstant 9007199254740991 (Integer 8) Decimal)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    Or
+                                    (IntegerCompare
+                                        (IntegerBinOp
+                                            (IntegerConstant 4 (Integer 8) Decimal)
+                                            Mul
+                                            (IntegerBinOp
+                                                (Var 2 __gpu_tile_threads)
+                                                Sub
+                                                (Var 2 __gpu_iteration_count)
+                                                (Integer 8)
+                                                ()
+                                            )
+                                            (Integer 8)
+                                            ()
+                                        )
+                                        Gt
+                                        (Var 2 __gpu_iteration_count)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                Or
+                                (IntegerCompare
+                                    (Var 2 __gpu_tile_threads)
+                                    Gt
+                                    (IntegerConstant 2147483647 (Integer 8) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 __gpu_launch_threads)
+                        (IfExp
+                            (IntegerCompare
+                                (Var 2 __gpu_tiled)
+                                Eq
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            (Var 2 __gpu_iteration_count)
+                            (Var 2 __gpu_tile_threads)
+                            (Integer 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 __gpu_launch_threads)
+                            Gt
+                            (IntegerConstant 0 (Integer 8) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(GpuKernelLaunch
+                            1 __lfortran_gpu_kernel_0
+                            (Var 2 __gpu_launch_threads)
+                            (IntegerConstant 256 (Integer 4) Decimal)
+                            [((Var 2 b))
+                            ((Var 2 m))
+                            ((Var 2 n))
+                            ((IntegerConstant 1 (Integer 4) Decimal))
+                            ((Var 2 __gpu_loop_end))
+                            ((Var 2 __gpu_loop_start))
+                            ((Var 2 __gpu_loop_end1))
+                            ((Var 2 __gpu_loop_start1))
+                            ((Var 2 __gpu_loop_end2))
+                            ((Var 2 __gpu_tiled))]
+                            ()
+                            []
+                            ()
+                            []
+                            []
+                            []
+                            [(4 __loop_start_1
+                            4 __loop_end_1)
+                            (4 __loop_start_2
+                            4 __loop_end_2)
+                            (4 __loop_start_0
+                            4 __loop_end_0)]
+                            1
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (IntegerCompare
+                                    (Var 2 b)
+                                    NotEq
+                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))
+                                    ((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                    Global
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringConstant
+                            "ok"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)

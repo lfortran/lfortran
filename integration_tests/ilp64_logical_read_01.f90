@@ -5,13 +5,13 @@ program ilp64_logical_read_01
     logical :: flag1, flag2
 
     ! Write logical values to temp file
-    open(10, file="/tmp/test_ilp64_logical.txt", status="replace")
+    open(10, file="ilp64_logical_read_01.txt", status="replace")
     write(10, *) .true.
     write(10, *) .false.
     close(10)
 
     ! Read them back
-    open(10, file="/tmp/test_ilp64_logical.txt", status="old")
+    open(10, file="ilp64_logical_read_01.txt", status="old")
     read(10, *) flag1
     read(10, *) flag2
     close(10)

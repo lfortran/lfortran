@@ -338,6 +338,10 @@ public:
             } case ASR::ttypeType::Pointer: {
                 r = get_type(down_cast<ASR::Pointer_t>(t)->m_type, type_decl) + ", pointer";
                 break;
+            } case ASR::ttypeType::Reference: {
+                // Not Fortran: a member of a host frame (see BindReference)
+                r = get_type(down_cast<ASR::Reference_t>(t)->m_type, type_decl) + ", reference";
+                break;
             } case ASR::ttypeType::StructType: {
                 if (!type_decl) {
                     throw LCompilersException("Missing derived type symbol while generating Fortran type spec");
@@ -391,6 +395,22 @@ public:
         r += src;
         last_expr_precedence = current_precedence;
         src = r;
+    }
+
+    void visit_ScopedVariableAttribute(const ASR::ScopedVariableAttribute_t &x) {
+        std::string name = call_name(x.m_variable);
+        src.clear();
+        if (x.m_is_volatile) src += indent + "volatile :: " + name + "\n";
+        if (x.m_is_asynchronous) src += indent + "asynchronous :: " + name + "\n";
+    }
+
+    void append_scoped_variable_attributes(SymbolTable *symtab, std::string &r) {
+        for (auto &item : symtab->get_scope()) {
+            if (is_a<ASR::ScopedVariableAttribute_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
     }
 
     void append_namelist_declarations(SymbolTable *symtab, std::string &r) {
@@ -528,6 +548,11 @@ public:
         std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
         for (auto &item : struct_deps) {
             ASR::symbol_t* struct_sym = symtab->get_symbol(item);
+            if (struct_sym == nullptr) {
+                // A dependency declared in an enclosing scope, such as the
+                // type of a variable that a procedure's host frame captures
+                continue;
+            }
             visit_symbol(*struct_sym);
             r += src;
         }
@@ -632,6 +657,7 @@ public:
         }
         append_common_block_declarations(x.m_symtab, r);
         append_namelist_declarations(x.m_symtab, r);
+        append_scoped_variable_attributes(x.m_symtab, r);
 
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)
@@ -716,6 +742,7 @@ public:
         }
         append_common_block_declarations(x.m_symtab, r);
         append_namelist_declarations(x.m_symtab, r);
+        append_scoped_variable_attributes(x.m_symtab, r);
         std::vector<std::string> func_name;
         std::vector<std::string> interface_func_name;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -786,6 +813,7 @@ public:
             }
         }
         append_common_block_declarations(x.m_symtab, r);
+        append_scoped_variable_attributes(x.m_symtab, r);
         r += "end block data" + name + "\n";
         src = r;
     }
@@ -861,8 +889,10 @@ public:
         bool is_return_var_declared = false;
         if (x.m_return_var) {
             bool return_var_in_function_header = true;
-            if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_return_var))) {
-                // Keep character result type declarations in the specification part.
+            ASR::Variable_t *return_var = ASRUtils::EXPR2VAR(x.m_return_var);
+            if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_return_var)) ||
+                    return_var->m_is_volatile || return_var->m_is_asynchronous) {
+                // These declarations need the specification part.
                 return_var_in_function_header = false;
             }
             if (return_var_in_function_header &&
@@ -921,6 +951,9 @@ public:
                 visit_symbol(*item.second);
                 r += src;
             }
+            // Its own derived types, such as the frame of a host (see
+            // nested_vars)
+            append_struct_definitions(x.m_symtab, r);
         }
         {
             std::string variable_declaration;
@@ -935,6 +968,7 @@ public:
             }
             append_common_block_declarations(x.m_symtab, variable_declaration);
             append_namelist_declarations(x.m_symtab, variable_declaration);
+            append_scoped_variable_attributes(x.m_symtab, variable_declaration);
             for (size_t i = 0; i < import_struct_type.size(); i ++) {
                 if (i == 0) {
                     r += indent;
@@ -1038,6 +1072,7 @@ public:
                 r += src;
             }
         }
+        append_scoped_variable_attributes(x.m_symtab, r);
         visit_body(x, r);
         dec_indent();
         r += indent;
@@ -1187,6 +1222,7 @@ public:
         }
 
         dec_indent();
+        r += indent;
         r += "end type ";
         r.append(x.m_name);
         r += "\n";
@@ -1267,12 +1303,22 @@ public:
             // A variable in a common block cannot have the SAVE attribute: it
             // is saved with its block (`save /blk/`).
             r += ", save";
+        } else if (ASRUtils::is_host_associated(x)) {
+            // Not Fortran: an alias of a host variable, bound on entry to
+            // the variable its symbolic value designates
+            r += ", host_associated";
         }
         if (x.m_value_attr) {
             r += ", value";
         }
         if (x.m_target_attr) {
             r += ", target";
+        }
+        if (x.m_is_volatile) {
+            r += ", volatile";
+        }
+        if (x.m_is_asynchronous) {
+            r += ", asynchronous";
         }
         r += " :: ";
         r.append(x.m_name);
@@ -1285,7 +1331,11 @@ public:
             src = r;
             return;
         }
-        if (x.m_symbolic_value && x.m_value && ASR::is_a<ASR::StringChr_t>(*x.m_symbolic_value) && ASR::is_a<ASR::StringConstant_t>(*x.m_value)) {
+        if (ASRUtils::is_host_associated(x)) {
+            r += " => ";
+            visit_expr(*x.m_symbolic_value);
+            r += src;
+        } else if (x.m_symbolic_value && x.m_value && ASR::is_a<ASR::StringChr_t>(*x.m_symbolic_value) && ASR::is_a<ASR::StringConstant_t>(*x.m_value)) {
             r += " = ";
             visit_expr(*x.m_symbolic_value);
             r += src;
@@ -1346,9 +1396,15 @@ public:
                 r += ")";
             }
             r += ", deferred";
+            if (x.m_access == ASR::accessType::Private) {
+                r += ", private";
+            }
             r += " :: ";
             r += std::string(x.m_name);
         } else {
+            if (x.m_access == ASR::accessType::Private) {
+                r += ", private";
+            }
             r += " :: ";
             r += std::string(x.m_name);
             if (strcmp(x.m_name, x.m_proc_name)) {
@@ -1388,6 +1444,7 @@ public:
             }
         }
 
+        append_scoped_variable_attributes(x.m_symtab, r);
         // Emit the block body
         for (size_t i = 0; i < x.n_body; i++) {
             visit_stmt(*x.m_body[i]);
@@ -1561,7 +1618,19 @@ public:
         }
         visit_expr(*x.m_value);
         std::string v = std::move(src);
-        src = t + " => " + v + "\n";
+        src = indent + t + " => " + v + "\n";
+    }
+
+    // Not Fortran: binds the reference member of a host frame
+    void visit_BindReference(const ASR::BindReference_t &x) {
+        std::string r = indent + "bind_reference(";
+        visit_expr(*x.m_reference);
+        r += src + ", ";
+        visit_expr(*x.m_variable);
+        r += src + ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
     }
 
     void visit_Cycle(const ASR::Cycle_t &x) {
@@ -1579,6 +1648,14 @@ public:
             visit_expr(*x.m_vars[i]);
             r += src;
             if (i < x.n_vars-1) r += ", ";
+        }
+        if (x.m_stat) {
+            visit_expr(*x.m_stat);
+            r += ", stat=" + src;
+        }
+        if (x.m_errmsg) {
+            visit_expr(*x.m_errmsg);
+            r += ", errmsg=" + src;
         }
         r += ")";
         handle_line_truncation(r, 2);
@@ -1599,6 +1676,12 @@ public:
         src = r;
     }
 
+    // A unit step is the default and is not written.
+    static bool is_unit_step(ASR::expr_t *increment) {
+        return ASR::is_a<ASR::IntegerConstant_t>(*increment)
+            && ASR::down_cast<ASR::IntegerConstant_t>(increment)->m_n == 1;
+    }
+
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         std::string r = indent;
 
@@ -1613,7 +1696,7 @@ public:
             r += ": ";
             visit_expr(*x.m_head[i].m_end);
             r += src;
-            if (x.m_head[i].m_increment) {
+            if (!is_unit_step(x.m_head[i].m_increment)) {
                 r += ":";
                 visit_expr(*x.m_head[i].m_increment);
                 r += src;
@@ -1648,7 +1731,7 @@ public:
         r += ", ";
         visit_expr(*x.m_head.m_end);
         r += src;
-        if (x.m_head.m_increment) {
+        if (!is_unit_step(x.m_head.m_increment)) {
             r += ", ";
             visit_expr(*x.m_head.m_increment);
             r += src;
@@ -1884,7 +1967,80 @@ public:
 
     // void visit_FileEndfile(const ASR::FileEndfile_t &x) {}
 
-    // void visit_FileInquire(const ASR::FileInquire_t &x) {}
+    void visit_FileInquire(const ASR::FileInquire_t &x) {
+        std::string r;
+        r = indent;
+        r += "inquire";
+        r += "(";
+        bool need_comma = false;
+        auto emit_specifier = [&](const char *keyword, ASR::expr_t *value) {
+            if (!value) {
+                return;
+            }
+            if (need_comma) {
+                r += ", ";
+            }
+            need_comma = true;
+            r += keyword;
+            r += "=";
+            visit_expr(*value);
+            r += src;
+        };
+        emit_specifier("unit", x.m_unit);
+        emit_specifier("file", x.m_file);
+        emit_specifier("iostat", x.m_iostat);
+        emit_specifier("err", x.m_err);
+        emit_specifier("exist", x.m_exist);
+        emit_specifier("opened", x.m_opened);
+        emit_specifier("number", x.m_number);
+        emit_specifier("named", x.m_named);
+        emit_specifier("name", x.m_name);
+        emit_specifier("access", x.m_access);
+        emit_specifier("sequential", x.m_sequential);
+        emit_specifier("direct", x.m_direct);
+        emit_specifier("form", x.m_form);
+        emit_specifier("formatted", x.m_formatted);
+        emit_specifier("unformatted", x.m_unformatted);
+        emit_specifier("recl", x.m_recl);
+        emit_specifier("nextrec", x.m_nextrec);
+        emit_specifier("blank", x.m_blank);
+        emit_specifier("position", x.m_position);
+        emit_specifier("action", x.m_action);
+        emit_specifier("read", x.m_read);
+        emit_specifier("write", x.m_write);
+        emit_specifier("readwrite", x.m_readwrite);
+        emit_specifier("delim", x.m_delim);
+        emit_specifier("pad", x.m_pad);
+        emit_specifier("flen", x.m_flen);
+        emit_specifier("blocksize", x.m_blocksize);
+        emit_specifier("convert", x.m_convert);
+        emit_specifier("carriagecontrol", x.m_carriagecontrol);
+        emit_specifier("size", x.m_size);
+        emit_specifier("pos", x.m_pos);
+        emit_specifier("iolength", x.m_iolength);
+        emit_specifier("decimal", x.m_decimal);
+        emit_specifier("sign", x.m_sign);
+        emit_specifier("encoding", x.m_encoding);
+        emit_specifier("stream", x.m_stream);
+        emit_specifier("iomsg", x.m_iomsg);
+        emit_specifier("round", x.m_round);
+        emit_specifier("pending", x.m_pending);
+        emit_specifier("asynchronous", x.m_asynchronous);
+        r += ")";
+        if (x.n_iolength_vars > 0) {
+            r += " ";
+            for (size_t i = 0; i < x.n_iolength_vars; i++) {
+                if (i > 0) {
+                    r += ", ";
+                }
+                visit_expr(*x.m_iolength_vars[i]);
+                r += src;
+            }
+        }
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         ASR::StringFormat_t *sf = nullptr;
@@ -2202,6 +2358,14 @@ public:
         src = r;
     }
 
+    void visit_GpuWait(const ASR::GpuWait_t &/*x*/) {
+        std::string r = indent;
+        r += "gpu wait";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
     void visit_GpuDiscard(const ASR::GpuDiscard_t &x) {
         std::string r = indent;
         r += "gpu discard(";
@@ -2506,6 +2670,7 @@ public:
                 r += src;
             }
         }
+        append_scoped_variable_attributes(block->m_symtab, r);
         // If this block is a goto target (used by select-case lowering), emit the label target
         if (x.m_label != -1) {
             r += std::to_string(x.m_label) + " continue\n";
@@ -3482,6 +3647,12 @@ public:
 
     void visit_GetPointer(const ASR::GetPointer_t &x) {
         visit_expr(*x.m_arg);
+    }
+
+    void visit_FrameAddress(const ASR::FrameAddress_t &x) {
+        // Not Fortran: the frame of a procedure value (see FrameAddress)
+        src = "frame_address(" + std::string(ASRUtils::symbol_name(
+            x.m_procedure)) + ")";
     }
 
     void visit_IntegerBitLen(const ASR::IntegerBitLen_t &x) {

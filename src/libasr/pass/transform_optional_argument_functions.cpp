@@ -5,7 +5,9 @@
 #include <libasr/asr_verify.h>
 #include <libasr/pass/transform_optional_argument_functions.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/symbol_expr_substitution.h>
 
 #include <vector>
 #include <string>
@@ -349,26 +351,90 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
 
 };
 
+// A pointer dummy given a nonpointer array target becomes associated with
+// it through a temporary pointer, as array_struct_temporary does. When the
+// target is itself an optional dummy that may be absent, the temporary
+// must not make the pointer dummy present, so `call_arg`, bound to the
+// optional pointer dummy `dummy`, is replaced by a temporary pointer that
+// is associated with the target only when it is present:
+//     if (is_present) then
+//         tmp => x
+//     else
+//         nullify(tmp)
+//     end if
+// and `is_present`, the presence of the target, is passed for it as well.
+// The association depends only on the target, which a nonpointer dummy
+// keeps for the whole procedure, so it can precede the statement, even one
+// that evaluates the call several times or under a mask.
+void associate_maybe_absent_target_with_pointer(Allocator& al,
+        ASR::call_arg_t& call_arg, ASR::Variable_t* dummy,
+        ASR::expr_t* is_present, SymbolTable* scope,
+        Vec<ASR::stmt_t*>& pass_result) {
+    if( call_arg.m_value == nullptr || !ASRUtils::is_pointer(dummy->m_type) ) {
+        return;
+    }
+    ASR::expr_t* target = ASRUtils::get_past_array_physical_cast(call_arg.m_value);
+    // `is_present` is the presence of the optional dummy the actual names
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*target));
+    ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+    if( !ASRUtils::is_array(target_type) || ASRUtils::is_pointer(target_type) ||
+            ASRUtils::is_allocatable(target_type) ) {
+        return;
+    }
+    const Location& loc = call_arg.loc;
+    // An assumed-length `character(len=*)` target gives the local temporary
+    // a deferred length instead
+    ASR::ttype_t* pointer_type = normalize_string_temporary_type(al, loc,
+        ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+            ASRUtils::create_array_type_with_empty_dims(al,
+                ASRUtils::extract_n_dims_from_ttype(target_type), target_type))));
+    std::string pointer_name = scope->get_unique_name(
+        "__libasr_created_optional_target_pointer_");
+    ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(loc,
+        pointer_name, al, scope, pointer_type, ASR::intentType::Local,
+        ASRUtils::EXPR2VAR(target)->m_type_declaration, target);
+    ASRUtils::ASRBuilder builder(al, loc);
+    Vec<ASR::expr_t*> nullify_vars; nullify_vars.reserve(al, 1);
+    nullify_vars.push_back(al, pointer_variable);
+    pass_result.push_back(al, builder.If(is_present,
+        {ASRUtils::STMT(ASR::make_Associate_t(al, loc, pointer_variable, target,
+            ASR::pointer_bounds_formType::NoPointerBounds))},
+        {ASRUtils::STMT(ASR::make_Nullify_t(al, loc, nullify_vars.p,
+            nullify_vars.size()))}));
+    call_arg.m_value = pointer_variable;
+}
+
+template <typename T>
+ASR::symbol_t *optional_call_symbol(const T &x) {
+    return x.m_name;
+}
+
+ASR::symbol_t *optional_call_symbol(const ASR::GpuKernelLaunch_t &x) {
+    return x.m_kernel;
+}
+
 template <typename T>
 bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     const T& x, SymbolTable* scope, std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx, Vec<ASR::stmt_t*>& pass_result) {
-    ASR::Function_t* owning_function = nullptr;
+    // The procedure containing the call and the procedures that host it.
+    // An actual argument can be an optional dummy of any of them, the
+    // latter by host association.
+    std::vector<ASR::Function_t*> owning_functions;
     {
         SymbolTable* s = scope;
-        while( s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
+        while( s && s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner) ) {
             ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
             if( ASR::is_a<ASR::Function_t>(*owner_sym) ) {
-                owning_function = ASR::down_cast<ASR::Function_t>(owner_sym);
-                break;
-            } else if( ASR::is_a<ASR::Block_t>(*owner_sym) ) {
-                s = s->parent;
-            } else {
+                owning_functions.push_back(ASR::down_cast<ASR::Function_t>(owner_sym));
+            } else if( !ASR::is_a<ASR::Block_t>(*owner_sym) ) {
                 break;
             }
+            s = s->parent;
         }
     }
 
-    ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
+    ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(
+        optional_call_symbol(x));
     if (ASR::is_a<ASR::Variable_t>(*func_sym)) {
         // possible it is a `procedure(cb) :: call_back`
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(func_sym);
@@ -481,11 +547,14 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             ASR::ttype_t* logical_t = ASRUtils::TYPE(ASR::make_Logical_t(al,
                                         x.m_args[i].loc, 4));
             ASR::expr_t* is_present = nullptr;
+            // Whether `is_present` is the presence of an optional dummy of
+            // an owning function, which the actual names
+            bool is_present_of_owning_dummy = false;
             if( i >= (int)x.n_args || x.m_args[i].m_value == nullptr ) {
                 is_present = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
                     al, x.m_args[0].loc, false, logical_t));
             } else {
-                if( owning_function != nullptr ) {
+                for( ASR::Function_t* owning_function: owning_functions ) {
                     size_t k;
                     bool k_found = false;
                     ASR::expr_t* original_expr = nullptr;
@@ -511,6 +580,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                             sym2optionalargidx[&(owning_function->base)].end(), k)
                                 != sym2optionalargidx[&(owning_function->base)].end() ) {
                         is_present = owning_function->m_args[k + 1];
+                        is_present_of_owning_dummy = true;
+                    }
+                    if( k_found ) {
+                        break;
                     }
                 }
 
@@ -536,6 +609,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                             al, loc, true, logical_t));
                     }
                 }
+            }
+            if( is_present_of_owning_dummy ) {
+                associate_maybe_absent_target_with_pointer(al, new_args.p[new_args.n - 1],
+                    func_arg_j, is_present, scope, pass_result);
             }
             ASR::call_arg_t present_arg;
             present_arg.loc = x.m_args[i].loc;
@@ -633,6 +710,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         ASR::dimension_t dim;
                         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, dummy_variable_type->base.loc, 4));
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, dummy_variable_type->base.loc, 1, int_type));
+                        dim.loc = dummy_variable_type->base.loc;
                         dim.m_start = one;
                         dim.m_length = one;
                         dims.push_back(al, dim);
@@ -775,14 +853,36 @@ class ReplaceFunctionCallsWithOptionalArgumentsVisitor : public ASR::CallReplace
         ReplaceFunctionCallsWithOptionalArguments replacer;
         Vec<ASR::stmt_t*> pass_result;
         Vec<ASR::stmt_t*>* parent_body;
+        // The body that holds the outermost WHERE being visited, if any. A
+        // WHERE construct contains assignments only, so the statements made
+        // for the calls in it go before it instead. This keeps the pointer
+        // association of associate_maybe_absent_target_with_pointer valid,
+        // as it depends only on a dummy. Other statements, such as one
+        // evaluating a function result into a temporary, are then evaluated
+        // before the construct, as they already are for calls without
+        // optional arguments (see #14901).
+        Vec<ASR::stmt_t*>* where_parent_body;
 
     public:
 
         ReplaceFunctionCallsWithOptionalArgumentsVisitor(Allocator& al_,
             std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx_) :
-        al(al_), replacer(al_, sym2optionalargidx_, pass_result), parent_body(nullptr) {
+        al(al_), replacer(al_, sym2optionalargidx_, pass_result), parent_body(nullptr),
+        where_parent_body(nullptr) {
             pass_result.n = 0;
             pass_result.reserve(al_, 0);
+        }
+
+        void visit_Where(const ASR::Where_t& x) {
+            if( where_parent_body != nullptr ) {
+                ASR::CallReplacerOnExpressionsVisitor<
+                    ReplaceFunctionCallsWithOptionalArgumentsVisitor>::visit_Where(x);
+                return;
+            }
+            where_parent_body = parent_body;
+            ASR::CallReplacerOnExpressionsVisitor<
+                ReplaceFunctionCallsWithOptionalArgumentsVisitor>::visit_Where(x);
+            where_parent_body = nullptr;
         }
 
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
@@ -791,9 +891,11 @@ class ReplaceFunctionCallsWithOptionalArgumentsVisitor : public ASR::CallReplace
             for (size_t i = 0; i < n_body; i++) {
                 body.push_back(al, m_body[i]);
             }
-            if( parent_body ) {
+            Vec<ASR::stmt_t*>* hoisted_body = where_parent_body ?
+                where_parent_body : parent_body;
+            if( hoisted_body ) {
                 for (size_t j=0; j < pass_result.size(); j++) {
-                    parent_body->push_back(al, pass_result[j]);
+                    hoisted_body->push_back(al, pass_result[j]);
                 }
             }
             // pass_result can contain FunctionCalls which need to be replaced
@@ -810,10 +912,10 @@ class ReplaceFunctionCallsWithOptionalArgumentsVisitor : public ASR::CallReplace
                     parent_body = &new_body;
                     visit_stmt(*body[i]);
                     parent_body = parent_body_copy;
-                    if( pass_result.size() > 0 ) {
-                        for (size_t j=0; j < pass_result.size(); j++) {
-                            new_body.push_back(al, pass_result[j]);
-                        }
+                    Vec<ASR::stmt_t*>& stmt_body = where_parent_body ?
+                        *where_parent_body : new_body;
+                    for (size_t j=0; j < pass_result.size(); j++) {
+                        stmt_body.push_back(al, pass_result[j]);
                     }
                     new_body.push_back(al, body[i]);
                 }
@@ -863,6 +965,88 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
                                     x.base.base.loc, x.m_name, x.m_original_name,
                                     new_args.p, new_args.size(), x.m_dt,
                                     nullptr, false)));
+        }
+
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            Vec<ASR::call_arg_t> args;
+            if (!fill_new_args(args, al, x, current_scope,
+                    sym2optionalargidx, pass_result)) {
+                return;
+            }
+            const Location &loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            std::map<ASR::symbol_t*, ASR::expr_t*> captures;
+            std::set<size_t> presence_args;
+            size_t inserted = 0;
+            for (int32_t index : sym2optionalargidx[x.m_kernel]) {
+                ASR::expr_t *actual = ASRUtils::get_past_array_physical_cast(
+                    args[index].m_value);
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*actual));
+                ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(actual));
+                ASR::expr_t *present = args[index + 1].m_value;
+                ASR::expr_t *capture;
+                ASR::symbol_t *type_decl =
+                    ASRUtils::EXPR2VAR(actual)->m_type_declaration;
+                if (ASRUtils::is_array(type) || ASRUtils::is_struct(*type)) {
+                    // Measure and transfer the view, not an absent descriptor.
+                    // Its empty backing storage does not change presence.
+                    ASR::ttype_t *target_type = ASRUtils::is_array(type)
+                        ? ASRUtils::duplicate_type_with_empty_dims(al, type)
+                        : ASRUtils::duplicate_type(al, type);
+                    capture = b.Variable(current_scope,
+                        current_scope->get_unique_name("__gpu_optional"),
+                        ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, target_type)),
+                        ASR::intentType::Local, type_decl);
+                    ASRUtils::EXPR2VAR(capture)->m_contiguous_attr =
+                        ASRUtils::is_simply_contiguous(actual);
+                    ASR::ttype_t *empty_type = ASRUtils::is_array(type)
+                        ? b.Array(std::vector<int64_t>(
+                            ASRUtils::extract_n_dims_from_ttype(type), 0),
+                            ASRUtils::duplicate_type(al,
+                                ASRUtils::extract_type(type)))
+                        : ASRUtils::duplicate_type(al, type);
+                    ASR::expr_t *empty = b.Variable(current_scope,
+                        current_scope->get_unique_name("__gpu_absent"),
+                        empty_type, ASR::intentType::Local, type_decl);
+                    auto associate = [&](ASR::expr_t *target) {
+                        return ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+                            capture, target,
+                            ASR::pointer_bounds_formType::NoPointerBounds));
+                    };
+                    pass_result.push_back(al, b.If(present,
+                        {associate(actual)}, {associate(empty)}));
+                } else {
+                    capture = b.Variable(current_scope,
+                        current_scope->get_unique_name("__gpu_optional"),
+                        ASRUtils::duplicate_type(al, type),
+                        ASR::intentType::Local);
+                    // A by-value ABI slot needs initialized storage even when
+                    // the separate presence bit forbids device access to it.
+                    pass_result.push_back(al, b.If(present,
+                        {b.Assignment(capture, actual)},
+                        {b.Assignment(capture,
+                            ASRUtils::get_constant_zero_with_given_type(al, type))}));
+                }
+                captures[ASR::down_cast<ASR::Var_t>(actual)->m_v] = capture;
+                ASR::expr_t *original = ASRUtils::get_past_array_physical_cast(
+                    x.m_args[index - inserted].m_value);
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*original));
+                captures[ASR::down_cast<ASR::Var_t>(original)->m_v] = capture;
+                presence_args.insert(index + 1);
+                inserted++;
+            }
+            AssociateVarResolver replace(al, captures);
+            for (size_t i = 0; i < args.n; i++) {
+                if (presence_args.count(i)) continue;
+                replace.current_expr = &args.p[i].m_value;
+                replace.replace_expr(args.p[i].m_value);
+            }
+            ASR::GpuKernelLaunch_t &launch =
+                const_cast<ASR::GpuKernelLaunch_t&>(x);
+            launch.m_args = args.p;
+            launch.n_args = args.n;
+            pass_result.push_back(al, &launch.base);
         }
 };
 

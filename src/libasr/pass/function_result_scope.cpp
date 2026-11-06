@@ -66,6 +66,12 @@
  * statement that branches, is evaluated by a BLOCK of its own before the
  * branch. A WHERE construct holds only assignments and WHERE constructs, so
  * it is made a BLOCK as a whole.
+ *
+ * A scalar constructor assigned to an allocatable target also needs a
+ * temporary. When its type has only intrinsic numeric/logical components
+ * and no final subroutines, a statement BLOCK owns that temporary's
+ * allocatable components. Their descriptors are initialized only when the
+ * statement executes, not on entry to the enclosing procedure.
  */
 
 namespace LCompilers {
@@ -183,6 +189,52 @@ public:
 
     void visit_ttype(const ASR::ttype_t & /*x*/) {}
 };
+
+// Moving cleanup earlier is unobservable for these constructors: their
+// components own only intrinsic storage, with no pointers or user finalizers.
+bool constructor_assignment_needs_scope(ASR::stmt_t* stmt) {
+    if (!ASR::is_a<ASR::Assignment_t>(*stmt)) return false;
+    ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(stmt);
+    if (assignment->m_overloaded != nullptr
+            || !ASRUtils::is_allocatable(
+                ASRUtils::expr_type(assignment->m_target))
+            || ASRUtils::is_array(ASRUtils::expr_type(assignment->m_target))
+            || !ASR::is_a<ASR::StructConstructor_t>(*assignment->m_value)) {
+        return false;
+    }
+    ASR::StructConstructor_t* constructor =
+        ASR::down_cast<ASR::StructConstructor_t>(assignment->m_value);
+    if (ASRUtils::is_array(constructor->m_type)) return false;
+    ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(
+        constructor->m_dt_sym);
+    bool owns_array = false;
+    std::unordered_set<ASR::symbol_t*> visited;
+    while (symbol != nullptr) {
+        if (!visited.insert(symbol).second ||
+                !ASR::is_a<ASR::Struct_t>(*symbol)) return false;
+        ASR::Struct_t* type = ASR::down_cast<ASR::Struct_t>(symbol);
+        if (type->n_member_functions != 0) return false;
+        for (size_t i = 0; i < type->n_members; i++) {
+            ASR::symbol_t* member = type->m_symtab->get_symbol(type->m_members[i]);
+            if (!ASR::is_a<ASR::Variable_t>(*member)) return false;
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(member);
+            if (ASRUtils::is_pointer(variable->m_type) || variable->n_codims) {
+                return false;
+            }
+            ASR::ttype_t* element = ASRUtils::extract_type(variable->m_type);
+            if (!(ASR::is_a<ASR::Integer_t>(*element) ||
+                    ASR::is_a<ASR::Real_t>(*element) ||
+                    ASR::is_a<ASR::Complex_t>(*element) ||
+                    ASR::is_a<ASR::Logical_t>(*element))) return false;
+            owns_array = owns_array ||
+                (ASRUtils::is_allocatable(variable->m_type) &&
+                 ASRUtils::is_array(variable->m_type));
+        }
+        symbol = type->m_parent == nullptr ? nullptr :
+            ASRUtils::symbol_get_past_external(type->m_parent);
+    }
+    return owns_array;
+}
 
 bool references_results(ASR::expr_t* expr) {
     if (expr == nullptr) {
@@ -598,6 +650,7 @@ class FunctionResultScopeVisitor:
 public:
     Allocator &al;
     const PassOptions &pass_options;
+    std::unordered_set<ASR::stmt_t*> scoped_constructors;
 
     FunctionResultScopeVisitor(Allocator &al_, const PassOptions &pass_options_):
         al(al_), pass_options(pass_options_) {}
@@ -859,7 +912,13 @@ public:
                 bool associates_result = ASR::is_a<ASR::Associate_t>(*x) &&
                     is_result_reference(
                         ASR::down_cast<ASR::Associate_t>(x)->m_value);
-                if (!associates_result && references_results(*x)) {
+                // This visitor also visits the BLOCK symbols it adds.
+                // Unlike function references, the constructor remains in
+                // the statement until the later constructor-lowering pass.
+                bool scope_constructor = constructor_assignment_needs_scope(x) &&
+                    scoped_constructors.insert(x).second;
+                if (!associates_result &&
+                        (references_results(*x) || scope_constructor)) {
                     body.push_back(al, make_statement_block(x));
                     continue;
                 }

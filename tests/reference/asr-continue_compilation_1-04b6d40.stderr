@@ -1562,6 +1562,342 @@ semantic error: intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_intern
 3665 |             class(cc1_ppo_t), intent(out) :: a  ! {Error} intent(out) dummy argument 'a' of pure procedure 'cc1_ppo_internal' cannot be polymorphic
      |                                              ^ 
 
+semantic error: integer overflow in `matmul`: the result does not fit in integer(4)
+    --> tests/errors/continue_compilation_1.f90:3761:38
+     |
+3761 |         integer, parameter :: p(1) = matmul(a, x)  ! {Error} integer overflow in `matmul`
+     |                                      ^^^^^^^^^^^^ 
+
+semantic error: selected_real_kind requires at least one of p, r or radix
+    --> tests/errors/continue_compilation_1.f90:3872:31
+     |
+3872 |     integer, parameter :: k = selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
+     |                               ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the volatile statement requires a list of entities
+    --> tests/errors/continue_compilation_1.f90:3879:9
+     |
+3879 |         volatile  ! {Error} the volatile statement requires a list of entities
+     |         ^^^^^^^^ 
+
+semantic error: the asynchronous statement requires a list of entities
+    --> tests/errors/continue_compilation_1.f90:3888:9
+     |
+3888 |         asynchronous  ! {Error} the asynchronous statement requires a list of entities
+     |         ^^^^^^^^^^^^ 
+
+semantic error: character length must be a constant expression in this context
+    --> tests/errors/continue_compilation_1.f90:3908:15
+     |
+3908 |     character(len(half(text))) :: inquiry  ! {Error} character length must be a constant expression in this context
+     |               ^^^^^^^^^^^^^^^ 
+
+semantic error: character length must be a constant expression in this context
+    --> tests/errors/continue_compilation_1.f90:3909:15
+     |
+3909 |     character(1 + len(half(text))) :: composite  ! {Error} character length must be a constant expression in this context
+     |               ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: character length must be a constant expression in this context
+    --> tests/errors/continue_compilation_1.f90:3910:23
+     |
+3910 |     character :: old*(len(half(text)))  ! {Error} character length must be a constant expression in this context
+     |                       ^^^^^^^^^^^^^^^ 
+
+semantic error: character length must be a constant expression in this context
+    --> tests/errors/continue_compilation_1.f90:3911:33
+     |
+3911 |     character(1) :: overridden*(len(half(text)))  ! {Error} character length must be a constant expression in this context
+     |                                 ^^^^^^^^^^^^^^^ 
+
+semantic error: character length must be a constant expression in this context
+    --> tests/errors/continue_compilation_1.f90:3912:15
+     |
+3912 |     character(length_value()) :: direct  ! {Error} character length must be a constant expression in this context
+     |               ^^^^^^^^^^^^^^ 
+
+semantic error: character length must be a constant expression in this context
+    --> tests/errors/continue_compilation_1.f90:3917:15
+     |
+3917 |     character(len(half('abcdeedcba'))) :: t  ! {Error} character length must be a constant expression in this context
+     |               ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 't' is not declared
+    --> tests/errors/continue_compilation_1.f90:3918:35
+     |
+3918 |     common /cc1_character_common/ t  ! {Error} Variable 't' is not declared
+     |                                   ^ 't' is undeclared
+
+semantic error: character length must be a constant expression in this context
+    --> tests/errors/continue_compilation_1.f90:3926:15
+     |
+3926 |     character(generic_length()) :: t  ! {Error} character length must be a constant expression in this context
+     |               ^^^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    --> tests/errors/continue_compilation_1.f90:4040:39
+     |
+4040 |     integer(1), parameter :: above8 = ibset(0_1, 8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+     |                                       ^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    --> tests/errors/continue_compilation_1.f90:4041:40
+     |
+4041 |     integer(2), parameter :: above16 = ibset(0_2, 16)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+     |                                        ^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    --> tests/errors/continue_compilation_1.f90:4042:40
+     |
+4042 |     integer(4), parameter :: above32 = ibset(0_4, 32)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+     |                                        ^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    --> tests/errors/continue_compilation_1.f90:4043:40
+     |
+4043 |     integer(8), parameter :: above64 = ibset(0_8, 64_8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+     |                                        ^^^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+    --> tests/errors/continue_compilation_1.f90:4044:42
+     |
+4044 |     integer(8), parameter :: large_pos = ibset(0_8, 9223372036854775807_8)  ! {Error} `pos` argument of `ibset` intrinsic must be less than bit_size(i)
+     |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be non-negative
+    --> tests/errors/continue_compilation_1.f90:4045:41
+     |
+4045 |     integer(1), parameter :: negative = ibset(0_1, -1)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
+     |                                         ^^^^^^^^^^^^^^ 
+
+semantic error: `pos` argument of `ibset` intrinsic must be non-negative
+    --> tests/errors/continue_compilation_1.f90:4046:43
+     |
+4046 |     integer(8), parameter :: lowest_pos = ibset(0_8, -9223372036854775807_8 - 1_8)  ! {Error} `pos` argument of `ibset` intrinsic must be non-negative
+     |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+warning: Assuming implicit save attribute for variable declaration
+    --> tests/errors/continue_compilation_1.f90:4072:42
+     |
+4072 |     procedure(cc1_ept_iface), pointer :: q => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                                          ^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+semantic error: procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4082:33
+     |
+4082 |         procedure(), pointer :: s  ! {Error} procedure pointer component 's' with an implicit interface must have the NOPASS attribute
+     |                                 ^ 
+
+semantic error: procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4085:40
+     |
+4085 |         procedure(integer), pointer :: f  ! {Error} procedure pointer component 'f' with an implicit interface must have the NOPASS attribute
+     |                                        ^ 
+
+semantic error: procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+    --> tests/errors/continue_compilation_1.f90:4088:40
+     |
+4088 |         procedure(real(8)), pointer :: g  ! {Error} procedure pointer component 'g' with an implicit interface must have the NOPASS attribute
+     |                                        ^ 
+
+semantic error: duplicate implicit none statement
+    --> tests/errors/continue_compilation_1.f90:4094:5
+     |
+4094 |     implicit none  ! {Error} duplicate implicit none statement
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate implicit none statement
+    --> tests/errors/continue_compilation_1.f90:4098:9
+     |
+4098 |         implicit none (external)  ! {Error} duplicate implicit none statement
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate implicit none statement
+    --> tests/errors/continue_compilation_1.f90:4102:9
+     |
+4102 |         implicit none  ! {Error} duplicate implicit none statement
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'cc1_ead_f' cannot be allocatable
+    --> tests/errors/continue_compilation_1.f90:4110:45
+     |
+4110 |         integer, allocatable, intent(in) :: x  ! {Error} dummy argument 'x' of elemental procedure 'cc1_ead_f' cannot be allocatable
+     |                                             ^ 
+
+semantic error: dummy argument 'y' of elemental procedure 'cc1_ead_s' cannot be allocatable
+    --> tests/errors/continue_compilation_1.f90:4114:48
+     |
+4114 |         integer, allocatable, intent(inout) :: y  ! {Error} dummy argument 'y' of elemental procedure 'cc1_ead_s' cannot be allocatable
+     |                                                ^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_array' must be scalar
+    --> tests/errors/continue_compilation_1.f90:4244:32
+     |
+4244 |         integer, intent(in) :: x(3)
+     |                                ^^^^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_pointer' cannot be a pointer
+    --> tests/errors/continue_compilation_1.f90:4249:41
+     |
+4249 |         integer, pointer, intent(in) :: x
+     |                                         ^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'cc_elem_dummies_coarray' cannot be a coarray
+    --> tests/errors/continue_compilation_1.f90:4253:32
+     |
+4253 |         integer, intent(in) :: x[*]
+     |                                ^^^^ 
+
+semantic error: dummy argument 'g' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+    --> tests/errors/continue_compilation_1.f90:4258:13 - 4260:24
+     |
+4258 |                pure integer function g(i)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4260 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a procedure
+    --> tests/errors/continue_compilation_1.f90:4262:66
+     |
+4262 |         procedure(cc_elem_dummies_iface), pointer, intent(in) :: h
+     |                                                                  ^ 
+
+semantic error: dummy argument 'h' of elemental procedure 'cc_elem_dummies_procedure' cannot be a pointer
+    --> tests/errors/continue_compilation_1.f90:4262:66
+     |
+4262 |         procedure(cc_elem_dummies_iface), pointer, intent(in) :: h
+     |                                                                  ^ 
+
+semantic error: elemental procedure 'cc_elem_dummies_alt_return' cannot have an alternate return dummy argument '*'
+    --> tests/errors/continue_compilation_1.f90:4265:5 - 4267:18
+     |
+4265 |        elemental subroutine cc_elem_dummies_alt_return(x, *)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4267 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result of elemental function 'cc_elem_result_array' must be scalar
+    --> tests/errors/continue_compilation_1.f90:4275:20
+     |
+4275 |         integer :: r(2)
+     |                    ^^^^ 
+
+semantic error: result of elemental function 'cc_elem_result_allocatable' cannot be allocatable
+    --> tests/errors/continue_compilation_1.f90:4281:33
+     |
+4281 |         integer, allocatable :: r
+     |                                 ^ 
+
+semantic error: result of elemental function 'cc_elem_result_pointer' cannot be a pointer
+    --> tests/errors/continue_compilation_1.f90:4287:29
+     |
+4287 |         integer, pointer :: r
+     |                             ^ 
+
+semantic error: result length of elemental function 'cc_elem_result_len_trim' can use dummy argument 'x' only as the argument of an inquiry function such as len
+    --> tests/errors/continue_compilation_1.f90:4293:32
+     |
+4293 |         character(len=len_trim(x)) :: r
+     |                                ^ 
+
+semantic error: dummy argument 'a' of pure function 'ccep_iface_fn' must be intent(in) or have the value attribute
+    --> tests/errors/continue_compilation_1.f90:4307:24
+     |
+4307 |             integer :: a
+     |                        ^ 
+
+semantic error: dummy argument 'b' of pure subroutine 'ccep_iface_sub' must have an explicit intent or the value attribute
+    --> tests/errors/continue_compilation_1.f90:4310:24
+     |
+4310 |             integer :: b
+     |                        ^ 
+
+semantic error: dummy argument 'x' of pure subroutine 'ccep_elem_sub' must have an explicit intent or the value attribute
+    --> tests/errors/continue_compilation_1.f90:4317:20
+     |
+4317 |         integer :: x
+     |                    ^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'ccep_elem_sub' must have an explicit intent or the value attribute
+    --> tests/errors/continue_compilation_1.f90:4317:20
+     |
+4317 |         integer :: x
+     |                    ^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'ccep_impure_elem_sub' must have an explicit intent or the value attribute
+    --> tests/errors/continue_compilation_1.f90:4322:20
+     |
+4322 |         integer :: x
+     |                    ^ 
+
+semantic error: dummy argument 'x' of pure function 'ccep_elem_fn' must be intent(in) or have the value attribute
+    --> tests/errors/continue_compilation_1.f90:4327:20
+     |
+4327 |         integer :: x
+     |                    ^ 
+
+semantic error: dummy argument 'x' of elemental procedure 'ccep_elem_fn' must have an explicit intent or the value attribute
+    --> tests/errors/continue_compilation_1.f90:4327:20
+     |
+4327 |         integer :: x
+     |                    ^ 
+
+semantic error: dummy argument 'x' of pure function 'ccep_elem_fn_out' must be intent(in) or have the value attribute
+    --> tests/errors/continue_compilation_1.f90:4333:33
+     |
+4333 |         integer, intent(out) :: x
+     |                                 ^ 
+
+semantic error: dummy argument 'a' of pure function 'ccep_pure_fn' must be intent(in) or have the value attribute
+    --> tests/errors/continue_compilation_1.f90:4339:33
+     |
+4339 |         integer, intent(out) :: a
+     |                                 ^ 
+
+semantic error: dummy argument 'b' of pure function 'ccep_pure_fn' must be intent(in) or have the value attribute
+    --> tests/errors/continue_compilation_1.f90:4340:35
+     |
+4340 |         integer, intent(inout) :: b
+     |                                   ^ 
+
+semantic error: dummy argument 'x' of pure subroutine 'ccep_pure_sub' must have an explicit intent or the value attribute
+    --> tests/errors/continue_compilation_1.f90:4353:20
+     |
+4353 |         integer :: x
+     |                    ^ 
+
+warning: Assuming implicit save attribute for variable declaration
+    --> tests/errors/continue_compilation_1.f90:4360:20
+     |
+4360 |         integer :: s = 9
+     |                    ^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+warning: Assuming implicit save attribute for variable declaration
+    --> tests/errors/continue_compilation_1.f90:4366:25
+     |
+4366 |         type(ccep_t) :: s = ccep_t(9)
+     |                         ^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+semantic error: dummy procedure 'h' cannot have an elemental interface
+    --> tests/errors/continue_compilation_1.f90:4473:13 - 4475:24
+     |
+4473 |                elemental integer function h(x)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4475 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: an initialization expression cannot specify a value for allocatable component 'a' of a structure constructor
+    --> tests/errors/continue_compilation_1.f90:4515:82
+     |
+4515 |     type(cc1_alloc_component_t) :: cc1_alloc_component_v = cc1_alloc_component_t([1, 2])  ! {Error} an initialization expression cannot specify a value for allocatable component 'a' of a structure constructor
+     |                                                                                  ^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -4613,15 +4949,6 @@ semantic error: output of an implied-do loop with run-time bounds or step and va
 3693 |     write(line, '(*(i0,1x))') (k(i), x(i), i=1,n)  ! {Error} run-time bounds or step is not supported yet
      |                                                ~ not a constant expression
 
-semantic error: output of an implied-do loop with a nested loop that reuses an enclosing loop variable and values of different types, including derived types, is not supported yet
-    --> tests/errors/continue_compilation_1.f90:3694:25
-     |
-3694 |     print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
-     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-     |
-3694 |     print '(*(i0,1x))', ((x(1), i=1,2), y(1), i=1,3)  ! {Error} a nested loop that reuses an enclosing loop variable ... is not supported yet
-     |                          ~~~~~~~~~~~~~ reuses the variable of an enclosing loop
-
 semantic error: output of an implied-do loop with more than 256 iterations, bounds that are not all literals and values of different types, including derived types, is not supported yet
     --> tests/errors/continue_compilation_1.f90:3695:25
      |
@@ -4663,3 +4990,509 @@ semantic error: Assignment to loop variable `i` is not allowed
      |
 3745 |                 i = 5  ! {Error} Assignment to loop variable `i` is not allowed
      |                 ^ 
+
+semantic error: integer overflow in `matmul`: the result does not fit in integer(4)
+    --> tests/errors/continue_compilation_1.f90:3765:13
+     |
+3765 |         y = matmul(a, x)  ! {Error} integer overflow in `matmul`
+     |             ^^^^^^^^^^^^ 
+
+semantic error: integer overflow in `matmul`: the result does not fit in integer(1)
+    --> tests/errors/continue_compilation_1.f90:3766:13
+     |
+3766 |         w = matmul(b, v)  ! {Error} integer overflow in `matmul`
+     |             ^^^^^^^^^^^^ 
+
+semantic error: integer overflow in `matmul`: the result does not fit in integer(8)
+    --> tests/errors/continue_compilation_1.f90:3767:13
+     |
+3767 |         z = matmul(c, u)  ! {Error} integer overflow in `matmul`
+     |             ^^^^^^^^^^^^ 
+
+semantic error: Different shape for array assignment on dimension 2(5 and 3)
+    --> tests/errors/continue_compilation_1.f90:3776:9
+     |
+3776 |         a = b(2,:,1:3)  ! {Error} Different shape for array assignment on dimension 2(5 and 3)
+     |         ^^^^^^^^^^^^^^ 
+
+semantic error: `stat` argument of `deallocate` must be a scalar of type integer, found real(4)
+    --> tests/errors/continue_compilation_1.f90:3787:28
+     |
+3787 |         deallocate(a, stat=r)  ! {Error} `stat` argument of `deallocate` must be a scalar of type integer
+     |                            ^ 
+
+semantic error: `stat` argument of `deallocate` must be a scalar of type integer, found integer(4)[:]
+    --> tests/errors/continue_compilation_1.f90:3788:28
+     |
+3788 |         deallocate(a, stat=s)  ! {Error} `stat` argument of `deallocate` must be a scalar of type integer
+     |                            ^ 
+
+semantic error: `errmsg` argument of `deallocate` must be a scalar of type character, found real(4)
+    --> tests/errors/continue_compilation_1.f90:3789:30
+     |
+3789 |         deallocate(a, errmsg=r)  ! {Error} `errmsg` argument of `deallocate` must be a scalar of type character
+     |                              ^ 
+
+semantic error: assumed-rank arguments are not supported for intrinsic `sum`
+    --> tests/errors/continue_compilation_1.f90:3797:22
+     |
+3797 |         print *, sum(x)  ! {Error} assumed-rank arguments are not supported for intrinsic `sum`
+     |                      ^ 
+
+semantic error: assumed-rank arguments are not supported for intrinsic `maxval`
+    --> tests/errors/continue_compilation_1.f90:3802:25
+     |
+3802 |         print *, maxval(x)  ! {Error} assumed-rank arguments are not supported for intrinsic `maxval`
+     |                         ^ 
+
+semantic error: size of an assumed-size array requires the DIM argument
+    --> tests/errors/continue_compilation_1.f90:3811:18
+     |
+3811 |         print *, size(c)  ! {Error} size of an assumed-size array requires the DIM argument
+     |                  ^^^^^^^ 
+
+semantic error: the extent of the last dimension of an assumed-size array is not defined
+    --> tests/errors/continue_compilation_1.f90:3812:18
+     |
+3812 |         print *, size(c, 2)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+     |                  ^^^^^^^^^^ 
+
+semantic error: the extent of the last dimension of an assumed-size array is not defined
+    --> tests/errors/continue_compilation_1.f90:3813:18
+     |
+3813 |         print *, size(d, dim=1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+     |                  ^^^^^^^^^^^^^^ 
+
+semantic error: size of an assumed-size array requires the DIM argument
+    --> tests/errors/continue_compilation_1.f90:3823:18
+     |
+3823 |         print *, size(c)  ! {Error} size of an assumed-size array requires the DIM argument
+     |                  ^^^^^^^ 
+
+semantic error: the extent of the last dimension of an assumed-size array is not defined
+    --> tests/errors/continue_compilation_1.f90:3824:18
+     |
+3824 |         print *, size(c, 2)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+     |                  ^^^^^^^^^^ 
+
+semantic error: the extent of the last dimension of an assumed-size array is not defined
+    --> tests/errors/continue_compilation_1.f90:3825:18
+     |
+3825 |         print *, size(d, 1)  ! {Error} the extent of the last dimension of an assumed-size array is not defined
+     |                  ^^^^^^^^^^ 
+
+semantic error: referencing the external procedure 'cc1_cyclic_iface_ext' in the module 'cc1_cyclic_iface_a' without an explicit interface is not supported yet when its interface names an entity of the module 'cc1_cyclic_iface_b', which uses 'cc1_cyclic_iface_a'
+    --> tests/errors/continue_compilation_1.f90:3833:9
+     |
+3833 |         call cc1_cyclic_iface_ext(a)  ! {Error} referencing the external procedure 'cc1_cyclic_iface_ext' in the module 'cc1_cyclic_iface_a' without an explicit interface is not supported yet when its interface names an entity of the module 'cc1_cyclic_iface_b', which uses 'cc1_cyclic_iface_a'
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: use --implicit-interface to reference it through an implicit interface
+
+semantic error: referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface calls the procedure 'cc1_file_fn_iface_len', which has an implicit interface
+    --> tests/errors/continue_compilation_1.f90:3852:9
+     |
+3852 |         call cc1_file_fn_iface_ext(a, 3)  ! {Error} referencing the external procedure 'cc1_file_fn_iface_ext' in the module 'cc1_file_fn_iface_m' without an explicit interface is not supported yet when its interface calls the procedure 'cc1_file_fn_iface_len', which has an implicit interface
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: give 'cc1_file_fn_iface_len' an explicit interface in 'cc1_file_fn_iface_ext', or use --implicit-interface
+
+semantic error: selected_real_kind requires at least one of p, r or radix
+    --> tests/errors/continue_compilation_1.f90:3868:14
+     |
+3868 |     print *, selected_real_kind()  ! {Error} selected_real_kind requires at least one of p, r or radix
+     |              ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3938:26
+     |
+3938 |         inquire(6, delim=trim(delim))  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3939:26
+     |
+3939 |         inquire(6, delim='NONE')  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3940:26
+     |
+3940 |         inquire(6, delim=fixed)  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3941:26
+     |
+3941 |         inquire(6, delim=fixed(1:2))  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3942:26
+     |
+3942 |         inquire(6, delim=input)  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3943:26
+     |
+3943 |         inquire(6, delim=input(1:2))  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a scalar character(kind=1) variable
+    --> tests/errors/continue_compilation_1.f90:3944:26
+     |
+3944 |         inquire(6, delim=number)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+     |                          ^^^^^^ 
+
+semantic error: delim in inquire must be a scalar character(kind=1) variable
+    --> tests/errors/continue_compilation_1.f90:3945:26
+     |
+3945 |         inquire(6, delim=delim_array)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+     |                          ^^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a scalar character(kind=1) variable
+    --> tests/errors/continue_compilation_1.f90:3946:26
+     |
+3946 |         inquire(6, delim=wide_delim)  ! {Error} delim in inquire must be a scalar character(kind=1) variable
+     |                          ^^^^^^^^^^ 
+
+semantic error: delim in inquire must be a definable variable
+    --> tests/errors/continue_compilation_1.f90:3947:26
+     |
+3947 |         inquire(6, delim=(delim))  ! {Error} delim in inquire must be a definable variable
+     |                          ^^^^^^^ 
+
+semantic error: cannot assign to host-associated variable 'res' in a pure procedure
+    --> tests/errors/continue_compilation_1.f90:3965:13
+     |
+3965 |             res = 10  ! {Error} cannot assign to host-associated variable 'res' in a pure procedure
+     |             ^^^^^^^^ 
+
+semantic error: cannot assign to host-associated variable 'scalar' in a pure procedure
+    --> tests/errors/continue_compilation_1.f90:3976:13
+     |
+3976 |             scalar = 1  ! {Error} cannot assign to host-associated variable 'scalar' in a pure procedure
+     |             ^^^^^^^^^^ 
+
+semantic error: cannot assign to host-associated variable 'object' in a pure procedure
+    --> tests/errors/continue_compilation_1.f90:3977:13
+     |
+3977 |             object%value = 2  ! {Error} cannot assign to host-associated variable 'object' in a pure procedure
+     |             ^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot assign to host-associated variable 'cc1_pa_values' in a pure procedure
+    --> tests/errors/continue_compilation_1.f90:3978:13
+     |
+3978 |             cc1_pa_values(1) = 3  ! {Error} cannot assign to host-associated variable 'cc1_pa_values' in a pure procedure
+     |             ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot assign to host-associated variable 'cc1_pa_values' in a pure procedure
+    --> tests/errors/continue_compilation_1.f90:3979:13
+     |
+3979 |             cc1_pa_values(2:3) = 4  ! {Error} cannot assign to host-associated variable 'cc1_pa_values' in a pure procedure
+     |             ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot assign to host-associated variable 'text' in a pure procedure
+    --> tests/errors/continue_compilation_1.f90:3980:13
+     |
+3980 |             text(1:2) = 'ab'  ! {Error} cannot assign to host-associated variable 'text' in a pure procedure
+     |             ^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot assign to host-associated variable 'scalar' in a pure procedure
+    --> tests/errors/continue_compilation_1.f90:3982:17
+     |
+3982 |                 scalar = 5  ! {Error} cannot assign to host-associated variable 'scalar' in a pure procedure
+     |                 ^^^^^^^^^^ 
+
+semantic error: cannot assign to use-associated variable 'scalar' in a pure procedure
+    --> tests/errors/continue_compilation_1.f90:3989:9
+     |
+3989 |         renamed = 1  ! {Error} cannot assign to use-associated variable 'scalar' in a pure procedure
+     |         ^^^^^^^^^^^ 
+
+semantic error: cannot assign to use-associated variable 'object' in a pure procedure
+    --> tests/errors/continue_compilation_1.f90:3990:9
+     |
+3990 |         object%value = 2  ! {Error} cannot assign to use-associated variable 'object' in a pure procedure
+     |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: cannot assign to use-associated variable 'cc1_pa_values' in a pure procedure
+    --> tests/errors/continue_compilation_1.f90:3991:9
+     |
+3991 |         cc1_pa_values(1:2) = 3  ! {Error} cannot assign to use-associated variable 'cc1_pa_values' in a pure procedure
+     |         ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'k' for operator .and. must be of type logical, found integer(4)
+    --> tests/errors/continue_compilation_1.f90:4004:33
+     |
+4004 |         do concurrent (i = 1:4) reduce(.and.: k)  ! {Error} reduction variable 'k' for operator .and. must be of type logical, found integer(4)
+     |                                 ^^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'r' for operator .or. must be of type logical, found real(4)
+    --> tests/errors/continue_compilation_1.f90:4007:33
+     |
+4007 |         do concurrent (i = 1:4) reduce(.or.: r)  ! {Error} reduction variable 'r' for operator .or. must be of type logical, found real(4)
+     |                                 ^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'k' for operator .eqv. must be of type logical, found integer(4)
+    --> tests/errors/continue_compilation_1.f90:4010:33
+     |
+4010 |         do concurrent (i = 1:4) reduce(.eqv.: l, k)  ! {Error} reduction variable 'k' for operator .eqv. must be of type logical, found integer(4)
+     |                                 ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
+    --> tests/errors/continue_compilation_1.f90:4013:33
+     |
+4013 |         do concurrent (i = 1:4) reduce(.neqv.: k)  ! {Error} reduction variable 'k' for operator .neqv. must be of type logical, found integer(4)
+     |                                 ^^^^^^^^^^^^^^^^^ 
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4061:55
+     |
+4061 | procedure(cc1_ept_iface), pointer :: cc1_ept_later => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                                                       ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4069:59
+     |
+4069 |         procedure(cc1_ept_iface), pointer, nopass :: c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                                                           ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4072:47
+     |
+4072 |     procedure(cc1_ept_iface), pointer :: q => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                                               ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4074:10
+     |
+4074 |     p => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |          ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4075:12
+     |
+4075 |     a%c => cc1_ept_ef  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |            ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+    --> tests/errors/continue_compilation_1.f90:4076:19
+     |
+4076 |     a = cc1_ept_t(cc1_ept_ef)  ! {Error} nonintrinsic elemental procedure 'cc1_ept_ef' cannot be a procedure pointer target
+     |                   ^^^^^^^^^^ a procedure pointer target shall not be a nonintrinsic elemental procedure
+
+semantic error: the shift argument of 'shifta' intrinsic must be non-negative and less than or equal to the bit size of the integer
+    --> tests/errors/continue_compilation_1.f90:4122:28
+     |
+4122 |         print *, shifta(n, 33)  ! {Error} shift argument of shifta out of range
+     |                            ^^ shift value is 33, but bit size of integer is 32
+
+semantic error: the shift argument of 'shifta' intrinsic must be non-negative and less than or equal to the bit size of the integer
+    --> tests/errors/continue_compilation_1.f90:4123:28
+     |
+4123 |         print *, shifta(n, -1_8)  ! {Error} shift argument of shifta out of range
+     |                            ^^^^ shift value is -1, but bit size of integer is 32
+
+semantic error: the shift argument of 'shifta' intrinsic must be non-negative and less than or equal to the bit size of the integer
+    --> tests/errors/continue_compilation_1.f90:4124:28
+     |
+4124 |         print *, shifta(n, [1, 40])  ! {Error} shift argument of shifta out of range
+     |                            ^^^^^^^ shift value is 40, but bit size of integer is 32
+
+semantic error: type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+    --> tests/errors/continue_compilation_1.f90:4155:9
+     |
+4155 |         call x%cc1_pb_s()  ! {Error} type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'cc1_pb_f' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+    --> tests/errors/continue_compilation_1.f90:4156:13
+     |
+4156 |         k = x%cc1_pb_f()  ! {Error} type-bound procedure 'cc1_pb_f' of derived type 'cc1_pb_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+     |             ^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_default_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+    --> tests/errors/continue_compilation_1.f90:4157:9
+     |
+4157 |         call y%cc1_pb_s()  ! {Error} type-bound procedure 'cc1_pb_s' of derived type 'cc1_pb_default_t' is private and cannot be accessed outside module 'cc1_private_binding_def'
+     |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+    --> tests/errors/continue_compilation_1.f90:4186:9
+     |
+4186 |         call x%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+     |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_default_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+    --> tests/errors/continue_compilation_1.f90:4187:9
+     |
+4187 |         call y%cc1_pg_gen()  ! {Error} generic type-bound procedure 'cc1_pg_gen' of derived type 'cc1_pg_default_t' is private and cannot be accessed outside module 'cc1_private_generic_def'
+     |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: generic type-bound procedure 'cc1_pi_g' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    --> tests/errors/continue_compilation_1.f90:4218:13
+     |
+4218 |         k = y%cc1_pi_g()  ! {Error} generic type-bound procedure 'cc1_pi_g' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+     |             ^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    --> tests/errors/continue_compilation_1.f90:4219:13
+     |
+4219 |         k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+     |             ^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+    --> tests/errors/continue_compilation_1.f90:4231:13
+     |
+4231 |         k = y%cc1_pi_q()  ! {Error} type-bound procedure 'cc1_pi_q' of derived type 'cc1_pi_t' is private and cannot be accessed outside module 'cc1_private_inherited_def'
+     |             ^^^^^^^^^^^^ 
+
+semantic error: local variable 's' of pure procedure 'ccep_init' cannot have an initial value, because it implies the save attribute
+    --> tests/errors/continue_compilation_1.f90:4360:20
+     |
+4360 |         integer :: s = 9
+     |                    ^^^^^ 
+
+semantic error: local variable 's' of pure procedure 'ccep_init_type' cannot have an initial value, because it implies the save attribute
+    --> tests/errors/continue_compilation_1.f90:4366:25
+     |
+4366 |         type(ccep_t) :: s = ccep_t(9)
+     |                         ^^^^^^^^^^^^^ 
+
+semantic error: local variable 's' of pure procedure 'ccep_save' cannot have the save attribute
+    --> tests/errors/continue_compilation_1.f90:4372:26
+     |
+4372 |         integer, save :: s
+     |                          ^ 
+
+semantic error: Different shape for array assignment on dimension 1(3 and 1)
+    --> tests/errors/continue_compilation_1.f90:4384:9
+     |
+4384 |         y = z(k+1:k+1)  ! {Error} Different shape for array assignment on dimension 1(3 and 1)
+     |         ^^^^^^^^^^^^^^ 
+
+semantic error: size in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4394:31
+     |
+4394 |         inquire(unit=10, size=real_size)  ! {Error} size in inquire must be a scalar integer variable
+     |                               ^^^^^^^^^ 
+
+semantic error: pos in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4395:30
+     |
+4395 |         inquire(unit=10, pos=real_pos)  ! {Error} pos in inquire must be a scalar integer variable
+     |                              ^^^^^^^^ 
+
+semantic error: size in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4396:31
+     |
+4396 |         inquire(unit=10, size=real8_size)  ! {Error} size in inquire must be a scalar integer variable
+     |                               ^^^^^^^^^^ 
+
+semantic error: pos in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4397:30
+     |
+4397 |         inquire(unit=10, pos=pos_array)  ! {Error} pos in inquire must be a scalar integer variable
+     |                              ^^^^^^^^^ 
+
+semantic error: size in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4406:31
+     |
+4406 |         inquire(unit=10, size=input)  ! {Error} size in inquire must be a scalar integer variable
+     |                               ^^^^^ 
+
+semantic error: pos in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4407:30
+     |
+4407 |         inquire(unit=10, pos=input)  ! {Error} pos in inquire must be a scalar integer variable
+     |                              ^^^^^ 
+
+semantic error: size in inquire must be a scalar integer variable
+    --> tests/errors/continue_compilation_1.f90:4411:31
+     |
+4411 |         inquire(unit=10, size=cc1_inquire_fixed)  ! {Error} size in inquire must be a scalar integer variable
+     |                               ^^^^^^^^^^^^^^^^^ 
+
+semantic error: nonintrinsic elemental procedure 'cc_elem_calls_ef' cannot be an actual argument
+    --> tests/errors/continue_compilation_1.f90:4487:39
+     |
+4487 |         print *, cc_elem_calls_call_f(cc_elem_calls_ef)
+     |                                       ^^^^^^^^^^^^^^^^ a nonintrinsic elemental procedure shall not be used as an actual argument
+
+semantic error: nonintrinsic elemental procedure 'cc_elem_calls_ef' cannot be an actual argument
+    --> tests/errors/continue_compilation_1.f90:4488:24
+     |
+4488 |         print *, o%get(cc_elem_calls_ef)
+     |                        ^^^^^^^^^^^^^^^^ a nonintrinsic elemental procedure shall not be used as an actual argument
+
+semantic error: nonintrinsic elemental procedure 'cc_elem_calls_es' cannot be an actual argument
+    --> tests/errors/continue_compilation_1.f90:4489:35
+     |
+4489 |         call cc_elem_calls_call_s(cc_elem_calls_es)
+     |                                   ^^^^^^^^^^^^^^^^ a nonintrinsic elemental procedure shall not be used as an actual argument
+
+semantic error: array section with a repeated vector subscript value cannot be associated with intent(inout) dummy argument 'x' of an elemental subroutine
+    --> tests/errors/continue_compilation_1.f90:4491:33
+     |
+4491 |         call cc_elem_calls_es(b([1, 1]))
+     |                                 ^^^^^^ a vector subscript with repeated values makes the section not definable
+
+semantic error: array section with a repeated vector subscript value cannot be associated with intent(out) dummy argument 'to' of an elemental subroutine
+    --> tests/errors/continue_compilation_1.f90:4492:11
+     |
+4492 |         c([2, 2]) = a
+     |           ^^^^^^ a vector subscript with repeated values makes the section not definable
+
+semantic error: elemental procedure 'cc_elem_calls_ext' needs an explicit interface
+    --> tests/errors/continue_compilation_1.f90:4504:5
+     |
+4504 |     call cc_elem_calls_ext(b)
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ put 'cc_elem_calls_ext' in a module or declare it in an interface block
+
+semantic error: the X argument of c_loc() shall not be polymorphic
+    --> tests/errors/continue_compilation_1.f90:4529:19
+     |
+4529 |         c = c_loc(x)  ! {Error} the X argument of c_loc() shall not be polymorphic
+     |                   ^ 
+
+semantic error: the X argument of c_loc() shall not be polymorphic
+    --> tests/errors/continue_compilation_1.f90:4535:19
+     |
+4535 |         c = c_loc(x)  ! {Error} the X argument of c_loc() shall not be polymorphic
+     |                   ^ 
+
+semantic error: the fptr argument of c_f_pointer() shall not be polymorphic
+    --> tests/errors/continue_compilation_1.f90:4541:29
+     |
+4541 |         call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
+     |                             ^ 
+
+semantic error: the fptr argument of c_f_pointer() shall not be polymorphic
+    --> tests/errors/continue_compilation_1.f90:4547:29
+     |
+4547 |         call c_f_pointer(p, q)  ! {Error} the fptr argument of c_f_pointer() shall not be polymorphic
+     |                             ^ 
+
+semantic error: branch to label 20 enters a DO loop from outside it
+    --> tests/errors/continue_compilation_1.f90:4024:9
+     |
+4024 |         go to 20  ! {Error} branch to label 20 enters a DO loop from outside it
+     |         ^^^^^^^^ 
+     |
+4025 |            do i = 1, 3
+     |            ~~~~~~~~~~~...
+...
+     |
+4027 |            end do
+     | ...~~~~~~~~~~~~~~ label 20 is inside this DO loop
+
+semantic error: branch to label 30 enters a BLOCK construct from outside it
+    --> tests/errors/continue_compilation_1.f90:4028:9
+     |
+4028 |         go to 30  ! {Error} branch to label 30 enters a BLOCK construct from outside it
+     |         ^^^^^^^^ 
+     |
+4029 |            block
+     |            ~~~~~...
+...
+     |
+4033 |            end block
+     | ...~~~~~~~~~~~~~~~~~ label 30 is inside this BLOCK construct

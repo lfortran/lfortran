@@ -26,6 +26,33 @@ namespace LCompilers {
         const PassOptions &pass_options, const ASRVerifyOptions &verify_options,
         const std::string &pass_name);
 
+    // The lock of the OpenMP critical constructs named `name`. Every critical
+    // construct of that name in the program must use the same lock, so it is
+    // a global variable under the name other compilers give it, with common
+    // linkage, which the linker merges across object files.
+    static inline ASR::symbol_t *omp_critical_name_lock(Allocator &al,
+            const Location &loc, SymbolTable *scope, const std::string &name) {
+        SymbolTable *global_scope = scope;
+        while (global_scope->parent != nullptr) {
+            global_scope = global_scope->parent;
+        }
+        // The leading underscores keep the name apart from any Fortran
+        // name in the global scope
+        std::string lock_name = "__lcompilers_omp_critical_" + name;
+        ASR::symbol_t *lock_sym = global_scope->get_symbol(lock_name);
+        if (lock_sym == nullptr) {
+            lock_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+                al, loc, global_scope, s2c(al, lock_name), nullptr, 0,
+                ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc, ASR::cptr_kindType::CPointer)),
+                nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::presenceType::Required, false, false, false,
+                s2c(al, ".gomp_critical_user_" + name)));
+            global_scope->add_symbol(lock_name, lock_sym);
+        }
+        return lock_sym;
+    }
+
     // The name of a temporary a pass creates, `__libasr_created_` followed
     // by `hint`, made unique in `scope`. The hint is often the name of the
     // symbol a call is made through, which can be an alias that is not an
@@ -380,25 +407,37 @@ namespace LCompilers {
 
         bool is_nameable_array_constant(ASR::ArrayConstant_t* x);
 
+        bool is_reevaluable_integer_expr(ASR::expr_t* expr,
+            bool through_components=false);
+
         ASR::expr_t* create_named_array_constant(Allocator& al,
             ASR::ArrayConstant_t* x, SymbolTable* current_scope);
-
-        ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
-                             Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
-                             PassOptions& pass_options);
 
         ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,
                                          Allocator& al, ASR::TranslationUnit_t& unit,
                                          Location& loc, PassOptions& pass_options);
 
-        ASR::stmt_t* get_vector_copy(ASR::expr_t* array0, ASR::expr_t* array1, ASR::expr_t* start,
-            ASR::expr_t* end, ASR::expr_t* step, ASR::expr_t* vector_length,
-            Allocator& al, ASR::TranslationUnit_t& unit,
-            SymbolTable*& global_scope, Location& loc);
+        // Whether the iterations of the DO loop `x` can be unrolled by
+        // unroll_iterations: every statement of its body can be duplicated,
+        // and none can leave an iteration or be jumped to (EXIT, CYCLE,
+        // GO TO, a label).
+        bool can_unroll_iterations(Allocator &al, const ASR::DoLoop_t &x);
 
-        Vec<ASR::stmt_t*> replace_doloop(Allocator &al, const ASR::DoLoop_t &loop,
-                                         int comp=-1, bool use_loop_variable_after_loop=false,
-                                         SymbolTable* current_scope=nullptr);
+        // The body of a DO loop over `group` with the step factor * step
+        // that runs `factor` iterations of the DO loop `x` (of the constant
+        // step `step`) in a row:
+        //
+        //     i = group
+        //     ...
+        //     i = group + step
+        //     ...
+        //     i = group + (factor - 1) * step
+        //     ...
+        //
+        // `x` must satisfy can_unroll_iterations.
+        std::vector<ASR::stmt_t*> unroll_iterations(Allocator &al,
+            const ASR::DoLoop_t &x, ASR::expr_t *group, int64_t step,
+            int64_t factor);
 
         ASR::stmt_t* create_do_loop_helper_pack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* mask,
@@ -1181,35 +1220,18 @@ namespace LCompilers {
             ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
             ASR::expr_t* idx_var, SymbolTable* current_scope,
             bool perform_cast, ASR::cast_kindType cast_kind,
-            ASR::ttype_t* casted_type, bool skip_save_restore);
+            ASR::ttype_t* casted_type);
 
         static inline void create_do_loop(Allocator& al, ASR::ImpliedDoLoop_t* idoloop,
         ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec, SymbolTable*& current_scope,
         ASR::expr_t* arr_idx=nullptr, bool perform_cast=false,
         ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-        ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false) {
-            // According to Fortran standard, the loop variable in an implied-DO
-            // within an array constructor is local to the implied-DO and should
-            // not affect any outer variable with the same name. To implement this,
-            // we save the loop variable's value before the loop and restore it after.
-            // However, for I/O implied-do loops with use_loop_variable_after_loop,
-            // Section 12.6.3 of F2023 says the loop variable retains its final value,
-            // so we skip the save/restore in that case.
-            ASR::ttype_t* loop_var_type = ASRUtils::expr_type(idoloop->m_var);
+        ASR::ttype_t* casted_type=nullptr) {
+            // The variable of an implied DO in an array constructor is a
+            // variable of its own (F2023 19.4), and that of an I/O implied DO
+            // keeps its final value (F2023 12.6.3), so the loop simply
+            // assigns the variable.
             const Location& loc = idoloop->m_var->base.loc;
-
-            ASR::expr_t* save_var = nullptr;
-            if (!skip_save_restore) {
-                // Create a temporary variable to save the loop variable's original value
-                static int idl_save_counter = 0;
-                save_var = PassUtils::create_var(idl_save_counter++, "_idl_save_",
-                    loc, loop_var_type, al, current_scope);
-
-                // Save the loop variable's value before the loop
-                ASR::stmt_t* save_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
-                    save_var, idoloop->m_var, nullptr, false, false));
-                result_vec->push_back(al, save_stmt);
-            }
 
             ASR::do_loop_head_t head;
             head.m_v = idoloop->m_var;
@@ -1259,11 +1281,11 @@ namespace LCompilers {
                                             ASR::arraystorageType::RowMajor, nullptr));
                 if( ASR::is_a<ASR::ImpliedDoLoop_t>(*idoloop->m_values[i]) ) {
                     create_do_loop(al, ASR::down_cast<ASR::ImpliedDoLoop_t>(idoloop->m_values[i]),
-                                   arr_var, &doloop_body, current_scope, arr_idx, perform_cast, cast_kind, casted_type, skip_save_restore);
+                                   arr_var, &doloop_body, current_scope, arr_idx, perform_cast, cast_kind, casted_type);
                 } else if( ASR::is_a<ASR::ArrayConstructor_t>(*idoloop->m_values[i]) ) {
                     ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(idoloop->m_values[i]);
                     visit_ArrayConstructor(array_constructor, al, arr_var, &doloop_body,
-                                           arr_idx, current_scope, perform_cast, cast_kind, casted_type, skip_save_restore);
+                                           arr_idx, current_scope, perform_cast, cast_kind, casted_type);
                 } else if( arr_idx != nullptr && ASRUtils::is_array(ASRUtils::expr_type(idoloop->m_values[i])) ) {
                     ASR::expr_t* curr_init = idoloop->m_values[i];
                     ASR::ttype_t* curr_init_type = ASRUtils::expr_type(curr_init);
@@ -1299,7 +1321,7 @@ namespace LCompilers {
                             } else {
                                 inner_body.push_back(al, inner_doloop);
                             }
-                            inner_doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                            inner_doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                                 inner_body.p, inner_body.size(), nullptr, 0));
                         }
                         doloop_body.push_back(al, inner_doloop);
@@ -1383,16 +1405,9 @@ namespace LCompilers {
                     }
                 }
             }
-            ASR::stmt_t* doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, arr_var->base.loc,
+            ASR::stmt_t* doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, arr_var->base.loc,
                 nullptr, head, doloop_body.p, doloop_body.size(), nullptr, 0));
             result_vec->push_back(al, doloop);
-
-            if (!skip_save_restore) {
-                // Restore the loop variable's original value after the loop
-                ASR::stmt_t* restore_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
-                    idoloop->m_var, save_var, nullptr, false, false));
-                result_vec->push_back(al, restore_stmt);
-            }
         }
 
         template <typename LOOP_BODY>
@@ -1419,7 +1434,7 @@ namespace LCompilers {
                 } else {
                     doloop_body.push_back(al, doloop);
                 }
-                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                     doloop_body.p, doloop_body.size(), nullptr, 0));
             }
             result_vec->push_back(al, doloop);
@@ -1461,7 +1476,7 @@ namespace LCompilers {
                 } else {
                     doloop_body.push_back(al, doloop);
                 }
-                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                     doloop_body.p, doloop_body.size(), nullptr, 0));
             }
             if(doloop != nullptr) result_vec->push_back(al, doloop);
@@ -1510,7 +1525,7 @@ namespace LCompilers {
                 } else {
                     doloop_body.push_back(al, doloop);
                 }
-                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                             doloop_body.p, doloop_body.size(), nullptr, 0));
             }
             result_vec->push_back(al, doloop);
@@ -1574,7 +1589,7 @@ namespace LCompilers {
                     } else {
                         doloop_body.push_back(al, doloop);
                     }
-                    doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                    doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                         doloop_body.p, doloop_body.size(), nullptr, 0));
                 }
                 result_vec->push_back(al, doloop);
@@ -1619,7 +1634,7 @@ namespace LCompilers {
                     } else {
                         doloop_body.push_back(al, doloop);
                     }
-                    doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                    doloop = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr, head,
                         doloop_body.p, doloop_body.size(), nullptr, 0));
                 }
                 result_vec->push_back(al, doloop);
@@ -1642,7 +1657,7 @@ namespace LCompilers {
             ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
             ASR::expr_t* idx_var, SymbolTable* current_scope,
             bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-            ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false);
+            ASR::ttype_t* casted_type=nullptr);
 
         template <typename T>
         static inline void replace_ArrayConstant(ASR::ArrayConstant_t* x, T* replacer,
@@ -1738,7 +1753,7 @@ namespace LCompilers {
         static inline void replace_ArrayConstructor_(Allocator& al, ASR::ArrayConstructor_t* x,
             ASR::expr_t* result_var, Vec<ASR::stmt_t*>* result_vec, SymbolTable* current_scope,
             bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-            ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false) {
+            ASR::ttype_t* casted_type=nullptr) {
             LCOMPILERS_ASSERT(result_var != nullptr);
             const Location& loc = x->base.base.loc;
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var) ||
@@ -1756,7 +1771,7 @@ namespace LCompilers {
                                             loc, idx_var, lb, nullptr, false, false));
             result_vec->push_back(al, assign_stmt);
             visit_ArrayConstructor(x, al, result_var, result_vec,
-                idx_var, current_scope, perform_cast, cast_kind, casted_type, skip_save_restore);
+                idx_var, current_scope, perform_cast, cast_kind, casted_type);
         }
 
         template <typename T>
@@ -1891,6 +1906,7 @@ namespace LCompilers {
                     if( curr_sym->type == ASR::symbolType::Variable ) {
                         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(curr_sym);
                         if ( return_var_sym && return_var_sym == curr_sym ){
+                            var->m_storage = ASR::storage_typeType::ResultArgument;
                             if( var->m_intent == ASR::intentType::Unspecified ) {
                                 var->m_intent = ASR::intentType::In;
                             } else if( var->m_intent == ASR::intentType::ReturnVar ) {

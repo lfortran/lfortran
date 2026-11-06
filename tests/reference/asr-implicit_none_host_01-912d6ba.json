@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit_none_host_01-912d6ba",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/implicit_none_host_01.f90",
+    "infile_hash": "fa265b4b3b8d0202af1946b30142924b5ed84ab2443b920996435416",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit_none_host_01-912d6ba.stderr",
+    "stderr_hash": "943e9aded9796577a1d5e098c059b060aec218f97692432e865aa5e2",
+    "returncode": 1
+}

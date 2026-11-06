@@ -12,11 +12,13 @@ program compiler_version_03
     use string_mod, only: string
 
 ! semantic error: The symbol 'compiler_version' not found in the module 'iso_fortran_env'
-    use, intrinsic :: iso_fortran_env, only: compiler_version
+    use, intrinsic :: iso_fortran_env, only: compiler_version, compiler_options
     
     character(len=len(compiler_version())) :: a
     character(len=len(string())) :: b
     character(len=:), allocatable :: c
+    character(len=len(compiler_options())) :: options
+    character(len=1+len(compiler_version())) :: decorated
 
     a = compiler_version()
     print *, len(a), a
@@ -30,4 +32,10 @@ program compiler_version_03
 
     if(len(c) /= len(a)) error stop
     if(c /= a) error stop
+    options = compiler_options()
+    if (len(options) /= len(compiler_options())) error stop
+    if (options /= compiler_options()) error stop
+    decorated = compiler_version() // '!'
+    if (len(decorated) /= len(a)+1) error stop
+    if (decorated /= a // '!') error stop
 end program

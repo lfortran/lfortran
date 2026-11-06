@@ -34,6 +34,15 @@ The LFortran compiler is then composed of the following independent stages:
   is loaded and executed using JIT as part of the interactive LFortran session
   or in a Jupyter kernel).
 
+The `function_result_scope` ASR pass also gives a statement scope to scalar
+constructor temporaries assigned to allocatable targets when the type has
+only numeric/logical components, owns allocatable array storage, and has no
+final subroutines (including inherited ones). The existing BLOCK lifetime
+initializes their component descriptors only when the constructor executes
+and releases their private storage after the assignment. Descriptor layout
+and ownership are unchanged. Types with pointers, nested derived components
+or user finalization keep their existing lifetime.
+
 LFortran is structured as a library, and so one can for example use the parser
 to obtain an AST and do something with it, or one can then use the semantic
 analyzer to obtain ASR and do something with it. One can generate the ASR
@@ -82,6 +91,15 @@ The ASR is designed to have the following features:
   construction, the ASR classes always contain valid Fortran code and the rest
   of LFortran can depend on it.
 
+## C++ procedure arguments
+
+The C++ backend represents source-ABI procedure dummies as callable template
+parameters. Actual procedures are wrapped in generic lambdas so that array
+descriptor templates are specialized when the callback is invoked. Each array
+dummy has its own template parameter: equal element kind and rank do not imply
+equal descriptor types or extents. This is a C++ representation choice; the
+Fortran interface and argument conversion remain determined by ASR.
+
 ## Compilation Modes
 
 We support two compilation modes:
@@ -93,6 +111,70 @@ In this mode, LFortran produces empty object files (`.o` files) with `-c` flag (
 is usually the default mode used by most other Fortran compilers. We create object code, and we still create `.mod` files for modules and they contain everything just like for direct mode but when any `.mod` file is loaded, we change all symbols to `ExternalUndefined` ABI. We don't change the ABI for `bind(c)` (since those are undefined already in object code, the user is responsible to provide an implementation at link time).
 
 Note: **_If you enable separate compilation mode, you have to enable it for all the files._**
+
+### Descriptor entry wrappers
+
+The array-by-data pass can make a retained descriptor-ABI subroutine an entry
+wrapper for its existing data-ABI specialization. The exported signature and
+type-bound procedure/vtable references still name the original descriptor entry,
+including across separately compiled modules. The normal call conversion handles
+runtime contiguity and copies strided inputs while preserving bounds and extents.
+Only required, ordinary numeric assumed-shape `intent(in)` arrays qualify;
+pointer, allocatable, TARGET, VOLATILE, ASYNCHRONOUS and coarray dummies do not.
+Scalar arguments must be numeric or derived-type receivers. In particular,
+logical presence flags introduced by optional-argument lowering exclude an entry.
+Procedures with saved local state, contained procedures, observable array
+addresses/contiguity, or forwarding of an input descriptor are left unchanged.
+Unused automatic locals are removed from the wrapper, but declarations needed
+by its signature remain.
+
+## Repeated Pure Array Calls
+
+With `--fast`, the array-temporary ASR pass can reuse a pure real-array
+function result within one ordinary arithmetic assignment. Calls must have
+the same procedure, receiver, and variable actuals; aliased, volatile,
+asynchronous, coarray, and unsafe dummy arguments are excluded. The pass
+uses the normal temporary allocation and call preparation paths, and does
+not reuse results across statements or hoist conditional evaluations.
+OpenMP, coarray, Metal, and CUDA modes disable this optimization because a
+pure procedure can still read nonlocal state.
+
+## LLVM Alias Information
+
+With `--fast`, the LLVM backend uses Fortran dummy-argument restrictions to
+mark eligible parameters `noalias`. It also distinguishes array data from
+compiler-managed descriptors and struct pointer fields using TBAA. Numeric
+and logical elements share one data class, so this metadata does not claim
+that two data arrays cannot overlap.
+
+For direct component accesses through nonpointer, non-TARGET CLASS variables,
+ASR storage facts distinguish inline numeric/logical components from elements
+of numeric/logical allocatable array components. These are sibling subclasses
+of data: allocated payload cannot overlap inline object storage, but generic
+pointer-array data remains their parent and may alias either. Scalar
+allocatable payloads, pointer members, nested component receivers, ordinary
+TYPE receivers, and byte/character accesses receive no new classification.
+VOLATILE, ASYNCHRONOUS (including scoped declarations), and coarray receivers
+or members are excluded. The backend records the component provenance while
+lowering ASR, before LLVM addresses lose it; it does not infer ownership from
+LLVM types.
+
+Lowered function results retain the explicit `ResultArgument` storage role;
+the backend does not infer that role from dummy position or type. A C_PTR
+passed as a C address is not a restricted Fortran object's address and is
+not annotated `noalias`. Scoped ASYNCHRONOUS/VOLATILE redeclarations are
+represented by `ScopedVariableAttribute`, referring to the canonical
+host/use-associated variable without changing its declaration. Such regions
+also exclude the variable from whole-procedure alias promises and dead
+whole-array store elimination.
+
+The data class includes owned local automatic and fixed-size arrays, but not
+raw local storage associated through EQUIVALENCE or COMMON, saved storage, or
+storage whose address is taken with C_LOC. Raw local VOLATILE, ASYNCHRONOUS,
+and coarray storage is excluded too. Ambiguous accesses, byte accesses, and
+memory-copy intrinsics remain untagged. Fresh `_lfortran_malloc_alloc` results
+are `noalias`; reallocations are not. These optimizer hints are disabled in
+default mode and for OpenMP, coarray, and GPU offload configurations.
 
 ## COMMON Blocks
 
@@ -130,6 +212,64 @@ those values, in both compilation modes. A view without initial values is
 object file of a module read from its module file, or by an earlier
 interactive cell, after which the block cannot grow or be given initial
 values. See [CommonBlock](asr/asr_nodes/symbol_nodes/CommonBlock.md).
+
+## Host Association
+
+An internal procedure reaches the variables of its host by host association:
+it uses the same storage as the instance of the host that invoked it, not a
+copy (F2018 19.5.1.4). A recursive host has one instance per active call, so
+that storage cannot be a global variable. The ASR that the frontend produces
+keeps the internal procedure nested in its host, and its `Var`s refer directly
+to the variables of the host.
+
+The `nested_vars` pass lowers this into ASR that every backend can emit
+without knowing about nesting. Every instance of a host gets a *frame*: a
+local variable of a derived type declared in the host, with one member per
+host variable that its internal procedures use. A member of
+[Reference](asr/asr_nodes/type_nodes/Reference.md) type holds the address of
+the host variable, which the host stores with
+[BindReference](asr/asr_nodes/statement_nodes/BindReference.md) at the start
+of its body. Nothing is copied, so allocation status, bounds, dynamic type,
+`target` identity and storage association are those of the host variable. An
+internal procedure gets the frame as its last dummy argument, and in it every
+host variable is replaced by a variable of `HostAssociated`
+[storage](asr/asr_nodes/enum_nodes/storage_type.md): an alias with the type of
+the host variable, bound on entry to the variable that its `symbolic_value`
+designates through the frame. Such a variable has no storage of its own
+(`ASRUtils::has_own_storage`), so it is never allocated, initialized,
+finalized or deallocated by the internal procedure.
+
+A non-allocatable, non-pointer array or character variable, whose
+representation the host fixes at run time, and a dummy procedure are reached
+through a pointer *view*: a local pointer of the host, associated with the
+variable at the start of its body, which the member then refers to. Named
+constants of the host are copied into the internal procedure. An internal
+procedure of an internal procedure (an extension) reaches the variables of
+the outer host through the aliases of the procedure it is nested in, whose
+own frame refers to them; the pass processes the hosts from the outside in.
+Calls between the internal procedures of a host pass on the frame dummy.
+
+A procedure value of an internal procedure that needs the frame (an actual
+argument, a pointer target, the interface of a procedure variable, the
+callback of a defined output procedure) cannot pass it. It names instead a
+*thunk*: a procedure of the host with the interface of the internal
+procedure, which calls it with the frame that the host's *frame slot*, a
+`Save` pointer of the host, points to. A statement that makes a procedure
+value points the slot at the frame of its instance first, and every instance
+of the host saves the slot when it starts and restores it before it returns.
+So a procedure value reaches the instance that made it, unless a newer
+instance of the same host has made a procedure value since and is still
+active; values that carry their frame would be exact in that case too. A
+call in an interface body to a procedure of the host that reads one of its
+variables for a bound or a length (`import :: n`) uses a thunk the same way.
+The thunks and the procedures that make procedure values read the slot
+directly, so a backend must resolve a saved variable of the host there
+(`ASRUtils::is_frame_slot`).
+
+The ASR after this pass is not valid Fortran: a member of Reference type and
+a HostAssociated variable have no Fortran syntax, and
+`--show-fortran` prints them as `reference`, `host_associated` and
+`bind_reference(...)`.
 
 ## Notes:
 

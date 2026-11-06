@@ -1,0 +1,5 @@
+ASR pass error: host association of a value dummy argument of a bind(c) procedure is not supported yet
+ --> tests/errors/host_assoc_bindc_value_01.f90:7:26
+  |
+7 | integer(c_int), value :: n
+  |                          ^ used by an internal procedure of 'h'

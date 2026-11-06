@@ -305,6 +305,17 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             }
         }
 
+        // The internal procedures of a host can allocate and deallocate an
+        // allocatable that a member of its frame refers to.
+        void visit_BindReference(const ASR::BindReference_t& x) {
+            if( ASR::is_a<ASR::Var_t>(*x.m_variable) &&
+                    ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_variable)) ) {
+                push_to_scopes_until_symbol_scope(
+                    ASR::down_cast<ASR::Var_t>(x.m_variable)->m_v);
+            }
+            ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled>::visit_BindReference(x);
+        }
+
         void visit_ReAlloc(const ASR::ReAlloc_t& x) {
             // A device has no heap: a reallocation there gives the array
             // the one shape it can have, as an allocation does.
@@ -547,14 +558,27 @@ class PromoteAllocatableToNonAllocatable:
                     }
                     is_class_array = ASRUtils::is_class_type(element_type);
                 }
-                if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) &&
+                ASR::symbol_t* var_sym = nullptr;
+                if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
+                    var_sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
+                }
+                // A variable declared in the translation unit, as an interactive
+                // cell does, has no symbol owner. It is not a module variable.
+                ASR::symbol_t* owner = (var_sym != nullptr
+                        && ASR::is_a<ASR::Variable_t>(*var_sym))
+                    ? ASRUtils::get_asr_owner(var_sym) : nullptr;
+                bool in_module = owner != nullptr
+                    && ASR::is_a<ASR::Module_t>(*owner);
+                if( var_sym != nullptr &&
                     is_allocatable_array &&
                     !is_deferred_len_character_array &&
                     !is_class_array &&
-                    ASR::is_a<ASR::Variable_t>(
-                        *ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v) &&
-                    !ASR::is_a<ASR::Module_t>(
-                        *ASRUtils::get_asr_owner(ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v)) &&
+                    ASR::is_a<ASR::Variable_t>(*var_sym) &&
+                    // A HostAssociated variable is the allocatable of the
+                    // host, whose allocation outlives this procedure.
+                    ASRUtils::has_own_storage(*ASR::down_cast<ASR::Variable_t>(
+                        var_sym)) &&
+                    !in_module &&
                     (!device_only || in_device) &&
                     (ASRUtils::expr_intent(alloc_arg.m_a) == ASRUtils::intent_local ||
                      (in_device && ASRUtils::expr_intent(alloc_arg.m_a) ==
@@ -753,6 +777,7 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
         }
 
         void visit_Associate(const ASR::Associate_t& x) {
+            ASR::CallReplacerOnExpressionsVisitor<FixArrayPhysicalCastVisitor>::visit_Associate(x);
             if( ASR::is_a<ASR::ArrayReshape_t>(*x.m_value) ) {
                 ASR::ArrayReshape_t* reshape = ASR::down_cast<ASR::ArrayReshape_t>(
                     x.m_value);

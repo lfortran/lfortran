@@ -247,12 +247,53 @@ public:
         }
     }
 
+    // The C type of a Var of the variable that the frame member `member`
+    // refers to: the descriptor pointer of an array, the pointer to a derived
+    // type object, and otherwise the type of its value.
+    std::string designator_type(const ASR::Variable_t &member) {
+        ASR::ttype_t* t = ASR::down_cast<ASR::Reference_t>(member.m_type)->m_type;
+        ASR::ttype_t* elem = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(t));
+        if (ASR::is_a<ASR::FunctionType_t>(*elem) || ASR::is_a<ASR::UnionType_t>(*elem) ||
+                ASRUtils::is_character(*elem)) {
+            throw unsupported_reference_member(member);
+        }
+        std::string elem_type, encoded_type_name;
+        if (ASR::is_a<ASR::StructType_t>(*elem)) {
+            std::string der_type_name = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(member.m_type_declaration));
+            elem_type = "struct " + der_type_name;
+            encoded_type_name = "x" + der_type_name;
+        } else if (ASRUtils::is_array(t) || !ASRUtils::is_pointer(t)) {
+            elem_type = CUtils::get_c_type_from_ttype_t(elem);
+            encoded_type_name = ASRUtils::get_type_code(elem);
+        } else {
+            // A pointer to a scalar of intrinsic type is its address.
+            return CUtils::get_c_type_from_ttype_t(
+                ASRUtils::type_get_past_allocatable(t));
+        }
+        if (ASRUtils::is_array(t)) {
+            return c_ds_api->get_array_type(elem_type, encoded_type_name,
+                array_types_decls);
+        }
+        if (ASR::is_a<ASR::StructType_t>(*elem)) {
+            return elem_type + "*";
+        }
+        return elem_type;
+    }
+
     std::string convert_variable_decl(const ASR::Variable_t &v,
         DeclarationOptions* decl_options=nullptr)
     {
         if (v.m_storage == ASR::storage_typeType::Threadprivate) {
             throw CodeGenError("threadprivate variables are not supported by the c backend",
                 v.base.base.loc);
+        }
+        LCOMPILERS_ASSERT(!ASRUtils::is_host_associated(v));
+        if (ASRUtils::is_reference(v.m_type)) {
+            // A member of Reference type holds the address of the variable
+            // that it designates (see visit_StructInstanceMember).
+            return designator_type(v) + " *" + std::string(v.m_name);
         }
         bool pre_initialise_derived_type;
         bool use_ptr_for_derived_type;
@@ -292,6 +333,37 @@ public:
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v.m_type, m_dims);
         ASR::ttype_t* v_m_type = v.m_type;
         v_m_type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(v_m_type));
+        if (ASR::is_a<ASR::FunctionType_t>(*v_m_type)) {
+            ASR::Function_t* iface = nullptr;
+            if (v.m_type_declaration) {
+                ASR::symbol_t* td = ASRUtils::symbol_get_past_external(v.m_type_declaration);
+                if (td && ASR::is_a<ASR::Function_t>(*td)) {
+                    iface = ASR::down_cast<ASR::Function_t>(td);
+                }
+            }
+            if (!iface) {
+                diag.codegen_error_label("Procedure variable '"
+                    + std::string(v.m_name)
+                    + "' has no interface. Add explicit interface.",
+                    {v.base.base.loc}, "");
+                throw Abort();
+            }
+            std::string ret = "void ";
+            if (iface->m_return_var) {
+                ASR::Variable_t* rv = ASRUtils::EXPR2VAR(iface->m_return_var);
+                ret = get_return_var_type(rv);
+            }
+            std::string params;
+            for (size_t i=0; i<iface->n_args; i++) {
+                ASR::Variable_t* arg = ASRUtils::EXPR2VAR(iface->m_args[i]);
+                CDeclarationOptions inner_opts;
+                inner_opts.pre_initialise_derived_type = false;
+                params += convert_variable_decl(*arg, &inner_opts);
+                if (i < iface->n_args-1) params += ", ";
+            }
+            sub = ret + "(*" + std::string(v.m_name) + ")(" + params + ")";
+            return sub;
+        }
         if (ASRUtils::is_pointer(v_m_type)) {
             ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(v_m_type)->m_type;
             t2 = ASRUtils::type_get_past_array(t2);
@@ -848,7 +920,20 @@ R"(
         intrinsic_module = false;
     }
 
+    // Declares at file scope the frame types (see nested_vars) that `scope`
+    // declares.
+    void declare_frame_types(SymbolTable &scope) {
+        for (auto &item : scope.get_scope()) {
+            if (ASRUtils::is_frame_type(item.second)) {
+                visit_symbol(*item.second);
+            }
+        }
+    }
+
     void visit_Program(const ASR::Program_t &x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
+        declare_frame_types(*x.m_symtab);
         // Topologically sort all program functions
         // and then define them in the right order
         std::vector<std::string> func_order = ASRUtils::determine_function_definition_order(x.m_symtab);
@@ -934,6 +1019,7 @@ R"(    // Initialise Numpy
                 + decl + body
                 + indent1 + "return 0;\n}\n";
         indentation_level -= 2;
+        current_scope = current_scope_copy;
     }
 
     template <typename T>
@@ -1787,6 +1873,11 @@ R"(    // Initialise Numpy
             }
         } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
             for( size_t idim = 0; idim < x.n_args; idim++ ) {
+                if (m_dims[idim].m_start == nullptr) {
+                    throw CodeGenError("an array element of an array without "
+                        "declared lower bounds is not supported by the c backend yet",
+                        x.base.base.loc);
+                }
                 this->visit_expr(*m_dims[idim].m_start);
                 diminfo.push_back(src);
             }

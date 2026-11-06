@@ -21,7 +21,7 @@ FINALIZE_SYMTABLE_px_call1:                       ; preds = %return
   ret void
 }
 
-define void @px_call1.__module_callback_05_printx(i32* %x) {
+define internal void @px_call1.__module_callback_05_printx(i32* %x) {
 .entry:
   %stringFormat_desc = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_get_default_allocator()

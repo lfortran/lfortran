@@ -1138,6 +1138,12 @@ semantic error: Parameter 'u' was not declared
 1914 |         require :: paren_r {u}
      |                    ^^^^^^^^^^^ 
 
+semantic error: duplicate implicit none statement
+    --> tests/errors/continue_compilation_templates_01.f90:1944:1
+     |
+1944 | implicit none
+     | ^^^^^^^^^^^^^^ 
+
 semantic error: a deferred interface can only appear in a requirement, a template or a templated procedure
     --> tests/errors/continue_compilation_templates_01.f90:1928:5
      |

@@ -2,7 +2,7 @@
     "basename": "asr-common_block_association_anchor-155a11d",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/common_block_association_anchor.asr",
-    "infile_hash": "7a5f00f8908462f31e0b3643c905651965a54509d84636f1b1bc0401",
+    "infile_hash": "b37d23049e02994509026e9e618cd3ba83f5e370aa62638700023ee6",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

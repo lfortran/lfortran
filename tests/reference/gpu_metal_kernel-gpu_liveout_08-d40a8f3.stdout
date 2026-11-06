@@ -1,173 +1,167 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct g_t {
-    long w;
-    int c[300];
+struct g_t_gpu {
+    long w_gpu;
+    int c_gpu[300];
 };
 
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __size_g_w;
-    int __lb_g_w_dim1;
-    int __1__data_g_w;
-    int __loop_end_0;
+    int __size_g_w_gpu;
+    int __lb_g_w_dim1_gpu;
+    int __1__data_g_w_gpu;
 };
 
 kernel void __lfortran_gpu_kernel_0(
-    device int* __gpu_buf_e [[buffer(0)]],
-    device int* __gpu_buf_m [[buffer(1)]],
-    device int* __gpu_buf_s [[buffer(2)]],
-    device int* a [[buffer(3)]],
-    device g_t& g [[buffer(4)]],
-    device float* __data_g_w [[buffer(5)]],
-    device int* __gpu_stop_status [[buffer(6)]],
+    device int* __gpu_buf_e_gpu [[buffer(0)]],
+    device int* __gpu_buf_m_gpu [[buffer(1)]],
+    device int* __gpu_buf_s_gpu [[buffer(2)]],
+    device int* a_gpu [[buffer(3)]],
+    device g_t_gpu& g_gpu [[buffer(4)]],
+    device float* __data_g_w_gpu [[buffer(5)]],
+    device int* __gpu_stop_status_gpu [[buffer(6)]],
     constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(7)]],
     uint __thread_id [[thread_position_in_grid]])
 {
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __flat_idx;
-    int __gpu_loop_end;
-    int __gpu_loop_end1;
-    int __gpu_loop_group;
-    int __gpu_loop_group1;
-    int e;
-    int i__dc;
-    int j;
-    int m;
-    int s;
-    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    int __flat_idx_gpu;
+    int __gpu_loop_end1_gpu;
+    int __gpu_loop_end_gpu;
+    int __gpu_loop_group1_gpu;
+    int __gpu_loop_group_gpu;
+    int e_gpu;
+    int i__dc_gpu;
+    int j_gpu;
+    int m_gpu;
+    int s_gpu;
+    if ((((0 * 0) + __thread_id) >= 100)) {
         return;
     }
-    __flat_idx = ((0 * 0) + __thread_id);
-    i__dc = (__flat_idx + 1);
-    e = __gpu_buf_e[((int)(1) - (1))];
-    m = __gpu_buf_m[((int)(1) - (1))];
-    s = __gpu_buf_s[((int)(1) - (1))];
-    if ((i__dc == 3)) {
-        j = (1 - 1);
-        while (((j + 1) <= 10)) {
-            j = (j + 1);
-            e = (e + j);
-            __gpu_buf_e[((int)(1) - (1))] = e;
-            if ((e > 20)) {
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    i__dc_gpu = (__flat_idx_gpu + 1);
+    e_gpu = __gpu_buf_e_gpu[((int)(1) - (1))];
+    m_gpu = __gpu_buf_m_gpu[((int)(1) - (1))];
+    s_gpu = __gpu_buf_s_gpu[((int)(1) - (1))];
+    if ((i__dc_gpu == 3)) {
+        for (j_gpu = 1; j_gpu <= 10; j_gpu++) {
+            e_gpu = (e_gpu + j_gpu);
+            __gpu_buf_e_gpu[((int)(1) - (1))] = e_gpu;
+            if ((e_gpu > 20)) {
                 break;
             }
         }
     }
-    a[((int)(i__dc) - (1))] = i__dc;
-    __gpu_loop_end = 3;
-    j = 1;
-    if ((__gpu_loop_end >= 1)) {
-        for (__gpu_loop_group = 1; __gpu_loop_group <= (__gpu_loop_end - 15); __gpu_loop_group += 16) {
-            j = __gpu_loop_group;
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 1);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 2);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 3);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 4);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 5);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 6);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 7);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 8);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 9);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 10);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 11);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 12);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 13);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 14);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
-            j = (__gpu_loop_group + 15);
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
+    a_gpu[((int)(i__dc_gpu) - (1))] = i__dc_gpu;
+    __gpu_loop_end_gpu = 3;
+    j_gpu = 1;
+    if ((__gpu_loop_end_gpu >= 1)) {
+        for (__gpu_loop_group_gpu = 1; __gpu_loop_group_gpu <= (__gpu_loop_end_gpu - 15); __gpu_loop_group_gpu += 16) {
+            j_gpu = __gpu_loop_group_gpu;
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 1);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 2);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 3);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 4);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 5);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 6);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 7);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 8);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 9);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 10);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 11);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 12);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 13);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 14);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
+            j_gpu = (__gpu_loop_group_gpu + 15);
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
         }
-        for (j = __gpu_loop_group; j <= __gpu_loop_end; j++) {
-            g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
+        for (j_gpu = __gpu_loop_group_gpu; j_gpu <= __gpu_loop_end_gpu; j_gpu++) {
+            g_gpu.c_gpu[((int)(((3 * (i__dc_gpu - 1)) + j_gpu)) - (1))] = ((10 * i__dc_gpu) + j_gpu);
         }
     }
-    if ((i__dc == 5)) {
-        __gpu_loop_end1 = 3;
-        j = 1;
-        if ((__gpu_loop_end1 >= 1)) {
-            for (__gpu_loop_group1 = 1; __gpu_loop_group1 <= (__gpu_loop_end1 - 15); __gpu_loop_group1 += 16) {
-                j = __gpu_loop_group1;
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 1);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 2);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 3);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 4);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 5);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 6);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 7);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 8);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 9);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 10);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 11);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 12);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 13);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 14);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
-                j = (__gpu_loop_group1 + 15);
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
+    if ((i__dc_gpu == 5)) {
+        __gpu_loop_end1_gpu = 3;
+        j_gpu = 1;
+        if ((__gpu_loop_end1_gpu >= 1)) {
+            for (__gpu_loop_group1_gpu = 1; __gpu_loop_group1_gpu <= (__gpu_loop_end1_gpu - 15); __gpu_loop_group1_gpu += 16) {
+                j_gpu = __gpu_loop_group1_gpu;
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 1);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 2);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 3);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 4);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 5);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 6);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 7);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 8);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 9);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 10);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 11);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 12);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 13);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 14);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
+                j_gpu = (__gpu_loop_group1_gpu + 15);
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
             }
-            for (j = __gpu_loop_group1; j <= __gpu_loop_end1; j++) {
-                m = (50 + j);
-                __gpu_buf_m[((int)(1) - (1))] = m;
+            for (j_gpu = __gpu_loop_group1_gpu; j_gpu <= __gpu_loop_end1_gpu; j_gpu++) {
+                m_gpu = (50 + j_gpu);
+                __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
             }
         }
         return;
     }
-    a[((int)(i__dc) - (1))] = (a[((int)(i__dc) - (1))] + 1);
-    if ((i__dc == 9)) {
-        j = (1 - 1);
-        while (((j + 1) <= 2)) {
-            j = (j + 1);
-            s = (90 + j);
-            __gpu_buf_s[((int)(1) - (1))] = s;
-            if ((s < 0)) {
-                if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
-                    __gpu_stop_status[((int)((1 + 1)) - (1))] = 9;
-                    __gpu_stop_status[((int)(1) - (1))] = 1;
+    a_gpu[((int)(i__dc_gpu) - (1))] = (a_gpu[((int)(i__dc_gpu) - (1))] + 1);
+    if ((i__dc_gpu == 9)) {
+        for (j_gpu = 1; j_gpu <= 2; j_gpu++) {
+            s_gpu = (90 + j_gpu);
+            __gpu_buf_s_gpu[((int)(1) - (1))] = s_gpu;
+            if ((s_gpu < 0)) {
+                if ((__gpu_stop_status_gpu[((int)(1) - (1))] == 0)) {
+                    __gpu_stop_status_gpu[((int)((1 + 1)) - (1))] = 9;
+                    __gpu_stop_status_gpu[((int)(1) - (1))] = 1;
                 }
                 return;
             }

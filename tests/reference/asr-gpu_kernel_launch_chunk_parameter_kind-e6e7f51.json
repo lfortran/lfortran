@@ -1,0 +1,13 @@
+{
+    "basename": "asr-gpu_kernel_launch_chunk_parameter_kind-e6e7f51",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/gpu_kernel_launch_chunk_parameter_kind.asr",
+    "infile_hash": "4191bd793beda178343fec02f816b01d29bb42900f1b48f08a7da932",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-gpu_kernel_launch_chunk_parameter_kind-e6e7f51.stderr",
+    "stderr_hash": "5c510743e19f3078372de3826bc770143494de74b41c6f9292cb343b",
+    "returncode": 2
+}

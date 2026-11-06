@@ -1,0 +1,8 @@
+runtime error: Array shape mismatch in assignment to 'z'. Tried to match size 2 of dimension 1 of LHS with size 3 of dimension 1 of RHS. Use '--realloc-lhs-arrays' option to reallocate LHS automatically.
+  --> tests/errors/array_shape_08.f90:13:5
+   |
+13 |     z = matmul(a, v) + b
+   |     ^ LHS size is 2
+   |
+13 |     z = matmul(a, v) + b
+   |         ^^^^^^^^^^^^ RHS size is 3

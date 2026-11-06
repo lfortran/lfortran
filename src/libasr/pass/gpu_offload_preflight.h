@@ -436,11 +436,15 @@ public:
                 return;
             }
         }
+        offloaded_cycles++;
         if (al != nullptr) {
             replacement = ASRUtils::STMT(ASR::make_Return_t(*al,
                 x.base.base.loc));
         }
     }
+
+    // The cycles of the offloaded loop found, which end the thread.
+    int offloaded_cycles = 0;
 };
 
 // Metal shaders have neither variable-length arrays nor a heap, so a
@@ -610,20 +614,26 @@ inline bool gpu_reduction_op_supported(ASR::reduction_opType op) {
         case ASR::reduction_opType::ReduceIAND:
         case ASR::reduction_opType::ReduceIOR:
         case ASR::reduction_opType::ReduceIEOR:
+        case ASR::reduction_opType::ReduceAND:
+        case ASR::reduction_opType::ReduceOR:
+        case ASR::reduction_opType::ReduceEQV:
+        case ASR::reduction_opType::ReduceNEQV:
             return true;
     }
     return false;
 }
 
 // Whether the identity of `op` can be written down in `type`. The bitwise
-// operators are only defined on integers, and MIN and MAX need the
-// extreme value of the kind they run over.
+// operators are only defined on integers, the logical ones only on
+// logicals, and MIN and MAX need the extreme value of the kind they run
+// over.
 inline bool gpu_reduction_identity_exists(ASR::reduction_opType op,
         ASR::ttype_t *type) {
     ASR::ttype_t *t = ASRUtils::type_get_past_array(
         ASRUtils::type_get_past_allocatable_pointer(type));
     bool is_int = ASR::is_a<ASR::Integer_t>(*t);
     bool is_real = ASR::is_a<ASR::Real_t>(*t);
+    bool is_logical = ASR::is_a<ASR::Logical_t>(*t);
     switch (op) {
         case ASR::reduction_opType::ReduceAdd:
         case ASR::reduction_opType::ReduceSub:
@@ -636,6 +646,11 @@ inline bool gpu_reduction_identity_exists(ASR::reduction_opType op,
         case ASR::reduction_opType::ReduceIOR:
         case ASR::reduction_opType::ReduceIEOR:
             return is_int;
+        case ASR::reduction_opType::ReduceAND:
+        case ASR::reduction_opType::ReduceOR:
+        case ASR::reduction_opType::ReduceEQV:
+        case ASR::reduction_opType::ReduceNEQV:
+            return is_logical;
     }
     return false;
 }
@@ -670,6 +685,55 @@ inline ASR::binopType gpu_reduction_fold_binop(ASR::reduction_opType op) {
     return ASR::binopType::Add;
 }
 
+// The statement that combines the accumulator `other` into `target`, both
+// of the reduction's type: the kernel combines each thread's local
+// accumulator into its slot with it, and the host folds each slot into the
+// variable. MIN and MAX keep whichever of the two they are named for; the
+// logical operators and the others combine the two. Each operator is
+// associative, so the runs the threads accumulated combine in any grouping.
+inline ASR::stmt_t* gpu_reduction_combine(Allocator &al, const Location &loc,
+        ASR::reduction_opType op, ASR::expr_t *target, ASR::expr_t *other,
+        ASR::ttype_t *type) {
+    if (gpu_reduction_folds_by_compare(op)) {
+        Vec<ASR::stmt_t*> keep;
+        keep.reserve(al, 1);
+        keep.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
+            target, other, nullptr, false, false, false, false)));
+        return ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
+            ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, loc,
+                op == ASR::reduction_opType::ReduceMIN
+                    ? ASR::cmpopType::Lt : ASR::cmpopType::Gt,
+                other, target, ASRUtils::duplicate_type(al, type))),
+            keep.p, keep.n, nullptr, 0));
+    }
+    auto combine_logically = [&](ASR::logicalbinopType lop) {
+        return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc, target, lop,
+            other, ASRUtils::duplicate_type(al, type), nullptr));
+    };
+    ASR::expr_t *value;
+    switch (op) {
+        case ASR::reduction_opType::ReduceAND:
+            value = combine_logically(ASR::logicalbinopType::And);
+            break;
+        case ASR::reduction_opType::ReduceOR:
+            value = combine_logically(ASR::logicalbinopType::Or);
+            break;
+        case ASR::reduction_opType::ReduceEQV:
+            value = combine_logically(ASR::logicalbinopType::Eqv);
+            break;
+        case ASR::reduction_opType::ReduceNEQV:
+            value = combine_logically(ASR::logicalbinopType::NEqv);
+            break;
+        default:
+            value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc,
+                gpu_reduction_fold_binop(op), target, other,
+                ASRUtils::duplicate_type(al, type)));
+            break;
+    }
+    return ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target, value,
+        nullptr, false, false, false, false));
+}
+
 // The value a thread's accumulator starts from: the one that leaves the
 // result unchanged when folded in, so a thread whose body never reached
 // the accumulator contributes nothing.
@@ -688,6 +752,17 @@ inline ASR::expr_t* gpu_reduction_identity(Allocator &al,
         return ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, v,
             ASRUtils::duplicate_type(al, t)));
     };
+    auto truth = [&](bool v) {
+        return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, v,
+            ASRUtils::duplicate_type(al, t)));
+    };
+    // The largest integer of the accumulator's kind; the smallest is one
+    // below its negation.
+    auto int_max = [&]() -> int64_t {
+        LCOMPILERS_ASSERT(kind == 1 || kind == 2 || kind == 4 || kind == 8);
+        return kind == 1 ? INT8_MAX : kind == 2 ? INT16_MAX
+            : kind == 4 ? INT32_MAX : INT64_MAX;
+    };
     switch (op) {
         case ASR::reduction_opType::ReduceAdd:
         case ASR::reduction_opType::ReduceSub:
@@ -705,13 +780,20 @@ inline ASR::expr_t* gpu_reduction_identity(Allocator &al,
                 return fraction(kind == 8 ? 1.7976931348623157e308
                                           : 3.40282347e38);
             }
-            return whole(kind == 8 ? INT64_MAX : INT32_MAX);
+            return whole(int_max());
         case ASR::reduction_opType::ReduceMAX:
             if (is_real) {
                 return fraction(kind == 8 ? -1.7976931348623157e308
                                           : -3.40282347e38);
             }
-            return whole(kind == 8 ? INT64_MIN : INT32_MIN);
+            return whole(-int_max() - 1);
+        case ASR::reduction_opType::ReduceAND:
+        case ASR::reduction_opType::ReduceEQV:
+            // `x .eqv. .true.` is `x`, as `x .and. .true.` is.
+            return truth(true);
+        case ASR::reduction_opType::ReduceOR:
+        case ASR::reduction_opType::ReduceNEQV:
+            return truth(false);
     }
     LCOMPILERS_ASSERT(false);
     return nullptr;
@@ -748,9 +830,16 @@ inline ASR::expr_t* gpu_loop_extent(Allocator &al, const Location &loc,
     if (ASRUtils::extract_value(ASRUtils::expr_value(start), start_value)
             && ASRUtils::extract_value(ASRUtils::expr_value(end),
                 end_value)) {
-        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
-            std::max<int64_t>(0, end_value - start_value + 1), int_type,
-            ASR::integerbozType::Decimal));
+        // An extent that does not fit in integer(8) is left to the run
+        // time, where the launch stops for it first
+        // (gpu_checked_iteration_count).
+        uint64_t span = static_cast<uint64_t>(end_value)
+            - static_cast<uint64_t>(start_value);
+        if (end_value < start_value || span < INT64_MAX) {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                end_value < start_value ? 0 : static_cast<int64_t>(span) + 1,
+                int_type, ASR::integerbozType::Decimal));
+        }
     }
     ASR::expr_t *extent = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
         ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, end,
@@ -764,6 +853,26 @@ inline ASR::expr_t* gpu_loop_extent(Allocator &al, const Location &loc,
     return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, nonempty, extent,
         ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type,
             ASR::integerbozType::Decimal)), int_type, nullptr));
+}
+
+// The integer type a kernel numbers the iterations of a nest in, given the
+// type of its widest loop index. Their number is the product of the extents,
+// which can exceed the largest value of the indices' kind even when every
+// index fits in it. A device that runs a launch of more iterations than the
+// chunk limit in chunks (GpuDeviceCapabilities::chunked_launches) numbers
+// the iterations of each chunk from 0, at most the limit, which is at most
+// huge(0), so it numbers them in integer(4); one that runs every iteration
+// in one launch numbers them in integer(8) where it indexes in it. Either
+// way the type is never narrower than the loop indices: an integer(8) index
+// keeps 64-bit index arithmetic. The host counts the iterations in
+// integer(8) whatever the kernel numbers them in.
+inline ASR::ttype_t* gpu_iteration_number_type(Allocator &al,
+        const Location &loc, ASR::ttype_t *loop_int_type,
+        const GpuDeviceCapabilities &caps) {
+    int kind = std::max(ASRUtils::extract_kind_from_ttype_t(loop_int_type),
+        caps.chunked_launches ? 4 : std::min(8, caps.max_index_kind));
+    return kind == ASRUtils::extract_kind_from_ttype_t(loop_int_type)
+        ? loop_int_type : ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
 }
 
 } // namespace LCompilers

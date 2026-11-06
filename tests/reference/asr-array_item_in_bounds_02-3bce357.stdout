@@ -47,6 +47,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -81,6 +82,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                     NotMethod
@@ -155,6 +157,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                     .false.
                                                     NotMethod
@@ -248,6 +251,7 @@
                                     ()
                                     .false.
                                     .false.
+                                    .false.
                                     NotMethod
                                     ()
                                     []
@@ -261,7 +265,7 @@
                         ((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal)
-                        ())
+                        (IntegerConstant 1 (Integer 4) Decimal))
                         [(Assignment
                             (StructInstanceMember
                                 (ArrayItem
@@ -522,36 +526,12 @@
                                         Abs
                                         [(ArrayPhysicalCast
                                             (RealBinOp
-                                                (ArrayBroadcast
-                                                    (ArrayItem
-                                                        (StructInstanceMember
-                                                            (ArrayItem
-                                                                (StructInstanceMember
-                                                                    (Var 2 zz)
-                                                                    2 1_v_s
-                                                                    (Array
-                                                                        (StructType
-                                                                            [(Array
-                                                                                (Real 4)
-                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                                (IntegerConstant 4 (Integer 4) Decimal))]
-                                                                                FixedSizeArray
-                                                                                Global
-                                                                            )]
-                                                                            []
-                                                                            .true.
-                                                                            .false.
-                                                                        )
-                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (IntegerConstant 3 (Integer 4) Decimal))]
-                                                                        FixedSizeArray
-                                                                        Global
-                                                                    )
-                                                                    ()
-                                                                )
-                                                                [(()
-                                                                (IntegerConstant 3 (Integer 4) Decimal)
-                                                                ())]
+                                                (ArrayItem
+                                                    (StructInstanceMember
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 2 zz)
+                                                                2 1_v_s
                                                                 (Array
                                                                     (StructType
                                                                         [(Array
@@ -566,44 +546,50 @@
                                                                         .false.
                                                                     )
                                                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                                                    (IntegerConstant 3 (Integer 4) Decimal))]
                                                                     FixedSizeArray
                                                                     Global
                                                                 )
-                                                                ColMajor
                                                                 ()
-                                                                .false.
                                                             )
-                                                            2 1_t_u
+                                                            [(()
+                                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                                            ())]
                                                             (Array
-                                                                (Real 4)
+                                                                (StructType
+                                                                    [(Array
+                                                                        (Real 4)
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                                                        FixedSizeArray
+                                                                        Global
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                                                (IntegerConstant 2 (Integer 4) Decimal))]
                                                                 FixedSizeArray
                                                                 Global
                                                             )
+                                                            ColMajor
                                                             ()
+                                                            .false.
                                                         )
-                                                        [(()
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        ())]
-                                                        (Real 4)
-                                                        ColMajor
-                                                        ()
-                                                        .true.
-                                                    )
-                                                    (ArrayConstant
-                                                        4
-                                                        [2]
+                                                        2 1_t_u
                                                         (Array
-                                                            (Integer 4)
+                                                            (Real 4)
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                                            (IntegerConstant 4 (Integer 4) Decimal))]
                                                             FixedSizeArray
                                                             Global
                                                         )
-                                                        ColMajor
+                                                        ()
                                                     )
+                                                    [(()
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    ())]
                                                     (Array
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -611,7 +597,9 @@
                                                         FixedSizeArray
                                                         Global
                                                     )
+                                                    ColMajor
                                                     ()
+                                                    .false.
                                                 )
                                                 Sub
                                                 (ArrayConstant
@@ -763,10 +751,16 @@
                                 [(()
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
-                                (Real 4)
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
                                 ColMajor
                                 ()
-                                .true.
+                                .false.
                             )]
                             FormatFortran
                             []

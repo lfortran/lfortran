@@ -877,3 +877,9 @@ semantic error: Variable 'undefined_toplevel_subroutine_13216' is not declared
     |
 476 |     print *, undefined_toplevel_subroutine_13216
     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_toplevel_subroutine_13216' is undeclared
+
+semantic error: Type mismatch in argument `i`: expected `integer(4)` but got `real(4)`
+   --> tests/errors/continue_compilation_3.f90:486:22
+    |
+486 |         call g_14817(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `real(4)`
+    |                      ^ 

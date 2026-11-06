@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-array_op_in_place_sections-0aee86e",
+    "cmd": "lfortran --pass=array_struct_temporary,array_op --show-fortran --no-color {infile} -o {outfile} --no-error-banner  --line=-1 --column=-1",
+    "infile": "tests/array_op_in_place_sections.f90",
+    "infile_hash": "a2904041a0f169ca7d1077991efedb3ff8e6288739e0730c146b089c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-array_op_in_place_sections-0aee86e.f90",
+    "stdout_hash": "ec09c875b371d396f3fe16195909008a0b6c59e761ef6a8dfbcef7b0",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -213,6 +213,17 @@ def fix_datalayout(s: bytes) -> bytes:
         s
     )
 
+def fix_comdat(s: bytes) -> bytes:
+    # Definitions the linker may merge are put into a COMDAT only on targets
+    # that support COMDATs (ELF, COFF; not Mach-O), so drop the COMDAT
+    # declarations and references to make the LLVM output target-independent
+    s = re.sub(rb'^\$[^\s=]+ = comdat \w+\n\n?', b'', s, flags=re.MULTILINE)
+    s = re.sub(rb'^(define [^\n]*?) comdat(\(\$[^)\s]*\))?(?= )', rb'\1', s,
+        flags=re.MULTILINE)
+    s = re.sub(rb'^(@[^\n]*?), comdat(\(\$[^)\s]*\))?', rb'\1', s,
+        flags=re.MULTILINE)
+    return s
+
 
 def unl_loop_del(b):
     return b.replace(bytes('\r\n', encoding='utf-8'),
@@ -273,12 +284,12 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
         else:
             stdout_ext = ".stdout"
         stdout_file = os.path.join(out_dir, basename + stdout_ext)
-        open(stdout_file, "wb").write(fix_datalayout(fixdir(r.stdout)))
+        open(stdout_file, "wb").write(fix_comdat(fix_datalayout(fixdir(r.stdout))))
     else:
         stdout_file = None
     if len(r.stderr):
         stderr_file = os.path.join(out_dir, basename + "." + "stderr")
-        open(stderr_file, "wb").write(fix_datalayout(fixdir(r.stderr)))
+        open(stderr_file, "wb").write(fix_comdat(fix_datalayout(fixdir(r.stderr))))
     else:
         stderr_file = None
 

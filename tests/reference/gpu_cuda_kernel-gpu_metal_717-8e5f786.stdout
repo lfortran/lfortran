@@ -1,0 +1,70 @@
+#include <stdint.h>
+
+struct s {
+    long v;
+};
+
+struct t {
+    long v;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    s* a,
+    int* __data_a_v,
+    long* __offsets_a_v,
+    long* __sizes_a_v,
+    int* __restrict__ n)
+{
+    int __flat_idx;
+    int i__dc;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    if ((n[((long)((unsigned int)((i__dc) - (1))))] > 0)) {
+        __data_a_v[__offsets_a_v[((long)((unsigned int)((i__dc) - (1))))] + ((long)((unsigned int)((n[((long)((unsigned int)((i__dc) - (1))))]) - (__sizes_a_v[(((long)((unsigned int)((i__dc) - (1))))) * 2 + 1]))))] = (__data_a_v[__offsets_a_v[((long)((unsigned int)((i__dc) - (1))))] + ((long)((unsigned int)((n[((long)((unsigned int)((i__dc) - (1))))]) - (__sizes_a_v[(((long)((unsigned int)((i__dc) - (1))))) * 2 + 1]))))] + (1000 * i__dc));
+    }
+}
+
+__device__ inline void shifted_gpu_14(t self, int* __data_self_v, long __size_self_v, long __lb_self_v_dim1, int k, int* w) {
+    long __libasr_index_0_;
+    long __libasr_index_0_1;
+    __libasr_index_0_1 = ((long)(__lb_self_v_dim1));
+    const long __lfortran_end_0 = ((((long)__size_self_v) + ((long)1)) - ((long)1));
+    for (__libasr_index_0_ = ((long)1); __libasr_index_0_ <= __lfortran_end_0; __libasr_index_0_++) {
+        w[((long)(__libasr_index_0_) - (1))] = (__data_self_v[((long)(__libasr_index_0_1) - (__lb_self_v_dim1))] + k);
+        __libasr_index_0_1 = (__libasr_index_0_1 + ((long)1));
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __workspace_extent;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    t* b,
+    int* __data_b_v,
+    long* __offsets_b_v,
+    long* __sizes_b_v,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
+    int* __restrict__ __workspace_5)
+{
+    int __workspace_extent = __scalar_args.__workspace_extent;
+    int __flat_idx;
+    int* __libasr_created__subroutine_from_function_ = ((__workspace_extent) > 0) ? (__workspace_5 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+    int i__dc1;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc1 = (__flat_idx + 1);
+    shifted_gpu_14(b[((long)((unsigned int)((i__dc1) - (1))))], __data_b_v + __offsets_b_v[((long)((unsigned int)((i__dc1) - (1))))], __sizes_b_v[(((long)((unsigned int)((i__dc1) - (1))))) * 2 + 0], __sizes_b_v[(((long)((unsigned int)((i__dc1) - (1))))) * 2 + 1], (10 * i__dc1), __libasr_created__subroutine_from_function_);
+    {
+        long __off = __offsets_b_v[((long)((unsigned int)((i__dc1) - (1))))];
+        for (int __ei = 0; __ei < (__sizes_b_v[(((long)((unsigned int)(((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))))) * 2 + 0]); __ei++) {
+            __data_b_v[__off + __ei] = __libasr_created__subroutine_from_function_[__ei];
+        }
+    }
+}
+

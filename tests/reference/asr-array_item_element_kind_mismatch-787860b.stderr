@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.array_item.type_matches_element]: ArrayItem type i32 does not match array element type i16
-  --> tests/asr/verify/array_item_element_kind_mismatch.asr:63:14
+  --> tests/asr/verify/array_item_element_kind_mismatch.asr:64:14
    |
-63 |             (ArrayItem
+64 |             (ArrayItem
    |              ^^^^^^^^^ failed here

@@ -45,9 +45,10 @@ Do not install dependencies with `apt`, `apt-get`, Homebrew, Conda, mamba,
 micromamba, pip, or other system/global installers. Do not substitute a host
 compiler or invoke standalone CMake, Ninja, build scripts, or test runners as
 an alternative to the Pixi tasks. Resolve missing project dependencies in
-`pixi.toml` and the selected Pixi environment. If Pixi or a required platform
-SDK is unavailable, report it rather than attempting another installation
-method. Git, Pixi, and the platform SDKs listed below are prerequisites.
+`pixi.toml` and the selected Pixi environment, pinning each package to an
+exact version (zlib and zstd excepted). If Pixi or a required platform SDK is
+unavailable, report it rather than attempting another installation method.
+Git, Pixi, and the platform SDKs listed below are prerequisites.
 
 This policy also applies when consulting older installation or CI recipes:
 `pixi.toml` and its tasks own agent setup. Read-only review and issue triage do
@@ -207,7 +208,8 @@ MCP tools; see "Git Remotes & Issues"), not a compiler build.
   supplies build/test dependencies and Linux C/C++ compilers. On macOS, install
   Xcode Command Line Tools; on Windows, use an initialized MSVC developer
   shell. Pixi supplies the cross-platform `shell` that runs the build scripts,
-  so Bash is not required. Use Pixi inside WSL for Unix-only test runners.
+  so Bash is not required; builds without Pixi fall back to Bash. Use Pixi
+  inside WSL for Unix-only test runners.
   If a prerequisite is missing, report it; do not provision an alternate toolchain.
 
 ## Build, Test, and Development Commands

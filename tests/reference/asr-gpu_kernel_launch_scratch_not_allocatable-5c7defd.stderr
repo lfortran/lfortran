@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.gpu_kernel_launch.scratch_actual]: the actual argument of a GpuKernelLaunch scratch buffer must be an allocatable array variable
-   --> tests/asr/verify/gpu_kernel_launch_scratch_not_allocatable.asr:112:18
+   --> tests/asr/verify/gpu_kernel_launch_scratch_not_allocatable.asr:113:18
     |
-112 |                 (GpuKernelLaunch
+113 |                 (GpuKernelLaunch
     |                  ^^^^^^^^^^^^^^^ failed here

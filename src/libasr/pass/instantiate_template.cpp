@@ -459,7 +459,8 @@ public:
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, current_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass,
+            x->m_access));
         current_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
@@ -549,7 +550,7 @@ public:
         head.m_end = duplicate_expr(x->m_head.m_end);
         head.m_increment = duplicate_expr(x->m_head.m_increment);
         head.loc = x->m_head.m_v->base.loc;
-        return ASR::make_DoLoop_t(al, x->base.base.loc, x->m_name, head, m_body.p, x->n_body, nullptr, 0);
+        return ASRUtils::make_DoLoop_t_util(al, x->base.base.loc, x->m_name, head, m_body.p, x->n_body, nullptr, 0);
     }
 
     ASR::asr_t* duplicate_Cast(ASR::Cast_t *x) {
@@ -1286,6 +1287,20 @@ public:
         }
 
         switch (sym->type) {
+            case (ASR::symbolType::ScopedVariableAttribute) : {
+                auto *x = ASR::down_cast<ASR::ScopedVariableAttribute_t>(sym);
+                SymbolInstantiator t(al, template_scope, target_scope,
+                    type_subs, symbol_subs, ASRUtils::symbol_name(x->m_variable),
+                    x->m_variable, diagnostics);
+                t.source_scope = x->m_parent_symtab;
+                ASR::symbol_t *variable = t.instantiate();
+                ASR::symbol_t *attribute = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ScopedVariableAttribute_t(al, x->base.base.loc,
+                        target_scope, s2c(al, new_sym_name), variable,
+                        x->m_is_volatile, x->m_is_asynchronous));
+                target_scope->add_symbol(new_sym_name, attribute);
+                return attribute;
+            }
             case (ASR::symbolType::Function) : {
                 ASR::Function_t* x = ASR::down_cast<ASR::Function_t>(sym);
                 return instantiate_Function(x);
@@ -1540,7 +1555,7 @@ public:
             x->m_intent, nullptr, nullptr, x->m_storage,
             new_type, type_decl, x->m_abi, x->m_access, x->m_presence, x->m_value_attr,
             x->m_target_attr, x->m_contiguous_attr, x->m_bindc_name, x->m_is_volatile,
-            x->m_is_protected, x->m_pass_attr, x->m_self_argument));
+            x->m_is_asynchronous, x->m_is_protected, x->m_pass_attr, x->m_self_argument));
         target_scope->add_symbol(new_sym_name, s);
 
         // The initializer of a named constant may refer to the template's
@@ -2268,7 +2283,8 @@ public:
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, target_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass,
+            x->m_access));
         target_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
@@ -2753,6 +2769,12 @@ public:
             case (ASR::symbolType::ExternalSymbol) : {
                 break;
             }
+            case (ASR::symbolType::ScopedVariableAttribute) : {
+                // Its variable reference was remapped with the declaration;
+                // there is no executable body to instantiate.
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::ScopedVariableAttribute_t>(*new_sym));
+                break;
+            }
             case (ASR::symbolType::CustomOperator) : {
                 break;
             }
@@ -3178,7 +3200,7 @@ public:
         head.m_end = duplicate_expr(x->m_head.m_end);
         head.m_increment = duplicate_expr(x->m_head.m_increment);
         head.loc = x->m_head.m_v->base.loc;
-        return ASR::make_DoLoop_t(al, x->base.base.loc, x->m_name, head, m_body.p, x->n_body, x->m_orelse, x->n_orelse);
+        return ASRUtils::make_DoLoop_t_util(al, x->base.base.loc, x->m_name, head, m_body.p, x->n_body, x->m_orelse, x->n_orelse);
     }
 
     ASR::asr_t* duplicate_ArrayItem(ASR::ArrayItem_t *x) {

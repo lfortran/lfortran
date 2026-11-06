@@ -241,8 +241,10 @@ class GlobalInitVisitor {
             if (v.m_symbolic_value == nullptr) return false;
             if (v.m_storage == ASR::storage_typeType::Parameter) return false;
             // The initial value of a variable in a common block is the
-            // initial value of the block's static storage.
-            if (v.m_common_block != nullptr) return false;
+            // initial value of the block's static storage, and the
+            // symbolic_value of a HostAssociated variable designates the
+            // host variable it stands for.
+            if (!ASRUtils::has_own_storage(v)) return false;
             ASR::expr_t *init = v.m_symbolic_value;
             // A pointer association whose target has a link-time address is
             // laid out by the backend as the variable's own initializer, so
@@ -280,10 +282,8 @@ class GlobalInitVisitor {
             // statement of the body runs. Only an element that needs
             // executable code of its own — a string, array or class member —
             // becomes a statement here.
-            ASR::expr_t *var_expr = ASRUtils::EXPR(ASR::make_Var_t(
-                al, v.base.base.loc,
-                const_cast<ASR::symbol_t*>(&v.base)));
-            return ASRUtils::needs_struct_array_member_init(var_expr, v.m_type);
+            return ASRUtils::needs_struct_array_member_init(
+                v.m_type_declaration, v.m_type);
         }
 
         // The variables of `scope` that need executable initialization, in

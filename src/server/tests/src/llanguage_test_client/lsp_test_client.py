@@ -111,6 +111,20 @@ def timestamp() -> str:
     return now_utc.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
 
 
+def describe_exit_status(returncode: Optional[int]) -> str:
+    """Describe how a server process ended, including the signal if it was killed."""
+    if returncode is None:
+        return "is still running"
+    if returncode < 0:
+        signum = -returncode
+        try:
+            signame = signal.Signals(signum).name
+        except ValueError:
+            signame = f"signal {signum}"
+        return f"was killed by {signame} ({signum})"
+    return f"exited with code {returncode}"
+
+
 class SpyIO(IO[bytes]):
     stream: IO[bytes]
     spy: BinaryIO
@@ -475,14 +489,23 @@ class LspTestClient(LspClient):
 
         try:
             if self.timeout_s > 0.0:
-                self.server.wait(timeout=self.timeout_s)
+                returncode = self.server.wait(timeout=self.timeout_s)
             else:
-                self.server.wait()
+                returncode = self.server.wait()
         except subprocess.TimeoutExpired as e:
             self.kill_server()
             raise RuntimeError(
                 f"Timed-out after {self.timeout_s} seconds while awaiting the server to terminate."
             ) from e
+
+        # A server that crashes (e.g. aborts on an unjoined thread) or otherwise
+        # exits with a non-zero status is broken even if every request it served
+        # was correct, so never let it pass silently.
+        if returncode != 0:
+            raise RuntimeError(
+                "Server " + describe_exit_status(returncode) + " instead of "
+                "exiting cleanly after the 'exit' notification."
+            )
 
     def kill_server(self) -> None:
         self.stop.set()
@@ -518,7 +541,8 @@ class LspTestClient(LspClient):
             else:
                 self.stop.set()
                 print(
-                    f"ServerProcess crashed with status: {self.server.returncode}",
+                    "ServerProcess crashed: it "
+                    + describe_exit_status(self.server.returncode),
                     file=sys.stderr
                 )
         except BaseException as e:
