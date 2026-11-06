@@ -7216,6 +7216,9 @@ RUN(NAME gpu_metal_730 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_reduction_overwrite_01 LABELS gfortran llvm metal cuda)
 # Chunks of more iterations than a grid-stride kernel has threads.
 RUN(NAME gpu_reduction_overwrite_01_chunks FILE gpu_reduction_overwrite_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=300000)
+# An array defined whole by a full-extent section in each iteration is
+# private to the iteration (lfortran/lfortran#17013).
+RUN(NAME gpu_metal_731 LABELS gfortran llvm metal cuda)
 # Logical reductions (lfortran/lfortran#16725), in one launch and in many.
 RUN(NAME gpu_metal_728 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_729 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
@@ -7404,6 +7407,7 @@ RUN(NAME gpu_kernel_source_39 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-s
 RUN(NAME gpu_kernel_source_40 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_kernel_source_41 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_kernel_source_42 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=50)
+RUN(NAME gpu_kernel_source_43 LABELS gfortran llvm) # not run on a GPU: the arrays defined in part stay shared, a race there
 RUN(NAME gpu_optional_launch_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --verify-all-passes)
 RUN(NAME gpu_optional_launch_02 LABELS gfortran llvm metal cuda
     EXTRAFILES gpu_optional_launch_02_mod.f90 EXTRA_ARGS --separate-compilation --verify-all-passes)

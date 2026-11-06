@@ -569,20 +569,60 @@ public:
     }
 
     // The shape of an array, and whether it is allocated or associated, are
-    // not its values.
+    // not its values. Asking about the shape of a designator evaluates only
+    // its subscripts: `shape(t(:))` does not access `t`, but
+    // `size(t(t(1):))` reads `t(1)`.
+    void inquiry(ASR::expr_t *e) {
+        switch (e->type) {
+            case ASR::exprType::Var:
+                return;
+            case ASR::exprType::StructInstanceMember:
+                inquiry(ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
+                return;
+            case ASR::exprType::ArrayItem: {
+                ASR::ArrayItem_t *a = ASR::down_cast<ASR::ArrayItem_t>(e);
+                subscripts(a->m_args, a->n_args);
+                inquiry(a->m_v);
+                return;
+            }
+            case ASR::exprType::ArraySection: {
+                ASR::ArraySection_t *a =
+                    ASR::down_cast<ASR::ArraySection_t>(e);
+                subscripts(a->m_args, a->n_args);
+                inquiry(a->m_v);
+                return;
+            }
+            case ASR::exprType::ArrayPhysicalCast:
+                inquiry(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
+                return;
+            default:
+                visit_expr(*e);
+        }
+    }
+    void subscripts(ASR::array_index_t *args, size_t n_args) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i].m_left) visit_expr(*args[i].m_left);
+            if (args[i].m_right) visit_expr(*args[i].m_right);
+            if (args[i].m_step) visit_expr(*args[i].m_step);
+        }
+    }
     void visit_ArraySize(const ASR::ArraySize_t &x) {
+        inquiry(x.m_v);
         if (x.m_dim) visit_expr(*x.m_dim);
     }
     void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        inquiry(x.m_v);
         if (x.m_dim) visit_expr(*x.m_dim);
     }
     void visit_ArrayRank(const ASR::ArrayRank_t &/*x*/) {}
-    void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t &/*x*/) {}
+    void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t &x) {
+        inquiry(x.m_array);
+    }
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
         if (x.m_arr_intrinsic_id == static_cast<int64_t>(
                 ASRUtils::IntrinsicArrayFunctions::Shape) &&
-                x.n_args == 1 && ASR::is_a<ASR::Var_t>(
-                    *ASRUtils::get_past_array_physical_cast(x.m_args[0]))) {
+                x.n_args == 1) {
+            inquiry(x.m_args[0]);
             return;
         }
         BaseWalkVisitor::visit_IntrinsicArrayFunction(x);
