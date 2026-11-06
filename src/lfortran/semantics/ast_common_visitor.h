@@ -17157,6 +17157,15 @@ public:
             if (arr_ref_val == nullptr && val_expr && ASR::is_a<ASR::ArrayConstant_t>(*val_expr)) {
                 ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(val_expr);
                 ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(arr_const->m_type);
+                // The constant's own type has default lower bounds; the
+                // subscripts refer to the bounds declared for the base array.
+                ASR::ttype_t* base_type = ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(v_Var));
+                ASR::Array_t* base_arr_type = nullptr;
+                if (ASR::is_a<ASR::Array_t>(*base_type) &&
+                        ASR::down_cast<ASR::Array_t>(base_type)->n_dims == arr_type->n_dims) {
+                    base_arr_type = ASR::down_cast<ASR::Array_t>(base_type);
+                }
                 
                 struct DimRange {
                     int64_t start, end, step;
@@ -17172,6 +17181,9 @@ public:
 
                 for (size_t d = 0; d < n_args; d++) {
                     ASR::expr_t* orig_start_expr = ASRUtils::expr_value(arr_type->m_dims[d].m_start);
+                    if (base_arr_type && base_arr_type->m_dims[d].m_start) {
+                        orig_start_expr = ASRUtils::expr_value(base_arr_type->m_dims[d].m_start);
+                    }
                     ASR::expr_t* orig_len_expr = ASRUtils::expr_value(arr_type->m_dims[d].m_length);
                     
                     if (!orig_start_expr || !ASRUtils::is_value_constant(orig_start_expr) ||
