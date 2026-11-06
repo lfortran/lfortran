@@ -708,7 +708,18 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
         } else {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(
                   ASRUtils::type_get_past_allocatable(x->m_type)));
-            if (ASRUtils::is_dimension_empty(arr->m_dims, arr->n_dims) && !(x->m_old == ASR::array_physical_typeType::AssumedRankArray)) {
+            // A cast to a data pointer carries no descriptor, so empty target
+            // extents stay empty: they describe a dummy that declares no
+            // extent (`a(*)`, or an assumed-shape dummy that this pass replaces
+            // by a data pointer) and must not become the actual argument's
+            // extents, which the call-site size check would then mistake for
+            // the dummy's shape. A descriptor or fixed-size target does need
+            // them to be built.
+            bool target_needs_extents =
+                x->m_new == ASR::array_physical_typeType::DescriptorArray ||
+                x->m_new == ASR::array_physical_typeType::FixedSizeArray;
+            if (target_needs_extents &&
+                    ASRUtils::is_dimension_empty(arr->m_dims, arr->n_dims) && !(x->m_old == ASR::array_physical_typeType::AssumedRankArray)) {
                 ASR::Array_t* src_arr = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
                         ASRUtils::expr_type(x->m_arg))));
@@ -1277,10 +1288,32 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
                         ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(orig_arg_type)));
                     if( array_t->m_physical_type != ASR::array_physical_typeType::PointerArray ) {
+                        // Every argument in `indices` is an assumed-shape
+                        // dummy, which this pass turns into a data pointer
+                        // whose extents travel as separate arguments. The cast
+                        // target therefore describes the dummy's declared
+                        // shape, which declares no extent: a call-site size
+                        // check must not measure it against the actual
+                        // argument's extents.
+                        ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(subrout_sym);
+                        ASR::dimension_t* formal_dims = nullptr;
+                        int n_formal_dims = (i < ft->n_arg_types) ?
+                            checked_integer_cast<int>(
+                                ASRUtils::extract_dimensions_from_ttype(
+                                    ft->m_arg_types[i], formal_dims)) : 0;
+                        Vec<ASR::dimension_t> cast_dims;
+                        ASR::ttype_t* cast_type = nullptr;
+                        if ((size_t) n_formal_dims == array_t->n_dims) {
+                            cast_dims.from_pointer_n_copy(al, formal_dims, n_formal_dims);
+                            cast_type = ASRUtils::duplicate_type(al, orig_arg_type,
+                                &cast_dims, ASR::array_physical_typeType::PointerArray, true);
+                        } else {
+                            cast_type = ASRUtils::duplicate_type(al, orig_arg_type,
+                                nullptr, ASR::array_physical_typeType::PointerArray, true);
+                        }
                         ASR::expr_t* physical_cast = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                             al, orig_arg_i->base.loc, orig_arg_i, array_t->m_physical_type,
-                            ASR::array_physical_typeType::PointerArray, ASRUtils::duplicate_type(al, orig_arg_type,
-                            nullptr, ASR::array_physical_typeType::PointerArray, true), nullptr));
+                            ASR::array_physical_typeType::PointerArray, cast_type, nullptr));
                         ASR::call_arg_t physical_cast_arg;
                         physical_cast_arg.loc = orig_arg_i->base.loc;
                         physical_cast_arg.m_value = physical_cast;

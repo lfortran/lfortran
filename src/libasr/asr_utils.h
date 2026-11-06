@@ -1983,6 +1983,59 @@ inline bool is_assumed_size_array(ASR::ttype_t* x) {
     return true;
 }
 
+// Whether an array type declares an explicit extent for at least one
+// dimension. That is true for an explicit-shape dummy and for an assumed-size
+// dummy that still declares all but its last extent (`a(n, *)`), for which an
+// actual argument is associated by element sequence (F2023 15.5.2.12) rather
+// than by shape. A deferred-shape (assumed-shape) dummy, and an assumed-size
+// dummy that declares no extent at all (`a(*)`), declare none and return
+// false.
+//
+// Call_t_body takes the ArrayPhysicalCast target of an array argument from the
+// formal parameter's dimensions, with the call's arguments substituted, and
+// pass_array_by_data keeps it deferred when it replaces an assumed-shape dummy
+// by a data pointer. When the formal extent's symbols are visible from the
+// caller and the actual argument is not a pointer, the predicate on such a
+// target therefore answers for the dummy argument, not for the actual
+// argument. Pre-existing Call_t_body fallbacks keep the actual argument's
+// extents instead: a pointer actual, an extent whose symbols the caller cannot
+// see, and a deferred extent on a descriptor cast. The predicate there answers
+// for the actual argument. Codegen then compares the actual with itself when
+// the extent's symbols were hidden, and emits no check when the pointer target
+// stays deferred (the predicate is false) or when the target is a descriptor
+// cast, which is not a checked cast form.
+inline bool has_explicit_dimension_bounds(ASR::ttype_t* x) {
+    x = type_get_past_allocatable(type_get_past_pointer(x));
+    if (!ASR::is_a<ASR::Array_t>(*x)) {
+        return false;
+    }
+    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x);
+    for (size_t i = 0; i < array_t->n_dims; i++) {
+        if (array_t->m_dims[i].m_length != nullptr) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Whether at least one extent is deferred, e.g. the last one of an assumed-size
+// dummy `a(n, *)`. Such a dummy has exactly the actual argument's element
+// count (F2023 15.5.2.12p6), so its explicit extents are a lower bound only for
+// a nonempty actual argument: a zero-element actual gives a zero-size dummy.
+inline bool has_deferred_dimension_bound(ASR::ttype_t* x) {
+    x = type_get_past_allocatable(type_get_past_pointer(x));
+    if (!ASR::is_a<ASR::Array_t>(*x)) {
+        return false;
+    }
+    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(x);
+    for (size_t i = 0; i < array_t->n_dims; i++) {
+        if (array_t->m_dims[i].m_length == nullptr) {
+            return true;
+        }
+    }
+    return false;
+}
+
 inline bool is_array_t(ASR::ttype_t* const x){
     return ASR::is_a<ASR::Array_t>(*type_get_past_allocatable_pointer(x));
 }

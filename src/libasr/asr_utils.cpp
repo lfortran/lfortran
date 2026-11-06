@@ -13193,6 +13193,11 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     cast_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (ASRUtils::is_pointer(physical_cast_type) &&
                            orig_arg_array_t->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
+                    // A pointer actual keeps its own extents: leaving the
+                    // dimensions empty keeps the actual argument's dimensions
+                    // in the cast target, so the target is not the dummy's
+                    // declared shape. A deferred-shape pointer stays deferred,
+                    // for which the size gate emits no check (pre-existing).
                     dimensions = nullptr;
                 } else if (ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims)) {
                     dimensions = &dimension_;
@@ -13225,7 +13230,25 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                       bool valid_symbols = true;
                       for (size_t i = 0; i < dimension_.size(); i++) {
                           dimension_.p[i].loc = arg->base.loc;
-        
+
+                          // A deferred extent is part of the dummy's declared
+                          // shape, not a symbol that has to be reachable from
+                          // the caller: an explicit-shape dummy substitutes its
+                          // extent here, while an assumed-size `a(*)` and an
+                          // assumed-shape `a(:)` keep it deferred. Keep it for a
+                          // data-pointer cast, which carries no descriptor. A
+                          // descriptor cast still needs concrete extents to be
+                          // built, so it keeps the actual argument's shape.
+                          if (dimension_[i].m_length == nullptr &&
+                                  dimension_[i].m_start == nullptr) {
+                              if (cast_physical_type ==
+                                      ASR::array_physical_typeType::DescriptorArray) {
+                                  valid_symbols = false;
+                                  break;
+                              }
+                              continue;
+                          }
+
                           // 2. Safely extract the replaced memory (optimized or mutated)
                           ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
                           ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
@@ -13248,8 +13271,17 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                             }
                           }
                         } else {
-                        dimensions = nullptr;
-                    }
+                            // The dummy's extent cannot be carried into the
+                            // cast target, which therefore keeps the actual
+                            // argument's dimensions. When a substituted extent
+                            // references a symbol the caller cannot see,
+                            // codegen compares the actual with itself; when the
+                            // extent is deferred and the target is a descriptor
+                            // (a fixed-size actual passed to an assumed-shape
+                            // dummy), the cast is not a checked cast form, so
+                            // codegen emits no check. Both are pre-existing.
+                            dimensions = nullptr;
+                        }
                 }
 
                 //TO DO : Add appropriate errors in 'asr_uttils.h'.
