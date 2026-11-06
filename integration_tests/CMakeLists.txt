@@ -4964,6 +4964,7 @@ RUN(NAME read_117 LABELS gfortran llvm)
 RUN(NAME read_118 LABELS gfortran llvm)
 RUN(NAME read_119 LABELS gfortran llvm)
 RUN(NAME read_120 LABELS gfortran llvm)
+RUN(NAME iomsg_deferred_char_01 LABELS gfortran llvm)
 RUN(NAME read_crlf_01 LABELS gfortran llvm)
 RUN(NAME read_unconnected_unit_01 LABELS gfortran llvm)
 
