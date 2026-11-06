@@ -262,16 +262,43 @@ cudaError_t cudaMallocManaged(void **ptr, size_t size, unsigned int flags) {
     return cudaMalloc(ptr, size);
 }
 
-cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count, int device,
+// Checks a prefetch of managed memory to `device` (cudaCpuDeviceId for the
+// host), which moves nothing.
+static cudaError_t prefetch(const void *ptr, size_t count, int device,
     cudaStream_t stream)
 {
-    (void)device;
     if (stream != 0) return fail(cudaErrorInvalidResourceHandle);
+    if (device != cudaCpuDeviceId && device != current_device) {
+        return fail(cudaErrorInvalidDevice);
+    }
     if (count > 0 && !device_range(ptr, count)) {
         return fail(cudaErrorInvalidValue);
     }
+    if (device == cudaCpuDeviceId) stats.host_prefetches++;
+    else stats.device_prefetches++;
     return cudaSuccess;
 }
+
+#if CUDART_VERSION >= 13000
+cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count,
+    struct cudaMemLocation location, unsigned int flags, cudaStream_t stream)
+{
+    if (flags != 0) return fail(cudaErrorInvalidValue);
+    switch (location.type) {
+        case cudaMemLocationTypeDevice:
+            return prefetch(ptr, count, location.id, stream);
+        case cudaMemLocationTypeHost:
+            return prefetch(ptr, count, cudaCpuDeviceId, stream);
+        default: return fail(cudaErrorInvalidValue);
+    }
+}
+#else
+cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count, int device,
+    cudaStream_t stream)
+{
+    return prefetch(ptr, count, device, stream);
+}
+#endif
 
 // Checks the two ranges of a copy against its direction, and copies.
 static cudaError_t copy(void *dst, const void *src, size_t count,

@@ -32,6 +32,26 @@ add_test(NAME test_gpu_cuda_api_state_unified
     COMMAND test_gpu_cuda_api_state unified)
 set_tests_properties(test_gpu_cuda_api_state_unified PROPERTIES
     ENVIRONMENT "LFORTRAN_GPU_MEMORY=unified")
+add_test(NAME test_gpu_cuda_api_state_managed
+    COMMAND test_gpu_cuda_api_state managed)
+set_tests_properties(test_gpu_cuda_api_state_managed PROPERTIES
+    ENVIRONMENT "LFORTRAN_GPU_MEMORY=managed"
+    PASS_REGULAR_EXPRESSION "passed on the CUDA runtime API 13000")
+# The emulation provides the CUDA 13 runtime API by default; the runtime has
+# to compile against, and run on, the CUDA 12 one too.
+add_executable(test_gpu_cuda_api_state_cuda12 test_gpu_cuda_api_state.cpp
+    ../libasr/runtime/cuda_cpu/cuda_cpu_runtime.c)
+target_include_directories(test_gpu_cuda_api_state_cuda12 PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/../libasr/runtime/cuda_cpu")
+target_compile_definitions(test_gpu_cuda_api_state_cuda12 PRIVATE
+    CUDART_VERSION=12080)
+add_test(NAME test_gpu_cuda_api_state_cuda12_managed
+    COMMAND test_gpu_cuda_api_state_cuda12 managed)
+set_tests_properties(test_gpu_cuda_api_state_cuda12_managed PROPERTIES
+    ENVIRONMENT "LFORTRAN_GPU_MEMORY=managed"
+    PASS_REGULAR_EXPRESSION "passed on the CUDA runtime API 12080")
+add_test(NAME test_gpu_cuda_api_state_cuda12
+    COMMAND test_gpu_cuda_api_state_cuda12)
 add_test(NAME test_gpu_cuda_api_state_no_device
     COMMAND test_gpu_cuda_api_state no-device)
 set_tests_properties(test_gpu_cuda_api_state_no_device PROPERTIES

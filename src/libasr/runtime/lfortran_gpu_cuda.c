@@ -223,6 +223,21 @@ static size_t managed_forget(void *p) {
     return size;
 }
 
+// Prefetches the `size` bytes of managed memory at `p` to `device`, on the
+// default stream. CUDA 13 names the destination by a location rather than a
+// device number; HIP keeps the device number.
+static cudaError_t prefetch_to_device(const void *p, size_t size, int device) {
+#if defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+    struct cudaMemLocation location;
+    memset(&location, 0, sizeof(location));
+    location.type = cudaMemLocationTypeDevice;
+    location.id = device;
+    return cudaMemPrefetchAsync(p, size, location, 0, 0);
+#else
+    return cudaMemPrefetchAsync(p, size, device, 0);
+#endif
+}
+
 // A launch is about to use the `size` bytes at `p`, inside a managed
 // allocation. The first launch that uses an allocation moves all of it to the
 // device in one go, which is several times faster than the page faults of
@@ -241,8 +256,7 @@ static void managed_to_device(void *p, size_t size) {
     if (!fresh) return;
     int device = 0;
     check(cudaGetDevice(&device), "cudaGetDevice");
-    check(cudaMemPrefetchAsync(base, length, device, 0),
-        "cudaMemPrefetchAsync");
+    check(prefetch_to_device(base, length, device), "cudaMemPrefetchAsync");
     (void)size;
 }
 

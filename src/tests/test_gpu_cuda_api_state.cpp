@@ -467,6 +467,78 @@ static int unified_memory_model()
     return 0;
 }
 
+// The managed memory model (LFORTRAN_GPU_MEMORY=managed): an allocation of
+// at least MANAGED_MIN_BYTES is managed memory, which a kernel uses in place,
+// and the first launch that uses it prefetches all of it to the device; later
+// launches do not. The prefetch is the cudaMemPrefetchAsync of the version of
+// the CUDA runtime API the runtime is compiled against (CUDART_VERSION):
+// CTest runs this case against the emulated CUDA 13 API and, in
+// test_gpu_cuda_api_state_cuda12, against the CUDA 12 one.
+static void *host_alloc(void *, int64_t size)
+{
+    return malloc((size_t)size);
+}
+
+static void *host_realloc(void *, void *ptr, int64_t size)
+{
+    return realloc(ptr, (size_t)size);
+}
+
+static void host_dealloc(void *, void *ptr)
+{
+    free(ptr);
+}
+
+static void managed_entry(void **args)
+{
+    unit_launch();
+    int32_t *data = arg<int32_t *>(args, 0);
+    int32_t sequence = arg<int32_t>(args, 1);
+    data[0] += sequence;
+}
+
+// CTest runs this case with LFORTRAN_GPU_MEMORY=managed.
+static int managed_memory_model()
+{
+    // A unit test links no program allocator for the managed one to replace.
+    previous_allocator = {host_alloc, host_realloc, host_dealloc, nullptr};
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    require(memory_model == MEMORY_MANAGED,
+        "LFORTRAN_GPU_MEMORY=managed selects the model");
+    auto *data = (int32_t *)managed_alloc(nullptr, MANAGED_MIN_BYTES);
+    require(data != nullptr && managed_contains(data, MANAGED_MIN_BYTES),
+        "a large allocation is managed memory");
+    data[0] = 10;
+    lfortran_gpu_register_kernel("managed", entry(managed_entry));
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    for (int32_t sequence = 1; sequence <= 2; sequence++) {
+        auto *k = lfortran_gpu_load_kernel(ctx, "managed", 7);
+        lfortran_gpu_set_buffer_arg(k, 0, data, sizeof(int32_t),
+            LFORTRAN_GPU_WRITE);
+        lfortran_gpu_set_scalar_arg(k, 1, &sequence, sizeof(sequence));
+        lfortran_gpu_launch(ctx, k, grid, block);
+        lfortran_gpu_release_kernel(k);
+        require(stats().device_prefetches == 1,
+            "the first launch that uses the allocation prefetches it");
+    }
+    lfortran_gpu_sync(ctx);
+    require(data[0] == 10 + 1 + 2, "the kernels wrote the memory in place");
+    require(stats().host_prefetches == 0, "nothing is prefetched to the host");
+    require(stats().async_copies[cudaMemcpyHostToDevice] == 0
+        && stats().copies[cudaMemcpyDeviceToHost] == 0,
+        "managed memory is not copied");
+    unsigned long long frees = stats().frees;
+    managed_dealloc(nullptr, data);
+    require(stats().frees == frees + 1, "managed memory is freed");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    // Only once every check passed, since CTest matches this line.
+    printf("managed memory passed on the CUDA runtime API %d: device "
+        "prefetches=%llu\n", CUDART_VERSION, stats().device_prefetches);
+    return 0;
+}
+
 // Without a device the runtime stops at initialization: it must not skip
 // the launch and leave the program with the values never computed.
 static int no_device()
@@ -527,6 +599,9 @@ int main(int argc, char **argv)
     }
     if (argc == 2 && strcmp(argv[1], "unified") == 0) {
         return unified_memory_model();
+    }
+    if (argc == 2 && strcmp(argv[1], "managed") == 0) {
+        return managed_memory_model();
     }
     if (argc == 2 && strcmp(argv[1], "resident") == 0) {
         return resident_table_order(output_access);
