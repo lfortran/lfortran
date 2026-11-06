@@ -4347,9 +4347,21 @@ public:
         return builder->CreateCall(fn, {x});
     }
 
-    void generate_Exp(ASR::expr_t* m_arg) {
+    // Read a math intrinsic's argument as a value. An ASSOCIATE name is an
+    // ASR Pointer stored in a local pointer variable, so codegen has to load
+    // it twice to reach the pointee, like generate_Abs does.
+    llvm::Value* get_math_intrinsic_arg_value(ASR::expr_t* m_arg) {
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_arg)) ? 2 : 1;
         this->visit_expr_wrapper(m_arg, true);
+        ptr_loads = ptr_loads_copy;
         llvm::Value *item = tmp;
+        load_non_array_non_character_pointers(m_arg, ASRUtils::expr_type(m_arg), item);
+        return item;
+    }
+
+    void generate_Exp(ASR::expr_t* m_arg) {
+        llvm::Value *item = get_math_intrinsic_arg_value(m_arg);
         if (item->getType()->isFP128Ty()) {
             tmp = call_fp128_runtime("lf_expq", item);
             return;
@@ -4366,8 +4378,7 @@ public:
     }
 
     void generate_Exp2(ASR::expr_t* m_arg) {
-        this->visit_expr_wrapper(m_arg, true);
-        llvm::Value *item = tmp;
+        llvm::Value *item = get_math_intrinsic_arg_value(m_arg);
         if (item->getType()->isFP128Ty()) {
             tmp = call_fp128_runtime("lf_exp2q", item);
             return;
@@ -4384,8 +4395,7 @@ public:
     }
 
     void generate_Expm1(ASR::expr_t* m_arg) {
-        this->visit_expr_wrapper(m_arg, true);
-        llvm::Value *item = tmp;
+        llvm::Value *item = get_math_intrinsic_arg_value(m_arg);
         if (item->getType()->isFP128Ty()) {
             tmp = call_fp128_runtime("lf_expm1q", item);
             return;
