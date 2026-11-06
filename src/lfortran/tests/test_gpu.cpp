@@ -1937,10 +1937,10 @@ end module
 
 namespace {
 
-// The launches (`L`), syncs (`S`), waits (`W`) and subroutine calls (`C`)
-// of a procedure body after gpu_launch_sync, in order, the two branches of
-// an `if` in brackets (a launch is in one: it is skipped when it has no
-// iterations).
+// The launches (`L`), syncs (`S`), waits (`W`), discards (`D`) and
+// subroutine calls (`C`) of a procedure body after gpu_launch_sync, in
+// order, the two branches of an `if` in brackets (a launch is in one: it is
+// skipped when it has no iterations).
 class SyncTrace : public ASR::BaseWalkVisitor<SyncTrace> {
 public:
     std::string trace;
@@ -1950,6 +1950,7 @@ public:
     }
     void visit_GpuSync(const ASR::GpuSync_t &/*x*/) { trace += "S"; }
     void visit_GpuWait(const ASR::GpuWait_t &/*x*/) { trace += "W"; }
+    void visit_GpuDiscard(const ASR::GpuDiscard_t &/*x*/) { trace += "D"; }
     void visit_SubroutineCall(const ASR::SubroutineCall_t &/*x*/) {
         trace += "C";
     }

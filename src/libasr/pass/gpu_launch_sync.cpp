@@ -821,14 +821,17 @@ private:
     // anything else the caller cannot follow.
     void leave(State &s, bool emit, Vec<ASR::stmt_t*> *out,
             const Location &loc) {
-        if (!twin) {
+        // A launch that may have recorded a stop is waited for, and its stop
+        // replayed, before anything is discarded: its status buffer is a
+        // local of the procedure.
+        if (!twin || !s.stops.empty()) {
             sync(s, emit, out, loc);
             return;
         }
         leave_blocks(0, s, emit, out, loc);
         discard_locals(routine, s, emit, out, loc);
         if (!s.any) return;
-        bool deferrable = s.stops.empty();
+        bool deferrable = true;
         for (const Path &p : s.written) {
             if (dummy_index(p.root) < 0) deferrable = false;
         }
@@ -1129,7 +1132,19 @@ private:
         vars.reserve(al, 1);
         std::vector<Path> kept;
         bool must_sync = false;
+        // The status buffers of the pending launches that may have recorded
+        // a stop: the replay after the wait reads them.
+        std::set<ASR::symbol_t*> statuses;
+        for (ASR::GpuKernelLaunch_t *l : s.stops) {
+            statuses.insert(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(l->m_stop_status)->m_v));
+        }
         for (const Path &p : s.written) {
+            if (statuses.count(p.root) > 0) {
+                must_sync = true;
+                kept.push_back(p);
+                continue;
+            }
             if (may_point_anywhere(p.root) && has_target_locals(scope)) {
                 // What a pointer may point to: a target local of `scope`
                 // too.
