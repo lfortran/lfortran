@@ -9662,8 +9662,7 @@ ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t member) {
 
 ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         SymbolTable* scope, ASR::accessType access,
-        const std::string &name_prefix, const std::string &name_suffix,
-        const std::string &reserved_name) {
+        const std::string &name_prefix, const std::string &name_suffix) {
     if (is_named_from(sym, scope)) return sym;
     ASR::symbol_t* definition = symbol_get_past_external(sym);
     if (definition == nullptr || symbol_parent_symtab(definition) == nullptr) {
@@ -9689,8 +9688,7 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         return sym;
     }
     std::string local_name = name_prefix + name + name_suffix;
-    for (int i = 1; scope->resolve_symbol(local_name) != nullptr ||
-            local_name == reserved_name; i++) {
+    for (int i = 1; scope->resolve_symbol(local_name) != nullptr; i++) {
         local_name = name_prefix + name + name_suffix + std::to_string(i);
     }
     ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
@@ -9743,8 +9741,16 @@ ASR::symbol_t* import_type_declaration(Allocator &al,
             !ASR::is_a<ASR::Function_t>(*definition)) {
         return type_declaration;
     }
+    // A new import takes the name of the type only when that name is free
+    // and is not the name of the variable being declared. Otherwise it takes
+    // a `1_`-prefixed name no user code can spell: a free name such as `t11`
+    // could be taken by a symbol declared in the scope later, e.g. a sibling
+    // associate name.
+    std::string name = symbol_name(definition);
+    std::string name_prefix = (name == declared_name ||
+        scope->resolve_symbol(name) != nullptr) ? "1_" : "";
     return import_symbol(al, type_declaration, scope, ASR::accessType::Public,
-        "", "", declared_name);
+        name_prefix);
 }
 
 void set_cptr_type_declaration(ASR::ttype_t* type,

@@ -64,12 +64,45 @@ contains
             end associate
         end block
     end subroutine s_sibling_first
+
+    subroutine s_numbered_sibling(x, f, r)
+        type(t2), intent(in) :: x
+        real, intent(in) :: f(:)
+        integer, intent(out) :: r
+        block
+            associate (t1 => x%c, t11 => x%c, t12 => x%c)
+                r = t1%i + t11%i + t12%i + size(f)
+            end associate
+        end block
+    end subroutine s_numbered_sibling
+
+    subroutine s_sibling_between(x, f, r)
+        type(t2), intent(in) :: x
+        real, intent(in) :: f(:)
+        integer, intent(out) :: r
+        block
+            associate (t1 => x%c, a => x%c, t11 => x%c)
+                r = t1%i + a%i + t11%i + size(f)
+            end associate
+        end block
+    end subroutine s_sibling_between
+
+    subroutine s_sibling_no_copy(x, r)
+        type(t2), intent(in) :: x
+        integer, intent(out) :: r
+        block
+            associate (t1 => x%c, a => x%c, t11 => x%c)
+                r = t1%i + a%i + t11%i
+            end associate
+        end block
+    end subroutine s_sibling_no_copy
 end module associate_65_m2
 
 program associate_65
     use associate_65_m1, only: t2
     use associate_65_m2, only: s_block, s_select_type, s_host_variable, &
-        s_sibling_first
+        s_sibling_first, s_numbered_sibling, s_sibling_between, &
+        s_sibling_no_copy
     implicit none
     type(t2) :: x
     integer :: r
@@ -85,4 +118,13 @@ program associate_65
     call s_sibling_first(x, [1.0, 2.0], r)
     print *, r
     if (r /= 86) error stop 4
+    call s_numbered_sibling(x, [1.0, 2.0], r)
+    print *, r
+    if (r /= 128) error stop 5
+    call s_sibling_between(x, [1.0, 2.0, 3.0], r)
+    print *, r
+    if (r /= 129) error stop 6
+    call s_sibling_no_copy(x, r)
+    print *, r
+    if (r /= 126) error stop 7
 end program associate_65
