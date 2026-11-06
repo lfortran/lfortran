@@ -1074,7 +1074,8 @@ overlap when one is a prefix of the other, except that a copy of only the
 bytes of a derived-type value itself (a polymorphic value the host copies
 for a launch) does not reach the data of its allocatable components. Asking
 about the shape of an array (`size`, `lbound`, `allocated`) does not access
-its elements. A call accesses its actual arguments, and may access every
+its elements, and neither does disassociating a pointer (`nullify`) or
+storing the address of a variable in the frame of a contained procedure. A call accesses its actual arguments, and may access every
 variable that a pointer may point to or that another procedure can reach (a
 module variable, a variable of a procedure this one is contained in, a
 `target`); a call to a procedure contained in this one may access anything.

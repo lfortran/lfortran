@@ -2126,6 +2126,30 @@ end module
         == "[L|][SC|][L|]SCC");
 }
 
+TEST_CASE("GPU launches are not waited for to disassociate a pointer") {
+    // `nullify(p)` changes only `p`, not the array it points to, which the
+    // first launch writes: the host waits once, before `print`.
+    const std::string source = R"(
+program sync_nullify
+implicit none
+real, target :: x(1000)
+real, pointer :: p(:)
+integer :: i
+x = 1
+p => x
+do concurrent (i = 1:1000)
+    x(i) = x(i) + 1
+end do
+nullify(p)
+do concurrent (i = 1:1000)
+    x(i) = 2*x(i)
+end do
+print *, x(1)
+end program
+)";
+    CHECK(gpu_sync_trace(source, "", "sync_nullify") == "[L|][L|]S");
+}
+
 #endif
 
 TEST_CASE("A scalar every iteration assigns first is not read back when "

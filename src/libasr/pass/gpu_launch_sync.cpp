@@ -197,6 +197,12 @@ public:
         visit_expr(*x.m_target);
         reached(x.m_value);
     }
+    // A frame refers to the variable: the procedures it is handed to can
+    // reach it.
+    void visit_BindReference(const ASR::BindReference_t &x) {
+        visit_expr(*x.m_reference);
+        reached(x.m_variable);
+    }
     void visit_SelectType(const ASR::SelectType_t &x) {
         reached(x.m_selector);
         BaseWalkVisitor::visit_SelectType(x);
@@ -992,15 +998,17 @@ private:
                 if (emit) out->push_back(al, x);
                 return s;
             }
-            case ASR::stmtType::Associate: {
-                // Binding a name accesses no values.
+            case ASR::stmtType::Associate:
+            case ASR::stmtType::Nullify:
+            case ASR::stmtType::BindReference: {
+                // Binding a name, disassociating a pointer and storing the
+                // address of a variable in a frame access no values.
                 if (emit) out->push_back(al, x);
                 return s;
             }
             case ASR::stmtType::Assignment:
             case ASR::stmtType::Allocate:
             case ASR::stmtType::ReAlloc:
-            case ASR::stmtType::Nullify:
             case ASR::stmtType::DebugCheckArrayBounds:
             case ASR::stmtType::SubroutineCall:
             case ASR::stmtType::IntrinsicImpureSubroutine:
