@@ -2217,6 +2217,11 @@ ASR::expr_t* get_ArrayConstant_size(Allocator& al, ASR::ArrayConstant_t* x);
 // sizes that depend on its variable, as in [((j, j = i, n), i = 1, m)], is
 // the sum of those sizes over the values of the variable, which only a loop
 // can compute in general.
+//
+// A null `body` stands for a place that cannot hold statements, such as the
+// dimensions of an array type. Such a sum is then the closed form
+// n * (f(first) + f(last)) / 2 of the n sizes f(var), which is exact if
+// f(var) is linear in the variable and never negative.
 struct ArraySizeStatements {
     Vec<ASR::stmt_t*>* body;
     SymbolTable* scope;

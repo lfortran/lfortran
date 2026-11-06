@@ -6,6 +6,11 @@ program implied_do_loops58
     integer :: i, j, k, lo, hi
     integer(8) :: hi8
     integer, allocatable :: v(:)
+    ! The same sizes in specification expressions, whose bounds are known at
+    ! compile time here and only at run time in `automatic` and `nest`.
+    integer :: d1(size([((j, j = 1, i), i = 1, 3)]))
+    integer :: d2(size([((j, j = i, 3), i = 0, 3)]))
+    integer :: d3(size([((j, j = 1, i * i), i = 1, 4)]))
 
     if (size([((j, j = i, 2), i = 0, 2)]) /= 6) error stop 1
     call check([((j, j = i, 2), i = 0, 2)], [0, 1, 2, 1, 2, 2])
@@ -64,7 +69,30 @@ program implied_do_loops58
     call check([(((k, k = j, 3), j = 1, 4), i = 1, 2)], &
         [1, 2, 3, 2, 3, 3, 1, 2, 3, 2, 3, 3])
 
+    if (size(d1) /= 6) error stop 20
+    if (size(d2) /= 10) error stop 21
+    if (size(d3) /= 30) error stop 22
+    call automatic(3)
+    if (size(nest(3)) /= 6) error stop 25
+    call check(nest(3), [1, 1, 2, 1, 2, 3])
+
 contains
+
+    subroutine automatic(n)
+        integer, intent(in) :: n
+        integer :: i, j
+        integer :: a(size([((j, j = 1, i), i = 1, n)]))
+        integer :: b(size([((j, j = i, n), i = 0, n)]))
+        if (size(a) /= 6) error stop 23
+        if (size(b) /= 10) error stop 24
+    end subroutine
+
+    function nest(n) result(res)
+        integer, intent(in) :: n
+        integer :: i, j
+        integer :: res(size([((j, j = 1, i), i = 1, n)]))
+        res = [((j, j = 1, i), i = 1, n)]
+    end function
 
     subroutine check(x, expected)
         integer, intent(in) :: x(:), expected(:)
