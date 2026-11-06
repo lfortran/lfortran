@@ -12307,6 +12307,40 @@ public:
         tmp = GetPointerCPtrUtil(tmp, x.m_arg);
     }
 
+    // C_LOC of an assumed-type (`type(*)`) dummy argument returns the address
+    // of the actual argument (F2023 18.2.3.7). The dummy is represented by an
+    // unlimited-polymorphic box that holds the actual argument's dynamic type
+    // and address (for an array, by a descriptor whose elements are such
+    // boxes), so return the box's data pointer rather than the box's own
+    // address.
+    llvm::Value* assumed_type_actual_address(ASR::expr_t* expr, llvm::Value* value) {
+        if (!ASR::is_a<ASR::GetPointer_t>(*expr)) {
+            return value;
+        }
+        ASR::expr_t* target = ASR::down_cast<ASR::GetPointer_t>(expr)->m_arg;
+        if (!ASR::is_a<ASR::Var_t>(*target)) {
+            return value;
+        }
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(target)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+            return value;
+        }
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+        if (!ASRUtils::is_assumed_type_dummy(v) ||
+                !ASRUtils::is_unlimited_polymorphic_type(ASRUtils::extract_type(v->m_type))) {
+            return value;
+        }
+        ASR::ttype_t* t = ASRUtils::type_get_past_allocatable_pointer(v->m_type);
+        llvm::Type* box_type = ASRUtils::is_array(t)
+            ? llvm_utils->get_el_type(target, ASRUtils::extract_type(t),
+                module.get(), v->m_type_declaration)
+            : llvm_utils->get_type_from_ttype_t_util(
+                t, v->m_type_declaration, module.get());
+        return unwrap_polymorphic_box_data(box_type,
+            builder->CreateBitCast(value, box_type->getPointerTo()));
+    }
+
     void visit_PointerToCPtr(const ASR::PointerToCPtr_t& x) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
@@ -12320,6 +12354,8 @@ public:
                 && !ASRUtils::is_inline_character_struct_member(
                     ASR::down_cast<ASR::GetPointer_t>(x.m_arg)->m_arg)){ // Targetted physicalType is `char*`
             tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp);
+        } else {
+            tmp = assumed_type_actual_address(x.m_arg, tmp);
         }
         tmp = builder->CreateBitCast(tmp,
                     llvm::Type::getVoidTy(context)->getPointerTo());

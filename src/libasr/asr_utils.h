@@ -3713,6 +3713,21 @@ static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
 {
     return is_unlimited_polymorphic_type(ASRUtils::expr_type(expr));
 }
+
+// A `type(*)` dummy argument is represented by the internal `~assumed_type`
+// struct. It is opaque: it carries no dynamic type, and it is associated with
+// an actual argument exactly like a nonpolymorphic dummy of the actual's type
+// (F2018 8.5.2). Only its address is meaningful, so c_loc of the dummy is the
+// address of the actual argument (F2023 18.2.3.7).
+static inline bool is_assumed_type_dummy(const ASR::Variable_t* v)
+{
+    if (v == nullptr || v->m_type_declaration == nullptr) {
+        return false;
+    }
+    ASR::symbol_t* sym = symbol_get_past_external(v->m_type_declaration);
+    return ASR::is_a<ASR::Struct_t>(*sym) &&
+        std::string(symbol_name(sym)) == "~assumed_type";
+}
 /// Check if type is a class + not unlimited-polymorphic one
 inline bool non_unlimited_polymorphic_class(ASR::ttype_t* const t){
     return is_class_type(extract_type(t)) && !is_unlimited_polymorphic_type(t);
