@@ -209,3 +209,53 @@ kernel void __lfortran_gpu_kernel_3(
     }
 }
 
+struct __ScalarArgs___lfortran_gpu_kernel_4 {
+    int __gpu_private_shape5_gpu;
+    int __gpu_private_shape6_gpu;
+    int m_gpu;
+    int n_gpu;
+    int __dim_out_0_gpu;
+    int __lb_out_0_gpu;
+    int __loop_end_0_gpu;
+    int __workspace_extent_gpu;
+    int __gpu_lanes_gpu;
+};
+
+kernel void __lfortran_gpu_kernel_4(
+    device int* out_gpu [[buffer(0)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_4& __scalar_args [[buffer(1)]],
+    device int* __workspace_2 [[buffer(2)]],
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+{
+    int __gpu_private_shape5_gpu = __scalar_args.__gpu_private_shape5_gpu;
+    int __gpu_private_shape6_gpu = __scalar_args.__gpu_private_shape6_gpu;
+    int m_gpu = __scalar_args.m_gpu;
+    int n_gpu = __scalar_args.n_gpu;
+    int __lb_out_0_gpu = __scalar_args.__lb_out_0_gpu;
+    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
+    int __workspace_extent_gpu = __scalar_args.__workspace_extent_gpu;
+    int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
+    int __flat_idx_gpu;
+    int i__dc4_gpu;
+    int j_gpu;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    i__dc4_gpu = (__flat_idx_gpu + 1);
+    {
+        device int* e_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + ((long)__thread_id) * __workspace_extent_gpu) : nullptr;
+        for (j_gpu = (__gpu_private_shape6_gpu + (((int)__gpu_lane) * 1)); j_gpu <= (__gpu_private_shape6_gpu + __gpu_private_shape5_gpu - 1); j_gpu += (1 * ((int)__gpu_lanes_gpu))) {
+            e_gpu[((int)(j_gpu) - (__gpu_private_shape6_gpu))] = (i__dc4_gpu + j_gpu);
+        }
+        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+        if ((__gpu_lane == 0)) {
+            out_gpu[((int)(i__dc4_gpu) - (__lb_out_0_gpu))] = (e_gpu[((int)((((i__dc4_gpu) % (((n_gpu - m_gpu) + 1))) + m_gpu)) - (__gpu_private_shape6_gpu))] - (((i__dc4_gpu) % (((n_gpu - m_gpu) + 1))) + m_gpu));
+        }
+        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+    }
+}
+

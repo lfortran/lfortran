@@ -155,3 +155,43 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     }
 }
 
+struct __ScalarArgs___lfortran_gpu_kernel_4 {
+    int __gpu_private_shape5;
+    int __gpu_private_shape6;
+    int m;
+    int n;
+    int __dim_out_0;
+    int __lb_out_0;
+    int __loop_end_0;
+    int __workspace_extent;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_4(
+    int* __restrict__ out,
+    __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args,
+    int* __restrict__ __workspace_2)
+{
+    int __gpu_private_shape5 = __scalar_args.__gpu_private_shape5;
+    int __gpu_private_shape6 = __scalar_args.__gpu_private_shape6;
+    int m = __scalar_args.m;
+    int n = __scalar_args.n;
+    int __lb_out_0 = __scalar_args.__lb_out_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __workspace_extent = __scalar_args.__workspace_extent;
+    int __flat_idx;
+    int i__dc4;
+    int j;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc4 = (__flat_idx + 1);
+    {
+        int* e = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        for (j = __gpu_private_shape6; j <= (__gpu_private_shape6 + __gpu_private_shape5 - 1); j++) {
+            e[((int)(j) - (__gpu_private_shape6))] = (i__dc4 + j);
+        }
+        out[((int)(i__dc4) - (__lb_out_0))] = (e[((int)((((i__dc4) % (((n - m) + 1))) + m)) - (__gpu_private_shape6))] - (((i__dc4) % (((n - m) + 1))) + m));
+    }
+}
+
