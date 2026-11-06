@@ -7203,6 +7203,9 @@ RUN(NAME gpu_metal_722 LABELS gfortran llvm metal cuda) # size/lbound/ubound of 
 RUN(NAME gpu_metal_723 FILE gpu_metal_722 LABELS gfortran llvm metal cuda EXTRA_ARGS --descriptor-index-64) # CUDA: long extents beside an int lower bound 1; Metal keeps int extents
 # .eqv. and .neqv. in a kernel (lfortran/lfortran#16630).
 RUN(NAME gpu_metal_730 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_reduction_overwrite_01 LABELS gfortran llvm metal cuda)
+# Chunks of more iterations than a grid-stride kernel has threads.
+RUN(NAME gpu_reduction_overwrite_01_chunks FILE gpu_reduction_overwrite_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=300000)
 # Logical reductions (lfortran/lfortran#16725), in one launch and in many.
 RUN(NAME gpu_metal_728 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_729 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)

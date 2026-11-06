@@ -4047,8 +4047,11 @@
                             []
                             ()
                             []
-                            []
-                            []
+                            [(Var 2 __gpu_red_s)]
+                            [(LogicalConstant
+                                .true.
+                                (Logical 4)
+                            )]
                             [(5 __loop_start_0
                             5 __loop_end_0)
                             (5 __loop_start_1

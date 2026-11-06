@@ -756,7 +756,9 @@ an `intent(in)` dummy -- and *written* otherwise.
   can use `LFORTRAN_GPU_WRITE_DISCARD` when its host coverage condition holds.
   CUDA and Metal skip copying it in unless another buffer argument overlaps
   it, in which case it remains an ordinary write. This does not establish
-  `gpu_kernel_argument.noalias`; that proof is independent.
+  `gpu_kernel_argument.noalias`; that proof is independent. The
+  accumulators of a reduction are always recorded as overwritten: the
+  kernel sets each one to the identity before it combines into it.
   Strict integer guards are narrowed without overflowing their endpoints,
   including dynamic `integer(8)` bounds. A strict guard requiring a value
   below the smallest integer or above the largest cannot establish an
