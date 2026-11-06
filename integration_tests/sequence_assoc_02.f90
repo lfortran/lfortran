@@ -45,6 +45,10 @@ contains
     a(n, 1) = 5.0_c_float
     a(1, 2) = 6.0_c_float
   end subroutine
+  subroutine bindc_no_extent(a) bind(c)
+    real(c_float), intent(inout) :: a(*)
+    a(1) = 7.0_c_float
+  end subroutine
 end module
 
 subroutine fill_ext(n, m, a)
@@ -56,7 +60,7 @@ end subroutine
 
 program sequence_assoc_02
   use sequence_assoc_02_mod
-  use sequence_assoc_02_bindc_mod, only: bindc_assumed_size
+  use sequence_assoc_02_bindc_mod, only: bindc_assumed_size, bindc_no_extent
   use iso_c_binding, only: c_float
   implicit none
   real, allocatable :: b(:,:)
@@ -64,7 +68,7 @@ program sequence_assoc_02
   real :: z(0, 0)
   real(c_float) :: x(6)
   real, allocatable :: empty(:), empty_2d(:,:)
-  integer :: i, j
+  integer :: i, j, k, l
   allocate(b(4, 2))
   b = 0.0
   c = 0.0
@@ -88,17 +92,28 @@ program sequence_assoc_02
   allocate(empty_2d(0, 0))
   ! A negative runtime extent means a zero-size dimension, so the dummy's
   ! element count is zero, never a positive product of two negative extents.
-  ! Both argument casts are covered: a fixed-size and a descriptor actual.
-  call neg_extent(-2, -2, z)
-  call neg_extent(-2, -2, empty_2d)
+  ! Both argument casts are covered: a fixed-size and a descriptor actual. The
+  ! extents come from variables so the clamp is evaluated at run time instead
+  ! of being constant-folded.
+  k = -2
+  l = k
+  call neg_extent(k, l, z)
+  call neg_extent(k, l, empty_2d)
   ! A negative extent in the dummy's own declaration is likewise zero-size.
+  ! The descriptor actual reaches the argument check; the fixed-size actual
+  ! is passed without a physical cast and only proves the declaration is
+  ! accepted.
   call neg_bounds(z)
+  call neg_bounds(empty_2d)
   call empty_extent(2, empty_2d)
-  ! A bind(c) assumed-size dummy that still declares its first extent reaches
-  ! the size check; `a(*)` alone declares no extent and is not checked.
+  ! A bind(c) assumed-size dummy that still declares its first extent is
+  ! checked against that extent: `a(n, *)` with n = 3 needs 3 elements.
+  ! `a(*)` alone declares no extent and is not checked.
   x = 0.0_c_float
   call bindc_assumed_size(3, x)
   if (abs(x(3) - 5.0_c_float) > 1.0e-5) error stop "bind(c) a(n, 1)"
   if (abs(x(4) - 6.0_c_float) > 1.0e-5) error stop "bind(c) a(1, 2)"
+  call bindc_no_extent(x)
+  if (abs(x(1) - 7.0_c_float) > 1.0e-5) error stop "bind(c) a(*)"
   print *, "pass"
 end program

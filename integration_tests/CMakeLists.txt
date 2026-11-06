@@ -5758,6 +5758,7 @@ RUN(NAME sequence_assoc_01 LABELS gfortran llvm)
 RUN(NAME sequence_assoc_02 LABELS gfortran llvm)
 RUN(NAME sequence_assoc_03 FAIL NO_FAST LABELS llvm) # run-time "Array size mismatch": empty actual, non-empty dummy
 RUN(NAME sequence_assoc_04 FAIL NO_FAST LABELS llvm) # run-time "Array size mismatch": too-small fixed-size actual
+RUN(NAME sequence_assoc_05 FAIL NO_FAST LABELS llvm) # run-time "Array size mismatch": too-small actual for a bind(c) assumed-size dummy
 
 RUN(NAME binop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME binop_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
