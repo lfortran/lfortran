@@ -3328,10 +3328,13 @@ public:
 
     bool is_polymorphic_descriptor_array(ASR::expr_t* expr) {
         ASR::ttype_t* type = ASRUtils::expr_type(expr);
-        return ASRUtils::is_array(type)
-            && ASRUtils::is_class_type(ASRUtils::extract_type(type))
-            && ASRUtils::extract_physical_type(type)
-                == ASR::array_physical_typeType::DescriptorArray;
+        if (!ASRUtils::is_array(type)
+                || !ASRUtils::is_class_type(ASRUtils::extract_type(type))) {
+            return false;
+        }
+        ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(type);
+        return phys == ASR::array_physical_typeType::DescriptorArray
+            || phys == ASR::array_physical_typeType::AssumedRankArray;
     }
 
     // The class wrapper {vptr, data} that the elements of a polymorphic

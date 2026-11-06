@@ -2172,6 +2172,8 @@ RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable cha
 RUN(NAME storage_size_02 LABELS gfortran llvm) # storage_size of run-time length characters
 
 RUN(NAME extends_type_of_01 LABELS gfortran llvm)
+RUN(NAME same_type_as_01 LABELS gfortran llvm) # polymorphic array arguments
+RUN(NAME same_type_as_02 LABELS gfortran llvm) # assumed-rank polymorphic arguments
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
