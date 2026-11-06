@@ -248,6 +248,9 @@ generates the device source. It never falls back to the CPU:
   Privatized automatic arrays capture their existing bounds and extents on
   the host; they do not re-evaluate specification expressions whose operands
   may have changed since entry to the procedure.
+  If an extent cannot be rebuilt on the host, the workspace pre-flight reports
+  a compile-time error; the compiler never silently leaves that array shared.
+  Workspace memory therefore grows with the launch size.
 * A scalar with unspecified locality that the loop assigns is copied back to
   the host after the launch only when a statement that can run after the
   loop may read the value it is left with, by the same reading as for the
@@ -258,9 +261,6 @@ generates the device source. It never falls back to the CPU:
   `equivalence`, a contained procedure or an `associate` around the loop).
   A loop of one iteration leaves the value it assigns defined (Fortran 2018,
   11.1.7.5), so a later read keeps it.
-  If an extent cannot be rebuilt on the host, the workspace pre-flight reports
-  a compile-time error; the compiler never silently leaves that array shared.
-  Workspace memory therefore grows with the launch size.
 * An array an iteration needs whose size is known only at run time -- a
   local of a `block` with run-time extents, an allocatable local, or a
   temporary the compiler introduces, such as the result of a function or

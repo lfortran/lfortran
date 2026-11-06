@@ -1,5 +1,6 @@
-! A scalar the host reads after a `do concurrent` that every iteration
-! assigns and then reads: each iteration has to read its own value.
+! A scalar every iteration of a `do concurrent` assigns and then reads, and
+! that a later `k = 0` redefines: each iteration has to read its own value,
+! and nothing is copied back. `last`, read after the loop, is copied back.
 program gpu_liveout_01
     implicit none
     integer :: k, i, last
