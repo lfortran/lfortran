@@ -43,11 +43,51 @@ becomes, for the factor 16,
 
 so that the device compiler gets the body sixteen times in a row. The
 loops it makes are not unrolled again.
+
+A loop that gpu_vector_lanes shares out between the lanes of an iteration
+steps by the lanes, `do i = a + lane, b, lanes` (or a positive constant
+times the lanes), which the host passes as a positive kernel argument
+(gpu_kernel_layout.lanes). Such a loop is unrolled the same way, its copies
+taking `i = group + k*lanes`, the groups stepping by `16*lanes`: each lane
+then has sixteen independent loads in flight where it had one, which is what
+a reduction shared out between the lanes waited on.
 */
 class SequentialUnrollVisitor
     : public ASR::StatementWalkVisitor<SequentialUnrollVisitor>
 {
     bool device_code = false;
+    // The lanes argument of the kernel being visited, if it has one.
+    ASR::symbol_t *lanes = nullptr;
+
+    // Whether `e` is the lanes argument, or a positive constant times it,
+    // possibly converted to another integer kind: a step that is positive.
+    bool lanes_step(ASR::expr_t *e) {
+        if (lanes == nullptr || e == nullptr) return false;
+        while (ASR::is_a<ASR::Cast_t>(*e)) {
+            ASR::Cast_t *c = ASR::down_cast<ASR::Cast_t>(e);
+            if (c->m_kind != ASR::cast_kindType::IntegerToInteger) {
+                return false;
+            }
+            e = c->m_arg;
+        }
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            return ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v) == lanes;
+        }
+        if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
+            ASR::IntegerBinOp_t *m = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+            if (m->m_op != ASR::binopType::Mul) return false;
+            int64_t c;
+            if (ASRUtils::extract_value(ASRUtils::expr_value(m->m_left), c)) {
+                return c > 0 && lanes_step(m->m_right);
+            }
+            if (ASRUtils::extract_value(ASRUtils::expr_value(m->m_right),
+                    c)) {
+                return c > 0 && lanes_step(m->m_left);
+            }
+        }
+        return false;
+    }
 
     bool unroll_device_loop(const ASR::DoLoop_t &x) {
         int factor = gpu_device_capabilities(pass_options).sequential_loop_unroll_factor;
@@ -70,8 +110,11 @@ class SequentialUnrollVisitor
         int64_t start = 0, step = 1;
         bool constant_start = ASRUtils::extract_value(
             ASRUtils::expr_value(x.m_head.m_start), start);
+        // A step of the lanes, positive but known only at run time.
+        bool strided = x.m_head.m_increment
+            && lanes_step(x.m_head.m_increment);
         if ((constant_start && start < 0)
-                || (x.m_head.m_increment &&
+                || (!strided && x.m_head.m_increment &&
                     !ASRUtils::extract_value(
                         ASRUtils::expr_value(x.m_head.m_increment), step))
                 || step != 1) return false;
@@ -101,12 +144,34 @@ class SequentialUnrollVisitor
         ASR::expr_t *group = PassUtils::create_auxiliary_variable(
             x.base.base.loc, group_name, al, current_scope, type,
             ASR::intentType::Local, nullptr, nullptr);
-        std::vector<ASR::stmt_t*> body = PassUtils::unroll_iterations(al, x,
-            group, 1, factor);
-        ASR::stmt_t *main = b.DoLoop(group, start_expr,
-            b.Sub(end, b.i_t(factor - 1, type)), body, b.i_t(factor, type));
+        std::vector<ASR::stmt_t*> body;
+        ASR::stmt_t *main = nullptr, *tail = nullptr;
         std::vector<ASR::stmt_t*> remainder(x.m_body, x.m_body + x.n_body);
-        ASR::stmt_t *tail = b.DoLoop(x.m_head.m_v, group, end, remainder);
+        if (strided) {
+            // Copy k at group + k*step; the groups step by factor*step.
+            ASRUtils::ExprStmtDuplicator dup(al);
+            auto times = [&](int64_t k) {
+                return b.Mul(b.i_t(k, type),
+                    dup.duplicate_expr(x.m_head.m_increment));
+            };
+            for (int64_t k = 0; k < factor; k++) {
+                body.push_back(b.Assignment(x.m_head.m_v,
+                    k == 0 ? group : b.Add(group, times(k))));
+                for (size_t i = 0; i < x.n_body; i++) {
+                    body.push_back(dup.duplicate_stmt(x.m_body[i]));
+                }
+            }
+            main = b.DoLoop(group, start_expr, b.Sub(end, times(factor - 1)),
+                body, times(factor));
+            tail = b.DoLoop(x.m_head.m_v, group, end, remainder,
+                dup.duplicate_expr(x.m_head.m_increment));
+        } else {
+            body = PassUtils::unroll_iterations(al, x, group, 1, factor);
+            main = b.DoLoop(group, start_expr,
+                b.Sub(end, b.i_t(factor - 1, type)), body,
+                b.i_t(factor, type));
+            tail = b.DoLoop(x.m_head.m_v, group, end, remainder);
+        }
 
         pass_result.push_back(al, capture);
         pass_result.push_back(al, b.Assignment(x.m_head.m_v, start_expr));
@@ -125,9 +190,12 @@ public:
 
     void visit_Function(const ASR::Function_t &x) {
         bool saved = device_code;
+        ASR::symbol_t *saved_lanes = lanes;
         device_code = ASRUtils::is_device_only_function(x);
+        lanes = x.m_gpu ? x.m_gpu->m_lanes : nullptr;
         StatementWalkVisitor::visit_Function(x);
         device_code = saved;
+        lanes = saved_lanes;
     }
 
     void visit_DoLoop(const ASR::DoLoop_t &x) {

@@ -6,7 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "gpu_metal_kernel-gpu_do_loop_01-6a12a46.stdout",
-    "stdout_hash": "fad2a6f234515686dc83150b9f960ace9eb30b32c80943374b283942",
+    "stdout_hash": "7f6b4f7dc624163168b257d7e9e1eff045ea9b962fba4e8cc7286a28",
     "stderr": "gpu_metal_kernel-gpu_do_loop_01-6a12a46.stderr",
     "stderr_hash": "2ba1a0fba4ce19c449ffc1dfef5a42e8b182fdd615206b1cb9ac6a47",
     "returncode": 0
