@@ -1463,7 +1463,10 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
         pass_manager.skip_pass("unused_functions");
         // For the same reason, array_by_data has to keep the descriptor
         // original of a procedure it specializes: a later cell may call
-        // it with a descriptor, e.g. with an array section.
+        // it with a descriptor, e.g. with an array section. Only user
+        // procedures a later cell can link to (module and top-level
+        // procedures) are kept; compiler-generated helpers are regenerated
+        // by each cell's lowering and would only inflate this cell's IR.
         compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
     }
 
