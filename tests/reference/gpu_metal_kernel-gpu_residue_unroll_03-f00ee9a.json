@@ -2,7 +2,7 @@
     "basename": "gpu_metal_kernel-gpu_residue_unroll_03-f00ee9a",
     "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
     "infile": "tests/../integration_tests/gpu_residue_unroll_03.f90",
-    "infile_hash": "5949c99ddd017c89e4dedd85749ab35841c9dbc75eeb18c352508b7a",
+    "infile_hash": "d77b4096b1a288b9aaf80810b1c9db6345a6e1ab5533a843ffdceec0",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "gpu_metal_kernel-gpu_residue_unroll_03-f00ee9a.stdout",

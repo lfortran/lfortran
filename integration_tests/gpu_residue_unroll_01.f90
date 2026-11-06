@@ -18,17 +18,19 @@ contains
         real(real32), contiguous, intent(in) :: x(:)
         real(real32), contiguous, intent(out) :: y(:)
         integer :: k, groups
+        integer :: n
         k = size(x)
         groups = k/64
-        do concurrent (integer :: n = 1:size(y))
+        do concurrent (n = 1:size(y))
             block
                 integer(int16) :: codes(k)
                 real(real32) :: terms(groups)
-                do concurrent (integer :: d = 1:k)
+                integer :: d, g
+                do concurrent (d = 1:k)
                     codes(d) = int(packed_byte(w((d-1)/4+1, n), &
                         modulo(d-1, 4)), int16)
                 end do
-                do concurrent (integer :: g = 1:groups)
+                do concurrent (g = 1:groups)
                     terms(g) = sum(real(codes((g-1)*64+1:g*64), real32) &
                         *x((g-1)*64+1:g*64))
                 end do
@@ -42,7 +44,8 @@ contains
     pure subroutine groups_of_eight(w, y, last)
         integer(int32), contiguous, intent(in) :: w(:,:)
         integer, contiguous, intent(out) :: y(:), last(:)
-        do concurrent (integer :: n = 1:size(y))
+        integer :: n
+        do concurrent (n = 1:size(y))
             block
                 integer :: d, g, acc, final
                 acc = 0

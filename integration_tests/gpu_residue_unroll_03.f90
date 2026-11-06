@@ -12,7 +12,8 @@ contains
     pure subroutine decode(w, y)
         integer, intent(in) :: w(:,:)
         integer, intent(out) :: y(:)
-        do concurrent (integer :: n = 1:size(y))
+        integer :: n
+        do concurrent (n = 1:size(y))
             block
                 integer :: d, acc
                 acc = 0

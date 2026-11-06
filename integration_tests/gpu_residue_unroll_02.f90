@@ -13,7 +13,8 @@ contains
     pure subroutine unaligned(w, lo, hi, s, last)
         integer, intent(in) :: w(0:), lo(:), hi(:)
         integer, intent(out) :: s(:), last(:)
-        do concurrent (integer :: n = 1:size(s))
+        integer :: n
+        do concurrent (n = 1:size(s))
             block
                 integer :: d, acc
                 acc = 0
@@ -32,7 +33,8 @@ contains
     pure subroutine signed(lo, hi, s, t)
         integer, intent(in) :: lo(:), hi(:)
         integer, intent(out) :: s(:), t(:)
-        do concurrent (integer :: n = 1:size(s))
+        integer :: n
+        do concurrent (n = 1:size(s))
             block
                 integer :: d, acc, acc2
                 acc = 0
@@ -54,7 +56,8 @@ contains
     pure subroutine counts(lo, hi, s)
         integer, intent(in) :: lo(:), hi(:)
         integer, intent(out) :: s(:)
-        do concurrent (integer :: n = 1:size(s))
+        integer :: n
+        do concurrent (n = 1:size(s))
             block
                 integer :: d, j, acc, cnt(0:40)
                 cnt = 0
