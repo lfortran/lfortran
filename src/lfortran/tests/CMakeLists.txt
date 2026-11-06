@@ -88,6 +88,13 @@ if (WITH_LSP)
     add_executable(test_lsp_union_copy test_lsp_union_copy.cpp)
     target_link_libraries(test_lsp_union_copy llanguage_server)
     add_test(NAME test_lsp_union_copy COMMAND test_lsp_union_copy)
+    add_executable(test_server_queue test_server_queue.cpp)
+    target_link_libraries(test_server_queue llanguage_server)
+    if (NOT EMSCRIPTEN)
+        # std::thread needs an explicit libpthread with glibc < 2.34.
+        target_link_libraries(test_server_queue Threads::Threads)
+    endif()
+    add_test(NAME test_server_queue COMMAND test_server_queue)
     set(SRC_AST ${SRC_AST}
         test_ast.cpp
     )
