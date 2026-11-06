@@ -67,6 +67,7 @@ program sequence_assoc_02
   real :: c(4, 2)
   real :: z(0, 0)
   real(c_float) :: x(6)
+  real(c_float), allocatable :: xa(:)
   real, allocatable :: empty(:), empty_2d(:,:)
   integer :: i, j, k, l
   allocate(b(4, 2))
@@ -113,6 +114,12 @@ program sequence_assoc_02
   call bindc_assumed_size(3, x)
   if (abs(x(3) - 5.0_c_float) > 1.0e-5) error stop "bind(c) a(n, 1)"
   if (abs(x(4) - 6.0_c_float) > 1.0e-5) error stop "bind(c) a(1, 2)"
+  ! The same conforming call through a descriptor (allocatable) actual argument.
+  allocate(xa(6))
+  xa = 0.0_c_float
+  call bindc_assumed_size(3, xa)
+  if (abs(xa(3) - 5.0_c_float) > 1.0e-5) error stop "bind(c) allocatable a(n, 1)"
+  if (abs(xa(4) - 6.0_c_float) > 1.0e-5) error stop "bind(c) allocatable a(1, 2)"
   call bindc_no_extent(x)
   if (abs(x(1) - 7.0_c_float) > 1.0e-5) error stop "bind(c) a(*)"
   print *, "pass"
