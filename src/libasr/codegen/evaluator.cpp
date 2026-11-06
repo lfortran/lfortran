@@ -209,6 +209,17 @@ std::vector<std::string> get_detected_host_features()
     return features;
 }
 
+bool host_has_feature(const char *name)
+{
+#if LLVM_VERSION_MAJOR >= 19
+    auto host_features = llvm::sys::getHostCPUFeatures();
+#else
+    llvm::StringMap<bool, llvm::MallocAllocator> host_features;
+    llvm::sys::getHostCPUFeatures(host_features);
+#endif
+    return host_features.lookup(name);
+}
+
 #if defined(HAVE_TARGET_AARCH64) && LLVM_VERSION_MAJOR >= 18
 std::vector<std::string> get_aarch64_extension_features(
     const llvm::AArch64::ExtensionSet &extensions)
@@ -346,6 +357,17 @@ std::string resolve_native_cpu(const llvm::Target &target,
     std::string cpu = get_host_cpu(option, config);
     if (!is_valid_cpu(target, triple, cpu)) {
         return "generic";
+    }
+    if (cpu == "generic") {
+        // LLVM reports "generic" for CPUs it does not recognize. Its generic
+        // cost model prefers 512-bit vectors, but known models with the same
+        // instruction set use 256-bit vectors, which is faster for small
+        // loops. Keep the detected features and only switch the CPU model.
+        if (host_has_feature("avx512f")) {
+            return "skylake-avx512";
+        } else if (host_has_feature("avx2")) {
+            return "haswell";
+        }
     }
     return cpu;
 }
