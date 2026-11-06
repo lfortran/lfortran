@@ -420,11 +420,18 @@ Access first_access(ASR::stmt_t **body, size_t from, size_t to,
             }
         } else if (ASR::is_a<ASR::DoLoop_t>(*x)) {
             auto *d = ASR::down_cast<ASR::DoLoop_t>(x);
+            bool header = mentions(d->m_head.m_start, s)
+                || mentions(d->m_head.m_end, s)
+                || mentions(d->m_head.m_increment, s);
             if (d->m_head.m_v && root_of(d->m_head.m_v) == s) {
-                return mentions(d->m_head.m_start, s)
-                    || mentions(d->m_head.m_end, s)
-                    || mentions(d->m_head.m_increment, s)
-                    ? Access::Read : Access::Write;
+                return header ? Access::Read : Access::Write;
+            }
+            // A loop whose body assigns `s` before it reads it, as a loop
+            // inside it over `s` does: what `s` held before is not read in
+            // it, and if it runs no iteration, is read only after it.
+            if (!header && d->n_orelse == 0 && first_access(d->m_body, 0,
+                    d->n_body, s) == Access::Write) {
+                continue;
             }
         }
         if (mentions(*x, s)) return Access::Read;
