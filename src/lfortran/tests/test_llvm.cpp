@@ -2870,6 +2870,127 @@ end module funcmod)");
     CHECK(std::abs(r.result.f32 - (-3.0)) <= 1e-8 );
 }
 
+// A derived-type global declared with a structure constructor keeps the
+// constructor's component values. The members are set up at run time in
+// interactive mode, and that setup must not fall back to the components'
+// declared defaults and overwrite the initializer (#16859).
+TEST_CASE("FortranEvaluator derived type constructor initializer") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: init_point\ninteger :: x, y\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(init_point) :: init_p = init_point(1, 2)");
+    CHECK(r.ok);
+    r = e.evaluate2("init_p%x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 1);
+    r = e.evaluate2("init_p%y");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 2);
+}
+
+// The same, with the type and the declaration in one cell and the use in
+// another.
+TEST_CASE("FortranEvaluator derived type initializer in one cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(type :: init_cell_point
+integer :: x, y
+end type
+type(init_cell_point) :: init_cell_p = init_cell_point(5, 6))");
+    CHECK(r.ok);
+    r = e.evaluate2("init_cell_p%x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 5);
+    r = e.evaluate2("init_cell_p%y");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+
+    // The type, the declaration and a use of the result in a single cell.
+    r = e.evaluate2(R"(type :: init_use_point
+integer :: x, y
+end type
+type(init_use_point) :: init_use_p = init_use_point(7, 8)
+init_use_p%y)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 8);
+}
+
+// Controls for the same cell layout: a component's own default initializer
+// and a later assignment must keep working.
+TEST_CASE("FortranEvaluator derived type initializer controls") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: init_ctrl_point\ninteger :: x = 3, y = 4\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(init_ctrl_point) :: init_ctrl_default");
+    CHECK(r.ok);
+    r = e.evaluate2("init_ctrl_default%x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 3);
+
+    r = e.evaluate2("type(init_ctrl_point) :: init_ctrl_assigned");
+    CHECK(r.ok);
+    r = e.evaluate2("init_ctrl_assigned = init_ctrl_point(9, 10)");
+    CHECK(r.ok);
+    r = e.evaluate2("init_ctrl_assigned%x");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+    r = e.evaluate2("init_ctrl_assigned%y");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 10);
+}
+
+// The member setup of an interactive global must also apply a structure
+// constructor's string and nested derived-type component values (#16859).
+TEST_CASE("FortranEvaluator derived type initializer string and nested components") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: init_string_point\ncharacter(len=3) :: s\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(init_string_point) :: init_string_p = init_string_point('abc')");
+    CHECK(r.ok);
+    r = e.evaluate2("init_string_p%s");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::character);
+    CHECK(r.result.str == "abc");
+
+    r = e.evaluate2("type :: init_inner_point\ninteger :: k\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type :: init_nested_point\ntype(init_inner_point) :: inner\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("type(init_nested_point) :: init_nested_p = init_nested_point(init_inner_point(11))");
+    CHECK(r.ok);
+    r = e.evaluate2("init_nested_p%inner%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 11);
+}
+
 #ifndef __EMSCRIPTEN__
 
 // Tests passing the complex struct by reference
@@ -6182,4 +6303,47 @@ end function
         CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
         CHECK(r.result.f64 == 6.0);
     }
+}
+
+TEST_CASE("ASR structure constructor with an allocatable component in an assignment") {
+    // An initialization expression cannot give an allocatable component a
+    // value, but an assignment may: it allocates the component. The check
+    // for the initialization-expression restriction must not fire here.
+    std::string source = R"(module alloc_component_assignment_m
+implicit none
+type :: inner_t
+    integer :: n
+end type
+type :: outer_t
+    type(inner_t), allocatable :: c(:)
+end type
+type :: nested_inner_t
+    integer, allocatable :: a
+end type
+type :: nested_outer_t
+    type(nested_inner_t) :: arr(1)
+end type
+contains
+subroutine assign_alloc_component()
+    type(outer_t) :: x
+    x = outer_t([inner_t(5)])
+    x = outer_t(null())
+    x = outer_t()
+end subroutine
+subroutine assign_nested_alloc_component()
+    type(nested_outer_t) :: y
+    y = nested_outer_t([nested_inner_t(5)])
+end subroutine
+end module)";
+    Allocator al(256*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+    compiler_options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    auto *ast = TRY(LCompilers::LFortran::parse(al, source,
+        diagnostics, compiler_options));
+    LCompilers::LocationManager lm;
+    auto *asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast, diagnostics,
+        nullptr, false, compiler_options, lm));
+    CHECK_FALSE(diagnostics.has_error());
+    CHECK(asr->m_symtab->get_symbol("alloc_component_assignment_m") != nullptr);
 }

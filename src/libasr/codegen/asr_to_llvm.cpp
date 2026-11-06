@@ -840,7 +840,12 @@ public:
         llvm::GlobalVariable* descriptor;
     };
     std::vector<to_be_allocated_array> allocatable_array_details;
-    std::vector<std::pair<ASR::symbol_t*, llvm::Value*>> allocatable_struct_array_members_details;
+    struct struct_global { /* A scalar global of a derived type, whose members are set up once, inside `program` or the cell's setup */
+        ASR::symbol_t* type_declaration; // The derived type of the global.
+        llvm::Value* ptr; // Corresponds to the global in llvm IR.
+        ASR::StructConstant_t* init_sc; // The global's constant initializer, or nullptr.
+    };
+    std::vector<struct_global> struct_global_members_details;
     struct struct_array_global { /* A module level array of a derived type, whose elements' members are set up once, inside `program` */
         ASR::symbol_t* type_declaration; // The derived type of the module variable.
         llvm::Value* ptr; // Corresponds to the module variable in llvm IR.
@@ -2469,14 +2474,16 @@ public:
     }
 
     // Set up, at the builder's insertion point, the members of the derived
-    // type globals `visit_Variable` queued because no static initializer
-    // describes them.
+    // type globals `visit_Variable` queued: the parts a static initializer
+    // cannot describe, with the values a declaration initializer gave them
+    // when it has one.
     void emit_global_struct_members_setup() {
-        for(auto& st : allocatable_struct_array_members_details) {
-            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.first),
-                st.second, ASRUtils::symbol_type(st.first), false, true);
+        for(struct_global& st : struct_global_members_details) {
+            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.type_declaration),
+                st.ptr, ASRUtils::symbol_type(st.type_declaration), false, true,
+                false, st.init_sc);
         }
-        allocatable_struct_array_members_details.clear();
+        struct_global_members_details.clear();
         for(struct_array_global& st : struct_array_global_members_details) {
             allocate_array_members_of_struct_arrays(st.type_declaration, st.ptr, st.var_type);
         }
@@ -2525,7 +2532,7 @@ public:
                 break;
             }
         }
-        if (allocatable_struct_array_members_details.empty()
+        if (struct_global_members_details.empty()
                 && struct_array_global_members_details.empty()
                 && !arrays) {
             return;
@@ -7980,8 +7987,22 @@ public:
                 }
             }
             if (!skip_runtime_struct_init && !is_earlier_cell_global(x)) {
-                allocatable_struct_array_members_details.push_back(std::make_pair(
-                    ASRUtils::symbol_get_past_external(x.m_type_declaration), llvm_symtab[h]));
+                // The declaration's own constant initializer, when it has one,
+                // is what the member setup must store: falling back to the
+                // components' declared defaults would overwrite the values the
+                // initializer gave them. A module global with an initializer is
+                // not queued at all, so this only decides for a global that is
+                // set up when its cell runs.
+                ASR::StructConstant_t *init_sc = nullptr;
+                if (x.m_symbolic_value != nullptr) {
+                    ASR::expr_t *init_expr = ASRUtils::expr_value(x.m_symbolic_value);
+                    if (init_expr != nullptr && ASR::is_a<ASR::StructConstant_t>(*init_expr)) {
+                        init_sc = ASR::down_cast<ASR::StructConstant_t>(init_expr);
+                    }
+                }
+                struct_global_members_details.push_back({
+                    ASRUtils::symbol_get_past_external(x.m_type_declaration),
+                    llvm_symtab[h], init_sc});
             }
         } else if(x.m_type->type == ASR::ttypeType::Pointer ||
                     x.m_type->type == ASR::ttypeType::Allocatable) {

@@ -1892,6 +1892,12 @@ semantic error: dummy procedure 'h' cannot have an elemental interface
 4475 |                end function
      | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: an initialization expression cannot specify a value for allocatable component 'a' of a structure constructor
+    --> tests/errors/continue_compilation_1.f90:4515:82
+     |
+4515 |     type(cc1_alloc_component_t) :: cc1_alloc_component_v = cc1_alloc_component_t([1, 2])  ! {Error} an initialization expression cannot specify a value for allocatable component 'a' of a structure constructor
+     |                                                                                  ^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

@@ -236,6 +236,10 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
                 !(asr_owner && ASR::is_a<ASR::Module_t>(*asr_owner));
             // The initial value of a variable in a common block is the
             // initial value of the block's static storage, not code.
+            // A constant initializer, including a derived-type StructConstant
+            // of a translation-unit-owned global (an interactive cell), is
+            // static data too: those node kinds are not lowerable here and
+            // fall through to the return below.
             if( x.m_common_block != nullptr ||
                 !(symbolic_value &&
                   (ASR::is_a<ASR::ArrayConstant_t>(*symbolic_value) ||

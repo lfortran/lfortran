@@ -6962,6 +6962,14 @@ class TransformVariableInitialiser:
                 (parameter_struct_has_array_member &&
                     !parameter_struct_has_character_member));
         if ((check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
+            // A global that a statement of an interactive cell declares
+            // belongs to that cell's translation unit: its constant
+            // initializer is static data the backend lays out, and no
+            // procedure body exists to run the statements this pass would
+            // otherwise create for it.
+            (ASRUtils::is_tu_scope(x.m_parent_symtab) &&
+                x.m_type->type == ASR::ttypeType::StructType &&
+                value != nullptr && ASRUtils::is_value_constant(value)) ||
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||
             skip_parameter_constant || (
@@ -7415,9 +7423,13 @@ class VerifySimplifierASROutput:
     }
 
     void visit_Variable(const ASR::Variable_t& x) {
+        ASR::expr_t* initial = x.m_value ? x.m_value : x.m_symbolic_value;
         if( (ASRUtils::is_array(x.m_type) ||
             ASRUtils::is_aggregate_type(x.m_type)) &&
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
+            !(ASRUtils::is_tu_scope(x.m_parent_symtab)
+                && x.m_type->type == ASR::ttypeType::StructType
+                && initial != nullptr && ASRUtils::is_value_constant(initial)) &&
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
             // A variable in a common block keeps its static initial value,

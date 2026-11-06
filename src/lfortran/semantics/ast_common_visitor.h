@@ -11247,12 +11247,15 @@ public:
                     }
                     RestrictedExprScope init_expr_scope(*this,
                         RestrictedExprContext::InitExpr);
-                    // Module variables, parameters and derived-type component
-                    // defaults are initialized statically, so their
-                    // initializer must be a StructConstant; other variables
-                    // get a StructConstructor that init_expr lowers to
-                    // assignments.
-                    bool is_struct_const = false;
+                    // Module variables, parameters, derived-type component
+                    // defaults and a global an interactive cell declares are
+                    // initialized statically, so their initializer must be a
+                    // StructConstant; other variables get a StructConstructor
+                    // that init_expr lowers to assignments. A statement of a
+                    // cell belongs to its translation unit rather than to a
+                    // procedure, and nothing would run the assignments such a
+                    // lower would produce (#16859).
+                    bool is_struct_const = ASRUtils::is_tu_scope(current_scope);
                     if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
                         ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
                         if (ASR::is_a<ASR::Module_t>(*asr_owner_sym)) {
@@ -15978,6 +15981,56 @@ public:
         return make_struct_constructor(loc, v, vals, members, is_const);
     }
 
+    // A structure constructor in an initialization expression cannot give an
+    // allocatable component a value: the constructor would have to allocate
+    // it, which an initialization expression cannot do, and the component is
+    // not part of the constant. An omitted component, or one given null(),
+    // stays unallocated and is fine. In an assignment statement the same
+    // constructor is valid. Nested constructors are created and folded
+    // separately, so their components are checked here too.
+    void check_allocatable_initializer_components(ASR::symbol_t* dt_sym,
+            ASR::call_arg_t* args, size_t n_args) {
+        StructConstructorInfo info = get_struct_constructor_info(dt_sym);
+        if (!info.kind_indices.empty() || info.members.size() != n_args) {
+            return;
+        }
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i].m_value == nullptr || info.members[i] == nullptr
+                    || !ASR::is_a<ASR::Variable_t>(*info.members[i])) {
+                continue;
+            }
+            ASR::Variable_t* member_var =
+                ASR::down_cast<ASR::Variable_t>(info.members[i]);
+            if (ASRUtils::is_allocatable(member_var->m_type)) {
+                diag.add(Diagnostic(
+                    "an initialization expression cannot specify a value for allocatable component '"
+                    + std::string(member_var->m_name) + "' of a structure constructor",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {args[i].m_value->base.loc})}));
+                if (!compiler_options.continue_compilation) {
+                    throw SemanticAbort();
+                }
+                args[i].m_value = nullptr;
+                continue;
+            }
+            ASR::expr_t* value = ASRUtils::expr_value(args[i].m_value);
+            ASR::expr_t* element = (value
+                && ASR::is_a<ASR::StructConstant_t>(*value)) ? value
+                : args[i].m_value;
+            if (ASR::is_a<ASR::StructConstructor_t>(*element)) {
+                ASR::StructConstructor_t* nested =
+                    ASR::down_cast<ASR::StructConstructor_t>(element);
+                check_allocatable_initializer_components(nested->m_dt_sym,
+                    nested->m_args, nested->n_args);
+            } else if (ASR::is_a<ASR::StructConstant_t>(*element)) {
+                ASR::StructConstant_t* nested =
+                    ASR::down_cast<ASR::StructConstant_t>(element);
+                check_allocatable_initializer_components(nested->m_dt_sym,
+                    nested->m_args, nested->n_args);
+            }
+        }
+    }
+
     // Returns the structure constructor of the type `v` with the component
     // values `vals`, one for each of `members`, which are conformed to their
     // components first. If `is_const` and every value is constant, it is a
@@ -15986,6 +16039,15 @@ public:
             Vec<ASR::call_arg_t>& vals, const std::vector<ASR::symbol_t*>& members,
             bool is_const) {
         conform_struct_constructor_args(vals, members);
+
+        // The restriction is on an initialization expression only. A
+        // structure constructor in an assignment may supply a value for an
+        // allocatable component, which allocates it, and is valid even
+        // though its arguments are constants.
+        if (is_const
+                && restricted_expr_context == RestrictedExprContext::InitExpr) {
+            check_allocatable_initializer_components(v, vals.p, vals.size());
+        }
 
         // Ensure all values are constant before creating StructConstant
         for (const auto& val : vals) {
