@@ -4,6 +4,7 @@
 #else
 #include <llvm/ADT/Triple.h>
 #endif
+#include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/SmallPtrSet.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/CodeGen/TargetSubtargetInfo.h>
@@ -18,6 +19,9 @@
 #endif
 
 #include <libasr/codegen/llvm_reductions.h>
+
+#include <utility>
+#include <vector>
 
 /*
 Pairwise horizontal reductions of four vector squares.
@@ -149,87 +153,196 @@ void collect_terms(Value *v, SmallVectorImpl<Value *> &terms,
     }
 }
 
-// Whether component 3 of `v` is known to be zero. Cycles through phis are
-// assumed to be zero while they are checked, which is sound because every
-// operation below preserves a zero component and every other input is
-// checked.
-bool lane_three_is_zero(Value *v, SmallPtrSetImpl<Value *> &visiting) {
-    if (auto *c = dyn_cast<Constant>(v)) {
-        if (isa<ConstantAggregateZero>(c)) {
-            return true;
+// Whether element `lane` of `v` is known to be +0.0 or -0.0 (a scalar is
+// element 0 of itself).
+//
+// The facts are the greatest fixed point of the rules below: every element
+// reachable from the query is first assumed to be zero, and the assumption is
+// dropped for each element whose operands no longer justify it, until nothing
+// changes. A cycle through phis is therefore zero only if every value that
+// enters the cycle is zero and every operation on it keeps the element zero,
+// which is induction over the iterations of the loop.
+class LaneZero {
+public:
+    bool is_zero(Value *v, unsigned lane) {
+        Element root{v, lane};
+        if (!add(root)) {
+            return constant_is_zero(v, lane);
         }
-        if (auto *cdv = dyn_cast<ConstantDataVector>(c)) {
-            if (!cdv->getElementType()->isDoubleTy()) {
-                return false;
-            }
-            return cast<ConstantFP>(cdv->getElementAsConstant(3))->isZero();
-        }
-        if (auto *cv = dyn_cast<ConstantVector>(c)) {
-            if (!cv->getType()->getElementType()->isDoubleTy()) {
-                return false;
-            }
-            auto *element = dyn_cast<ConstantFP>(cv->getAggregateElement(3));
-            return element && element->isZero();
-        }
-        return false;
-    }
-    auto *i = dyn_cast<Instruction>(v);
-    if (!i) {
-        return false;
-    }
-    if (!visiting.insert(i).second) {
-        return true;
-    }
-    switch (i->getOpcode()) {
-        case Instruction::FAdd:
-        case Instruction::FSub:
-            return lane_three_is_zero(i->getOperand(0), visiting)
-                && lane_three_is_zero(i->getOperand(1), visiting);
-        case Instruction::FMul:
-            // A zero times a value is zero with fast math; without it the
-            // other value could be an infinity or a NaN.
-            return (is_fast(i)
-                    && (lane_three_is_zero(i->getOperand(0), visiting)
-                        || lane_three_is_zero(i->getOperand(1), visiting)))
-                || (lane_three_is_zero(i->getOperand(0), visiting)
-                    && lane_three_is_zero(i->getOperand(1), visiting));
-        case Instruction::FNeg:
-            return lane_three_is_zero(i->getOperand(0), visiting);
-        case Instruction::Select:
-            return lane_three_is_zero(i->getOperand(1), visiting)
-                && lane_three_is_zero(i->getOperand(2), visiting);
-        case Instruction::PHI: {
-            auto *phi = cast<PHINode>(i);
-            for (unsigned k = 0; k < phi->getNumIncomingValues(); k++) {
-                if (!lane_three_is_zero(phi->getIncomingValue(k), visiting)) {
-                    return false;
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (Node &node : nodes) {
+                if (node.zero && !holds(node)) {
+                    node.zero = false;
+                    changed = true;
                 }
             }
-            return phi->getNumIncomingValues() > 0;
         }
-        case Instruction::ShuffleVector: {
-            auto *shuffle = cast<ShuffleVectorInst>(i);
-            unsigned n = cast<FixedVectorType>(shuffle->getType())
-                ->getNumElements();
-            int mask = shuffle->getShuffleMask()[3];
-            if (mask < 0) {
-                return false;
-            }
-            Value *source = mask < (int)n ? shuffle->getOperand(0)
-                : shuffle->getOperand(1);
-            return lane_three_is_zero(source, visiting);
-        }
-        case Instruction::BitCast:
-            return lane_three_is_zero(i->getOperand(0), visiting);
-        default:
-            return false;
+        return nodes[index[root]].zero;
     }
-}
 
-bool lane_three_is_zero(Value *v) {
-    SmallPtrSet<Value *, 16> visiting;
-    return lane_three_is_zero(v, visiting);
-}
+private:
+    using Element = std::pair<Value *, unsigned>;
+
+    // The element is zero if all operand elements are zero, or with `any`,
+    // if one of them is.
+    struct Node {
+        SmallVector<Element, 3> operands;
+        bool any = false;
+        bool zero = true;
+    };
+
+    std::vector<Node> nodes;
+    DenseMap<Element, unsigned> index;
+
+    // A constant element that is +0.0 or -0.0, or an integer zero.
+    static bool constant_is_zero(Value *v, unsigned lane) {
+        auto *c = dyn_cast<Constant>(v);
+        if (!c) {
+            return false;
+        }
+        if (c->getType()->isVectorTy()) {
+            c = c->getAggregateElement(lane);
+        } else if (lane != 0) {
+            return false;
+        }
+        if (!c || isa<UndefValue>(c)) {
+            return false;
+        }
+        if (auto *fp = dyn_cast<ConstantFP>(c)) {
+            return fp->isZero();
+        }
+        return c->isNullValue();
+    }
+
+    static unsigned width(Type *type) {
+        auto *vector = dyn_cast<FixedVectorType>(type);
+        return vector ? vector->getNumElements() : 1;
+    }
+
+    bool value_of(const Element &e) const {
+        auto it = index.find(e);
+        if (it == index.end()) {
+            return constant_is_zero(e.first, e.second);
+        }
+        return nodes[it->second].zero;
+    }
+
+    bool holds(const Node &node) const {
+        for (const Element &e : node.operands) {
+            if (value_of(e) == node.any) {
+                return node.any;
+            }
+        }
+        return !node.any && !node.operands.empty();
+    }
+
+    // The operand elements that decide element `lane` of instruction `i`, or
+    // false if the element is not known to be zero whatever its operands are.
+    static bool rule(Instruction *i, unsigned lane, Node &node) {
+        auto same = [&](Value *v) { node.operands.push_back({v, lane}); };
+        switch (i->getOpcode()) {
+            case Instruction::FAdd:
+            case Instruction::FSub:
+                same(i->getOperand(0));
+                same(i->getOperand(1));
+                return true;
+            case Instruction::FMul:
+                // With fast math a zero times any value is zero; without it
+                // the other value could be an infinity or a NaN.
+                node.any = is_fast(i);
+                same(i->getOperand(0));
+                same(i->getOperand(1));
+                return true;
+            case Instruction::FNeg:
+                same(i->getOperand(0));
+                return true;
+            case Instruction::Select:
+                same(i->getOperand(1));
+                same(i->getOperand(2));
+                return true;
+            case Instruction::PHI:
+                for (Value *incoming : cast<PHINode>(i)->incoming_values()) {
+                    same(incoming);
+                }
+                return true;
+            case Instruction::ShuffleVector: {
+                auto *shuffle = cast<ShuffleVectorInst>(i);
+                int m = shuffle->getShuffleMask()[lane];
+                if (m < 0) {
+                    return false;
+                }
+                unsigned n = width(shuffle->getOperand(0)->getType());
+                node.operands.push_back({shuffle->getOperand(m < (int)n ? 0 : 1),
+                    (unsigned)m % n});
+                return true;
+            }
+            case Instruction::InsertElement: {
+                auto *at = dyn_cast<ConstantInt>(i->getOperand(2));
+                if (!at) {
+                    return false;
+                }
+                if (at->getZExtValue() == lane) {
+                    node.operands.push_back({i->getOperand(1), 0});
+                } else {
+                    same(i->getOperand(0));
+                }
+                return true;
+            }
+            case Instruction::ExtractElement: {
+                auto *at = dyn_cast<ConstantInt>(i->getOperand(1));
+                if (!at || lane != 0) {
+                    return false;
+                }
+                node.operands.push_back({i->getOperand(0),
+                    (unsigned)at->getZExtValue()});
+                return true;
+            }
+            case Instruction::BitCast:
+                // Only a cast between floating point elements of the same
+                // width keeps the meaning of a zero element.
+                if (width(i->getType()) != width(i->getOperand(0)->getType())
+                        || !i->getType()->getScalarType()->isFloatingPointTy()
+                        || !i->getOperand(0)->getType()->getScalarType()
+                            ->isFloatingPointTy()) {
+                    return false;
+                }
+                same(i->getOperand(0));
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    // Add the elements reachable from `root` to the graph. Returns false if
+    // `root` is not an instruction.
+    bool add(const Element &root) {
+        if (!isa<Instruction>(root.first)) {
+            return false;
+        }
+        SmallVector<Element, 16> work;
+        work.push_back(root);
+        while (!work.empty()) {
+            Element e = work.pop_back_val();
+            auto *i = dyn_cast<Instruction>(e.first);
+            if (!i || index.count(e)) {
+                continue;
+            }
+            index[e] = nodes.size();
+            Node node;
+            if (!rule(i, e.second, node)) {
+                node.operands.clear();
+                node.any = false;
+            }
+            for (const Element &operand : node.operands) {
+                work.push_back(operand);
+            }
+            nodes.push_back(node);
+        }
+        return true;
+    }
+};
 
 Function *hadd_pd(Module &m) {
 #ifdef HAVE_TARGET_X86
@@ -342,9 +455,10 @@ bool recombine_horizontal_reductions(llvm::Function &f,
         for (unsigned j = 0; j < 4; j++) {
             x[j] = builder.CreateFMul(bases[j], bases[j]);
         }
+        LaneZero lanes;
         bool zero = true;
         for (unsigned j = 0; j < 4; j++) {
-            zero = zero && lane_three_is_zero(bases[j]);
+            zero = zero && lanes.is_zero(bases[j], 3);
         }
         if (!zero) {
             llvm::Type *i64 = llvm::Type::getInt64Ty(f.getContext());

@@ -7941,6 +7941,72 @@ bool reductions_rewrite(const std::string &ir, const llvm::TargetMachine &tm) {
     return changed;
 }
 
+// The same sum of squares in a loop. BASES defines the four vectors %v0 to
+// %v3 from the loop-carried vector %x and the loaded vectors %la and %lb,
+// and UPDATE defines %x.next. The pass clears the fourth component unless it
+// can prove that it is zero in all four vectors.
+const std::string reductions_loop_ir = R"""(
+define double @reductions_sum(<4 x double>* %p, i32 %n) #0 {
+entry:
+  %la = load <4 x double>, <4 x double>* %p
+  %q = getelementptr <4 x double>, <4 x double>* %p, i64 1
+  %lb = load <4 x double>, <4 x double>* %q
+  br label %loop
+
+loop:
+  %x = phi <4 x double> [ <double 1.0, double 2.0, double 3.0, double 0.0>, %entry ], [ %x.next, %loop ]
+  %i = phi i32 [ 0, %entry ], [ %i.next, %loop ]
+BASES
+  %g0a = shufflevector <4 x double> %v0, <4 x double> %v1, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
+  %g0b = shufflevector <4 x double> %g0a, <4 x double> %v2, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
+  %g0c = shufflevector <4 x double> %g0b, <4 x double> %v3, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
+  %s0 = fmul fast <4 x double> %g0c, %g0c
+  %g1a = shufflevector <4 x double> %v0, <4 x double> %v1, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
+  %g1b = shufflevector <4 x double> %g1a, <4 x double> %v2, <4 x i32> <i32 0, i32 1, i32 5, i32 undef>
+  %g1c = shufflevector <4 x double> %g1b, <4 x double> %v3, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
+  %s1 = fmul fast <4 x double> %g1c, %g1c
+  %g2a = shufflevector <4 x double> %v0, <4 x double> %v1, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
+  %g2b = shufflevector <4 x double> %g2a, <4 x double> %v2, <4 x i32> <i32 0, i32 1, i32 6, i32 undef>
+  %g2c = shufflevector <4 x double> %g2b, <4 x double> %v3, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
+  %s2 = fmul fast <4 x double> %g2c, %g2c
+  %t0 = fadd fast <4 x double> %s0, %s1
+  %t1 = fadd fast <4 x double> %t0, %s2
+UPDATE
+  %i.next = add i32 %i, 1
+  %c = icmp slt i32 %i.next, %n
+  br i1 %c, label %loop, label %exit
+
+exit:
+  %r = extractelement <4 x double> %t1, i32 0
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
+// Whether the pass rewrites `reductions_loop_ir` with the given bases and
+// update for `tm`, and clears the fourth component when it does.
+bool reductions_loop_masks(const std::string &bases,
+        const std::string &update, const llvm::TargetMachine &tm) {
+    std::string ir = reductions_loop_ir;
+    ir.replace(ir.find("BASES"), 5, bases);
+    ir.replace(ir.find("UPDATE"), 6, update);
+    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<llvm::Module> m = e.parse_module(ir, "");
+    llvm::Function &f = *m->getFunction("reductions_sum");
+    REQUIRE(LCompilers::recombine_horizontal_reductions(f, tm));
+    std::string err;
+    llvm::raw_string_ostream os(err);
+    CHECK(!llvm::verifyFunction(f, &os));
+    for (llvm::BasicBlock &bb : f) {
+        for (llvm::Instruction &i : bb) {
+            if (i.getOpcode() == llvm::Instruction::And) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 std::string reductions_replace(std::string ir, const std::string &from,
         const std::string &to) {
     size_t pos = 0;
@@ -7973,6 +8039,34 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         // Without fast math the shuffle chain is not rewritten.
         CHECK(!reductions_rewrite(reductions_replace(reductions_sum_ir,
             " fast ", " "), *x86));
+        // A fourth component that is zero on entry to the loop and that the
+        // update keeps zero needs no mask: a zero times any value is zero.
+        const std::string differences =
+            "  %v0 = fsub fast <4 x double> %x, <double 1.0, double 1.0, double 1.0, double 0.0>\n"
+            "  %v1 = fsub fast <4 x double> %x, <double 2.0, double 1.0, double 1.0, double 0.0>\n"
+            "  %v2 = fsub fast <4 x double> %x, <double 3.0, double 1.0, double 1.0, double 0.0>\n"
+            "  %v3 = fsub fast <4 x double> %x, <double 4.0, double 1.0, double 1.0, double 0.0>\n";
+        CHECK(!reductions_loop_masks(differences,
+            "  %d = fmul fast <4 x double> %la, %v0\n"
+            "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
+        // Adding a loaded vector can make it nonzero after the first
+        // iteration.
+        CHECK(reductions_loop_masks(differences,
+            "  %x.next = fadd fast <4 x double> %x, %la\n", *x86));
+        // A product of two vectors whose fourth components are unknown.
+        CHECK(reductions_loop_masks(
+            "  %v0 = fmul fast <4 x double> %la, %lb\n"
+            "  %v1 = fmul fast <4 x double> %lb, %la\n"
+            "  %v2 = fmul fast <4 x double> %la, %la\n"
+            "  %v3 = fmul fast <4 x double> %lb, %lb\n",
+            "  %x.next = fadd fast <4 x double> %x, %x\n", *x86));
+        // A shuffle that moves a nonzero component into the fourth one.
+        CHECK(reductions_loop_masks(
+            "  %v0 = shufflevector <4 x double> %x, <4 x double> <double 1.0, double 1.0, double 1.0, double 0.0>, <4 x i32> <i32 0, i32 1, i32 2, i32 4>\n"
+            "  %v1 = fsub fast <4 x double> %x, %v0\n"
+            "  %v2 = fsub fast <4 x double> %v0, %x\n"
+            "  %v3 = fadd fast <4 x double> %v0, %x\n",
+            "  %x.next = fadd fast <4 x double> %x, %x\n", *x86));
     }
     // Other targets are left to LLVM.
     std::unique_ptr<llvm::TargetMachine> arm
