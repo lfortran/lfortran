@@ -1994,6 +1994,51 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
         std::set<ASR::symbol_t*>& not_to_be_erased;
         bool skip_removal;
 
+        // With skip_removal set, only the descriptor originals that another
+        // compilation unit or a later interactive cell could link to are
+        // kept: module procedures and top-level external procedures. A
+        // nested/inner procedure and a scope-local procedure cannot be
+        // reached from outside. Compiler-generated helpers (intrinsic
+        // lowerings such as `_lcompilers_Sum_...`) are top-level, but a later
+        // unit regenerates its own copy instead of resolving an earlier one
+        // by name, so keeping their descriptor original only inflates the
+        // defining cell's IR.
+        //
+        // Provenance is structural first: a procedure written in the source
+        // program carries the location of its defining name in
+        // `m_start_name`, while a helper synthesized by an ASR pass or an
+        // intrinsic lowering has no source name. A user is free to name a
+        // procedure `_lcompilers_...`; it still has a `m_start_name` and its
+        // descriptor original is kept, so a later cell can link to it.
+        //
+        // Callers can switch this mode on without supplying name metadata
+        // (the unit tests exercise that path), so a procedure without a name
+        // location is only dropped when its name is one the compiler itself
+        // generates.
+        static bool keep_for_a_later_unit(SymbolTable* scope,
+                ASR::symbol_t* sym) {
+            if (scope == nullptr || sym == nullptr) {
+                return false;
+            }
+            if (!ASR::is_a<ASR::Function_t>(*sym)) {
+                return false;
+            }
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
+            if (fn->m_start_name == nullptr
+                    && ASRUtils::is_compiler_generated_name(fn->m_name)) {
+                return false;
+            }
+            if (ASRUtils::is_tu_scope(scope)) {
+                return true;
+            }
+            ASR::asr_t* owner = scope->asr_owner;
+            if (owner != nullptr && ASR::is_a<ASR::symbol_t>(*owner)) {
+                ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(owner);
+                return ASR::is_a<ASR::Module_t>(*owner_sym);
+            }
+            return false;
+        }
+
     public:
 
         RemoveArrayByDescriptorProceduresVisitor(Allocator& al_, PassArrayByDataProcedureVisitor& v_,
@@ -2039,9 +2084,17 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                 }
             }
 
-            if (!skip_removal) {
+            {
                 for (auto &item: to_be_erased) {
                     if (not_to_be_erased.find(item.second) != not_to_be_erased.end()) {
+                        continue;
+                    }
+                    if (skip_removal && keep_for_a_later_unit(
+                            current_scope, item.second)) {
+                        // Separate compilation or an interactive cell: another
+                        // unit or a later cell can link to this user-written
+                        // module or top-level procedure, so its descriptor
+                        // original has to stay.
                         continue;
                     }
                     // If this function is in a submodule, check if the parent

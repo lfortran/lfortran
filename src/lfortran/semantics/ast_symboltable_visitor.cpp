@@ -2112,7 +2112,12 @@ public:
                                    proc_interface->m_access,
                                    proc_interface->m_deterministic,
                                    proc_interface->m_side_effect_free,
-                                   nullptr, nullptr);
+                                   nullptr, nullptr,
+                                   // A `module procedure` body is written by
+                                   // the user; its name location comes from
+                                   // the interface declaration.
+                                   proc_interface->m_start_name,
+                                   proc_interface->m_end_name);
         ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp));
         ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature);
         ASR::FunctionType_t* iface_type = ASRUtils::get_FunctionType(proc_interface);
@@ -2769,7 +2774,19 @@ public:
             s_access, deftype, bindc_name,
             is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
-            is_requirement, init_deterministic, init_side_effect_free);
+            is_requirement, init_deterministic, init_side_effect_free,
+            /* m_c_header */ nullptr,
+            // The name locations are metadata for tooling and diagnostics.
+            // Only the modes that keep array-by-data descriptor originals
+            // (`--separate-compilation`, and each interactive cell) need
+            // them to tell user-written procedures from generated helpers;
+            // leaving them unset elsewhere keeps ordinary output unchanged.
+            /* m_start_name */ (compiler_options.interactive
+                || compiler_options.separate_compilation) && x.m_start_name
+                ? x.m_start_name : nullptr,
+            /* m_end_name */ (compiler_options.interactive
+                || compiler_options.separate_compilation) && x.m_end_name
+                ? x.m_end_name : nullptr);
         PureChecks::check_declaration(
             *ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp)),
             to_lower(x.m_name), diag, compiler_options);

@@ -5959,3 +5959,227 @@ a = reshape([1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0], [2, 3])
         CHECK(r.result.f64 == 12.0);
     }
 }
+
+// Whether the LLVM IR defines (not merely declares) a function whose
+// definition line mentions `name`.
+static bool llvm_ir_defines(const std::string &ir, const std::string &name) {
+    size_t pos = 0;
+    while ((pos = ir.find("define ", pos)) != std::string::npos) {
+        size_t end = ir.find('\n', pos);
+        std::string line = ir.substr(pos, end == std::string::npos
+            ? std::string::npos : end - pos);
+        if (line.find(name) != std::string::npos) return true;
+        if (end == std::string::npos) break;
+        pos = end;
+    }
+    return false;
+}
+
+TEST_CASE("FortranEvaluator keeps only linkable user procedures across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // A function with an assumed-shape dummy is specialized by
+    // array_by_data (total_16858_real____0). Its body's `sum(x)` also
+    // instantiates a compiler-generated helper, which is specialized in
+    // turn. A later cell can link to the user function, but not to the
+    // helper, which it regenerates for itself. Only the user function's
+    // descriptor original may stay in this cell's IR.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.skip_llvm_backend_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate(
+        R"(real(8) function total_16858(x)
+real(8), intent(in) :: x(:)
+total_16858 = sum(x)
+end function
+)", true, lm, lpm, d);
+    INFO(d.render2());
+    REQUIRE(r.ok);
+    const std::string &ir = r.result.llvm_ir;
+    CHECK(llvm_ir_defines(ir, "total_16858("));
+    CHECK(llvm_ir_defines(ir, "_lcompilers_Sum_8_1_0_idx4_real____0("));
+    // Match the helper's name only, so the assertion does not depend on how
+    // LLVM spells the descriptor argument.
+    CHECK_FALSE(llvm_ir_defines(ir, "_lcompilers_Sum_8_1_0_idx4("));
+    // The retained descriptor original still links from a later cell. Use a
+    // section, not a contiguous constructor: only a section keeps the
+    // descriptor call that needs the original.
+    REQUIRE(e.evaluate2(R"(real(8) :: w_16858(3)
+w_16858 = [1.0d0, 2.0d0, 3.0d0]
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r2
+        = e.evaluate2("total_16858(w_16858(2:3))");
+    REQUIRE(r2.ok);
+    CHECK(r2.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r2.result.f64 == 5.0);
+}
+
+TEST_CASE("FortranEvaluator drops only descriptor originals of nested procedures") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The scope half of the retention rule: a top-level procedure's descriptor
+    // original is kept for later cells, while an internal procedure's is
+    // dropped because no other unit can reach it. Both still get a data
+    // version that the host body calls.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.skip_llvm_backend_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate(
+        R"(real(8) function outer_16858(x)
+real(8), intent(in) :: x(:)
+outer_16858 = inner_16858(x)
+contains
+real(8) function inner_16858(y)
+real(8), intent(in) :: y(:)
+inner_16858 = sum(y)
+end function
+end function
+)", true, lm, lpm, d);
+    INFO(d.render2());
+    REQUIRE(r.ok);
+    const std::string &ir = r.result.llvm_ir;
+    CHECK(llvm_ir_defines(ir, "outer_16858("));
+    CHECK(llvm_ir_defines(ir, "outer_16858.inner_16858_real____0("));
+    CHECK_FALSE(llvm_ir_defines(ir, ".inner_16858("));
+    // The host original still links from a later cell with a section.
+    REQUIRE(e.evaluate2(R"(real(8) :: v_16858(4)
+v_16858 = [1.0d0, 2.0d0, 3.0d0, 4.0d0]
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r2
+        = e.evaluate2("outer_16858(v_16858(2:3))");
+    REQUIRE(r2.ok);
+    CHECK(r2.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r2.result.f64 == 5.0);
+}
+
+TEST_CASE("FortranEvaluator keeps a user procedure with a helper-like name") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Compiler provenance is structural, not a name prefix: a user procedure
+    // may legitimately start with `_lcompilers_`. Its descriptor original must
+    // stay so a later cell can call it with a section.
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    lpm.skip_llvm_backend_passes();
+    LCompilers::diag::Diagnostics d;
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate(
+        R"(real(8) function _lcompilers_user_16858(x)
+real(8), intent(in) :: x(:)
+_lcompilers_user_16858 = sum(x)
+end function
+)", true, lm, lpm, d);
+    INFO(d.render2());
+    REQUIRE(r.ok);
+    const std::string &ir = r.result.llvm_ir;
+    CHECK(llvm_ir_defines(ir, "_lcompilers_user_16858("));
+    REQUIRE(e.evaluate2(R"(real(8) :: vv2_16858(4)
+vv2_16858 = [1.0d0, 2.0d0, 3.0d0, 4.0d0]
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r2
+        = e.evaluate2("_lcompilers_user_16858(vv2_16858(2:3))");
+    REQUIRE(r2.ok);
+    CHECK(r2.result.type == FortranEvaluator::EvalResult::real8);
+    CHECK(r2.result.f64 == 5.0);
+}
+
+TEST_CASE("FortranEvaluator redefines a procedure in a later cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(integer function value_16858(x)
+integer, intent(in) :: x
+value_16858 = x + 1
+end function
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("value_16858(10)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 11);
+        // A later definition of the same name shadows the earlier one for
+        // cells that come after it.
+        REQUIRE(e.evaluate2(R"(integer function value_16858(x)
+integer, intent(in) :: x
+value_16858 = x * 10
+end function
+)").ok);
+        r = e.evaluate2("value_16858(10)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 100);
+    }
+    {
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2(R"(module m_red_16858
+implicit none
+contains
+integer function value_16858(x)
+integer, intent(in) :: x
+value_16858 = x + 1
+end function
+end module
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("use m_red_16858\nvalue_16858(10)\n");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 11);
+        // Redefining the module and using it in a later cell sees the new
+        // module procedure body.
+        REQUIRE(e.evaluate2(R"(module m_red_16858
+implicit none
+contains
+integer function value_16858(x)
+integer, intent(in) :: x
+value_16858 = x * 10
+end function
+end module
+)").ok);
+        r = e.evaluate2("use m_red_16858\nvalue_16858(10)\n");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == 100);
+    }
+    {
+        FortranEvaluator e(cu);
+        // An assumed-shape procedure is specialized by array_by_data, so
+        // redefining it also exercises the pass's specialization cache.
+        REQUIRE(e.evaluate2(R"(real(8) function arr_value_16858(x)
+real(8), intent(in) :: x(:)
+arr_value_16858 = x(1) + x(2)
+end function
+)").ok);
+        REQUIRE(e.evaluate2(R"(real(8) :: av_16858(2)
+av_16858 = [1.0d0, 2.0d0]
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r
+            = e.evaluate2("arr_value_16858(av_16858)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+        CHECK(r.result.f64 == 3.0);
+        // The redefined body is used; the cached specialization of the first
+        // definition is not reused.
+        REQUIRE(e.evaluate2(R"(real(8) function arr_value_16858(x)
+real(8), intent(in) :: x(:)
+arr_value_16858 = 2.0d0 * (x(1) + x(2))
+end function
+)").ok);
+        r = e.evaluate2("arr_value_16858(av_16858)");
+        REQUIRE(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
+        CHECK(r.result.f64 == 6.0);
+    }
+}
