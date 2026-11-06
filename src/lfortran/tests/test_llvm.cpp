@@ -5366,6 +5366,33 @@ arr_init_v(1)%k + arr_init_v(2)%k)");
     CHECK(r.result.i32 == 11);
 }
 
+// An array of a derived type that a cell declares with an implied-do array
+// constructor of structure constructors is initialized statically (#13226).
+TEST_CASE("FortranEvaluator derived type array implied do initializer") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type :: idl_init_t\ninteger :: k = 3\nend type");
+    CHECK(r.ok);
+    r = e.evaluate2("integer :: idl_i");
+    CHECK(r.ok);
+    r = e.evaluate2("type(idl_init_t) :: idl_init_a(3) = [(idl_init_t(idl_i*10), idl_i=1,3)]");
+    CHECK(r.ok);
+    r = e.evaluate2("100 * idl_init_a(1)%k + 10 * idl_init_a(2)%k / 10 + idl_init_a(3)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 1050);
+
+    // The declaration and a use of the array in a single cell.
+    r = e.evaluate2("type(idl_init_t) :: idl_init_b(2) = [(idl_init_t(idl_i + 1), idl_i=1,2)]\nidl_init_b(1)%k * idl_init_b(2)%k");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 6);
+}
+
 TEST_CASE("FortranEvaluator the calls the kernel makes") {
     CompilerOptions cu;
     cu.interactive = true;

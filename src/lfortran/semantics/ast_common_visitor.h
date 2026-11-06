@@ -577,6 +577,24 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         }
         return name2signature_varargs.at(id);
     }
+
+    void visit_Cast(const ASR::Cast_t &x) {
+        value = nullptr;
+        this->visit_expr(*x.m_arg);
+        // The cast is folded only if the argument has been evaluated to a
+        // constant of its type, e.g. `t(i)` with a real component
+        if (value == nullptr || !ASRUtils::is_value_constant(value)
+                || ASRUtils::extract_type(ASRUtils::expr_type(value))->type
+                    != ASRUtils::extract_type(ASRUtils::expr_type(x.m_arg))->type) {
+            return;
+        }
+        ASR::expr_t* cast_value = ASRUtils::expr_value(ASRUtils::EXPR(
+            ASRUtils::make_Cast_t_value(al, x.base.base.loc, value, x.m_kind, x.m_type)));
+        if (cast_value != nullptr) {
+            value = cast_value;
+        }
+    }
+
     // handle intrinsic elemental function
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
         Vec<ASR::expr_t*> args; args.reserve(al, x.n_args);
@@ -24467,6 +24485,22 @@ public:
         return true;
     }
 
+    // Whether every value of `idl` and of the loops nested in it is a scalar
+    static bool implied_do_loop_has_scalar_values(ASR::ImpliedDoLoop_t* idl) {
+        for (size_t i = 0; i < idl->n_values; i++) {
+            ASR::expr_t* value = idl->m_values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                if (!implied_do_loop_has_scalar_values(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(value))) {
+                    return false;
+                }
+            } else if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     void fetch_implied_do_loop_variables(ASR::ImpliedDoLoop_t* idl, std::vector<ASR::symbol_t*>& loop_vars) {
         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(idl->m_var);
         loop_vars.push_back(var->m_v);
@@ -24479,11 +24513,83 @@ public:
         return;
     }
 
+    // Returns the structure constructor `expr`, a value of an implied do
+    // loop, as a StructConstant of its arguments evaluated at the loop
+    // indices of `visitor`, or nullptr if it cannot be evaluated.
+    ASR::expr_t* get_implied_do_struct_constant(ASR::expr_t* expr,
+            ImpliedDoLoopValuesVisitor& visitor) {
+        ASR::expr_t* value = ASRUtils::expr_value(expr);
+        if (value && ASR::is_a<ASR::StructConstant_t>(*value)) {
+            return value;
+        }
+        if (!ASR::is_a<ASR::StructConstructor_t>(*expr)) {
+            return nullptr;
+        }
+        ASR::StructConstructor_t* sc = ASR::down_cast<ASR::StructConstructor_t>(expr);
+        auto evaluate = [&](ASR::expr_t* x) -> ASR::expr_t* {
+            if (ASRUtils::is_value_constant(ASRUtils::expr_value(x))) {
+                return ASRUtils::expr_value(x);
+            }
+            visitor.value = nullptr;
+            visitor.visit_expr(*x);
+            return visitor.value;
+        };
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, sc->n_args);
+        for (size_t i = 0; i < sc->n_args; i++) {
+            ASR::call_arg_t arg = sc->m_args[i];
+            ASR::expr_t* arg_value = arg.m_value;
+            if (arg_value == nullptr
+                    || ASR::is_a<ASR::PointerNullConstant_t>(*arg_value)) {
+                args.push_back(al, arg);
+                continue;
+            }
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(arg_value))) {
+                arg.m_value = get_implied_do_struct_constant(arg_value, visitor);
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*arg_value)
+                    && !ASRUtils::is_value_constant(ASRUtils::expr_value(arg_value))) {
+                // `t([i, -i])` for an array component
+                ASR::ArrayConstructor_t* ac =
+                    ASR::down_cast<ASR::ArrayConstructor_t>(arg_value);
+                Vec<ASR::expr_t*> elements;
+                elements.reserve(al, ac->n_args);
+                for (size_t j = 0; j < ac->n_args; j++) {
+                    ASR::expr_t* element = ASRUtils::is_array(
+                        ASRUtils::expr_type(ac->m_args[j]))
+                        ? nullptr : evaluate(ac->m_args[j]);
+                    if (element == nullptr
+                            || !ASRUtils::is_value_constant(element)) {
+                        return nullptr;
+                    }
+                    elements.push_back(al, element);
+                }
+                arg.m_value = ASRUtils::expr_value(ASRUtils::EXPR(
+                    ASRUtils::make_ArrayConstructor_t_util(al, arg_value->base.loc,
+                        elements.p, elements.size(), ac->m_type,
+                        ac->m_storage_format)));
+            } else {
+                arg.m_value = evaluate(arg_value);
+            }
+            if (arg.m_value == nullptr
+                    || !ASRUtils::is_value_constant(arg.m_value)) {
+                return nullptr;
+            }
+            args.push_back(al, arg);
+        }
+        // The values are checked against the components' types, so a value
+        // that has not been evaluated correctly is not stored.
+        return get_folded_struct_constant(expr->base.loc, sc->m_dt_sym,
+            args.p, args.size(), sc->m_type);
+    }
+
     template<typename T>
     T get_constant_value(ASR::expr_t* expr, ImpliedDoLoopValuesVisitor& visitor) {
+        if constexpr (std::is_same_v<T, ASR::expr_t*>) {
+            return get_implied_do_struct_constant(expr, visitor);
+        }
         visitor.value = nullptr;
         visitor.visit_expr(*expr);
-        T res;
+        T res{};
         if constexpr (std::is_same_v<T,bool>) {
             res = ASR::down_cast<ASR::LogicalConstant_t>(visitor.value)->m_value;
         } else if constexpr (std::is_same_v<T,int> || std::is_same_v<T,int64_t>) {
@@ -24787,6 +24893,19 @@ public:
                 }
                 char_data[len * itr] = '\0';
                 data = (void*) char_data;
+            } else if (ASR::is_a<ASR::StructType_t>(*type)
+                    && implied_do_loop_has_scalar_values(idl)) {
+                // `[(t(10*i), i=1,3)]`: an array of StructConstants, which a
+                // module variable or a saved variable can be initialized with
+                Vec<ASR::expr_t*> array; array.reserve(al, 1);
+                populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                bool all_constant = itr > 0;
+                for (int i = 0; i < itr; i++) {
+                    all_constant = all_constant && array.p[i] != nullptr;
+                }
+                if (all_constant) {
+                    data = ASRUtils::set_ArrayConstant_data(array.p, itr, type);
+                }
             }
             if (data != nullptr) {
                 Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
