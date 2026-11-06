@@ -24901,7 +24901,8 @@ public:
                 // module variable or a saved variable can be initialized with
                 Vec<ASR::expr_t*> array; array.reserve(al, 1);
                 populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
-                bool all_constant = itr > 0;
+                // A zero-trip loop gives an empty array, as `[t ::]` does
+                bool all_constant = true;
                 for (int i = 0; i < itr; i++) {
                     all_constant = all_constant && array.p[i] != nullptr;
                 }
