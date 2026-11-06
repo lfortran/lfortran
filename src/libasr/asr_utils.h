@@ -3023,25 +3023,29 @@ bool is_elemental(ASR::symbol_t* x);
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
     Location& loc, const std::function<void (const std::string &, const Location &)> err);
 
+// Matches the type-bound specific procedure `method` (a StructMethodDeclaration)
+// against `args`, whose first element is the passed-object (the `dt` of the
+// call). The passed-object is dropped for a `nopass` binding and otherwise
+// moved to the position of the binding's passed-object dummy argument.
+bool select_type_bound_proc(ASR::symbol_t* method, const Vec<ASR::call_arg_t>& args,
+    Location& loc, const std::function<void (const std::string &, const Location &)> err);
+
 template <typename T>
 int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     const T &p, Location loc,
     const std::function<void (const std::string &, const Location &)> err,
     bool raise_error=true, bool is_dt_present=false) {
     // When `is_dt_present` is true, `args[0]` is the passed-object (the `dt`
-    // of a type-bound procedure call). A `nopass` specific procedure does not
-    // receive the passed-object, so it must be matched against the arguments
-    // excluding `args[0]`.
+    // of a type-bound procedure call), which is matched against the
+    // passed-object dummy argument of each specific procedure.
     auto matches = [&](ASR::symbol_t* proc_sym) -> bool {
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
+            if( is_dt_present ) {
+                return select_type_bound_proc(proc_sym, args, loc, err);
+            }
             ASR::StructMethodDeclaration_t *clss_fn
                 = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
             const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-            if( is_dt_present && clss_fn->m_is_nopass && args.n >= 1 ) {
-                Vec<ASR::call_arg_t> args_no_dt;
-                args_no_dt.from_pointer_n(args.p + 1, args.n - 1);
-                return select_func_subrout(proc, args_no_dt, loc, err);
-            }
             return select_func_subrout(proc, args, loc, err);
         } else {
             return select_func_subrout(proc_sym, args, loc, err);
