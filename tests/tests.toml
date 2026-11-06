@@ -5713,6 +5713,12 @@ gpu_metal_kernel = true
 filename = "../integration_tests/gpu_lanes_reuse_01.f90"
 gpu_metal_kernel = true
 
+# The loops shared out between the lanes, which step by the lanes, are
+# unrolled on Metal like the sequential loops of device code.
+[[test]]
+filename = "../integration_tests/gpu_lanes_unroll_01.f90"
+gpu_metal_kernel = true
+
 # A kernel's calls of small pure functions that run a loop are inlined, so
 # that the lanes of an iteration share the loop and combine its sum.
 [[test]]

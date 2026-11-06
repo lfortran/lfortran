@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_lanes_unroll_01-38034c0",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_unroll_01.f90",
+    "infile_hash": "e3b3360366d88f18a1a4dd2899f1a86a34eaaefa2cc10db2c215061d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_lanes_unroll_01-38034c0.stdout",
+    "stdout_hash": "76dfd3149d8230c370a773d76fe5bbb9dcbbf1addde92ec8d06ad81c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
