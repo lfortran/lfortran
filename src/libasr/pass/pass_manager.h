@@ -71,6 +71,7 @@
 #include <libasr/pass/gpu_launch_sync.h>
 #include <libasr/pass/gpu_sequential_unroll.h>
 #include <libasr/pass/gpu_residue_unroll.h>
+#include <libasr/pass/gpu_integer_powers.h>
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_time_skew.h>
 #include <libasr/pass/gpu_index_set_split.h>
@@ -156,6 +157,7 @@ namespace LCompilers {
             {"device_partition", &pass_device_partition},
             {"gpu_launch_sync", &pass_gpu_launch_sync},
             {"gpu_sequential_unroll", &pass_gpu_sequential_unroll},
+            {"gpu_integer_powers", &pass_gpu_integer_powers},
             {"gpu_loop_fusion", &pass_gpu_loop_fusion},
             {"gpu_private_map_forwarding", &pass_gpu_private_map_forwarding},
             {"gpu_private_reduction_fusion", &pass_gpu_private_reduction_fusion},
@@ -438,6 +440,10 @@ namespace LCompilers {
                 "print_list_tuple",
                 "print_struct_type",
                 "array_dim_intrinsics_update",
+                // A real power of device code with a small constant integer
+                // exponent is the product the host computes, once the
+                // passes above have written every one of them.
+                "gpu_integer_powers",
                 // What the host cannot size before the launch is allocated
                 // on the device heap, and every `stop` of device code is
                 // lowered, once nothing else can add one.

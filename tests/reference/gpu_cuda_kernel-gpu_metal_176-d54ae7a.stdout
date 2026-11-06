@@ -36,6 +36,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
     {
+        float __gpu_power_base;
         int __gpu_sum_k;
         float __gpu_sum_res;
         float* a = ((__workspace_extent) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
@@ -51,7 +52,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
         for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, n); __gpu_sum_k++) {
-            __gpu_sum_res = (__gpu_sum_res + pow(a[((int)(__gpu_sum_k) - (1))], 2));
+            __gpu_power_base = a[((int)(__gpu_sum_k) - (1))];
+            __gpu_sum_res = (__gpu_sum_res + (__gpu_power_base * __gpu_power_base));
         }
         cost[((int)(i__dc) - (1))] = __gpu_sum_res;
     }

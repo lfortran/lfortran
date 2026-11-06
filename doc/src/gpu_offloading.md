@@ -1168,6 +1168,19 @@ the first group and after the last run as written too. On an Apple M4 Max,
 a 5120x17408 q8 product whose kernel runs the loop above took 1.02 ms of GPU
 time instead of 2.73 ms.
 
+### Integer powers in device code
+
+A real power with a constant integer exponent from 0 to 8 in device code,
+such as `x**2`, is written as the products the host computes it with
+(`gpu_integer_powers`): `x*x`, `x*(x*x)`, `(x*x)*(x*x)` and so on, with `x`
+evaluated once, into a variable of its own unless it is one already. The
+device's `pow` takes a logarithm and an exponential under fast math, which
+is slower and not always exact (a product of powers of two came out
+inexact on an Apple M1), where `x*x` is the correctly rounded square the
+host computes. A power whose base can only be evaluated where it is written
+(in the test of a `do while`, or an operand of `.and.` that need not be
+evaluated) is kept as it is, unless its base is a variable or an element.
+
 ### Lanes: an iteration on a SIMD-group
 
 A loop with few iterations -- a training step over a mini-batch of one, a

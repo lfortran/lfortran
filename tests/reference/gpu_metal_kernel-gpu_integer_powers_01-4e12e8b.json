@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_integer_powers_01-4e12e8b",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_integer_powers_01.f90",
+    "infile_hash": "1bd57a83fd03c0273e8212bf105d0f0613a04db27da32bab20122bac",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_integer_powers_01-4e12e8b.stdout",
+    "stdout_hash": "43ff9d0d7e000db06e655d8faf33cafeba2770409fe4b48c8abf8977",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

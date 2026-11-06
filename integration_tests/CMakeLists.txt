@@ -1320,6 +1320,7 @@ RUN(NAME gpu_private_map_forwarding_01 LABELS gfortran llvm metal cuda NO_FAST_M
 RUN(NAME gpu_residue_unroll_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_residue_unroll_02 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_residue_unroll_03 FAIL LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_integer_powers_01 LABELS gfortran llvm metal cuda)
 RUN(NAME dot_product_01 LABELS gfortran llvm)
 RUN(NAME intrinsic_reduce_01 LABELS llvm GFORTRAN_ARGS -std=f2018)
 RUN(NAME intrinsic_reduce_derived_type_01 LABELS llvm)
