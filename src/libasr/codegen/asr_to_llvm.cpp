@@ -15977,7 +15977,12 @@ public:
             } else {
                 if( LLVM::is_llvm_pointer(*target_type) ) {
                     llvm::Type* ptr_load_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::type_get_past_allocatable_pointer(target_type), module.get());
-                    target = llvm_utils->CreateLoad2(ptr_load_type->getPointerTo(), target);
+                    if (x.m_move_allocation) {
+                        target = llvm_utils->ensure_array_descriptor_on_heap(x.m_target,
+                            ASRUtils::type_get_past_allocatable_pointer(target_type), ptr_load_type, target);
+                    } else {
+                        target = llvm_utils->CreateLoad2(ptr_load_type->getPointerTo(), target);
+                    }
                 }
                 ASR::ttype_t* target_llvm_type_asr = ASRUtils::expr_type(target_expr_for_type);
                 llvm::Type* target_array_type = llvm_utils->get_type_from_ttype_t_util(target_expr_for_type,
