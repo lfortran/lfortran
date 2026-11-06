@@ -1561,6 +1561,40 @@ end program
     }
 }
 
+TEST_CASE("GPU reduction accumulators are overwritten, not copied in") {
+    // Every kernel of a reduction sets each of its accumulators before it
+    // reads it, so every launch hands them over write-discard: the first
+    // loop's one, then the second loop's two, and nothing else.
+    struct Accumulators : public ASR::BaseWalkVisitor<Accumulators> {
+        std::vector<std::vector<std::string>> launches;
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            std::vector<std::string> names;
+            for (size_t i = 0; i < x.n_overwritten; i++) {
+                REQUIRE(ASR::is_a<ASR::Var_t>(*x.m_overwritten[i]));
+                names.push_back(ASRUtils::symbol_name(ASR::down_cast<
+                    ASR::Var_t>(x.m_overwritten[i])->m_v));
+                CHECK(ASR::is_a<ASR::LogicalConstant_t>(
+                    *x.m_overwritten_if[i]));
+            }
+            launches.push_back(names);
+        }
+    } accumulators;
+    visit_cuda_program(
+        read_project_file("integration_tests/gpu_reduction_overwrite_01.f90"),
+        "gpu_reduction_overwrite_01.f90", "gpu_reduction_overwrite_01",
+        [&](ASR::stmt_t &s) { accumulators.visit_stmt(s); });
+    REQUIRE(accumulators.launches.size() == 2);
+    std::vector<size_t> expected = {1, 2};
+    for (size_t i = 0; i < expected.size(); i++) {
+        INFO("launch " << i);
+        REQUIRE(accumulators.launches[i].size() == expected[i]);
+        for (const std::string &name : accumulators.launches[i]) {
+            INFO(name);
+            CHECK(startswith(name, "__gpu_red_"));
+        }
+    }
+}
+
 TEST_CASE("GPU split nests keep the write-discard of the loops they split") {
     // gpu_metal_527 splits a 1-D stencil (the split nest, then the original
     // nest for a domain without an interior) and a 2-D one (the jammed

@@ -624,6 +624,11 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         launch_stmts.push_back(al, ASRUtils::STMT(
             ASR::make_Allocate_t(al, loc, alloc_args.p, alloc_args.n,
                 nullptr, nullptr, nullptr)));
+        // The launch says so, or the fresh accumulators would be copied
+        // to the device for nothing.
+        overwritten.push_back(al,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, r.host_buf_sym)));
+        overwritten_if.push_back(al, b.logical_true());
     }
 
     Vec<ASR::gpu_launch_dimension_t> chunk_dimensions;
