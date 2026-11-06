@@ -8797,11 +8797,9 @@ bool is_variable(ASR::expr_t* a_value) {
     }
     switch (a_value->type) {
         case ASR::exprType::ArrayItem: {
-            ASR::ArrayItem_t* a_item = ASR::down_cast<ASR::ArrayItem_t>(a_value);
-            ASR::expr_t* array_expr = a_item->m_v;
-            ASR::Variable_t* array_var = ASRUtils::EXPR2VAR(array_expr);
-            // a constant array's item isn't a "variable"
-            return array_var->m_storage != ASR::storage_typeType::Parameter;
+            // The array may be a component, as in `x%a(2)`; an element of a
+            // named constant isn't a "variable"
+            return !is_named_constant_designator(a_value);
         }
         case ASR::exprType::Var: {
             ASR::Variable_t* variable_t = ASRUtils::EXPR2VAR(a_value);
