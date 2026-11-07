@@ -1138,6 +1138,36 @@ quotient of a correctly rounded root takes two long ones: an n-body
 force loop ran 16% faster on an H100. The result can differ from the exact
 one in the last bit, as host code under `--fast` can.
 
+### Packed data: unrolling by the divisor
+
+A kernel that decodes packed data reads, for each index `d`, a word
+`w((d - 1)/4 + 1)` and a part `modulo(d - 1, 4)` of it, often through a
+small pure function that checks the part, as the decode of a quantized
+matrix-vector product does:
+
+```fortran
+do d = (g - 1)*64 + 1, g*64
+    acc = acc + real(packed_byte(w((d - 1)/4 + 1, n), modulo(d - 1, 4)))*x(d)
+end do
+```
+
+The `gpu_residue_unroll` pass unrolls such a loop (a `do` or a one-index
+`do concurrent` of device code) by the constant divisor, in groups that
+start where the numerator `d - 1` is a multiple of it. In each of the four
+copies the part is a constant and the quotient the same, so the word is
+read once per group, and a call of a small pure function with a constant
+argument is inlined so that its check folds away: no reloaded word, no
+`modulo`, no call and no test for a stop remain in the loop. A check that
+still fails, such as `packed_byte(w, 4)`, still stops the program. The
+iterations run in their original order, so the results are the same bits.
+
+The groups need the numerator to be non-negative and at least four
+iterations; what the bounds of the loops around it do not prove is tested
+before the loop, which runs as written otherwise, and the iterations before
+the first group and after the last run as written too. On an Apple M4 Max,
+a 5120x17408 q8 product whose kernel runs the loop above took 1.02 ms of GPU
+time instead of 2.73 ms.
+
 ### Lanes: an iteration on a SIMD-group
 
 A loop with few iterations -- a training step over a mini-batch of one, a

@@ -1421,9 +1421,12 @@ namespace {
 class BodyCheck : public ASR::BaseWalkVisitor<BodyCheck> {
 public:
     bool ok = true;
+    bool allow_stops = false;
     void visit_Return(const ASR::Return_t &) { ok = false; }
-    void visit_Stop(const ASR::Stop_t &) { ok = false; }
-    void visit_ErrorStop(const ASR::ErrorStop_t &) { ok = false; }
+    void visit_Stop(const ASR::Stop_t &) { if (!allow_stops) ok = false; }
+    void visit_ErrorStop(const ASR::ErrorStop_t &) {
+        if (!allow_stops) ok = false;
+    }
     void visit_GoTo(const ASR::GoTo_t &) { ok = false; }
     void visit_GoToTarget(const ASR::GoToTarget_t &) { ok = false; }
     void visit_Print(const ASR::Print_t &) { ok = false; }
@@ -1475,7 +1478,7 @@ bool assumed_shape(ASR::ttype_t *t) {
 
 } // namespace
 
-bool gpu_function_inlinable(ASR::Function_t *fn) {
+bool gpu_function_inlinable(ASR::Function_t *fn, bool allow_stops) {
     ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(fn);
     if (ft->m_deftype != ASR::deftypeType::Implementation
             || ft->m_abi != ASR::abiType::Source) {
@@ -1523,6 +1526,7 @@ bool gpu_function_inlinable(ASR::Function_t *fn) {
         }
     }
     BodyCheck check;
+    check.allow_stops = allow_stops;
     for (size_t i = 0; i < fn->n_body; i++) check.visit_stmt(*fn->m_body[i]);
     return check.ok;
 }
@@ -1628,7 +1632,8 @@ ASR::expr_t *GpuInliner::inline_call(ASR::FunctionCall_t *call,
     ASR::symbol_t *f = ASRUtils::symbol_get_past_external(call->m_name);
     if (!ASR::is_a<ASR::Function_t>(*f)) return nullptr;
     ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(f);
-    if (!gpu_function_inlinable(fn) || fn->n_args != call->n_args
+    if (!gpu_function_inlinable(fn, allow_stops)
+            || fn->n_args != call->n_args
             || call->m_dt != nullptr) {
         return nullptr;
     }
