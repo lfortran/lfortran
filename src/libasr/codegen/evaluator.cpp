@@ -101,6 +101,7 @@
 #include <libasr/codegen/KaleidoscopeJIT.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
+#include <libasr/codegen/llvm_rsqrt.h>
 #include <libasr/codegen/asr_to_cpp.h>
 #include <libasr/exception.h>
 #include <libasr/asr.h>
@@ -1108,6 +1109,9 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     mpm.add(llvm::createVerifierPass());
     mpm.run(m);
 #endif
+    for (llvm::Function &f : m) {
+        expand_reciprocal_sqrt(f, TM->getTargetTriple());
+    }
 }
 
 std::string LLVMEvaluator::module_to_string(llvm::Module &m) {

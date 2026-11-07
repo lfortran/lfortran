@@ -163,6 +163,7 @@ if (WITH_LLVM)
         codegen/asr_to_llvm.cpp
         codegen/llvm_array_utils.cpp
         codegen/llvm_utils.cpp
+        codegen/llvm_rsqrt.cpp
     )
     if (WITH_MLIR)
         set(SRC ${SRC} codegen/asr_to_mlir.cpp)
@@ -176,6 +177,8 @@ if (WITH_LLVM)
         set_source_files_properties(codegen/llvm_array_utils.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
         set_source_files_properties(codegen/llvm_utils.cpp PROPERTIES
+            COMPILE_FLAGS -Wno-deprecated-declarations)
+        set_source_files_properties(codegen/llvm_rsqrt.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
         set_source_files_properties(stacktrace.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
