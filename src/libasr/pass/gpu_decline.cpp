@@ -1,4 +1,5 @@
 #include <cctype>
+#include <limits>
 
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
@@ -48,6 +49,14 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             caps.device_function_runtime_sized_locals = false;
             // Every Apple GPU runs SIMD-groups of 32 threads.
             caps.lanes_per_iteration = 32;
+            // The lanes of an iteration are a whole SIMD-group, whose
+            // `simd_sum`, `simd_product`, `simd_min` and `simd_max` combine
+            // 32-bit integers and floats.
+            caps.lane_reductions = true;
+            caps.lane_reduction_max_kind = 4;
+            // As many as the 32-bit thread index of a kernel numbers.
+            caps.lanes_column_iterations_max =
+                std::numeric_limits<int32_t>::max() / 32;
             caps.threads_per_block = 64;
             caps.sequential_loop_unroll_factor = 16;
             // A kernel is compiled for the GPU that runs it, so this is the
@@ -91,6 +100,17 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
     GpuDeviceCapabilities caps = gpu_device_capabilities(
         gpu_device_selected(pass_options));
+    if (caps.device == GpuDevice::Cuda && pass_options.gpu_cuda_warps) {
+        // A warp of 32 threads runs the lanes of an iteration; neither the
+        // CPU emulation (which runs the threads of a block one after
+        // another) nor HIP (64-wide wavefronts) has them yet. An H100 keeps
+        // about 230,000 threads resident, so a launch of up to 65,536
+        // iterations of 32 lanes each still fits it a few times over.
+        caps.lanes_per_iteration = 32;
+        caps.lanes_iterations_max = 65536;
+        caps.lane_reductions = true;
+        caps.lane_independent_loops = false;
+    }
     if (pass_options.descriptor_index_64
             && caps.offsets_follow_descriptor_index_64()) {
         caps.offset_kind = 8;

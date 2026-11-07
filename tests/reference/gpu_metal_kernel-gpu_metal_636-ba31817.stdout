@@ -35,7 +35,15 @@ kernel void __lfortran_gpu_kernel_0(
         int __gpu_sum_k_gpu;
         float __gpu_sum_res_gpu;
         __gpu_sum_res_gpu =   0.00000000000000000e+00;
-        if ((__gpu_lane == 0)) {
+        if ((__gpu_lanes_gpu > 1)) {
+            if ((__gpu_lane != 0)) {
+                __gpu_sum_res_gpu =   0.00000000000000000e+00;
+            }
+            for (__gpu_sum_k_gpu = (1 + (((int)__gpu_lane) * 1)); __gpu_sum_k_gpu <= __lfortran_gpu_dim__gpu; __gpu_sum_k_gpu += (1 * ((int)__gpu_lanes_gpu))) {
+                __gpu_sum_res_gpu = (__gpu_sum_res_gpu + ((float)pair__dc_gpu));
+            }
+            __gpu_sum_res_gpu = simd_sum(__gpu_sum_res_gpu);
+        } else {
             __gpu_loop_end_gpu = __lfortran_gpu_dim__gpu;
             __gpu_sum_k_gpu = 1;
             if ((__gpu_loop_end_gpu >= 1)) {
@@ -77,11 +85,11 @@ kernel void __lfortran_gpu_kernel_0(
                     __gpu_sum_res_gpu = (__gpu_sum_res_gpu + ((float)pair__dc_gpu));
                 }
             }
+        }
+        if ((__gpu_lane == 0)) {
             y_gpu[((int)(pair__dc_gpu) - (__lb_y_0_gpu))] = __gpu_sum_res_gpu;
         }
         if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
-        __gpu_sum_res_gpu = simd_shuffle(__gpu_sum_res_gpu, (ushort)(__gpu_simd_lane - (uint)__gpu_lane));
-        __gpu_sum_k_gpu = simd_shuffle(__gpu_sum_k_gpu, (ushort)(__gpu_simd_lane - (uint)__gpu_lane));
     }
 }
 

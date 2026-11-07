@@ -307,6 +307,7 @@ expr
     | GpuAtomicFetchAdd(expr target, expr increment, ttype type, expr? value)
     | GpuLaneIndex(ttype type, expr? value)
     | GpuLaneBroadcast(expr arg, ttype type, expr? value)
+    | GpuLaneReduce(expr arg, reduction_op op, ttype type, expr? value)
 
 ttype
     = Integer(int kind)

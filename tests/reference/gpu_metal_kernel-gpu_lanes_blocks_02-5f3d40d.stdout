@@ -1,0 +1,94 @@
+#include <metal_stdlib>
+using namespace metal;
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __dim_first_0_gpu;
+    int __lb_first_0_gpu;
+    int __dim_first_1_gpu;
+    int __lb_first_1_gpu;
+    int __dim_out_0_gpu;
+    int __lb_out_0_gpu;
+    int __dim_out_1_gpu;
+    int __lb_out_1_gpu;
+    int __dim_out_2_gpu;
+    int __lb_out_2_gpu;
+    int __dim_q_0_gpu;
+    int __lb_q_0_gpu;
+    int __dim_q_1_gpu;
+    int __lb_q_1_gpu;
+    int __dim_q_2_gpu;
+    int __lb_q_2_gpu;
+    int __loop_start_0_gpu;
+    int __loop_end_0_gpu;
+    int __loop_start_1_gpu;
+    int __loop_end_1_gpu;
+    int __gpu_lanes_gpu;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device int* first_gpu [[buffer(0)]],
+    device float* out_gpu [[buffer(1)]],
+    device float* q_gpu [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+{
+    int __dim_first_0_gpu = __scalar_args.__dim_first_0_gpu;
+    int __lb_first_0_gpu = __scalar_args.__lb_first_0_gpu;
+    int __lb_first_1_gpu = __scalar_args.__lb_first_1_gpu;
+    int __dim_out_0_gpu = __scalar_args.__dim_out_0_gpu;
+    int __lb_out_0_gpu = __scalar_args.__lb_out_0_gpu;
+    int __dim_out_1_gpu = __scalar_args.__dim_out_1_gpu;
+    int __lb_out_1_gpu = __scalar_args.__lb_out_1_gpu;
+    int __lb_out_2_gpu = __scalar_args.__lb_out_2_gpu;
+    int __dim_q_0_gpu = __scalar_args.__dim_q_0_gpu;
+    int __lb_q_0_gpu = __scalar_args.__lb_q_0_gpu;
+    int __dim_q_1_gpu = __scalar_args.__dim_q_1_gpu;
+    int __lb_q_1_gpu = __scalar_args.__lb_q_1_gpu;
+    int __lb_q_2_gpu = __scalar_args.__lb_q_2_gpu;
+    int __loop_start_0_gpu = __scalar_args.__loop_start_0_gpu;
+    int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
+    int __loop_start_1_gpu = __scalar_args.__loop_start_1_gpu;
+    int __loop_end_1_gpu = __scalar_args.__loop_end_1_gpu;
+    int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
+    int __flat_idx_gpu;
+    int h__dc_gpu;
+    int token__dc_gpu;
+    if ((((0 * 0) + __thread_id) >= ((((__loop_end_0_gpu >= __loop_start_0_gpu)) ? (((__loop_end_0_gpu - __loop_start_0_gpu) + 1)) : (0)) * (((__loop_end_1_gpu >= __loop_start_1_gpu)) ? (((__loop_end_1_gpu - __loop_start_1_gpu) + 1)) : (0))))) {
+        return;
+    }
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    h__dc_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((__loop_end_1_gpu - __loop_start_1_gpu) + 1)) * ((__loop_end_1_gpu - __loop_start_1_gpu) + 1))) + __loop_start_1_gpu);
+    __flat_idx_gpu = (__flat_idx_gpu / ((__loop_end_1_gpu - __loop_start_1_gpu) + 1));
+    token__dc_gpu = (__flat_idx_gpu + __loop_start_0_gpu);
+    {
+        int d_gpu;
+        int found_gpu;
+        for (d_gpu = (1 + (((int)__gpu_lane) * 1)); d_gpu <= __dim_q_0_gpu; d_gpu += (1 * ((int)__gpu_lanes_gpu))) {
+            {
+                float acc_gpu;
+                float twice_gpu;
+                acc_gpu = (((float)2) * q_gpu[((int)(d_gpu) - (__lb_q_0_gpu)) + (__dim_q_0_gpu * ((int)(h__dc_gpu) - (__lb_q_1_gpu))) + ((__dim_q_0_gpu * __dim_q_1_gpu) * ((int)(token__dc_gpu) - (__lb_q_2_gpu)))]);
+                twice_gpu = (acc_gpu + q_gpu[((int)(d_gpu) - (__lb_q_0_gpu)) + (__dim_q_0_gpu * ((int)(h__dc_gpu) - (__lb_q_1_gpu))) + ((__dim_q_0_gpu * __dim_q_1_gpu) * ((int)(token__dc_gpu) - (__lb_q_2_gpu)))]);
+                out_gpu[((int)(d_gpu) - (__lb_out_0_gpu)) + (__dim_out_0_gpu * ((int)(h__dc_gpu) - (__lb_out_1_gpu))) + ((__dim_out_0_gpu * __dim_out_1_gpu) * ((int)(token__dc_gpu) - (__lb_out_2_gpu)))] = (acc_gpu * twice_gpu);
+            }
+        }
+        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+        found_gpu = 0;
+        for (d_gpu = 1; d_gpu <= __dim_q_0_gpu; d_gpu++) {
+            {
+                if ((q_gpu[((int)(d_gpu) - (__lb_q_0_gpu)) + (__dim_q_0_gpu * ((int)(h__dc_gpu) - (__lb_q_1_gpu))) + ((__dim_q_0_gpu * __dim_q_1_gpu) * ((int)(token__dc_gpu) - (__lb_q_2_gpu)))] > ((float)7))) {
+                    found_gpu = d_gpu;
+                    break;
+                }
+            }
+        }
+        if ((__gpu_lane == 0)) {
+            first_gpu[((int)(h__dc_gpu) - (__lb_first_0_gpu)) + (__dim_first_0_gpu * ((int)(token__dc_gpu) - (__lb_first_1_gpu)))] = found_gpu;
+        }
+        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+    }
+}
+

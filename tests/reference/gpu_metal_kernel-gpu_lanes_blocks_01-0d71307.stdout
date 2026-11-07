@@ -1,0 +1,67 @@
+#include <metal_stdlib>
+using namespace metal;
+
+kernel void __lfortran_gpu_kernel_0(
+    device float* a_gpu [[buffer(0)]],
+    device float* g_gpu [[buffer(1)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx_gpu;
+    int i__dc_gpu;
+    if ((((0 * 0) + __thread_id) >= 48)) {
+        return;
+    }
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    i__dc_gpu = (__flat_idx_gpu + 1);
+    {
+        float e_gpu;
+        float s_gpu;
+        e_gpu = exp((-(abs(a_gpu[((int)(i__dc_gpu) - (1))]))));
+        s_gpu = (max(a_gpu[((int)(i__dc_gpu) - (1))],   0.00000000000000000e+00) + log((  1.00000000000000000e+00 + e_gpu)));
+        g_gpu[((int)(i__dc_gpu) - (1))] = exp((-(s_gpu)));
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __gpu_lanes_gpu;
+};
+
+kernel void __lfortran_gpu_kernel_1(
+    device float* a_gpu [[buffer(0)]],
+    device float* w_gpu [[buffer(1)]],
+    device float* y_gpu [[buffer(2)]],
+    device float* z_gpu [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(4)]],
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+{
+    int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
+    int __flat_idx_gpu;
+    int __gpu_sec_i_gpu;
+    int i__dc1_gpu;
+    if ((((0 * 0) + __thread_id) >= 48)) {
+        return;
+    }
+    __flat_idx_gpu = ((0 * 0) + __thread_id);
+    i__dc1_gpu = (__flat_idx_gpu + 1);
+    {
+        float u_gpu;
+        if ((__gpu_lane == 0)) {
+            {
+                float t_gpu;
+                t_gpu = (((float)2) * a_gpu[((int)(i__dc1_gpu) - (1))]);
+                u_gpu = (t_gpu + ((float)1));
+                y_gpu[((int)(i__dc1_gpu) - (1))] = (t_gpu * t_gpu);
+            }
+        }
+        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+        u_gpu = simd_shuffle(u_gpu, (ushort)(__gpu_simd_lane - (uint)__gpu_lane));
+        for (__gpu_sec_i_gpu = (1 + (((int)__gpu_lane) * 1)); __gpu_sec_i_gpu <= ((((int)300) + ((int)1)) - 1); __gpu_sec_i_gpu += (1 * ((int)__gpu_lanes_gpu))) {
+            z_gpu[((int)(__gpu_sec_i_gpu) - (1)) + (300 * ((int)(i__dc1_gpu) - (1)))] = (w_gpu[((int)(__gpu_sec_i_gpu) - (1)) + (300 * ((int)(i__dc1_gpu) - (1)))] * u_gpu);
+        }
+        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+    }
+}
+
