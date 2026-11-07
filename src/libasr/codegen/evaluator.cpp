@@ -580,6 +580,11 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
 {
     const llvm::Target *target = get_llvm_target(config.triple);
     llvm::TargetOptions options;
+    // The IR of `--fast` already allows contraction (`fast` flags), but the
+    // AArch64 backend of LLVM 11 only fuses with this option.
+    if (config.fast_math) {
+        options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+    }
     llvm::Triple triple(config.triple);
     // WebAssembly objects are linked into static executables (wasm-ld for
     // WASI, emcc for Emscripten), which do not need position independent
@@ -649,6 +654,8 @@ LLVMTargetConfig resolve_llvm_target_config(
 
     LLVMTargetConfig config;
     config.fast = compiler_options.po.fast;
+    config.fast_math = compiler_options.po.fast
+        && !compiler_options.po.no_fast_math;
     config.triple = compiler_options.target.empty()
         ? llvm::sys::getDefaultTargetTriple()
         : llvm::Triple::normalize(compiler_options.target);
