@@ -26780,8 +26780,10 @@ public:
         for (size_t oi = 0; oi < proc_order.size(); ++oi) {
             size_t i = proc_order[oi];
             ASR::symbol_t* proc;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
-                proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(gen_proc->m_procs[i])->m_proc;
+            ASR::StructMethodDeclaration_t* binding =
+                ASRUtils::type_bound_specific_binding(gen_proc->m_procs[i], nullptr);
+            if (binding != nullptr) {
+                proc = binding->m_proc;
             } else {
                 proc = gen_proc->m_procs[i];
             }
@@ -26834,7 +26836,7 @@ public:
             std::string func_name = to_lower(func->m_name);
             ASR::symbol_t* call_sym = nullptr;
             if (op_sym != nullptr && !ASRUtils::is_type_bound_generic(operator_sym)
-                    && !ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
+                    && binding == nullptr) {
                 call_sym = gen_proc->m_procs[i];
             } else {
                 call_sym = ASRUtils::import_type_bound_specific(al, current_scope,
@@ -26871,8 +26873,10 @@ public:
                 ASR::CustomOperator_t* rhs_gen_proc = ASR::down_cast<ASR::CustomOperator_t>(rhs_operator_sym);
                 for (size_t i = 0; i < rhs_gen_proc->n_procs; ++i) {
                     ASR::symbol_t* proc;
-                    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*rhs_gen_proc->m_procs[i])) {
-                        proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(rhs_gen_proc->m_procs[i])->m_proc;
+                    ASR::StructMethodDeclaration_t* binding =
+                        ASRUtils::type_bound_specific_binding(rhs_gen_proc->m_procs[i], nullptr);
+                    if (binding != nullptr) {
+                        proc = binding->m_proc;
                     } else {
                         proc = rhs_gen_proc->m_procs[i];
                     }

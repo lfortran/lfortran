@@ -4598,6 +4598,18 @@ ASR::StructMethodDeclaration_t* overridden_binding(
 bool binding_overrides(const ASR::StructMethodDeclaration_t *x,
     const ASR::StructMethodDeclaration_t *target);
 
+// The binding that a call through `specific`, a specific procedure of a
+// type-bound generic or operator, reaches for an object of declared type
+// `type`: the binding named like `specific` in `type` or its nearest ancestor
+// that is or overrides `specific`, else `specific` itself. `specific` may be an
+// ExternalSymbol to an ancestor's binding (an inherited private specific that
+// is not accessible where the extension is declared), and a binding of the
+// same name that does not override it is a different binding. With `type`
+// nullptr, the binding `specific` denotes. nullptr if `specific` is not a
+// binding.
+ASR::StructMethodDeclaration_t* type_bound_specific_binding(
+    ASR::symbol_t *specific, ASR::Struct_t *type);
+
 // Fortran 2018 7.5.7.3: an overriding type-bound procedure and the one it
 // overrides must have the same interface apart from the passed-object dummy
 // argument. Nothing downstream re-derives this, so a mismatch means a dispatch
