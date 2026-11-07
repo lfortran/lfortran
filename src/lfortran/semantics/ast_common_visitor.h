@@ -8242,10 +8242,12 @@ public:
             }));
     }
 
-    // The value of the NAME= specifier `value` of bind(c), a scalar default
-    // character constant expression (Fortran 2023 R808, C809), evaluated in
-    // the current scope. Returns nullptr after reporting an invalid NAME=
-    // when compilation continues.
+    // The binding label given by the NAME= specifier `value` of bind(c): the
+    // value of the scalar default character constant expression (Fortran 2023
+    // R808, C809), evaluated in the current scope, without its leading and
+    // trailing blanks (18.10.2). An empty label means the entity has no
+    // binding label. Returns nullptr after reporting an invalid NAME= when
+    // compilation continues.
     char *evaluate_bind_name(AST::expr_t &value) {
         ASR::asr_t *tmp_copy = tmp;
         ASR::expr_t *name = nullptr;
@@ -8285,7 +8287,14 @@ public:
             if (!compiler_options.continue_compilation) throw SemanticAbort();
             return nullptr;
         }
-        return ASR::down_cast<ASR::StringConstant_t>(name_value)->m_s;
+        std::string label = ASR::down_cast<ASR::StringConstant_t>(
+            name_value)->m_s;
+        size_t first = label.find_first_not_of(' ');
+        if (first == std::string::npos) {
+            return s2c(al, "");
+        }
+        size_t last = label.find_last_not_of(' ');
+        return s2c(al, label.substr(first, last - first + 1));
     }
 
     // Declares `sym` as an external procedure with the explicit interface of
@@ -10914,6 +10923,12 @@ public:
                             }
                             ASR::CommonBlock_t *block = get_or_create_common_block(
                                 common_block_name, x.m_syms[j].loc);
+                            if (bindc_name && bindc_name[0] == '\0') {
+                                // A NAME= that is empty or all blanks: the
+                                // block has no binding label and keeps its
+                                // ordinary link name.
+                                continue;
+                            }
                             block->m_abi = abi_type;
                             block->m_link_name = bindc_name ? bindc_name
                                 : s2c(al, common_block_name);
