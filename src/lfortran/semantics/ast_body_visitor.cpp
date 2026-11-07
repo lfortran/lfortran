@@ -2685,7 +2685,7 @@ public:
                         }));
                     throw SemanticAbort();
                 }
-                if (!ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_pointer(a_iomsg_type))) {
+                if (!ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable_pointer(a_iomsg_type))) {
                     diag.add(Diagnostic(
                         "`iomsg` must be of type, String",
                         Level::Error, Stage::Semantic, {
