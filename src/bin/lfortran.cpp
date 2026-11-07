@@ -540,7 +540,8 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
                           compiler_options.po.include_dirs.end());
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<std::string> prescan_res = LCompilers::LFortran::prescan(input, lm,
-        compiler_options.fixed_form, include_dirs, diagnostics);
+        compiler_options.fixed_form, compiler_options.openmp, include_dirs,
+        diagnostics);
     if (!prescan_res.ok) {
         std::cerr << diagnostics.render(lm, LCompilers::CompilerOptions());
         return 1;
@@ -571,7 +572,8 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
                             compiler_options.po.include_dirs.begin(),
                             compiler_options.po.include_dirs.end());
         LCompilers::Result<std::string> prescan_res = LCompilers::LFortran::prescan(input, lm,
-            compiler_options.fixed_form, include_dirs, diagnostics);
+            compiler_options.fixed_form, compiler_options.openmp, include_dirs,
+            diagnostics);
         if (!prescan_res.ok) {
             std::cerr << diagnostics.render(lm, LCompilers::CompilerOptions());
             return 1;
