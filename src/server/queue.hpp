@@ -131,27 +131,34 @@ namespace LCompilers::LLanguageServer::Threading {
     auto Queue<T,N>::stop() -> void {
         logger.debug() << "Stopping queue ..." << std::endl;
 
-        bool expected = true;
-        if (receiving.compare_exchange_strong(expected, false)) {
-            dequeued.notify_all();
-        } else {
-            throw std::runtime_error("Queue has already been stopped!");
+        // NOTE: The stop flags are predicates of the condition variables below,
+        // so they must be updated while holding the same mutex that the waiters
+        // hold. Otherwise a notification can be lost if it arrives after a
+        // waiter has evaluated its predicate but before it has registered on
+        // the condition variable, leaving that thread blocked forever.
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+            bool expected = true;
+            if (!receiving.compare_exchange_strong(expected, false)) {
+                throw std::runtime_error("Queue has already been stopped!");
+            }
         }
+        dequeued.notify_all();
     }
 
     template <typename T, std::size_t N>
     auto Queue<T,N>::stopNow() -> void {
         logger.trace() << "Stopping queue now!" << std::endl;
 
-        bool expected = true;
-        if (receiving.compare_exchange_strong(expected, false)) {
-            dequeued.notify_all();
+        // NOTE: See the comment in stop() above: update the predicates while
+        // holding `mutex` so that no waiter can miss the notification.
+        {
+            std::unique_lock<std::mutex> lock(mutex);
+            receiving = false;
+            sending = false;
         }
-
-        expected = true;
-        if (sending.compare_exchange_strong(expected, false)) {
-            enqueued.notify_all();
-        }
+        dequeued.notify_all();
+        enqueued.notify_all();
     }
 
 } // namespace LCompilers::LLanguageServer::Threading
