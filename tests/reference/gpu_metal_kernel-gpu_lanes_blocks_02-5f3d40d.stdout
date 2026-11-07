@@ -70,7 +70,7 @@ kernel void __lfortran_gpu_kernel_0_21gpu_lanes_blocks_02_m5scale(
             {
                 float acc_gpu;
                 float twice_gpu;
-                acc_gpu = (((float)2) * q_gpu[((int)(d_gpu) - (__lb_q_0_gpu)) + (__dim_q_0_gpu * ((int)(h__dc_gpu) - (__lb_q_1_gpu))) + ((__dim_q_0_gpu * __dim_q_1_gpu) * ((int)(token__dc_gpu) - (__lb_q_2_gpu)))]);
+                acc_gpu = (  2.00000000000000000e+00 * q_gpu[((int)(d_gpu) - (__lb_q_0_gpu)) + (__dim_q_0_gpu * ((int)(h__dc_gpu) - (__lb_q_1_gpu))) + ((__dim_q_0_gpu * __dim_q_1_gpu) * ((int)(token__dc_gpu) - (__lb_q_2_gpu)))]);
                 twice_gpu = (acc_gpu + q_gpu[((int)(d_gpu) - (__lb_q_0_gpu)) + (__dim_q_0_gpu * ((int)(h__dc_gpu) - (__lb_q_1_gpu))) + ((__dim_q_0_gpu * __dim_q_1_gpu) * ((int)(token__dc_gpu) - (__lb_q_2_gpu)))]);
                 out_gpu[((int)(d_gpu) - (__lb_out_0_gpu)) + (__dim_out_0_gpu * ((int)(h__dc_gpu) - (__lb_out_1_gpu))) + ((__dim_out_0_gpu * __dim_out_1_gpu) * ((int)(token__dc_gpu) - (__lb_out_2_gpu)))] = (acc_gpu * twice_gpu);
             }
@@ -79,7 +79,7 @@ kernel void __lfortran_gpu_kernel_0_21gpu_lanes_blocks_02_m5scale(
         found_gpu = 0;
         for (d_gpu = 1; d_gpu <= __dim_q_0_gpu; d_gpu++) {
             {
-                if ((q_gpu[((int)(d_gpu) - (__lb_q_0_gpu)) + (__dim_q_0_gpu * ((int)(h__dc_gpu) - (__lb_q_1_gpu))) + ((__dim_q_0_gpu * __dim_q_1_gpu) * ((int)(token__dc_gpu) - (__lb_q_2_gpu)))] > ((float)7))) {
+                if ((q_gpu[((int)(d_gpu) - (__lb_q_0_gpu)) + (__dim_q_0_gpu * ((int)(h__dc_gpu) - (__lb_q_1_gpu))) + ((__dim_q_0_gpu * __dim_q_1_gpu) * ((int)(token__dc_gpu) - (__lb_q_2_gpu)))] >   7.00000000000000000e+00)) {
                     found_gpu = d_gpu;
                     break;
                 }

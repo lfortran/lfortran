@@ -432,10 +432,7 @@ public:
 } // namespace
 
 void pass_specialize_procedure_arguments(Allocator &al,
-        ASR::TranslationUnit_t &unit, const PassOptions &pass_options) {
-    if (!pass_options.fast) {
-        return;
-    }
+        ASR::TranslationUnit_t &unit, const PassOptions &/*pass_options*/) {
     ProcedureArgumentSpecializer specializer(al, unit.m_symtab);
     if (specializer.removable.empty()) {
         return;

@@ -28,6 +28,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_
     int* __restrict__ out)
 {
     int __flat_idx;
+    int __gpu_sec_i1;
     int i__dc1;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 10000)) {
         return;
@@ -35,7 +36,12 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc1 = (__flat_idx + 1);
     {
-        out[((int)(i__dc1) - (1))] = (2 * i__dc1);
+        int tmp[4];
+        #pragma unroll 16
+        for (__gpu_sec_i1 = 1; __gpu_sec_i1 <= 4; __gpu_sec_i1++) {
+            tmp[((int)(__gpu_sec_i1) - (1))] = (2 * i__dc1);
+        }
+        out[((int)(i__dc1) - (1))] = tmp[((int)((((i__dc1) % (4)) + 1)) - (1))];
     }
 }
 
@@ -64,6 +70,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_13gpu_
     int* __restrict__ out)
 {
     int __flat_idx;
+    int __gpu_sec_i3;
     int i__dc3;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 10000)) {
         return;
@@ -71,7 +78,12 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_13gpu_
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc3 = (__flat_idx + 1);
     {
-        out[((int)(i__dc3) - (1))] = (4 * i__dc3);
+        int tmp[4];
+        #pragma unroll 16
+        for (__gpu_sec_i3 = 1; __gpu_sec_i3 <= 4; __gpu_sec_i3++) {
+            tmp[((int)(__gpu_sec_i3) - (1))] = (4 * i__dc3);
+        }
+        out[((int)(i__dc3) - (1))] = tmp[((int)((((i__dc3) % (4)) + 1)) - (1))];
     }
 }
 

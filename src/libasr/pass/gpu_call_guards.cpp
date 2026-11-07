@@ -39,7 +39,8 @@ The call is rewritten only when that changes nothing but the time it takes:
 * the actual arguments call no function: skipping their evaluation is then
   not observable, and evaluating them cannot change `c`.
 
-Only with a GPU device selected, where the waits are what this saves.
+Only with --fast and a GPU device selected, where the waits are what this
+saves.
 */
 
 namespace {
