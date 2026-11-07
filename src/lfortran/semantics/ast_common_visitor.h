@@ -8869,8 +8869,14 @@ public:
                                         assgnd_access[sym] = ASR::accessType::Private;
                                     } else {
                                         assgnd_access[sym] = ASR::accessType::Private;
-                                        sym_ = ASRUtils::symbol_get_past_external(sym_);
-                                        if (ASR::is_a<ASR::Variable_t>(*sym_)) {
+                                        if (ASR::is_a<ASR::ExternalSymbol_t>(*sym_)) {
+                                            // The access-spec of a use-associated name
+                                            // only controls whether this module
+                                            // re-exports it; the entity in its own
+                                            // module is unchanged.
+                                            ASR::down_cast<ASR::ExternalSymbol_t>(sym_)
+                                                ->m_access = ASR::accessType::Private;
+                                        } else if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                             v->m_access = ASR::accessType::Private;
                                         } else if (ASR::is_a<ASR::Function_t>(*sym_)) {
@@ -8885,8 +8891,14 @@ public:
                                         assgnd_access[sym] = ASR::accessType::Public;
                                     } else {
                                         assgnd_access[sym] = ASR::accessType::Public;
-                                        sym_ = ASRUtils::symbol_get_past_external(sym_);
-                                        if (ASR::is_a<ASR::Variable_t>(*sym_)) {
+                                        if (ASR::is_a<ASR::ExternalSymbol_t>(*sym_)) {
+                                            // The access-spec of a use-associated name
+                                            // only controls whether this module
+                                            // re-exports it; the entity in its own
+                                            // module is unchanged.
+                                            ASR::down_cast<ASR::ExternalSymbol_t>(sym_)
+                                                ->m_access = ASR::accessType::Public;
+                                        } else if (ASR::is_a<ASR::Variable_t>(*sym_)) {
                                             ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
                                             v->m_access = ASR::accessType::Public;
                                         } else if (ASR::is_a<ASR::Function_t>(*sym_)) {
@@ -30384,6 +30396,16 @@ public:
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
         } else if (ASR::is_a<ASR::ExternalSymbol_t>(*t)) {
             ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(t);
+            if (ext_sym->m_access == ASR::accessType::Private &&
+                    ASR::is_a<ASR::Variable_t>(
+                        *ASRUtils::symbol_get_past_external(t))) {
+                // A use-associated variable that `m` does not re-export.
+                diag.add(diag::Diagnostic(
+                    "Private variable `" + local_sym + "` cannot be imported",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
+            }
             ASR::asr_t* temp = ASR::make_ExternalSymbol_t(
                 al, loc,
                 current_scope,

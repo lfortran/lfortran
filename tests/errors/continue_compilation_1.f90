@@ -4577,3 +4577,32 @@ subroutine cc1_char_len_entity_override()
     implicit none
     character(len=cc1_char_len_nundef) :: c*4  ! {Error} Variable 'cc1_char_len_nundef' is not declared
 end subroutine
+
+! A host's access statement on a use-associated name changes only the host's
+! re-export, so importing that name from the host by `use host, only:` fails.
+module cc1_priv_reexport_m0
+    integer :: x = 3
+    integer :: y = 4
+end module
+
+module cc1_priv_reexport_named
+    use cc1_priv_reexport_m0, only: x, z => y
+    private :: x, z
+end module
+
+module cc1_priv_reexport_default
+    use cc1_priv_reexport_m0, only: x
+    private
+end module
+
+subroutine cc1_priv_reexport_use_named()
+    use cc1_priv_reexport_named, only: x  ! {Error} Private variable `x` cannot be imported
+end subroutine
+
+subroutine cc1_priv_reexport_use_default()
+    use cc1_priv_reexport_default, only: x  ! {Error} Private variable `x` cannot be imported
+end subroutine
+
+subroutine cc1_priv_reexport_use_renamed()
+    use cc1_priv_reexport_named, only: z  ! {Error} Private variable `z` cannot be imported
+end subroutine
