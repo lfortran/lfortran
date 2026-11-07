@@ -85,11 +85,13 @@ jobs:
             export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
             bash ci/test_llvm_integration.sh --options
 
+      # The GPU suites run with --fast, which adds the GPU optimizations to
+      # the passes the offload needs. Exhaustive runs them without --fast too.
       - name: Test Metal GPU backend (macOS)
         shell: bash -e {0}
         if: contains(matrix.os, 'macos')
         run: |
-            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b metal -j3
+            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b metal -f -j3
 
       # The CUDA device code is compiled and run on the CPU, so this exercises
       # the whole CUDA path on a runner that has no GPU.
@@ -97,7 +99,7 @@ jobs:
         shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b cuda_cpu -j3
+            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b cuda_cpu -f -j3
 
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')

@@ -128,13 +128,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
     int __lb_q_0 = __scalar_args.__lb_q_0;
     int __flat_idx;
     int i__dc;
-    const int n = 20;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 20)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
-    if (((int)((i__dc >= 3) && (i__dc < n)))) {
+    if (((int)((i__dc >= 3) && (i__dc < 20)))) {
         flux[((int)(i__dc) - (__lb_flux_0))] = (q[((int)((i__dc + 1)) - (__lb_q_0))] - q[((int)(i__dc) - (__lb_q_0))]);
     }
 }

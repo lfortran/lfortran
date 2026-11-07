@@ -85,6 +85,7 @@
 #include <libasr/pass/gpu_struct_component_args.h>
 #include <libasr/pass/gpu_device_heap.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
 #include <libasr/codegen/asr_to_fortran.h>
@@ -102,11 +103,32 @@ namespace LCompilers {
     typedef void (*pass_function)(Allocator&, ASR::TranslationUnit_t&,
                                   const LCompilers::PassOptions&);
 
+    // When a pass of the default pipeline runs. A pass runs where it is
+    // listed, when every condition it is marked with holds.
+    enum PipelinePassCondition : unsigned {
+        // Every compilation: what the program needs to run.
+        RunAlways = 0,
+        // Only with --fast: an optimization, which nothing the program
+        // needs to run depends on.
+        RunFast = 1,
+        // Only when --gpu selects a device: the pass works on device code,
+        // or on what the host does around the launch of a kernel, and a
+        // program compiled for no device has none.
+        RunGpu = 2,
+    };
+
+    struct PipelinePass {
+        std::string name;
+        unsigned when = RunAlways;
+    };
+
     class PassManager {
         private:
 
-        std::vector<std::string> _passes;
-        std::vector<std::string> _optimization_passes;
+        // The default pipeline, in the order its passes run. Without
+        // --fast, the passes marked RunFast do not run, and without a
+        // device, the passes marked RunGpu do not run.
+        std::vector<PipelinePass> _pipeline;
         std::vector<std::string> _user_defined_passes;
         std::vector<std::string> _skip_passes, _c_skip_passes;
         std::map<std::string, pass_function> _passes_db = {
@@ -200,40 +222,7 @@ namespace LCompilers {
                            double &cummulative_time_taken_by_passes_in_microseconds) {
             pass_options.diagnostics = &diagnostics;
             if (pass_options.pass_cumulative) {
-                std::vector<std::string> _with_optimization_passes;
-                _with_optimization_passes.insert(
-                    _with_optimization_passes.end(),
-                    _passes.begin(),
-                    _passes.end()
-                );
-                _with_optimization_passes.insert(
-                    _with_optimization_passes.end(),
-                    _optimization_passes.begin(),
-                    _optimization_passes.end()
-                );
-                int _pass_max_idx = -1, _opt_max_idx = -1;
-                for (std::string &current_pass: passes) {
-                    auto it1 = std::find(_passes.begin(), _passes.end(), current_pass);
-                    if (it1 != _passes.end()) {
-                        _pass_max_idx = std::max(_pass_max_idx,
-                                            (int)(it1 - _passes.begin()));
-                    }
-                    auto it2 = std::find(_with_optimization_passes.begin(),
-                                    _with_optimization_passes.end(), current_pass);
-                    if (it2 != _with_optimization_passes.end()) {
-                        _opt_max_idx = std::max(_opt_max_idx,
-                                            (int)(it2 - _with_optimization_passes.begin()));
-                    }
-                }
-                passes.clear();
-                if (_pass_max_idx != -1) {
-                    for (int i=0; i<=_pass_max_idx; i++)
-                        passes.push_back(_passes[i]);
-                }
-                if (_opt_max_idx != -1) {
-                    for (int i=0; i<=_opt_max_idx; i++)
-                        passes.push_back(_with_optimization_passes[i]);
-                }
+                passes = cumulative_passes(passes, pass_options);
             }
             // The verifier options for the ASR after each pass
             ASRVerifyOptions verify_options;
@@ -316,170 +305,224 @@ namespace LCompilers {
             }
         }
 
+        // Whether a pass of the default pipeline runs with these options.
+        static bool pipeline_pass_runs(const PipelinePass &pass,
+                const PassOptions &pass_options) {
+            if ((pass.when & RunFast) && !pass_options.fast) return false;
+            if ((pass.when & RunGpu)
+                    && gpu_device_selected(pass_options) == GpuDevice::None) {
+                return false;
+            }
+            return true;
+        }
+
+        // The passes of the default pipeline that run with these options,
+        // in order.
+        std::vector<std::string> default_passes(
+                const PassOptions &pass_options) const {
+            std::vector<std::string> passes;
+            for (const PipelinePass &pass: _pipeline) {
+                if (pipeline_pass_runs(pass, pass_options)) {
+                    passes.push_back(pass.name);
+                }
+            }
+            return passes;
+        }
+
+        // With --cumulative: the passes of the default pipeline up to the
+        // first place each of `named` is listed in it, leaving out those that
+        // do not run with these options unless they are named. A named pass
+        // that is not in the pipeline runs nowhere.
+        std::vector<std::string> cumulative_passes(
+                const std::vector<std::string> &named,
+                const PassOptions &pass_options) const {
+            auto is_named = [&](const std::string &name) {
+                return std::find(named.begin(), named.end(), name)
+                    != named.end();
+            };
+            size_t end = 0;
+            for (const std::string &name: named) {
+                for (size_t i = 0; i < _pipeline.size(); i++) {
+                    if (_pipeline[i].name == name) {
+                        end = std::max(end, i + 1);
+                        break;
+                    }
+                }
+            }
+            std::vector<std::string> passes;
+            for (size_t i = 0; i < end; i++) {
+                if (pipeline_pass_runs(_pipeline[i], pass_options)
+                        || is_named(_pipeline[i].name)) {
+                    passes.push_back(_pipeline[i].name);
+                }
+            }
+            return passes;
+        }
+
         PassManager(): apply_default_passes{false},
             c_skip_pass{false} {
-            _passes = {
-                "global_stmts",
-                "init_expr",
+            _pipeline = {
+                {"global_stmts"},
+                {"init_expr"},
                 // A declaration initializer no target can lay out as static
                 // data becomes an executable statement of a startup
                 // initializer here, which the passes below lower like any
                 // other procedure body.
-                "global_init",
+                {"global_init"},
                 // The bounds and the extent (never negative) of every
                 // explicit-shape array are fixed on entry here, before any
                 // pass below copies its type or sizes a temporary from it.
-                "function_call_in_declaration",
+                {"function_call_in_declaration"},
                 // Each defined output procedure that a formatted output
                 // statement uses gets a callback with the fixed interface
                 // the runtime formatter calls, lowered by the passes below
                 // like any other procedure.
-                "dtio_callbacks",
+                {"dtio_callbacks"},
                 // Every parallel loop, however it was written, becomes one
                 // canonical `OMPRegion` before anything decides how to lower
                 // it, and the pass after that writes the decision into the
                 // region.
-                "parallel_canonicalize",
-                "parallel_dispatch",
+                {"parallel_canonicalize"},
+                {"parallel_dispatch"},
                 // A whole-array assignment that is assigned again before
                 // anything reads it goes, before it can cost a launch.
-                "dead_array_store",
+                {"dead_array_store", RunFast},
                 // A call its subroutine returns from at once on a condition
                 // tests that condition itself, so that the host need not
                 // wait for the device before evaluating its arguments.
-                "gpu_call_guards",
+                {"gpu_call_guards", RunFast | RunGpu},
                 // Parallel loops assigned to the device are fused, skewed
                 // and split while they are still loops of the source
                 // (gpu_loop_fusion.cpp, gpu_time_skew.cpp,
                 // gpu_index_set_split.cpp).
-                "gpu_loop_transforms",
+                {"gpu_loop_transforms", RunFast | RunGpu},
                 // A whole-array assignment in a host loop that launches
                 // kernels, on the data they use, runs on the device too.
-                "gpu_array_statements",
+                {"gpu_array_statements", RunFast | RunGpu},
                 // Each statement that references a function whose result is
                 // finalized after the statement becomes a BLOCK here, before
                 // the passes below split it into several statements.
-                "function_result_scope",
-                "implied_do_loops",
+                {"function_result_scope"},
+                {"implied_do_loops"},
                 // Every loop the dispatch assigned to the device becomes a
                 // kernel and its launch. Nothing is kept to run it on the
                 // host instead: a loop this cannot lower is an error.
-                "gpu_offload",
-                "openmp",
+                {"gpu_offload", RunGpu},
+                {"openmp"},
                 // Whatever OpenMP construct no lowering claimed is unwrapped
                 // here, so it runs serially instead of reaching a code
                 // generator that cannot lower it.
-                "omp_region_flatten",
+                {"omp_region_flatten"},
                 // Everything a kernel reaches is device code, and the
                 // passes below have to know which routines those are.
-                "device_partition",
+                {"device_partition", RunGpu},
                 // A derived-type component holding device buffers becomes
                 // an argument of its own wherever device code uses it.
-                "gpu_struct_component_args",
-                "gpu_device_allocatable",
-                "conditional_expr",
+                {"gpu_struct_component_args", RunGpu},
+                {"gpu_device_allocatable", RunGpu},
+                {"conditional_expr"},
                 // A FORALL becomes a DO CONCURRENT loop before temporaries
                 // are created, so that temporaries depending on its indices
                 // are evaluated inside each iteration.
-                "forall",
-                "array_struct_temporary",
-                "coarray",
+                {"forall"},
+                {"array_struct_temporary"},
+                {"coarray"},
                 // Every pass that can create a startup initializer has run,
                 // so the calls that make them run can be put in now.
-                "global_init_wire",
+                {"global_init_wire"},
                 // An intent(out) dummy is finalized, deallocated and
                 // default-initialized on entry only when it is present.  The
                 // pass guards that with `present()`, so it runs while an
                 // optional dummy is still optional; the pass after it turns
                 // the dummy into a required one and `present()` into its
                 // presence argument.
-                "intent_out_deallocate",
-                "transform_optional_argument_functions",
-                "select_case",
+                {"intent_out_deallocate"},
+                {"transform_optional_argument_functions"},
+                {"select_case"},
                 // With --fast, a call that passes an internal procedure to a
                 // procedure of this file whose dummy only calls it becomes a
                 // direct call of a copy of that procedure in the host, so
                 // nested_vars below needs no procedure value for it.
-                "specialize_procedure_arguments",
+                {"specialize_procedure_arguments", RunFast},
                 // With --fast, a procedure of this file whose dummy
                 // procedures are only called or passed on gets a copy that
                 // takes each as a code pointer and the address of a frame,
                 // so that nested_vars below passes an internal procedure to
                 // it with the frame of its host instead of a thunk.
-                "specialize_frame_arguments",
-                "nested_vars",
-                "class_constructor",
-                "pass_list_expr",
-                "where",
-                "array_op",
+                {"specialize_frame_arguments", RunFast},
+                {"nested_vars"},
+                {"class_constructor"},
+                {"pass_list_expr"},
+                {"where"},
+                {"array_op"},
                 // A block-private map read element by element after it
                 // is written needs no per-thread device storage at all.
-                "gpu_private_map_forwarding",
+                {"gpu_private_map_forwarding", RunFast | RunGpu},
                 // A block-private map read once by an ordered scalar fold
                 // needs only a scalar, not a per-thread device workspace.
-                "gpu_private_reduction_fusion",
+                {"gpu_private_reduction_fusion", RunFast | RunGpu},
                 // A device loop over packed data, reading `(d + r)/K` and
                 // `modulo(d + r, K)` of its index, is unrolled by K so that
                 // each copy has constant residues, while `modulo` is still
                 // an intrinsic and the checks of small functions are still
                 // IF and STOP statements.
-                "gpu_residue_unroll",
-                "symbolic",
-                "intrinsic_function",
-                "intrinsic_subroutine",
-                "subroutine_from_function",
+                {"gpu_residue_unroll", RunFast | RunGpu},
+                {"symbolic"},
+                {"intrinsic_function"},
+                {"intrinsic_subroutine"},
+                {"subroutine_from_function"},
                 // A pass above can add a routine of its own, such as the
                 // shared lowering of an intrinsic, so the partition is
                 // taken again before the device passes below read it.
-                "device_partition",
+                {"device_partition", RunGpu},
                 // A routine's array result becomes an argument here, so a
                 // device routine's result needs the shape of that argument.
-                "gpu_device_allocatable",
-                "array_op",
+                {"gpu_device_allocatable", RunGpu},
+                {"array_op"},
                 // An intrinsic assignment allocates its unallocated
                 // allocatable variable, explicitly from here on.
-                "allocate_on_assignment",
-                "pass_array_by_data",
-                "array_passed_in_function_call",
-                "print_struct_type",
-                "print_arr",
-                "print_list_tuple",
-                "print_struct_type",
-                "array_dim_intrinsics_update",
+                {"allocate_on_assignment"},
+                {"pass_array_by_data"},
+                {"array_passed_in_function_call"},
+                {"print_struct_type"},
+                {"print_arr"},
+                {"print_list_tuple"},
+                {"print_struct_type"},
+                {"array_dim_intrinsics_update"},
                 // A real power of device code with a small constant integer
                 // exponent is the product the host computes, once the
                 // passes above have written every one of them.
-                "gpu_integer_powers",
+                {"gpu_integer_powers", RunGpu},
                 // What the host cannot size before the launch is allocated
                 // on the device heap, and every `stop` of device code is
                 // lowered, once nothing else can add one.
-                "gpu_device_heap",
+                {"gpu_device_heap", RunGpu},
                 // Heap images own their whole-value copies. Locals still
                 // backed by separate component storage copy only values,
                 // never the opaque host descriptors in the struct layout.
-                "gpu_struct_component_copies",
+                {"gpu_struct_component_copies", RunGpu},
                 // A run-time sized local of a device routine becomes an
                 // argument its callers give it, up to the kernel, where the
                 // host sizes it before the launch.
-                "gpu_device_workspace",
+                {"gpu_device_workspace", RunGpu},
                 // Place the actual lowered arrays before specializing device
                 // calls by the address spaces of their storage.
-                "gpu_kernel_storage",
+                {"gpu_kernel_storage", RunGpu},
                 // A device routine's address spaces are settled here, once
                 // every array of device code has the type it is emitted
                 // with. Decomposed component buffers needing specialization
                 // become explicit array arguments with their storage's space.
-                "gpu_memory_space",
+                {"gpu_memory_space", RunGpu},
                 // Lay out each kernel, now that shared lowering has given it
                 // the shape the device code generators see.
-                "gpu_kernel_finalize",
+                {"gpu_kernel_finalize", RunGpu},
                 // An iteration of a kernel with few runs on the lanes of a
                 // SIMD-group, which share the loops inside it.
-                "gpu_vector_lanes",
+                {"gpu_vector_lanes", RunFast | RunGpu},
                 // A launch does not wait for its kernel: the host waits
                 // where it next needs what a kernel wrote.
-                "gpu_launch_sync",
-                "device_launch_expand",
+                {"gpu_launch_sync", RunGpu},
+                {"device_launch_expand", RunGpu},
                 // Every array a StringFormat formats or a WRITE statement
                 // transfers, and every internal file, is passed to the
                 // runtime as its contiguous data. An array item of a READ is
@@ -488,26 +531,26 @@ namespace LCompilers {
                 // descriptor. This runs after every pass above that can
                 // change the physical type of an array, and before its copy
                 // loops are lowered.
-                "string_format_array_args",
+                {"string_format_array_args"},
                 // The short loops of Metal device code are unrolled.
-                "gpu_sequential_unroll",
-                "while_else",
+                {"gpu_sequential_unroll", RunFast | RunGpu},
+                {"while_else"},
                 // Every call the passes above can create is in place, so each
                 // character dummy gets its hidden length argument here, and
                 // each call the length of its actual.
-                "string_length_arguments",
-                "unused_functions",
-                "unique_symbols",
-            };
-            _optimization_passes = {
-                "replace_with_compile_time_values",
-                "dead_code_removal",
-                "unused_functions",
-                "sign_from_value",
-                "div_to_mul",
-                "inline_function_calls",
-                "promote_allocatable_to_nonallocatable",
-                "loop_fusion"
+                {"string_length_arguments"},
+                {"unused_functions"},
+                {"unique_symbols"},
+                // The optimizations that need no particular place in the
+                // pipeline run after everything above.
+                {"replace_with_compile_time_values", RunFast},
+                {"dead_code_removal", RunFast},
+                {"unused_functions", RunFast},
+                {"sign_from_value", RunFast},
+                {"div_to_mul", RunFast},
+                {"inline_function_calls", RunFast},
+                {"promote_allocatable_to_nonallocatable", RunFast},
+                {"loop_fusion", RunFast},
             };
 
             // These are re-write passes which are already handled
@@ -560,10 +603,9 @@ namespace LCompilers {
                 apply_passes(al, asr, _user_defined_passes, pass_options,
                     diagnostics, cummulative_time_taken_by_passes_in_microseconds);
             } else if( apply_default_passes ) {
-                apply_passes(al, asr, _passes, pass_options, diagnostics, cummulative_time_taken_by_passes_in_microseconds);
-                if (pass_options.fast ){
-                    apply_passes(al, asr, _optimization_passes, pass_options, diagnostics, cummulative_time_taken_by_passes_in_microseconds);
-                }
+                std::vector<std::string> passes = default_passes(pass_options);
+                apply_passes(al, asr, passes, pass_options, diagnostics,
+                    cummulative_time_taken_by_passes_in_microseconds);
             }
             auto t2 = std::chrono::high_resolution_clock::now();
             if (pass_options.time_report) {
@@ -584,17 +626,7 @@ namespace LCompilers {
         void dump_all_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            PassOptions &pass_options,
                            [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm) {
-            std::vector<std::string> passes;
-            if (pass_options.fast) {
-                passes = _passes;
-                passes.insert(
-                    passes.end(),
-                    _optimization_passes.begin(),
-                    _optimization_passes.end()
-                );
-            } else {
-                passes = _passes;
-            }
+            std::vector<std::string> passes = default_passes(pass_options);
             size_t pass_cnt_asr_dump = 0, pass_cnt_fortran_dump = 0;
             // The verifier options for the ASR after each pass
             ASRVerifyOptions verify_options;

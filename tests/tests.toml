@@ -4680,6 +4680,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_08.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_metal_213.f90"
@@ -5242,14 +5243,17 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_480.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_residue_unroll_01.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_residue_unroll_03.f90"
 gpu_metal_kernel = true
+options = "--fast"
 # Real powers with small constant integer exponents in device code are the
 # products the host computes them with, not calls of `pow`.
 [[test]]
@@ -5365,14 +5369,17 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_17.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_18.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_23.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 # With --descriptor-index-64 element offsets, extents and lower bounds are
 # 64-bit, so arrays of more than huge(0) elements are addressed unwrapped.
@@ -5432,7 +5439,7 @@ gpu_cuda_kernel = true
 # same flag: the loop indices and the subscripts are `long`.
 [[test]]
 filename = "../integration_tests/gpu_metal_692.f90"
-options = "--descriptor-index-64"
+options = "--descriptor-index-64 --fast"
 gpu_cuda_kernel = true
 
 # matmul lowered inside the kernel, of operands with lower bounds that do
@@ -5461,14 +5468,17 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_24.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_25.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_metal_526.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 # The kernel numbers the 2**31 + 1 iterations in integer(8).
 [[test]]
@@ -5497,7 +5507,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_19.f90"
 gpu_cuda_kernel = true
-options = "--gpu-cache-bytes=32768"
+options = "--gpu-cache-bytes=32768 --fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_16.f90"
@@ -5514,15 +5524,17 @@ gpu_metal_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_20.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_21.f90"
 gpu_cuda_kernel = true
-options = "--gpu-loop-transforms=fuse"
+options = "--gpu-loop-transforms=fuse --fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_22.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_metal_522.f90"

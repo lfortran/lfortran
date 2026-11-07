@@ -365,8 +365,9 @@ only once, redirect to a log file and then examine the log file.
   selections on PRs, main, release tags and manual runs. It runs full Linux
   LLVM/reference coverage and representative checks on every platform, plus
   shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
-  capability checks in Quick. Exhaustive never runs on PRs and is not
-  required before review or merge.
+  capability checks in Quick. Quick runs the Metal and CUDA-on-CPU suites
+  with `--fast`; Exhaustive's platform jobs run them with and without it.
+  Exhaustive never runs on PRs and is not required before review or merge.
   Caffeine's own LFortran unit tests and all coarray capability tests always run.
   Only Linux GFortran/OpenCoarrays reference validation is source-change-aware:
   use the same input comparison on every event, validate conservatively when
@@ -389,6 +390,8 @@ only once, redirect to a log file and then examine the log file.
   (`NDEBUG`) build and also uses `-Werror`, matching Exhaustive's
   `Check Release build`.
   Exhaustive checks add missing configurations without replaying Quick.
+  The one exception is the Metal and CUDA-on-CPU suites, which Exhaustive
+  runs with `--fast`, as Quick does, and without it.
   LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
   The LLVM 19 WASM compiler is also a Debug build compiled with `-O2`; its
   WASI and Emscripten suites run in two parallel jobs.

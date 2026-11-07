@@ -52,7 +52,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         }
         __gpu_array_i1 = (__ordinal + __loop_start_1);
     }
-    v[((long)(((((long)__lb_v_0) + __gpu_array_i) - ((long)1))) - (__lb_v_0)) + (__dim_v_0 * ((long)(((((long)__lb_v_1) + __gpu_array_i1) - ((long)1))) - (__lb_v_1)))] = ((float)(-(1)));
+    v[((long)(((((long)__lb_v_0) + __gpu_array_i) - ((long)1))) - (__lb_v_0)) + (__dim_v_0 * ((long)(((((long)__lb_v_1) + __gpu_array_i1) - ((long)1))) - (__lb_v_1)))] = ((float)-1);
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_1 {
@@ -234,7 +234,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
         }
         __gpu_array_i6 = (__ordinal + __loop_start_1);
     }
-    v[((long)(((((long)__lb_v_0) + __gpu_array_i5) - ((long)1))) - (__lb_v_0)) + (__dim_v_0 * ((long)(((((long)__lb_v_1) + __gpu_array_i6) - ((long)1))) - (__lb_v_1)))] = (v[((long)(((((long)__lb_v_0) + __gpu_array_i5) - ((long)1))) - (__lb_v_0)) + (__dim_v_0 * ((long)(((((long)__lb_v_1) + __gpu_array_i6) - ((long)1))) - (__lb_v_1)))] + (((float)2) * w[((long)(((((long)__lb_w_0) + __gpu_array_i5) - ((long)1))) - (__lb_w_0)) + (__dim_w_0 * ((long)(((((long)__lb_w_1) + __gpu_array_i6) - ((long)1))) - (__lb_w_1)))]));
+    v[((long)(((((long)__lb_v_0) + __gpu_array_i5) - ((long)1))) - (__lb_v_0)) + (__dim_v_0 * ((long)(((((long)__lb_v_1) + __gpu_array_i6) - ((long)1))) - (__lb_v_1)))] = (v[((long)(((((long)__lb_v_0) + __gpu_array_i5) - ((long)1))) - (__lb_v_0)) + (__dim_v_0 * ((long)(((((long)__lb_v_1) + __gpu_array_i6) - ((long)1))) - (__lb_v_1)))] + (  2.00000000000000000e+00f * w[((long)(((((long)__lb_w_0) + __gpu_array_i5) - ((long)1))) - (__lb_w_0)) + (__dim_w_0 * ((long)(((((long)__lb_w_1) + __gpu_array_i6) - ((long)1))) - (__lb_w_1)))]));
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_5 {
@@ -258,6 +258,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_5(
     }
     __flat_idx = ((((long)blockIdx.x) * ((long)blockDim.x)) + ((long)threadIdx.x));
     __gpu_array_i7 = (__flat_idx + __loop_start_0);
-    s[((long)(((((long)__lb_s_0) + __gpu_array_i7) - ((long)1))) - (__lb_s_0))] = (s[((long)(((((long)__lb_s_0) + __gpu_array_i7) - ((long)1))) - (__lb_s_0))] + (((float)2) * s[((long)(((((long)__lb_s_0) + __gpu_array_i7) - ((long)1))) - (__lb_s_0))]));
+    s[((long)(((((long)__lb_s_0) + __gpu_array_i7) - ((long)1))) - (__lb_s_0))] = (s[((long)(((((long)__lb_s_0) + __gpu_array_i7) - ((long)1))) - (__lb_s_0))] + (  2.00000000000000000e+00f * s[((long)(((((long)__lb_s_0) + __gpu_array_i7) - ((long)1))) - (__lb_s_0))]));
 }
 

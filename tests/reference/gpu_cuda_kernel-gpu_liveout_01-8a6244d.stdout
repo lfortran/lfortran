@@ -1,54 +1,7 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
-    int __loop_start_0;
-    int __loop_end_0;
-};
-
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     int* __restrict__ __gpu_buf_last,
-    int* __restrict__ b,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
-{
-    int __loop_start_0 = __scalar_args.__loop_start_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __flat_idx;
-    int i__dc;
-    int k;
-    int last;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0)))) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i__dc = (__flat_idx + __loop_start_0);
-    last = __gpu_buf_last[((int)(1) - (1))];
-    {
-        long __gpu_frame;
-        int __gpu_frame_i__dc;
-        if ((((long)i__dc) < (((long)1) + ((long)0)))) {
-            __gpu_frame = ((((long)i__dc) - ((((long)1) + ((long)0)) - ((((long)1) + (((long)1) - ((long)1))) / ((long)1)))) * ((long)1));
-            if ((__gpu_frame < ((long)1))) {
-                if ((__gpu_frame < ((long)0))) {
-                    __gpu_frame_i__dc = ((int)(((long)1) + __gpu_frame));
-                } else {
-                    __gpu_frame_i__dc = ((int)(((((long)100) + ((long)1)) - ((long)1)) + (__gpu_frame - ((long)0))));
-                }
-                k = (__gpu_frame_i__dc * 10);
-                b[((int)(__gpu_frame_i__dc) - (1))] = (k + 1);
-                if ((__gpu_frame_i__dc == 100)) {
-                    last = (k + __gpu_frame_i__dc);
-                    __gpu_buf_last[((int)(1) - (1))] = last;
-                }
-            }
-        } else {
-            k = (i__dc * 10);
-            b[((int)(i__dc) - (1))] = (k + 1);
-        }
-    }
-}
-
-extern "C" __global__ void __lfortran_gpu_kernel_1(
-    int* __restrict__ __gpu_buf_last1,
     int* __restrict__ b)
 {
     int __flat_idx;
@@ -60,12 +13,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
-    last = __gpu_buf_last1[((int)(1) - (1))];
+    last = __gpu_buf_last[((int)(1) - (1))];
     k = (i__dc * 10);
     b[((int)(i__dc) - (1))] = (k + 1);
     if ((i__dc == 100)) {
         last = (k + i__dc);
-        __gpu_buf_last1[((int)(1) - (1))] = last;
+        __gpu_buf_last[((int)(1) - (1))] = last;
     }
 }
 

@@ -8,8 +8,8 @@ them knows anything about a particular application. Each proves that what it
 does preserves the meaning of the program, and leaves the loops as they are
 when it cannot.
 
-They run for `--gpu=cuda`, `--gpu=cuda_cpu` and `--gpu=hip` (on by default),
-right after the dispatch has assigned the loops (the pass
+They are optimizations, so they run only with `--fast`, for `--gpu=cuda`,
+`--gpu=cuda_cpu` and `--gpu=hip` (all of them by default), right after the dispatch has assigned the loops (the pass
 `gpu_loop_transforms`, which runs `gpu_loop_fusion`, `gpu_time_skew`, then
 `gpu_index_set_split`, before `gpu_offload`; each of the three can also be run
 on its own with `--pass`), so their output is ordinary `do concurrent` nests
@@ -59,7 +59,7 @@ evaluated (the second operand of a logical operator, an argument of
 ### Private map into an ordered scalar fold
 
 After shared reduction lowering, `gpu_private_reduction_fusion` also runs
-for Metal. A block-local rank-one map used only by one additive scalar fold
+for Metal, with `--fast`. A block-local rank-one map used only by one additive scalar fold
 over the identical full unit-stride domain can be replaced by a typed scalar
 assignment before each fold update. This preserves the producer's evaluation
 count, the scalar rounding boundary and the fold's addition order; it does

@@ -194,7 +194,8 @@ Require a test that fails without the fix and passes with it.
   artifacts are absent, and avoid committed binary or large generated blobs.
 - Apply `AGENTS.md`'s CI policy when reviewing coverage. Quick must retain the
   internal regression modes and capability checks; Exhaustive should add
-  missing configurations without duplicating Quick. Application validation
+  missing configurations without duplicating Quick, except for the GPU
+  suites, which it runs in both modes. Application validation
   runs only in Exhaustive (main or an explicit request), and publishing
   requires main-only credentials.
 
