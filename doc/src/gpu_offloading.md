@@ -560,6 +560,26 @@ needed, and no backend has anything to lower but assignments and `return`.
 When several threads stop, which one is reported is not specified, as the
 iterations of a `do concurrent` have no order.
 
+A check that no call can fail is removed before any of this, so it costs
+the kernel nothing and does not make it a kernel that can stop
+(`gpu_device_guard_fold.cpp`). Each kernel has copies of the procedures it
+calls, so all the calls of a copy are known: when every call passes an
+`intent(in)` integer dummy a value in a range (`modulo(k - 1, 4)` is in
+0..3), the tests of the copy are judged with the dummy in that range, and an
+`if` whose test the ranges of the integers it compares decide is replaced by
+the branch it takes. The `error stop` of
+
+    pure elemental integer function byte_of(word, part)
+        integer, intent(in) :: word, part
+        if (part < 0 .or. part > 3) error stop "part must be in 0..3"
+        byte_of = ibits(word, 8*part, 8)
+    end function
+
+goes when every call is `byte_of(w((k-1)/4+1), modulo(k-1, 4))`, and is kept,
+and stops the program, when a call can pass 4. The ranges come from
+constants, `modulo`, `mod`, `iand`, `ibits`, `min`, `max`, integer
+arithmetic and the indices of counted loops.
+
 A character stop code has to be a constant, which the host statement
 repeats. One computed at run time (`error stop "bad " // name`) is an error
 for now ("a character stop code that is not a constant"): it would have to

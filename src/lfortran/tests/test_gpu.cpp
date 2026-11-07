@@ -2409,4 +2409,68 @@ TEST_CASE("Device powers with small integer exponents are products") {
     // half.
     CHECK(device.products == 32);
 }
+
+TEST_CASE("A device check every call satisfies does not make a kernel stop") {
+    // gpu_guard_fold_01 checks arguments that every call passes in range,
+    // gpu_guard_fold_02 one that a call passes out of range: only its
+    // launch keeps a status buffer, and only its copy of the checking
+    // function the hidden stop arguments.
+    for (const auto &test : {std::make_pair("gpu_guard_fold_01", 0),
+            std::make_pair("gpu_guard_fold_02", 1)}) {
+        INFO(test.first);
+        std::string filename = std::string(test.first) + ".f90";
+        std::string source = read_project_file(
+            "integration_tests/" + filename);
+        CompilerOptions options;
+        options.gpu_backend = "metal";
+        options.po.gpu_offload_metal = true;
+        options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        FortranEvaluator evaluator(options);
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = filename;
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LFortran::source_offset(source.size()));
+        diag::Diagnostics diagnostics;
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        Allocator allocator(32 * 1024 * 1024);
+        // Up to the pass that places the waits, before the launches are
+        // expanded into runtime calls.
+        PassManager passes;
+        std::string pass = "gpu_launch_sync", skip;
+        passes.parse_pass_arg(pass, skip);
+        options.po.pass_cumulative = true;
+        passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+        struct Stops : public ASR::BaseWalkVisitor<Stops> {
+            size_t launches = 0, stopping_launches = 0;
+            void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+                launches++;
+                if (x.m_stop_status != nullptr) stopping_launches++;
+            }
+        } stops;
+        stops.visit_TranslationUnit(*parsed.result);
+        CHECK(stops.launches == (test.second == 0 ? 3 : 1));
+        CHECK(stops.stopping_launches == (size_t)test.second);
+        size_t kernels = 0, stopping_copies = 0;
+        for (const auto &entry: parsed.result->m_symtab->get_scope()) {
+            if (!ASRUtils::is_device_kernel(entry.second)) continue;
+            kernels++;
+            auto *kernel = ASR::down_cast<ASR::Function_t>(entry.second);
+            for (const auto &local: kernel->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Function_t>(*local.second)) continue;
+                if (ASR::down_cast<ASR::Function_t>(local.second)->m_symtab
+                        ->get_symbol("__gpu_stop_site") != nullptr) {
+                    stopping_copies++;
+                }
+            }
+        }
+        CHECK(kernels == stops.launches);
+        CHECK(stopping_copies == (size_t)test.second);
+    }
+}
 #endif
