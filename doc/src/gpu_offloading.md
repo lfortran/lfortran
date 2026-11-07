@@ -1063,9 +1063,11 @@ elemental, a separate module procedure or device code, and with no pointer,
 target, procedure or frame dummy -- gets a *deferring twin*,
 `<name>__gpu_deferred`, which takes over its body, while the subroutine
 itself only calls the twin and then waits as before. The pass makes the
-twins first, of the modules of the file and of those loaded from module
-files alike: the choice depends only on the declaration, which is in the
-module file, so every file that uses the module makes the same twins. The
+twins first, of the module subroutines whose code the file compiles: those
+of its own modules and, without `--separate-compilation`, those of the
+modules it loads from module files. A subroutine whose code another file
+compiles gets no twin, as that file may have been compiled without a GPU
+device and so defines none; a call of it waits as any call does. The
 calls the pass sees by name are redirected to the twin; a call through a
 procedure pointer, a dummy procedure or a binding, and one from a file
 compiled without a GPU device or from C, reaches the subroutine, which

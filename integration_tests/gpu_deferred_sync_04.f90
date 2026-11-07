@@ -1,7 +1,8 @@
 ! Kernels in a module of another file (--separate-compilation), called
-! from a module procedure of this file with a debug hook between them: the
-! launches of a layer stay pending across the calls, and the host still
-! sees what they wrote, in the hook when it runs and after the layers.
+! from a module procedure of this file with a debug hook between them. That
+! file may have been compiled without a device, so its subroutines get no
+! deferring twins here and wait before they return: the host sees what
+! they wrote, in the hook when it runs and after the layers.
 module gpu_deferred_sync_04_model
 use, intrinsic :: iso_fortran_env, only: int16
 use gpu_deferred_sync_04_mod

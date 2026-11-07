@@ -7294,6 +7294,12 @@ RUN(NAME gpu_deferred_sync_04 LABELS gfortran llvm metal cuda EXTRAFILES gpu_def
 RUN(NAME gpu_deferred_sync_05 FAIL LABELS gfortran llvm metal cuda) # stops: a part of 4 fails the check
 RUN(NAME gpu_deferred_sync_06 FAIL LABELS gfortran llvm metal cuda) # stops: a negative value
 RUN(NAME gpu_deferred_sync_07 FAIL LABELS gfortran llvm metal cuda EXTRAFILES gpu_deferred_sync_07_mod.f90 EXTRA_ARGS --separate-compilation) # stops: a negative value
+RUN(NAME gpu_deferred_sync_08 LABELS gfortran llvm cuda STATIC_LIBRARY_FILES gpu_deferred_sync_08_mod.f90 EXTRA_ARGS --separate-compilation)
+# The library is compiled without a GPU device, as a host library is.
+if (TARGET gpu_deferred_sync_08_staticlib AND LFORTRAN_BACKEND MATCHES "^(cuda|cuda_cpu|hip)$")
+    set_property(TARGET gpu_deferred_sync_08_staticlib PROPERTY COMPILE_OPTIONS
+        "$<$<COMPILE_LANGUAGE:Fortran>:--separate-compilation>")
+endif()
 RUN(NAME gpu_ending_locals_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_ending_locals_02 LABELS gfortran llvm metal cuda EXTRAFILES gpu_ending_locals_02_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_partial_read_01 LABELS gfortran llvm metal cuda)
