@@ -5195,13 +5195,20 @@ end module
     CHECK(r.result.i32 == 7);
 }
 
+#if !defined(__EMSCRIPTEN__) && LLVM_VERSION_MAJOR != 8
 // The evaluator's message for a symbol the JIT cannot resolve; LLVM 7
 // reports it from findSymbol()/getAddress(), newer LLVM from lookup().
+// In the WASM build an unresolved symbol is instead a JavaScript "Dynamic
+// linking error" that aborts the process, so the checks below that call a
+// cell that does not link are native only. They are also skipped with
+// LLVM 8, whose ORC ExecutionSession::lookup() reports "Symbols not found"
+// but then never returns when a symbol fails to materialize.
 static bool is_jit_symbol_lookup_failure(const std::string &msg) {
     return msg.find("lookup() failed to find the symbol") != std::string::npos
         || msg.find("findSymbol() failed to find the symbol") != std::string::npos
         || msg.find("getAddress() failed for symbol") != std::string::npos;
 }
+#endif
 
 TEST_CASE("FortranEvaluator interface body in a generic interface block") {
     CompilerOptions cu;
@@ -5225,6 +5232,7 @@ c = gen()
 end function
 )");
     CHECK(r.ok);
+#if !defined(__EMSCRIPTEN__) && LLVM_VERSION_MAJOR != 8
     // The unresolved `fn` makes the JIT lookup of the cell fail.
     bool linked = false;
     try {
@@ -5236,6 +5244,7 @@ end function
         CHECK(is_jit_symbol_lookup_failure(msg));
     }
     CHECK(!linked);
+#endif
 }
 
 TEST_CASE("FortranEvaluator abstract interface named as an earlier cell's function") {
@@ -5310,6 +5319,10 @@ end function
     r = e.evaluate2("c_typed()");
     REQUIRE(r.ok);
     CHECK(r.result.f32 == 1.0f);
+#ifndef __EMSCRIPTEN__
+    // In the WASM build the side module of this cell, which calls an
+    // undefined `fn`, does not load ("function index ... is out of bounds",
+    // like #17138).
     // `fn` has the implicit type real, so the external procedure it
     // declares is not the earlier cell's integer `fn`: as without that
     // `fn`, a call of `c` does not link.
@@ -5318,6 +5331,7 @@ external fn
 c = fn() / 2
 end function
 )").ok);
+#if LLVM_VERSION_MAJOR != 8
     // The unresolved `fn` makes the JIT lookup of the cell fail.
     bool linked = false;
     try {
@@ -5329,6 +5343,8 @@ end function
         CHECK(is_jit_symbol_lookup_failure(msg));
     }
     CHECK(!linked);
+#endif
+#endif
 }
 
 TEST_CASE("FortranEvaluator interface body of an earlier cell's procedure in scoping units") {
@@ -5346,6 +5362,10 @@ integer, intent(out) :: x
 x = 9
 end subroutine
 )").ok);
+#ifndef __EMSCRIPTEN__
+    // Procedure pointers do not work in the WASM interactive executor yet
+    // (#17138): the side module of a cell that takes a procedure's address is
+    // rejected with "function index ... is out of bounds".
     // A procedure pointer declared with the interface, a subroutine
     // referenced by CALL, a dummy procedure named like an earlier cell's
     // procedure, and a contained procedure that uses its host's interface.
@@ -5388,6 +5408,7 @@ end function
     r = e.evaluate2("app(d)");
     REQUIRE(r.ok);
     CHECK(r.result.i32 == 107);
+#endif
     // A module procedure and a BLOCK construct.
     REQUIRE(e.evaluate2(R"(module m_cell_iface
 contains
@@ -5411,9 +5432,9 @@ end function
 end module
 )").ok);
     REQUIRE(e.evaluate2("use m_cell_iface").ok);
-    r = e.evaluate2("h()");
-    REQUIRE(r.ok);
-    CHECK(r.result.i32 == 60);
+    LCompilers::Result<FortranEvaluator::EvalResult> rh = e.evaluate2("h()");
+    REQUIRE(rh.ok);
+    CHECK(rh.result.i32 == 60);
 }
 
 TEST_CASE("FortranEvaluator old and new module side by side") {
