@@ -2656,6 +2656,72 @@ r
     CHECK(r.result.f32 == 3);
 }
 
+TEST_CASE("c_long_double is the kind of C long double of the target") {
+    // The values of __LDBL_MANT_DIG__ in clang: 64 -> 10, 53 -> 8, 113 -> 16
+    std::vector<std::pair<std::string, int>> triples = {
+        {"x86_64-unknown-linux-gnu", 10},
+        {"x86_64-linux-gnu", 10},
+        {"x86_64-apple-darwin", 10},
+        {"x86_64h-apple-darwin", 10},
+        {"i686-pc-linux-gnu", 10},
+        {"i686-w64-windows-gnu", 10},
+        {"i686-w64-mingw32", 10},
+        {"i686-pc-cygwin", 10},
+        {"i686-pc-win32", 8},
+        {"x86_64-w64-mingw32", 10},
+        {"x86_64-pc-windows-gnu", 10},
+        {"x86_64-pc-cygwin", 10},
+        {"x86_64-pc-windows-cygnus", 10},
+        {"x86_64-pc-windows-msvc", 8},
+        {"x86_64-pc-windows-msvc19.30.0", 8},
+        {"x86_64-pc-win32", 8},
+        {"x86_64-pc-windows", 8},
+        {"x86_64-windows", 8},
+        {"x86_64-pc-windows-itanium", 8},
+        {"i686-linux-android", 8},
+        {"x86_64-linux-android", 16},
+        {"aarch64-unknown-linux-gnu", 16},
+        {"aarch64-linux-android", 16},
+        {"aarch64_be-unknown-linux-gnu", 16},
+        {"aarch64-apple-darwin", 8},
+        {"arm64-apple-macosx14.0.0", 8},
+        {"arm64e-apple-ios", 8},
+        {"arm64_32-apple-watchos", 8},
+        {"aarch64-pc-windows-msvc", 8},
+        {"aarch64-pc-win32", 8},
+        {"aarch64-w64-mingw32", 8},
+        {"aarch64-pc-windows-gnu", 8},
+        {"arm64ec-pc-windows-msvc", 8},
+        {"wasm32-wasi", 16},
+        {"wasm32-unknown-emscripten", 16},
+        {"wasm64-unknown-unknown", 16},
+    };
+    for (auto &t : triples) {
+        INFO(t.first);
+        CHECK(LCompilers::get_c_long_double_kind(t.first) == t.second);
+    }
+
+    // The intrinsic module gives the kind of the target it is used for
+    for (int kind : {8, 10, 16}) {
+        CompilerOptions cu;
+        cu.interactive = true;
+        cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        cu.po.c_long_double_kind = kind;
+        FortranEvaluator e(cu);
+        LCompilers::Result<FortranEvaluator::EvalResult>
+        r = e.evaluate2("use iso_c_binding, only: ld => c_long_double, c_long_double_complex");
+        CHECK(r.ok);
+        r = e.evaluate2("ld");
+        CHECK(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == kind);
+        r = e.evaluate2("c_long_double_complex");
+        CHECK(r.ok);
+        CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+        CHECK(r.result.i32 == (kind == 8 ? 8 : -1));
+    }
+}
+
 TEST_CASE("FortranEvaluator character result") {
     CompilerOptions cu;
     cu.interactive = true;

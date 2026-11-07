@@ -3,6 +3,7 @@
 #include <windows.h>
 #endif
 
+#include <cfloat>
 #include <iostream>
 #include <fstream>
 #include <filesystem>
@@ -256,6 +257,47 @@ Platform get_platform()
 #else
     return Platform::Linux;
 #endif
+}
+
+int get_c_long_double_kind(const std::string &target_triple)
+{
+    // The values of clang. As in llvm::Triple, the components after the
+    // architecture may come in any order and the vendor may be omitted.
+    std::vector<std::string> c = string_split(target_triple, "-", false);
+    auto has = [&](const std::string &prefix) {
+        for (size_t i = 1; i < c.size(); i++) {
+            if (startswith(c[i], prefix)) return true;
+        }
+        return false;
+    };
+    std::string arch = c.empty() ? "" : c[0];
+    bool apple = has("apple") || has("darwin") || has("macos");
+    bool windows = has("windows") || has("win32") || has("mingw32")
+        || has("cygwin");
+    bool x86_64 = startswith(arch, "x86_64") || arch == "amd64";
+    bool x86 = x86_64
+        || (arch.size() == 4 && arch[0] == 'i' && endswith(arch, "86"));
+    if (x86) {
+        // 80-bit x87 extended precision, except for MSVC (also the default
+        // environment on Windows) and Android
+        if (has("android")) return x86_64 ? 16 : 8;
+        bool windows_gnu = has("gnu") || has("mingw32") || has("cygwin")
+            || has("cygnus");
+        return (windows && !windows_gnu) ? 8 : 10;
+    }
+    if (startswith(arch, "aarch64") || startswith(arch, "arm64")) {
+        // Apple and Windows use double, the others IEEE quadruple precision.
+        // arm64ec exists only on Windows and arm64_32 only on Apple.
+        bool double_only = arch == "arm64ec" || arch == "arm64_32";
+        return (apple || windows || double_only) ? 8 : 16;
+    }
+    if (arch == "wasm32" || arch == "wasm64") return 16;
+    // The host, which is also the default target
+    switch (LDBL_MANT_DIG) {
+        case 53: return 8;
+        case 113: return 16;
+        default: return 10;
+    }
 }
 
 // Platform-specific initialization

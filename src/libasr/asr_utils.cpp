@@ -2135,6 +2135,33 @@ ASR::Variable_t* get_storage_designator_offset(ASR::expr_t *designator,
     return base;
 }
 
+// The kinds of C `long double` and of its complex counterpart depend on the
+// target, so the intrinsic iso_c_binding module gets them when it is loaded
+// instead of keeping the values its modfile was compiled with
+static void set_iso_c_binding_target_kinds(Allocator &al,
+        ASR::TranslationUnit_t &tu, int c_long_double_kind)
+{
+    // Only kinds 4 and 8 of complex are supported; the standard gives an
+    // unsupported kind as a negative value
+    int complex_kind = (c_long_double_kind == 4 || c_long_double_kind == 8)
+        ? c_long_double_kind : -1;
+    const std::pair<std::string, int> kinds[] = {
+        {"c_long_double", c_long_double_kind},
+        {"c_long_double_complex", complex_kind}};
+    ASR::Module_t *m = extract_module(tu);
+    for (const auto &[name, kind] : kinds) {
+        ASR::symbol_t *sym = m->m_symtab->get_symbol(name);
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+            continue;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+        ASR::expr_t *value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+            v->base.base.loc, kind, v->m_type));
+        v->m_symbolic_value = value;
+        v->m_value = value;
+    }
+}
+
 Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options,
@@ -2163,6 +2190,10 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
                 ASR::TranslationUnit_t* asr = res.result;
                 if (intrinsic) {
                     set_intrinsic(asr);
+                    if (msym == "lfortran_intrinsic_iso_c_binding") {
+                        set_iso_c_binding_target_kinds(al, *asr,
+                            pass_options.c_long_double_kind);
+                    }
                 }
                 return asr;
             } else {
