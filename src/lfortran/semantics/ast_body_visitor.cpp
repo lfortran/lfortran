@@ -7361,9 +7361,15 @@ public:
         CurrentBodyScope body_scope(*this, &master_function_body, current_scope);
         record_procedure_references(current_scope, x.m_items, x.n_items);
         // The master function implements the procedure and its ENTRY points,
-        // so its statements access their names like the procedure's own.
+        // so its statements access their names like the procedure's own,
+        // including the names that the procedure accesses for a declaration
+        // that was left out, see `access_cell_procedure()`.
         std::set<std::string> &own_names =
             procedure_references[current_scope->counter];
+        auto own = procedure_references.find(old_scope->counter);
+        if (own != procedure_references.end()) {
+            own_names.insert(own->second.begin(), own->second.end());
+        }
         own_names.insert(original_function_name);
         for (auto &it: entry_functions[original_function_name]) {
             own_names.insert(it.first);

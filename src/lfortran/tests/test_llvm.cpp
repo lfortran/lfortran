@@ -4818,6 +4818,29 @@ end function
         LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("c_iface()");
         REQUIRE(r.ok);
         CHECK(r.result.i32 == 309);
+        // The same in a procedure with ENTRY, whose statements are visited
+        // in the scope of its master function.
+        REQUIRE(e.evaluate2(R"(integer function gg2()
+gg2 = 8
+end function
+
+integer function c_entry_iface()
+interface
+integer function gg2()
+end function
+end interface
+c_entry_iface = app(gg2) + 400
+return
+entry c_entry_iface2()
+c_entry_iface2 = app(gg2) + 410
+end function
+)").ok);
+        r = e.evaluate2("c_entry_iface()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 409);
+        r = e.evaluate2("c_entry_iface2()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 419);
         if (!mode.first) continue;
         // The same with `integer, external`.
         REQUIRE(e.evaluate2(R"(integer function hh()
@@ -4832,6 +4855,25 @@ end function
         r = e.evaluate2("c_ext()");
         REQUIRE(r.ok);
         CHECK(r.result.i32 == 320);
+        // The same with ENTRY.
+        REQUIRE(e.evaluate2(R"(integer function hh2()
+hh2 = 9
+end function
+
+integer function c_entry_ext()
+integer, external :: hh2
+c_entry_ext = app(hh2) + 420
+return
+entry c_entry_ext2()
+c_entry_ext2 = app(hh2) + 430
+end function
+)").ok);
+        r = e.evaluate2("c_entry_ext()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 430);
+        r = e.evaluate2("c_entry_ext2()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 440);
     }
 }
 
@@ -4943,11 +4985,15 @@ c = gen()
 end function
 )");
     CHECK(r.ok);
+    // The unresolved `fn` makes the JIT lookup of the cell fail.
     bool linked = false;
     try {
         r = e.evaluate2("c()");
         linked = r.ok;
-    } catch (const LCompilers::LCompilersException &) {
+    } catch (const LCompilers::LCompilersException &ex) {
+        std::string msg = ex.msg();
+        CAPTURE(msg);
+        CHECK(msg.find("lookup() failed") != std::string::npos);
     }
     CHECK(!linked);
 }
@@ -5032,11 +5078,15 @@ external fn
 c = fn() / 2
 end function
 )").ok);
+    // The unresolved `fn` makes the JIT lookup of the cell fail.
     bool linked = false;
     try {
         r = e.evaluate2("c()");
         linked = r.ok;
-    } catch (const LCompilers::LCompilersException &) {
+    } catch (const LCompilers::LCompilersException &ex) {
+        std::string msg = ex.msg();
+        CAPTURE(msg);
+        CHECK(msg.find("lookup() failed") != std::string::npos);
     }
     CHECK(!linked);
 }
