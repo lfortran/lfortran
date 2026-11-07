@@ -4570,3 +4570,10 @@ contains
         call cc1_ptr_inout(p)  ! {Error} Argument `p` with intent(in) passed to a dummy argument with modifying intent
     end subroutine
 end module
+
+! A char-length in the entity declaration overrides the type-spec length, but
+! the overridden len= selector must still be a valid character length.
+subroutine cc1_char_len_entity_override()
+    implicit none
+    character(len=cc1_char_len_nundef) :: c*4  ! {Error} Variable 'cc1_char_len_nundef' is not declared
+end subroutine

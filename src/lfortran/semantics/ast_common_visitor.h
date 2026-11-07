@@ -11068,7 +11068,8 @@ public:
                 if (is_char_type && s.m_length) {
                     this->visit_expr(*s.m_length);
                     ASR::String_t *lhs_type = ASR::down_cast<ASR::String_t>(
-                        ASRUtils::type_get_past_array(type));
+                        ASRUtils::type_get_past_array(
+                            ASRUtils::type_get_past_allocatable_pointer(type)));
                     char_length = ASRUtils::EXPR(tmp);
                     check_character_length_expr(char_length,
                         character_length_requires_constant());
@@ -29444,7 +29445,26 @@ public:
         // Delayed generic calls are resolved with in_Subroutine temporarily
         // set, so keep the requirement of the original declaration.
         bool require_constant_length = character_length_requires_constant();
-        if(len_item){ // Standard Fortran Declaration. `character(len=10) :: str`
+        // A char-length in the entity declaration (`c*4`, `c*(*)`) overrides
+        // the length in the type spec (F2018 7.4.4.2 paragraph 4), e.g.
+        // `character(len=*) :: c*4` declares `c` with length 4.
+        bool has_entity_length = var_sym && (var_sym->m_length != nullptr
+            || var_sym->m_sym == AST::DoubleAsterisk);
+        if (len_item && has_entity_length
+                && len_item->m_type == AST::kind_item_typeType::Value
+                && !is_funcCall_to_unresolved_genereicProcedure(len_item->m_value)) {
+            // The overridden type-spec length must still be a valid
+            // character length, even though its value is not used.
+            _processing_char_len = true;
+            visit_restricted_expr(*len_item->m_value,
+                RestrictedExprContext::CharacterLength);
+            ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+            check_specification_expr(len_expr,
+                RestrictedExprContext::CharacterLength);
+            _processing_char_len = false;
+            check_character_length_expr(len_expr, require_constant_length);
+        }
+        if(len_item && !has_entity_length){ // Standard Fortran Declaration. `character(len=10) :: str`
             // Set length of the string -> [`:`, `*`, `expr`]
             switch (len_item->m_type) {
                 case (AST::kind_item_typeType::Value) : {
@@ -29493,15 +29513,11 @@ public:
             }
         } else if (type && var_sym) { // Old-Fortran-style Declaration
             // Set length of the string -> [None(default 1), `CHARACTER*(*)`, `CHARACTER :: s*(*)`]
-            if(type->m_sym == AST::DoubleAsterisk || var_sym->m_sym == AST::DoubleAsterisk){
-                LCOMPILERS_ASSERT(!type->m_kind)
+            if(var_sym->m_sym == AST::DoubleAsterisk){
                 LCOMPILERS_ASSERT(!var_sym->m_length)
                 str->m_len = nullptr; // If it's parameter variable, len will be set later.
                 str->m_len_kind = ASR::AssumedLength;
-            } else if(type->m_sym == AST::Asterisk){
-                throw LCompilersException("Unhandled case: `CHARACTER*(10)` OR `CHARACTER*(n)`");
-            } else if(var_sym->m_sym == AST::Asterisk){
-                LCOMPILERS_ASSERT(var_sym->m_length != nullptr);
+            } else if(var_sym->m_length){ // `c*4`, `c*(n)`, also with `= init`
                     if(is_funcCall_to_unresolved_genereicProcedure(var_sym->m_length)){ // Postpone the evaluation
                         postponed_genericProcedure_calls_vec.emplace_back(&str->m_len, current_scope,
                         var_sym->m_length, s2c(al, sym),
@@ -29526,6 +29542,12 @@ public:
                         }
                     }
                     str->m_len_kind = ASR::ExpressionLength;
+            } else if(type->m_sym == AST::DoubleAsterisk){
+                LCOMPILERS_ASSERT(!type->m_kind)
+                str->m_len = nullptr; // If it's parameter variable, len will be set later.
+                str->m_len_kind = ASR::AssumedLength;
+            } else if(type->m_sym == AST::Asterisk){
+                throw LCompilersException("Unhandled case: `CHARACTER*(10)` OR `CHARACTER*(n)`");
             } else {// Default len of "character :: x" is 1
                 str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, type->base.base.loc, 1,
                     ASRUtils::TYPE(ASR::make_Integer_t(al, type->base.base.loc, 4))));
