@@ -3863,6 +3863,10 @@ asr = true
 pass = "pass_array_by_data,transform_optional_argument_functions"
 
 [[test]]
+filename = "../integration_tests/mangle_underscore_07.f90"
+pass = "pass_array_by_data"
+
+[[test]]
 filename = "../integration_tests/modules_48.f90"
 asr = true
 

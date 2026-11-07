@@ -5574,6 +5574,9 @@ RUN(NAME mangle_underscore_03 LABELS gfortran llvm EXTRAFILES mangle_underscore_
     EXTRA_ARGS --separate-compilation --implicit-interface --all-mangling --mangle-underscore) # external procedures called from module procedures (#16065)
 RUN(NAME mangle_underscore_04 LABELS gfortran llvm EXTRAFILES mangle_underscore_04_m.f90
     EXTRA_ARGS --separate-compilation --implicit-interface --all-mangling --mangle-underscore) # module compiled separately agrees on the names of `t` and `x` (#16065)
+RUN(NAME mangle_underscore_05 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling) # components used in a procedure copied by pass_array_by_data (#16091)
+RUN(NAME mangle_underscore_06 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling) # components of a host type in a contained procedure of a pass_array_by_data copy (#16091)
+RUN(NAME mangle_underscore_07 LABELS gfortran llvm EXTRA_ARGS --mangle-underscore --all-mangling) # structure constructor of a local type in a pass_array_by_data copy (#16091)
 
 RUN(NAME nan_handling_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
