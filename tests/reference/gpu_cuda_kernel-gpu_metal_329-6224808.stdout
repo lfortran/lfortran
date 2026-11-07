@@ -6,7 +6,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __workspace_extent1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     float* __restrict__ result,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
     float* __restrict__ __workspace_2,
@@ -28,10 +28,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __gpu_sum_k;
         float __gpu_sum_res;
         float* work = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        #pragma unroll 16
         for (__gpu_bc_i = 1; __gpu_bc_i <= max(0, n); __gpu_bc_i++) {
             work[((int)(__gpu_bc_i) - (1))] = ((float)i__dc);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, n); __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
         }
@@ -41,10 +43,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __gpu_sum_k;
         float __gpu_sum_res;
         float* work = ((__workspace_extent1) > 0) ? (__workspace_3 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent1) : nullptr;
+        #pragma unroll 16
         for (__gpu_bc_i1 = 1; __gpu_bc_i1 <= max(0, (n + 1)); __gpu_bc_i1++) {
             work[((int)(__gpu_bc_i1) - (1))] = ((float)(2 * i__dc));
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, (n + 1)); __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
         }

@@ -5,6 +5,7 @@ __device__ inline float vla_fill_gpu_9(int m, float v) {
     int __gpu_sum_k;
     float __gpu_sum_res;
     __gpu_sum_res =   0.00000000000000000e+00f;
+    #pragma unroll 16
     for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, m); __gpu_sum_k++) {
         __gpu_sum_res = (__gpu_sum_res + v);
     }
@@ -19,7 +20,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     float* __restrict__ r,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {

@@ -8,7 +8,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     leaf_t* __restrict__ c,
     float* __restrict__ __data_c_m_,
     int* __restrict__ __offsets_c_m_,
@@ -29,11 +29,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int k;
         float* w = ((__workspace_extent) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         const int __lfortran_end_0 = (__sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 1]);
+        #pragma unroll 16
         for (k = 1; k <= __lfortran_end_0; k++) {
             w[((int)(k) - (1))] = ((float)((1000 * i__dc) + k));
         }
         o[((int)(i__dc) - (1))] =   0.00000000000000000e+00f;
         const int __lfortran_end_1 = (__sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 1]);
+        #pragma unroll 16
         for (k = 1; k <= __lfortran_end_1; k++) {
             o[((int)(i__dc) - (1))] = (o[((int)(i__dc) - (1))] + w[((int)(k) - (1))]);
         }
@@ -44,7 +46,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1(
     leaf_t* __restrict__ c,
     float* __restrict__ __data_c_m_,
     int* __restrict__ __offsets_c_m_,
@@ -65,11 +67,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         int k;
         float* w = ((__workspace_extent) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         const int __lfortran_end_2 = (__sizes_c_m_[(((int)(1) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(1) - (1))) * 4 + 1]);
+        #pragma unroll 16
         for (k = 1; k <= __lfortran_end_2; k++) {
             w[((int)(k) - (1))] = ((float)((100 * i__dc1) + k));
         }
         p[((int)(i__dc1) - (1))] =   0.00000000000000000e+00f;
         const int __lfortran_end_3 = (__sizes_c_m_[(((int)(1) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(1) - (1))) * 4 + 1]);
+        #pragma unroll 16
         for (k = 1; k <= __lfortran_end_3; k++) {
             p[((int)(i__dc1) - (1))] = (p[((int)(i__dc1) - (1))] + w[((int)(k) - (1))]);
         }

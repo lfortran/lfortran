@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     float* __restrict__ y)
 {
     int __flat_idx;
@@ -24,7 +24,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1(
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
@@ -41,6 +41,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         int __gpu_sum_k;
         float __gpu_sum_res;
         __gpu_sum_res =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
         }
@@ -57,7 +58,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2(
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
 {
@@ -75,6 +76,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
         float __gpu_sum_res;
         float __gpu_sum_tmp;
         __gpu_sum_res =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
         }

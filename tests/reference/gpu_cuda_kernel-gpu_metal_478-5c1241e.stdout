@@ -6,7 +6,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __dim_t_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     float* __restrict__ t,
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
@@ -20,6 +20,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc = (__flat_idx + 1);
+    #pragma unroll 16
     for (k = 1; k <= m; k++) {
         t[((int)(k) - (1))] = ((float)j__dc);
     }

@@ -4,7 +4,7 @@ struct t {
     long v;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     float* __restrict__ a,
     t* __restrict__ arr,
     float* __restrict__ __data_arr_v,
@@ -19,6 +19,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
+    #pragma unroll 16
     for (__gpu_sec_i = 1; __gpu_sec_i <= ((((int)2) + ((int)1)) - 1); __gpu_sec_i++) {
         a[((int)(__gpu_sec_i) - (1)) + (2 * ((int)(i__dc) - (1)))] = __data_arr_v[__offsets_arr_v[((int)(i__dc) - (1))] + ((int)((__sizes_arr_v[(((int)(i__dc) - (1))) * 2 + 1] + (__gpu_sec_i - 1))) - (__sizes_arr_v[(((int)(i__dc) - (1))) * 2 + 1]))];
     }
@@ -28,7 +29,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1(
     t* __restrict__ arr,
     float* __restrict__ __data_arr_v,
     int* __restrict__ __offsets_arr_v,
@@ -50,9 +51,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     {
         float* r = ((__workspace_extent) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
         const int __lfortran_end_0 = (__sizes_arr_v[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
+        #pragma unroll 16
         for (__gpu_elem_i = 1; __gpu_elem_i <= __lfortran_end_0; __gpu_elem_i++) {
             r[((int)((1 + (__gpu_elem_i - 1))) - (1))] = __data_arr_v[__offsets_arr_v[((int)(i__dc1) - (1))] + ((int)((__sizes_arr_v[(((int)(i__dc1) - (1))) * 2 + 1] + (__gpu_elem_i - 1))) - (__sizes_arr_v[(((int)(i__dc1) - (1))) * 2 + 1]))];
         }
+        #pragma unroll 16
         for (__gpu_sec_i1 = 1; __gpu_sec_i1 <= ((((int)2) + ((int)1)) - 1); __gpu_sec_i1++) {
             b[((int)(__gpu_sec_i1) - (1)) + (2 * ((int)(i__dc1) - (1)))] = r[((int)((1 + (__gpu_sec_i1 - 1))) - (1))];
         }

@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     float* __restrict__ x,
     float* __restrict__ y)
 {
@@ -22,6 +22,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     b1 =   0.00000000000000000e+00f;
     b2 =   0.00000000000000000e+00f;
     twox = (  2.00000000000000000e+00f * x[((int)(i__dc) - (1))]);
+    #pragma unroll 16
     for (j = 1; j <= nc; j++) {
         b2 = b1;
         b1 = b0;

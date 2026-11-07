@@ -15,7 +15,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __1__data_self_op__a;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0(
     float* __restrict__ r,
     base_t& self,
     inner_t& self_op_,
@@ -39,7 +39,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __1__data_self_op__a;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1(
     float* __restrict__ r,
     base_t& self,
     inner_t& self_op_,
