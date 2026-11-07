@@ -1065,7 +1065,12 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     llvm::FunctionAnalysisManager FAM;
     llvm::CGSCCAnalysisManager CGAM;
     llvm::ModuleAnalysisManager MAM;
-    llvm::PassBuilder PB = llvm::PassBuilder(TM.get());
+    // The default tuning options leave the SLP vectorizer off; clang and
+    // flang enable it at -O2 and -O3, as the legacy pipeline below does.
+    llvm::PipelineTuningOptions PTO;
+    PTO.LoopVectorization = true;
+    PTO.SLPVectorization = true;
+    llvm::PassBuilder PB = llvm::PassBuilder(TM.get(), PTO);
     PB.registerModuleAnalyses(MAM);
     PB.registerCGSCCAnalyses(CGAM);
     PB.registerFunctionAnalyses(FAM);
