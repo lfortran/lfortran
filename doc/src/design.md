@@ -119,8 +119,9 @@ runs:
 
 A new optimization pass is marked `RunFast`, so that a compilation without
 `--fast` does not pay for it. `--pass` runs exactly the passes it names,
-whatever they are marked with; `--cumulative` runs the passes the default
-pipeline runs with the same options up to the passes it names, and those.
+whatever they are marked with. With `--cumulative`, it runs the default
+pipeline up to and including the passes it names, leaving out the passes the
+options do not select unless it names them.
 
 ## Compilation Modes
 

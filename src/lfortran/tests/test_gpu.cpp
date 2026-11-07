@@ -2421,3 +2421,68 @@ TEST_CASE("Device powers with small integer exponents are products") {
     CHECK(device.products == 32);
 }
 #endif
+
+TEST_CASE("The default pipeline runs GPU passes with --gpu, optimizations "
+        "with --fast") {
+    auto passes = [](bool gpu, bool fast) {
+        PassOptions options;
+        options.gpu_offload_cuda = gpu;
+        options.fast = fast;
+        return PassManager().default_passes(options);
+    };
+    auto has = [](const std::vector<std::string> &list,
+            const std::string &name) {
+        return std::find(list.begin(), list.end(), name) != list.end();
+    };
+    auto is_gpu_pass = [](const std::string &name) {
+        return startswith(name, "gpu_") || startswith(name, "device_");
+    };
+    // The passes that only make a program faster.
+    const std::vector<std::string> optimizations = {"dead_array_store",
+        "specialize_procedure_arguments", "specialize_frame_arguments",
+        "inline_function_calls"};
+    const std::vector<std::string> gpu_optimizations = {"gpu_call_guards",
+        "gpu_loop_transforms", "gpu_array_statements", "gpu_private_map_forwarding",
+        "gpu_private_reduction_fusion", "gpu_residue_unroll",
+        "gpu_vector_lanes", "gpu_sequential_unroll"};
+    // Some of the passes the offload needs.
+    const std::vector<std::string> gpu_required = {"gpu_offload",
+        "device_partition", "gpu_integer_powers", "gpu_kernel_finalize",
+        "gpu_launch_sync", "device_launch_expand"};
+
+    for (bool fast : {false, true}) {
+        INFO("fast: " << fast);
+        std::vector<std::string> cpu = passes(false, fast);
+        for (const std::string &name : cpu) {
+            INFO(name);
+            CHECK_FALSE(is_gpu_pass(name));
+        }
+        CHECK(has(cpu, "nested_vars"));
+        for (const std::string &name : optimizations) {
+            INFO(name);
+            CHECK(has(cpu, name) == fast);
+        }
+
+        std::vector<std::string> gpu = passes(true, fast);
+        for (const std::string &name : gpu_required) {
+            INFO(name);
+            CHECK(has(gpu, name));
+        }
+        for (const std::string &name : gpu_optimizations) {
+            INFO(name);
+            CHECK(has(gpu, name) == fast);
+        }
+        // Without a device, the pipeline is the same less its GPU passes.
+        std::vector<std::string> host;
+        for (const std::string &name : gpu) {
+            if (!is_gpu_pass(name)) host.push_back(name);
+        }
+        CHECK(host == cpu);
+    }
+    // An optimization runs where the pipeline lists it, not after it.
+    std::vector<std::string> gpu = passes(true, true);
+    auto at = [&](const std::string &name) {
+        return std::find(gpu.begin(), gpu.end(), name) - gpu.begin();
+    };
+    CHECK(at("gpu_loop_transforms") < at("gpu_offload"));
+}

@@ -329,9 +329,10 @@ namespace LCompilers {
             return passes;
         }
 
-        // With --cumulative: the passes of the default pipeline that run
-        // with these options, up to the first place each of `named` is
-        // listed, and the passes `named` themselves.
+        // With --cumulative: the passes of the default pipeline up to the
+        // first place each of `named` is listed in it, leaving out those that
+        // do not run with these options unless they are named. A named pass
+        // that is not in the pipeline runs nowhere.
         std::vector<std::string> cumulative_passes(
                 const std::vector<std::string> &named,
                 const PassOptions &pass_options) const {
