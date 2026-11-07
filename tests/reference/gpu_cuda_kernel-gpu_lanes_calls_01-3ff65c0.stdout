@@ -1,5 +1,18 @@
 #include <stdint.h>
 
+// The combination of what the `lanes` lanes of an iteration hold,
+// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
+// largest. With one lane, the lane's own value.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce(T v, int lanes) {
+    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {
+        T w = __shfl_xor_sync(0xffffffffu, v, offset, lanes);
+        v = op == 0 ? v + w : op == 1 ? v * w
+            : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+    }
+    return v;
+}
+
 __device__ inline int _lcompilers_ibits_i32_gpu_29(int x, int y, int z) {
     int _lcompilers_ibits_i32{};
     _lcompilers_ibits_i32 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
@@ -71,17 +84,27 @@ __device__ inline int _lcompilers_ibits_i327_gpu_36(int x, int y, int z) {
     return _lcompilers_ibits_i327;
 }
 
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __gpu_lanes;
+};
+
 extern "C" __global__ void __lfortran_gpu_kernel_1(
     int* __restrict__ total,
-    int* __restrict__ w)
+    int* __restrict__ w,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
     const int k = 512;
     int r__dc1;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 40)) {
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 40)) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     r__dc1 = (__flat_idx + 1);
     {
         int __gpu_residue_element;
@@ -89,14 +112,31 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         {
             int s;
             s = 0;
-            for (__gpu_residue_group = 1; __gpu_residue_group <= (k - 3); __gpu_residue_group += 4) {
-                __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1) - (1)))];
-                s = (s + _lcompilers_ibits_i324_gpu_33(__gpu_residue_element, (8 * 0), 8));
-                s = (s + _lcompilers_ibits_i325_gpu_34(__gpu_residue_element, (8 * 1), 8));
-                s = (s + _lcompilers_ibits_i326_gpu_35(__gpu_residue_element, (8 * 2), 8));
-                s = (s + _lcompilers_ibits_i327_gpu_36(__gpu_residue_element, (8 * 3), 8));
+            if ((__gpu_lanes > 1)) {
+                if ((__gpu_lane != 0)) {
+                    s = 0;
+                }
+                for (__gpu_residue_group = (1 + (((int)__gpu_lane) * 4)); __gpu_residue_group <= (k - 3); __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
+                    __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1) - (1)))];
+                    s = (s + _lcompilers_ibits_i324_gpu_33(__gpu_residue_element, (8 * 0), 8));
+                    s = (s + _lcompilers_ibits_i325_gpu_34(__gpu_residue_element, (8 * 1), 8));
+                    s = (s + _lcompilers_ibits_i326_gpu_35(__gpu_residue_element, (8 * 2), 8));
+                    s = (s + _lcompilers_ibits_i327_gpu_36(__gpu_residue_element, (8 * 3), 8));
+                }
+                s = __lfortran_lane_reduce<0>(s, __gpu_lanes_n);
+            } else {
+                for (__gpu_residue_group = 1; __gpu_residue_group <= (k - 3); __gpu_residue_group += 4) {
+                    __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1) - (1)))];
+                    s = (s + _lcompilers_ibits_i324_gpu_33(__gpu_residue_element, (8 * 0), 8));
+                    s = (s + _lcompilers_ibits_i325_gpu_34(__gpu_residue_element, (8 * 1), 8));
+                    s = (s + _lcompilers_ibits_i326_gpu_35(__gpu_residue_element, (8 * 2), 8));
+                    s = (s + _lcompilers_ibits_i327_gpu_36(__gpu_residue_element, (8 * 3), 8));
+                }
             }
-            total[((int)(r__dc1) - (1))] = s;
+            if ((__gpu_lane == 0)) {
+                total[((int)(r__dc1) - (1))] = s;
+            }
+            if (__gpu_lanes_n > 1) __syncwarp();
         }
     }
 }
