@@ -1047,6 +1047,15 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
             break;
         }
     }
+    // A pending launch may read the memory in place too.
+    int read_in_place = pending_in_place_reads && managed_contains(ptr, size);
+    for (int i = 0; i < n_entries && pending_in_place_reads; i++) {
+        if (entries[i].used && entries[i].in_place
+                && overlaps(entries[i].host, entries[i].size, ptr, size)) {
+            read_in_place = 1;
+        }
+    }
+    if (read_in_place) lfortran_gpu_wait(ctx);
     for (int i = 0; i < n_entries; i++) {
         if (entries[i].used
                 && overlaps(entries[i].host, entries[i].size, ptr, size)) {

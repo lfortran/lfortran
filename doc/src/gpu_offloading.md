@@ -779,7 +779,9 @@ an `intent(in)` dummy -- and *written* otherwise.
 * `lfortran_gpu_sync` waits for every launch, copies every dirty entry back
   to the host, and marks it clean.
 * `lfortran_gpu_discard` forgets the dirty entries of a host range that is
-  about to be freed, without copying anything back.
+  about to be freed, without copying anything back; in the unified and
+  managed memory models it first waits for a pending launch that uses the
+  range in place.
 * A range that overlaps a dirty one without being the same range makes the
   runtime wait first, so that the bytes it copies are current.
 * The runtime never writes a device buffer that a pending launch may still
@@ -876,7 +878,7 @@ runtime does with an entry changes:
   one is used in place. The host does not change or free it while the launch
   is pending: the `gpu_launch_sync` pass puts a `GpuWait` before a host
   statement that may (see "Where the host waits").
-* `lfortran_gpu_discard` of a range that a pending launch writes in place
+* `lfortran_gpu_discard` of a range that a pending launch uses in place
   waits for the launch, since the host is about to free memory the kernel
   uses.
 * The runtime gives the driver no advice about a range it uses in place. On
@@ -964,6 +966,8 @@ GPU that shares the host's memory, every Apple GPU, and copy otherwise):
   the allocation.
 * `lfortran_gpu_wait` waits for every launch when one that reads host
   memory in place may be pending, and returns at once otherwise.
+  `lfortran_gpu_discard` of a range in a managed allocation that a pending
+  launch uses waits for the launches; of any other range it waits for none.
 * Smaller allocations, memory the allocator does not make (stack and static
   arrays), and an allocation the device cannot map keep the copy model.
 
@@ -1060,7 +1064,7 @@ memory until the next wait, and the host must not change it before that
 either. The pass keeps what pending launches read as well, and
 puts a `GpuWait` -- wait for the launches that read host memory in place,
 copying nothing back -- before a host statement that may change or free
-such storage, and at the end of a `block` whose locals they read. Since an
+such storage. Since an
 access is not known to be a read or a write, any statement that accesses
 the storage counts, except where it only evaluates an expression. A launch
 itself never waits, so launches that only share what they read, such as the
@@ -1091,7 +1095,13 @@ GB/s).
 Storage that a pending launch writes and the host frees is not waited for:
 a local of a `block` at the end of the block, or where `exit` or `cycle`
 leaves it, and an array the host deallocates, get a `GpuDiscard` instead,
-since nothing can read those values any more.
+since nothing can read those values any more. A local array that a pending
+launch reads gets a `GpuDiscard` where it ends too, at the end of its
+`block` or when a deferring twin returns: the runtime waits there only for
+a launch that uses that storage in place, not for every launch that reads
+host memory in place. A twin such as `linear(x, w, y)`, whose second launch
+reads a local workspace the first one writes while the weights `w` are read
+in place, so returns without waiting for its launches.
 
 What a statement accesses is worked out over *access paths*: a variable and
 a chain of components (`workspace%dcdw`), whatever the subscripts. A pointer

@@ -2264,6 +2264,34 @@ end program
     CHECK(gpu_sync_trace(source, "", "sync_twins_main") == "CSCCS");
 }
 
+TEST_CASE("GPU twins return without waiting for the launches that read "
+        "their locals") {
+    // The second launch of `two_steps` reads the local `t` that the first
+    // writes. Where `t` ends, the runtime is handed it to wait for a launch
+    // that uses its storage in place (GpuDiscard), so the twin does not wait
+    // for every launch that reads host memory in place, such as the ones
+    // that read `x`.
+    const std::string source = R"(
+module sync_locals
+implicit none
+contains
+subroutine two_steps(x, y)
+    real, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    real :: t(size(x))
+    integer :: i
+    do concurrent (i = 1:size(x))
+        t(i) = 2*x(i)
+    end do
+    do concurrent (i = 1:size(x))
+        y(i) = t(i) + x(i)
+    end do
+end subroutine
+end module
+)";
+    CHECK(gpu_sync_trace(source, "sync_locals", "two_steps") == "[L|][L|]D");
+}
+
 #endif
 
 TEST_CASE("A scalar every iteration assigns first is not read back when "

@@ -71,10 +71,16 @@ return with launches pending:
 Storage a launch only reads the runtime may hand the kernel in place (the
 unified and managed memory models), so a GpuWait -- wait for the launches
 that read host memory in place, copying nothing back -- goes before a host
-statement that may change or free storage a pending launch reads, at the
-end of a `block` whose locals a pending launch reads, and where any GpuSync
-would go. Accesses are not split into reads and writes: a statement that
-may access such storage, other than by evaluating an expression, waits.
+statement that may change or free storage a pending launch reads, and
+where any GpuSync would go. Accesses are not split into reads and writes: a
+statement that may access such storage, other than by evaluating an
+expression, waits.
+
+A local array of a procedure or `block` that a pending launch reads, where
+its storage ends, is handed to GpuDiscard instead: the runtime waits there
+only for a launch that uses that storage in place (one whose array is copied
+to the device need not be waited for), not for every launch that reads host
+memory in place, such as one that reads the arrays of the caller.
 
 Where the host does not change an array a launch since the last wait read
 until a later launch reads it, a GpuKeep naming it goes right before the
@@ -1115,21 +1121,51 @@ private:
                 == ASR::intentType::Local;
     }
 
-    // Tells the runtime to forget what pending launches write into the
-    // locals of `scope`, which end here.
+    // Whether the storage of the local `root` of `scope` ends with the scope
+    // and is an array the runtime can be handed by its address and size.
+    static bool ending_array(ASR::symbol_t *root, SymbolTable *scope) {
+        if (!is_local(root, scope)) return false;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(root);
+        return v->m_storage != ASR::storage_typeType::Save
+            && ASRUtils::is_array(v->m_type);
+    }
+
+    // Tells the runtime that the locals of `scope` end here: it forgets
+    // what pending launches write into them, and waits for the pending
+    // launches that read them in place, if any (lfortran_gpu_discard).
     void discard_locals(SymbolTable *scope, State &s, bool emit,
             Vec<ASR::stmt_t*> *out, const Location &loc) {
         // A local a pending launch reads in place ends too: its storage
-        // must outlive the read.
+        // must outlive the read. The runtime knows whether a launch reads
+        // the storage of a whole array in place, and waits for it when the
+        // array is discarded; only another local, or what a pointer may
+        // point to, makes the host wait for every launch that reads host
+        // memory in place.
+        bool must_wait = false;
         for (const Path &p : s.read) {
-            if ((may_point_anywhere(p.root) && has_target_locals(scope))
-                    || is_local(p.root, scope)) {
-                wait(s, emit, out, loc);
-                break;
+            if (may_point_anywhere(p.root) && has_target_locals(scope)) {
+                must_wait = true;
+            } else if (is_local(p.root, scope)) {
+                must_wait = must_wait || !ending_array(p.root, scope)
+                    || !p.members.empty() || p.shallow;
             }
         }
         Vec<ASR::expr_t*> vars;
         vars.reserve(al, 1);
+        if (must_wait) {
+            wait(s, emit, out, loc);
+        } else {
+            std::vector<Path> read_kept;
+            for (const Path &p : s.read) {
+                if (!is_local(p.root, scope)) {
+                    read_kept.push_back(p);
+                    continue;
+                }
+                vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    p.root)));
+            }
+            s.read = read_kept;
+        }
         std::vector<Path> kept;
         bool must_sync = false;
         // The status buffers of the pending launches that may have recorded
@@ -1164,8 +1200,15 @@ private:
                 kept.push_back(p);
                 continue;
             }
-            vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                p.root)));
+            bool listed = false;
+            for (size_t i = 0; i < vars.size(); i++) {
+                listed = listed || ASR::down_cast<ASR::Var_t>(vars[i])->m_v
+                    == p.root;
+            }
+            if (!listed) {
+                vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    p.root)));
+            }
         }
         if (must_sync) {
             sync(s, emit, out, loc);

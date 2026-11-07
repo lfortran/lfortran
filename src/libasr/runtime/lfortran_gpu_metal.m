@@ -1492,6 +1492,14 @@ void lfortran_gpu_keep(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
 
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
     if (!ctx || size == 0) return;
+    // A pending launch may use the range in place, in a managed allocation:
+    // the host is about to free its storage.
+    uint64_t last_use = 0;
+    os_unfair_lock_lock(&managed_lock);
+    managed_range *r = managed_holding(ptr, size);
+    if (r) last_use = r->last_use;
+    os_unfair_lock_unlock(&managed_lock);
+    if (last_use != 0 && !completed_by_device(ctx, last_use)) wait_all(ctx);
     for (int d = n_dirty - 1; d >= 0; d--) {
         int i = dirty_list[d];
         if (overlaps(entries[i].host, entries[i].size, ptr, size)) {
