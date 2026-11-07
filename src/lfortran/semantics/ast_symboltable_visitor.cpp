@@ -4347,6 +4347,16 @@ public:
                 visit_interface_item(*x.m_items[i]);
                 if (is_abstract) {
                     mark_abstract_interface_body(*x.m_items[i]);
+                } else if (AST::is_a<AST::InterfaceProc_t>(*x.m_items[i])) {
+                    AST::program_unit_t *proc = AST::down_cast<
+                        AST::InterfaceProc_t>(x.m_items[i])->m_proc;
+                    if (AST::is_a<AST::Subroutine_t>(*proc)) {
+                        bind_interface_body_to_cell_procedure(to_lower(
+                            AST::down_cast<AST::Subroutine_t>(proc)->m_name));
+                    } else if (AST::is_a<AST::Function_t>(*proc)) {
+                        bind_interface_body_to_cell_procedure(to_lower(
+                            AST::down_cast<AST::Function_t>(proc)->m_name));
+                    }
                 }
             }
         } else if (AST::is_a<AST::DeferredInterfaceHeader_t>(*x.m_header)) {

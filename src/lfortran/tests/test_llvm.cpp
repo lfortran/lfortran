@@ -4812,7 +4812,7 @@ fn = 1
 end function
 )").ok);
     // The contained procedure declares a procedure pointer with the host's
-    // interface, so the interface stays.
+    // interface, which is the earlier cell's `fn`.
     LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(R"(integer function c()
 interface
 integer function fn()
@@ -4917,6 +4917,151 @@ end function
     CHECK(!r.ok);
     cu.use_colors = false;
     CHECK(d.render(lm, cu).find("ASR verify") == std::string::npos);
+}
+
+TEST_CASE("FortranEvaluator external statement of another type than an earlier cell's function") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.implicit_interface = true;
+    cu.implicit_typing = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 3
+end function
+)").ok);
+    REQUIRE(e.evaluate2(R"(real function gn()
+gn = 3
+end function
+)").ok);
+    REQUIRE(e.evaluate2(R"(subroutine sn(x)
+integer, intent(out) :: x
+x = 4
+end subroutine
+)").ok);
+    // `gn` has the implicit type real, like the earlier cell's `gn`, and
+    // `sn` is a subroutine.
+    REQUIRE(e.evaluate2(R"(real function c_gn()
+external gn, sn
+integer :: k
+call sn(k)
+c_gn = gn() / 2 + k
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("c_gn()");
+    REQUIRE(r.ok);
+    CHECK(r.result.f32 == 5.5f);
+    // A type declaration statement after EXTERNAL gives the type.
+    REQUIRE(e.evaluate2(R"(real function c_typed()
+external fn
+integer fn
+c_typed = fn() / 2
+end function
+)").ok);
+    r = e.evaluate2("c_typed()");
+    REQUIRE(r.ok);
+    CHECK(r.result.f32 == 1.0f);
+    // `fn` has the implicit type real, so the external procedure it
+    // declares is not the earlier cell's integer `fn`: as without that
+    // `fn`, a call of `c` does not link.
+    REQUIRE(e.evaluate2(R"(real function c()
+external fn
+c = fn() / 2
+end function
+)").ok);
+    bool linked = false;
+    try {
+        r = e.evaluate2("c()");
+        linked = r.ok;
+    } catch (const LCompilers::LCompilersException &) {
+    }
+    CHECK(!linked);
+}
+
+TEST_CASE("FortranEvaluator interface body of an earlier cell's procedure in scoping units") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    REQUIRE(e.evaluate2("integer :: z0").ok);
+    REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 1
+end function
+)").ok);
+    REQUIRE(e.evaluate2(R"(subroutine s(x)
+integer, intent(out) :: x
+x = 9
+end subroutine
+)").ok);
+    // A procedure pointer declared with the interface, a subroutine
+    // referenced by CALL, a dummy procedure named like an earlier cell's
+    // procedure, and a contained procedure that uses its host's interface.
+    REQUIRE(e.evaluate2(R"(integer function c()
+interface
+integer function fn()
+end function
+subroutine s(x)
+integer, intent(out) :: x
+end subroutine
+end interface
+procedure(fn), pointer :: p
+integer :: k
+p => fn
+call s(k)
+c = p() + k * 10 + g()
+contains
+integer function g()
+procedure(fn), pointer :: q
+q => fn
+g = q() * 100
+end function
+end function
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("c()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 191);
+    REQUIRE(e.evaluate2(R"(integer function app(fn)
+interface
+integer function fn()
+end function
+end interface
+app = fn() + 100
+end function
+)").ok);
+    REQUIRE(e.evaluate2(R"(integer function d()
+d = 7
+end function
+)").ok);
+    r = e.evaluate2("app(d)");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 107);
+    // A module procedure and a BLOCK construct.
+    REQUIRE(e.evaluate2(R"(module m_cell_iface
+contains
+integer function h()
+interface
+integer function fn()
+end function
+end interface
+h = fn() + 50
+block
+interface
+subroutine s(x)
+integer, intent(out) :: x
+end subroutine
+end interface
+integer :: k
+call s(k)
+h = h + k
+end block
+end function
+end module
+)").ok);
+    REQUIRE(e.evaluate2("use m_cell_iface").ok);
+    r = e.evaluate2("h()");
+    REQUIRE(r.ok);
+    CHECK(r.result.i32 == 60);
 }
 
 TEST_CASE("FortranEvaluator old and new module side by side") {
