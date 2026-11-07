@@ -175,6 +175,10 @@ struct IntrinsicSignature {
         positional_args(positional_args_), max_args(max_args_) {}
 };
 
+// Thrown by ImpliedDoLoopValuesVisitor for an expression it cannot evaluate;
+// the implied do loop is then not evaluated at compile time.
+struct ImpliedDoLoopNotEvaluated {};
+
 class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValuesVisitor> {
     public:
     Allocator &al;
@@ -182,204 +186,144 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     std::vector<int64_t>& loop_indices;
     ASR::expr_t* value;
     ASR::ttype_t* type;
-    diag::Diagnostics& diag;
     int64_t element_idx;
-    const std::map<ASRUtils::IntrinsicElementalFunctions, size_t> name2signature_varargs = {
-        // max0 can accept any arbitrary number of arguments 2<=x<=100
-        {ASRUtils::IntrinsicElementalFunctions::Max, 100},
-        // min0 can accept any arbitrary number of arguments 2<=x<=100
-        {ASRUtils::IntrinsicElementalFunctions::Min, 100},
-        {ASRUtils::IntrinsicElementalFunctions::Aint, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Nint, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Anint, 2},
-        {ASRUtils::IntrinsicElementalFunctions::StringContainsSet, 4},
-        {ASRUtils::IntrinsicElementalFunctions::StringFindSet, 4},
-        {ASRUtils::IntrinsicElementalFunctions::SubstrIndex, 4},
-        {ASRUtils::IntrinsicElementalFunctions::Floor, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Ceiling, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Maskr, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Maskl, 2},
-        {ASRUtils::IntrinsicElementalFunctions::SelectedRealKind, 3},
-        {ASRUtils::IntrinsicElementalFunctions::Ishftc, 3},
-        {ASRUtils::IntrinsicElementalFunctions::Ichar, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Iachar, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Char, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Achar, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Logical, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Real, 2},
-        {ASRUtils::IntrinsicElementalFunctions::StorageSize, 2},
-        {ASRUtils::IntrinsicElementalFunctions::OutOfRange, 3},
-        {ASRUtils::IntrinsicElementalFunctions::StringLenTrim, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Int, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Cmplx, 3},
-    };
 
     ImpliedDoLoopValuesVisitor(Allocator& al, std::vector<ASR::symbol_t*>& loop_vars, std::vector<int64_t>& loop_indices, ASR::expr_t* value_,
-        ASR::ttype_t* type, diag::Diagnostics& diag) :
-        al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value_), type(type), diag(diag), element_idx(-1) {}
+        ASR::ttype_t* type) :
+        al(al), loop_vars(loop_vars), loop_indices(loop_indices), value(value_), type(type), element_idx(-1) {}
+
+    // Only the expressions that have a visitor below are evaluated. Walking
+    // the children of any other expression would leave the value of its
+    // last operand in `value`, e.g. `k > 1` for `.not. (k > 1)`.
+    void visit_expr(const ASR::expr_t &x) {
+        switch (x.type) {
+            case ASR::exprType::Var:
+            case ASR::exprType::ArrayItem:
+            case ASR::exprType::IntegerCompare:
+            case ASR::exprType::RealCompare:
+            case ASR::exprType::IntegerConstant:
+            case ASR::exprType::IntegerUnaryMinus:
+            case ASR::exprType::RealConstant:
+            case ASR::exprType::RealUnaryMinus:
+            case ASR::exprType::LogicalConstant:
+            case ASR::exprType::ComplexConstant:
+            case ASR::exprType::StringConstant:
+            case ASR::exprType::StringSection:
+            case ASR::exprType::StringItem:
+            case ASR::exprType::IntegerBinOp:
+            case ASR::exprType::ArrayConstant:
+            case ASR::exprType::ArrayBroadcast:
+            case ASR::exprType::RealBinOp:
+            case ASR::exprType::ComplexBinOp:
+            case ASR::exprType::ComplexUnaryMinus:
+            case ASR::exprType::ComplexCompare:
+            case ASR::exprType::LogicalNot:
+            case ASR::exprType::LogicalBinOp:
+            case ASR::exprType::Cast:
+            case ASR::exprType::IntrinsicElementalFunction:
+                ASR::BaseWalkVisitor<ImpliedDoLoopValuesVisitor>::visit_expr(x);
+                return;
+            default:
+                break;
+        }
+        ASR::expr_t* x_value = ASRUtils::expr_value(const_cast<ASR::expr_t*>(&x));
+        if (x_value != nullptr && x_value != &x && ASRUtils::is_value_constant(x_value)) {
+            this->visit_expr(*x_value);
+            return;
+        }
+        throw ImpliedDoLoopNotEvaluated();
+    }
+
+    // The constant `x` evaluates to; throws if it cannot be evaluated
+    ASR::expr_t* evaluate_constant(const ASR::expr_t &x) {
+        value = nullptr;
+        this->visit_expr(x);
+        if (value == nullptr) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        return value;
+    }
 
     void visit_Var(const ASR::Var_t &x) {
         size_t loop_var_index = std::find(loop_vars.begin(), loop_vars.end(), x.m_v) - loop_vars.begin();
         // check if loop_var_index is valid
         if (loop_var_index >= loop_vars.size()) {
             // this is compiletime value
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
-                                        ASRUtils::symbol_get_past_external(x.m_v));
-            this->visit_expr(*var->m_value);
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(x.m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)
+                    || ASR::down_cast<ASR::Variable_t>(sym)->m_value == nullptr) {
+                throw ImpliedDoLoopNotEvaluated();
+            }
+            this->visit_expr(*ASR::down_cast<ASR::Variable_t>(sym)->m_value);
         } else {
             value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, loop_indices[loop_var_index], ASRUtils::symbol_type(x.m_v)));
         }
     }
 
+    // `p(k)` for a named constant array `p`, indexed from its declared
+    // lower bounds
     void visit_ArrayItem(const ASR::ArrayItem_t &x) {
-        std::vector<int64_t> indices;
+        Vec<ASR::array_index_t> indices;
+        indices.reserve(al, x.n_args);
         for (size_t k = 0; k < x.n_args; k++) {
-            this->visit_expr(*x.m_args[k].m_right);
-            LCOMPILERS_ASSERT(this->value != nullptr);
-            auto idx_c = ASR::down_cast<ASR::IntegerConstant_t>(this->value);
-            indices.push_back(idx_c->m_n);
+            ASR::array_index_t index = x.m_args[k];
+            if (index.m_left != nullptr || index.m_step != nullptr
+                    || index.m_right == nullptr) {
+                throw ImpliedDoLoopNotEvaluated();
+            }
+            index.m_right = evaluate_constant(*index.m_right);
+            if (!ASR::is_a<ASR::IntegerConstant_t>(*index.m_right)) {
+                throw ImpliedDoLoopNotEvaluated();
+            }
+            indices.push_back(al, index);
         }
+        if (!ASRUtils::is_array_constant_element_type(x.m_type)) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        value = ASRUtils::fold_ArrayItem_value(al, x.m_v, indices.p,
+            indices.size());
+        if (value == nullptr) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+    }
 
-        ASR::expr_t* arr_val = ASRUtils::expr_value(x.m_v);
-        if (!(arr_val && ASR::is_a<ASR::ArrayConstant_t>(*arr_val))) {
-            this->value = nullptr;
-            return;
+    // The constant `x` evaluates to, which has to be a `T`
+    template <typename T>
+    T* evaluate_constant_of(const ASR::expr_t &x) {
+        ASR::expr_t* val = evaluate_constant(x);
+        if (!ASR::is_a<T>(*val)) {
+            throw ImpliedDoLoopNotEvaluated();
         }
-        const ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(arr_val);
-        LCOMPILERS_ASSERT(indices.size() == 1);
-        int64_t idx0 = indices[0] - 1;
-        if (idx0 < 0 || idx0 >= arr_const->m_n_data) {
-            this->value = nullptr;
-            return;
-        }
-    
-        ASR::ttype_t* array_type = arr_const->m_type;
-        ASR::ttype_t* el_type = ASRUtils::type_get_past_array(array_type);
-        if (ASR::is_a<ASR::Integer_t>(*el_type)) {
-            int64_t kind = ASR::down_cast<ASR::Integer_t>(el_type)->m_kind;
-            if (kind == 4) {
-                int32_t* data = (int32_t*)arr_const->m_data;
-                int32_t val = data[idx0];
-                this->value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_const->base.base.loc, val, el_type));
-                return;
-            } else if (kind == 8) {
-                int64_t* data = (int64_t*)arr_const->m_data;
-                int64_t val = data[idx0];
-                this->value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_const->base.base.loc, val, el_type));
-                return;
-            } else {
-                this->value = nullptr;
-                return;
-            }
-        } else if (ASR::is_a<ASR::Real_t>(*el_type)) {
-            int64_t kind = ASR::down_cast<ASR::Real_t>(el_type)->m_kind;
-            if (kind == 4) {
-                float* data = (float*)arr_const->m_data;
-                float val = data[idx0];
-                this->value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, arr_const->base.base.loc, (double)val, el_type));
-                return;
-            } else if (kind == 8) {
-                double* data = (double*)arr_const->m_data;
-                double val = data[idx0];
-                this->value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, arr_const->base.base.loc, val, el_type));
-                return;
-            } else {
-                this->value = nullptr;
-                return;
-            }
-        } else if (ASR::is_a<ASR::Logical_t>(*el_type)) {
-            int64_t kind = ASR::down_cast<ASR::Logical_t>(el_type)->m_kind;
-            if (kind == 1) {
-                int8_t* data = (int8_t*)arr_const->m_data;
-                bool val = data[idx0] != 0;
-                this->value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, arr_const->base.base.loc, val, el_type));
-                return;
-            } else {
-                int32_t* data = (int32_t*)arr_const->m_data;
-                bool val = data[idx0] != 0;
-                this->value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, arr_const->base.base.loc, val, el_type));
-                return;
-            }
-        } else {
-            this->value = nullptr;
-            return;
-        }
+        return ASR::down_cast<T>(val);
     }
 
     void visit_IntegerCompare( const ASR::IntegerCompare_t &x ) {
-        int64_t left_val, right_val;
-        this->visit_expr(*x.m_left);
-        left_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
-        this->visit_expr(*x.m_right);
-        right_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
-        bool res;
-        switch (x.m_op) {
-            case ASR::cmpopType::Eq:
-                res = left_val == right_val;
-                break;
-            case ASR::cmpopType::NotEq:
-                res = left_val != right_val;
-                break;
-            case ASR::cmpopType::Gt:
-                res = left_val > right_val;
-                break;
-            case ASR::cmpopType::LtE:
-                res = left_val <= right_val;
-                break;
-            case ASR::cmpopType::Lt:
-                res = left_val < right_val;
-                break;
-            case ASR::cmpopType::GtE:
-                res = left_val >= right_val;
-                break;
-            default:
-                diag.add(Diagnostic("Unsupported comparison operation in implied do loop",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+        ASR::expr_t* left_val = &evaluate_constant_of<ASR::IntegerConstant_t>(
+            *x.m_left)->base;
+        ASR::expr_t* right_val = &evaluate_constant_of<ASR::IntegerConstant_t>(
+            *x.m_right)->base;
+        value = ASRUtils::fold_compare_constants(al, left_val, right_val,
+            x.m_op, x.base.base.loc, x.m_type);
+        if (value == nullptr) {
+            throw ImpliedDoLoopNotEvaluated();
         }
-        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, res, x.m_type));
     }
 
+    // Real operands are evaluated by the shared folding helpers, which
+    // handle every kind: the value of a real(10) or real(16) constant is not
+    // stored as a double.
     void visit_RealCompare( const ASR::RealCompare_t &x ) {
-        double left_val, right_val;
-        this->visit_expr(*x.m_left);
-        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            left_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
-        } else {
-            left_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+        ASR::expr_t* left_val = evaluate_constant(*x.m_left);
+        ASR::expr_t* right_val = evaluate_constant(*x.m_right);
+        if (!ASR::is_a<ASR::RealConstant_t>(*left_val)
+                || !ASR::is_a<ASR::RealConstant_t>(*right_val)) {
+            throw ImpliedDoLoopNotEvaluated();
         }
-        this->visit_expr(*x.m_right);
-        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            right_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
-        } else {
-            right_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+        value = ASRUtils::fold_compare_constants(al, left_val, right_val,
+            x.m_op, x.base.base.loc, x.m_type);
+        if (value == nullptr) {
+            throw ImpliedDoLoopNotEvaluated();
         }
-        bool res;
-        switch (x.m_op) {
-            case ASR::cmpopType::Eq:
-                res = left_val == right_val;
-                break;
-            case ASR::cmpopType::NotEq:
-                res = left_val != right_val;
-                break;
-            case ASR::cmpopType::Gt:
-                res = left_val > right_val;
-                break;
-            case ASR::cmpopType::LtE:
-                res = left_val <= right_val;
-                break;
-            case ASR::cmpopType::Lt:
-                res = left_val < right_val;
-                break;
-            case ASR::cmpopType::GtE:
-                res = left_val >= right_val;
-                break;
-            default:
-                diag.add(Diagnostic("Unsupported comparison operation in implied do loop",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-        }
-        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, res, x.m_type));
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
@@ -387,8 +331,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t &x) {
-        this->visit_expr(*x.m_arg);
-        int64_t arg_val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        int64_t arg_val = evaluate_constant_of<ASR::IntegerConstant_t>(*x.m_arg)->m_n;
         value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, -arg_val, x.m_type));
     }
 
@@ -397,22 +340,22 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
-        this->visit_expr(*x.m_arg);
-        if (ASR::is_a<ASR::RealConstant_t>(*value)
-                && ASRUtils::extract_kind_from_ttype_t(x.m_type) == 16) {
-            lf_float128 v = ASRUtils::real_constant_get_r16(
-                ASR::down_cast<ASR::RealConstant_t>(value));
+        ASR::expr_t* arg_val = evaluate_constant(*x.m_arg);
+        if (!ASR::is_a<ASR::RealConstant_t>(*arg_val)) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        ASR::RealConstant_t* arg = ASR::down_cast<ASR::RealConstant_t>(arg_val);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (kind == 16) {
             value = ASRUtils::make_RealConstant_r16(al, x.base.base.loc,
-                lf_f128_neg(v), x.m_type);
-            return;
-        }
-        double arg_val;
-        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            arg_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+                lf_f128_neg(ASRUtils::real_constant_get_r16(arg)), x.m_type);
+        } else if (kind == 10) {
+            value = ASRUtils::make_RealConstant_r10(al, x.base.base.loc,
+                -ASRUtils::real_constant_get_r10(arg), x.m_type);
         } else {
-            arg_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+            value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
+                -arg->m_r, x.m_type));
         }
-        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, -arg_val, x.m_type));
     }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
@@ -431,21 +374,23 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     // UTF-8, so one character can span several bytes and the value has to be
     // sliced character by character.
     void visit_StringSection(const ASR::StringSection_t &x) {
-        this->visit_expr(*x.m_arg);
-        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value);
+        ASR::StringConstant_t* str_const =
+            evaluate_constant_of<ASR::StringConstant_t>(*x.m_arg);
         std::vector<std::string> characters = ASRUtils::string_value_characters(
             str_const->m_s, ASRUtils::extract_kind_from_ttype_t(str_const->m_type));
         int64_t start = 1, end = static_cast<int64_t>(characters.size());
         if (x.m_start) {
-            this->visit_expr(*x.m_start);
-            start = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+            start = evaluate_constant_of<ASR::IntegerConstant_t>(*x.m_start)->m_n;
         }
         if (x.m_end) {
-            this->visit_expr(*x.m_end);
-            end = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+            end = evaluate_constant_of<ASR::IntegerConstant_t>(*x.m_end)->m_n;
+        }
+        if (x.m_step != nullptr || (start <= end && (start < 1
+                || end > static_cast<int64_t>(characters.size())))) {
+            throw ImpliedDoLoopNotEvaluated();
         }
         std::string result;
-        for (int64_t i = start; i <= end && i <= static_cast<int64_t>(characters.size()); i++) {
+        for (int64_t i = start; i <= end; i++) {
             result += characters[i - 1];
         }
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
@@ -453,158 +398,202 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_StringItem(const ASR::StringItem_t &x) {
-        this->visit_expr(*x.m_arg);
-        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(value);
+        ASR::StringConstant_t* str_const =
+            evaluate_constant_of<ASR::StringConstant_t>(*x.m_arg);
         std::vector<std::string> characters = ASRUtils::string_value_characters(
             str_const->m_s, ASRUtils::extract_kind_from_ttype_t(str_const->m_type));
-        this->visit_expr(*x.m_idx);
-        int64_t idx = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+        int64_t idx = evaluate_constant_of<ASR::IntegerConstant_t>(*x.m_idx)->m_n;
+        if (idx < 1 || idx > static_cast<int64_t>(characters.size())) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
         std::string result = characters[idx - 1];
         value = ASRUtils::EXPR(ASR::make_StringConstant_t(al, x.base.base.loc,
             s2c(al, result), x.m_type));
     }
 
-
-
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
-        value = nullptr;
-        this->visit_expr(*x.m_left);
-        ASR::expr_t* left_val = value;
-        value = nullptr;
-        this->visit_expr(*x.m_right);
-        ASR::expr_t* right_val = value;
-
-        if (left_val && right_val) {
-            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(left_val)->m_n;
-            int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(right_val)->m_n;
-            int64_t res;
-
-            switch (x.m_op) {
-                case ASR::binopType::Mul: res = a * b; break;
-                case ASR::binopType::Add: res = a + b; break;
-                case ASR::binopType::Sub: res = a - b; break;
-                case ASR::binopType::Div: res = b != 0 ? a / b : 0; break;
-                case ASR::binopType::Pow: res = static_cast<int64_t>(std::pow(a, b)); break;
-                default:
-                    diag.add(Diagnostic("Unsupported binary operation in implied do loop",
-                                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-            }
-            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, res, x.m_type));
-        } else {
-            value = nullptr;
+        ASR::expr_t* left_val = &evaluate_constant_of<ASR::IntegerConstant_t>(
+            *x.m_left)->base;
+        ASR::expr_t* right_val = &evaluate_constant_of<ASR::IntegerConstant_t>(
+            *x.m_right)->base;
+        switch (x.m_op) {
+            case ASR::binopType::Add:
+            case ASR::binopType::Sub:
+            case ASR::binopType::Mul:
+            case ASR::binopType::Div:
+            case ASR::binopType::Pow:
+                break;
+            default:
+                throw ImpliedDoLoopNotEvaluated();
+        }
+        bool division_by_zero = false;
+        value = ASRUtils::fold_binop_constants(al, left_val, right_val, x.m_op,
+            x.base.base.loc, x.m_type, division_by_zero);
+        if (value == nullptr) {
+            throw ImpliedDoLoopNotEvaluated();
         }
     }
 
+    // The element `element_idx` of an array value, or the whole array
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
-        if (element_idx != -1) {
-            ASR::ttype_t* base_type = ASRUtils::extract_type(x.m_type);
-            int kind = ASRUtils::extract_kind_from_ttype_t(base_type);
-            if (ASRUtils::is_integer(*base_type)) {
-                if (kind == 4) {
-                    int32_t val = ((int32_t*)x.m_data)[element_idx];
-                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, val, base_type));
-                } else if (kind == 8) {
-                    int64_t val = ((int64_t*)x.m_data)[element_idx];
-                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, val, base_type));
-                } else {
-                    LCOMPILERS_ASSERT(false);
-                }
-            } else if (ASRUtils::is_real(*base_type)) {
-                if (kind == 4) {
-                    float val = ((float*)x.m_data)[element_idx];
-                    value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, val, base_type));
-                } else if (kind == 8) {
-                    double val = ((double*)x.m_data)[element_idx];
-                    value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, val, base_type));
-                } else {
-                    LCOMPILERS_ASSERT(false);
-                }
-            } else {
-                value = nullptr;
-            }
-        } else {
+        if (element_idx == -1) {
             value = const_cast<ASR::expr_t*>(&(x.base));
+            return;
         }
+        if (element_idx >= ASRUtils::get_fixed_size_of_array(x.m_type)
+                || !ASRUtils::is_array_constant_element_type(
+                    ASRUtils::type_get_past_array(
+                        ASRUtils::type_get_past_allocatable(x.m_type)))) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        value = ASRUtils::fetch_ArrayConstant_value(al,
+            const_cast<ASR::ArrayConstant_t*>(&x), element_idx);
     }
 
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t &x) {
         this->visit_expr(*x.m_array);
     }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
-        double left_val, right_val;
-        this->visit_expr(*x.m_left);
-        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            left_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
-        } else {
-            left_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
-        }
-        this->visit_expr(*x.m_right);
-        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            right_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
-        } else {
-            right_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
-        }
-        double res;
-        switch (x.m_op) {
-            case ASR::binopType::Mul:
-                res = left_val * right_val;
-                break;
+    // `left op right` for the operands of a RealBinOp or ComplexBinOp
+    void fold_binop(const ASR::expr_t &left, const ASR::expr_t &right,
+            ASR::binopType op, const Location &loc, ASR::ttype_t* type) {
+        ASR::expr_t* left_val = evaluate_constant(left);
+        ASR::expr_t* right_val = evaluate_constant(right);
+        bool supported = false;
+        switch (op) {
             case ASR::binopType::Add:
-                res = left_val + right_val;
-                break;
             case ASR::binopType::Sub:
-                res = left_val - right_val;
-                break;
+            case ASR::binopType::Mul:
             case ASR::binopType::Div:
-                res = left_val / right_val;
+                supported = left_val->type == right_val->type;
                 break;
             case ASR::binopType::Pow:
-                res = std::pow(left_val, right_val);
+                supported = left_val->type == right_val->type
+                    || ASR::is_a<ASR::IntegerConstant_t>(*right_val);
                 break;
             default:
-                diag.add(Diagnostic("Unsupported binary operation in implied do loop",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+                break;
         }
-        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, res, x.m_type));
+        if (!supported || !(ASR::is_a<ASR::RealConstant_t>(*left_val)
+                || ASR::is_a<ASR::ComplexConstant_t>(*left_val))) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        bool division_by_zero = false;
+        value = ASRUtils::fold_binop_constants(al, left_val, right_val, op,
+            loc, type, division_by_zero);
+        if (value == nullptr) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
     }
 
-     inline size_t get_max_args(ASRUtils::IntrinsicElementalFunctions id) {
-        if( name2signature_varargs.find(id) == name2signature_varargs.end() ) {
-            return 1;
-        }
-        return name2signature_varargs.at(id);
+    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+        fold_binop(*x.m_left, *x.m_right, x.m_op, x.base.base.loc, x.m_type);
     }
-    // handle intrinsic elemental function
+
+    void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
+        fold_binop(*x.m_left, *x.m_right, x.m_op, x.base.base.loc, x.m_type);
+    }
+
+    std::complex<double> get_complex_value(const ASR::expr_t &x) {
+        ASR::expr_t* val = evaluate_constant(x);
+        if (!ASR::is_a<ASR::ComplexConstant_t>(*val)) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(val);
+        return std::complex<double>(c->m_re, c->m_im);
+    }
+
+    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
+        std::complex<double> res = -get_complex_value(*x.m_arg);
+        value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc,
+            res.real(), res.imag(), x.m_type));
+    }
+
+    void visit_ComplexCompare(const ASR::ComplexCompare_t &x) {
+        std::complex<double> left_val = get_complex_value(*x.m_left);
+        std::complex<double> right_val = get_complex_value(*x.m_right);
+        bool res;
+        switch (x.m_op) {
+            case ASR::cmpopType::Eq: res = left_val == right_val; break;
+            case ASR::cmpopType::NotEq: res = left_val != right_val; break;
+            default: throw ImpliedDoLoopNotEvaluated();
+        }
+        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, res, x.m_type));
+    }
+
+    bool get_logical_value(const ASR::expr_t &x) {
+        ASR::expr_t* val = evaluate_constant(x);
+        if (!ASR::is_a<ASR::LogicalConstant_t>(*val)) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        return ASR::down_cast<ASR::LogicalConstant_t>(val)->m_value;
+    }
+
+    void visit_LogicalNot(const ASR::LogicalNot_t &x) {
+        bool res = !get_logical_value(*x.m_arg);
+        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, res, x.m_type));
+    }
+
+    void visit_LogicalBinOp(const ASR::LogicalBinOp_t &x) {
+        bool left_val = get_logical_value(*x.m_left);
+        bool right_val = get_logical_value(*x.m_right);
+        bool res;
+        if (!ASRUtils::fold_logical_binop(x.m_op, left_val, right_val, res)) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, res, x.m_type));
+    }
+
+    void visit_Cast(const ASR::Cast_t &x) {
+        ASR::expr_t* arg_value = evaluate_constant(*x.m_arg);
+        // The cast is folded only if the argument has been evaluated to a
+        // scalar constant of its type, e.g. `t(i)` with a real component
+        if (!ASRUtils::is_value_constant(arg_value)
+                || ASRUtils::is_array(ASRUtils::expr_type(arg_value))
+                || ASRUtils::expr_type(arg_value)->type
+                    != ASRUtils::extract_type(ASRUtils::expr_type(x.m_arg))->type) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        value = ASRUtils::expr_value(ASRUtils::EXPR(
+            ASRUtils::make_Cast_t_value(al, x.base.base.loc, arg_value, x.m_kind, x.m_type)));
+        if (value == nullptr) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+    }
+
+    // The intrinsic is evaluated for the type of `x`, which carries the
+    // kind of a kind argument, e.g. real(16) for `real(k, 16)`
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
         Vec<ASR::expr_t*> args; args.reserve(al, x.n_args);
         for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i] == nullptr) {
+                args.push_back(al, nullptr);
+                continue;
+            }
             ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
-            this->visit_expr(*x.m_args[i]);
             // TODO: handle multiple types
             if (ASRUtils::is_real(*arg_type) || ASRUtils::is_integer(*arg_type)
                     || ASRUtils::is_logical(*arg_type) || ASRUtils::is_character(*arg_type)) {
-                args.push_back(al, value);
+                args.push_back(al, evaluate_constant(*x.m_args[i]));
             } else {
-                diag.add(Diagnostic("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+                throw ImpliedDoLoopNotEvaluated();
             }
         }
-        size_t max_args = get_max_args(static_cast<ASRUtils::IntrinsicElementalFunctions>(x.m_intrinsic_id));
-        for (size_t i = x.n_args; i < max_args; i++) args.push_back(al, nullptr);
-        ASRUtils::create_intrinsic_function create_func =
-                ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(x.m_intrinsic_id);
-        ASR::asr_t* intrinsic_asr = create_func == nullptr ? nullptr :
-                create_func(al, x.base.base.loc, args, diag);
-        ASR::expr_t* intrinsic_value = intrinsic_asr == nullptr ? nullptr :
-                ASRUtils::expr_value(ASRUtils::EXPR(intrinsic_asr));
+        // `eval_Mod` divides by the second argument unchecked
+        int64_t divisor = -1;
+        if (x.m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::Mod)
+                && args.size() == 2 && args[1] != nullptr
+                && ASRUtils::extract_value(args[1], divisor) && divisor == 0) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        ASRUtils::eval_intrinsic_function eval =
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_eval_function(x.m_intrinsic_id);
+        diag::Diagnostics eval_diag;
+        ASR::expr_t* intrinsic_value = eval == nullptr ? nullptr :
+            eval(al, x.base.base.loc, x.m_type, args, eval_diag);
         if (intrinsic_value == nullptr) {
-            diag.add(Diagnostic("Intrinsic cannot be evaluated at compile time in implied do loop",
-                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
+            throw ImpliedDoLoopNotEvaluated();
         }
         this->visit_expr(*intrinsic_value);
     }
@@ -2672,6 +2661,9 @@ public:
 
     // implied do loop nesting
     int idl_nesting_level = 0;
+    // Set when a value of the implied do loop being evaluated at compile
+    // time cannot be evaluated
+    bool idl_not_evaluated = false;
     // Whether the implied do loops being visited are in an array constructor
     bool in_array_constructor = false;
     // The variables of the implied do loops whose values are being visited
@@ -24527,6 +24519,22 @@ public:
         return true;
     }
 
+    // Whether every value of `idl` and of the loops nested in it is a scalar
+    static bool implied_do_loop_has_scalar_values(ASR::ImpliedDoLoop_t* idl) {
+        for (size_t i = 0; i < idl->n_values; i++) {
+            ASR::expr_t* value = idl->m_values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                if (!implied_do_loop_has_scalar_values(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(value))) {
+                    return false;
+                }
+            } else if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     void fetch_implied_do_loop_variables(ASR::ImpliedDoLoop_t* idl, std::vector<ASR::symbol_t*>& loop_vars) {
         ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(idl->m_var);
         loop_vars.push_back(var->m_v);
@@ -24539,25 +24547,109 @@ public:
         return;
     }
 
+    // Returns the structure constructor `expr`, a value of an implied do
+    // loop, as a StructConstant of its arguments evaluated at the loop
+    // indices of `visitor`, or nullptr if it cannot be evaluated.
+    ASR::expr_t* get_implied_do_struct_constant(ASR::expr_t* expr,
+            ImpliedDoLoopValuesVisitor& visitor) {
+        ASR::expr_t* value = ASRUtils::expr_value(expr);
+        if (value && ASR::is_a<ASR::StructConstant_t>(*value)) {
+            return value;
+        }
+        if (!ASR::is_a<ASR::StructConstructor_t>(*expr)) {
+            return nullptr;
+        }
+        ASR::StructConstructor_t* sc = ASR::down_cast<ASR::StructConstructor_t>(expr);
+        auto evaluate = [&](ASR::expr_t* x) -> ASR::expr_t* {
+            if (ASRUtils::is_value_constant(ASRUtils::expr_value(x))) {
+                return ASRUtils::expr_value(x);
+            }
+            return visitor.evaluate_constant(*x);
+        };
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, sc->n_args);
+        for (size_t i = 0; i < sc->n_args; i++) {
+            ASR::call_arg_t arg = sc->m_args[i];
+            ASR::expr_t* arg_value = arg.m_value;
+            if (arg_value == nullptr
+                    || ASR::is_a<ASR::PointerNullConstant_t>(*arg_value)) {
+                args.push_back(al, arg);
+                continue;
+            }
+            if (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(arg_value))) {
+                arg.m_value = get_implied_do_struct_constant(arg_value, visitor);
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*arg_value)
+                    && !ASRUtils::is_value_constant(ASRUtils::expr_value(arg_value))) {
+                // `t([i, -i])` for an array component
+                ASR::ArrayConstructor_t* ac =
+                    ASR::down_cast<ASR::ArrayConstructor_t>(arg_value);
+                Vec<ASR::expr_t*> elements;
+                elements.reserve(al, ac->n_args);
+                for (size_t j = 0; j < ac->n_args; j++) {
+                    ASR::expr_t* element = ASRUtils::is_array(
+                        ASRUtils::expr_type(ac->m_args[j]))
+                        ? nullptr : evaluate(ac->m_args[j]);
+                    if (element == nullptr
+                            || !ASRUtils::is_value_constant(element)) {
+                        return nullptr;
+                    }
+                    elements.push_back(al, element);
+                }
+                arg.m_value = ASRUtils::expr_value(ASRUtils::EXPR(
+                    ASRUtils::make_ArrayConstructor_t_util(al, arg_value->base.loc,
+                        elements.p, elements.size(), ac->m_type,
+                        ac->m_storage_format)));
+            } else {
+                arg.m_value = evaluate(arg_value);
+            }
+            if (arg.m_value == nullptr
+                    || !ASRUtils::is_value_constant(arg.m_value)) {
+                return nullptr;
+            }
+            args.push_back(al, arg);
+        }
+        // The values are checked against the components' types
+        return get_folded_struct_constant(expr->base.loc, sc->m_dt_sym,
+            args.p, args.size(), sc->m_type);
+    }
+
     template<typename T>
     T get_constant_value(ASR::expr_t* expr, ImpliedDoLoopValuesVisitor& visitor) {
-        visitor.value = nullptr;
-        visitor.visit_expr(*expr);
-        T res;
+        T res{};
+        try {
+            if constexpr (std::is_same_v<T, ASR::expr_t*>) {
+                return get_implied_do_struct_constant(expr, visitor);
+            }
+            visitor.value = nullptr;
+            visitor.visit_expr(*expr);
+        } catch (const ImpliedDoLoopNotEvaluated&) {
+            idl_not_evaluated = true;
+            return res;
+        }
+        // The value has to be a constant of the element type
+        ASR::expr_t* v = visitor.value;
+        auto not_evaluated = [&]() {
+            idl_not_evaluated = true;
+            return T{};
+        };
         if constexpr (std::is_same_v<T,bool>) {
-            res = ASR::down_cast<ASR::LogicalConstant_t>(visitor.value)->m_value;
+            if (v == nullptr || !ASR::is_a<ASR::LogicalConstant_t>(*v)) return not_evaluated();
+            res = ASR::down_cast<ASR::LogicalConstant_t>(v)->m_value;
         } else if constexpr (std::is_same_v<T,int> || std::is_same_v<T,int64_t>) {
-            res = static_cast<T>(ASR::down_cast<ASR::IntegerConstant_t>(visitor.value)->m_n);
+            if (v == nullptr || !ASR::is_a<ASR::IntegerConstant_t>(*v)) return not_evaluated();
+            res = static_cast<T>(ASR::down_cast<ASR::IntegerConstant_t>(v)->m_n);
         } else if constexpr (std::is_same_v<T,float> || std::is_same_v<T,double>) {
-            res = static_cast<T>(ASR::down_cast<ASR::RealConstant_t>(visitor.value)->m_r);
+            if (v == nullptr || !ASR::is_a<ASR::RealConstant_t>(*v)) return not_evaluated();
+            res = static_cast<T>(ASR::down_cast<ASR::RealConstant_t>(v)->m_r);
         } else if constexpr (std::is_same_v<T,std::complex<float>>
                 || std::is_same_v<T,std::complex<double>>) {
-            ASR::ComplexConstant_t* cc =
-                ASR::down_cast<ASR::ComplexConstant_t>(visitor.value);
+            if (v == nullptr || !ASR::is_a<ASR::ComplexConstant_t>(*v)) return not_evaluated();
+            ASR::ComplexConstant_t* cc = ASR::down_cast<ASR::ComplexConstant_t>(v);
             using V = typename T::value_type;
             res = T(static_cast<V>(cc->m_re), static_cast<V>(cc->m_im));
         } else if constexpr (std::is_same_v<T,char*>) {
-            res = ASR::down_cast<ASR::StringConstant_t>(visitor.value)->m_s;
+            if (v == nullptr || !ASR::is_a<ASR::StringConstant_t>(*v)) return not_evaluated();
+            res = ASR::down_cast<ASR::StringConstant_t>(v)->m_s;
         }
         return res;
     }
@@ -24579,7 +24671,7 @@ public:
             }
         }
         */
-        ImpliedDoLoopValuesVisitor index_bound_visitor(al, loop_vars, loop_indices, nullptr, idl->m_type, diag);
+        ImpliedDoLoopValuesVisitor index_bound_visitor(al, loop_vars, loop_indices, nullptr, idl->m_type);
         int64_t end;
         if (ASRUtils::expr_value(idl->m_end)) {
             end = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(idl->m_end))->m_n;
@@ -24602,8 +24694,14 @@ public:
         } else {
             increment = 1;
         }
+        if (idl_not_evaluated) {
+            curr_nesting_level--;
+            return;
+        }
 
-        for ( int64_t j = start; j <= end; j += increment ) {
+        // A negative step counts down to the end
+        for ( int64_t j = start; increment > 0 ? j <= end : (increment < 0 && j >= end);
+                j += increment ) {
             loop_indices[curr_nesting_level] = j;
             for ( size_t i = 0; i < idl->n_values; i++ ) {
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i])) {
@@ -24616,13 +24714,13 @@ public:
                     }
                     
                     for (int64_t element_idx = 0; element_idx < n_elements; ++element_idx) {
-                        ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, nullptr, idl->m_type, diag);
+                        ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, nullptr, idl->m_type);
                         visitor.element_idx = element_idx;
                         array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
                         itr++;
                     }
                 } else {
-                    ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, nullptr, idl->m_type, diag);
+                    ImpliedDoLoopValuesVisitor visitor(al, loop_vars, loop_indices, nullptr, idl->m_type);
                     array.push_back(al, get_constant_value<T>(idl->m_values[i], visitor));
                     itr++;
                 }
@@ -24788,6 +24886,7 @@ public:
 
             void *data = nullptr;
             int itr = 0, curr_nesting_level = 0;
+            idl_not_evaluated = false;
             // TODO: handle multiple types
             // populate compiletime array
             if (ASRUtils::is_integer(*type)) {
@@ -24843,16 +24942,32 @@ public:
                 int len = -1;
                 ASRUtils::extract_value(
                     ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(type))->m_len, len);
-                char* char_data = new char[len * itr + 1];
-                for (int i = 0; i < itr; i++) {
-                    for (int j = 0; j < len; j++) {
-                        char_data[i*len + j] = array.p[i][j];
+                if (!idl_not_evaluated) {
+                    char* char_data = new char[len * itr + 1];
+                    for (int i = 0; i < itr; i++) {
+                        for (int j = 0; j < len; j++) {
+                            char_data[i*len + j] = array.p[i][j];
+                        }
                     }
+                    char_data[len * itr] = '\0';
+                    data = (void*) char_data;
                 }
-                char_data[len * itr] = '\0';
-                data = (void*) char_data;
+            } else if (ASR::is_a<ASR::StructType_t>(*type)
+                    && implied_do_loop_has_scalar_values(idl)) {
+                // `[(t(10*i), i=1,3)]`: an array of StructConstants, which a
+                // module variable or a saved variable can be initialized with
+                Vec<ASR::expr_t*> array; array.reserve(al, 1);
+                populate_compiletime_array_for_idl(idl, array, loop_vars, loop_indices, curr_nesting_level, itr);
+                // A zero-trip loop gives an empty array, as `[t ::]` does
+                bool all_constant = true;
+                for (int i = 0; i < itr; i++) {
+                    all_constant = all_constant && array.p[i] != nullptr;
+                }
+                if (all_constant) {
+                    data = ASRUtils::set_ArrayConstant_data(array.p, itr, type);
+                }
             }
-            if (data != nullptr) {
+            if (data != nullptr && !idl_not_evaluated) {
                 Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                 ASR::dimension_t dim; dim.loc = x.base.base.loc;
                 dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4))));
