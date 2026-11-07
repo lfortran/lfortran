@@ -4605,7 +4605,20 @@ module cc1_ambiguous_generic
             real, intent(in), optional :: r
         end subroutine
     end interface
+
+    ! Only the errors in the declarations: the dummy arguments are dropped.
+    interface cc1_amb_after_error
+        module procedure cc1_amb_err_a, cc1_amb_err_b
+    end interface
 contains
+    subroutine cc1_amb_err_a(x)
+        type(cc1_undefined_a) :: x  ! {Error} Derived type `cc1_undefined_a` is not defined
+    end subroutine
+
+    subroutine cc1_amb_err_b(x)
+        type(cc1_undefined_b) :: x  ! {Error} Derived type `cc1_undefined_b` is not defined
+    end subroutine
+
     subroutine cc1_visit_circle(v, c)
         class(cc1_visitor), intent(in) :: v
         class(cc1_circle), intent(in) :: c

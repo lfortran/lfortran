@@ -1904,6 +1904,38 @@ semantic error: Variable 'cc1_char_len_nundef' is not declared
 4578 |     character(len=cc1_char_len_nundef) :: c*4  ! {Error} Variable 'cc1_char_len_nundef' is not declared
      |                   ^^^^^^^^^^^^^^^^^^^ 'cc1_char_len_nundef' is undeclared
 
+semantic error: Derived type `cc1_undefined_a` is not defined
+    --> tests/errors/continue_compilation_1.f90:4615:9
+     |
+4615 |         type(cc1_undefined_a) :: x  ! {Error} Derived type `cc1_undefined_a` is not defined
+     |         ^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_1.f90:4614:5 - 4616:18
+     |
+4614 |        subroutine cc1_amb_err_a(x)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4616 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type `cc1_undefined_b` is not defined
+    --> tests/errors/continue_compilation_1.f90:4619:9
+     |
+4619 |         type(cc1_undefined_b) :: x  ! {Error} Derived type `cc1_undefined_b` is not defined
+     |         ^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_1.f90:4618:5 - 4620:18
+     |
+4618 |        subroutine cc1_amb_err_b(x)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4620 |        end subroutine
+     | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: ambiguous interfaces in generic 'cc1_amb_names' for 'cc1_amb_x' and 'cc1_amb_y'
     --> tests/errors/continue_compilation_1.f90:4596:9
      |

@@ -4976,12 +4976,17 @@ public:
             bool known = ASR::is_a<ASR::StructType_t>(*t)
                 ? d && ASR::is_a<ASR::Struct_t>(*d)
                     && !ASRUtils::is_unlimited_polymorphic_type(t)
-                    && ASR::down_cast<ASR::Struct_t>(d)->n_kind_params == 0
-                    && !ASR::down_cast<ASR::Struct_t>(d)->m_is_sequence
-                    && ASR::down_cast<ASR::Struct_t>(d)->m_abi != ASR::abiType::BindC
                 : ASR::is_a<ASR::Integer_t>(*t) || ASR::is_a<ASR::Real_t>(*t)
                     || ASR::is_a<ASR::Complex_t>(*t) || ASR::is_a<ASR::Logical_t>(*t)
                     || ASR::is_a<ASR::String_t>(*t);
+            // Type parameters can also come from a parent type.
+            for (ASR::Struct_t *st = known && ASR::is_a<ASR::StructType_t>(*t)
+                    ? ASR::down_cast<ASR::Struct_t>(d) : nullptr; st && known;
+                    st = st->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(st->m_parent)) : nullptr) {
+                known = st->n_kind_params == 0 && !st->m_is_sequence
+                    && st->m_abi != ASR::abiType::BindC;
+            }
             if (!known || std::string(v->m_name) == "__lfortran_alt_ret"
                     || ASRUtils::is_assumed_rank_array(v->m_type)
                     || (v->m_intent == ASRUtils::intent_unspecified
@@ -5024,10 +5029,11 @@ public:
             || (!generic_tkr_compatible(a, b) && !generic_tkr_compatible(b, a));
     }
 
-    // Whether rule (1) or (3) of F2018 C1514 holds for `one` against `other`
-    // (their dummy arguments without the passed-object ones). For rule (1),
-    // X is taken from either, which makes more procedures distinguishable.
-    static bool generic_rule_1_or_3(const std::vector<ASR::Variable_t*> &one,
+    // Whether the counting rule or the position rule of F2018 C1514 holds
+    // for `one` against `other` (their dummy arguments without the
+    // passed-object ones). For the counting rule, the dummy data object X is
+    // taken from either, which makes more procedures distinguishable.
+    static bool generic_counting_or_position_rule(const std::vector<ASR::Variable_t*> &one,
             const std::vector<ASR::Variable_t*> &other) {
         auto optional = [](ASR::Variable_t *v) {
             return v->m_presence == ASR::presenceType::Optional;
@@ -5043,7 +5049,7 @@ public:
                 if (n_compatible > n_not_distinguishable) return true;
             }
         }
-        // Rule (3), only by position: a nonoptional dummy argument that
+        // The position rule, without its name part: a nonoptional dummy argument that
         // `other` has none or a distinguishable one at the position of. Not
         // checking the name too only makes more procedures distinguishable.
         for (size_t i = 0; i < one.size(); i++) {
@@ -5057,9 +5063,7 @@ public:
 
     // Reports each pair of the specific procedures of the generic `generic`
     // that violates F2018 C1514. A pair is taken to be distinguishable
-    // whenever generic_dummies() cannot decide. Rule (2) never applies: the
-    // passed-object dummies of the bindings of one type are not
-    // distinguishable.
+    // whenever generic_dummies() cannot decide.
     void check_generic_distinguishable(const std::string &generic,
             const std::vector<GenericCandidate> &specifics) {
         for (size_t j = 1; j < specifics.size(); j++) {
@@ -5069,8 +5073,11 @@ public:
                 if (a.f == b.f || (a.f->m_return_var == nullptr)
                             != (b.f->m_return_var == nullptr)
                         || !generic_dummies(a, da) || !generic_dummies(b, db)
-                        || generic_rule_1_or_3(da, db)
-                        || generic_rule_1_or_3(db, da)) {
+                        || (a.pass >= 0 && b.pass >= 0 && generic_distinguishable(
+                            ASRUtils::EXPR2VAR(a.f->m_args[a.pass]),
+                            ASRUtils::EXPR2VAR(b.f->m_args[b.pass])))
+                        || generic_counting_or_position_rule(da, db)
+                        || generic_counting_or_position_rule(db, da)) {
                     continue;
                 }
                 std::vector<Label> labels = {Label("'" + b.name + "' is not "
