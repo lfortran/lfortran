@@ -6285,6 +6285,22 @@ public:
             throw SemanticAbort();
         }
         ASR::expr_t* constant = ASRUtils::expr_value(value);
+        // A character constant is padded with blanks or truncated to the
+        // length of the component
+        if (constant && ASR::is_a<ASR::StringConstant_t>(*constant)
+                && ASR::is_a<ASR::String_t>(*object_type)) {
+            ASR::String_t* object_str = ASR::down_cast<ASR::String_t>(object_type);
+            ASR::String_t* value_str = ASR::down_cast<ASR::String_t>(
+                ASRUtils::expr_type(constant));
+            int64_t object_len = 0, value_len = 0;
+            if (object_str->m_len && value_str->m_len
+                    && ASRUtils::extract_value(object_str->m_len, object_len)
+                    && ASRUtils::extract_value(value_str->m_len, value_len)
+                    && object_len != value_len) {
+                constant = ASRUtils::adjust_character_length(constant,
+                    object_len, value_len, loc, al);
+            }
+        }
         ASR::Variable_t* arr_var = nullptr;
         int64_t flat = 0;
         ASR::expr_t* element_value = nullptr;
