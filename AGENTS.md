@@ -390,6 +390,8 @@ only once, redirect to a log file and then examine the log file.
   (`NDEBUG`) build and also uses `-Werror`, matching Exhaustive's
   `Check Release build`.
   Exhaustive checks add missing configurations without replaying Quick.
+  The one exception is the Metal and CUDA-on-CPU suites, which Exhaustive
+  runs with `--fast`, as Quick does, and without it.
   LLVM-WASM, no-LLVM and MLIR belong only to Quick, including on main.
   The LLVM 19 WASM compiler is also a Debug build compiled with `-O2`; its
   WASI and Emscripten suites run in two parallel jobs.
