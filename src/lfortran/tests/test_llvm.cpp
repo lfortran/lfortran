@@ -7941,6 +7941,7 @@ bool reductions_rewrite(const std::string &ir, const llvm::TargetMachine &tm) {
     return changed;
 }
 
+#if LLVM_VERSION_MAJOR >= 11
 // The same sum of squares in a loop. BASES defines the four vectors %v0 to
 // %v3 from the loop-carried vector %x and the loaded vectors %la and %lb,
 // and UPDATE defines %x.next. The pass clears the fourth component unless it
@@ -8017,12 +8018,19 @@ std::string reductions_replace(std::string ir, const std::string &from,
     return ir;
 }
 
+#endif
+
 } // namespace
 
 TEST_CASE("LLVM horizontal reductions of four vector squares") {
     std::unique_ptr<llvm::TargetMachine> x86
         = reductions_target_machine("x86_64-unknown-linux-gnu", "x86-64");
     if (x86) {
+#if LLVM_VERSION_MAJOR < 11
+        // The pass needs LLVM 11 or later; before that it leaves the
+        // function as it is.
+        CHECK(!reductions_rewrite(reductions_sum_ir, *x86));
+#else
         // The pass replaces the shuffle transpose with horizontal adds.
         CHECK(reductions_rewrite(reductions_sum_ir, *x86));
         // A CPU with AVX enables it without a target-features attribute,
@@ -8067,6 +8075,7 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
             "  %v2 = fsub fast <4 x double> %v0, %x\n"
             "  %v3 = fadd fast <4 x double> %v0, %x\n",
             "  %x.next = fadd fast <4 x double> %x, %x\n", *x86));
+#endif
     }
     // Other targets are left to LLVM.
     std::unique_ptr<llvm::TargetMachine> arm
@@ -8076,7 +8085,8 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
     }
     // The rewritten function computes the same value when it runs. It
     // needs AVX to run, so it only runs on an x86 host with AVX.
-#if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__) \
+    && LLVM_VERSION_MAJOR >= 11
     if (x86 && __builtin_cpu_supports("avx")) {
         LCompilers::LLVMEvaluator e;
         std::unique_ptr<llvm::Module> m = e.parse_module(reductions_sum_ir, "");
