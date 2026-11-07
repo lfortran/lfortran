@@ -4032,6 +4032,27 @@ inline std::string fetch_ArrayConstant_value(const ASR::ArrayConstant_t &x, int6
     return fetch_ArrayConstant_value(x.m_data, type, i);
 }
 
+// Whether an ArrayConstant can hold elements of `type`, i.e. whether
+// `fetch_ArrayConstant_value_helper` supports it
+inline bool is_array_constant_element_type(ASR::ttype_t* type) {
+    int kind = ASRUtils::extract_kind_from_ttype_t(type);
+    switch (type->type) {
+        case ASR::ttypeType::Integer:
+        case ASR::ttypeType::UnsignedInteger:
+            return kind == 1 || kind == 2 || kind == 4 || kind == 8;
+        case ASR::ttypeType::Real:
+        case ASR::ttypeType::Complex:
+            return kind == 4 || kind == 8;
+        case ASR::ttypeType::Logical:
+        case ASR::ttypeType::String:
+        case ASR::ttypeType::StructType:
+        case ASR::ttypeType::CPtr:
+            return true;
+        default:
+            return false;
+    }
+}
+
 ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Location& loc, void *data, ASR::ttype_t* type, int64_t i);
 
 inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, ASR::ArrayConstant_t* x, int64_t i) {

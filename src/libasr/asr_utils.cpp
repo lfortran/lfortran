@@ -12486,7 +12486,7 @@ ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
         if (dims[i].m_start) {
             ASR::expr_t* lb_value =
                 ASRUtils::expr_value(dims[i].m_start);
-            if (lb_value &&
+            if (lb_value == nullptr ||
                     !ASRUtils::extract_value(lb_value, lower_bound)) {
                 return nullptr;
             }
