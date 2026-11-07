@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cctype>
 #include <iostream>
 #include <map>
@@ -144,26 +145,6 @@ CPreprocessor::CPreprocessor(CompilerOptions &compiler_options)
 std::string CPreprocessor::token(unsigned char *tok, unsigned char* cur) const
 {
     return std::string((char *)tok, cur - tok);
-}
-
-void handle_continuation_lines(std::string &s, unsigned char *&cur);
-
-std::string parse_continuation_lines(unsigned char *&cur) {
-    std::string output;
-    while (*cur != '\n') {
-        output += *cur;
-        cur++;
-    }
-    cur++;
-    handle_continuation_lines(output, cur);
-    return output;
-}
-
-void handle_continuation_lines(std::string &s, unsigned char *&cur) {
-    if (s.size() > 0 && s[s.size()-1] == '\\') {
-        s = s.substr(0, s.size()-1);
-        s += parse_continuation_lines(cur);
-    }
 }
 
 // Parse a macro declaration argument, e.g. in:
@@ -332,16 +313,198 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
 
 }
 
+namespace {
+
+// Piecewise linear map from offsets in the spliced text to offsets in the
+// original text: offset `p >= spliced[k]` (the last such `k`) maps to
+// `orig[k] + (p - spliced[k])`.
+struct SpliceMap {
+    std::vector<uint32_t> spliced{0};
+    std::vector<uint32_t> orig{0};
+    // Positions in the spliced text that end the original (physical) lines,
+    // used to compute the original line numbers (e.g. for `__LINE__`). A
+    // spliced newline is represented by the character preceding the splice.
+    std::vector<uint32_t> newlines;
+
+    void add(size_t spliced_pos, size_t orig_pos) {
+        if (spliced.back() == spliced_pos) {
+            orig.back() = source_offset(orig_pos);
+        } else {
+            spliced.push_back(source_offset(spliced_pos));
+            orig.push_back(source_offset(orig_pos));
+        }
+    }
+
+    // Index of the linear piece containing `pos`
+    size_t piece(uint32_t pos) const {
+        return std::upper_bound(spliced.begin(), spliced.end(), pos)
+            - spliced.begin() - 1;
+    }
+
+    uint32_t map(uint32_t pos) const {
+        size_t k = piece(pos);
+        return orig[k] + (pos - spliced[k]);
+    }
+};
+
+// Splice lines like the (traditional) C preprocessor does before anything
+// else: every backslash followed by optional horizontal whitespace and a
+// newline is removed, everywhere in the source. The removed newlines are
+// emitted after the end of the logical line, so that the following lines keep
+// their line numbers. Returns false if there is nothing to splice.
+bool splice_lines(const std::string &input, std::string &out,
+        SpliceMap &splices) {
+    size_t n = input.size();
+    size_t pending = 0;
+    bool spliced = false;
+    size_t i = 0;
+    out.reserve(n);
+    while (i < n) {
+        char c = input[i];
+        if (c == '\\') {
+            size_t j = i + 1;
+            while (j < n && (input[j] == ' ' || input[j] == '\t'
+                    || input[j] == '\v' || input[j] == '\f'
+                    || input[j] == '\r')) j++;
+            if (j < n && input[j] == '\n') {
+                spliced = true;
+                splices.newlines.push_back(
+                    source_offset(out.empty() ? 0 : out.size() - 1));
+                pending++;
+                i = j + 1;
+                splices.add(out.size(), i);
+                continue;
+            }
+        }
+        if (c == '\n') splices.newlines.push_back(source_offset(out.size()));
+        out.push_back(c);
+        i++;
+        if (c == '\n' && pending > 0) {
+            splices.add(out.size(), i);
+            out.append(pending, '\n');
+            splices.add(out.size(), i);
+            pending = 0;
+        }
+    }
+    if (pending > 0) {
+        splices.add(out.size(), i);
+        out.append(pending, '\n');
+        splices.add(out.size(), i);
+    }
+    return spliced;
+}
+
+// Map the location `loc` in the spliced text to the original text
+void unsplice_location(Location &loc, const SpliceMap &splices) {
+    uint32_t first = loc.first, last = loc.last;
+    loc.first = splices.map(first);
+    loc.last = last < first ? loc.first : splices.map(last);
+}
+
+}
+
 Result<std::string> CPreprocessor::run(const std::string &input, LocationManager &lm,
         cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics,
         bool macro_expansion) const {
+    std::string spliced;
+    SpliceMap splices;
+    if (macro_expansion || !splice_lines(input, spliced, splices)) {
+        return run_spliced(input, lm, macro_definitions, diagnostics,
+            macro_expansion, nullptr);
+    }
+    size_t n_newlines0 = lm.files.back().in_newlines0.size();
+    size_t n_newlines = lm.files.back().in_newlines.size();
+    size_t n_starts = lm.files.back().out_start0.size();
+    size_t n_intervals = lm.files.back().in_size0.size();
+    size_t n_diagnostics = diagnostics.diagnostics.size();
+    Result<std::string> res = run_spliced(spliced, lm, macro_definitions,
+        diagnostics, macro_expansion, &splices.newlines);
+    for (size_t i = n_diagnostics; i < diagnostics.diagnostics.size(); i++) {
+        for (auto &label : diagnostics.diagnostics[i].labels) {
+            for (auto &span : label.spans) {
+                unsplice_location(span.loc, splices);
+            }
+        }
+    }
+    LocationManager::FileLocations &fl = lm.files.back();
+    if (!res.ok) {
+        if (!fl.preprocessor) {
+            // The location manager was reset to the (spliced) input
+            fl.in_newlines.resize(n_newlines);
+            lm.init_simple(input);
+        }
+        return res;
+    }
+    // Line numbers refer to the original text
+    fl.in_newlines0.resize(n_newlines0);
+    lm.get_newlines(input, fl.in_newlines0);
+    // Map the intervals created for the spliced text to the original text,
+    // splitting the 1:1 intervals where a line was spliced
+    std::vector<uint32_t> out_start0(fl.out_start0.begin(),
+        fl.out_start0.begin() + n_starts);
+    std::vector<uint32_t> in_start0(fl.in_start0.begin(),
+        fl.in_start0.begin() + n_starts);
+    std::vector<uint32_t> in_size0(fl.in_size0.begin(),
+        fl.in_size0.begin() + n_intervals);
+    std::vector<uint32_t> interval_type0(fl.interval_type0.begin(),
+        fl.interval_type0.begin() + n_intervals);
+    size_t n_new = fl.in_size0.size() - n_intervals;
+    for (size_t k = 0; k < n_new; k++) {
+        uint32_t out = fl.out_start0[n_starts + k];
+        uint32_t in = fl.in_start0[n_starts + k];
+        uint32_t size = fl.in_size0[n_intervals + k];
+        uint32_t type = fl.interval_type0[n_intervals + k];
+        if (type == 0) {
+            uint32_t in_end = in + (fl.out_start0[n_starts + k + 1] - out);
+            for (;;) {
+                size_t next = splices.piece(in) + 1;
+                uint32_t piece_end = in_end;
+                if (next < splices.spliced.size()
+                        && splices.spliced[next] < in_end) {
+                    piece_end = splices.spliced[next];
+                }
+                out_start0.push_back(out);
+                in_start0.push_back(splices.map(in));
+                in_size0.push_back(piece_end - in);
+                interval_type0.push_back(0);
+                if (piece_end == in_end) break;
+                out += piece_end - in;
+                in = piece_end;
+            }
+        } else {
+            uint32_t orig_in = splices.map(in);
+            out_start0.push_back(out);
+            in_start0.push_back(orig_in);
+            in_size0.push_back(size == 0 ? 0
+                : splices.map(in + size - 1) + 1 - orig_in);
+            interval_type0.push_back(type);
+        }
+    }
+    out_start0.push_back(fl.out_start0.back());
+    in_start0.push_back(source_offset(input.size()));
+    fl.out_start0 = out_start0;
+    fl.in_start0 = in_start0;
+    fl.in_size0 = in_size0;
+    fl.interval_type0 = interval_type0;
+    return res;
+}
+
+Result<std::string> CPreprocessor::run_spliced(const std::string &input,
+        LocationManager &lm, cpp_symtab &macro_definitions,
+        diag::Diagnostics &diagnostics, bool macro_expansion,
+        const std::vector<uint32_t> *newlines) const {
     LCOMPILERS_ASSERT(input[input.size()] == '\0');
     bool fixed_form_comments = compiler_options.fixed_form && !macro_expansion;
     unsigned char *string_start=(unsigned char*)(&input[0]);
     unsigned char *cur = string_start;
     std::string output;
     lm.files.back().preprocessor = true;
-    lm.get_newlines(input, lm.files.back().in_newlines0);
+    if (newlines) {
+        lm.files.back().in_newlines0.insert(lm.files.back().in_newlines0.end(),
+            newlines->begin(), newlines->end());
+    } else {
+        lm.get_newlines(input, lm.files.back().in_newlines0);
+    }
     lm.files.back().out_start0.push_back(0);
     lm.files.back().in_start0.push_back(0);
     std::vector<ConditionalDirective> ConditionalDirective_stack;
@@ -426,7 +589,6 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 if (t3 != nullptr) {
                     LCOMPILERS_ASSERT(t4 != nullptr);
                     macro_subs = token(t3, t4);
-                    handle_continuation_lines(macro_subs, cur);
                 }
                 CPPMacro fn;
                 fn.expansion = macro_subs;
@@ -439,7 +601,6 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);
-                handle_continuation_lines(macro_subs, cur);
                 CPPMacro fn;
                 fn.expansion = macro_subs;
                 macro_definitions[macro_name] = fn;
@@ -451,7 +612,6 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);
-                handle_continuation_lines(macro_subs, cur);
                 CPPMacro fn;
                 fn.function_like = true;
                 fn.args = {};
@@ -464,7 +624,6 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 if (!branch_enabled) continue;
                 std::string macro_name = token(t1, t2),
                         macro_subs = token(t3, t4);
-                handle_continuation_lines(macro_subs, cur);
                 std::vector<std::string> args = parse_arguments(string_start, t2, true);
                 CPPMacro fn;
                 fn.function_like = true;
@@ -1047,7 +1206,6 @@ void get_next_token(unsigned char *string_start, unsigned char *&cur, CPPTokenTy
             whitespace { continue; }
             "//" [^\n\x00]* { continue; }
             "/*" ([^*\x00] | "*"[^/\x00])* "*/" { continue; }
-            "\\" whitespace? newline { continue; }
             "+" { type = CPPTokenType::TK_PLUS; return; }
             "-" { type = CPPTokenType::TK_MINUS; return; }
             "*" { type = CPPTokenType::TK_MUL; return; }

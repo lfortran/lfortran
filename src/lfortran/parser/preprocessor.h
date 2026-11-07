@@ -42,6 +42,15 @@ public:
         loc.first = source_offset(tok-string_start);
         loc.last = source_offset(cur-string_start-1);
     }
+
+private:
+    // Preprocess `input` in which backslash-newline sequences have already
+    // been spliced (called by `run`). `newlines` are the positions in `input`
+    // that end the original lines (if nullptr, the newlines of `input`).
+    Result<std::string> run_spliced(const std::string &input,
+        LocationManager &lm, cpp_symtab &macro_definitions,
+        diag::Diagnostics &diagnostics, bool macro_expansion,
+        const std::vector<uint32_t> *newlines) const;
 };
 
 std::string function_like_macro_expansion(
