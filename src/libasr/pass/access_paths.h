@@ -341,6 +341,114 @@ inline ASR::symbol_t *designator_base(ASR::expr_t *e) {
     }
 }
 
+// Whether a value of the type of `e` may hold a pointer, through which a
+// procedure handed it as an intent(in) argument could still change storage.
+inline bool may_hold_pointer(ASR::expr_t *e) {
+    ASR::ttype_t *type = ASRUtils::expr_type(e);
+    if (ASRUtils::is_pointer(type)) return true;
+    ASR::ttype_t *t = ASRUtils::extract_type(type);
+    if (ASR::is_a<ASR::Integer_t>(*t) || ASR::is_a<ASR::UnsignedInteger_t>(*t)
+            || ASR::is_a<ASR::Real_t>(*t) || ASR::is_a<ASR::Complex_t>(*t)
+            || ASR::is_a<ASR::Logical_t>(*t) || ASR::is_a<ASR::String_t>(*t)) {
+        return false;
+    }
+    if (!ASR::is_a<ASR::StructType_t>(*t)
+            || ASR::down_cast<ASR::StructType_t>(t)
+                ->m_is_unlimited_polymorphic) {
+        return true;
+    }
+    ASR::symbol_t *declaration = ASRUtils::get_struct_sym_from_struct_expr(e);
+    if (declaration == nullptr) return true;
+    // The components, and those of the derived-type components, to a depth.
+    std::vector<std::pair<ASR::symbol_t*, int>> todo{{declaration, 0}};
+    while (!todo.empty()) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            todo.back().first);
+        int depth = todo.back().second;
+        todo.pop_back();
+        if (depth > 8 || !ASR::is_a<ASR::Struct_t>(*sym)) return true;
+        ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(sym);
+        if (st->m_parent) todo.push_back({st->m_parent, depth + 1});
+        for (auto &item : st->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (ASRUtils::is_pointer(v->m_type)) return true;
+            ASR::ttype_t *m = ASRUtils::extract_type(v->m_type);
+            if (ASR::is_a<ASR::StructType_t>(*m)) {
+                if (v->m_type_declaration == nullptr) return true;
+                todo.push_back({v->m_type_declaration, depth + 1});
+            } else if (!ASR::is_a<ASR::Integer_t>(*m)
+                    && !ASR::is_a<ASR::UnsignedInteger_t>(*m)
+                    && !ASR::is_a<ASR::Real_t>(*m)
+                    && !ASR::is_a<ASR::Complex_t>(*m)
+                    && !ASR::is_a<ASR::Logical_t>(*m)
+                    && !ASR::is_a<ASR::String_t>(*m)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// The paths an array designator may name through a local pointer that the
+// procedure associates with several things, each of which `path_of`
+// follows (`p => x` in one branch, `p => y` in the other, as the lowering of
+// an optional argument does): one path for each, and the subscripts it
+// evaluates. False for any other designator, and for a pointer that may
+// point to anything else.
+inline bool alternative_paths(const PointerTargets &pointers, ASR::expr_t *e,
+        std::vector<Path> &paths, std::vector<ASR::expr_t*> *subscripts) {
+    while (true) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            continue;
+        }
+        ASR::array_index_t *args = nullptr;
+        size_t n_args = 0;
+        if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            ASR::ArraySection_t *a = ASR::down_cast<ASR::ArraySection_t>(e);
+            args = a->m_args;
+            n_args = a->n_args;
+            e = a->m_v;
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            ASR::ArrayItem_t *a = ASR::down_cast<ASR::ArrayItem_t>(e);
+            args = a->m_args;
+            n_args = a->n_args;
+            e = a->m_v;
+        } else {
+            break;
+        }
+        for (size_t i = 0; subscripts && i < n_args; i++) {
+            if (args[i].m_left) subscripts->push_back(args[i].m_left);
+            if (args[i].m_right) subscripts->push_back(args[i].m_right);
+            if (args[i].m_step) subscripts->push_back(args[i].m_step);
+        }
+    }
+    if (!ASR::is_a<ASR::Var_t>(*e)) return false;
+    ASR::symbol_t *p = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(e)->m_v);
+    if (!is_pointer_variable(p) || pointers.unknown.count(p) > 0) {
+        return false;
+    }
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(p);
+    auto it = pointers.targets.find(p);
+    if (v->m_intent != ASR::intentType::Local
+            || v->m_storage == ASR::storage_typeType::Save
+            || it == pointers.targets.end() || it->second.size() < 2) {
+        return false;
+    }
+    std::vector<Path> found;
+    for (ASR::expr_t *target : it->second) {
+        Path path;
+        // The subscripts of a target were evaluated where it was
+        // associated, not here.
+        if (!path_of(pointers, target, path, nullptr)) return false;
+        found.push_back(path);
+    }
+    paths.insert(paths.end(), found.begin(), found.end());
+    return true;
+}
+
 // Whether `fn` is contained in the procedure whose scope is `routine`, and
 // so may access its variables by host association.
 inline bool contained_in(ASR::Function_t *fn, SymbolTable *routine) {

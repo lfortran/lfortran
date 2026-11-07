@@ -197,7 +197,10 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx);
 void lfortran_gpu_wait(lfortran_gpu_ctx* ctx);
 // The host is about to free the `size` bytes at `ptr`, and no longer needs
 // what a launch since the last sync wrote there: the runtime forgets the
-// range without copying anything back.
+// range without copying anything back. A pending launch that uses the range
+// in place is waited for first, so the compiler hands a local array that a
+// launch only reads here too, instead of waiting for every launch that
+// reads host memory in place (lfortran_gpu_wait).
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size);
 // Called right before lfortran_gpu_sync or lfortran_gpu_wait: the host does
 // not change the `size` bytes at `ptr` from there until a launch reads them

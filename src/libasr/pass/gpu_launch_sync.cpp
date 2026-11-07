@@ -71,10 +71,17 @@ return with launches pending:
 Storage a launch only reads the runtime may hand the kernel in place (the
 unified and managed memory models), so a GpuWait -- wait for the launches
 that read host memory in place, copying nothing back -- goes before a host
-statement that may change or free storage a pending launch reads, at the
-end of a `block` whose locals a pending launch reads, and where any GpuSync
-would go. Accesses are not split into reads and writes: a statement that
-may access such storage, other than by evaluating an expression, waits.
+statement that may change or free storage a pending launch reads, and
+where any GpuSync would go. A statement that may access such storage waits,
+except where it only reads it: by evaluating an expression, such as the value
+of an assignment, or as an actual argument of an intent(in) dummy of a
+deferring twin that cannot change it through a pointer.
+
+A local array of a procedure or `block` that a pending launch reads, where
+its storage ends, is handed to GpuDiscard instead: the runtime waits there
+only for a launch that uses that storage in place (one whose array is copied
+to the device need not be waited for), not for every launch that reads host
+memory in place, such as one that reads the arrays of the caller.
 
 Where the host does not change an array a launch since the last wait read
 until a later launch reads it, a GpuKeep naming it goes right before the
@@ -866,11 +873,29 @@ private:
         }
     }
 
+    // Whether no launch can still use the storage of the dummy `d` once the
+    // launch is made: a scalar of an intrinsic type, which a launch is handed
+    // by value (a kernel scalar argument), and which a kernel never writes
+    // (the host combines a reduction into it after a sync), such as the
+    // extents pass_array_by_data adds.
+    static bool launch_copies(ASR::Variable_t *d) {
+        ASR::ttype_t *type = d->m_type;
+        if (ASRUtils::is_array(type) || ASRUtils::is_pointer(type)
+                || ASRUtils::is_allocatable(type)) {
+            return false;
+        }
+        return ASR::is_a<ASR::Integer_t>(*type)
+            || ASR::is_a<ASR::UnsignedInteger_t>(*type)
+            || ASR::is_a<ASR::Real_t>(*type)
+            || ASR::is_a<ASR::Complex_t>(*type)
+            || ASR::is_a<ASR::Logical_t>(*type);
+    }
+
     // What the launches a twin leaves pending may write and read, as
     // paths rooted at its dummies: what its syncs were placed to leave,
     // when this pass placed them, otherwise what its declaration allows --
     // writes of what a dummy that is not intent(in) holds, and reads of what
-    // any dummy holds.
+    // any dummy holds, except a scalar a launch is handed by value.
     const Deferral::Pending &twin_pending(ASR::Function_t *t) {
         if (deferral.own.count(t) > 0) {
             deferral.place(t);
@@ -885,7 +910,7 @@ private:
         for (size_t i = 0; i < t->n_args; i++) {
             ASR::Variable_t *d = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(t->m_args[i])->m_v);
-            if (d->m_value_attr) continue;
+            if (d->m_value_attr || launch_copies(d)) continue;
             Path q;
             q.root = &d->base;
             if (d->m_intent != ASR::intentType::In) {
@@ -908,30 +933,42 @@ private:
         const Location &loc = x.base.base.loc;
         Accesses acc;
         AccessCollector c(acc, routine, pointers, outside, &summaries);
+        // What the call only reads: the actual arguments of intent(in)
+        // dummies the twin cannot change through a pointer.
+        Accesses read;
+        AccessCollector r(read, routine, pointers, outside, &summaries);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::expr_t *arg = x.m_args[i].m_value;
             if (arg == nullptr) continue;
-            bool handed = i < t->n_args && handed_pending(
-                ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(
-                    t->m_args[i])->m_v));
-            Path p;
+            ASR::Variable_t *dummy = i < t->n_args
+                ? ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(
+                    t->m_args[i])->m_v) : nullptr;
+            bool handed = dummy != nullptr && handed_pending(dummy);
+            std::vector<Path> paths;
             std::vector<ASR::expr_t*> subscripts;
-            if (!handed || !path_of(pointers, arg, p, &subscripts)) {
-                c.visit_expr(*arg);
+            if (!handed || !designated_paths(arg, paths, &subscripts)) {
+                if (dummy != nullptr && only_read(dummy, arg)) {
+                    r.visit_expr(*arg);
+                } else {
+                    c.visit_expr(*arg);
+                }
                 continue;
             }
             for (ASR::expr_t *sub : subscripts) c.visit_expr(*sub);
-            if (is_pointer_variable(p.root)) acc.globals = true;
-            if (!reachable_elsewhere(p.root, routine)
-                    && escaped.count(p.root) == 0) {
-                continue;
+            for (const Path &p : paths) {
+                if (is_pointer_variable(p.root)) acc.globals = true;
+                if (!reachable_elsewhere(p.root, routine)
+                        && escaped.count(p.root) == 0) {
+                    continue;
+                }
+                acc.paths.push_back(p);
             }
-            acc.paths.push_back(p);
         }
         // The twin may access what other procedures can reach, and stop.
         acc.globals = true;
         if (acts_outside(t, outside)) acc.observable = true;
         if (!s.stops.empty()) sync(s, emit, out, loc);
+        before(read, s, emit, out, loc);
         before(acc, s, emit, out, loc, true);
         if (emit) out->push_back(al, &x.base);
         const Deferral::Pending &pending = twin_pending(t);
@@ -944,17 +981,19 @@ private:
                         == nullptr) {
                     continue;
                 }
-                Path p;
-                if (!path_of(pointers, x.m_args[e.first].m_value, p,
+                std::vector<Path> actual;
+                if (!designated_paths(x.m_args[e.first].m_value, actual,
                         nullptr)) {
                     (pass == 0 ? wait_written : wait_read) = true;
                     continue;
                 }
-                p.members.insert(p.members.end(), e.second.members.begin(),
-                    e.second.members.end());
-                p.shallow = e.second.shallow;
-                if (pass == 0) s.add_written(p);
-                else s.add_read(p);
+                for (Path &p : actual) {
+                    p.members.insert(p.members.end(),
+                        e.second.members.begin(), e.second.members.end());
+                    p.shallow = e.second.shallow;
+                    if (pass == 0) s.add_written(p);
+                    else s.add_read(p);
+                }
             }
         }
         s.any = true;
@@ -963,6 +1002,36 @@ private:
         } else if (wait_read) {
             wait(s, emit, out, loc);
         }
+    }
+
+    // Whether a call only reads its actual argument `arg` of the dummy `d`:
+    // an intent(in) dummy, which the callee does not change, unless through
+    // a pointer the value holds or the dummy is.
+    static bool only_read(ASR::Variable_t *d, ASR::expr_t *arg) {
+        return d->m_intent == ASR::intentType::In && !d->m_value_attr
+            && !ASRUtils::is_pointer(d->m_type) && !may_hold_pointer(arg);
+    }
+
+    // The path of the designator `e` (path_of), or, through a local pointer
+    // the procedure associates with one of a few arrays, one path for each
+    // (alternative_paths), and the subscripts evaluated on the way.
+    bool designated_paths(ASR::expr_t *e, std::vector<Path> &paths,
+            std::vector<ASR::expr_t*> *subscripts) {
+        Path p;
+        std::vector<ASR::expr_t*> own;
+        if (path_of(pointers, e, p, subscripts ? &own : nullptr)) {
+            paths.push_back(p);
+        } else {
+            own.clear();
+            if (!alternative_paths(pointers, e, paths,
+                    subscripts ? &own : nullptr)) {
+                return false;
+            }
+        }
+        if (subscripts) {
+            subscripts->insert(subscripts->end(), own.begin(), own.end());
+        }
+        return true;
     }
 
     // Makes the call `x` name the twin of the procedure it calls, which
@@ -1115,21 +1184,51 @@ private:
                 == ASR::intentType::Local;
     }
 
-    // Tells the runtime to forget what pending launches write into the
-    // locals of `scope`, which end here.
+    // Whether the storage of the local `root` of `scope` ends with the scope
+    // and is an array the runtime can be handed by its address and size.
+    static bool ending_array(ASR::symbol_t *root, SymbolTable *scope) {
+        if (!is_local(root, scope)) return false;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(root);
+        return v->m_storage != ASR::storage_typeType::Save
+            && ASRUtils::is_array(v->m_type);
+    }
+
+    // Tells the runtime that the locals of `scope` end here: it forgets
+    // what pending launches write into them, and waits for the pending
+    // launches that read them in place, if any (lfortran_gpu_discard).
     void discard_locals(SymbolTable *scope, State &s, bool emit,
             Vec<ASR::stmt_t*> *out, const Location &loc) {
         // A local a pending launch reads in place ends too: its storage
-        // must outlive the read.
+        // must outlive the read. The runtime knows whether a launch reads
+        // the storage of a whole array in place, and waits for it when the
+        // array is discarded; only another local, or what a pointer may
+        // point to, makes the host wait for every launch that reads host
+        // memory in place.
+        bool must_wait = false;
         for (const Path &p : s.read) {
-            if ((may_point_anywhere(p.root) && has_target_locals(scope))
-                    || is_local(p.root, scope)) {
-                wait(s, emit, out, loc);
-                break;
+            if (may_point_anywhere(p.root) && has_target_locals(scope)) {
+                must_wait = true;
+            } else if (is_local(p.root, scope)) {
+                must_wait = must_wait || !ending_array(p.root, scope)
+                    || !p.members.empty() || p.shallow;
             }
         }
         Vec<ASR::expr_t*> vars;
         vars.reserve(al, 1);
+        if (must_wait) {
+            wait(s, emit, out, loc);
+        } else {
+            std::vector<Path> read_kept;
+            for (const Path &p : s.read) {
+                if (!is_local(p.root, scope)) {
+                    read_kept.push_back(p);
+                    continue;
+                }
+                vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    p.root)));
+            }
+            s.read = read_kept;
+        }
         std::vector<Path> kept;
         bool must_sync = false;
         // The status buffers of the pending launches that may have recorded
@@ -1164,8 +1263,15 @@ private:
                 kept.push_back(p);
                 continue;
             }
-            vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                p.root)));
+            bool listed = false;
+            for (size_t i = 0; i < vars.size(); i++) {
+                listed = listed || ASR::down_cast<ASR::Var_t>(vars[i])->m_v
+                    == p.root;
+            }
+            if (!listed) {
+                vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                    p.root)));
+            }
         }
         if (must_sync) {
             sync(s, emit, out, loc);
@@ -1320,7 +1426,33 @@ private:
             if (handling == GpuBufferHandling::Scratch) continue;
             Path p;
             std::vector<ASR::expr_t*> subscripts;
+            std::vector<Path> alternatives;
             if (!path_of(pointers, arg, p, &subscripts)) {
+                std::vector<ASR::expr_t*> alternative_subscripts;
+                // Through a local pointer associated with one of a few
+                // arrays here: the launch uses whichever it is.
+                if (e.m_member == nullptr
+                        && !ASR::is_a<ASR::StructType_t>(
+                            *ASRUtils::extract_type(ASRUtils::expr_type(arg)))
+                        && alternative_paths(pointers, arg, alternatives,
+                            &alternative_subscripts)) {
+                    for (ASR::expr_t *sub : alternative_subscripts) {
+                        c.visit_expr(*sub);
+                    }
+                    for (const Path &q : alternatives) {
+                        if (handling == GpuBufferHandling::HostCopy) {
+                            acc.paths.push_back(q);
+                        } else if (handling
+                                == GpuBufferHandling::HostCopyShallow) {
+                            Path r = q;
+                            r.shallow = true;
+                            acc.paths.push_back(r);
+                        }
+                        if (e.m_written) writes.push_back(q);
+                        else reads.push_back(q);
+                    }
+                    continue;
+                }
                 if (!is_pointer_variable(designator_base(arg))) {
                     // Not a designator this pass follows: the host may
                     // access anything for it, and the kernel may write
@@ -1415,6 +1547,54 @@ private:
             out->push_back(al, ASRUtils::STMT(ASR::make_GpuDiscard_t(al, loc,
                 forget.p, forget.n)));
         }
+    }
+
+    // Whether evaluating `e` calls a function that may change an actual
+    // argument: one that is not pure and has a dummy that is a pointer or
+    // neither intent(in) nor `value` (the lowering of an intrinsic gives
+    // its functions intent(in) dummies).
+    static bool changes_arguments(ASR::expr_t *e) {
+        class Changes : public ASR::BaseWalkVisitor<Changes> {
+        public:
+            bool found = false;
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                ASR::symbol_t *f = ASRUtils::symbol_get_past_external(
+                    x.m_name);
+                if (!ASR::is_a<ASR::Function_t>(*f)) {
+                    found = true;
+                    return;
+                }
+                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(f);
+                for (size_t i = 0; i < fn->n_args && !found
+                        && !ASRUtils::get_FunctionType(fn)->m_pure; i++) {
+                    ASR::symbol_t *d = ASR::is_a<ASR::Var_t>(*fn->m_args[i])
+                        ? ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v
+                        : nullptr;
+                    if (d == nullptr || !ASR::is_a<ASR::Variable_t>(*d)) {
+                        found = true;
+                        break;
+                    }
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(d);
+                    found = ASRUtils::is_pointer(v->m_type)
+                        || (v->m_intent != ASR::intentType::In
+                            && !v->m_value_attr);
+                }
+                BaseWalkVisitor::visit_FunctionCall(x);
+            }
+        } v;
+        v.visit_expr(*e);
+        return v.found;
+    }
+
+    // A statement that may change whatever it accesses.
+    State process_accesses(ASR::stmt_t *x, State s, bool emit,
+            Vec<ASR::stmt_t*> *out, const Location &loc) {
+        Accesses acc;
+        AccessCollector c(acc, routine, pointers, outside, &summaries);
+        c.visit_stmt(*x);
+        before(acc, s, emit, out, loc, true);
+        if (emit) out->push_back(al, x);
+        return s;
     }
 
     State process(ASR::stmt_t *x, State s, bool emit,
@@ -1677,19 +1857,29 @@ private:
                 if (emit) out->push_back(al, x);
                 return s;
             }
-            case ASR::stmtType::Assignment:
+            case ASR::stmtType::Assignment: {
+                // The value is only read, as an expression, unless a function
+                // it calls may change an argument: storage a pending launch
+                // only reads needs no wait for that. The target is written.
+                ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(x);
+                if (a->m_overloaded != nullptr || a->m_move_allocation
+                        || changes_arguments(a->m_value)) {
+                    return process_accesses(x, s, emit, out, loc);
+                }
+                before(expression_accesses(a->m_value, routine, pointers,
+                    outside, &summaries), s, emit, out, loc);
+                before(expression_accesses(a->m_target, routine, pointers,
+                    outside, &summaries), s, emit, out, loc, true);
+                if (emit) out->push_back(al, x);
+                return s;
+            }
             case ASR::stmtType::Allocate:
             case ASR::stmtType::ReAlloc:
             case ASR::stmtType::DebugCheckArrayBounds:
             case ASR::stmtType::IntrinsicImpureSubroutine:
             case ASR::stmtType::Expr:
             case ASR::stmtType::CPtrToPointer: {
-                Accesses acc;
-                AccessCollector c(acc, routine, pointers, outside, &summaries);
-                c.visit_stmt(*x);
-                before(acc, s, emit, out, loc, true);
-                if (emit) out->push_back(al, x);
-                return s;
+                return process_accesses(x, s, emit, out, loc);
             }
             default: {
                 // Input/output, and anything this pass does not know: wait

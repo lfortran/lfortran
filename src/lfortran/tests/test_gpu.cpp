@@ -1,6 +1,8 @@
 #include <tests/doctest.h>
 
+#include <algorithm>
 #include <fstream>
+#include <functional>
 #include <sstream>
 
 #include <libasr/asr_text.h>
@@ -2262,6 +2264,217 @@ end program
     CHECK(gpu_sync_trace(source, "sync_twins", "to_shared") == "[L|]S");
     CHECK(gpu_sync_trace(source, "sync_twins", "checked") == "[L|]S[|]");
     CHECK(gpu_sync_trace(source, "", "sync_twins_main") == "CSCCS");
+}
+
+TEST_CASE("GPU twins return without waiting for the launches that read "
+        "their locals") {
+    // The second launch of `two_steps` reads the local `t` that the first
+    // writes, and the launch of `shifted` reads the optional `bias` through
+    // the pointer the lowering of optional arguments associates with
+    // `bias` or a local placeholder. Where those locals end, the runtime is
+    // handed them to wait for a launch that uses their storage in place
+    // (GpuDiscard), so neither twin waits for every launch that reads host
+    // memory in place, such as the ones that read `x`.
+    const std::string source = R"(
+module sync_locals
+implicit none
+contains
+subroutine two_steps(x, y)
+    real, intent(in) :: x(:)
+    real, intent(out) :: y(:)
+    real :: t(size(x))
+    integer :: i
+    do concurrent (i = 1:size(x))
+        t(i) = 2*x(i)
+    end do
+    do concurrent (i = 1:size(x))
+        y(i) = t(i) + x(i)
+    end do
+end subroutine
+subroutine shifted(x, y, bias)
+    real, contiguous, intent(in) :: x(:)
+    real, contiguous, intent(out) :: y(:)
+    real, contiguous, intent(in), optional :: bias(:)
+    integer :: i
+    do concurrent (i = 1:size(x))
+        y(i) = x(i)
+        if (present(bias)) y(i) = y(i) + bias(i)
+    end do
+end subroutine
+end module
+)";
+    CHECK(gpu_sync_trace(source, "sync_locals", "two_steps") == "[L|][L|]D");
+    CHECK(gpu_sync_trace(source, "sync_locals", "shifted") == "[[|]L|]D");
+}
+
+// The buffer arguments of every kernel of `source` after the Metal pipeline
+// up to gpu_launch_sync, as `name:W` when the kernel may write it and
+// `name:R` otherwise, sorted.
+static std::vector<std::string> gpu_buffer_access(const std::string &source) {
+    CompilerOptions options;
+    options.gpu_backend = "metal";
+    options.po.gpu_offload_metal = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "gpu_buffer_access.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    ASR::TranslationUnit_t &unit = *parsed.result;
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_vector_lanes", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, &unit, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    std::vector<std::string> access;
+    std::function<void(SymbolTable*)> walk = [&](SymbolTable *scope) {
+        for (auto &item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)
+                    && !ASR::is_a<ASR::Module_t>(*item.second)) {
+                continue;
+            }
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(
+                    item.second);
+                for (size_t i = 0; f->m_gpu && i < f->m_gpu->n_buffers;
+                        i++) {
+                    const ASR::gpu_kernel_argument_t &b =
+                        f->m_gpu->m_buffers[i];
+                    access.push_back(std::string(ASRUtils::symbol_name(
+                        b.m_variable)) + (b.m_written ? ":W" : ":R"));
+                }
+            }
+            walk(ASRUtils::symbol_symtab(item.second));
+        }
+    };
+    walk(unit.m_symtab);
+    std::sort(access.begin(), access.end());
+    return access;
+}
+
+TEST_CASE("A GPU kernel that binds a view of an array only reads it") {
+    // The elemental call on a section of `k` in the inner loop gets a
+    // pointer bound to the section in the kernel; nothing is written through
+    // it, so `k` stays an argument the kernel only reads, which the runtime
+    // need not keep as one the kernel writes (nor wait for when a launch
+    // wrote part of it).
+    const std::string source = R"(
+module kernel_views
+use, intrinsic :: iso_fortran_env, only: int16, real32
+implicit none
+contains
+pure elemental function widen(x) result(y)
+    integer(int16), intent(in) :: x
+    real(real32) :: y
+    y = real(x, real32)
+end function
+pure subroutine scores_of(q, k, s)
+    integer(int16), contiguous, intent(in) :: q(:,:), k(:,:)
+    real(real32), contiguous, intent(out) :: s(:,:)
+    integer :: h, t
+    do concurrent (h = 1:size(q,2))
+        block
+            real(real32) :: qv(size(q,1))
+            qv = widen(q(:,h))*2
+            do concurrent (t = 1:size(k,2))
+                s(t,h) = sum(qv*widen(k(:,t)))
+            end do
+        end block
+    end do
+end subroutine
+end module
+)";
+    std::vector<std::string> access = gpu_buffer_access(source);
+    std::string joined;
+    for (const std::string &a : access) joined += a + " ";
+    INFO(joined);
+    CHECK(std::find(access.begin(), access.end(), "k:R") != access.end());
+    CHECK(std::find(access.begin(), access.end(), "k:W") == access.end());
+    CHECK(std::find(access.begin(), access.end(), "s:W") != access.end());
+}
+
+TEST_CASE("GPU host reads of what pending launches only read do not wait") {
+    // The host reads `x(1)` while the launch that reads `x` is pending, and
+    // `use_twice` hands `m`, whose component a pending launch reads, to an
+    // intent(in) dummy: neither changes what the launches read, so neither
+    // waits. Writing `x(2)` does.
+    const std::string source = R"(
+module sync_reads
+implicit none
+type :: matrix
+    real, allocatable :: w(:)
+end type
+contains
+subroutine apply(m, x, y)
+    type(matrix), intent(in) :: m
+    real, contiguous, intent(in) :: x(:)
+    real, contiguous, intent(out) :: y(:)
+    integer :: i
+    do concurrent (i = 1:size(x))
+        y(i) = m%w(i)*x(i)
+    end do
+end subroutine
+subroutine use_twice(m, x, y, z)
+    type(matrix), intent(in) :: m
+    real, contiguous, intent(in) :: x(:)
+    real, contiguous, intent(inout) :: y(:), z(:)
+    call apply(m, x, y)
+    call apply(m, y, z)
+end subroutine
+end module
+program sync_reads_main
+use sync_reads
+implicit none
+real :: x(100000), y(100000), z(100000), s
+integer :: i
+x = 1
+do concurrent (i = 1:size(x))
+    y(i) = 2*x(i)
+end do
+s = x(1) + 1
+do concurrent (i = 1:size(x))
+    z(i) = 3*x(i)
+end do
+x(2) = s
+print *, y(1), z(1)
+end program
+)";
+    CHECK(gpu_sync_trace(source, "sync_reads", "use_twice") == "CC");
+    CHECK(gpu_sync_trace(source, "", "sync_reads_main") == "[L|][L|]WS");
+    // An assignment whose value calls a function that may change its
+    // argument, here what the pending launch reads, waits as before.
+    const std::string impure = R"(
+module sync_impure
+implicit none
+contains
+real function bump(a)
+    real, intent(inout) :: a(:)
+    a(1) = a(1) + 1
+    bump = a(1)
+end function
+end module
+program sync_impure_main
+use sync_impure
+implicit none
+real :: x(100000), y(100000), s
+integer :: i
+x = 1
+do concurrent (i = 1:size(x))
+    y(i) = 2*x(i)
+end do
+s = bump(x)
+print *, s, y(1)
+end program
+)";
+    CHECK(gpu_sync_trace(impure, "", "sync_impure_main") == "[L|]WS");
 }
 
 #endif

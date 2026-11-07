@@ -1,3 +1,4 @@
+#include <map>
 #include <set>
 
 #include <libasr/asr_builder.h>
@@ -857,13 +858,31 @@ public:
 // known to only read it: an operand of an expression, a subscript, the
 // value of an assignment, an inquiry about its shape, or an actual argument
 // of an `intent(in)` dummy argument. Anything else -- the target of an
-// assignment, what an `allocate` or `deallocate` names, an alias bound to
-// it, its address, an argument of a dummy that may be defined, or a
-// statement this does not know -- counts as a write.
+// assignment, what an `allocate` or `deallocate` names, its address, an
+// argument of a dummy that may be defined, or a statement this does not
+// know -- counts as a write. A pointer the kernel binds to it (`p => x(:,i)`,
+// as for the section an elemental function is called with) writes it only
+// where the kernel writes through the pointer (`finish`).
 class KernelWrites : public ASR::BaseWalkVisitor<KernelWrites> {
 public:
     std::set<ASR::symbol_t*> written;
     std::set<ASR::symbol_t*> visited_blocks;
+    // The variables each pointer of the kernel is bound to.
+    std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> aliases;
+
+    // What is written through a pointer is written in what it is bound to.
+    void finish() {
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (auto &alias : aliases) {
+                if (written.count(alias.first) == 0) continue;
+                for (ASR::symbol_t *target : alias.second) {
+                    changed = written.insert(target).second || changed;
+                }
+            }
+        }
+    }
 
     void visit_stmt(const ASR::stmt_t &x) {
         switch (x.type) {
@@ -960,6 +979,22 @@ public:
                 const ASR::SubroutineCall_t &c =
                     *ASR::down_cast<ASR::SubroutineCall_t>(&x);
                 call_arguments(c.m_name, c.m_args, c.n_args, c.m_dt);
+                return;
+            }
+            case ASR::stmtType::Associate: {
+                // Binding the pointer reads the subscripts of the target.
+                const ASR::Associate_t &a =
+                    *ASR::down_cast<ASR::Associate_t>(&x);
+                ASR::symbol_t *target = root(a.m_value);
+                if (ASR::is_a<ASR::Var_t>(*a.m_target) && target != nullptr) {
+                    aliases[ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(a.m_target)->m_v)]
+                        .insert(target);
+                    visit_expr(*a.m_value);
+                    return;
+                }
+                AllNames names(written);
+                names.visit_stmt(x);
                 return;
             }
             default: {
@@ -1423,6 +1458,7 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     for (size_t i = 0; i < kernel.n_body; i++) {
         writes.visit_stmt(*kernel.m_body[i]);
     }
+    writes.finish();
     // The device reaches an allocatable array component of a derived-type
     // parameter through a parameter of its own, which the kernel names as
     // the component (`net%nodes_`): a write through the parameter may
