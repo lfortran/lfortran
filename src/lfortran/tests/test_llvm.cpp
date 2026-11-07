@@ -6410,6 +6410,10 @@ a = reshape([1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0], [2, 3])
     }
 }
 
+#ifndef __EMSCRIPTEN__
+// These tests run the expanded function through LLVMEvaluator's ORC JIT,
+// which the WASM build does not have (see the note at the top of this file).
+
 namespace {
 
 // sum(1/sqrt(i)**3, i = 1, n) in single precision, with fast math.
@@ -6620,6 +6624,8 @@ TEST_CASE("LLVM double precision reciprocal square roots with Newton steps in IR
         CHECK(!calls_intrinsic(f, "llvm.x86.avx512.rsqrt14.pd.512"));
     }
 }
+
+#endif // __EMSCRIPTEN__
 
 // Whether the LLVM IR defines (not merely declares) a function whose
 // definition line mentions `name`.
