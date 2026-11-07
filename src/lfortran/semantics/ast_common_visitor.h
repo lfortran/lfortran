@@ -188,35 +188,6 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     ASR::ttype_t* type;
     diag::Diagnostics& diag;
     int64_t element_idx;
-    const std::map<ASRUtils::IntrinsicElementalFunctions, size_t> name2signature_varargs = {
-        // max0 can accept any arbitrary number of arguments 2<=x<=100
-        {ASRUtils::IntrinsicElementalFunctions::Max, 100},
-        // min0 can accept any arbitrary number of arguments 2<=x<=100
-        {ASRUtils::IntrinsicElementalFunctions::Min, 100},
-        {ASRUtils::IntrinsicElementalFunctions::Aint, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Nint, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Anint, 2},
-        {ASRUtils::IntrinsicElementalFunctions::StringContainsSet, 4},
-        {ASRUtils::IntrinsicElementalFunctions::StringFindSet, 4},
-        {ASRUtils::IntrinsicElementalFunctions::SubstrIndex, 4},
-        {ASRUtils::IntrinsicElementalFunctions::Floor, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Ceiling, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Maskr, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Maskl, 2},
-        {ASRUtils::IntrinsicElementalFunctions::SelectedRealKind, 3},
-        {ASRUtils::IntrinsicElementalFunctions::Ishftc, 3},
-        {ASRUtils::IntrinsicElementalFunctions::Ichar, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Iachar, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Char, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Achar, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Logical, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Real, 2},
-        {ASRUtils::IntrinsicElementalFunctions::StorageSize, 2},
-        {ASRUtils::IntrinsicElementalFunctions::OutOfRange, 3},
-        {ASRUtils::IntrinsicElementalFunctions::StringLenTrim, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Int, 2},
-        {ASRUtils::IntrinsicElementalFunctions::Cmplx, 3},
-    };
 
     ImpliedDoLoopValuesVisitor(Allocator& al, std::vector<ASR::symbol_t*>& loop_vars, std::vector<int64_t>& loop_indices, ASR::expr_t* value_,
         ASR::ttype_t* type, diag::Diagnostics& diag) :
@@ -262,6 +233,16 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
             return;
         }
         throw ImpliedDoLoopNotEvaluated();
+    }
+
+    // The constant `x` evaluates to; throws if it cannot be evaluated
+    ASR::expr_t* evaluate_constant(const ASR::expr_t &x) {
+        value = nullptr;
+        this->visit_expr(x);
+        if (value == nullptr) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        return value;
     }
 
     void visit_Var(const ASR::Var_t &x) {
@@ -386,46 +367,21 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, res, x.m_type));
     }
 
+    // Real operands are evaluated by the shared folding helpers, which
+    // handle every kind: the value of a real(10) or real(16) constant is not
+    // stored as a double.
     void visit_RealCompare( const ASR::RealCompare_t &x ) {
-        double left_val, right_val;
-        this->visit_expr(*x.m_left);
-        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            left_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
-        } else {
-            left_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+        ASR::expr_t* left_val = evaluate_constant(*x.m_left);
+        ASR::expr_t* right_val = evaluate_constant(*x.m_right);
+        if (!ASR::is_a<ASR::RealConstant_t>(*left_val)
+                || !ASR::is_a<ASR::RealConstant_t>(*right_val)) {
+            throw ImpliedDoLoopNotEvaluated();
         }
-        this->visit_expr(*x.m_right);
-        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            right_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
-        } else {
-            right_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+        value = ASRUtils::fold_compare_constants(al, left_val, right_val,
+            x.m_op, x.base.base.loc, x.m_type);
+        if (value == nullptr) {
+            throw ImpliedDoLoopNotEvaluated();
         }
-        bool res;
-        switch (x.m_op) {
-            case ASR::cmpopType::Eq:
-                res = left_val == right_val;
-                break;
-            case ASR::cmpopType::NotEq:
-                res = left_val != right_val;
-                break;
-            case ASR::cmpopType::Gt:
-                res = left_val > right_val;
-                break;
-            case ASR::cmpopType::LtE:
-                res = left_val <= right_val;
-                break;
-            case ASR::cmpopType::Lt:
-                res = left_val < right_val;
-                break;
-            case ASR::cmpopType::GtE:
-                res = left_val >= right_val;
-                break;
-            default:
-                diag.add(Diagnostic("Unsupported comparison operation in implied do loop",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-        }
-        value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, res, x.m_type));
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
@@ -443,22 +399,22 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t &x) {
-        this->visit_expr(*x.m_arg);
-        if (ASR::is_a<ASR::RealConstant_t>(*value)
-                && ASRUtils::extract_kind_from_ttype_t(x.m_type) == 16) {
-            lf_float128 v = ASRUtils::real_constant_get_r16(
-                ASR::down_cast<ASR::RealConstant_t>(value));
+        ASR::expr_t* arg_val = evaluate_constant(*x.m_arg);
+        if (!ASR::is_a<ASR::RealConstant_t>(*arg_val)) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        ASR::RealConstant_t* arg = ASR::down_cast<ASR::RealConstant_t>(arg_val);
+        int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        if (kind == 16) {
             value = ASRUtils::make_RealConstant_r16(al, x.base.base.loc,
-                lf_f128_neg(v), x.m_type);
-            return;
-        }
-        double arg_val;
-        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            arg_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+                lf_f128_neg(ASRUtils::real_constant_get_r16(arg)), x.m_type);
+        } else if (kind == 10) {
+            value = ASRUtils::make_RealConstant_r10(al, x.base.base.loc,
+                -ASRUtils::real_constant_get_r10(arg), x.m_type);
         } else {
-            arg_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
+            value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc,
+                -arg->m_r, x.m_type));
         }
-        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, -arg_val, x.m_type));
     }
 
     void visit_LogicalConstant(const ASR::LogicalConstant_t &x) {
@@ -578,67 +534,53 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         this->visit_expr(*x.m_array);
     }
 
-    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
-        double left_val, right_val;
-        this->visit_expr(*x.m_left);
-        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            left_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
-        } else {
-            left_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
-        }
-        this->visit_expr(*x.m_right);
-        if (ASR::is_a<ASR::RealConstant_t>(*value)) {
-            right_val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
-        } else {
-            right_val = static_cast<double>(ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n);
-        }
-        double res;
-        switch (x.m_op) {
-            case ASR::binopType::Mul:
-                res = left_val * right_val;
-                break;
+    // `left op right` for the operands of a RealBinOp or ComplexBinOp
+    void fold_binop(const ASR::expr_t &left, const ASR::expr_t &right,
+            ASR::binopType op, const Location &loc, ASR::ttype_t* type) {
+        ASR::expr_t* left_val = evaluate_constant(left);
+        ASR::expr_t* right_val = evaluate_constant(right);
+        bool supported = false;
+        switch (op) {
             case ASR::binopType::Add:
-                res = left_val + right_val;
-                break;
             case ASR::binopType::Sub:
-                res = left_val - right_val;
-                break;
+            case ASR::binopType::Mul:
             case ASR::binopType::Div:
-                res = left_val / right_val;
+                supported = left_val->type == right_val->type;
                 break;
             case ASR::binopType::Pow:
-                res = std::pow(left_val, right_val);
+                supported = left_val->type == right_val->type
+                    || ASR::is_a<ASR::IntegerConstant_t>(*right_val);
                 break;
             default:
-                diag.add(Diagnostic("Unsupported binary operation in implied do loop",
-                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
+                break;
         }
-        value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, x.base.base.loc, res, x.m_type));
-    }
-
-    std::complex<double> get_complex_value(const ASR::expr_t &x) {
-        this->visit_expr(x);
-        if (value == nullptr || !ASR::is_a<ASR::ComplexConstant_t>(*value)) {
+        if (!supported || !(ASR::is_a<ASR::RealConstant_t>(*left_val)
+                || ASR::is_a<ASR::ComplexConstant_t>(*left_val))) {
             throw ImpliedDoLoopNotEvaluated();
         }
-        ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(value);
-        return std::complex<double>(c->m_re, c->m_im);
+        bool division_by_zero = false;
+        value = ASRUtils::fold_binop_constants(al, left_val, right_val, op,
+            loc, type, division_by_zero);
+        if (value == nullptr) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+    }
+
+    void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+        fold_binop(*x.m_left, *x.m_right, x.m_op, x.base.base.loc, x.m_type);
     }
 
     void visit_ComplexBinOp(const ASR::ComplexBinOp_t &x) {
-        std::complex<double> left_val = get_complex_value(*x.m_left);
-        std::complex<double> right_val = get_complex_value(*x.m_right);
-        std::complex<double> res;
-        switch (x.m_op) {
-            case ASR::binopType::Add: res = left_val + right_val; break;
-            case ASR::binopType::Sub: res = left_val - right_val; break;
-            case ASR::binopType::Mul: res = left_val * right_val; break;
-            case ASR::binopType::Div: res = left_val / right_val; break;
-            default: throw ImpliedDoLoopNotEvaluated();
+        fold_binop(*x.m_left, *x.m_right, x.m_op, x.base.base.loc, x.m_type);
+    }
+
+    std::complex<double> get_complex_value(const ASR::expr_t &x) {
+        ASR::expr_t* val = evaluate_constant(x);
+        if (!ASR::is_a<ASR::ComplexConstant_t>(*val)) {
+            throw ImpliedDoLoopNotEvaluated();
         }
-        value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, x.base.base.loc,
-            res.real(), res.imag(), x.m_type));
+        ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(val);
+        return std::complex<double>(c->m_re, c->m_im);
     }
 
     void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t &x) {
@@ -660,11 +602,11 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
     }
 
     bool get_logical_value(const ASR::expr_t &x) {
-        this->visit_expr(x);
-        if (value == nullptr || !ASR::is_a<ASR::LogicalConstant_t>(*value)) {
+        ASR::expr_t* val = evaluate_constant(x);
+        if (!ASR::is_a<ASR::LogicalConstant_t>(*val)) {
             throw ImpliedDoLoopNotEvaluated();
         }
-        return ASR::down_cast<ASR::LogicalConstant_t>(value)->m_value;
+        return ASR::down_cast<ASR::LogicalConstant_t>(val)->m_value;
     }
 
     void visit_LogicalNot(const ASR::LogicalNot_t &x) {
@@ -676,22 +618,10 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         bool left_val = get_logical_value(*x.m_left);
         bool right_val = get_logical_value(*x.m_right);
         bool res;
-        switch (x.m_op) {
-            case ASR::logicalbinopType::And: res = left_val && right_val; break;
-            case ASR::logicalbinopType::Or: res = left_val || right_val; break;
-            case ASR::logicalbinopType::Xor:
-            case ASR::logicalbinopType::NEqv: res = left_val != right_val; break;
-            case ASR::logicalbinopType::Eqv: res = left_val == right_val; break;
-            default: throw ImpliedDoLoopNotEvaluated();
+        if (!ASRUtils::fold_logical_binop(x.m_op, left_val, right_val, res)) {
+            throw ImpliedDoLoopNotEvaluated();
         }
         value = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, x.base.base.loc, res, x.m_type));
-    }
-
-     inline size_t get_max_args(ASRUtils::IntrinsicElementalFunctions id) {
-        if( name2signature_varargs.find(id) == name2signature_varargs.end() ) {
-            return 1;
-        }
-        return name2signature_varargs.at(id);
     }
 
     void visit_Cast(const ASR::Cast_t &x) {
@@ -711,30 +641,39 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         }
     }
 
-    // handle intrinsic elemental function
+    // The intrinsic is evaluated for the type of `x`, which carries the
+    // kind of a kind argument, e.g. real(16) for `real(k, 16)`
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
         Vec<ASR::expr_t*> args; args.reserve(al, x.n_args);
         for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i] == nullptr) {
+                args.push_back(al, nullptr);
+                continue;
+            }
             ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
-            this->visit_expr(*x.m_args[i]);
             // TODO: handle multiple types
             if (ASRUtils::is_real(*arg_type) || ASRUtils::is_integer(*arg_type)
                     || ASRUtils::is_logical(*arg_type) || ASRUtils::is_character(*arg_type)) {
-                args.push_back(al, value);
+                args.push_back(al, evaluate_constant(*x.m_args[i]));
             } else {
                 diag.add(Diagnostic("Unsupported argument type in compiletime evaluation of intrinsics in implied do loop",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
         }
-        size_t max_args = get_max_args(static_cast<ASRUtils::IntrinsicElementalFunctions>(x.m_intrinsic_id));
-        for (size_t i = x.n_args; i < max_args; i++) args.push_back(al, nullptr);
-        ASRUtils::create_intrinsic_function create_func =
-                ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(x.m_intrinsic_id);
-        ASR::asr_t* intrinsic_asr = create_func == nullptr ? nullptr :
-                create_func(al, x.base.base.loc, args, diag);
-        ASR::expr_t* intrinsic_value = intrinsic_asr == nullptr ? nullptr :
-                ASRUtils::expr_value(ASRUtils::EXPR(intrinsic_asr));
+        // `eval_Mod` divides by the second argument unchecked
+        int64_t divisor = -1;
+        if (x.m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::Mod)
+                && args.size() == 2 && args[1] != nullptr
+                && ASRUtils::extract_value(args[1], divisor) && divisor == 0) {
+            throw ImpliedDoLoopNotEvaluated();
+        }
+        ASRUtils::eval_intrinsic_function eval =
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_eval_function(x.m_intrinsic_id);
+        diag::Diagnostics eval_diag;
+        ASR::expr_t* intrinsic_value = eval == nullptr ? nullptr :
+            eval(al, x.base.base.loc, x.m_type, args, eval_diag);
         if (intrinsic_value == nullptr) {
             diag.add(Diagnostic("Intrinsic cannot be evaluated at compile time in implied do loop",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));

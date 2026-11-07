@@ -4571,6 +4571,7 @@ RUN(NAME implied_do_loops57 LABELS gfortran llvm)
 RUN(NAME implied_do_loops58 LABELS gfortran llvm)
 RUN(NAME implied_do_loops59 LABELS gfortran llvm)
 RUN(NAME implied_do_loops60 LABELS gfortran llvm)
+RUN(NAME implied_do_loops61 LABELS gfortran llvm)
 RUN(NAME internal_write_trim_idl_01 LABELS gfortran llvm)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
