@@ -17624,65 +17624,99 @@ static int parse_repeat_count(const char *token, int *count, char *value_part, s
     return 1;
 }
 
-// Helper to parse array subscript (e.g., "arr(2,3)" -> base_name="arr", indices=[2,3])
-// Returns number of indices found, or 0 if no subscript
-static int parse_array_subscript(const char *name_with_idx, char *base_name,
-                                  int *indices, int max_indices) {
+// Helper to split a designator (e.g., "arr(2,3)" -> base_name="arr")
+// Returns a pointer just past the '(' of the subscript list, or NULL if none
+static const char* parse_array_subscript(const char *name_with_idx, char *base_name) {
     const char *lparen = strchr(name_with_idx, '(');
     if (!lparen) {
         strcpy(base_name, name_with_idx);
-        return 0; // No subscript
+        return NULL; // No subscript
     }
 
-    // Extract base name
     size_t base_len = lparen - name_with_idx;
     strncpy(base_name, name_with_idx, base_len);
     base_name[base_len] = '\0';
-
-    // Parse indices
-    const char *ptr = lparen + 1;
-    int n_indices = 0;
-    while (*ptr && *ptr != ')' && n_indices < max_indices) {
-        indices[n_indices++] = atoi(ptr);
-        // Skip to next comma or closing paren
-        while (*ptr && *ptr != ',' && *ptr != ')') ptr++;
-        if (*ptr == ',') ptr++;
-    }
-
-    return n_indices;
+    return lparen + 1;
 }
 
-// Helper to calculate linear offset from multi-dimensional indices
-// Returns -1 if indices are out of bounds
-static int64_t calculate_array_offset(const int *indices, int n_indices,
-                                       const lfortran_nml_item_t *item) {
-    if (n_indices == 0 || item->rank == 0) {
-        return 0;
-    }
+// The elements of an array section, as 0-based starts, strides and counts
+// per dimension (Fortran order)
+typedef struct {
+    int32_t rank;
+    int64_t start[16];
+    int64_t step[16];
+    int64_t count[16];
+} nml_section_t;
 
-    // Validate number of indices matches rank
-    if (n_indices != item->rank) {
-        return -1;
-    }
+static void nml_skip_blanks(const char **ptr) {
+    while (**ptr == ' ' || **ptr == '\t') (*ptr)++;
+}
 
-    // Validate each index is within bounds
-    for (int i = 0; i < n_indices; i++) {
-        if (indices[i] < 1 || indices[i] > item->shape[i]) {
-            return -1;  // Out of bounds
+// Parses an optional signed integer; returns true if one was found
+static bool nml_parse_subscript_int(const char **ptr, int64_t *value) {
+    nml_skip_blanks(ptr);
+    char *end;
+    long long v = strtoll(*ptr, &end, 10);
+    if (end == *ptr) return false;
+    *value = v;
+    *ptr = end;
+    nml_skip_blanks(ptr);
+    return true;
+}
+
+// Helper to parse a subscript list such as "2,3)", "1,:)" or "2:5:2)" of an
+// item into the section it designates.
+// Returns false if the subscripts are invalid or out of bounds
+static bool parse_nml_section(const char *subscripts, const lfortran_nml_item_t *item,
+                              nml_section_t *sec) {
+    const char *ptr = subscripts;
+    sec->rank = item->rank;
+    if (item->rank == 0) {
+        sec->rank = 1;
+        sec->start[0] = 0;
+        sec->step[0] = 1;
+        sec->count[0] = 1;
+        return true;
+    }
+    if (item->rank > 16) return false;
+    int32_t n = 0;
+    while (1) {
+        if (n >= item->rank) return false;
+        int64_t extent = item->shape[n];
+        int64_t lo = 0, hi = 0, step = 1;
+        bool has_lo = nml_parse_subscript_int(&ptr, &lo);
+        if (*ptr == ':') {
+            ptr++;
+            if (!has_lo) lo = 1;
+            if (!nml_parse_subscript_int(&ptr, &hi)) hi = extent;
+            if (*ptr == ':') {
+                ptr++;
+                if (!nml_parse_subscript_int(&ptr, &step) || step == 0) return false;
+            }
+        } else if (has_lo) {
+            hi = lo;
+        } else {
+            return false;
+        }
+        int64_t count = (hi - lo + step) / step;
+        if (count < 0) count = 0;
+        if (count > 0) {
+            int64_t last = lo + (count - 1) * step;
+            if (lo < 1 || lo > extent || last < 1 || last > extent) return false;
+        }
+        sec->start[n] = lo - 1;
+        sec->step[n] = step;
+        sec->count[n] = count;
+        n++;
+        if (*ptr == ',') {
+            ptr++;
+        } else if (*ptr == ')') {
+            break;
+        } else {
+            return false;
         }
     }
-
-    // Convert Fortran 1-based indices to 0-based offsets
-    // Use column-major (Fortran) order: offset = i1 + i2*d1 + i3*d1*d2 + ...
-    int64_t offset = indices[0] - 1;
-    int64_t multiplier = 1;
-
-    for (int i = 0; i < n_indices - 1 && i < item->rank - 1; i++) {
-        multiplier *= item->shape[i];
-        offset += (indices[i + 1] - 1) * multiplier;
-    }
-
-    return offset;
+    return n == item->rank;
 }
 
 // Helper to collect derived type items (name starts with "base%")
@@ -17707,17 +17741,45 @@ typedef struct {
     lfortran_nml_item_t **items;
     int n_items;
     int item_idx;
-    int64_t value_idx;
-    int64_t total_size;
+    int64_t value_idx;   // element offset of the next value in the current item
+    int64_t elem_idx;    // position of the next value in the effective items
+    int64_t total_size;  // number of effective items of the current item
+    // If not NULL, only the elements of this section of the (single) item
+    // are effective items, in array element order
+    const nml_section_t *section;
+    int64_t pos[16];     // section subscript positions of the next value
 } nml_value_iter_t;
 
+static void nml_value_iter_set_section_offset(nml_value_iter_t *it) {
+    const nml_section_t *sec = it->section;
+    const lfortran_nml_item_t *item = it->items[it->item_idx];
+    int64_t offset = 0;
+    int64_t multiplier = 1;
+    for (int32_t d = 0; d < sec->rank; d++) {
+        offset += (sec->start[d] + it->pos[d] * sec->step[d]) * multiplier;
+        if (d < item->rank) multiplier *= item->shape[d];
+    }
+    it->value_idx = offset;
+}
+
 static void nml_value_iter_init(nml_value_iter_t *it, lfortran_nml_item_t **items,
-                                int n_items, int64_t value_idx, int64_t total_size) {
+                                int n_items, const nml_section_t *section) {
     it->items = items;
     it->n_items = n_items;
     it->item_idx = 0;
-    it->value_idx = value_idx;
-    it->total_size = total_size;
+    it->value_idx = 0;
+    it->elem_idx = 0;
+    it->section = section;
+    if (section) {
+        it->total_size = 1;
+        for (int32_t d = 0; d < section->rank; d++) {
+            it->total_size *= section->count[d];
+            it->pos[d] = 0;
+        }
+        nml_value_iter_set_section_offset(it);
+    } else {
+        it->total_size = compute_array_size(items[0]);
+    }
 }
 
 static bool nml_value_iter_next_item(nml_value_iter_t *it) {
@@ -17728,6 +17790,7 @@ static bool nml_value_iter_next_item(nml_value_iter_t *it) {
         }
         it->total_size = compute_array_size(it->items[it->item_idx]);
         it->value_idx = 0;
+        it->elem_idx = 0;
         if (it->total_size > 0) {
             return true;
         }
@@ -17735,8 +17798,18 @@ static bool nml_value_iter_next_item(nml_value_iter_t *it) {
 }
 
 static bool nml_value_iter_advance(nml_value_iter_t *it) {
-    it->value_idx++;
-    if (it->value_idx < it->total_size) {
+    it->elem_idx++;
+    if (it->elem_idx < it->total_size) {
+        if (it->section) {
+            for (int32_t d = 0; d < it->section->rank; d++) {
+                it->pos[d]++;
+                if (it->pos[d] < it->section->count[d]) break;
+                it->pos[d] = 0;
+            }
+            nml_value_iter_set_section_offset(it);
+        } else {
+            it->value_idx = it->elem_idx;
+        }
         return true;
     }
     return nml_value_iter_next_item(it);
@@ -17780,7 +17853,7 @@ static int nml_read_values(nml_reader_t *reader, char **line_buf, char **line_pt
                 }
             }
             // Check that repeat count doesn't overflow array bounds
-            if (enforce_bounds && it->value_idx + repeat_count > it->total_size) {
+            if (enforce_bounds && it->elem_idx + repeat_count > it->total_size) {
                 internal_free(token);
                 internal_free(*line_buf);
                 if (iostat) {
@@ -17910,8 +17983,9 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
 
         // Parse array subscript if present
         char base_name[256];
-        int indices[16];  // Support up to 16 dimensions
-        int n_indices = parse_array_subscript(name, base_name, indices, 16);
+        nml_section_t section;
+        bool has_section = false;
+        const char *subscripts = parse_array_subscript(name, base_name);
 
         // Find matching item using base name
         lfortran_nml_item_t *item = NULL;
@@ -17938,6 +18012,21 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
             } else {
                 fprintf(stderr, "Runtime Error: Unknown variable '%s' in namelist\n", base_name);
                 exit(1);
+            }
+        }
+        if (item && subscripts) {
+            has_section = true;
+            if (!parse_nml_section(subscripts, item, &section)) {
+                // Invalid subscript or array index out of bounds
+                internal_free(name);
+                internal_free(line_buf);
+                if (iostat) {
+                    *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
+                    return;
+                } else {
+                    fprintf(stderr, "Runtime Error: Array index out of bounds in namelist '%s'\n", base_name);
+                    exit(1);
+                }
             }
         }
         internal_free(name);
@@ -17969,30 +18058,9 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
         }
 
         if (item) {
-            // Read value(s)
-            int64_t total_size = compute_array_size(item);
-
-            // If array subscript specified, use that offset; otherwise start at 0
-            int64_t value_idx = 0;
-            if (n_indices > 0) {
-                value_idx = calculate_array_offset(indices, n_indices, item);
-                if (value_idx < 0) {
-                    // Array index out of bounds
-                    internal_free(line_buf);
-                    if (iostat) {
-                        *iostat = 5015;  // LFORTRAN_IOSTAT_NML_INDEX_OUT_OF_BOUNDS
-                        return;
-                    } else {
-                        fprintf(stderr, "Runtime Error: Array index out of bounds in namelist '%s'\n", base_name);
-                        exit(1);
-                    }
-                }
-                total_size = value_idx + 1;  // Only set one element
-            }
-
             lfortran_nml_item_t *items[1] = {item};
             nml_value_iter_t it;
-            nml_value_iter_init(&it, items, 1, value_idx, total_size);
+            nml_value_iter_init(&it, items, 1, has_section ? &section : NULL);
             int read_result = nml_read_values(reader, &line_buf, &line_ptr, &line_len, &read_len,
                                 &it, true, iostat);
             if (read_result == 1) {
@@ -18002,8 +18070,7 @@ static void namelist_read_impl(nml_reader_t *reader, int32_t *iostat, lfortran_n
             }
         } else if (derived_count > 0) {
             nml_value_iter_t it;
-            nml_value_iter_init(&it, derived_items, derived_count, 0,
-                                compute_array_size(derived_items[0]));
+            nml_value_iter_init(&it, derived_items, derived_count, NULL);
             int read_result = nml_read_values(reader, &line_buf, &line_ptr, &line_len, &read_len,
                                 &it, false, iostat);
             if (read_result == 1) {
