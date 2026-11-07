@@ -872,11 +872,29 @@ private:
         }
     }
 
+    // Whether no launch can still use the storage of the dummy `d` once the
+    // launch is made: a scalar of an intrinsic type, which a launch is handed
+    // by value (a kernel scalar argument), and which a kernel never writes
+    // (the host combines a reduction into it after a sync), such as the
+    // extents pass_array_by_data adds.
+    static bool launch_copies(ASR::Variable_t *d) {
+        ASR::ttype_t *type = d->m_type;
+        if (ASRUtils::is_array(type) || ASRUtils::is_pointer(type)
+                || ASRUtils::is_allocatable(type)) {
+            return false;
+        }
+        return ASR::is_a<ASR::Integer_t>(*type)
+            || ASR::is_a<ASR::UnsignedInteger_t>(*type)
+            || ASR::is_a<ASR::Real_t>(*type)
+            || ASR::is_a<ASR::Complex_t>(*type)
+            || ASR::is_a<ASR::Logical_t>(*type);
+    }
+
     // What the launches a twin leaves pending may write and read, as
     // paths rooted at its dummies: what its syncs were placed to leave,
     // when this pass placed them, otherwise what its declaration allows --
     // writes of what a dummy that is not intent(in) holds, and reads of what
-    // any dummy holds.
+    // any dummy holds, except a scalar a launch is handed by value.
     const Deferral::Pending &twin_pending(ASR::Function_t *t) {
         if (deferral.own.count(t) > 0) {
             deferral.place(t);
@@ -891,7 +909,7 @@ private:
         for (size_t i = 0; i < t->n_args; i++) {
             ASR::Variable_t *d = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(t->m_args[i])->m_v);
-            if (d->m_value_attr) continue;
+            if (d->m_value_attr || launch_copies(d)) continue;
             Path q;
             q.root = &d->base;
             if (d->m_intent != ASR::intentType::In) {

@@ -7255,6 +7255,7 @@ RUN(NAME gpu_deferred_sync_05 FAIL LABELS gfortran llvm metal cuda) # stops: a p
 RUN(NAME gpu_deferred_sync_06 FAIL LABELS gfortran llvm metal cuda) # stops: a negative value
 RUN(NAME gpu_deferred_sync_07 FAIL LABELS gfortran llvm metal cuda EXTRAFILES gpu_deferred_sync_07_mod.f90 EXTRA_ARGS --separate-compilation) # stops: a negative value
 RUN(NAME gpu_ending_locals_01 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_ending_locals_02 LABELS gfortran llvm metal cuda EXTRAFILES gpu_ending_locals_02_mod.f90 EXTRA_ARGS --separate-compilation)
 # Logical reductions (lfortran/lfortran#16725), in one launch and in many.
 RUN(NAME gpu_metal_728 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_729 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
