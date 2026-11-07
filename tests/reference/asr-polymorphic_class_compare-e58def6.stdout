@@ -412,6 +412,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             polymorphic_class_compare:

@@ -24,6 +24,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             tomlf_structure_base:
@@ -181,6 +182,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             tomlf_type:
@@ -261,6 +263,7 @@
                     ()
                     [tomlf_type_array
                     tomlf_type_keyval]
+                    .false.
                     .false.
                     .false.
                     .false.
@@ -687,6 +690,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             tomlf_type_keyval:
@@ -1065,6 +1069,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             tomlf_type_value:
@@ -1217,6 +1222,7 @@
                     ()
                     []
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()

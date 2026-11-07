@@ -48,7 +48,14 @@ then waits at its end as any procedure does. What can call a procedure
 without this pass seeing the call -- a procedure pointer, a dummy procedure,
 a binding, C, a file compiled without a device -- reaches the subroutine.
 The calls this pass sees by name are redirected to the twin, which may
-return with launches pending:
+return with launches pending. A subroutine defined in another object file
+(a module loaded from its module file whose procedures this translation
+unit does not compile) gets no twin if that object defines none: when the
+module was compiled with separate compilation into an object of its own
+and without a device (Module.host_only_object), such as a library built for
+the host. Its calls reach the subroutine. In the default mode the unit with
+the main program compiles the module's procedures, and is assumed to be
+compiled with a device like this unit, so it defines their twins.
 
 * At its exits the twin discards, or waits for, the launches on its locals,
   and returns without waiting when what is still pending writes and reads
@@ -268,12 +275,16 @@ bool gets_twin(ASR::Module_t *m, ASR::Function_t *fn) {
             || fn->m_gpu != nullptr || fn->m_return_var != nullptr) {
         return false;
     }
-    // A procedure of a module loaded from its module file has the ABI
-    // ExternalUndefined there; a bind(c) one is an interface.
+    // A procedure of a module loaded from its module file that another
+    // object file defines has the ABI ExternalUndefined there; that object
+    // defines no twin if it is the module's own, compiled without a device.
+    // A bind(c) procedure is an interface.
     ASR::FunctionType_t *type = ASRUtils::get_FunctionType(fn);
     if (type->m_deftype != ASR::deftypeType::Implementation
             || (type->m_abi != ASR::abiType::Source
                 && type->m_abi != ASR::abiType::ExternalUndefined)
+            || (type->m_abi == ASR::abiType::ExternalUndefined
+                && m->m_host_only_object)
             || type->m_elemental || type->m_module
             || type->m_exec_space != ASR::exec_spaceType::Host) {
         return false;
