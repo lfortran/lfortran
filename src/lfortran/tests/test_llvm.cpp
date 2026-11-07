@@ -5045,6 +5045,14 @@ end module
     CHECK(r.result.i32 == 7);
 }
 
+// The evaluator's message for a symbol the JIT cannot resolve; LLVM 7
+// reports it from findSymbol()/getAddress(), newer LLVM from lookup().
+static bool is_jit_symbol_lookup_failure(const std::string &msg) {
+    return msg.find("lookup() failed to find the symbol") != std::string::npos
+        || msg.find("findSymbol() failed to find the symbol") != std::string::npos
+        || msg.find("getAddress() failed for symbol") != std::string::npos;
+}
+
 TEST_CASE("FortranEvaluator interface body in a generic interface block") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -5075,7 +5083,7 @@ end function
     } catch (const LCompilers::LCompilersException &ex) {
         std::string msg = ex.msg();
         CAPTURE(msg);
-        CHECK(msg.find("lookup() failed") != std::string::npos);
+        CHECK(is_jit_symbol_lookup_failure(msg));
     }
     CHECK(!linked);
 }
@@ -5168,7 +5176,7 @@ end function
     } catch (const LCompilers::LCompilersException &ex) {
         std::string msg = ex.msg();
         CAPTURE(msg);
-        CHECK(msg.find("lookup() failed") != std::string::npos);
+        CHECK(is_jit_symbol_lookup_failure(msg));
     }
     CHECK(!linked);
 }
