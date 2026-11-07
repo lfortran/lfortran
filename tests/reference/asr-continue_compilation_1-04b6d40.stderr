@@ -1968,6 +1968,24 @@ semantic error: ambiguous interfaces in generic 'visit' for 'cc1_visit_circle' a
 4590 |         procedure :: cc1_visit_circle
      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 'cc1_visit_circle' is specified here
 
+semantic error: Private variable `x` cannot be imported
+    --> tests/errors/continue_compilation_1.f90:4672:40
+     |
+4672 |     use cc1_priv_reexport_named, only: x  ! {Error} Private variable `x` cannot be imported
+     |                                        ^ 
+
+semantic error: Private variable `x` cannot be imported
+    --> tests/errors/continue_compilation_1.f90:4676:42
+     |
+4676 |     use cc1_priv_reexport_default, only: x  ! {Error} Private variable `x` cannot be imported
+     |                                          ^ 
+
+semantic error: Private variable `z` cannot be imported
+    --> tests/errors/continue_compilation_1.f90:4680:40
+     |
+4680 |     use cc1_priv_reexport_named, only: z  ! {Error} Private variable `z` cannot be imported
+     |                                        ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
