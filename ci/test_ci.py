@@ -536,8 +536,8 @@ class WorkflowPolicyTests(unittest.TestCase):
         workflows = ROOT / ".github/workflows"
         quick = (workflows / "Quick-Checks-CI.yml").read_text()
         shared = (workflows / "Compiler-Compatibility-CI.yml").read_text()
-        self.assertIn("integration_tests -b metal -j3", quick)
-        self.assertIn("integration_tests -b cuda_cpu -j3", quick)
+        self.assertIn("integration_tests -b metal -f -j3", quick)
+        self.assertIn("integration_tests -b cuda_cpu -f -j3", quick)
         self.assertIn("scope: quick", quick)
         caffeine = shared.split("      - name: Test coarray runtime with Caffeine\n", 1)[1]
         caffeine = caffeine.split("\n  test_llvm_wasm:", 1)[0]
@@ -1166,6 +1166,7 @@ class QuickScriptTests(unittest.TestCase):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         platform = source.split("\n  platform:\n", 1)[1].split("\n  debug_outOfSource:\n", 1)[0]
         step = platform.split("      - name: Test full platform coverage\n", 1)[1]
+        step = step.split("\n      - name: ", 1)[0]
         script = step.split("        run: |\n", 1)[1]
         (self.directory / "ci").mkdir()
         (self.directory / "ci/test_llvm_integration.sh").symlink_to(
@@ -1199,6 +1200,37 @@ class QuickScriptTests(unittest.TestCase):
                     self.assertEqual(integration,
                                      [normal, submodule] if macos else
                                      [normal, fast_variants, fast, submodule])
+
+    def test_exhaustive_runs_gpu_suites_with_and_without_fast(self):
+        source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
+        platform = source.split("\n  platform:\n", 1)[1].split("\n  debug_outOfSource:\n", 1)[0]
+        step = platform.split("      - name: Test GPU backends with and without --fast\n", 1)[1]
+        step = step.split("\n      - name: ", 1)[0]
+        self.assertNotIn("if:", step.split("        run: |\n", 1)[0])
+        script = step.split("        run: |\n", 1)[1]
+        for os_name, llvm in (("macos-latest", "11"), ("ubuntu-latest", "11"),
+                              ("ubuntu-latest", "21")):
+            with self.subTest(platform=os_name, llvm=llvm):
+                bin_dir = self.directory / "bin"
+                bin_dir.mkdir(exist_ok=True)
+                log = self.directory / "pixi.log"
+                log.write_text("")
+                pixi = bin_dir / "pixi"
+                pixi.write_text(f'#!/bin/sh\necho "$*" >> {log}\n')
+                pixi.chmod(0o755)
+                rendered = script.replace("${{ matrix.os }}", os_name)
+                rendered = rendered.replace("${{ matrix.llvm-version }}", llvm)
+                env = dict(self.env, PATH=f"{bin_dir}:{self.env['PATH']}")
+                result = subprocess.run(
+                    ["bash", "-e", "-o", "pipefail"], input=rendered,
+                    cwd=self.directory, env=env, capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                prefix = f"run -e llvm{llvm} integration_tests -b"
+                expected = [f"{prefix} cuda_cpu -j3", f"{prefix} cuda_cpu -f -j3"]
+                if os_name == "macos-latest":
+                    expected = [f"{prefix} metal -j3", f"{prefix} metal -f -j3"] + expected
+                self.assertEqual(log.read_text().splitlines(), expected)
 
     def test_installation_variants_run_full_suites_on_every_event(self):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
