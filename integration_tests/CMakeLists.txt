@@ -4167,6 +4167,7 @@ RUN(NAME class_170 LABELS gfortran llvm)
 RUN(NAME class_171 LABELS gfortran llvm)
 RUN(NAME class_172 LABELS gfortran llvm)
 RUN(NAME class_173 LABELS gfortran llvm)
+RUN(NAME class_174 LABELS gfortran llvm)
 RUN(NAME class_175 LABELS gfortran llvm EXTRAFILES class_175_ext.f90)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)

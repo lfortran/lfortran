@@ -10211,6 +10211,20 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 ASR::StructMethodDeclaration_t* method_decl = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
                 ASR::symbol_t* impl_sym = ASRUtils::symbol_get_past_external(method_decl->m_proc);
                 if (method_decl->m_is_deferred) {
+                    if (struct_t->m_parent) {
+                        ASR::symbol_t* par = ASRUtils::symbol_get_past_external(struct_t->m_parent);
+                        // Case: a deferred binding overriding a deferred binding of the parent
+                        // keeps the parent's slot, so overrides in extensions land in that slot
+                        auto par_offsets = struct_vtab_function_offset.find(par);
+                        if (par_offsets != struct_vtab_function_offset.end()) {
+                            auto par_offset = par_offsets->second.find(method_decl->m_name);
+                            if (par_offset != par_offsets->second.end()) {
+                                int64_t offset = par_offset->second;
+                                struct_vtab_function_offset[struct_sym][method_decl->m_name] = offset;
+                                continue;
+                            }
+                        }
+                    }
                     llvm::FunctionType *func_type = llvm_utils->get_function_type(
                         *(ASR::down_cast<ASR::Function_t>(
                             ASRUtils::symbol_get_past_external(method_decl->m_proc))),
