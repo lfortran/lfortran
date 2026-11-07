@@ -70,7 +70,17 @@ TEST_CASE("LLVM target configuration") {
     CompilerOptions default_options;
     LCompilers::LLVMTargetConfig default_config
         = LCompilers::resolve_llvm_target_config(default_options);
-    CHECK(default_config.cpu == "generic");
+    // LLVM 7-9 give real(16) arguments a register class only when the x86-64
+    // subtarget has MMX, so the default CPU is the x86-64 baseline rather
+    // than "generic" (see resolve_llvm_target_config in evaluator.cpp).
+    std::string default_cpu = "generic";
+#if LLVM_VERSION_MAJOR < 10
+    if (llvm::Triple(default_config.triple).getArch()
+            == llvm::Triple::x86_64) {
+        default_cpu = "x86-64";
+    }
+#endif
+    CHECK(default_config.cpu == default_cpu);
     CHECK(!default_config.emit_cpu_attribute);
     CHECK(default_config.features.empty());
 
@@ -95,7 +105,7 @@ TEST_CASE("LLVM target configuration") {
     tune_options.mtune = "generic";
     LCompilers::LLVMTargetConfig tune_config
         = LCompilers::resolve_llvm_target_config(tune_options);
-    CHECK(tune_config.cpu == "generic");
+    CHECK(tune_config.cpu == default_cpu);
     CHECK(tune_config.tune_cpu == "generic");
     CHECK(!tune_config.emit_cpu_attribute);
 
