@@ -2380,6 +2380,20 @@ public:
         src = r;
     }
 
+    void visit_GpuKeep(const ASR::GpuKeep_t &x) {
+        std::string r = indent;
+        r += "gpu keep(";
+        for (size_t i = 0; i < x.n_vars; i++) {
+            visit_expr(*x.m_vars[i]);
+            r += src;
+            if (i < x.n_vars - 1) r += ", ";
+        }
+        r += ")";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
     void visit_Where(const ASR::Where_t &x) {
         std::string r;
         r = indent;

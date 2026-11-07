@@ -21,10 +21,11 @@
 namespace LCompilers {
 
 /*
-Expands the high level GpuKernelLaunch, GpuSync, GpuWait and GpuDiscard
-statements into explicit ASR that calls the `lfortran_gpu_*` runtime, so that the host side of a
-kernel launch is ordinary ASR: it shows up in --show-asr, every backend can
-lower it, and later passes can optimise it.
+Expands the high level GpuKernelLaunch, GpuSync, GpuWait, GpuDiscard and
+GpuKeep statements into explicit ASR that calls the `lfortran_gpu_*`
+runtime, so that the host side of a kernel launch is ordinary ASR: it shows
+up in --show-asr, every backend can lower it, and later passes can optimise
+it.
 
 The generated sequence mirrors the argument layout that the device code
 generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
@@ -173,6 +174,30 @@ class DeviceLaunchExpandVisitor :
                 args.push_back(al, call_arg(loc, buffer_byte_size(loc,
                     x.m_vars[i])));
                 pass_result.push_back(al, b.SubroutineCall(discard, args));
+            }
+        }
+
+        // lfortran_gpu_keep(ctx, c_loc(v), size_in_bytes(v)) for each
+        // variable, before the sync or wait that follows: the host does not
+        // change it before a launch reads it again.
+        void visit_GpuKeep(const ASR::GpuKeep_t &x) {
+            const Location &loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *ctx = declare_local(loc, "gpu_ctx", b.CPtr());
+            pass_result.reserve(al, x.n_vars + 1);
+            pass_result.push_back(al, b.Assignment(ctx, gpu_init_call(loc)));
+            ASR::symbol_t *keep = runtime_subroutine(loc,
+                "lfortran_gpu_keep", {b.CPtr(), b.CPtr(), int64},
+                {true, true, true});
+            for (size_t i = 0; i < x.n_vars; i++) {
+                Vec<ASR::call_arg_t> args;
+                args.reserve(al, 3);
+                args.push_back(al, call_arg(loc, ctx));
+                args.push_back(al, call_arg(loc, address_of(loc,
+                    x.m_vars[i])));
+                args.push_back(al, call_arg(loc, buffer_byte_size(loc,
+                    x.m_vars[i])));
+                pass_result.push_back(al, b.SubroutineCall(keep, args));
             }
         }
 

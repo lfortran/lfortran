@@ -163,6 +163,11 @@ stmt
     | GpuWait()
     | GpuLaneBarrier()
     | GpuDiscard(expr* vars)
+    -- Goes right before a GpuSync or GpuWait: the host does not change the
+    -- arrays `vars` from there until a launch reads them or the next GpuSync
+    -- or GpuWait, so the device copies the launches since the last wait made
+    -- of them are still those of the host after it.
+    | GpuKeep(expr* vars)
     -- Makes the Reference member `reference` (a StructInstanceMember of a
     -- frame object) refer to `variable`, a designator whose type is the
     -- referenced type: a Var, or a StructInstanceMember of a Reference member

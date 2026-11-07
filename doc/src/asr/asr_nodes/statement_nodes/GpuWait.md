@@ -44,4 +44,4 @@ It comes from this complete ASR text document:
 
 ## See Also
 
-[GpuSync](GpuSync.md), [GpuKernelLaunch](GpuKernelLaunch.md), [GpuDiscard](GpuDiscard.md)
+[GpuSync](GpuSync.md), [GpuKernelLaunch](GpuKernelLaunch.md), [GpuDiscard](GpuDiscard.md), [GpuKeep](GpuKeep.md)

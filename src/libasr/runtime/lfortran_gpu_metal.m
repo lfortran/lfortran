@@ -1106,6 +1106,14 @@ void lfortran_gpu_wait(lfortran_gpu_ctx* ctx) {
     (void)ctx;
 }
 
+// A launch copies what its kernel only reads at the launch itself, and keeps
+// no copy for later launches, so there is none to keep.
+void lfortran_gpu_keep(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
+    (void)ctx;
+    (void)ptr;
+    (void)size;
+}
+
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
     if (!ctx || size == 0) return;
     for (int d = n_dirty - 1; d >= 0; d--) {

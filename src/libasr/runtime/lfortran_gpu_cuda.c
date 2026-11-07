@@ -37,7 +37,10 @@ default stream ordering every copy and launch:
   the host does not change a range a launch since the last wait reads before
   it waits (gpu_launch_sync.cpp places the waits), so later launches that read
   the range, such as the iterations of a time loop, use the copy without
-  copying again. A smaller range is copied into memory the argument slot of
+  copying again. A wait keeps the copies inside the ranges the compiler
+  passed to lfortran_gpu_keep right before it, which the host does not change
+  until the launches after the wait read them: a time loop whose host reads
+  the result of a reduction at every iteration waits there. A smaller range is copied into memory the argument slot of
   its kernel keeps; a later launch of the same kernel handle that is not
   handed the buffer again (the next chunk of a launch that runs in chunks)
   reads what the first one copied, as long as no other handle has used that
@@ -119,6 +122,9 @@ typedef struct resident {
     // `device` holds a copy of the host bytes made since the last wait, which
     // the host has not changed since (the copy model).
     int fresh;
+    // lfortran_gpu_keep was called for a range that holds the entry since
+    // the last wait: the copy stays fresh past the next one.
+    int keep;
     // The wait period (n_waits) in which a launch last used the entry.
     uint64_t last_use;
 } resident;
@@ -454,14 +460,16 @@ static resident* entry_for(void *host, size_t size) {
     return &entries[i];
 }
 
-// After a wait the host may change any range, so no copy is fresh. An entry
-// unused in the last two wait periods that holds nothing the host lacks is
-// forgotten: the program may have freed its host range.
+// After a wait the host may change any range but those it was told to keep
+// (lfortran_gpu_keep), so no other copy is fresh. An entry unused in the
+// last two wait periods that holds nothing the host lacks is forgotten: the
+// program may have freed its host range.
 static void end_wait_period(void) {
     for (int i = 0; i < n_entries; i++) {
         resident *e = &entries[i];
         if (!e->used) continue;
-        e->fresh = 0;
+        if (!e->keep) e->fresh = 0;
+        e->keep = 0;
         if (!e->dirty && e->last_use + 1 < n_waits) {
             remove_entry(i);
         }
@@ -1013,6 +1021,19 @@ void lfortran_gpu_wait(lfortran_gpu_ctx* ctx) {
     if (!pending_in_place_reads) return;
     pending_in_place_reads = 0;
     check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
+}
+
+void lfortran_gpu_keep(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
+    if (!ctx || !ptr || size == 0) return;
+    const char *lo = (const char *)ptr, *hi = lo + size;
+    for (int i = 0; i < n_entries; i++) {
+        resident *e = &entries[i];
+        const char *h = (const char *)e->host;
+        if (e->used && e->fresh && !e->dirty && h >= lo
+                && h + e->size <= hi) {
+            e->keep = 1;
+        }
+    }
 }
 
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {

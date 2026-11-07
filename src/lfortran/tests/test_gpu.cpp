@@ -1757,6 +1757,178 @@ end program
     CHECK(loop.syncs == 0);
 }
 
+namespace {
+
+// The arrays each GpuKeep names, and how many GpuWait statements there are,
+// in the body it is handed.
+class Keeps : public ASR::BaseWalkVisitor<Keeps> {
+public:
+    std::vector<std::string> kept;
+    size_t waits = 0;
+    void visit_GpuKeep(const ASR::GpuKeep_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) {
+            kept.push_back(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(x.m_vars[i])->m_v));
+        }
+    }
+    void visit_GpuWait(const ASR::GpuWait_t &/*x*/) {
+        waits++;
+    }
+};
+
+Keeps keeps_in(ASR::stmt_t **body, size_t n_body) {
+    Keeps k;
+    for (size_t i = 0; i < n_body; i++) k.visit_stmt(*body[i]);
+    std::sort(k.kept.begin(), k.kept.end());
+    return k;
+}
+
+}
+
+TEST_CASE("GPU waits keep the copies of arrays the host does not change") {
+    const std::string source = R"(
+module gpu_keep_m
+implicit none
+contains
+
+    ! The host reads the sum at every iteration, and changes neither array:
+    ! both are kept. The procedure returns after the loop, so it waits before
+    ! it returns, which keeps nothing.
+    subroutine both(a, b, n, s)
+        integer, intent(in) :: n
+        real(8), intent(in) :: a(n), b(n)
+        real(8), intent(out) :: s
+        real(8) :: t
+        integer :: i, it
+        s = 0
+        do it = 1, 4
+            t = 0
+            do concurrent (i = 1:n) reduce(+:t)
+                t = t + a(i)*b(i)
+            end do
+            s = s + t
+        end do
+    end subroutine
+
+    ! The host changes `a` between the launches: only `b` is kept.
+    subroutine host_changes(a, b, n, s)
+        integer, intent(in) :: n
+        real(8), intent(inout) :: a(n)
+        real(8), intent(in) :: b(n)
+        real(8), intent(out) :: s
+        real(8) :: t
+        integer :: i, it
+        s = 0
+        do it = 1, 4
+            t = 0
+            do concurrent (i = 1:n) reduce(+:t)
+                t = t + a(i)*b(i)
+            end do
+            s = s + t
+            a(1) = a(1) + t
+        end do
+    end subroutine
+
+    ! A pointer may point to a section with gaps: not kept.
+    subroutine pointer_dummy(a, s)
+        real(8), pointer, intent(in) :: a(:)
+        real(8), intent(out) :: s
+        real(8) :: t
+        integer :: i, it
+        s = 0
+        do it = 1, 4
+            t = 0
+            do concurrent (i = 1:size(a)) reduce(+:t)
+                t = t + a(i)
+            end do
+            s = s + t
+        end do
+    end subroutine
+
+    ! A contained procedure changes `a`, another only reads a scalar: only
+    ! `b` is kept.
+    subroutine contained_changes(a, b, n, s)
+        integer, intent(in) :: n
+        real(8), intent(inout) :: a(n)
+        real(8), intent(in) :: b(n)
+        real(8), intent(out) :: s
+        real(8) :: t
+        integer :: i, it
+        s = 0
+        do it = 1, 4
+            t = 0
+            do concurrent (i = 1:n) reduce(+:t)
+                t = t + a(i)*b(i)
+            end do
+            s = s + twice(t)
+            call bump()
+        end do
+    contains
+        real(8) function twice(x)
+            real(8), intent(in) :: x
+            twice = 2*x
+        end function
+        subroutine bump()
+            a(n) = a(n) + 1
+        end subroutine
+    end subroutine
+
+end module
+)";
+    CompilerOptions options;
+    options.gpu_backend = "cuda";
+    options.po.gpu_offload_cuda = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "gpu_keep.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    ASR::TranslationUnit_t &unit = *parsed.result;
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_vector_lanes", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, &unit, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    pass_gpu_launch_sync(allocator, unit, options.po);
+    REQUIRE(asr_verify(unit, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        unit.m_symtab->get_symbol("gpu_keep_m"));
+    // A procedure may be specialized under another name
+    // (`<name>_real____0`).
+    auto keeps = [&](const std::string &name) {
+        ASR::Function_t *fn = nullptr;
+        for (auto &item : module->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)
+                    && (item.first == name
+                        || item.first.rfind(name + "_", 0) == 0)) {
+                fn = ASR::down_cast<ASR::Function_t>(item.second);
+            }
+        }
+        REQUIRE(fn != nullptr);
+        return keeps_in(fn->m_body, fn->n_body);
+    };
+    using names = std::vector<std::string>;
+    Keeps k = keeps("both");
+    CHECK(k.kept == names{"a", "b"});
+    CHECK(k.waits == 1);
+    k = keeps("host_changes");
+    CHECK(k.kept == names{"b"});
+    k = keeps("pointer_dummy");
+    CHECK(k.kept.empty());
+    CHECK(k.waits == 0);
+    k = keeps("contained_changes");
+    CHECK(k.kept == names{"b"});
+}
+
 #endif
 
 TEST_CASE("A scalar every iteration assigns first is not read back when "

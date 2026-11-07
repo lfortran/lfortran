@@ -536,6 +536,10 @@ public:
     SymbolTable *routine;
     const PointerTargets &pointers;
     std::map<ASR::Function_t*, bool> &outside;
+    // When set, a call to a procedure contained in `routine` goes here and
+    // counts as accessing what another procedure can reach, instead of
+    // anything: the caller checks which variables of `routine` it names.
+    std::vector<ASR::Function_t*> *contained = nullptr;
 
     AccessCollector(Accesses &acc_, SymbolTable *routine_,
             const PointerTargets &pointers_,
@@ -642,7 +646,12 @@ public:
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(callee);
         if (acts_outside(fn, outside)) acc.observable = true;
         if (contained_in(fn, routine)) {
-            acc.everything = true;
+            if (contained != nullptr) {
+                contained->push_back(fn);
+                acc.globals = true;
+            } else {
+                acc.everything = true;
+            }
         } else {
             acc.globals = true;
         }

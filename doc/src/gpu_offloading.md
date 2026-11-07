@@ -755,8 +755,11 @@ an `intent(in)` dummy -- and *written* otherwise.
   loop that only read an array, between which the host touches nothing they
   use, copy it once. On an MI210, where a copy runs at about 25 GB/s, that
   makes a matrix-vector product 27 times faster (24 to 634 GB/s) and a
-  sparse one 26 times. A kept copy that no launch used since the wait before
-  the last one is freed.
+  sparse one 26 times. A wait right after a `GpuKeep` keeps the copies of
+  the arrays it names (see [Where the host waits](#where-the-host-waits)), so
+  a time loop whose host reads the result of a reduction at every iteration
+  copies the arrays it reads once too. A kept copy that no launch used since
+  the wait before the last one is freed.
 * A written buffer is *resident*: the runtime keeps a device buffer for its
   host range in a table. When the device does not hold newer values than the
   host (the entry is not *dirty*), the host bytes are copied in; after the
@@ -997,6 +1000,28 @@ access is not known to be a read or a write, any statement that accesses
 the storage counts, except where it only evaluates an expression. A launch
 itself never waits, so launches that only share what they read, such as the
 iterations of a time loop, run back to back.
+
+A wait ends what the copy model keeps of what launches read, unless the
+host leaves it unchanged until launches read it again: a time loop whose
+host reads the result of a reduction at every iteration waits there, and the
+arrays the reduction reads would be copied again at every iteration. So,
+with every wait placed, the pass follows the statements once more, and puts
+a `GpuKeep` before a wait that names the arrays a launch since the previous
+wait read (or that the previous wait kept) which, on every path from the
+wait to the next one, no host statement may change, and no launch since the
+last `GpuSync` writes. Here a read is told apart from a write: an
+assignment changes only its target, an expression only what the procedures
+it calls may change, and a procedure contained in this one changes a
+variable of this one only if it, or a contained procedure it calls, names
+it. Only whole contiguous arrays that are locals or dummy arguments of the
+procedure are named, not an assumed-shape dummy, which may be a section with
+gaps, nor a pointer. Locals of a `block` end with it, and a procedure's
+arrays may change once it returns, so a procedure other than the main
+program in which a copy is still kept when it returns puts a `GpuWait`
+before the `return` (or at its end), unless the keeping wait is the
+statement right before. On an MI210 that makes a time loop of dot products
+whose host reads the sum at every iteration 36 times faster (23 to 830
+GB/s).
 
 Storage that a pending launch writes and the host frees is not waited for:
 a local of a `block` at the end of the block, or where `exit` or `cycle`
