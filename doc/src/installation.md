@@ -249,7 +249,10 @@ full CUDA-on-CPU suite once, along with normal/fast smoke coverage, and
 Linux/LLVM 7/23 Release provide additional smoke coverage. macOS/LLVM 11 keeps
 platform smoke coverage and
 the Metal and CUDA-on-CPU smoke checks. The full Metal suite runs in
-Exhaustive's macOS platform job. Windows keeps its native Release
+Exhaustive's macOS platform job. Quick compiles the GPU suites with `--fast`,
+which applies the GPU optimizations on top of the passes the offload needs;
+the Metal smoke check on macOS and the CUDA-on-CPU smoke check on Linux/LLVM 21
+also run without `--fast`. Windows keeps its native Release
 build and supported compile/link/run checks. Caffeine/coarrays run on the
 LLVM 11 Debug compatibility compiler. The standalone compiler-to-WASM build is also retained;
 its native phase is Quick's Linux GCC Release build, so it uses `-Werror`
@@ -264,7 +267,8 @@ LLVM 11/21 Debug and full normal/reference suites on macOS LLVM 11 Debug.
 These retain the full platform coverage that used to run only in main's Quick.
 Quick and Exhaustive share `.github/actions/build-platform` so these compiler
 configurations cannot drift. The macOS supplemental job runs the full Metal
-suite; the supplemental jobs do not rerun Quick's CUDA-on-CPU,
+suite with and without `--fast`, and the Linux/LLVM 21 one the full
+CUDA-on-CPU suite without `--fast`; the supplemental jobs do not rerun Quick's
 alternate-backend or descriptor-mode suites. Linux references stay in Quick.
 
 All native compatibility profiles enable runtime-stacktrace support, including

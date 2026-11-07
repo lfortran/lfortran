@@ -1464,8 +1464,10 @@ LFORTRAN_GPU_PROFILE=2 LFORTRAN_GPU_PROFILE_FILE=profile.txt ./a.out
 * Every pipeline fix comes with an integration test that runs on the GPU
   backends (`metal`, `cuda` labels) and checks the results.
 * One `cuda` label covers every mode of the CUDA device code, and every
-  `cuda` test must pass in all of them: `integration_tests -b cuda_cpu` runs
-  the `cuda` tests in the CPU emulation (`--gpu=cuda_cpu`, what CI runs),
+  `cuda` test must pass in all of them, with and without `--fast`:
+  `integration_tests -b cuda_cpu` runs the `cuda` tests in the CPU emulation
+  (`--gpu=cuda_cpu`, what CI runs: Quick with `--fast`, Exhaustive in both
+  modes),
   `integration_tests -b cuda` runs the same tests natively on an NVIDIA GPU
   (`--gpu=cuda`), and `integration_tests -b hip` on an AMD GPU
   (`--gpu=hip`). There are no `cuda_cpu` and `hip` labels. The memory models
