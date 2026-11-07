@@ -11301,6 +11301,39 @@ public:
                                 throw SemanticAbort();
                             }
                         }
+                    } else if (!is_pointer && AST::is_a<AST::Name_t>(*initializer) &&
+                            AST::down_cast<AST::Name_t>(initializer)->n_member > 0) {
+                        // A component of a named constant, such as `c%a%b`,
+                        // is a constant expression (F2018 10.1.12).
+                        this->visit_expr(*initializer);
+                        init_expr = ASRUtils::EXPR(tmp);
+                        ASR::expr_t* component_value = ASRUtils::expr_value(init_expr);
+                        if (component_value) {
+                            // The value of a component of an imported
+                            // parameter refers to the Struct symbols of the
+                            // module that declares it.
+                            SymbolTable *import_scope = current_scope;
+                            if (is_derived_type && current_scope->parent) {
+                                import_scope = current_scope->parent;
+                            }
+                            ImportedValueDuplicator duplicator(al, import_scope);
+                            component_value = duplicator.duplicate_expr(component_value);
+                        }
+                        if (component_value &&
+                                ASR::is_a<ASR::StructConstant_t>(*component_value)) {
+                            if (is_struct_const) {
+                                init_expr = component_value;
+                            } else {
+                                ASR::StructConstant_t* struct_const =
+                                    ASR::down_cast<ASR::StructConstant_t>(component_value);
+                                init_expr = ASRUtils::EXPR(ASR::make_StructConstructor_t(
+                                    al, x.base.base.loc, struct_const->m_dt_sym,
+                                    struct_const->m_args, struct_const->n_args,
+                                    struct_const->m_type, component_value));
+                            }
+                        } else if (component_value) {
+                            init_expr = component_value;
+                        }
                     } else if (AST::is_a<AST::Name_t>(*initializer)) {
                         std::string sym_name = AST::down_cast<AST::Name_t>(initializer)->m_id;
                         sym_name = to_lower(sym_name);
