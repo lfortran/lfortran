@@ -211,13 +211,10 @@ namespace LCompilers {
                     _optimization_passes.begin(),
                     _optimization_passes.end()
                 );
-                int _pass_max_idx = -1, _opt_max_idx = -1;
+                // Every pass of the pipeline up to the first place each
+                // pass named is listed, once.
+                int _opt_max_idx = -1;
                 for (std::string &current_pass: passes) {
-                    auto it1 = std::find(_passes.begin(), _passes.end(), current_pass);
-                    if (it1 != _passes.end()) {
-                        _pass_max_idx = std::max(_pass_max_idx,
-                                            (int)(it1 - _passes.begin()));
-                    }
                     auto it2 = std::find(_with_optimization_passes.begin(),
                                     _with_optimization_passes.end(), current_pass);
                     if (it2 != _with_optimization_passes.end()) {
@@ -226,14 +223,8 @@ namespace LCompilers {
                     }
                 }
                 passes.clear();
-                if (_pass_max_idx != -1) {
-                    for (int i=0; i<=_pass_max_idx; i++)
-                        passes.push_back(_passes[i]);
-                }
-                if (_opt_max_idx != -1) {
-                    for (int i=0; i<=_opt_max_idx; i++)
-                        passes.push_back(_with_optimization_passes[i]);
-                }
+                for (int i=0; i<=_opt_max_idx; i++)
+                    passes.push_back(_with_optimization_passes[i]);
             }
             // The verifier options for the ASR after each pass
             ASRVerifyOptions verify_options;
