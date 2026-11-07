@@ -85,6 +85,7 @@
 #include <libasr/pass/gpu_struct_component_args.h>
 #include <libasr/pass/gpu_device_heap.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
 #include <libasr/codegen/asr_to_fortran.h>
@@ -110,6 +111,10 @@ namespace LCompilers {
         // Only with --fast: an optimization, which nothing the program
         // needs to run depends on.
         RunFast = 1,
+        // Only when --gpu selects a device: the pass works on device code,
+        // or on what the host does around the launch of a kernel, and a
+        // program compiled for no device has none.
+        RunGpu = 2,
     };
 
     struct PipelinePass {
@@ -121,7 +126,8 @@ namespace LCompilers {
         private:
 
         // The default pipeline, in the order its passes run. Without
-        // --fast, only the passes that are not marked RunFast run.
+        // --fast, the passes marked RunFast do not run, and without a
+        // device, the passes marked RunGpu do not run.
         std::vector<PipelinePass> _pipeline;
         std::vector<std::string> _user_defined_passes;
         std::vector<std::string> _skip_passes, _c_skip_passes;
@@ -216,7 +222,7 @@ namespace LCompilers {
                            double &cummulative_time_taken_by_passes_in_microseconds) {
             pass_options.diagnostics = &diagnostics;
             if (pass_options.pass_cumulative) {
-                passes = cumulative_passes(passes);
+                passes = cumulative_passes(passes, pass_options);
             }
             // The verifier options for the ASR after each pass
             ASRVerifyOptions verify_options;
@@ -302,7 +308,12 @@ namespace LCompilers {
         // Whether a pass of the default pipeline runs with these options.
         static bool pipeline_pass_runs(const PipelinePass &pass,
                 const PassOptions &pass_options) {
-            return !(pass.when & RunFast) || pass_options.fast;
+            if ((pass.when & RunFast) && !pass_options.fast) return false;
+            if ((pass.when & RunGpu)
+                    && gpu_device_selected(pass_options) == GpuDevice::None) {
+                return false;
+            }
+            return true;
         }
 
         // The passes of the default pipeline that run with these options,
@@ -318,10 +329,16 @@ namespace LCompilers {
             return passes;
         }
 
-        // With --cumulative: every pass of the default pipeline up to the
-        // first place each of `named` is listed, once.
+        // With --cumulative: the passes of the default pipeline that run
+        // with these options, up to the first place each of `named` is
+        // listed, and the passes `named` themselves.
         std::vector<std::string> cumulative_passes(
-                const std::vector<std::string> &named) const {
+                const std::vector<std::string> &named,
+                const PassOptions &pass_options) const {
+            auto is_named = [&](const std::string &name) {
+                return std::find(named.begin(), named.end(), name)
+                    != named.end();
+            };
             size_t end = 0;
             for (const std::string &name: named) {
                 for (size_t i = 0; i < _pipeline.size(); i++) {
@@ -333,7 +350,10 @@ namespace LCompilers {
             }
             std::vector<std::string> passes;
             for (size_t i = 0; i < end; i++) {
-                passes.push_back(_pipeline[i].name);
+                if (pipeline_pass_runs(_pipeline[i], pass_options)
+                        || is_named(_pipeline[i].name)) {
+                    passes.push_back(_pipeline[i].name);
+                }
             }
             return passes;
         }
@@ -369,15 +389,15 @@ namespace LCompilers {
                 // A call its subroutine returns from at once on a condition
                 // tests that condition itself, so that the host need not
                 // wait for the device before evaluating its arguments.
-                {"gpu_call_guards"},
+                {"gpu_call_guards", RunGpu},
                 // Parallel loops assigned to the device are fused, skewed
                 // and split while they are still loops of the source
                 // (gpu_loop_fusion.cpp, gpu_time_skew.cpp,
                 // gpu_index_set_split.cpp).
-                {"gpu_loop_transforms"},
+                {"gpu_loop_transforms", RunGpu},
                 // A whole-array assignment in a host loop that launches
                 // kernels, on the data they use, runs on the device too.
-                {"gpu_array_statements"},
+                {"gpu_array_statements", RunGpu},
                 // Each statement that references a function whose result is
                 // finalized after the statement becomes a BLOCK here, before
                 // the passes below split it into several statements.
@@ -386,7 +406,7 @@ namespace LCompilers {
                 // Every loop the dispatch assigned to the device becomes a
                 // kernel and its launch. Nothing is kept to run it on the
                 // host instead: a loop this cannot lower is an error.
-                {"gpu_offload"},
+                {"gpu_offload", RunGpu},
                 {"openmp"},
                 // Whatever OpenMP construct no lowering claimed is unwrapped
                 // here, so it runs serially instead of reaching a code
@@ -394,11 +414,11 @@ namespace LCompilers {
                 {"omp_region_flatten"},
                 // Everything a kernel reaches is device code, and the
                 // passes below have to know which routines those are.
-                {"device_partition"},
+                {"device_partition", RunGpu},
                 // A derived-type component holding device buffers becomes
                 // an argument of its own wherever device code uses it.
-                {"gpu_struct_component_args"},
-                {"gpu_device_allocatable"},
+                {"gpu_struct_component_args", RunGpu},
+                {"gpu_device_allocatable", RunGpu},
                 {"conditional_expr"},
                 // A FORALL becomes a DO CONCURRENT loop before temporaries
                 // are created, so that temporaries depending on its indices
@@ -436,16 +456,16 @@ namespace LCompilers {
                 {"array_op"},
                 // A block-private map read element by element after it
                 // is written needs no per-thread device storage at all.
-                {"gpu_private_map_forwarding"},
+                {"gpu_private_map_forwarding", RunGpu},
                 // A block-private map read once by an ordered scalar fold
                 // needs only a scalar, not a per-thread device workspace.
-                {"gpu_private_reduction_fusion"},
+                {"gpu_private_reduction_fusion", RunGpu},
                 // A device loop over packed data, reading `(d + r)/K` and
                 // `modulo(d + r, K)` of its index, is unrolled by K so that
                 // each copy has constant residues, while `modulo` is still
                 // an intrinsic and the checks of small functions are still
                 // IF and STOP statements.
-                {"gpu_residue_unroll"},
+                {"gpu_residue_unroll", RunGpu},
                 {"symbolic"},
                 {"intrinsic_function"},
                 {"intrinsic_subroutine"},
@@ -453,10 +473,10 @@ namespace LCompilers {
                 // A pass above can add a routine of its own, such as the
                 // shared lowering of an intrinsic, so the partition is
                 // taken again before the device passes below read it.
-                {"device_partition"},
+                {"device_partition", RunGpu},
                 // A routine's array result becomes an argument here, so a
                 // device routine's result needs the shape of that argument.
-                {"gpu_device_allocatable"},
+                {"gpu_device_allocatable", RunGpu},
                 {"array_op"},
                 // An intrinsic assignment allocates its unallocated
                 // allocatable variable, explicitly from here on.
@@ -471,37 +491,37 @@ namespace LCompilers {
                 // A real power of device code with a small constant integer
                 // exponent is the product the host computes, once the
                 // passes above have written every one of them.
-                {"gpu_integer_powers"},
+                {"gpu_integer_powers", RunGpu},
                 // What the host cannot size before the launch is allocated
                 // on the device heap, and every `stop` of device code is
                 // lowered, once nothing else can add one.
-                {"gpu_device_heap"},
+                {"gpu_device_heap", RunGpu},
                 // Heap images own their whole-value copies. Locals still
                 // backed by separate component storage copy only values,
                 // never the opaque host descriptors in the struct layout.
-                {"gpu_struct_component_copies"},
+                {"gpu_struct_component_copies", RunGpu},
                 // A run-time sized local of a device routine becomes an
                 // argument its callers give it, up to the kernel, where the
                 // host sizes it before the launch.
-                {"gpu_device_workspace"},
+                {"gpu_device_workspace", RunGpu},
                 // Place the actual lowered arrays before specializing device
                 // calls by the address spaces of their storage.
-                {"gpu_kernel_storage"},
+                {"gpu_kernel_storage", RunGpu},
                 // A device routine's address spaces are settled here, once
                 // every array of device code has the type it is emitted
                 // with. Decomposed component buffers needing specialization
                 // become explicit array arguments with their storage's space.
-                {"gpu_memory_space"},
+                {"gpu_memory_space", RunGpu},
                 // Lay out each kernel, now that shared lowering has given it
                 // the shape the device code generators see.
-                {"gpu_kernel_finalize"},
+                {"gpu_kernel_finalize", RunGpu},
                 // An iteration of a kernel with few runs on the lanes of a
                 // SIMD-group, which share the loops inside it.
-                {"gpu_vector_lanes"},
+                {"gpu_vector_lanes", RunGpu},
                 // A launch does not wait for its kernel: the host waits
                 // where it next needs what a kernel wrote.
-                {"gpu_launch_sync"},
-                {"device_launch_expand"},
+                {"gpu_launch_sync", RunGpu},
+                {"device_launch_expand", RunGpu},
                 // Every array a StringFormat formats or a WRITE statement
                 // transfers, and every internal file, is passed to the
                 // runtime as its contiguous data. An array item of a READ is
@@ -512,7 +532,7 @@ namespace LCompilers {
                 // loops are lowered.
                 {"string_format_array_args"},
                 // The short loops of Metal device code are unrolled.
-                {"gpu_sequential_unroll"},
+                {"gpu_sequential_unroll", RunGpu},
                 {"while_else"},
                 // Every call the passes above can create is in place, so each
                 // character dummy gets its hidden length argument here, and
