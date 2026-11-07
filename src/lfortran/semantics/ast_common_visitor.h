@@ -5837,6 +5837,23 @@ public:
         if (outermost_local_loop) {
             set_data_local_elements_value(data_stmt, statement_local_elements);
         }
+        // The values of a plain array are set only in the array of the first
+        // object, so they would be lost, or set in the derived type, when that
+        // object is a structure component.
+        if (top_level_module_scope && !statement_component_elements.arrays.empty()
+                && local_collected_values.size() > 0
+                && (target_variable == nullptr
+                    || ASR::is_a<ASR::Struct_t>(*ASRUtils::get_asr_owner(
+                        &target_variable->base)))) {
+            diag.add(Diagnostic(
+                "a DATA implied do loop that initializes both a structure "
+                "component of an array element and another array, with the "
+                "structure component first, is not supported in a module yet",
+                Level::Error, Stage::Semantic, {
+                    Label("", {implied_do_loop_expr->base.loc})
+                }));
+            throw SemanticAbort();
+        }
         if (top_level_module_scope) {
             set_data_component_elements_value(statement_component_elements,
                 data_stmt.base.base.loc);

@@ -5547,6 +5547,12 @@ semantic error: Argument `p` with intent(in) passed to a dummy argument with mod
 4570 |         call cc1_ptr_inout(p)  ! {Error} Argument `p` with intent(in) passed to a dummy argument with modifying intent
      |                            ^ 
 
+semantic error: a DATA implied do loop that initializes both a structure component of an array element and another array, with the structure component first, is not supported in a module yet
+    --> tests/errors/continue_compilation_1.f90:4651:10
+     |
+4651 |     data (cc1_data_mixed_a(i)%x(1), cc1_data_mixed_y(i), i=1,2) / 1, 10, 2, 20 /  ! {Error} a DATA implied do loop that initializes both a structure component of an array element and another array, with the structure component first, is not supported in a module yet
+     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
