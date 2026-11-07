@@ -7294,6 +7294,20 @@ RUN(NAME gpu_deferred_sync_04 LABELS gfortran llvm metal cuda EXTRAFILES gpu_def
 RUN(NAME gpu_deferred_sync_05 FAIL LABELS gfortran llvm metal cuda) # stops: a part of 4 fails the check
 RUN(NAME gpu_deferred_sync_06 FAIL LABELS gfortran llvm metal cuda) # stops: a negative value
 RUN(NAME gpu_deferred_sync_07 FAIL LABELS gfortran llvm metal cuda EXTRAFILES gpu_deferred_sync_07_mod.f90 EXTRA_ARGS --separate-compilation) # stops: a negative value
+RUN(NAME gpu_deferred_sync_08 LABELS gfortran llvm cuda STATIC_LIBRARY_FILES gpu_deferred_sync_08_mod.f90 EXTRA_ARGS --separate-compilation)
+# The library is compiled without a GPU device, as a host library is: its
+# options are the program's without `--gpu`. (The metal backend does not
+# build STATIC_LIBRARY_FILES.) The target name carries the suffixes of the
+# mode, such as _STD_F23 and _FAST.
+if (LFORTRAN_BACKEND MATCHES "^(cuda|cuda_cpu|hip)$")
+    get_property(targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+    list(FILTER targets INCLUDE REGEX "^gpu_deferred_sync_08(_[A-Z0-9_]+)?_staticlib$")
+    foreach(target ${targets})
+        get_target_property(options ${target} COMPILE_OPTIONS)
+        string(REGEX REPLACE "--gpu=[a-z_]+;?" "" options "${options}")
+        set_property(TARGET ${target} PROPERTY COMPILE_OPTIONS "${options}")
+    endforeach()
+endif()
 RUN(NAME gpu_ending_locals_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_ending_locals_02 LABELS gfortran llvm metal cuda EXTRAFILES gpu_ending_locals_02_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_partial_read_01 LABELS gfortran llvm metal cuda)

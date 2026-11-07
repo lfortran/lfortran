@@ -1,5 +1,5 @@
 ! A kernel that can stop, in a module of another file (--separate-compilation):
-! the twin the caller calls replays the stop before it returns, so the
+! the subroutine the caller calls replays the stop before it returns, so the
 ! program stops before it prints the result.
 program gpu_deferred_sync_07
 use gpu_deferred_sync_07_mod, only: scaled

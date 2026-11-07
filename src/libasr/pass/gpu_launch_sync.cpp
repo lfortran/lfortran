@@ -40,15 +40,16 @@ host -- where the host next needs that, and nowhere else:
   pending: what the caller sees is complete -- except in a deferring twin;
 * before any statement this pass does not know.
 
-Deferring twins. A module subroutine that `gets_twin` selects from its
-declaration alone (so that every translation unit that uses the module from
-its module file selects the same) hands its body to a new procedure of the
-module, `<name>__gpu_deferred`, its twin, and only calls it: the subroutine
-then waits at its end as any procedure does. What can call a procedure
-without this pass seeing the call -- a procedure pointer, a dummy procedure,
-a binding, C, a file compiled without a device -- reaches the subroutine.
-The calls this pass sees by name are redirected to the twin, which may
-return with launches pending:
+Deferring twins. A module subroutine that this translation unit compiles
+and that `gets_twin` selects from its declaration hands its body to a new
+procedure of the module, `<name>__gpu_deferred`, its twin, and only calls
+it: the subroutine then waits at its end as any procedure does. What can
+call a procedure without this pass seeing the call -- a procedure pointer, a
+dummy procedure, a binding, C, a file compiled without a device -- reaches
+the subroutine. A module subroutine that another translation unit compiles
+gets no twin: that unit may have been compiled without a device, and so
+defines none. The calls this pass sees by name are redirected to the twin,
+which may return with launches pending:
 
 * At its exits the twin discards, or waits for, the launches on its locals,
   and returns without waiting when what is still pending writes and reads
@@ -260,20 +261,21 @@ bool refers(ASR::ttype_t *t) {
     return false;
 }
 
-// Whether the module procedure `fn` of `m` gets a deferring twin. Only its
-// declaration decides, as it is in the module file, so that every
-// translation unit that uses the module decides the same.
+// Whether the module procedure `fn` of `m` gets a deferring twin: one this
+// translation unit compiles, whose declaration allows it. A procedure
+// another translation unit compiles (ExternalUndefined: of a module loaded
+// from its module file with --separate-compilation, or one marked external
+// because the program compiles it) gets none, as that unit may have been
+// compiled without a device, and so without twins; a bind(c) one is an
+// interface.
 bool gets_twin(ASR::Module_t *m, ASR::Function_t *fn) {
     if (m->m_parent_module != nullptr || m->m_intrinsic
             || fn->m_gpu != nullptr || fn->m_return_var != nullptr) {
         return false;
     }
-    // A procedure of a module loaded from its module file has the ABI
-    // ExternalUndefined there; a bind(c) one is an interface.
     ASR::FunctionType_t *type = ASRUtils::get_FunctionType(fn);
     if (type->m_deftype != ASR::deftypeType::Implementation
-            || (type->m_abi != ASR::abiType::Source
-                && type->m_abi != ASR::abiType::ExternalUndefined)
+            || type->m_abi != ASR::abiType::Source
             || type->m_elemental || type->m_module
             || type->m_exec_space != ASR::exec_spaceType::Host) {
         return false;
@@ -451,8 +453,9 @@ ASR::Function_t *make_twin(Allocator &al, ASR::Module_t *m,
 }
 
 // Gives every procedure of the modules of `unit` that gets_twin selects its
-// twin, the modules loaded from module files included. A procedure that has
-// one already, because the pass runs again, keeps it, and a twin gets none.
+// twin, those of the modules loaded from module files that this unit
+// compiles included. A procedure that has one already, because the pass runs
+// again, keeps it, and a twin gets none.
 void make_twins(Allocator &al, ASR::TranslationUnit_t &unit,
         Deferral &deferral) {
     for (auto &item : unit.m_symtab->get_scope()) {
