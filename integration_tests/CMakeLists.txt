@@ -4589,6 +4589,10 @@ RUN(NAME external_10 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_11 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_12 LABELS gfortran llvm EXTRAFILES external_12_module.f90)
 RUN(NAME external_13 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --mangle-underscore-external)
+RUN(NAME mangle_underscore_external_02 LABELS gfortran llvm EXTRAFILES mangle_underscore_external_02b.f90
+    EXTRA_ARGS --mangle-underscore-external) # global procedures defined in another object file link (#14164)
+RUN(NAME mangle_underscore_external_03 LABELS gfortran llvm EXTRAFILES mangle_underscore_external_03b.f90
+    EXTRA_ARGS --mangle-underscore-external) # `f` and `f_` stay distinct global procedures
 RUN(NAME external_14 LABELS gfortran llvm EXTRAFILES external_14_module.f90)
 RUN(NAME external_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
 RUN(NAME external_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
