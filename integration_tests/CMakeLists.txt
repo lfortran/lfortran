@@ -3268,6 +3268,7 @@ RUN(NAME type_bound_private_05 LABELS llvm EXTRAFILES type_bound_private_05a.f90
 RUN(NAME type_bound_private_06 LABELS llvm)
 RUN(NAME type_bound_private_07 LABELS llvm)
 RUN(NAME type_bound_private_08 LABELS llvm) # GFortran rejects the new same-named bindings as overrides
+RUN(NAME type_bound_private_09 LABELS llvm) # GFortran rejects the new same-named binding as an override
 
 RUN(NAME type_parameter_inquiry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

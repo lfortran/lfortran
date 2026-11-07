@@ -5279,7 +5279,10 @@ public:
             }
             Vec<ASR::symbol_t*> procs;
             procs.reserve(al, generic_procs(parent_generic).second);
-            std::set<std::string> proc_names;
+            // Specifics are merged by the binding they denote, not by name: an
+            // inherited private specific that `clss` cannot override and a new
+            // binding of `clss` with its name are different bindings.
+            std::set<ASR::symbol_t*> bindings;
             for (ASR::symbol_t *generic : {parent_generic, own_generic}) {
                 if (generic == nullptr) {
                     continue;
@@ -5288,9 +5291,6 @@ public:
                 for (size_t i = 0; i < n_procs; i++) {
                     ASR::symbol_t *specific = ASRUtils::symbol_get_past_external(m_procs[i]);
                     std::string proc_name = ASRUtils::symbol_name(specific);
-                    if (!proc_names.insert(proc_name).second) {
-                        continue;
-                    }
                     ASR::symbol_t *proc = resolve_type_bound_proc_in_parent_chain(
                         clss, proc_name);
                     // An inherited private binding that is not accessible in
@@ -5327,6 +5327,9 @@ public:
                     } else if (proc == nullptr
                             || !ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
                         proc = m_procs[i];
+                    }
+                    if (!bindings.insert(ASRUtils::symbol_get_past_external(proc)).second) {
+                        continue;
                     }
                     procs.push_back(al, proc);
                 }
