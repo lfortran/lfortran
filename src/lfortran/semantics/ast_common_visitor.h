@@ -7569,14 +7569,8 @@ public:
                     ::visit_SubroutineCall(x);
             }
 
-            // A reference with a section subscript or a substring range,
-            // such as `s(1:1)`, is not a function reference.
             void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
-                bool section = x.n_subargs > 0;
-                for (size_t i = 0; i < x.n_args; i++) {
-                    if (x.m_args[i].m_step != nullptr) section = true;
-                }
-                if (x.n_member == 0 && !section) {
+                if (x.n_member == 0) {
                     names.insert(to_lower(x.m_func));
                 }
                 AST::BaseWalkVisitor<ProcedureReferenceFinder>

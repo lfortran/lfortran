@@ -4577,3 +4577,50 @@ subroutine cc1_char_len_entity_override()
     implicit none
     character(len=cc1_char_len_nundef) :: c*4  ! {Error} Variable 'cc1_char_len_nundef' is not declared
 end subroutine
+
+! The specific procedures of a generic shall be distinguishable (C1514).
+module cc1_ambiguous_generic
+    implicit none
+    type :: cc1_circle
+    end type
+    type, extends(cc1_circle) :: cc1_ellipse
+    end type
+    type :: cc1_visitor
+    contains
+        procedure :: cc1_visit_circle
+        procedure :: cc1_visit_ellipse  ! {Error} ambiguous interfaces in generic 'visit' for 'cc1_visit_circle' and 'cc1_visit_ellipse'
+        generic :: visit => cc1_visit_circle, cc1_visit_ellipse
+    end type
+
+    interface cc1_amb_names
+        module procedure cc1_amb_x, cc1_amb_y  ! {Error} ambiguous interfaces in generic 'cc1_amb_names' for 'cc1_amb_x' and 'cc1_amb_y'
+    end interface
+
+    interface cc1_amb_optional
+        subroutine cc1_amb_n(n)
+            integer, intent(in) :: n
+        end subroutine
+        subroutine cc1_amb_nr(k, r)  ! {Error} ambiguous interfaces in generic 'cc1_amb_optional' for 'cc1_amb_n' and 'cc1_amb_nr'
+            integer, intent(in) :: k
+            real, intent(in), optional :: r
+        end subroutine
+    end interface
+contains
+    subroutine cc1_visit_circle(v, c)
+        class(cc1_visitor), intent(in) :: v
+        class(cc1_circle), intent(in) :: c
+    end subroutine
+
+    subroutine cc1_visit_ellipse(v, e)
+        class(cc1_visitor), intent(in) :: v
+        class(cc1_ellipse), intent(in) :: e
+    end subroutine
+
+    subroutine cc1_amb_x(x)
+        real(8) :: x
+    end subroutine
+
+    subroutine cc1_amb_y(y)
+        real(8) :: y
+    end subroutine
+end module

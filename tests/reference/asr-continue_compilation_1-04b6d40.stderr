@@ -1904,6 +1904,38 @@ semantic error: Variable 'cc1_char_len_nundef' is not declared
 4578 |     character(len=cc1_char_len_nundef) :: c*4  ! {Error} Variable 'cc1_char_len_nundef' is not declared
      |                   ^^^^^^^^^^^^^^^^^^^ 'cc1_char_len_nundef' is undeclared
 
+semantic error: ambiguous interfaces in generic 'cc1_amb_names' for 'cc1_amb_x' and 'cc1_amb_y'
+    --> tests/errors/continue_compilation_1.f90:4596:9
+     |
+4596 |         module procedure cc1_amb_x, cc1_amb_y  ! {Error} ambiguous interfaces in generic 'cc1_amb_names' for 'cc1_amb_x' and 'cc1_amb_y'
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'cc1_amb_y' is not distinguishable from 'cc1_amb_x' by its arguments
+
+semantic error: ambiguous interfaces in generic 'cc1_amb_optional' for 'cc1_amb_n' and 'cc1_amb_nr'
+    --> tests/errors/continue_compilation_1.f90:4603:9 - 4606:22
+     |
+4603 |            subroutine cc1_amb_nr(k, r)  ! {Error} ambiguous interfaces in generic 'cc1_amb_optional' for 'cc1_amb_n' and 'cc1_amb_nr'
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4606 |            end subroutine
+     | ...^^^^^^^^^^^^^^^^^^^^^^ 'cc1_amb_nr' is not distinguishable from 'cc1_amb_n' by its arguments
+     |
+4600 |            subroutine cc1_amb_n(n)
+     |            ~~~~~~~~~~~~~~~~~~~~~~~...
+...
+     |
+4602 |            end subroutine
+     | ...~~~~~~~~~~~~~~~~~~~~~~ 'cc1_amb_n' is specified here
+
+semantic error: ambiguous interfaces in generic 'visit' for 'cc1_visit_circle' and 'cc1_visit_ellipse'
+    --> tests/errors/continue_compilation_1.f90:4591:9
+     |
+4591 |         procedure :: cc1_visit_ellipse  ! {Error} ambiguous interfaces in generic 'visit' for 'cc1_visit_circle' and 'cc1_visit_ellipse'
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'cc1_visit_ellipse' is not distinguishable from 'cc1_visit_circle' by its arguments
+     |
+4590 |         procedure :: cc1_visit_circle
+     |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 'cc1_visit_circle' is specified here
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
