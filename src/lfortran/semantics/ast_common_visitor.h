@@ -2419,6 +2419,11 @@ public:
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
     // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
+    // The dummy arguments of the ENTRY statements of the procedure whose
+    // specification part SymbolTableVisitor is visiting. Unlike
+    // `current_procedure_args`, they are known before it, see
+    // `cell_procedure_for_declaration()`.
+    std::vector<std::string> current_entry_args;
     // The result name and its declaring function scope are available before
     // the function's ASR owner and return variable have been constructed.
     std::string current_procedure_result;
@@ -7652,7 +7657,8 @@ public:
     // Return that procedure if the declaration of `name` that is being made
     // in `current_scope` can be left out in favour of it: `current_scope` is
     // a procedure, a main program or a BLOCK construct (an entity of a module
-    // is also accessible by `use`), `name` is not one of its dummy arguments,
+    // is also accessible by `use`), `name` is not one of its dummy arguments
+    // (of the procedure statement or of an ENTRY statement),
     // and `name` resolves from its host to a procedure defined at the top
     // level of such a cell. The caller then does not create the declaration,
     // before anything can refer to it, so that every reference to `name`
@@ -7672,7 +7678,9 @@ public:
             return nullptr;
         }
         if (std::find(current_procedure_args.begin(),
-                current_procedure_args.end(), name) != current_procedure_args.end()) {
+                current_procedure_args.end(), name) != current_procedure_args.end()
+                || std::find(current_entry_args.begin(),
+                    current_entry_args.end(), name) != current_entry_args.end()) {
             return nullptr;
         }
         ASR::symbol_t *proc = current_scope->parent->resolve_symbol(name);

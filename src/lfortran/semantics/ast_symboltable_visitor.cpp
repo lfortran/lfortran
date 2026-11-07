@@ -313,6 +313,33 @@ public:
 
     ASR::ttype_t *tmp_type;
 
+    // Sets `current_entry_args` to the dummy arguments of the ENTRY
+    // statements among `items`, the items of the program unit being
+    // visited, and restores the enclosing unit's on the way out.
+    struct EntryArgsScope {
+        SymbolTableVisitor &v;
+        std::vector<std::string> enclosing;
+
+        EntryArgsScope(SymbolTableVisitor &v_, AST::decl_stmt_t **items,
+                size_t n_items) : v(v_) {
+            enclosing.swap(v.current_entry_args);
+            for (size_t i = 0; i < n_items; i++) {
+                if (!AST::is_a<AST::Entry_t>(*items[i])) continue;
+                AST::Entry_t *entry = AST::down_cast<AST::Entry_t>(items[i]);
+                for (size_t j = 0; j < entry->n_args; j++) {
+                    if (entry->m_args[j].m_arg) {
+                        v.current_entry_args.push_back(
+                            to_lower(entry->m_args[j].m_arg));
+                    }
+                }
+            }
+        }
+
+        ~EntryArgsScope() {
+            v.current_entry_args.swap(enclosing);
+        }
+    };
+
     struct ContainedProcedureScope;
     ContainedProcedureScope *contained_procedure_scope = nullptr;
 
@@ -1390,6 +1417,7 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        EntryArgsScope entry_args(*this, x.m_items, x.n_items);
         ClassProcedureScope class_procedure_scope(*this);
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
@@ -2381,6 +2409,7 @@ public:
 
         record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        EntryArgsScope entry_args(*this, x.m_items, x.n_items);
         bool subroutine_has_alternate_returns = false;
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
@@ -3058,6 +3087,7 @@ public:
 
         record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        EntryArgsScope entry_args(*this, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));

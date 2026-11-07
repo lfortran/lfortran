@@ -4877,6 +4877,88 @@ end function
     }
 }
 
+TEST_CASE("FortranEvaluator dummy procedure of an ENTRY statement named like an earlier cell's procedure") {
+    // {implicit_interface, implicit_typing}
+    for (auto mode : {std::make_pair(false, false), std::make_pair(true, false),
+            std::make_pair(true, true)}) {
+        CAPTURE(mode.first);
+        CAPTURE(mode.second);
+        CompilerOptions cu;
+        cu.interactive = true;
+        cu.implicit_interface = mode.first;
+        cu.implicit_typing = mode.second;
+        cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2("integer :: z0").ok);
+        REQUIRE(e.evaluate2(R"(integer function fn()
+fn = 1
+end function
+
+subroutine sn(x)
+integer, intent(out) :: x
+x = 4
+end subroutine
+
+integer function ifn()
+ifn = 5
+end function
+)").ok);
+        // `fn` is a dummy argument of the ENTRY statement only, so its
+        // interface body declares that dummy, not the earlier cell's `fn`.
+        REQUIRE(e.evaluate2(R"(integer function c_iface()
+interface
+integer function fn()
+end function
+end interface
+integer :: c_iface2
+c_iface = 10
+return
+entry c_iface2(fn)
+c_iface2 = fn() + 30
+end function
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("c_iface()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 10);
+        r = e.evaluate2("c_iface2(ifn)");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 35);
+        if (!mode.first) continue;
+        // The same with `integer, external`.
+        REQUIRE(e.evaluate2(R"(integer function c_ext()
+integer, external :: fn
+integer :: c_ext2
+c_ext = 10
+return
+entry c_ext2(fn)
+c_ext2 = fn() + 20
+end function
+)").ok);
+        r = e.evaluate2("c_ext()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 10);
+        r = e.evaluate2("c_ext2(ifn)");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 25);
+        // The same with an EXTERNAL statement in a subroutine.
+        REQUIRE(e.evaluate2(R"(subroutine s(r)
+integer, intent(out) :: r
+external sn
+r = 10
+return
+entry s2(r, sn)
+call sn(r)
+r = r + 40
+end subroutine
+)").ok);
+        REQUIRE(e.evaluate2("integer :: q").ok);
+        REQUIRE(e.evaluate2("call s2(q, sn)").ok);
+        r = e.evaluate2("q");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 44);
+    }
+}
+
 TEST_CASE("FortranEvaluator external statement for an earlier cell's function") {
     CompilerOptions cu;
     cu.interactive = true;
