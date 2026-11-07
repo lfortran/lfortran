@@ -4577,3 +4577,16 @@ subroutine cc1_char_len_entity_override()
     implicit none
     character(len=cc1_char_len_nundef) :: c*4  ! {Error} Variable 'cc1_char_len_nundef' is not declared
 end subroutine
+
+! In a module, a DATA implied do loop cannot yet initialize a plain array after
+! a structure component of an array element.
+module cc1_data_implied_do_component_mixed
+    implicit none
+    type :: cc1_data_mixed_t
+        integer :: x(2)
+    end type
+    integer, private :: i
+    type(cc1_data_mixed_t) :: cc1_data_mixed_a(2)
+    integer :: cc1_data_mixed_y(2)
+    data (cc1_data_mixed_a(i)%x(1), cc1_data_mixed_y(i), i=1,2) / 1, 10, 2, 20 /  ! {Error} a DATA implied do loop that initializes both a structure component of an array element and another array, with the structure component first, is not supported in a module yet
+end module
