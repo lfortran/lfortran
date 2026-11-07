@@ -1606,6 +1606,40 @@ end module
     }
 }
 
+TEST_CASE("LLVM straight-line code is SLP vectorized under --fast") {
+    // Four independent additions of adjacent elements: only the SLP
+    // vectorizer can combine them, as there is no loop to vectorize.
+    std::string source = R"(module slp_m
+implicit none
+contains
+subroutine add4(a, b, c)
+    real(8), intent(in) :: a(4), b(4)
+    real(8), intent(out) :: c(4)
+    c(1) = a(1) + b(1)
+    c(2) = a(2) + b(2)
+    c(3) = a(3) + b(3)
+    c(4) = a(4) + b(4)
+end subroutine
+end module
+)";
+    inspect_definitions(source, true, {{"add4", "_slp_m_add4"}},
+        [&](const std::string &, llvm::Function &fn) {
+            size_t scalar_adds = 0, vector_adds = 0;
+            for (llvm::BasicBlock &block: fn) {
+                for (llvm::Instruction &inst: block) {
+                    if (inst.getOpcode() != llvm::Instruction::FAdd) continue;
+                    if (inst.getType()->isVectorTy()) {
+                        vector_adds++;
+                    } else {
+                        scalar_adds++;
+                    }
+                }
+            }
+            CHECK(vector_adds > 0);
+            CHECK(scalar_adds == 0);
+        }, false, true);
+}
+
 TEST_CASE("LLVM TBAA metadata under --fast") {
     std::string source = R"(module tbaa_ir_m
 implicit none

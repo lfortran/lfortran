@@ -52,8 +52,8 @@ sum_ABC = sum(ABC)
 
 print *, "Sum of all ABC elements:", sum_ABC
 
-! Verify sums
-if (abs(sum_ABC - expected_sum_ABC) > 1.0e-5) then
+! Verify sums; one ulp of 345.6 is 3e-5, and fast math may reorder the sum
+if (abs(sum_ABC - expected_sum_ABC) > 1.0e-4) then
     print *, "Expected ABC sum:", expected_sum_ABC, "Actual:", sum_ABC
     error stop "Sum of ABC array is incorrect"
 end if
