@@ -5557,12 +5557,23 @@ public:
         ASR::expr_t* value;
     };
 
-    // The elements of arrays of derived type whose components the DATA
-    // statements of a module give initial values, by column-major position,
-    // collected for a whole statement.
+    // The constant `value` that a DATA statement of a module gives the
+    // structure component `object` of an element of an array of derived
+    // type, which `parts` select in the element.
+    struct DataComponentValue {
+        ASR::expr_t* object;
+        std::vector<ASR::expr_t*> parts;
+        ASR::expr_t* value;
+    };
+
+    // The values that a DATA statement of a module gives structure
+    // components of elements of arrays of derived type, by array and
+    // column-major position of the element, in the order of the statement.
+    // Each element is built once from all of its values.
     struct DataComponentElements {
         std::vector<ASR::Variable_t*> arrays;
-        std::map<ASR::Variable_t*, std::map<int64_t, ASR::expr_t*>> elements;
+        std::map<ASR::Variable_t*,
+            std::map<int64_t, std::vector<DataComponentValue>>> elements;
     };
 
     void emit_data_element_assignment(const AST::DataStmt_t &data_stmt,
@@ -6161,19 +6172,28 @@ public:
             args.p, args.size(), type));
     }
 
-    // The value of the object that `parts[k]` is a part of, whose value is
-    // `previous` (nullptr for its default initial value), after its
-    // subobject that `parts` select from `k` on gets the constant `value`.
-    // Returns nullptr when it cannot be determined at compile time.
+    // The value of the object whose value is `previous` (nullptr for its
+    // default initial value) after its subobjects that the `parts` of
+    // `values` select from `k` on get their values. A later value replaces
+    // an earlier one. Returns nullptr when it cannot be determined at
+    // compile time.
     ASR::expr_t* data_component_updated_value(ASR::expr_t* previous,
-            const std::vector<ASR::expr_t*>& parts, size_t k,
-            ASR::expr_t* value, const Location& loc) {
-        if (k == parts.size()) {
-            return value;
+            const std::vector<const DataComponentValue*>& values, size_t k,
+            const Location& loc) {
+        size_t first = 0;
+        for (size_t v = 0; v < values.size(); v++) {
+            if (values[v]->parts.size() == k) {
+                previous = values[v]->value;
+                first = v + 1;
+            }
         }
-        if (ASR::is_a<ASR::StructInstanceMember_t>(*parts[k])) {
+        if (first == values.size()) {
+            return previous;
+        }
+        ASR::expr_t* part = values[first]->parts[k];
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*part)) {
             ASR::StructInstanceMember_t* member =
-                ASR::down_cast<ASR::StructInstanceMember_t>(parts[k]);
+                ASR::down_cast<ASR::StructInstanceMember_t>(part);
             ASR::ttype_t* struct_type = ASRUtils::expr_type(member->m_v);
             ASR::symbol_t* dt_sym = ASRUtils::get_struct_sym_from_struct_expr(member->m_v);
             if (previous == nullptr) {
@@ -6184,39 +6204,73 @@ public:
             }
             ASR::StructConstant_t* sc = ASR::down_cast<ASR::StructConstant_t>(previous);
             std::vector<ASR::symbol_t*> members = get_struct_constructor_info(dt_sym).members;
-            auto it = std::find(members.begin(), members.end(),
-                ASRUtils::symbol_get_past_external(member->m_m));
-            if (it == members.end() || sc->n_args != members.size()) {
+            if (sc->n_args != members.size()) {
                 return nullptr;
             }
-            size_t index = std::distance(members.begin(), it);
-            ASR::expr_t* component = data_component_updated_value(
-                sc->m_args[index].m_value, parts, k + 1, value, loc);
-            if (component == nullptr) {
-                return nullptr;
+            // The values of each component, by its position in `members`
+            std::map<size_t, std::vector<const DataComponentValue*>> components;
+            for (size_t v = first; v < values.size(); v++) {
+                ASR::expr_t* p = values[v]->parts[k];
+                if (!ASR::is_a<ASR::StructInstanceMember_t>(*p)) {
+                    return nullptr;
+                }
+                auto it = std::find(members.begin(), members.end(),
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructInstanceMember_t>(p)->m_m));
+                if (it == members.end()) {
+                    return nullptr;
+                }
+                components[std::distance(members.begin(), it)].push_back(values[v]);
             }
             Vec<ASR::call_arg_t> args;
             args.reserve(al, sc->n_args);
             for (size_t i = 0; i < sc->n_args; i++) {
                 args.push_back(al, sc->m_args[i]);
             }
-            args.p[index].m_value = component;
+            for (const auto &component : components) {
+                ASR::expr_t* component_value = data_component_updated_value(
+                    sc->m_args[component.first].m_value, component.second,
+                    k + 1, loc);
+                if (component_value == nullptr) {
+                    return nullptr;
+                }
+                args.p[component.first].m_value = component_value;
+            }
             return ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc, sc->m_dt_sym,
                 args.p, args.size(), sc->m_type));
         }
-        // An element of an array component, such as `x(j)` in `a(i)%x(j)`
-        ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(parts[k]);
-        ASR::ttype_t* array_type = ASRUtils::expr_type(item->m_v);
-        DataSectionBounds b;
-        if (ASRUtils::is_allocatable_or_pointer(array_type)
-                || !resolve_data_section(item->m_v, item->m_args, item->n_args,
-                    b, parts[k]->base.loc) || b.size != 1) {
+        // Elements of an array component, such as `x(j)` in `a(i)%x(j)`
+        if (!ASR::is_a<ASR::ArrayItem_t>(*part)) {
             return nullptr;
         }
-        int64_t flat = 0, total_size = 1;
-        for (size_t d = 0; d < b.lb.size(); d++) {
-            flat += (b.subscripts[d][0] - b.lb[d]) * total_size;
-            total_size *= b.extent[d];
+        ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(part);
+        ASR::ttype_t* array_type = ASRUtils::expr_type(item->m_v);
+        if (ASRUtils::is_allocatable_or_pointer(array_type)) {
+            return nullptr;
+        }
+        int64_t total_size = ASRUtils::get_fixed_size_of_array(array_type);
+        // The values of each element, by its column-major position
+        std::map<int64_t, std::vector<const DataComponentValue*>> array_elements;
+        for (size_t v = first; v < values.size(); v++) {
+            ASR::expr_t* p = values[v]->parts[k];
+            if (!ASR::is_a<ASR::ArrayItem_t>(*p)) {
+                return nullptr;
+            }
+            ASR::ArrayItem_t* element_item = ASR::down_cast<ASR::ArrayItem_t>(p);
+            DataSectionBounds b;
+            if (!resolve_data_section(element_item->m_v, element_item->m_args,
+                    element_item->n_args, b, p->base.loc) || b.size != 1) {
+                return nullptr;
+            }
+            int64_t flat = 0, stride = 1;
+            for (size_t d = 0; d < b.lb.size(); d++) {
+                flat += (b.subscripts[d][0] - b.lb[d]) * stride;
+                stride *= b.extent[d];
+            }
+            if (stride != total_size || flat < 0 || flat >= total_size) {
+                return nullptr;
+            }
+            array_elements[flat].push_back(values[v]);
         }
         ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(array_type);
         Vec<ASR::expr_t*> elements;
@@ -6251,12 +6305,14 @@ public:
                 elements.push_back(al, zero);
             }
         }
-        ASR::expr_t* element = data_component_updated_value(elements[flat],
-            parts, k + 1, value, loc);
-        if (element == nullptr) {
-            return nullptr;
+        for (const auto &array_element : array_elements) {
+            ASR::expr_t* element = data_component_updated_value(
+                elements[array_element.first], array_element.second, k + 1, loc);
+            if (element == nullptr) {
+                return nullptr;
+            }
+            elements.p[array_element.first] = element;
         }
-        elements.p[flat] = element;
         ASR::expr_t* result = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
             al, loc, elements.p, elements.size(), array_type,
             ASR::arraystorageType::ColMajor));
@@ -6265,7 +6321,8 @@ public:
 
     // Gives the structure component `object` of the element `element` of an
     // array of a module, which `parts` select in the element, the initial
-    // value `value` that a DATA statement specifies, in `component_elements`.
+    // value `value` that a DATA statement specifies: adds it to the values
+    // of the element in `component_elements`.
     void set_data_component_value(ASR::ArrayItem_t* element,
             const std::vector<ASR::expr_t*>& parts, ASR::expr_t* object,
             ASR::expr_t* value, DataComponentElements& component_elements) {
@@ -6301,30 +6358,27 @@ public:
         }
         ASR::Variable_t* arr_var = nullptr;
         int64_t flat = 0;
-        ASR::expr_t* element_value = nullptr;
-        if (constant && data_array_element_position(element, arr_var, flat)) {
-            auto &elements = component_elements.elements[arr_var];
-            if (elements.empty()) {
-                component_elements.arrays.push_back(arr_var);
-            }
-            auto previous = elements.find(flat);
-            element_value = data_component_updated_value(
-                previous != elements.end() ? previous->second
-                    : data_array_initial_element(arr_var, flat),
-                parts, 0, constant, loc);
-            if (element_value) {
-                elements[flat] = element_value;
-            }
+        if (constant == nullptr
+                || !data_array_element_position(element, arr_var, flat)) {
+            data_component_value_error(loc);
         }
-        if (element_value == nullptr) {
-            diag.add(Diagnostic(
-                "this structure component of an array element cannot be "
-                "initialized by a DATA implied do loop in a module yet",
-                Level::Error, Stage::Semantic, {
-                    Label("", {loc})
-                }));
-            throw SemanticAbort();
+        auto &elements = component_elements.elements[arr_var];
+        if (elements.empty()) {
+            component_elements.arrays.push_back(arr_var);
         }
+        elements[flat].push_back({object, parts, constant});
+    }
+
+    // Reports a structure component of an array element of a module that
+    // a DATA implied-do cannot initialize at compile time yet.
+    [[noreturn]] void data_component_value_error(const Location& loc) {
+        diag.add(Diagnostic(
+            "this structure component of an array element cannot be "
+            "initialized by a DATA implied do loop in a module yet",
+            Level::Error, Stage::Semantic, {
+                Label("", {loc})
+            }));
+        throw SemanticAbort();
     }
 
     // Sets the elements in `component_elements` in the initial values of
@@ -6345,20 +6399,24 @@ public:
                 for (int64_t k = 0; k < total_size; k++) {
                     if (elements.find(k) == elements.end()) {
                         if (default_value == nullptr) {
-                            diag.add(Diagnostic(
-                                "this structure component of an array element cannot be "
-                                "initialized by a DATA implied do loop in a module yet",
-                                Level::Error, Stage::Semantic, {
-                                    Label("", {loc})
-                                }));
-                            throw SemanticAbort();
+                            data_component_value_error(loc);
                         }
                         values.push_back({k, default_value});
                     }
                 }
             }
             for (const auto &element : elements) {
-                values.push_back(element);
+                std::vector<const DataComponentValue*> element_values;
+                for (const DataComponentValue &value : element.second) {
+                    element_values.push_back(&value);
+                }
+                ASR::expr_t* element_value = data_component_updated_value(
+                    data_array_initial_element(arr_var, element.first),
+                    element_values, 0, loc);
+                if (element_value == nullptr) {
+                    data_component_value_error(element.second[0].object->base.loc);
+                }
+                values.push_back({element.first, element_value});
             }
             set_data_array_elements_value(arr_var, values, loc);
         }
