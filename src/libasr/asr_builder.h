@@ -220,9 +220,10 @@ class ASRBuilder {
         if ( ASRUtils::is_array(type) ) {
             ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(type)));
             ASR::dimension_t* dims = array_type->m_dims;
-            ASRUtils::extract_dimensions_from_ttype(type, dims);
+            // An assumed-rank array has no static dimensions.
+            int64_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
             int64_t new_dim = dim - 1;
-            if( dims[new_dim].m_start && dims[new_dim].m_length ) {
+            if( new_dim < n_dims && dims[new_dim].m_start && dims[new_dim].m_length ) {
                 ASR::expr_t* start = ASRUtils::expr_value(dims[new_dim].m_start);
                 ASR::expr_t* length = ASRUtils::expr_value(dims[new_dim].m_length);
                 if( ASRUtils::is_value_constant(start) &&
@@ -248,9 +249,10 @@ class ASRBuilder {
         if ( ASRUtils::is_array(type) ) {
             ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(type)));
             ASR::dimension_t* dims = array_type->m_dims;
-            ASRUtils::extract_dimensions_from_ttype(type, dims);
+            // An assumed-rank array has no static dimensions.
+            int64_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
             int64_t new_dim = dim - 1;
-            if( dims[new_dim].m_start ) {
+            if( new_dim < n_dims && dims[new_dim].m_start ) {
                 ASR::expr_t* start = ASRUtils::expr_value(dims[new_dim].m_start);
                 if( ASRUtils::is_value_constant(start) ) {
                     int64_t const_lbound = -1;

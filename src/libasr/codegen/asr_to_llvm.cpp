@@ -5883,6 +5883,38 @@ public:
                 tmp = builder->CreateOr(is_contiguous, builder->CreateNot(is_allocated));
                 break;
             }
+            case ASR::array_physical_typeType::AssumedRankArray: {
+                // The rank is only known at run time: check the stride of
+                // each dimension in the descriptor.
+                llvm::Type* i32_type = llvm::Type::getInt32Ty(context);
+                llvm::Type* i1_type = llvm::Type::getInt1Ty(context);
+                llvm::Type* index_type = arr_descr->get_index_type();
+                llvm::Value* rank = arr_descr->get_rank(array_type, llvm_arg1);
+                llvm::Value* dim_des_val = arr_descr->get_pointer_to_dimension_descriptor_array(array_type, llvm_arg1);
+                llvm::Value* dim_ptr = llvm_utils->CreateAlloca(i32_type, nullptr, "is_contiguous_dim");
+                llvm::Value* expected_stride_ptr = llvm_utils->CreateAlloca(index_type, nullptr, "is_contiguous_stride");
+                llvm::Value* result_ptr = llvm_utils->CreateAlloca(i1_type, nullptr, "is_contiguous");
+                builder->CreateStore(llvm::ConstantInt::get(i32_type, 0), dim_ptr);
+                builder->CreateStore(llvm::ConstantInt::get(index_type, 1), expected_stride_ptr);
+                builder->CreateStore(llvm::ConstantInt::get(i1_type, 1), result_ptr);
+                create_loop(nullptr, [&]() {
+                    return builder->CreateICmpSLT(llvm_utils->CreateLoad2(i32_type, dim_ptr), rank);
+                }, [&]() {
+                    llvm::Value* dim = llvm_utils->CreateLoad2(i32_type, dim_ptr);
+                    llvm::Value* dim_desc = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim);
+                    llvm::Value* stride = arr_descr->get_stride(dim_desc);
+                    llvm::Value* expected_stride = llvm_utils->CreateLoad2(index_type, expected_stride_ptr);
+                    builder->CreateStore(builder->CreateAnd(
+                        llvm_utils->CreateLoad2(i1_type, result_ptr),
+                        builder->CreateICmpEQ(stride, expected_stride)), result_ptr);
+                    llvm::Value* extent = builder->CreateSExtOrTrunc(
+                        arr_descr->get_dimension_size(dim_des_val, dim), index_type);
+                    builder->CreateStore(builder->CreateMul(expected_stride, extent), expected_stride_ptr);
+                    builder->CreateStore(builder->CreateAdd(dim, llvm::ConstantInt::get(i32_type, 1)), dim_ptr);
+                });
+                tmp = llvm_utils->CreateLoad2(i1_type, result_ptr);
+                break;
+            }
             case ASR::array_physical_typeType::FixedSizeArray:
             case ASR::array_physical_typeType::SIMDArray:
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
