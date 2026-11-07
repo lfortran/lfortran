@@ -461,14 +461,28 @@ private:
             && ASRUtils::extract_value(ASRUtils::expr_value(e), v);
     }
 
+    // `lbound(t, d)` or `ubound(t, d)` of the array itself is its declared
+    // bound in that dimension, whether or not that is a constant (`t(:)` of
+    // an automatic array).
+    bool is_own_bound(size_t d, ASR::expr_t *e, ASR::arrayboundType bound) {
+        if (!ASR::is_a<ASR::ArrayBound_t>(*e)) return false;
+        ASR::ArrayBound_t *b = ASR::down_cast<ASR::ArrayBound_t>(e);
+        int64_t dim = 0;
+        return b->m_bound == bound && ASR::is_a<ASR::Var_t>(*b->m_v)
+            && ASR::down_cast<ASR::Var_t>(b->m_v)->m_v == sym
+            && constant(b->m_dim, dim) && dim == (int64_t)d + 1;
+    }
+
     bool is_lower_bound(size_t d, ASR::expr_t *e) {
         int64_t s = 0, v = 0;
+        if (is_own_bound(d, e, ASR::arrayboundType::LBound)) return true;
         return constant(arr->m_dims[d].m_start, s) && constant(e, v)
             && v == s;
     }
 
     bool is_upper_bound(size_t d, ASR::expr_t *e) {
         int64_t s = 0, l = 0, v = 0;
+        if (is_own_bound(d, e, ASR::arrayboundType::UBound)) return true;
         ASR::expr_t *length = ASRUtils::Max::get_clamped_length(
             arr->m_dims[d].m_length);
         if (length == nullptr) length = arr->m_dims[d].m_length;

@@ -1,0 +1,144 @@
+#include <stdint.h>
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    int* __restrict__ out)
+{
+    int __flat_idx;
+    int __gpu_sec_i;
+    int __gpu_sec_i1;
+    int __gpu_sec_i2;
+    int i__dc;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 8)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    {
+        int full[4];
+        int grid[6];
+        for (__gpu_sec_i = 1; __gpu_sec_i <= 4; __gpu_sec_i++) {
+            full[((int)(__gpu_sec_i) - (1))] = i__dc;
+        }
+        for (__gpu_sec_i1 = 1; __gpu_sec_i1 <= 3; __gpu_sec_i1++) {
+            for (__gpu_sec_i2 = 1; __gpu_sec_i2 <= 2; __gpu_sec_i2++) {
+                grid[((int)(__gpu_sec_i1) - (1)) + (3 * ((int)(__gpu_sec_i2) - (1)))] = (2 * i__dc);
+            }
+        }
+        out[((int)(i__dc) - (1))] = (full[((int)((((i__dc) % (4)) + 1)) - (1))] + grid[((int)((((i__dc) % (3)) + 1)) - (1)) + (3 * ((int)((((i__dc) % (2)) + 1)) - (1)))]);
+    }
+}
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    int* __restrict__ head,
+    int* __restrict__ out)
+{
+    int __flat_idx;
+    int __gpu_sec_i3;
+    int i__dc1;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 8)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc1 = (__flat_idx + 1);
+    for (__gpu_sec_i3 = 1; __gpu_sec_i3 <= 3; __gpu_sec_i3++) {
+        head[((int)(__gpu_sec_i3) - (1))] = i__dc1;
+    }
+    out[((int)(i__dc1) - (1))] = head[((int)((((i__dc1) % (3)) + 1)) - (1))];
+}
+
+extern "C" __global__ void __lfortran_gpu_kernel_2(
+    int* __restrict__ out,
+    int* __restrict__ tail)
+{
+    int __flat_idx;
+    int __gpu_sec_i4;
+    int i__dc2;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 8)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc2 = (__flat_idx + 1);
+    for (__gpu_sec_i4 = 1; __gpu_sec_i4 <= ((((((int)4) + ((int)1)) - 1) - 2) + 1); __gpu_sec_i4++) {
+        tail[((int)((2 + (__gpu_sec_i4 - 1))) - (1))] = i__dc2;
+    }
+    out[((int)(i__dc2) - (1))] = tail[((int)((((i__dc2) % (3)) + 2)) - (1))];
+}
+
+extern "C" __global__ void __lfortran_gpu_kernel_3(
+    int* __restrict__ odd,
+    int* __restrict__ out)
+{
+    int __flat_idx;
+    int __gpu_sec_i5;
+    int i__dc3;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 8)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc3 = (__flat_idx + 1);
+    for (__gpu_sec_i5 = 1; __gpu_sec_i5 <= (((((((int)4) + ((int)1)) - 1) - ((int)1)) / 2) + 1); __gpu_sec_i5++) {
+        odd[((int)((((int)1) + ((__gpu_sec_i5 - 1) * 2))) - (1))] = i__dc3;
+    }
+    out[((int)(i__dc3) - (1))] = odd[((int)(((2 * ((i__dc3) % (2))) + 1)) - (1))];
+}
+
+extern "C" __global__ void __lfortran_gpu_kernel_4(
+    int* __restrict__ col,
+    int* __restrict__ out)
+{
+    int __flat_idx;
+    int __gpu_sec_i6;
+    int i__dc4;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 8)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc4 = (__flat_idx + 1);
+    for (__gpu_sec_i6 = 1; __gpu_sec_i6 <= ((((int)3) + ((int)1)) - 1); __gpu_sec_i6++) {
+        col[((int)(__gpu_sec_i6) - (1)) + (3 * ((int)(2) - (1)))] = i__dc4;
+    }
+    out[((int)(i__dc4) - (1))] = col[((int)((((i__dc4) % (3)) + 1)) - (1)) + (3 * ((int)(2) - (1)))];
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_5 {
+    int __workspace_extent;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_5(
+    int* __restrict__ lo,
+    int* __restrict__ out,
+    int* __restrict__ sz,
+    __ScalarArgs___lfortran_gpu_kernel_5 __scalar_args,
+    int* __restrict__ __workspace_4)
+{
+    int __workspace_extent = __scalar_args.__workspace_extent;
+    int __flat_idx;
+    int __gpu_bc_i;
+    int __gpu_sec_i7;
+    int* __libasr_created__array_bound_v = ((__workspace_extent) > 0) ? (__workspace_4 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+    int* __libasr_created__array_section_pointer_;
+    int __libasr_index_0_;
+    int __libasr_index_0_1;
+    int i__dc5;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 1)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc5 = (__flat_idx + 1);
+    const int __lfortran_end_0 = ((4 - lo[((int)(4) - (1))]) + 1);
+    for (__gpu_sec_i7 = 1; __gpu_sec_i7 <= __lfortran_end_0; __gpu_sec_i7++) {
+        lo[((int)((lo[((int)(4) - (1))] + (__gpu_sec_i7 - 1))) - (1))] = 7;
+    }
+    for (__gpu_bc_i = 1; __gpu_bc_i <= 4; __gpu_bc_i++) {
+        __libasr_created__array_section_pointer_ = sz + ((int)(sz[((int)(1) - (1))]) - (1));
+        __libasr_index_0_1 = 1;
+        const int __lfortran_end_1 = __workspace_extent;
+        for (__libasr_index_0_ = 1; __libasr_index_0_ <= __lfortran_end_1; __libasr_index_0_++) {
+            __libasr_created__array_bound_v[((int)(__libasr_index_0_) - (1))] = __libasr_created__array_section_pointer_[((int)(__libasr_index_0_1) - (1))];
+            __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+        }
+        sz[((int)(__gpu_bc_i) - (1))] = __workspace_extent;
+    }
+    out[((int)(i__dc5) - (1))] = (lo[((int)(4) - (1))] + sz[((int)(4) - (1))]);
+}
+

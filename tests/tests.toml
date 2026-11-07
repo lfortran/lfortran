@@ -5529,6 +5529,24 @@ filename = "../integration_tests/gpu_kernel_source_42.f90"
 gpu_cuda_kernel = true
 options = "--gpu-chunk-limit=50"
 
+# An array defined by a section over its full extent is private to each
+# iteration; one defined in part, or by a section whose bounds read it,
+# stays a kernel argument (lfortran/lfortran#17013).
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_43.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_731.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_732.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
 [[test]]
 filename = "../integration_tests/gpu_metal_669.f90"
 gpu_cuda_kernel = true
