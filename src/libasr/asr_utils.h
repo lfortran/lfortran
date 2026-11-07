@@ -3054,6 +3054,9 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     // of a type-bound procedure call), which is matched against the
     // passed-object dummy argument of each specific procedure.
     auto matches = [&](ASR::symbol_t* proc_sym) -> bool {
+        // A specific may be a binding of another module, imported as an
+        // ExternalSymbol (the kept private specific of an inherited generic).
+        proc_sym = symbol_get_past_external(proc_sym);
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
             if( is_dt_present ) {
                 return select_type_bound_proc(proc_sym, args, loc, err);
