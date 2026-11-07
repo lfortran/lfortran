@@ -15186,8 +15186,8 @@ ASR::symbol_t* SymbolDuplicator::duplicate_Module(ASR::Module_t* module_t,
         al, module_t->base.base.loc, module_symtab,
         module_t->m_name, module_t->m_parent_module, module_t->m_dependencies,
         module_t->n_dependencies, module_t->m_loaded_from_mod, module_t->m_intrinsic,
-        module_t->m_has_submodules, module_t->m_global_init,
-        module_t->m_start_name, module_t->m_end_name
+        module_t->m_has_submodules, module_t->m_host_only_object,
+        module_t->m_global_init, module_t->m_start_name, module_t->m_end_name
     ));
 }
 

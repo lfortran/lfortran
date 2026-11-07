@@ -284,6 +284,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             fpm_manifest_dependency1:
@@ -1075,6 +1076,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             fpm_manifest_executable:
@@ -1656,6 +1658,7 @@
                     ()
                     [fpm_manifest_dependency1]
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()

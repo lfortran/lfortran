@@ -19,6 +19,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <libasr/utils.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/instantiate_template.h>
 
 namespace LCompilers::LFortran {
@@ -994,6 +995,13 @@ public:
         current_module_dependencies.reserve(al, 4);
         generic_procedures.clear();
         ASR::asr_t *tmp0 = nullptr;
+        // With separate compilation the module's own object defines its
+        // procedures, and their deferring twins only if gpu_launch_sync runs
+        // here (a device is selected). In the default mode the unit with the
+        // main program defines them, and their twins if it is compiled with a
+        // device, as a unit that calls them with one assumes.
+        bool host_only_object = compiler_options.separate_compilation
+            && gpu_device_selected(compiler_options.po) == GpuDevice::None;
         if( x.class_type == AST::modType::Submodule ) {
             ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
                                                 parent_name, x.base.base.loc, false, loaded_submodules,
@@ -1011,7 +1019,8 @@ public:
                                                 m->m_name,
                                                 nullptr,
                                                 0,
-                                                false, false, false, nullptr);
+                                                false, false, false,
+                                                host_only_object, nullptr);
             std::set<std::string> submodule_proc_names;
             for (size_t i = 0; i < x.n_contains; i++) {
                 AST::program_unit_t *pu = x.m_contains[i];
@@ -1058,7 +1067,8 @@ public:
                                                 nullptr,
                                                 nullptr,
                                                 0,
-                                                false, false, false, nullptr);
+                                                false, false, false,
+                                                host_only_object, nullptr);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_items; i++) {

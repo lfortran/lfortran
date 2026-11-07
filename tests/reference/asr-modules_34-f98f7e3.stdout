@@ -24,6 +24,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             fpm_manifest_modules_34:
@@ -46,6 +47,7 @@
                     ()
                     [fpm_manifest_package_modules_34]
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()
@@ -180,6 +182,7 @@
                     ()
                     [fpm_versioning_modules_34]
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()
@@ -489,6 +492,7 @@
                     fpm_manifest_package_modules_34
                     fpm_versioning_modules_34]
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()
@@ -835,6 +839,7 @@
                     ()
                     [fpm_versioning_modules_34]
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()

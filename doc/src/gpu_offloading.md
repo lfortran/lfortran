@@ -1065,7 +1065,13 @@ target, procedure or frame dummy -- gets a *deferring twin*,
 itself only calls the twin and then waits as before. The pass makes the
 twins first, of the modules of the file and of those loaded from module
 files alike: the choice depends only on the declaration, which is in the
-module file, so every file that uses the module makes the same twins. The
+module file, so every file that uses the module makes the same twins. A
+module compiled with `--separate-compilation` and without a GPU device (a
+library built for the host) records that its object defines its procedures
+and no twins: other files call its procedures themselves. In the default
+mode the file with the main program compiles the procedures of the modules
+it uses, with their twins only if it is compiled with `--gpu`, so it must be
+compiled with `--gpu` too when other files that call them are. The
 calls the pass sees by name are redirected to the twin; a call through a
 procedure pointer, a dummy procedure or a binding, and one from a file
 compiled without a GPU device or from C, reaches the subroutine, which

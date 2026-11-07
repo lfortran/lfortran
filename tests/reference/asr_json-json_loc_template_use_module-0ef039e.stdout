@@ -626,6 +626,7 @@
                         "loaded_from_mod": true,
                         "intrinsic": false,
                         "has_submodules": false,
+                        "host_only_object": false,
                         "global_init": []
                     },
                     "loc": {

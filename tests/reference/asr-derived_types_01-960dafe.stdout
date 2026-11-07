@@ -891,6 +891,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             derived_types_01_m_02:
@@ -1016,6 +1017,7 @@
                     derived_types_01_m_02
                     ()
                     [derived_types_01_m_01]
+                    .false.
                     .false.
                     .false.
                     .false.
