@@ -1129,23 +1129,34 @@ void LLVMEvaluator::opt(llvm::Module &m) {
         expand_reciprocal_sqrt(f, TM->getTargetTriple());
     }
 
+    // The late cleanup and the horizontal reduction rewrite only run on
+    // functions that the rewrite may apply to: definitions for x86 with AVX
+    // that contain a fast sum of three vector squares. Other functions and
+    // targets (such as AArch64) keep the code of the pipeline above.
+    std::vector<llvm::Function *> late_functions;
+    for (llvm::Function &f : m) {
+        if (may_recombine_horizontal_reductions(f, *TM)) {
+            late_functions.push_back(&f);
+        }
+    }
+
     // SROA runs before the vectorizer, so a fixed-size local array that the
     // vectorized loop then accesses keeps its stack slot. Simplifying once
     // more promotes it and exposes the reductions the vectorizer built.
+    if (!late_functions.empty()) {
 #if LLVM_VERSION_MAJOR >= 17
-    {
         llvm::FunctionPassManager LateFPM;
         LateFPM.addPass(llvm::SROAPass(llvm::SROAOptions(
             llvm::SROAOptions::ModifyCFG)));
         LateFPM.addPass(llvm::InstCombinePass());
         LateFPM.addPass(llvm::SimplifyCFGPass());
-        llvm::ModulePassManager LateMPM;
-        LateMPM.addPass(llvm::createModuleToFunctionPassAdaptor(
-            std::move(LateFPM)));
-        LateMPM.run(m, MAM);
-    }
+        for (llvm::Function *f : late_functions) {
+            LateFPM.run(*f, FAM);
+        }
+        // The functions changed outside of a module pass: drop the module
+        // analyses (and through them the function ones) computed before.
+        MAM.invalidate(m, llvm::PreservedAnalyses::none());
 #else
-    {
         llvm::legacy::FunctionPassManager late(&m);
         late.add(llvm::createTargetTransformInfoWrapperPass(
             TM->getTargetIRAnalysis()));
@@ -1153,20 +1164,20 @@ void LLVMEvaluator::opt(llvm::Module &m) {
         late.add(llvm::createInstructionCombiningPass());
         late.add(llvm::createCFGSimplificationPass());
         late.doInitialization();
-        for (llvm::Function &func : m) {
-            late.run(func);
+        for (llvm::Function *f : late_functions) {
+            late.run(*f);
         }
         late.doFinalization();
-    }
 #endif
+    }
 
     // The horizontal reduction pass matches the lane transpose the SLP
     // vectorizer builds for a four-way sum of squares and rewrites it as
     // pairwise horizontal additions. It only matches fast math instructions,
     // so ordinary compilations keep their existing output.
     bool reduced = false;
-    for (llvm::Function &f : m) {
-        reduced |= recombine_horizontal_reductions(f, *TM);
+    for (llvm::Function *f : late_functions) {
+        reduced |= recombine_horizontal_reductions(*f, *TM);
     }
     if (reduced) {
         // Simplify and schedule the rewritten reductions.

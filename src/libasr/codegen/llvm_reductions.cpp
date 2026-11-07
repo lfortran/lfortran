@@ -358,13 +358,8 @@ Function *hadd_pd(Module &m) {
 #endif
 }
 
-#endif // LLVM_VERSION_MAJOR >= 11
-
-} // namespace
-
-bool recombine_horizontal_reductions(llvm::Function &f,
-        const llvm::TargetMachine &tm) {
-#if LLVM_VERSION_MAJOR >= 11
+// Whether `f` is compiled for x86 with AVX.
+bool has_avx(const Function &f, const TargetMachine &tm) {
     const Triple &triple = tm.getTargetTriple();
     if (triple.getArch() != Triple::x86 && triple.getArch() != Triple::x86_64) {
         return false;
@@ -372,7 +367,59 @@ bool recombine_horizontal_reductions(llvm::Function &f,
     // The subtarget the code generator uses for `f`: its target-cpu and
     // target-features attributes over the defaults of `tm`. A CPU implies
     // its features, so the attribute alone does not tell whether AVX is on.
-    if (!tm.getSubtargetImpl(f)->checkFeatures("+avx")) {
+    return tm.getSubtargetImpl(f)->checkFeatures("+avx");
+}
+
+#endif // LLVM_VERSION_MAJOR >= 11
+
+} // namespace
+
+bool may_recombine_horizontal_reductions(const llvm::Function &f,
+        const llvm::TargetMachine &tm) {
+#if LLVM_VERSION_MAJOR >= 11
+    if (f.isDeclaration() || !has_avx(f, tm)) {
+        return false;
+    }
+    // Every rewrite starts from a fast sum of three squares of four doubles.
+    // The late cleanup only turns the operands of the squares into the
+    // gather chains the rewrite matches (before it, SLP inserts scalars
+    // loaded from a stack slot), so the sum is looked for here.
+    for (const llvm::BasicBlock &block : f) {
+        for (const llvm::Instruction &i : block) {
+            if (i.getOpcode() != llvm::Instruction::FAdd
+                    || !is_four_doubles(i.getType())
+                    || !is_fast(const_cast<Instruction *>(&i))) {
+                continue;
+            }
+            llvm::SmallVector<llvm::Value *, 4> terms;
+            llvm::SmallPtrSet<llvm::Value *, 8> seen;
+            collect_terms(const_cast<Instruction *>(&i), terms, seen);
+            if (terms.size() != 3) {
+                continue;
+            }
+            bool squares = true;
+            for (llvm::Value *term : terms) {
+                llvm::Value *x = nullptr;
+                squares = squares && match_square(term, x)
+                    && is_four_doubles(x->getType());
+            }
+            if (squares) {
+                return true;
+            }
+        }
+    }
+    return false;
+#else
+    (void)f;
+    (void)tm;
+    return false;
+#endif
+}
+
+bool recombine_horizontal_reductions(llvm::Function &f,
+        const llvm::TargetMachine &tm) {
+#if LLVM_VERSION_MAJOR >= 11
+    if (!has_avx(f, tm)) {
         return false;
     }
     bool changed = false;

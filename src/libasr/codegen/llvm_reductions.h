@@ -15,6 +15,15 @@ namespace LCompilers {
     bool recombine_horizontal_reductions(llvm::Function &f,
         const llvm::TargetMachine &tm);
 
+    // A cheap test, run before the late cleanup that precedes
+    // recombine_horizontal_reductions: whether `f` is a definition for x86
+    // with AVX that contains a fast sum of three squares of four element
+    // double vectors, where every rewrite starts. Only such functions get
+    // the cleanup and the rewrite, so every other function and target keeps
+    // the code of the regular pipeline.
+    bool may_recombine_horizontal_reductions(const llvm::Function &f,
+        const llvm::TargetMachine &tm);
+
 } // namespace LCompilers
 
 #endif // LIBASR_CODEGEN_LLVM_REDUCTIONS_H

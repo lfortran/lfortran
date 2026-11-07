@@ -8097,4 +8097,59 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
     }
 #endif
 }
+
+#if LLVM_VERSION_MAJOR >= 11
+TEST_CASE("LLVM horizontal reductions only where they may apply") {
+    // The --fast pipeline runs its late cleanup and the rewrite only on the
+    // functions `may_recombine_horizontal_reductions` accepts. Everywhere
+    // else the function must stay exactly as it is.
+    auto check = [](const std::string &ir, const llvm::TargetMachine &tm,
+            bool applies) {
+        LCompilers::LLVMEvaluator e;
+        std::unique_ptr<llvm::Module> m = e.parse_module(ir, "");
+        llvm::Function &f = *m->getFunction("reductions_sum");
+        std::string before = e.module_to_string(*m);
+        CHECK(LCompilers::may_recombine_horizontal_reductions(f, tm)
+            == applies);
+        CHECK(LCompilers::recombine_horizontal_reductions(f, tm) == applies);
+        CHECK((e.module_to_string(*m) == before) == !applies);
+    };
+    // Fast vector arithmetic on AVX, but no sum of three squares.
+    const std::string no_gather_ir = R"""(
+define double @reductions_sum(<4 x double> %v0, <4 x double> %v1) #0 {
+entry:
+  %s0 = fmul fast <4 x double> %v0, %v0
+  %s1 = fmul fast <4 x double> %v1, %v1
+  %t0 = fadd fast <4 x double> %s0, %s1
+  %t1 = fadd fast <4 x double> %t0, %v0
+  %r = extractelement <4 x double> %t1, i32 0
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+    std::unique_ptr<llvm::TargetMachine> x86
+        = reductions_target_machine("x86_64-unknown-linux-gnu", "x86-64");
+    if (x86) {
+        // x86 with AVX, from target-features or from target-cpu.
+        check(reductions_sum_ir, *x86, true);
+        check(reductions_replace(reductions_sum_ir,
+            "\"target-features\"=\"+avx\"", "\"target-cpu\"=\"haswell\""),
+            *x86, true);
+        // x86 without AVX.
+        check(reductions_replace(reductions_sum_ir, "+avx", "+sse2"), *x86,
+            false);
+        check(reductions_replace(reductions_sum_ir,
+            "\"target-features\"=\"+avx\"", "\"target-cpu\"=\"x86-64\""),
+            *x86, false);
+        // x86 with AVX, but nothing to rewrite.
+        check(no_gather_ir, *x86, false);
+    }
+    // AArch64, such as Apple Silicon.
+    std::unique_ptr<llvm::TargetMachine> arm
+        = reductions_target_machine("arm64-apple-darwin", "generic");
+    if (arm) {
+        check(reductions_sum_ir, *arm, false);
+    }
+}
+#endif
 #endif // __EMSCRIPTEN__
