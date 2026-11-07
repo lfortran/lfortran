@@ -2353,3 +2353,60 @@ end program
     CHECK(local == 1);
     CHECK(syncs("") == local);
 }
+
+#ifndef HAVE_BUILD_TO_WASM
+TEST_CASE("Device powers with small integer exponents are products") {
+    // gpu_integer_powers_01 raises an element, a function result and an
+    // expression to the powers 0 to 8: no device routine is left with a
+    // real power whose exponent is an integer constant.
+    std::string filename = "gpu_integer_powers_01.f90";
+    std::string source = read_project_file("integration_tests/" + filename);
+    CompilerOptions options;
+    options.gpu_backend = "metal";
+    options.po.gpu_offload_metal = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = filename;
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_kernel_finalize", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, parsed.result, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    REQUIRE(asr_verify(*parsed.result, true, diagnostics));
+    struct Powers : public ASR::BaseWalkVisitor<Powers> {
+        size_t powers = 0, products = 0;
+        void visit_RealBinOp(const ASR::RealBinOp_t &x) {
+            int64_t k;
+            if (x.m_op == ASR::binopType::Pow
+                    && ASRUtils::extract_value(x.m_right, k)) {
+                powers++;
+            }
+            if (x.m_op == ASR::binopType::Mul) products++;
+            ASR::BaseWalkVisitor<Powers>::visit_RealBinOp(x);
+        }
+    } device;
+    size_t kernels = 0;
+    for (const auto &entry: parsed.result->m_symtab->get_scope()) {
+        if (!ASRUtils::is_device_kernel(entry.second)) continue;
+        kernels++;
+        device.visit_symbol(*entry.second);
+    }
+    CHECK(kernels == 1);
+    CHECK(device.powers == 0);
+    // The 0 + 0 + 1 + 2 + 3 + 4 + 5 + 6 + 7 products of x**0 to x**8, one
+    // of half(x)**2, two of (x + 1)**3, and the one in the kernel's copy of
+    // half.
+    CHECK(device.products == 32);
+}
+#endif

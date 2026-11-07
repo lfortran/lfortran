@@ -1,0 +1,52 @@
+#include <stdint.h>
+
+__device__ inline float half_gpu_23(float x) {
+    float y{};
+    y = (  5.00000000000000000e-01f * x);
+    return y;
+}
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* __restrict__ p,
+    float* __restrict__ q,
+    float* __restrict__ s,
+    float* __restrict__ x)
+{
+    int __flat_idx;
+    float __gpu_power_base;
+    float __gpu_power_base1;
+    float __gpu_power_base2;
+    float __gpu_power_base3;
+    float __gpu_power_base4;
+    float __gpu_power_base5;
+    float __gpu_power_base6;
+    float __gpu_power_base7;
+    float __gpu_power_base8;
+    int i__dc;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 64)) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    i__dc = (__flat_idx + 1);
+    p[((int)(0) - (0)) + (9 * ((int)(i__dc) - (1)))] =   1.00000000000000000e+00f;
+    p[((int)(1) - (0)) + (9 * ((int)(i__dc) - (1)))] = x[((int)(i__dc) - (1))];
+    __gpu_power_base = x[((int)(i__dc) - (1))];
+    p[((int)(2) - (0)) + (9 * ((int)(i__dc) - (1)))] = (__gpu_power_base * __gpu_power_base);
+    __gpu_power_base1 = x[((int)(i__dc) - (1))];
+    p[((int)(3) - (0)) + (9 * ((int)(i__dc) - (1)))] = (__gpu_power_base1 * (__gpu_power_base1 * __gpu_power_base1));
+    __gpu_power_base2 = x[((int)(i__dc) - (1))];
+    p[((int)(4) - (0)) + (9 * ((int)(i__dc) - (1)))] = ((__gpu_power_base2 * __gpu_power_base2) * (__gpu_power_base2 * __gpu_power_base2));
+    __gpu_power_base3 = x[((int)(i__dc) - (1))];
+    p[((int)(5) - (0)) + (9 * ((int)(i__dc) - (1)))] = (((__gpu_power_base3 * __gpu_power_base3) * (__gpu_power_base3 * __gpu_power_base3)) * __gpu_power_base3);
+    __gpu_power_base4 = x[((int)(i__dc) - (1))];
+    p[((int)(6) - (0)) + (9 * ((int)(i__dc) - (1)))] = (((__gpu_power_base4 * __gpu_power_base4) * (__gpu_power_base4 * __gpu_power_base4)) * (__gpu_power_base4 * __gpu_power_base4));
+    __gpu_power_base5 = x[((int)(i__dc) - (1))];
+    p[((int)(7) - (0)) + (9 * ((int)(i__dc) - (1)))] = ((((__gpu_power_base5 * __gpu_power_base5) * (__gpu_power_base5 * __gpu_power_base5)) * (__gpu_power_base5 * __gpu_power_base5)) * __gpu_power_base5);
+    __gpu_power_base6 = x[((int)(i__dc) - (1))];
+    p[((int)(8) - (0)) + (9 * ((int)(i__dc) - (1)))] = (((__gpu_power_base6 * __gpu_power_base6) * (__gpu_power_base6 * __gpu_power_base6)) * ((__gpu_power_base6 * __gpu_power_base6) * (__gpu_power_base6 * __gpu_power_base6)));
+    __gpu_power_base7 = half_gpu_23(x[((int)(i__dc) - (1))]);
+    q[((int)(i__dc) - (1))] = ((__gpu_power_base7 * __gpu_power_base7) +   1.00000000000000000e+00f);
+    __gpu_power_base8 = (x[((int)(i__dc) - (1))] +   1.00000000000000000e+00f);
+    s[((int)(i__dc) - (1))] = (__gpu_power_base8 * (__gpu_power_base8 * __gpu_power_base8));
+}
+
