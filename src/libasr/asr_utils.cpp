@@ -2739,19 +2739,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
             bool iter_found_on_right = proc_from_right_struct || found_on_right;
             ASR::symbol_t* proc;
             ASR::symbol_t* orig_proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
-            if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*op_overloading_procs[i]) ) {
-                ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(op_overloading_procs[i]);
-                if (proc_op_struct != nullptr && cp->m_parent_symtab->get_counter() != proc_op_struct->m_symtab->get_counter()) {
-                    ASR::Struct_t* temp_struct = proc_op_struct;
-                    while (temp_struct->m_parent) {
-                        if (temp_struct->m_symtab->get_symbol(cp->m_name) != nullptr) {
-                            cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(temp_struct->m_symtab->get_symbol(cp->m_name));
-                            orig_proc = temp_struct->m_symtab->get_symbol(cp->m_name);
-                            break;
-                        }
-                        temp_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(temp_struct->m_parent));
-                    }
-                }
+            // It may be overridden in the operand's type
+            ASR::StructMethodDeclaration_t* cp = type_bound_specific_binding(
+                op_overloading_procs[i], proc_op_struct);
+            if (cp != nullptr) {
+                orig_proc = &cp->base;
                 proc =  ASRUtils::symbol_get_past_external(cp->m_proc);
             } else {
                 proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
@@ -3886,20 +3878,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         for( size_t i = 0; i < op_overloading_procs.size() && !found; i++ ) {
             ASR::symbol_t* proc;
             ASR::symbol_t* orig_proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
-            if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*op_overloading_procs[i]) ) {
-                ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(op_overloading_procs[i]);
-                if (cp->m_parent_symtab->get_counter() != active_struct->m_symtab->get_counter()) {
-                    // It may be overided in the derived class
-                    ASR::Struct_t* temp_struct = active_struct;
-                    while (temp_struct->m_parent) {
-                        if (temp_struct->m_symtab->get_symbol(cp->m_name) != nullptr) {
-                            cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(temp_struct->m_symtab->get_symbol(cp->m_name));
-                            orig_proc = temp_struct->m_symtab->get_symbol(cp->m_name);
-                            break;
-                        }
-                        temp_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(temp_struct->m_parent));
-                    }
-                }
+            // It may be overridden in the derived class
+            ASR::StructMethodDeclaration_t* cp = type_bound_specific_binding(
+                op_overloading_procs[i], active_struct);
+            if (cp != nullptr) {
+                orig_proc = &cp->base;
                 proc =  ASRUtils::symbol_get_past_external(cp->m_proc);
             } else {
                 proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
@@ -4062,9 +4045,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
             ASR::symbol_t* proc;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
-                proc = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructMethodDeclaration_t>(gen_proc->m_procs[i])->m_proc);
+            ASR::StructMethodDeclaration_t* cp = type_bound_specific_binding(
+                gen_proc->m_procs[i], nullptr);
+            if (cp != nullptr) {
+                proc = ASRUtils::symbol_get_past_external(cp->m_proc);
             } else {
                 proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
             }
@@ -4082,8 +4066,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             a_args.push_back(al, ASR::call_arg_t{ left->base.loc, left });
                             a_args.push_back(al, ASR::call_arg_t{ right->base.loc, right });
                             ASR::symbol_t* a_name = nullptr;
-                            if (sym != nullptr && !is_type_bound_generic(sym)
-                                    && !ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
+                            if (sym != nullptr && !is_type_bound_generic(sym) && cp == nullptr) {
                                 a_name = gen_proc->m_procs[i];
                             } else {
                                 a_name = import_type_bound_specific(al, curr_scope, proc,
@@ -6530,6 +6513,57 @@ size_t passed_object_index(const ASR::StructMethodDeclaration_t &x,
     return proc->n_args;
 }
 
+// Whether code in module `m` can access the private entities of module
+// `owner`: `m` is `owner` itself or one of its submodules.
+static bool has_private_access(const ASR::Module_t *m,
+    const ASR::Module_t *owner)
+{
+    std::set<const ASR::Module_t*> seen;
+    while (m != nullptr && seen.insert(m).second) {
+        if (m == owner || std::string(m->m_name) == owner->m_name) {
+            return true;
+        }
+        if (m->m_parent_module == nullptr || m->m_symtab->parent == nullptr) {
+            return false;
+        }
+        ASR::symbol_t *parent = m->m_symtab->parent->resolve_symbol(
+            std::string(m->m_parent_module));
+        parent = parent ? ASRUtils::symbol_get_past_external(parent) : nullptr;
+        if (parent == nullptr || !ASR::is_a<ASR::Module_t>(*parent)) {
+            return false;
+        }
+        m = ASR::down_cast<ASR::Module_t>(parent);
+    }
+    return false;
+}
+
+bool is_binding_accessible_in_extension(
+    const ASR::StructMethodDeclaration_t &binding,
+    const ASR::symbol_t *extension)
+{
+    if (binding.m_access != ASR::accessType::Private) return true;
+    if (binding.m_parent_symtab == nullptr ||
+            binding.m_parent_symtab->asr_owner == nullptr ||
+            !ASR::is_a<ASR::symbol_t>(*binding.m_parent_symtab->asr_owner)) {
+        return true;
+    }
+    ASR::Module_t *owner = get_sym_module0(
+        ASR::down_cast<ASR::symbol_t>(binding.m_parent_symtab->asr_owner));
+    if (owner == nullptr) return true;
+    return has_private_access(get_sym_module0(extension), owner);
+}
+
+bool is_binding_overridable_in_extension(
+    const ASR::StructMethodDeclaration_t &binding,
+    const ASR::symbol_t *extension)
+{
+    // A deferred binding is overridden even where it is private and not
+    // accessible: otherwise an abstract type with a private deferred binding
+    // could never be completed outside its module. GFortran accepts this too.
+    if (binding.m_is_deferred) return true;
+    return is_binding_accessible_in_extension(binding, extension);
+}
+
 ASR::StructMethodDeclaration_t* overridden_binding(
     const ASR::StructMethodDeclaration_t &x)
 {
@@ -6543,6 +6577,9 @@ ASR::StructMethodDeclaration_t* overridden_binding(
     ASR::symbol_t *parent = ASR::down_cast<ASR::Struct_t>(owner)->m_parent;
     // A parent cycle is diagnosed on its own; here it must only not loop.
     std::set<const ASR::Struct_t*> seen;
+    // Only the nearest binding of the name is the one in effect in the parent
+    // type; a deferred binding further up is already implemented by it.
+    bool nearest = true;
     while (parent != nullptr) {
         parent = ASRUtils::symbol_get_past_external(parent);
         if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
@@ -6553,11 +6590,54 @@ ASR::StructMethodDeclaration_t* overridden_binding(
         ASR::symbol_t *sym = s->m_symtab->get_symbol(std::string(x.m_name));
         if (sym != nullptr &&
                 ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
-            return ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+            ASR::StructMethodDeclaration_t *b =
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+            if (nearest ? is_binding_overridable_in_extension(*b, owner)
+                    : is_binding_accessible_in_extension(*b, owner)) {
+                return b;
+            }
+            nearest = false;
         }
         parent = s->m_parent;
     }
     return nullptr;
+}
+
+bool binding_overrides(const ASR::StructMethodDeclaration_t *x,
+    const ASR::StructMethodDeclaration_t *target)
+{
+    std::set<const ASR::StructMethodDeclaration_t*> seen;
+    while (x != nullptr && seen.insert(x).second) {
+        if (x == target) return true;
+        x = overridden_binding(*x);
+    }
+    return false;
+}
+
+ASR::StructMethodDeclaration_t* type_bound_specific_binding(
+    ASR::symbol_t *specific, ASR::Struct_t *type)
+{
+    ASR::symbol_t *s = symbol_get_past_external(specific);
+    if (s == nullptr || !ASR::is_a<ASR::StructMethodDeclaration_t>(*s)) {
+        return nullptr;
+    }
+    ASR::StructMethodDeclaration_t *binding =
+        ASR::down_cast<ASR::StructMethodDeclaration_t>(s);
+    std::set<ASR::Struct_t*> seen;
+    while (type != nullptr && seen.insert(type).second) {
+        ASR::symbol_t *sym = type->m_symtab->get_symbol(
+            std::string(binding->m_name));
+        if (sym != nullptr && ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+            ASR::StructMethodDeclaration_t *b =
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+            if (binding_overrides(b, binding)) {
+                return b;
+            }
+        }
+        type = type->m_parent ? ASR::down_cast<ASR::Struct_t>(
+            symbol_get_past_external(type->m_parent)) : nullptr;
+    }
+    return binding;
 }
 
 InterfaceMismatch binding_override_mismatch(

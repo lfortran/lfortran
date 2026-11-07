@@ -10210,20 +10210,37 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
                 ASR::StructMethodDeclaration_t* method_decl = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
                 ASR::symbol_t* impl_sym = ASRUtils::symbol_get_past_external(method_decl->m_proc);
-                if (method_decl->m_is_deferred) {
-                    if (struct_t->m_parent) {
-                        ASR::symbol_t* par = ASRUtils::symbol_get_past_external(struct_t->m_parent);
-                        // Case: a deferred binding overriding a deferred binding of the parent
-                        // keeps the parent's slot, so overrides in extensions land in that slot
-                        auto par_offsets = struct_vtab_function_offset.find(par);
-                        if (par_offsets != struct_vtab_function_offset.end()) {
-                            auto par_offset = par_offsets->second.find(method_decl->m_name);
-                            if (par_offset != par_offsets->second.end()) {
-                                int64_t offset = par_offset->second;
-                                struct_vtab_function_offset[struct_sym][method_decl->m_name] = offset;
-                                continue;
-                            }
+                // The ancestor whose slot this binding takes over: the owner
+                // of the binding it overrides. A binding named like an
+                // inaccessible private one of an ancestor overrides nothing
+                // and gets a slot of its own.
+                ASR::symbol_t* par = nullptr;
+                if (struct_t->m_parent) {
+                    par = ASRUtils::symbol_get_past_external(struct_t->m_parent);
+                    if (method_decl->m_parent_symtab == struct_t->m_symtab) {
+                        ASR::StructMethodDeclaration_t* base =
+                            ASRUtils::overridden_binding(*method_decl);
+                        par = base ? ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::symbol_t>(base->m_parent_symtab->asr_owner))
+                            : nullptr;
+                    }
+                }
+                int64_t parent_offset = -1;
+                if (par) {
+                    auto par_offsets = struct_vtab_function_offset.find(par);
+                    if (par_offsets != struct_vtab_function_offset.end()) {
+                        auto par_offset = par_offsets->second.find(method_decl->m_name);
+                        if (par_offset != par_offsets->second.end()) {
+                            parent_offset = par_offset->second;
                         }
+                    }
+                }
+                if (method_decl->m_is_deferred) {
+                    // Case: a deferred binding overriding a deferred binding of the parent
+                    // keeps the parent's slot, so overrides in extensions land in that slot
+                    if (parent_offset >= 0) {
+                        struct_vtab_function_offset[struct_sym][method_decl->m_name] = parent_offset;
+                        continue;
                     }
                     llvm::FunctionType *func_type = llvm_utils->get_function_type(
                         *(ASR::down_cast<ASR::Function_t>(
@@ -10242,15 +10259,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm_symtab_fn[h] = fn;
                     }
                     llvm::Function* F = llvm_symtab_fn[h];
-                    if (struct_t->m_parent) {
-                        ASR::symbol_t* par = ASRUtils::symbol_get_past_external(struct_t->m_parent);
-                        // Case: If current method is overriding any methods from parent class
-                        if ((struct_vtab_function_offset.find(par) != struct_vtab_function_offset.end()) &&
-                              (struct_vtab_function_offset[par].find(method_decl->m_name) != struct_vtab_function_offset[par].end()) ) {
-                            impls[struct_vtab_function_offset[par][method_decl->m_name] + 2] = llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr);
-                            struct_vtab_function_offset[struct_sym][method_decl->m_name] = struct_vtab_function_offset[par][method_decl->m_name];
-                            continue;
-                        }
+                    // Case: If current method is overriding a method of an
+                    // ancestor class, it takes over that method's slot.
+                    if (parent_offset >= 0) {
+                        impls[parent_offset + 2] = llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr);
+                        struct_vtab_function_offset[struct_sym][method_decl->m_name] = parent_offset;
+                        continue;
                     }
                     struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;  // -2 to account for reserved null ptr and type info
                     impls.push_back(llvm::ConstantExpr::getBitCast(F, llvm_utils->i8_ptr));
@@ -10269,6 +10283,24 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 }
             }
         }
+    }
+
+    int64_t LLVMStruct::get_vtable_function_offset(ASR::symbol_t* struct_sym,
+        ASR::StructMethodDeclaration_t* binding)
+    {
+        std::string name = binding->m_name;
+        if (binding->m_parent_symtab != nullptr &&
+                binding->m_parent_symtab->asr_owner != nullptr &&
+                ASR::is_a<ASR::symbol_t>(*binding->m_parent_symtab->asr_owner)) {
+            ASR::symbol_t* owner = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::symbol_t>(binding->m_parent_symtab->asr_owner));
+            auto it = struct_vtab_function_offset.find(owner);
+            if (it != struct_vtab_function_offset.end() &&
+                    it->second.find(name) != it->second.end()) {
+                return it->second[name];
+            }
+        }
+        return struct_vtab_function_offset[struct_sym][name];
     }
 
     void LLVMStruct::create_type_info_for_intrinsic_type(ASR::ttype_t* ttype, int kind, llvm::Module* module)

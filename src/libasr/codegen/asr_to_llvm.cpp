@@ -29333,14 +29333,12 @@ public:
         }
 
         const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
-        std::string proc_sym_name = "";
         bool is_runtime_polymorphism = false;
         bool is_nopass = false;
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
             ASR::StructMethodDeclaration_t* class_proc =
                 ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
             is_runtime_polymorphism = ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)));
-            proc_sym_name = class_proc->m_name;
             is_nopass = class_proc->m_is_nopass;
         }
         ASR::Function_t *s;
@@ -29367,7 +29365,7 @@ public:
             is_method = true;
         }
         if (is_runtime_polymorphism) {
-            visit_RuntimePolymorphicSubroutineCall(x, proc_sym_name);
+            visit_RuntimePolymorphicSubroutineCall(x);
             return;
         }
         std::string sub_name = s->m_name;
@@ -29775,7 +29773,7 @@ public:
         return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type);
     }
 
-    void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x, std::string proc_sym_name) {
+    void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x) {
         bool is_pointer = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_dt));
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = is_pointer;
@@ -29796,15 +29794,8 @@ public:
         // Convert function args
         std::vector<llvm::Value*> args;
         struct_api->create_new_vtable_for_struct_type(struct_sym, module.get());
-        ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
-        ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
-        while(!s_class_proc && struct_type_t->m_parent) {
-            struct_type_t = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
-            s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
-        }
-        LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*s_class_proc));
-        ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
+        ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+            ASRUtils::symbol_get_past_external(x.m_name));
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(class_proc->m_proc));
         if (!class_proc->m_is_nopass) {
@@ -29841,13 +29832,13 @@ public:
 
         // Get function pointer from VTable
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
-            vtable_ptr, checked_integer_cast<int>(struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name])));
+            vtable_ptr, checked_integer_cast<int>(struct_api->get_vtable_function_offset(struct_sym, class_proc))));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         builder->CreateCall(fnTy, fn, args);
         return;
     }
 
-    void visit_RuntimePolymorphicFunctionCall(const ASR::FunctionCall_t& x, std::string proc_sym_name) {
+    void visit_RuntimePolymorphicFunctionCall(const ASR::FunctionCall_t& x) {
         bool is_pointer = LLVM::is_llvm_pointer(*ASRUtils::expr_type(x.m_dt));
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = is_pointer;
@@ -29868,15 +29859,8 @@ public:
         // Convert function args
         std::vector<llvm::Value*> args;
         struct_api->create_new_vtable_for_struct_type(struct_sym, module.get());
-        ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
-        ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
-        while(!s_class_proc && struct_type_t->m_parent) {
-            struct_type_t = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
-            s_class_proc = struct_type_t->m_symtab->get_symbol(proc_sym_name);
-        }
-        LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*s_class_proc));
-        ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
+        ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+            ASRUtils::symbol_get_past_external(x.m_name));
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(class_proc->m_proc));
         if (!class_proc->m_is_nopass) {
@@ -29924,7 +29908,7 @@ public:
 
         // Get function pointer from VTable
         llvm::Value* fn = (llvm_utils->create_ptr_gep2(fnPtrTy,
-            vtable_ptr, checked_integer_cast<int>(struct_api->struct_vtab_function_offset[struct_sym][proc_sym_name])));
+            vtable_ptr, checked_integer_cast<int>(struct_api->get_vtable_function_offset(struct_sym, class_proc))));
         fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
         tmp = builder->CreateCall(fnTy, fn, args);
         if (func->m_return_var) {
@@ -30009,18 +29993,16 @@ public:
         }
 
         const ASR::symbol_t *proc_sym = symbol_get_past_external(x.m_name);
-        std::string proc_sym_name = "";
         bool is_deferred = false;
         bool is_nopass = false;
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
             ASR::StructMethodDeclaration_t* class_proc =
                 ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
             is_deferred = ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)));
-            proc_sym_name = class_proc->m_name;
             is_nopass = class_proc->m_is_nopass;
         }
         if( is_deferred ) {
-            visit_RuntimePolymorphicFunctionCall(x, proc_sym_name);
+            visit_RuntimePolymorphicFunctionCall(x);
             wrap_string_function_result(x.m_type);
             return ;
         }

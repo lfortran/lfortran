@@ -3054,6 +3054,9 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     // of a type-bound procedure call), which is matched against the
     // passed-object dummy argument of each specific procedure.
     auto matches = [&](ASR::symbol_t* proc_sym) -> bool {
+        // A specific may be a binding of another module, imported as an
+        // ExternalSymbol (the kept private specific of an inherited generic).
+        proc_sym = symbol_get_past_external(proc_sym);
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
             if( is_dt_present ) {
                 return select_type_bound_proc(proc_sym, args, loc, err);
@@ -4576,10 +4579,47 @@ InterfaceMismatch interface_mismatch(const std::string &what,
 size_t passed_object_index(const ASR::StructMethodDeclaration_t &x,
     ASR::Function_t *proc);
 
+// Whether the binding `binding` of an ancestor type is accessible in the
+// scoping unit that declares the derived type `extension`. A private binding
+// is accessible only in its module and that module's submodules.
+bool is_binding_accessible_in_extension(
+    const ASR::StructMethodDeclaration_t &binding,
+    const ASR::symbol_t *extension);
+
+// Whether a binding of the same name declared in the derived type `extension`
+// overrides `binding`, the nearest binding of that name of its ancestors:
+// `binding` is accessible there (Fortran 2023 7.5.7.3), or it is deferred. A
+// private deferred binding that is not accessible is still overridden, as
+// GFortran does, because an abstract type with one could otherwise never be
+// completed outside its module.
+bool is_binding_overridable_in_extension(
+    const ASR::StructMethodDeclaration_t &binding,
+    const ASR::symbol_t *extension);
+
 // The binding of the same name that `x` overrides, searched up the parent
-// chain of the derived type `x` belongs to, or nullptr.
+// chain of the derived type `x` belongs to, or nullptr. Fortran 2023 7.5.7.3:
+// only an accessible binding is overridden; a binding with the name of an
+// inaccessible private one is a new binding, unless that one is deferred and
+// the nearest of its name (see `is_binding_overridable_in_extension`).
 ASR::StructMethodDeclaration_t* overridden_binding(
     const ASR::StructMethodDeclaration_t &x);
+
+// Whether the binding `x` is `target` or overrides it, directly or through
+// intermediate overrides.
+bool binding_overrides(const ASR::StructMethodDeclaration_t *x,
+    const ASR::StructMethodDeclaration_t *target);
+
+// The binding that a call through `specific`, a specific procedure of a
+// type-bound generic or operator, reaches for an object of declared type
+// `type`: the binding named like `specific` in `type` or its nearest ancestor
+// that is or overrides `specific`, else `specific` itself. `specific` may be an
+// ExternalSymbol to an ancestor's binding (an inherited private specific that
+// is not accessible where the extension is declared), and a binding of the
+// same name that does not override it is a different binding. With `type`
+// nullptr, the binding `specific` denotes. nullptr if `specific` is not a
+// binding.
+ASR::StructMethodDeclaration_t* type_bound_specific_binding(
+    ASR::symbol_t *specific, ASR::Struct_t *type);
 
 // Fortran 2018 7.5.7.3: an overriding type-bound procedure and the one it
 // overrides must have the same interface apart from the passed-object dummy

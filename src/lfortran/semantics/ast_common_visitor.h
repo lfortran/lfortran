@@ -17958,12 +17958,14 @@ public:
                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
                     ASRUtils::expr_type(args[0].m_value)))) {
             SymbolTable* scope = current_scope;
-            final_sym_past_ext = ASRUtils::symbol_get_past_external(
+            ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(
                 resolve_deriv_type_proc(loc,
                     ASRUtils::symbol_name(final_sym_past_ext), "",
                     args[0].m_value,
                     ASRUtils::extract_type(ASRUtils::expr_type(args[0].m_value)),
                     scope));
+            final_sym_past_ext = ASRUtils::symbol_get_past_external(
+                generic_specific_binding(final_sym_past_ext, resolved));
         }
         bool is_nopass_method = false;
         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym_past_ext)) {
@@ -19586,10 +19588,12 @@ public:
                     return b;
                 }
                 for (size_t i = 0; i < g->n_procs; i++) {
-                    std::string name = ASRUtils::symbol_name(g->m_procs[i]);
+                    std::string name = ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(g->m_procs[i]));
                     bool found = false;
                     for (size_t j = 0; j < pg->n_procs && !found; j++) {
-                        found = name == ASRUtils::symbol_name(pg->m_procs[j]);
+                        found = name == ASRUtils::symbol_name(
+                            ASRUtils::symbol_get_past_external(pg->m_procs[j]));
                     }
                     if (!found) {
                         return b;
@@ -19633,6 +19637,27 @@ public:
             + std::string(mod->m_name) + "'",
             Level::Error, Stage::Semantic, {Label("", {loc})}));
         if (!compiler_options.continue_compilation) throw SemanticAbort();
+    }
+
+    // The binding a type-bound generic call reaches for its specific binding
+    // `specific`, given `resolved`, the binding of that name in the declared
+    // type of the passed object. A binding there named like the specific but
+    // not overriding it (the specific is private and not accessible where
+    // that binding is declared) is a different binding, so the call keeps
+    // the specific.
+    ASR::symbol_t* generic_specific_binding(ASR::symbol_t *specific,
+            ASR::symbol_t *resolved) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(specific);
+        ASR::symbol_t *r = resolved ? ASRUtils::symbol_get_past_external(resolved) : nullptr;
+        if (r != nullptr && s != nullptr &&
+                ASR::is_a<ASR::StructMethodDeclaration_t>(*r) &&
+                ASR::is_a<ASR::StructMethodDeclaration_t>(*s) &&
+                !ASRUtils::binding_overrides(
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(r),
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(s))) {
+            return specific;
+        }
+        return resolved;
     }
 
     ASR::symbol_t* resolve_deriv_type_proc(const Location &loc, const std::string &var_name,
@@ -26756,8 +26781,10 @@ public:
         for (size_t oi = 0; oi < proc_order.size(); ++oi) {
             size_t i = proc_order[oi];
             ASR::symbol_t* proc;
-            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
-                proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(gen_proc->m_procs[i])->m_proc;
+            ASR::StructMethodDeclaration_t* binding =
+                ASRUtils::type_bound_specific_binding(gen_proc->m_procs[i], nullptr);
+            if (binding != nullptr) {
+                proc = binding->m_proc;
             } else {
                 proc = gen_proc->m_procs[i];
             }
@@ -26810,7 +26837,7 @@ public:
             std::string func_name = to_lower(func->m_name);
             ASR::symbol_t* call_sym = nullptr;
             if (op_sym != nullptr && !ASRUtils::is_type_bound_generic(operator_sym)
-                    && !ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
+                    && binding == nullptr) {
                 call_sym = gen_proc->m_procs[i];
             } else {
                 call_sym = ASRUtils::import_type_bound_specific(al, current_scope,
@@ -26847,8 +26874,10 @@ public:
                 ASR::CustomOperator_t* rhs_gen_proc = ASR::down_cast<ASR::CustomOperator_t>(rhs_operator_sym);
                 for (size_t i = 0; i < rhs_gen_proc->n_procs; ++i) {
                     ASR::symbol_t* proc;
-                    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*rhs_gen_proc->m_procs[i])) {
-                        proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(rhs_gen_proc->m_procs[i])->m_proc;
+                    ASR::StructMethodDeclaration_t* binding =
+                        ASRUtils::type_bound_specific_binding(rhs_gen_proc->m_procs[i], nullptr);
+                    if (binding != nullptr) {
+                        proc = binding->m_proc;
                     } else {
                         proc = rhs_gen_proc->m_procs[i];
                     }

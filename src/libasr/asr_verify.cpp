@@ -1560,7 +1560,7 @@ public:
     // call through a null slot rather than a diagnostic.
     void verify_deferred_bindings(const Struct_t &x) {
         if (!check_external || x.m_is_abstract) return;
-        std::set<std::string> nearest;
+        ASR::Struct_t *type = const_cast<ASR::Struct_t*>(&x);
         std::set<const ASR::Struct_t*> seen;
         const ASR::Struct_t *s = &x;
         while (s != nullptr) {
@@ -1569,13 +1569,16 @@ public:
                 if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*item.second)) {
                     continue;
                 }
-                // The nearest declaration of a name is the one in effect;
-                // anything it hides has already been overridden.
-                if (!nearest.insert(item.first).second) continue;
                 ASR::StructMethodDeclaration_t *binding =
                     ASR::down_cast<ASR::StructMethodDeclaration_t>(
                         item.second);
-                require_id(!binding->m_is_deferred,
+                if (!binding->m_is_deferred) continue;
+                // The binding in effect for `x` is the nearest one that is or
+                // overrides this deferred binding; a binding that only shares
+                // its name overrides nothing.
+                ASR::StructMethodDeclaration_t *in_effect =
+                    ASRUtils::type_bound_specific_binding(item.second, type);
+                require_id(in_effect != nullptr && !in_effect->m_is_deferred,
                     "asr.verify.struct.deferred_binding_overridden",
                     "'" + std::string(x.m_name) + "' is not abstract but "
                     "does not override the deferred type bound procedure '" +

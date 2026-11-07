@@ -5279,20 +5279,59 @@ public:
             }
             Vec<ASR::symbol_t*> procs;
             procs.reserve(al, generic_procs(parent_generic).second);
-            std::set<std::string> proc_names;
+            // Specifics are merged by the binding they denote, not by name: an
+            // inherited private specific that `clss` cannot override and a new
+            // binding of `clss` with its name are different bindings.
+            std::set<ASR::symbol_t*> bindings;
             for (ASR::symbol_t *generic : {parent_generic, own_generic}) {
                 if (generic == nullptr) {
                     continue;
                 }
                 auto [m_procs, n_procs] = generic_procs(generic);
                 for (size_t i = 0; i < n_procs; i++) {
-                    std::string proc_name = ASRUtils::symbol_name(m_procs[i]);
-                    if (!proc_names.insert(proc_name).second) {
+                    ASR::symbol_t *specific = ASRUtils::symbol_get_past_external(m_procs[i]);
+                    std::string proc_name = ASRUtils::symbol_name(specific);
+                    ASR::symbol_t *proc = resolve_type_bound_proc_in_parent_chain(
+                        clss, proc_name);
+                    // An inherited private binding that cannot be overridden
+                    // in the module of `clss` is not copied into `clss`: the
+                    // copy would count as declared in that module, so an
+                    // extension declared there could override it.
+                    bool inaccessible = proc &&
+                        ASR::is_a<ASR::StructMethodDeclaration_t>(*proc) &&
+                        ASRUtils::symbol_parent_symtab(proc) != clss->m_symtab &&
+                        !ASRUtils::is_binding_overridable_in_extension(
+                            *ASR::down_cast<ASR::StructMethodDeclaration_t>(proc),
+                            &clss->base);
+                    if (!inaccessible) {
+                        proc = resolve_and_copy_type_bound_proc(clss, proc_name);
+                    }
+                    // A binding of `clss` named like the specific but not
+                    // overriding it (the specific is private and not
+                    // accessible here), or no binding of `clss` at all, leaves
+                    // the generic with the specific, a binding of another
+                    // module, imported into the module of `clss`.
+                    if (proc && ASR::is_a<ASR::StructMethodDeclaration_t>(*proc) &&
+                            ASR::is_a<ASR::StructMethodDeclaration_t>(*specific) &&
+                            (inaccessible || !ASRUtils::binding_overrides(
+                                ASR::down_cast<ASR::StructMethodDeclaration_t>(proc),
+                                ASR::down_cast<ASR::StructMethodDeclaration_t>(specific)))) {
+                        proc = ASRUtils::import_class_procedure(al, specific->base.loc,
+                            specific, clss->m_symtab->parent);
+                        if (ASR::is_a<ASR::ExternalSymbol_t>(*proc)) {
+                            ASR::down_cast<ASR::ExternalSymbol_t>(proc)->m_access
+                                = ASR::accessType::Private;
+                            ASRUtils::insert_module_dependency(proc, al,
+                                current_module_dependencies);
+                        }
+                    } else if (proc == nullptr
+                            || !ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
+                        proc = m_procs[i];
+                    }
+                    if (!bindings.insert(ASRUtils::symbol_get_past_external(proc)).second) {
                         continue;
                     }
-                    ASR::symbol_t *proc = resolve_and_copy_type_bound_proc(clss, proc_name);
-                    procs.push_back(al, proc && ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)
-                        ? proc : m_procs[i]);
+                    procs.push_back(al, proc);
                 }
             }
             if (own_generic == nullptr) {
