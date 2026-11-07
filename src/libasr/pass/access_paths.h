@@ -341,6 +341,55 @@ inline ASR::symbol_t *designator_base(ASR::expr_t *e) {
     }
 }
 
+// Whether a value of the type of `e` may hold a pointer, through which a
+// procedure handed it as an intent(in) argument could still change storage.
+inline bool may_hold_pointer(ASR::expr_t *e) {
+    ASR::ttype_t *type = ASRUtils::expr_type(e);
+    if (ASRUtils::is_pointer(type)) return true;
+    ASR::ttype_t *t = ASRUtils::extract_type(type);
+    if (ASR::is_a<ASR::Integer_t>(*t) || ASR::is_a<ASR::UnsignedInteger_t>(*t)
+            || ASR::is_a<ASR::Real_t>(*t) || ASR::is_a<ASR::Complex_t>(*t)
+            || ASR::is_a<ASR::Logical_t>(*t) || ASR::is_a<ASR::String_t>(*t)) {
+        return false;
+    }
+    if (!ASR::is_a<ASR::StructType_t>(*t)
+            || ASR::down_cast<ASR::StructType_t>(t)
+                ->m_is_unlimited_polymorphic) {
+        return true;
+    }
+    ASR::symbol_t *declaration = ASRUtils::get_struct_sym_from_struct_expr(e);
+    if (declaration == nullptr) return true;
+    // The components, and those of the derived-type components, to a depth.
+    std::vector<std::pair<ASR::symbol_t*, int>> todo{{declaration, 0}};
+    while (!todo.empty()) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            todo.back().first);
+        int depth = todo.back().second;
+        todo.pop_back();
+        if (depth > 8 || !ASR::is_a<ASR::Struct_t>(*sym)) return true;
+        ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(sym);
+        if (st->m_parent) todo.push_back({st->m_parent, depth + 1});
+        for (auto &item : st->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            if (ASRUtils::is_pointer(v->m_type)) return true;
+            ASR::ttype_t *m = ASRUtils::extract_type(v->m_type);
+            if (ASR::is_a<ASR::StructType_t>(*m)) {
+                if (v->m_type_declaration == nullptr) return true;
+                todo.push_back({v->m_type_declaration, depth + 1});
+            } else if (!ASR::is_a<ASR::Integer_t>(*m)
+                    && !ASR::is_a<ASR::UnsignedInteger_t>(*m)
+                    && !ASR::is_a<ASR::Real_t>(*m)
+                    && !ASR::is_a<ASR::Complex_t>(*m)
+                    && !ASR::is_a<ASR::Logical_t>(*m)
+                    && !ASR::is_a<ASR::String_t>(*m)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 // The paths an array designator may name through a local pointer that the
 // procedure associates with several things, each of which `path_of`
 // follows (`p => x` in one branch, `p => y` in the other, as the lowering of

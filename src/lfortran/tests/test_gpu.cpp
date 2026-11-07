@@ -2305,6 +2305,82 @@ end module
     CHECK(gpu_sync_trace(source, "sync_locals", "shifted") == "[[|]L|]D");
 }
 
+TEST_CASE("GPU host reads of what pending launches only read do not wait") {
+    // The host reads `x(1)` while the launch that reads `x` is pending, and
+    // `use_twice` hands `m`, whose component a pending launch reads, to an
+    // intent(in) dummy: neither changes what the launches read, so neither
+    // waits. Writing `x(2)` does.
+    const std::string source = R"(
+module sync_reads
+implicit none
+type :: matrix
+    real, allocatable :: w(:)
+end type
+contains
+subroutine apply(m, x, y)
+    type(matrix), intent(in) :: m
+    real, contiguous, intent(in) :: x(:)
+    real, contiguous, intent(out) :: y(:)
+    integer :: i
+    do concurrent (i = 1:size(x))
+        y(i) = m%w(i)*x(i)
+    end do
+end subroutine
+subroutine use_twice(m, x, y, z)
+    type(matrix), intent(in) :: m
+    real, contiguous, intent(in) :: x(:)
+    real, contiguous, intent(inout) :: y(:), z(:)
+    call apply(m, x, y)
+    call apply(m, y, z)
+end subroutine
+end module
+program sync_reads_main
+use sync_reads
+implicit none
+real :: x(100000), y(100000), z(100000), s
+integer :: i
+x = 1
+do concurrent (i = 1:size(x))
+    y(i) = 2*x(i)
+end do
+s = x(1) + 1
+do concurrent (i = 1:size(x))
+    z(i) = 3*x(i)
+end do
+x(2) = s
+print *, y(1), z(1)
+end program
+)";
+    CHECK(gpu_sync_trace(source, "sync_reads", "use_twice") == "CC");
+    CHECK(gpu_sync_trace(source, "", "sync_reads_main") == "[L|][L|]WS");
+    // An assignment whose value calls a function that may change its
+    // argument, here what the pending launch reads, waits as before.
+    const std::string impure = R"(
+module sync_impure
+implicit none
+contains
+real function bump(a)
+    real, intent(inout) :: a(:)
+    a(1) = a(1) + 1
+    bump = a(1)
+end function
+end module
+program sync_impure_main
+use sync_impure
+implicit none
+real :: x(100000), y(100000), s
+integer :: i
+x = 1
+do concurrent (i = 1:size(x))
+    y(i) = 2*x(i)
+end do
+s = bump(x)
+print *, s, y(1)
+end program
+)";
+    CHECK(gpu_sync_trace(impure, "", "sync_impure_main") == "[L|]WS");
+}
+
 #endif
 
 TEST_CASE("A scalar every iteration assigns first is not read back when "

@@ -1064,9 +1064,11 @@ memory until the next wait, and the host must not change it before that
 either. The pass keeps what pending launches read as well, and
 puts a `GpuWait` -- wait for the launches that read host memory in place,
 copying nothing back -- before a host statement that may change or free
-such storage. Since an
-access is not known to be a read or a write, any statement that accesses
-the storage counts, except where it only evaluates an expression. A launch
+such storage. Any statement that accesses the storage counts, except where
+it only reads it: where it evaluates an expression, such as the value of an
+assignment, or hands it to an `intent(in)` dummy of a deferring twin that
+cannot change it through a pointer (a weight matrix handed to every layer's
+projection while the previous projection still reads it in place). A launch
 itself never waits, so launches that only share what they read, such as the
 iterations of a time loop, run back to back.
 
