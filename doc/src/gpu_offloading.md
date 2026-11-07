@@ -942,6 +942,35 @@ the CPU and the GPU of an APU share the power of their socket, and on an
 MI300A a host thread spinning while a kernel streams through memory made the
 kernel 3-5% slower.
 
+An Apple GPU shares the host's memory, but a kernel can only use memory a
+Metal buffer covers, which must be whole pages; making a buffer over a range
+the host allocated (`newBufferWithBytesNoCopy`) costs about 0.1 ms, while
+the first launch that uses a new buffer maps its pages for the GPU (about
+10 ms for 1.4 GB). So the Metal runtime has the managed model, chosen as on
+CUDA (`LFORTRAN_GPU_MEMORY=copy` or `managed`; `auto` selects managed on a
+GPU that shares the host's memory, every Apple GPU, and copy otherwise):
+
+* The runtime replaces the program's allocator, so that an allocation of at
+  least 1 MiB takes whole pages. The first launch that uses it makes a
+  buffer over its pages, kept until the allocation is freed, and a range in
+  it is handed to the kernel in place, at its offset in that buffer: nothing
+  is copied in at a launch or back at a sync. Freeing the allocation waits
+  for the launches that use it, and forgets the buffer, so an allocation
+  made later at the same address gets a buffer of its own.
+* A range a launch only reads of at most 64 KiB is still copied, unless a
+  pending launch writes the allocation in place, and so is a range that
+  overlaps one the same launch writes, so that the kernel reads it as the
+  host holds it; the runtime first waits for pending launches that write
+  the allocation.
+* `lfortran_gpu_wait` waits for every launch when one that reads host
+  memory in place may be pending, and returns at once otherwise.
+* Smaller allocations, memory the allocator does not make (stack and static
+  arrays), and an allocation the device cannot map keep the copy model.
+
+Decoding a 27B-parameter language model whose weights are allocatable
+arrays, the copy model copied 28.8 GB of weights into fresh buffers for
+every token; the managed model copies none of them.
+
 The Metal runtime encodes the launches one after another into one compute
 encoder and commits its command buffer every 64 launches and at every wait:
 encoding a dispatch costs the host about 2 us, committing a command buffer
@@ -952,15 +981,17 @@ barrier writes, or writes one that such a dispatch reads: launches that do
 not depend on each other overlap, and the others run in launch order. At
 most three committed command buffers are pending; a host that launches
 faster than the device runs waits for the oldest, which also bounds how many
-buffers the pending launches hold. A scratch buffer of at most 16 MiB is
-kept per kernel and argument and used by every launch of the kernel, which
-writes it, so launches of one kernel that share it never overlap. A larger
-one, such as a device-heap arena, is kept by the kernel handle of one launch
-and released with it, so a new launch gets a new one. A launch that runs in
-chunks encodes every chunk with its one kernel handle, so the chunks share
-all its scratch buffers, the small and the large ones: what an earlier chunk
-leaves in a scratch buffer is still there for the later chunks and for the
-host to read back. Between launches, what a launch leaves in a scratch
+buffers the pending launches hold. A scratch buffer is kept per kernel and
+argument, grown when a launch needs more, and used by every launch of the
+kernel, which writes it, so launches of one kernel that share it never
+overlap. That holds for a large one too, such as a device-heap arena or the
+workspaces of a kernel with many threads: a new buffer's pages are mapped
+for the GPU at its first use, and a projection of a language model that got
+new workspaces of 60-360 MB at every launch spent more time on that than in
+its kernel. A launch that runs in chunks encodes every chunk with its one
+kernel handle, so the chunks share all its scratch buffers: what an earlier
+chunk leaves in a scratch buffer is still there for the later chunks and for
+the host to read back. Between launches, what a launch leaves in a scratch
 buffer is dead.
 
 ### Where the host waits
