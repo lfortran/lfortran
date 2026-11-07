@@ -4739,3 +4739,6 @@ end module
 
 subroutine cc1_bind_name_kind() bind(C, name=4_"x")  ! {Error} the name= specifier in bind(c) must be of default character kind
 end subroutine
+
+subroutine cc1_bind_name_undecl() bind(C, name=cc1_bind_name_nodecl)  ! {Error} Variable 'cc1_bind_name_nodecl' is not declared
+end subroutine
