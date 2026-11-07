@@ -226,6 +226,46 @@ TEST_CASE("LLVM code generation optimization level") {
 #endif
 }
 
+TEST_CASE("LLVM --fast fuses multiplies and adds in the backend") {
+    // Like -ffast-math (-ffp-contract=fast) in clang and flang.
+    CompilerOptions default_options;
+    LCompilers::LLVMEvaluator default_evaluator(default_options);
+    CHECK(default_evaluator.get_target_machine().Options.AllowFPOpFusion
+        == llvm::FPOpFusion::Standard);
+
+    CompilerOptions fast_options;
+    fast_options.po.fast = true;
+    LCompilers::LLVMEvaluator fast_evaluator(fast_options);
+    CHECK(fast_evaluator.get_target_machine().Options.AllowFPOpFusion
+        == llvm::FPOpFusion::Fast);
+
+    CompilerOptions strict_options;
+    strict_options.po.fast = true;
+    strict_options.po.no_fast_math = true;
+    LCompilers::LLVMEvaluator strict_evaluator(strict_options);
+    CHECK(strict_evaluator.get_target_machine().Options.AllowFPOpFusion
+        == llvm::FPOpFusion::Standard);
+
+#ifdef HAVE_TARGET_AARCH64
+    // The AArch64 backend of LLVM 11 keeps `fmul fast` and `fadd fast`
+    // separate unless the target machine allows fusion.
+    CompilerOptions aarch64_options;
+    aarch64_options.po.fast = true;
+    aarch64_options.target = "aarch64-unknown-linux-gnu";
+    LCompilers::LLVMEvaluator aarch64_evaluator(aarch64_options);
+    std::unique_ptr<LCompilers::LLVMModule> m = aarch64_evaluator.parse_module2(R"""(
+define double @f(double %x, double %y, double %z) {
+    %m = fmul fast double %x, %y
+    %s = fadd fast double %m, %z
+    ret double %s
+}
+)""", "");
+    std::string assembly = aarch64_evaluator.get_asm(*m->m_m);
+    CAPTURE(assembly);
+    CHECK(assembly.find("fmadd") != std::string::npos);
+#endif
+}
+
 TEST_CASE("llvm 1") {
     //std::cout << "LLVM Version:" << std::endl;
     //LFortran::LLVMEvaluator::print_version_message();

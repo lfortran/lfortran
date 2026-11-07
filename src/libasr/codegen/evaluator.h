@@ -43,6 +43,9 @@ struct LLVMTargetConfig {
     bool emit_cpu_attribute = false;
     bool host_target = false;
     bool fast = false;
+    // `--fast` without `--no-fast-math`: the backend may fuse a multiply and
+    // an add into an FMA, like `-ffp-contract=fast` in clang and flang.
+    bool fast_math = false;
 
     void apply_target_attributes(llvm::Module &module) const;
 };
