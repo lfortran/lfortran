@@ -6990,3 +6990,78 @@ end subroutine
     CHECK(r.result.type == FortranEvaluator::EvalResult::real8);
     CHECK(r.result.f64 == 6.0);
 }
+
+TEST_CASE("FortranEvaluator character variables across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "character(len=20) :: greeting\n"
+        "greeting = \"hello\"\n");
+    REQUIRE(r.ok);
+    r = e.evaluate2("greeting");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::character);
+    CHECK(r.result.str == "hello               ");
+    r = e.evaluate2("greeting = \"bye\"");
+    REQUIRE(r.ok);
+    r = e.evaluate2("trim(greeting) // \"!\"");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "bye!");
+
+    r = e.evaluate2("character(len=3) :: initialized = \"abc\"");
+    REQUIRE(r.ok);
+    r = e.evaluate2("initialized");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "abc");
+
+    r = e.evaluate2("character(len=5) :: names(2)");
+    REQUIRE(r.ok);
+    r = e.evaluate2("names(1) = \"ab\"\nnames(2) = \"cdefg\"");
+    REQUIRE(r.ok);
+    r = e.evaluate2("names(1) // names(2)");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "ab   cdefg");
+
+    r = e.evaluate2("character(len=2) :: pairs(2) = [\"xy\", \"zw\"]");
+    REQUIRE(r.ok);
+    r = e.evaluate2("pairs(2) // pairs(1)");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "zwxy");
+
+    r = e.evaluate2("character(len=:), allocatable :: deferred");
+    REQUIRE(r.ok);
+    r = e.evaluate2("deferred = \"grows\"");
+    REQUIRE(r.ok);
+    r = e.evaluate2("deferred // \"!\"");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "grows!");
+
+    // A procedure of a later cell assigns to the global.
+    r = e.evaluate2("subroutine set_greeting()\ngreeting = \"done\"\nend subroutine");
+    REQUIRE(r.ok);
+    r = e.evaluate2("call set_greeting()");
+    REQUIRE(r.ok);
+    r = e.evaluate2("trim(greeting)");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "done");
+}
+
+TEST_CASE("FortranEvaluator module character variables across cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module char_vars_13453\n"
+        "character(len=3) :: label = \"mod\"\n"
+        "character(len=2) :: tags(2)\n"
+        "end module\n");
+    REQUIRE(r.ok);
+    r = e.evaluate2("use char_vars_13453\ntags(1) = \"q1\"");
+    REQUIRE(r.ok);
+    r = e.evaluate2("use char_vars_13453\nlabel // tags(1)");
+    REQUIRE(r.ok);
+    CHECK(r.result.str == "modq1");
+}
