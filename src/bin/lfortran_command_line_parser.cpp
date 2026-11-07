@@ -428,9 +428,20 @@ namespace LCompilers::CommandLineInterface {
             handle_help_category(app, help_arg);
         }
 
+        // `-shared` (single dash, as in GCC/gfortran/clang) would otherwise be
+        // parsed as `-s hared` (Emscripten settings), so map it to `--shared`.
         if (argv != nullptr) {
-            app.parse(argc, argv);
+            std::vector<std::string> argv_copy(argv, argv + argc);
+            for (auto &a : argv_copy) {
+                if (a == "-shared") a = "--shared";
+            }
+            std::vector<const char*> argv_ptrs;
+            for (const auto &a : argv_copy) argv_ptrs.push_back(a.c_str());
+            app.parse(argc, argv_ptrs.data());
         } else {
+            for (auto &a : args) {
+                if (a == "-shared") a = "--shared";
+            }
             app.parse(args);
         }
 
