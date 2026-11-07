@@ -3333,10 +3333,13 @@ public:
 
     bool is_polymorphic_descriptor_array(ASR::expr_t* expr) {
         ASR::ttype_t* type = ASRUtils::expr_type(expr);
-        return ASRUtils::is_array(type)
-            && ASRUtils::is_class_type(ASRUtils::extract_type(type))
-            && ASRUtils::extract_physical_type(type)
-                == ASR::array_physical_typeType::DescriptorArray;
+        if (!ASRUtils::is_array(type)
+                || !ASRUtils::is_class_type(ASRUtils::extract_type(type))) {
+            return false;
+        }
+        ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(type);
+        return phys == ASR::array_physical_typeType::DescriptorArray
+            || phys == ASR::array_physical_typeType::AssumedRankArray;
     }
 
     // The class wrapper {vptr, data} that the elements of a polymorphic
@@ -4828,10 +4831,8 @@ public:
                 ASR::symbol_t* struct_sym1 = ASRUtils::symbol_get_past_external(
                     ASRUtils::get_struct_sym_from_struct_expr(x.m_args[1]));
 
-                llvm::Value* id0 = llvm_utils->get_type_identifier_for_polymorphic_type(
-                    x.m_args[0], arg0, struct_sym0, module.get(), get_class_hash(struct_sym0));
-                llvm::Value* id1 = llvm_utils->get_type_identifier_for_polymorphic_type(
-                    x.m_args[1], arg1, struct_sym1, module.get(), get_class_hash(struct_sym1));
+                llvm::Value* id0 = get_type_identifier(x.m_args[0], arg0, struct_sym0);
+                llvm::Value* id1 = get_type_identifier(x.m_args[1], arg1, struct_sym1);
 
                 if (compiler_options.new_classes) {
                     // new_classes: walk parent chain via TypeInfo
@@ -28241,6 +28242,29 @@ public:
             llvm::ConstantPointerNull::get(wrapper_type->getPointerTo()));
     }
 
+    // The elements of a polymorphic array share one class wrapper
+    // {vptr, data}, `src`. A class(*) array dummy associated with it gets its
+    // own wrapper `dst` with the same dynamic type (vptr) and element data.
+    // An unallocated actual (passed to an optional dummy) has no wrapper,
+    // and `dst` then gets null data.
+    void copy_class_array_wrapper(llvm::Value* src, llvm::Value* dst) {
+        llvm::StructType* wrapper_type = llvm::StructType::get(
+            context, {llvm_utils->vptr_type, llvm_utils->i8_ptr});
+        src = builder->CreateBitCast(src, wrapper_type->getPointerTo());
+        dst = builder->CreateBitCast(dst, wrapper_type->getPointerTo());
+        llvm_utils->create_if_else(builder->CreateIsNotNull(src), [&]() {
+            for (int i = 0; i < 2; i++) {
+                builder->CreateStore(
+                    llvm_utils->CreateLoad2(wrapper_type->getElementType(i),
+                        llvm_utils->create_gep2(wrapper_type, src, i)),
+                    llvm_utils->create_gep2(wrapper_type, dst, i));
+            }
+        }, [&]() {
+            builder->CreateStore(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr),
+                llvm_utils->create_gep2(wrapper_type, dst, 1));
+        });
+    }
+
     llvm::Value* convert_to_polymorphic_arg(ASR::expr_t* arg_expr, llvm::Value* dt, ASR::Variable_t* dummy,
         ASR::ttype_t* s_m_args0_type, ASR::ttype_t* arg_type) {
         if ( compiler_options.new_classes ) {
@@ -28330,14 +28354,12 @@ public:
                         actual_array_data_type->getPointerTo(), llvm_utils->create_gep2(actual_array_type, dt, 0));
                     arg_type = ASRUtils::extract_type(arg_type);
 
+                    bool is_class_array = ASR::is_a<ASR::StructType_t>(*arg_type) &&
+                        ASRUtils::is_class_type(arg_type);
                     // Store vptr in wrapper field 0
                     if (ASR::is_a<ASR::StructType_t>(*arg_type)) {
-                        if (ASRUtils::is_class_type(arg_type)) {
-                            llvm::Value* v = builder->CreateBitCast(dt, llvm_utils->vptr_type->getPointerTo());
-                            llvm::Value* loaded_vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, v);
-                            llvm::Value* w = builder->CreateBitCast(
-                                unlimited_polymorphic_struct, llvm_utils->vptr_type->getPointerTo());
-                            builder->CreateStore(loaded_vptr, w);
+                        if (is_class_array) {
+                            copy_class_array_wrapper(actual_data, unlimited_polymorphic_struct);
                         } else {
                             struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(
                                 ASRUtils::get_struct_sym_from_struct_expr(arg_expr)),
@@ -28363,7 +28385,7 @@ public:
                         llvm::Value* descs_i8 = llvm_utils->expand_flat_to_char_descriptors(
                             src_char_data, char_len, n_elems_i64);
                         builder->CreateStore(descs_i8, data_ptr);
-                    } else {
+                    } else if (!is_class_array) {
                         builder->CreateStore(builder->CreateBitCast(actual_data, llvm_utils->i8_ptr),
                                             data_ptr);
                     }
@@ -28638,22 +28660,18 @@ public:
                         src_char_data, char_len, n_elems_i64);
 
                     builder->CreateStore(descs_i8, data_ptr);
+                } else if (ASR::is_a<ASR::StructType_t>(*arg_type) &&
+                        ASRUtils::is_class_type(arg_type)) {
+                    copy_class_array_wrapper(actual_data, unlimited_polymorphic_struct);
                 } else {
                     // Non-character types: source data is already contiguous
                     builder->CreateStore(
                         builder->CreateBitCast(actual_data, llvm_utils->i8_ptr), data_ptr);
                 }
 
-                // Store vptr in wrapper field 0
+                // Store vptr in wrapper field 0 (a class array's was copied above)
                 if (ASR::is_a<ASR::StructType_t>(*arg_type)) {
-                    if (ASRUtils::is_class_type(arg_type)) {
-                        // For class types, load vptr from the source's class wrapper
-                        llvm::Value* v = builder->CreateBitCast(dt, llvm_utils->vptr_type->getPointerTo());
-                        llvm::Value* loaded_vptr = llvm_utils->CreateLoad2(llvm_utils->vptr_type, v);
-                        llvm::Value* w = builder->CreateBitCast(
-                            unlimited_polymorphic_struct, llvm_utils->vptr_type->getPointerTo());
-                        builder->CreateStore(loaded_vptr, w);
-                    } else {
+                    if (!ASRUtils::is_class_type(arg_type)) {
                         struct_api->store_class_vptr(ASRUtils::symbol_get_past_external(
                             ASRUtils::get_struct_sym_from_struct_expr(arg_expr)),
                             unlimited_polymorphic_struct, module.get());

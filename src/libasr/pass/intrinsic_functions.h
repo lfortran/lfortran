@@ -1500,14 +1500,14 @@ namespace SameTypeAs {
         ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
         // If either argument is polymorphic (class(*) or class(T)),
         // we cannot evaluate at compile time
-        if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type0)) ||
-            ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type1))) {
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_type0)) ||
+            ASRUtils::is_class_type(ASRUtils::extract_type(arg_type1))) {
             return nullptr;
         }
         // Both types are known at compile time, compare them
         ASRUtils::ASRBuilder b(al, loc);
-        ASR::ttype_t *t0 = ASRUtils::type_get_past_allocatable_pointer(arg_type0);
-        ASR::ttype_t *t1 = ASRUtils::type_get_past_allocatable_pointer(arg_type1);
+        ASR::ttype_t *t0 = ASRUtils::extract_type(arg_type0);
+        ASR::ttype_t *t1 = ASRUtils::extract_type(arg_type1);
 
         if (ASR::is_a<ASR::StructType_t>(*t0) && ASR::is_a<ASR::StructType_t>(*t1)) {
             ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
@@ -1533,14 +1533,14 @@ namespace ExtendsTypeOf {
         ASR::ttype_t *arg_type1 = ASRUtils::expr_type(args[1]);
         // If either argument is polymorphic (class(*) or class(T)),
         // we cannot evaluate at compile time
-        if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type0)) ||
-            ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg_type1))) {
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(arg_type0)) ||
+            ASRUtils::is_class_type(ASRUtils::extract_type(arg_type1))) {
             return nullptr;
         }
         // Both types are known at compile time
         ASRUtils::ASRBuilder b(al, loc);
-        ASR::ttype_t *t0 = ASRUtils::type_get_past_allocatable_pointer(arg_type0);
-        ASR::ttype_t *t1 = ASRUtils::type_get_past_allocatable_pointer(arg_type1);
+        ASR::ttype_t *t0 = ASRUtils::extract_type(arg_type0);
+        ASR::ttype_t *t1 = ASRUtils::extract_type(arg_type1);
 
         if (ASR::is_a<ASR::StructType_t>(*t0) && ASR::is_a<ASR::StructType_t>(*t1)) {
             ASR::symbol_t *sym0 = ASRUtils::symbol_get_past_external(
