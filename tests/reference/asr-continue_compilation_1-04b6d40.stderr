@@ -1904,6 +1904,24 @@ semantic error: Variable 'cc1_char_len_nundef' is not declared
 4578 |     character(len=cc1_char_len_nundef) :: c*4  ! {Error} Variable 'cc1_char_len_nundef' is not declared
      |                   ^^^^^^^^^^^^^^^^^^^ 'cc1_char_len_nundef' is undeclared
 
+semantic error: Private variable `x` cannot be imported
+    --> tests/errors/continue_compilation_1.f90:4599:40
+     |
+4599 |     use cc1_priv_reexport_named, only: x  ! {Error} Private variable `x` cannot be imported
+     |                                        ^ 
+
+semantic error: Private variable `x` cannot be imported
+    --> tests/errors/continue_compilation_1.f90:4603:42
+     |
+4603 |     use cc1_priv_reexport_default, only: x  ! {Error} Private variable `x` cannot be imported
+     |                                          ^ 
+
+semantic error: Private variable `z` cannot be imported
+    --> tests/errors/continue_compilation_1.f90:4607:40
+     |
+4607 |     use cc1_priv_reexport_named, only: z  ! {Error} Private variable `z` cannot be imported
+     |                                        ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
