@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_lanes_blocks_01-0d71307",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_blocks_01.f90",
+    "infile_hash": "8f7b1a6137ac2cf392116b9a6858dd2a35b60a67574ad260012cff61",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_lanes_blocks_01-0d71307.stdout",
+    "stdout_hash": "cf278aca5b132cb303dd3895f40100709fc60d6f25b55f8244ff6167",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

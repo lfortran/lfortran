@@ -1,5 +1,18 @@
 #include <stdint.h>
 
+// The combination of what the `lanes` lanes of an iteration hold,
+// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
+// largest. With one lane, the lane's own value.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce(T v, int lanes) {
+    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {
+        T w = __shfl_xor_sync(0xffffffffu, v, offset, lanes);
+        v = op == 0 ? v + w : op == 1 ? v * w
+            : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+    }
+    return v;
+}
+
 struct __ScalarArgs___lfortran_gpu_kernel_0 {
     long __dim_y_0;
     long __lb_y_0;
@@ -182,6 +195,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
     long __lb_y_0;
     long __dim_y_1;
     long __lb_y_1;
+    int __gpu_lanes;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_3(
@@ -201,22 +215,40 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     long __dim_y_0 = __scalar_args.__dim_y_0;
     long __lb_y_0 = __scalar_args.__lb_y_0;
     long __lb_y_1 = __scalar_args.__lb_y_1;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
     float __gpu_mm_acc1;
     long __gpu_mm_j;
     long __gpu_mm_k1;
     int j__dc1;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 4)) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     j__dc1 = (__flat_idx + 1);
     for (__gpu_mm_j = ((long)__lb_b_1); __gpu_mm_j <= ((((long)__dim_b_1) + ((long)__lb_b_1)) - ((long)1)); __gpu_mm_j++) {
         __gpu_mm_acc1 =   0.00000000000000000e+00f;
-        for (__gpu_mm_k1 = ((long)__lb_b_0); __gpu_mm_k1 <= ((((long)__dim_b_0) + ((long)__lb_b_0)) - ((long)1)); __gpu_mm_k1++) {
-            __gpu_mm_acc1 = (__gpu_mm_acc1 + (w[((long)((lo8 + ((__gpu_mm_k1 - ((long)__lb_b_0)) * ((long)2)))) - (__lb_w_0)) + (__dim_w_0 * ((long)((unsigned int)((j__dc1) - (__lb_w_1)))))] * b[((long)(__gpu_mm_k1) - (__lb_b_0)) + (__dim_b_0 * ((long)(__gpu_mm_j) - (__lb_b_1)))]));
+        if ((__gpu_lanes > 1)) {
+            if ((__gpu_lane != 0)) {
+                __gpu_mm_acc1 =   0.00000000000000000e+00f;
+            }
+            for (__gpu_mm_k1 = (((long)__lb_b_0) + (((long)__gpu_lane) * ((long)1))); __gpu_mm_k1 <= ((((long)__dim_b_0) + ((long)__lb_b_0)) - ((long)1)); __gpu_mm_k1 += (((long)1) * ((long)__gpu_lanes))) {
+                __gpu_mm_acc1 = (__gpu_mm_acc1 + (w[((long)((lo8 + ((__gpu_mm_k1 - ((long)__lb_b_0)) * ((long)2)))) - (__lb_w_0)) + (__dim_w_0 * ((long)((unsigned int)((j__dc1) - (__lb_w_1)))))] * b[((long)(__gpu_mm_k1) - (__lb_b_0)) + (__dim_b_0 * ((long)(__gpu_mm_j) - (__lb_b_1)))]));
+            }
+            __gpu_mm_acc1 = __lfortran_lane_reduce<0>(__gpu_mm_acc1, __gpu_lanes_n);
+        } else {
+            for (__gpu_mm_k1 = ((long)__lb_b_0); __gpu_mm_k1 <= ((((long)__dim_b_0) + ((long)__lb_b_0)) - ((long)1)); __gpu_mm_k1++) {
+                __gpu_mm_acc1 = (__gpu_mm_acc1 + (w[((long)((lo8 + ((__gpu_mm_k1 - ((long)__lb_b_0)) * ((long)2)))) - (__lb_w_0)) + (__dim_w_0 * ((long)((unsigned int)((j__dc1) - (__lb_w_1)))))] * b[((long)(__gpu_mm_k1) - (__lb_b_0)) + (__dim_b_0 * ((long)(__gpu_mm_j) - (__lb_b_1)))]));
+            }
         }
-        y[((long)((((long)__lb_y_0) + (__gpu_mm_j - ((long)__lb_b_1)))) - (__lb_y_0)) + (__dim_y_0 * ((long)((unsigned int)((j__dc1) - (__lb_y_1)))))] = __gpu_mm_acc1;
+        if ((__gpu_lane == 0)) {
+            y[((long)((((long)__lb_y_0) + (__gpu_mm_j - ((long)__lb_b_1)))) - (__lb_y_0)) + (__dim_y_0 * ((long)((unsigned int)((j__dc1) - (__lb_y_1)))))] = __gpu_mm_acc1;
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
     }
 }
 

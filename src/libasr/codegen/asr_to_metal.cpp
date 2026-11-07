@@ -83,6 +83,21 @@ struct MetalDialect {
     }
 
     std::string lane_index() const { return "__gpu_lane"; }
+    // The prologue renames the grid position, so a kernel with lanes reads
+    // it under its usual name.
+    std::string lane_thread_index() const { return thread_index(); }
+    std::string lane_block_size() const { return block_size(); }
+    // What the lanes of the iteration hold, combined, in every lane. It is
+    // only reached with more than one lane (gpu_vector_lanes.cpp), and
+    // then the lanes are the whole SIMD-group (emit_lane_prologue): 0 adds,
+    // 1 multiplies, 2 takes the smallest, 3 the largest.
+    std::string lane_reduce(const std::string &value, int op) const {
+        static const char *names[] = {"simd_sum", "simd_product", "simd_min",
+            "simd_max"};
+        LCOMPILERS_ASSERT(op >= 0 && op < 4);
+        return std::string(names[op]) + "(" + value + ")";
+    }
+    std::string lane_reduce_helper() const { return ""; }
 
     // The value in the first lane of the iteration. With one lane per
     // iteration, that is the thread's own.

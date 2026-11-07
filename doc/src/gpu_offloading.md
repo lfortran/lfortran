@@ -1278,9 +1278,9 @@ thread: a GPU thread does not run ahead of a load the way a CPU core does,
 so every element of every array statement inside the iteration costs a
 memory latency. The `gpu_vector_lanes` pass, right after
 `gpu_kernel_finalize`, rewrites such a kernel so that each iteration runs on
-the lanes of a SIMD-group, which share the loops inside it (Metal only, 32
-lanes; a device's capabilities say how many, see `GpuDeviceCapabilities::
-lanes_per_iteration`):
+the lanes of a SIMD-group, which share the loops inside it (32 lanes on
+Metal and on an NVIDIA GPU; a device's capabilities say how many, see
+`GpuDeviceCapabilities::lanes_per_iteration`, and which loops they share):
 
 * A loop whose iterations are independent -- it assigns every shared array
   at one subscript list holding its variable, reads such an array only at
@@ -1291,6 +1291,24 @@ lanes_per_iteration`):
   (`GpuLaneBarrier`). Adjacent loops over the same iterations are joined
   first, and a loop whose body is one more such loop shares out the pairs
   of iterations of both.
+* A loop that accumulates into private scalars -- the inner product of a
+  matrix-vector product, the forces on one body -- by one statement each,
+  `s = s op e` (`+`, `-`, `*`, `max`, `min`), and otherwise only assigns
+  scalars of its own in every iteration, is shared out as well where the
+  lanes can combine values (`lane_reductions`: an NVIDIA GPU, whose warps
+  run them, and Metal, for values of 4 bytes): the lanes but the first
+  start every accumulator at the identity, and after the loop every lane
+  gets them combined (`GpuLaneReduce`: shuffles within the warp on CUDA,
+  `simd_sum`, `simd_product`, `simd_min` and `simd_max` on Metal). A loop that reads a matrix
+  along a row (`a(i, j)` over `j`) is left to one lane per iteration, since
+  the threads of the launch already read a column of it together, and so
+  are a loop of fewer than 64 iterations known at compile time and a loop
+  whose bounds are read from an array, as the rows of a compressed sparse
+  matrix are, which usually hold a few elements. A launch
+  with one lane per iteration runs the loop as it was, in the other branch
+  of a test of the lanes. On an H100 the forces of an n-body loop of 32768
+  bodies run 1.5 times faster this way and the column sums of a 12288 by
+  12288 matrix 2.6 times faster.
 * A statement with an effect the lanes must not repeat -- one that writes
   shared memory outside such a loop, calls a procedure that is not pure,
   or takes elements of the device heap -- runs on the first lane, and the
@@ -1306,8 +1324,19 @@ iteration uses as a temporary, which the launch shares between all threads
 (a known limitation, which lanes would only make show more often).
 
 The host chooses the lanes per launch: the SIMD-group width for a launch of
-at most 1024 iterations, one otherwise, where the iterations fill the GPU
-anyway and the lanes would only repeat each other's work. The kernel takes
+at most `lanes_iterations_max` iterations (1024 on Metal, 65536 on an NVIDIA
+GPU, which keeps about 230,000 threads resident), one otherwise, where the
+iterations fill the GPU anyway and the lanes would only repeat each other's
+work. A kernel whose shared-out loops all read along the first subscript of
+the arrays they name, at least one along a column the iteration takes (a
+later subscript depends on it), and that repeats no such column walk on
+every lane, gets lanes up to `lanes_column_iterations_max` iterations
+(`huge(0)/32` on Metal): one lane per iteration would read 32 columns at
+once there, a few elements at a time, while the lanes read one column
+together. Every row of a quantized matrix-vector product, and every row of a
+gated-delta state update, is such an iteration. On an NVIDIA GPU only reduction loops are shared out
+(`lane_independent_loops` is off), and a kernel with workspaces or that
+takes memory from the device heap keeps one lane per iteration. The kernel takes
 the lanes as its last parameter (`gpu_kernel_layout.lanes`); its thread
 index then numbers the iterations, the host starts `lanes` threads per
 iteration, and a workspace slice belongs to an iteration, shared by its

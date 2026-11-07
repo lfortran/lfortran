@@ -17,7 +17,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __lb_z_0_gpu;
     int __dim_z_1_gpu;
     int __lb_z_1_gpu;
-    int __gpu_lanes_gpu;
 };
 
 kernel void __lfortran_gpu_kernel_0(
@@ -25,8 +24,7 @@ kernel void __lfortran_gpu_kernel_0(
     device float* y_gpu [[buffer(1)]],
     device float* z_gpu [[buffer(2)]],
     constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
-    uint __gpu_grid_thread [[thread_position_in_grid]],
-    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+    uint __thread_id [[thread_position_in_grid]])
 {
     float a_gpu = __scalar_args.a_gpu;
     int __lb_x_0_gpu = __scalar_args.__lb_x_0_gpu;
@@ -34,9 +32,6 @@ kernel void __lfortran_gpu_kernel_0(
     int __dim_z_0_gpu = __scalar_args.__dim_z_0_gpu;
     int __lb_z_0_gpu = __scalar_args.__lb_z_0_gpu;
     int __lb_z_1_gpu = __scalar_args.__lb_z_1_gpu;
-    int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
-    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
-    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
     int __flat_idx_gpu;
     int i__dc_gpu;
     if ((((0 * 0) + __thread_id) >= 8)) {
@@ -47,14 +42,8 @@ kernel void __lfortran_gpu_kernel_0(
     {
         float t_gpu;
         t_gpu = (a_gpu * x_gpu[((int)(i__dc_gpu) - (__lb_x_0_gpu))]);
-        if ((__gpu_lane == 0)) {
-            y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))] = (t_gpu + y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))]);
-        }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+        y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))] = (t_gpu + y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))]);
     }
-    if ((__gpu_lane == 0)) {
-        z_gpu[((int)(i__dc_gpu) - (__lb_z_0_gpu)) + (__dim_z_0_gpu * ((int)(2) - (__lb_z_1_gpu)))] = twice_gpu_11(y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))]);
-    }
-    if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+    z_gpu[((int)(i__dc_gpu) - (__lb_z_0_gpu)) + (__dim_z_0_gpu * ((int)(2) - (__lb_z_1_gpu)))] = twice_gpu_11(y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))]);
 }
 

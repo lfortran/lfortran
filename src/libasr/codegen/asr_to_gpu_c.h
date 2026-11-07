@@ -59,6 +59,11 @@ class GpuMathHelperScanner : public ASR::BaseWalkVisitor<GpuMathHelperScanner> {
 public:
     bool needs_erf = false;
     bool needs_erfc = false;
+    bool needs_lane_reduce = false;
+    void visit_GpuLaneReduce(const ASR::GpuLaneReduce_t &x) {
+        needs_lane_reduce = true;
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuLaneReduce(x);
+    }
     // The type of an integer power device code computes, by kind.
     std::map<int64_t, ASR::ttype_t*> integer_power_types;
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
@@ -3192,6 +3197,7 @@ public:
 
     bool needs_erf_helper = false;
     bool needs_erfc_helper = false;
+    bool needs_lane_reduce_helper = false;
     std::map<int64_t, ASR::ttype_t*> integer_power_types;
 
     void scan_for_math_helpers(const ASR::TranslationUnit_t &tu) {
@@ -3212,6 +3218,7 @@ public:
         }
         needs_erf_helper = scanner.needs_erf;
         needs_erfc_helper = scanner.needs_erfc;
+        needs_lane_reduce_helper = scanner.needs_lane_reduce;
         integer_power_types = scanner.integer_power_types;
     }
 
@@ -3247,6 +3254,7 @@ public:
 
     void emit_math_helpers() {
         emit_integer_power_helpers();
+        if (needs_lane_reduce_helper) src << dialect.lane_reduce_helper();
         if (needs_erf_helper) {
             src << "// Abramowitz & Stegun approximation (7.1.26), max error ~1.5e-7\n";
             src << dialect.device_fn_qualifier()
@@ -4163,6 +4171,12 @@ public:
     }
 
     size_t loop_control_count = 0;
+
+    // Whether the kernel being written runs each iteration on lanes.
+    bool kernel_has_lanes() const {
+        return current_kernel_layout != nullptr
+            && current_kernel_layout->m_lanes != nullptr;
+    }
 
     // The scalars of the kernel being written that are positive by
     // construction: the lanes of an iteration.
@@ -5977,7 +5991,10 @@ public:
                 break;
             }
             case ASR::exprType::GpuThreadIndex: {
-                src << dialect.thread_index();
+                // In a kernel with lanes, the thread index numbers the
+                // iterations (gpu_vector_lanes.cpp).
+                src << (kernel_has_lanes() ? dialect.lane_thread_index()
+                    : dialect.thread_index());
                 break;
             }
             case ASR::exprType::GpuBlockIndex: {
@@ -5985,7 +6002,17 @@ public:
                 break;
             }
             case ASR::exprType::GpuBlockSize: {
-                src << dialect.block_size();
+                src << (kernel_has_lanes() ? dialect.lane_block_size()
+                    : dialect.block_size());
+                break;
+            }
+            case ASR::exprType::GpuLaneReduce: {
+                ASR::GpuLaneReduce_t *r =
+                    ASR::down_cast<ASR::GpuLaneReduce_t>(expr);
+                int op = r->m_op == ASR::reduction_opType::ReduceAdd ? 0
+                    : r->m_op == ASR::reduction_opType::ReduceMul ? 1
+                    : r->m_op == ASR::reduction_opType::ReduceMIN ? 2 : 3;
+                src << dialect.lane_reduce(expr_str(r->m_arg), op);
                 break;
             }
             case ASR::exprType::GpuLaneIndex: {
