@@ -32,7 +32,7 @@ jobs:
   platform:
     name: Full platform coverage (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ contains(matrix.os, 'macos') && 130 || 60 }}
+    timeout-minutes: ${{ contains(matrix.os, 'macos') && 130 || 90 }}
     env:
       MACOSX_DEPLOYMENT_TARGET: 26.0
     strategy:
@@ -71,6 +71,18 @@ jobs:
                 export MACOS=0
             fi
             bash ci/test_llvm_integration.sh --platform
+
+      # Quick runs the GPU suites with --fast only. Here they run in both
+      # modes: without --fast only the passes the offload needs run.
+      - name: Test GPU backends with and without --fast
+        shell: bash -e {0}
+        run: |
+            if [[ "${{ matrix.os }}" == *macos* ]]; then
+                pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b metal -j3
+                pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b metal -f -j3
+            fi
+            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b cuda_cpu -j3
+            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b cuda_cpu -f -j3
 
   # Besides the out-of-source configuration, this job builds the way a user
   # without Pixi does: the llvm11-noshell environment has no Prefix `shell`, so

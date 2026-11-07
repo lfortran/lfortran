@@ -365,8 +365,9 @@ only once, redirect to a log file and then examine the log file.
   selections on PRs, main, release tags and manual runs. It runs full Linux
   LLVM/reference coverage and representative checks on every platform, plus
   shared compiler compatibility jobs. Keep Metal, CUDA-on-CPU and Caffeine-backed coarray
-  capability checks in Quick. Exhaustive never runs on PRs and is not
-  required before review or merge.
+  capability checks in Quick. Quick runs the Metal and CUDA-on-CPU suites
+  with `--fast`; Exhaustive's platform jobs run them with and without it.
+  Exhaustive never runs on PRs and is not required before review or merge.
   Caffeine's own LFortran unit tests and all coarray capability tests always run.
   Only Linux GFortran/OpenCoarrays reference validation is source-change-aware:
   use the same input comparison on every event, validate conservatively when

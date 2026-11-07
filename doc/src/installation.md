@@ -244,10 +244,14 @@ another dependent job/queue.
 
 The Linux/LLVM 11 platform build retains full reference coverage, platform smoke tests,
 and the full GFortran, C/C++, Fortran, direct-WASM, OpenMP and CUDA-on-CPU
-backend suites. Linux/LLVM 21 Debug also runs normal/fast smoke coverage, and
+backend suites. Linux/LLVM 21 Debug also runs normal/fast smoke coverage and
+the full CUDA-on-CPU suite, and
 Linux/LLVM 7/23 Release provide additional smoke coverage. macOS/LLVM 11 keeps
 platform smoke coverage and
-the full Metal and CUDA-on-CPU suites. Windows keeps its native Release
+the full Metal and CUDA-on-CPU suites. Quick runs the Metal and CUDA-on-CPU
+suites with `--fast`, which applies the GPU optimizations on top of the
+passes the offload needs; their kernel-source references, which run with
+Linux references, cover the kernels compiled without `--fast`. Windows keeps its native Release
 build and supported compile/link/run checks. Caffeine/coarrays run on the
 LLVM 11 Debug compatibility compiler. The standalone compiler-to-WASM build is also retained;
 its native phase is Quick's Linux GCC Release build, so it uses `-Werror`
@@ -261,8 +265,10 @@ every compatibility job runs Caffeine/coarrays. Three supplemental platform buil
 LLVM 11/21 Debug and full normal/reference suites on macOS LLVM 11 Debug.
 These retain the full platform coverage that used to run only in main's Quick.
 Quick and Exhaustive share `.github/actions/build-platform` so these compiler
-configurations cannot drift. The supplemental jobs do not rerun Quick's GPU,
-alternate-backend or descriptor-mode suites; Linux references stay in Quick.
+configurations cannot drift. The supplemental jobs also run the CUDA-on-CPU
+suite, and on macOS the Metal suite, with and without `--fast`. They do not
+rerun Quick's alternate-backend or descriptor-mode suites; Linux references
+stay in Quick.
 
 All native compatibility profiles enable runtime-stacktrace support, including
 the LLVM 11/19 and macOS application compilers. Caffeine removes LFortran
