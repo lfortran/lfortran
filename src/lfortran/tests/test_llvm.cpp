@@ -5195,12 +5195,14 @@ end module
     CHECK(r.result.i32 == 7);
 }
 
-#ifndef __EMSCRIPTEN__
+#if !defined(__EMSCRIPTEN__) && LLVM_VERSION_MAJOR != 8
 // The evaluator's message for a symbol the JIT cannot resolve; LLVM 7
 // reports it from findSymbol()/getAddress(), newer LLVM from lookup().
 // In the WASM build an unresolved symbol is instead a JavaScript "Dynamic
 // linking error" that aborts the process, so the checks below that call a
-// cell that does not link are native only.
+// cell that does not link are native only. They are also skipped with
+// LLVM 8, whose ORC ExecutionSession::lookup() reports "Symbols not found"
+// but then never returns when a symbol fails to materialize.
 static bool is_jit_symbol_lookup_failure(const std::string &msg) {
     return msg.find("lookup() failed to find the symbol") != std::string::npos
         || msg.find("findSymbol() failed to find the symbol") != std::string::npos
@@ -5230,7 +5232,7 @@ c = gen()
 end function
 )");
     CHECK(r.ok);
-#ifndef __EMSCRIPTEN__
+#if !defined(__EMSCRIPTEN__) && LLVM_VERSION_MAJOR != 8
     // The unresolved `fn` makes the JIT lookup of the cell fail.
     bool linked = false;
     try {
@@ -5329,6 +5331,7 @@ external fn
 c = fn() / 2
 end function
 )").ok);
+#if LLVM_VERSION_MAJOR != 8
     // The unresolved `fn` makes the JIT lookup of the cell fail.
     bool linked = false;
     try {
@@ -5340,6 +5343,7 @@ end function
         CHECK(is_jit_symbol_lookup_failure(msg));
     }
     CHECK(!linked);
+#endif
 #endif
 }
 
