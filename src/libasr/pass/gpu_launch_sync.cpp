@@ -920,19 +920,21 @@ private:
             bool handed = i < t->n_args && handed_pending(
                 ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(
                     t->m_args[i])->m_v));
-            Path p;
+            std::vector<Path> paths;
             std::vector<ASR::expr_t*> subscripts;
-            if (!handed || !path_of(pointers, arg, p, &subscripts)) {
+            if (!handed || !designated_paths(arg, paths, &subscripts)) {
                 c.visit_expr(*arg);
                 continue;
             }
             for (ASR::expr_t *sub : subscripts) c.visit_expr(*sub);
-            if (is_pointer_variable(p.root)) acc.globals = true;
-            if (!reachable_elsewhere(p.root, routine)
-                    && escaped.count(p.root) == 0) {
-                continue;
+            for (const Path &p : paths) {
+                if (is_pointer_variable(p.root)) acc.globals = true;
+                if (!reachable_elsewhere(p.root, routine)
+                        && escaped.count(p.root) == 0) {
+                    continue;
+                }
+                acc.paths.push_back(p);
             }
-            acc.paths.push_back(p);
         }
         // The twin may access what other procedures can reach, and stop.
         acc.globals = true;
@@ -950,17 +952,19 @@ private:
                         == nullptr) {
                     continue;
                 }
-                Path p;
-                if (!path_of(pointers, x.m_args[e.first].m_value, p,
+                std::vector<Path> actual;
+                if (!designated_paths(x.m_args[e.first].m_value, actual,
                         nullptr)) {
                     (pass == 0 ? wait_written : wait_read) = true;
                     continue;
                 }
-                p.members.insert(p.members.end(), e.second.members.begin(),
-                    e.second.members.end());
-                p.shallow = e.second.shallow;
-                if (pass == 0) s.add_written(p);
-                else s.add_read(p);
+                for (Path &p : actual) {
+                    p.members.insert(p.members.end(),
+                        e.second.members.begin(), e.second.members.end());
+                    p.shallow = e.second.shallow;
+                    if (pass == 0) s.add_written(p);
+                    else s.add_read(p);
+                }
             }
         }
         s.any = true;
@@ -969,6 +973,28 @@ private:
         } else if (wait_read) {
             wait(s, emit, out, loc);
         }
+    }
+
+    // The path of the designator `e` (path_of), or, through a local pointer
+    // the procedure associates with one of a few arrays, one path for each
+    // (alternative_paths), and the subscripts evaluated on the way.
+    bool designated_paths(ASR::expr_t *e, std::vector<Path> &paths,
+            std::vector<ASR::expr_t*> *subscripts) {
+        Path p;
+        std::vector<ASR::expr_t*> own;
+        if (path_of(pointers, e, p, subscripts ? &own : nullptr)) {
+            paths.push_back(p);
+        } else {
+            own.clear();
+            if (!alternative_paths(pointers, e, paths,
+                    subscripts ? &own : nullptr)) {
+                return false;
+            }
+        }
+        if (subscripts) {
+            subscripts->insert(subscripts->end(), own.begin(), own.end());
+        }
+        return true;
     }
 
     // Makes the call `x` name the twin of the procedure it calls, which
@@ -1363,7 +1389,33 @@ private:
             if (handling == GpuBufferHandling::Scratch) continue;
             Path p;
             std::vector<ASR::expr_t*> subscripts;
+            std::vector<Path> alternatives;
             if (!path_of(pointers, arg, p, &subscripts)) {
+                std::vector<ASR::expr_t*> alternative_subscripts;
+                // Through a local pointer associated with one of a few
+                // arrays here: the launch uses whichever it is.
+                if (e.m_member == nullptr
+                        && !ASR::is_a<ASR::StructType_t>(
+                            *ASRUtils::extract_type(ASRUtils::expr_type(arg)))
+                        && alternative_paths(pointers, arg, alternatives,
+                            &alternative_subscripts)) {
+                    for (ASR::expr_t *sub : alternative_subscripts) {
+                        c.visit_expr(*sub);
+                    }
+                    for (const Path &q : alternatives) {
+                        if (handling == GpuBufferHandling::HostCopy) {
+                            acc.paths.push_back(q);
+                        } else if (handling
+                                == GpuBufferHandling::HostCopyShallow) {
+                            Path r = q;
+                            r.shallow = true;
+                            acc.paths.push_back(r);
+                        }
+                        if (e.m_written) writes.push_back(q);
+                        else reads.push_back(q);
+                    }
+                    continue;
+                }
                 if (!is_pointer_variable(designator_base(arg))) {
                     // Not a designator this pass follows: the host may
                     // access anything for it, and the kernel may write

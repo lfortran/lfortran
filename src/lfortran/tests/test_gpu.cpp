@@ -2267,10 +2267,12 @@ end program
 TEST_CASE("GPU twins return without waiting for the launches that read "
         "their locals") {
     // The second launch of `two_steps` reads the local `t` that the first
-    // writes. Where `t` ends, the runtime is handed it to wait for a launch
-    // that uses its storage in place (GpuDiscard), so the twin does not wait
-    // for every launch that reads host memory in place, such as the ones
-    // that read `x`.
+    // writes, and the launch of `shifted` reads the optional `bias` through
+    // the pointer the lowering of optional arguments associates with
+    // `bias` or a local placeholder. Where those locals end, the runtime is
+    // handed them to wait for a launch that uses their storage in place
+    // (GpuDiscard), so neither twin waits for every launch that reads host
+    // memory in place, such as the ones that read `x`.
     const std::string source = R"(
 module sync_locals
 implicit none
@@ -2287,9 +2289,20 @@ subroutine two_steps(x, y)
         y(i) = t(i) + x(i)
     end do
 end subroutine
+subroutine shifted(x, y, bias)
+    real, contiguous, intent(in) :: x(:)
+    real, contiguous, intent(out) :: y(:)
+    real, contiguous, intent(in), optional :: bias(:)
+    integer :: i
+    do concurrent (i = 1:size(x))
+        y(i) = x(i)
+        if (present(bias)) y(i) = y(i) + bias(i)
+    end do
+end subroutine
 end module
 )";
     CHECK(gpu_sync_trace(source, "sync_locals", "two_steps") == "[L|][L|]D");
+    CHECK(gpu_sync_trace(source, "sync_locals", "shifted") == "[[|]L|]D");
 }
 
 #endif

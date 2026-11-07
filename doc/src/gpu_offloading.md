@@ -1106,7 +1106,10 @@ in place, so returns without waiting for its launches.
 What a statement accesses is worked out over *access paths*: a variable and
 a chain of components (`workspace%dcdw`), whatever the subscripts. A pointer
 the procedure associates with one designator only -- an associate name, or a
-pointer the compiler creates for a section -- stands for it. Two paths
+pointer the compiler creates for a section -- stands for it. An array a
+launch is handed through a local pointer the procedure associates with a
+few designators, such as the pointer the lowering of an optional argument
+associates with the argument or with a placeholder, is each of them. Two paths
 overlap when one is a prefix of the other, except that a copy of only the
 bytes of a derived-type value itself (a polymorphic value the host copies
 for a launch) does not reach the data of its allocatable components. Asking

@@ -341,6 +341,65 @@ inline ASR::symbol_t *designator_base(ASR::expr_t *e) {
     }
 }
 
+// The paths an array designator may name through a local pointer that the
+// procedure associates with several things, each of which `path_of`
+// follows (`p => x` in one branch, `p => y` in the other, as the lowering of
+// an optional argument does): one path for each, and the subscripts it
+// evaluates. False for any other designator, and for a pointer that may
+// point to anything else.
+inline bool alternative_paths(const PointerTargets &pointers, ASR::expr_t *e,
+        std::vector<Path> &paths, std::vector<ASR::expr_t*> *subscripts) {
+    while (true) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            continue;
+        }
+        ASR::array_index_t *args = nullptr;
+        size_t n_args = 0;
+        if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            ASR::ArraySection_t *a = ASR::down_cast<ASR::ArraySection_t>(e);
+            args = a->m_args;
+            n_args = a->n_args;
+            e = a->m_v;
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            ASR::ArrayItem_t *a = ASR::down_cast<ASR::ArrayItem_t>(e);
+            args = a->m_args;
+            n_args = a->n_args;
+            e = a->m_v;
+        } else {
+            break;
+        }
+        for (size_t i = 0; subscripts && i < n_args; i++) {
+            if (args[i].m_left) subscripts->push_back(args[i].m_left);
+            if (args[i].m_right) subscripts->push_back(args[i].m_right);
+            if (args[i].m_step) subscripts->push_back(args[i].m_step);
+        }
+    }
+    if (!ASR::is_a<ASR::Var_t>(*e)) return false;
+    ASR::symbol_t *p = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(e)->m_v);
+    if (!is_pointer_variable(p) || pointers.unknown.count(p) > 0) {
+        return false;
+    }
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(p);
+    auto it = pointers.targets.find(p);
+    if (v->m_intent != ASR::intentType::Local
+            || v->m_storage == ASR::storage_typeType::Save
+            || it == pointers.targets.end() || it->second.size() < 2) {
+        return false;
+    }
+    std::vector<Path> found;
+    for (ASR::expr_t *target : it->second) {
+        Path path;
+        // The subscripts of a target were evaluated where it was
+        // associated, not here.
+        if (!path_of(pointers, target, path, nullptr)) return false;
+        found.push_back(path);
+    }
+    paths.insert(paths.end(), found.begin(), found.end());
+    return true;
+}
+
 // Whether `fn` is contained in the procedure whose scope is `routine`, and
 // so may access its variables by host association.
 inline bool contained_in(ASR::Function_t *fn, SymbolTable *routine) {
