@@ -59,8 +59,10 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
 // Converts token number to text
 std::string token2text(const int token);
 
+// With `openmp`, free-form `!$` conditional compilation lines are compiled
 Result<std::string> prescan(const std::string &s, LocationManager &lm,
-        bool fixed_form, std::vector<std::filesystem::path> &include_dirs,
+        bool fixed_form, bool openmp,
+        std::vector<std::filesystem::path> &include_dirs,
         diag::Diagnostics &diagnostics);
 
 } // namespace LCompilers::LFortran

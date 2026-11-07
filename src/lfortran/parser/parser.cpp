@@ -787,6 +787,7 @@ bool check_newlines(const std::string &s, const std::vector<uint32_t> &newlines)
 
 bool process_include(std::string& out, const std::string& s,
                      LocationManager& lm, size_t& pos, bool fixed_form,
+                     bool openmp,
                      std::vector<std::filesystem::path> &include_dirs,
                      int &col, diag::Diagnostics &diagnostics)
 {
@@ -838,7 +839,7 @@ bool process_include(std::string& out, const std::string& s,
         lm_tmp.files.push_back(fl);
     }
     Result<std::string> include_res = prescan(include, lm_tmp, fixed_form,
-        include_dirs, diagnostics);
+        openmp, include_dirs, diagnostics);
     if (include_res.ok) {
         include = include_res.result;
     } else {
@@ -888,7 +889,8 @@ The prescan phase includes:
 - Handling of fixed-form column rules (columns 1–6 for labels/comments)
 */
 bool prescan_impl(std::string &out, const std::string &s, LocationManager &lm,
-        bool fixed_form, std::vector<std::filesystem::path> &include_dirs,
+        bool fixed_form, bool openmp,
+        std::vector<std::filesystem::path> &include_dirs,
         diag::Diagnostics &diagnostics)
 {
     if (fixed_form) {
@@ -981,7 +983,7 @@ bool prescan_impl(std::string &out, const std::string &s, LocationManager &lm,
                     while (pos < s.size() && s[pos] == ' ') pos++;
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
                         if (!process_include(out, s, lm, pos, fixed_form,
-                                include_dirs, col, diagnostics)) {
+                                openmp, include_dirs, col, diagnostics)) {
                             return false;
                         }
                     }
@@ -1021,7 +1023,7 @@ bool prescan_impl(std::string &out, const std::string &s, LocationManager &lm,
                 pos += 7;
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
-                if (!process_include(out, s, lm, pos, fixed_form, include_dirs, col, diagnostics)) {
+                if (!process_include(out, s, lm, pos, fixed_form, openmp, include_dirs, col, diagnostics)) {
                     return false;
                 }
             }
@@ -1076,12 +1078,44 @@ bool prescan_impl(std::string &out, const std::string &s, LocationManager &lm,
     }
 }
 
+// OpenMP free-form conditional compilation: in a line whose first nonblank
+// characters are the `!$` sentinel followed by a blank, `&` or the end of the
+// line, replaces the sentinel by two blanks, so that the line is compiled
+// (and continued) like any other line. Directives (`!$omp`) are kept. The
+// length is unchanged, so locations stay valid.
+std::string enable_omp_conditional_lines(const std::string &s)
+{
+    std::string r = s;
+    size_t pos = 0;
+    while (pos < r.size()) {
+        while (pos < r.size() && (r[pos] == ' ' || r[pos] == '\t')) pos++;
+        if (pos + 1 < r.size() && r[pos] == '!' && r[pos+1] == '$') {
+            char c = pos + 2 < r.size() ? r[pos+2] : '\n';
+            if (c == ' ' || c == '\t' || c == '&' || c == '\n' || c == '\r') {
+                r[pos] = ' ';
+                r[pos+1] = ' ';
+            }
+        }
+        while (pos < r.size() && r[pos] != '\n') pos++;
+        pos++;
+    }
+    return r;
+}
+
 Result<std::string> prescan(const std::string &s, LocationManager &lm,
-        bool fixed_form, std::vector<std::filesystem::path> &include_dirs,
+        bool fixed_form, bool openmp,
+        std::vector<std::filesystem::path> &include_dirs,
         diag::Diagnostics &diagnostics)
 {
     std::string out;
-    bool ok = prescan_impl(out, s, lm, fixed_form, include_dirs, diagnostics);
+    bool ok;
+    if (openmp && !fixed_form) {
+        ok = prescan_impl(out, enable_omp_conditional_lines(s), lm, fixed_form,
+            openmp, include_dirs, diagnostics);
+    } else {
+        ok = prescan_impl(out, s, lm, fixed_form, openmp, include_dirs,
+            diagnostics);
+    }
     cover_output(lm, out);
     if (!ok) return Error();
     return out;
