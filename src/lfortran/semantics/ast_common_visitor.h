@@ -1839,6 +1839,7 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -2407,6 +2408,11 @@ public:
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
     // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
+    // The dummy arguments of the ENTRY statements of the procedure whose
+    // specification part SymbolTableVisitor is visiting. Unlike
+    // `current_procedure_args`, they are known before it, see
+    // `cell_procedure_for_declaration()`.
+    std::vector<std::string> current_entry_args;
     // The result name and its declaring function scope are available before
     // the function's ASR owner and return variable have been constructed.
     std::string current_procedure_result;
@@ -2533,7 +2539,9 @@ public:
     std::vector<std::string> external_procedures;
     // The names that each scoping unit references as a procedure, keyed by
     // the `counter` of its symbol table, see `record_procedure_references()`.
-    std::map<uint32_t, std::set<std::string>> procedure_references;
+    // The symbol table and body visitors share it, so that the body visitor
+    // sees what `access_cell_procedure()` recorded.
+    std::map<uint32_t, std::set<std::string>> &procedure_references;
 
     // Attributes defined before declaration
     std::map<std::string, ASR::symbol_t*> symbols_having_only_attributes_without_type;
@@ -2886,6 +2894,7 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -2898,6 +2907,7 @@ public:
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           external_procedures_mapping{external_procedures_mapping},
           explicit_intrinsic_procedures_mapping{explicit_intrinsic_procedures_mapping},
+          procedure_references{procedure_references},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
           instantiate_symbols{instantiate_symbols}, data_structure{data_structure},
@@ -7416,6 +7426,18 @@ public:
                     ASR::down_cast2<ASR::Function_t>(tmp), loc);
                 return;
             }
+            // The type that EXTERNAL or an earlier type declaration statement
+            // declares, not the type of a procedure accessible from the host.
+            if (local_sym == nullptr || ASR::is_a<ASR::Variable_t>(*local_sym)) {
+                ASR::ttype_t *declared_type = determined_type;
+                if (declared_type == nullptr && local_sym != nullptr) {
+                    declared_type = ASRUtils::symbol_type(local_sym);
+                }
+                if (bind_external_to_cell_procedure(sym, declared_type)) {
+                    if (local_sym != nullptr) parent_scope->erase_symbol(sym);
+                    return;
+                }
+            }
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
         } else {
             diag.add(Diagnostic(
@@ -7573,8 +7595,10 @@ public:
         for (size_t i = 0; i < n_items; i++) {
             finder.visit_decl_stmt(*items[i]);
         }
+        // Keep the names that the symbol table visitor recorded as accessed
+        // for a declaration it left out, see `access_cell_procedure()`.
         if (!names.empty()) {
-            procedure_references[scope->counter] = std::move(names);
+            procedure_references[scope->counter].insert(names.begin(), names.end());
         }
     }
 
@@ -7611,6 +7635,118 @@ public:
                 return false;
             }
         }
+        return true;
+    }
+
+    // Interactive evaluation compiles each cell as its own translation unit
+    // and qualifies the link names of the procedures that a cell after the
+    // first defines by that cell, see `ASRUtils::cell_prefix()`. An interface
+    // body or an EXTERNAL statement declares an external procedure, which is
+    // linked by its plain name, so declaring one that such a cell defines
+    // names a symbol that is never defined. The external procedure it means
+    // is the one that its name resolves to without the declaration.
+    //
+    // Return that procedure if the declaration of `name` that is being made
+    // in `current_scope` can be left out in favour of it: `current_scope` is
+    // a procedure, a main program or a BLOCK construct (an entity of a module
+    // is also accessible by `use`), `name` is not one of its dummy arguments
+    // (of the procedure statement or of an ENTRY statement),
+    // and `name` resolves from its host to a procedure defined at the top
+    // level of such a cell. The caller then does not create the declaration,
+    // before anything can refer to it, so that every reference to `name`
+    // resolves to that procedure through the chain of cells, and records
+    // with `access_cell_procedure()` that `current_scope` accesses it.
+    ASR::Function_t* cell_procedure_for_declaration(const std::string &name) {
+        if (!compiler_options.interactive || current_scope->parent == nullptr) {
+            return nullptr;
+        }
+        // The symbol of a procedure or a main program is created after its
+        // specification part.
+        ASR::asr_t *owner = current_scope->asr_owner;
+        if (owner != nullptr && (!ASR::is_a<ASR::symbol_t>(*owner)
+                || !(ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(owner))
+                    || ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(owner))
+                    || ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(owner))))) {
+            return nullptr;
+        }
+        if (std::find(current_procedure_args.begin(),
+                current_procedure_args.end(), name) != current_procedure_args.end()
+                || std::find(current_entry_args.begin(),
+                    current_entry_args.end(), name) != current_entry_args.end()) {
+            return nullptr;
+        }
+        ASR::symbol_t *proc = current_scope->parent->resolve_symbol(name);
+        if (proc == nullptr || !ASR::is_a<ASR::Function_t>(*proc)) {
+            return nullptr;
+        }
+        ASR::Function_t *impl = ASR::down_cast<ASR::Function_t>(proc);
+        SymbolTable *impl_scope = impl->m_symtab->parent;
+        if (ASRUtils::get_FunctionType(impl)->m_deftype
+                    != ASR::deftypeType::Implementation
+                || !ASRUtils::is_tu_scope(impl_scope)
+                || ASRUtils::cell_prefix(impl_scope).empty()) {
+            return nullptr;
+        }
+        return impl;
+    }
+
+    void access_cell_procedure(const std::string &name) {
+        procedure_references[current_scope->counter].insert(name);
+    }
+
+    // Whether the interface body `iface` just declared in `current_scope`
+    // is left out in favour of an earlier cell's procedure of its name, see
+    // `cell_procedure_for_declaration()`: only if it has that procedure's
+    // characteristics as far as `ASRUtils::types_equal()` compares them.
+    void bind_interface_body_to_cell_procedure(const std::string &name) {
+        ASR::symbol_t *sym = current_scope->get_symbol(name);
+        if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) return;
+        ASR::Function_t *iface = ASR::down_cast<ASR::Function_t>(sym);
+        ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(iface);
+        if (ftype->m_deftype != ASR::deftypeType::Interface
+                || ftype->m_abi != ASR::abiType::Source
+                || !ASRUtils::is_external_procedure_interface(ftype)
+                || ASRUtils::is_abstract_interface(*iface)) {
+            return;
+        }
+        ASR::Function_t *impl = cell_procedure_for_declaration(name);
+        if (impl == nullptr || !ASRUtils::types_equal(impl->m_function_signature,
+                iface->m_function_signature,
+                ASRUtils::get_expr_from_sym(al, &impl->base),
+                ASRUtils::get_expr_from_sym(al, sym))) {
+            return;
+        }
+        current_scope->erase_symbol(name);
+        access_cell_procedure(name);
+    }
+
+    // Whether the EXTERNAL declaration of `name` in `current_scope` is left
+    // out in favour of an earlier cell's procedure of its name, see
+    // `cell_procedure_for_declaration()`. EXTERNAL gives no interface, only
+    // a type, so it is left out only if the reference `name()` has the same
+    // type with either declaration: a function whose result has the declared
+    // type (`declared_type`, null if the name is not explicitly typed), or
+    // else the implicit type of `name`, or a subroutine if it is not
+    // explicitly typed.
+    bool bind_external_to_cell_procedure(const std::string &name,
+            ASR::ttype_t *declared_type) {
+        ASR::Function_t *impl = cell_procedure_for_declaration(name);
+        if (impl == nullptr) return false;
+        ASR::ttype_t *impl_type = ASRUtils::get_FunctionType(impl)->m_return_var_type;
+        if (declared_type == nullptr) {
+            if (impl_type != nullptr) {
+                declared_type = compiler_options.implicit_typing
+                    ? implicit_dictionary[std::string(1, name[0])] : nullptr;
+            }
+        } else if (impl_type == nullptr) {
+            return false;
+        }
+        if (impl_type != nullptr && (declared_type == nullptr
+                || !ASRUtils::types_equal(declared_type, impl_type,
+                    nullptr, nullptr))) {
+            return false;
+        }
+        access_cell_procedure(name);
         return true;
     }
 
@@ -10974,6 +11110,24 @@ public:
                     continue;
                 }
                 ASR::symbol_t *ext_sym = current_scope->get_symbol(sym);
+                // `external :: x` binds `x` to an earlier cell's procedure
+                // by the type of `x`, see `bind_external_to_cell_procedure()`,
+                // which this statement declares now.
+                if (is_external && !is_attr_external
+                        && std::find(external_procedures.begin(),
+                            external_procedures.end(), sym) != external_procedures.end()
+                        && cell_procedure_for_declaration(sym) != nullptr) {
+                    if (ext_sym == nullptr) {
+                        create_external_function(sym, x.m_syms[i].loc, type);
+                        continue;
+                    }
+                    if (ASR::is_a<ASR::Function_t>(*ext_sym)
+                            && ASRUtils::is_bare_implicit_interface(ext_sym)
+                            && bind_external_to_cell_procedure(sym, type)) {
+                        current_scope->erase_symbol(sym);
+                        continue;
+                    }
+                }
                 if ( ext_sym != nullptr && ( is_external && !is_attr_external ) ) {
                     /*
                         return type of external function is specified

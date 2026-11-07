@@ -313,6 +313,33 @@ public:
 
     ASR::ttype_t *tmp_type;
 
+    // Sets `current_entry_args` to the dummy arguments of the ENTRY
+    // statements among `items`, the items of the program unit being
+    // visited, and restores the enclosing unit's on the way out.
+    struct EntryArgsScope {
+        SymbolTableVisitor &v;
+        std::vector<std::string> enclosing;
+
+        EntryArgsScope(SymbolTableVisitor &v_, AST::decl_stmt_t **items,
+                size_t n_items) : v(v_) {
+            enclosing.swap(v.current_entry_args);
+            for (size_t i = 0; i < n_items; i++) {
+                if (!AST::is_a<AST::Entry_t>(*items[i])) continue;
+                AST::Entry_t *entry = AST::down_cast<AST::Entry_t>(items[i]);
+                for (size_t j = 0; j < entry->n_args; j++) {
+                    if (entry->m_args[j].m_arg) {
+                        v.current_entry_args.push_back(
+                            to_lower(entry->m_args[j].m_arg));
+                    }
+                }
+            }
+        }
+
+        ~EntryArgsScope() {
+            v.current_entry_args.swap(enclosing);
+        }
+    };
+
     struct ContainedProcedureScope;
     ContainedProcedureScope *contained_procedure_scope = nullptr;
 
@@ -592,6 +619,7 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -601,7 +629,7 @@ public:
         std::set<ASR::symbol_t*> &getter_functions, LCompilers::LocationManager &lm)
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
-            external_procedures_mapping,
+            external_procedures_mapping, procedure_references,
             explicit_intrinsic_procedures_mapping,
             instantiate_types, instantiate_symbols, entry_functions,
             entry_function_arguments_mapping, data_structure, getter_functions, lm
@@ -1389,6 +1417,7 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        EntryArgsScope entry_args(*this, x.m_items, x.n_items);
         ClassProcedureScope class_procedure_scope(*this);
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
@@ -2380,6 +2409,7 @@ public:
 
         record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        EntryArgsScope entry_args(*this, x.m_items, x.n_items);
         bool subroutine_has_alternate_returns = false;
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
@@ -3057,6 +3087,7 @@ public:
 
         record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        EntryArgsScope entry_args(*this, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
@@ -4347,6 +4378,16 @@ public:
                 visit_interface_item(*x.m_items[i]);
                 if (is_abstract) {
                     mark_abstract_interface_body(*x.m_items[i]);
+                } else if (AST::is_a<AST::InterfaceProc_t>(*x.m_items[i])) {
+                    AST::program_unit_t *proc = AST::down_cast<
+                        AST::InterfaceProc_t>(x.m_items[i])->m_proc;
+                    if (AST::is_a<AST::Subroutine_t>(*proc)) {
+                        bind_interface_body_to_cell_procedure(to_lower(
+                            AST::down_cast<AST::Subroutine_t>(proc)->m_name));
+                    } else if (AST::is_a<AST::Function_t>(*proc)) {
+                        bind_interface_body_to_cell_procedure(to_lower(
+                            AST::down_cast<AST::Function_t>(proc)->m_name));
+                    }
                 }
             }
         } else if (AST::is_a<AST::DeferredInterfaceHeader_t>(*x.m_header)) {
@@ -7940,6 +7981,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -7950,7 +7992,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         const std::map<std::string, ASR::ttype_t*> *interactive_implicit_types)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
-                         implicit_mapping, external_procedures_mapping,
+                         implicit_mapping, external_procedures_mapping, procedure_references,
                          explicit_intrinsic_procedures_mapping,
                          instantiate_types, instantiate_symbols, entry_functions,
                          entry_function_arguments_mapping, data_structure, getter_functions, lm);
@@ -7971,6 +8013,7 @@ BlockInterfaceVisitor::BlockInterfaceVisitor(Allocator &al, SymbolTable *block_s
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -7980,7 +8023,7 @@ BlockInterfaceVisitor::BlockInterfaceVisitor(Allocator &al, SymbolTable *block_s
         std::set<ASR::symbol_t*> &getter_functions,
         LCompilers::LocationManager &lm)
     : v(std::make_unique<SymbolTableVisitor>(al, block_scope, diagnostics,
-        compiler_options, implicit_mapping, external_procedures_mapping,
+        compiler_options, implicit_mapping, external_procedures_mapping, procedure_references,
         explicit_intrinsic_procedures_mapping, instantiate_types,
         instantiate_symbols, entry_functions, entry_function_arguments_mapping,
         data_structure, getter_functions, lm))

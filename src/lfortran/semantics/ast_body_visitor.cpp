@@ -258,6 +258,7 @@ public:
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -268,7 +269,7 @@ public:
         LCompilers::LocationManager &lm
     ) : CommonVisitor(
             al, nullptr, diagnostics, compiler_options, implicit_mapping,
-            external_procedures_mapping,
+            external_procedures_mapping, procedure_references,
             explicit_intrinsic_procedures_mapping, instantiate_types,
             instantiate_symbols, entry_functions, entry_function_arguments_mapping,
             data_structure, getter_functions, lm
@@ -500,7 +501,7 @@ public:
         if( !block_interfaces ) {
             block_interfaces = std::make_unique<BlockInterfaceVisitor>(al,
                 current_scope, diag, compiler_options, implicit_mapping,
-                external_procedures_mapping,
+                external_procedures_mapping, procedure_references,
                 explicit_intrinsic_procedures_mapping, instantiate_types,
                 instantiate_symbols, entry_functions,
                 entry_function_arguments_mapping, data_structure, getter_functions, lm);
@@ -7360,9 +7361,15 @@ public:
         CurrentBodyScope body_scope(*this, &master_function_body, current_scope);
         record_procedure_references(current_scope, x.m_items, x.n_items);
         // The master function implements the procedure and its ENTRY points,
-        // so its statements access their names like the procedure's own.
+        // so its statements access their names like the procedure's own,
+        // including the names that the procedure accesses for a declaration
+        // that was left out, see `access_cell_procedure()`.
         std::set<std::string> &own_names =
             procedure_references[current_scope->counter];
+        auto own = procedure_references.find(old_scope->counter);
+        if (own != procedure_references.end()) {
+            own_names.insert(own->second.begin(), own->second.end());
+        }
         own_names.insert(original_function_name);
         for (auto &it: entry_functions[original_function_name]) {
             own_names.insert(it.first);
@@ -12736,6 +12743,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -12746,7 +12754,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         LCompilers::LocationManager &lm)
 {
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping,
-        external_procedures_mapping,
+        external_procedures_mapping, procedure_references,
         explicit_intrinsic_procedures_mapping,
         instantiate_types, instantiate_symbols, entry_functions,
         entry_function_arguments_mapping, data_structure, getter_functions, lm
