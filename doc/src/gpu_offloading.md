@@ -744,7 +744,9 @@ kernel uses it, which `gpu_kernel_finalize` records in the kernel's layout
 (`gpu_kernel_argument.written`): a buffer is *read-only* when every
 reference of the kernel to it only reads it -- an operand, a subscript, the
 value of an assignment, an inquiry about its shape, an actual argument of
-an `intent(in)` dummy -- and *written* otherwise.
+an `intent(in)` dummy, the target of a pointer the kernel binds (for the
+section an elemental function is called with) that nothing writes
+through -- and *written* otherwise.
 
 * The host bytes of a read-only buffer are copied when the launch is made.
   The CUDA runtime keeps the copy of a range of at least 64 KiB in device

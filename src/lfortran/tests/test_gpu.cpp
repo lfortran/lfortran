@@ -1,6 +1,8 @@
 #include <tests/doctest.h>
 
+#include <algorithm>
 #include <fstream>
+#include <functional>
 #include <sstream>
 
 #include <libasr/asr_text.h>
@@ -2303,6 +2305,100 @@ end module
 )";
     CHECK(gpu_sync_trace(source, "sync_locals", "two_steps") == "[L|][L|]D");
     CHECK(gpu_sync_trace(source, "sync_locals", "shifted") == "[[|]L|]D");
+}
+
+// The buffer arguments of every kernel of `source` after the Metal pipeline
+// up to gpu_launch_sync, as `name:W` when the kernel may write it and
+// `name:R` otherwise, sorted.
+static std::vector<std::string> gpu_buffer_access(const std::string &source) {
+    CompilerOptions options;
+    options.gpu_backend = "metal";
+    options.po.gpu_offload_metal = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "gpu_buffer_access.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    ASR::TranslationUnit_t &unit = *parsed.result;
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_vector_lanes", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, &unit, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    std::vector<std::string> access;
+    std::function<void(SymbolTable*)> walk = [&](SymbolTable *scope) {
+        for (auto &item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)
+                    && !ASR::is_a<ASR::Module_t>(*item.second)) {
+                continue;
+            }
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(
+                    item.second);
+                for (size_t i = 0; f->m_gpu && i < f->m_gpu->n_buffers;
+                        i++) {
+                    const ASR::gpu_kernel_argument_t &b =
+                        f->m_gpu->m_buffers[i];
+                    access.push_back(std::string(ASRUtils::symbol_name(
+                        b.m_variable)) + (b.m_written ? ":W" : ":R"));
+                }
+            }
+            walk(ASRUtils::symbol_symtab(item.second));
+        }
+    };
+    walk(unit.m_symtab);
+    std::sort(access.begin(), access.end());
+    return access;
+}
+
+TEST_CASE("A GPU kernel that binds a view of an array only reads it") {
+    // The elemental call on a section of `k` in the inner loop gets a
+    // pointer bound to the section in the kernel; nothing is written through
+    // it, so `k` stays an argument the kernel only reads, which the runtime
+    // need not keep as one the kernel writes (nor wait for when a launch
+    // wrote part of it).
+    const std::string source = R"(
+module kernel_views
+use, intrinsic :: iso_fortran_env, only: int16, real32
+implicit none
+contains
+pure elemental function widen(x) result(y)
+    integer(int16), intent(in) :: x
+    real(real32) :: y
+    y = real(x, real32)
+end function
+pure subroutine scores_of(q, k, s)
+    integer(int16), contiguous, intent(in) :: q(:,:), k(:,:)
+    real(real32), contiguous, intent(out) :: s(:,:)
+    integer :: h, t
+    do concurrent (h = 1:size(q,2))
+        block
+            real(real32) :: qv(size(q,1))
+            qv = widen(q(:,h))*2
+            do concurrent (t = 1:size(k,2))
+                s(t,h) = sum(qv*widen(k(:,t)))
+            end do
+        end block
+    end do
+end subroutine
+end module
+)";
+    std::vector<std::string> access = gpu_buffer_access(source);
+    std::string joined;
+    for (const std::string &a : access) joined += a + " ";
+    INFO(joined);
+    CHECK(std::find(access.begin(), access.end(), "k:R") != access.end());
+    CHECK(std::find(access.begin(), access.end(), "k:W") == access.end());
+    CHECK(std::find(access.begin(), access.end(), "s:W") != access.end());
 }
 
 TEST_CASE("GPU host reads of what pending launches only read do not wait") {
