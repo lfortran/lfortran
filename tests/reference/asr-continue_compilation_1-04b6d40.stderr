@@ -2010,6 +2010,12 @@ semantic error: the name= specifier in bind(c) must be a constant expression
 4736 |     subroutine cc1_bind_name_sub() bind(C, name=cc1_bind_name_var)  ! {Error} the name= specifier in bind(c) must be a constant expression
      |                                                 ^^^^^^^^^^^^^^^^^ 
 
+semantic error: the name= specifier in bind(c) must be of default character kind
+    --> tests/errors/continue_compilation_1.f90:4740:46
+     |
+4740 | subroutine cc1_bind_name_kind() bind(C, name=4_"x")  ! {Error} the name= specifier in bind(c) must be of default character kind
+     |                                              ^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

@@ -2,7 +2,7 @@
 ! binding label (F2023 18.10.2), whether NAME= is a literal or a constant
 ! expression. Each binding label is the name of a C function or object in
 ! bindc_77.c, so a label that keeps its blanks fails to link. A procedure
-! whose NAME= is all blanks has no binding label (18.10.2.2).
+! or common block whose NAME= is all blanks has no binding label (18.10.2.2).
 module bindc_77_mod
     use iso_c_binding, only: c_int
     implicit none
@@ -37,6 +37,9 @@ module bindc_77_mod
     integer(c_int) :: cv
     common /blk/ cv
     bind(C, name=" "//pfx//"blk") :: /blk/
+    integer(c_int) :: cv2
+    common /blk2/ cv2
+    bind(C, name="  ") :: /blk2/
 
 contains
 
@@ -51,6 +54,10 @@ contains
         integer(c_int) :: r
         r = x + 100
     end function
+
+    subroutine bump_cv2()
+        cv2 = cv2 + 1
+    end subroutine
 
 end module
 
@@ -87,5 +94,8 @@ program bindc_77
     if (get_cv() /= 5) error stop 6
     if (call_twice(4) /= 8) error stop 7
     if (no_label(1) /= 101) error stop 8
+    cv2 = 20
+    call bump_cv2()
+    if (cv2 /= 21) error stop 9
     print *, "ok"
 end program
