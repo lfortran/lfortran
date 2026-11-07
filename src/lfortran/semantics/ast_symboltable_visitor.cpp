@@ -5291,17 +5291,31 @@ public:
                     if (!proc_names.insert(proc_name).second) {
                         continue;
                     }
-                    ASR::symbol_t *proc = resolve_and_copy_type_bound_proc(clss, proc_name);
+                    ASR::symbol_t *proc = resolve_type_bound_proc_in_parent_chain(
+                        clss, proc_name);
+                    // An inherited private binding that is not accessible in
+                    // the module of `clss` is not copied into `clss`: the copy
+                    // would count as declared in that module, so an extension
+                    // declared there could override it.
+                    bool inaccessible = proc &&
+                        ASR::is_a<ASR::StructMethodDeclaration_t>(*proc) &&
+                        ASRUtils::symbol_parent_symtab(proc) != clss->m_symtab &&
+                        !ASRUtils::is_binding_accessible_in_extension(
+                            *ASR::down_cast<ASR::StructMethodDeclaration_t>(proc),
+                            &clss->base);
+                    if (!inaccessible) {
+                        proc = resolve_and_copy_type_bound_proc(clss, proc_name);
+                    }
                     // A binding of `clss` named like the specific but not
                     // overriding it (the specific is private and not
-                    // accessible here) leaves the generic with the specific,
-                    // a binding of another module, imported into the module
-                    // of `clss`.
+                    // accessible here), or no binding of `clss` at all, leaves
+                    // the generic with the specific, a binding of another
+                    // module, imported into the module of `clss`.
                     if (proc && ASR::is_a<ASR::StructMethodDeclaration_t>(*proc) &&
                             ASR::is_a<ASR::StructMethodDeclaration_t>(*specific) &&
-                            !ASRUtils::binding_overrides(
+                            (inaccessible || !ASRUtils::binding_overrides(
                                 ASR::down_cast<ASR::StructMethodDeclaration_t>(proc),
-                                ASR::down_cast<ASR::StructMethodDeclaration_t>(specific))) {
+                                ASR::down_cast<ASR::StructMethodDeclaration_t>(specific)))) {
                         proc = ASRUtils::import_class_procedure(al, specific->base.loc,
                             specific, clss->m_symtab->parent);
                         if (ASR::is_a<ASR::ExternalSymbol_t>(*proc)) {

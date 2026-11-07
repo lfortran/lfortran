@@ -6585,11 +6585,7 @@ ASR::StructMethodDeclaration_t* overridden_binding(
                 ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
             ASR::StructMethodDeclaration_t *b =
                 ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
-            // A binding with the procedure of the inherited one is the
-            // inherited binding itself, as copied into the extension.
-            if (is_binding_accessible_in_extension(*b, owner) ||
-                    ASRUtils::symbol_get_past_external(b->m_proc) ==
-                    ASRUtils::symbol_get_past_external(x.m_proc)) {
+            if (is_binding_accessible_in_extension(*b, owner)) {
                 return b;
             }
         }
