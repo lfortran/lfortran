@@ -11598,11 +11598,12 @@ public:
                             // element is stored once, so the array has the
                             // save attribute for the same reason a scalar does.
                             static_init = init_expr;
-                        } else if (!is_local && ASR::is_a<ASR::StructType_t>(
+                        } else if (ASR::is_a<ASR::StructType_t>(
                                     *ASRUtils::type_get_past_array(type))) {
-                            // `type(t) :: a(2) = [t(5), t(6)]` in an
-                            // interactive cell: a constant initializer is
-                            // stored once, as the global's static data.
+                            // `type(t) :: a(2) = [t(5), t(6)]` in a procedure,
+                            // a block or an interactive cell: a constant
+                            // initializer is stored once, as static data, so
+                            // the array has the save attribute.
                             ASR::expr_t* init_value = ASRUtils::expr_value(init_expr);
                             if (init_value != nullptr
                                     && ASR::is_a<ASR::ArrayConstant_t>(*init_value)) {

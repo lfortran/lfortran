@@ -10377,6 +10377,14 @@ public:
                             ASR::array_physical_typeType::UnboundedPointerArray
                             && !has_static_struct_array_initializer(v)) {
                         allocate_array_members_of_struct_arrays(v->m_type_declaration, ptr, v->m_type);
+                        // Apply the initial value of a save variable inside
+                        // the one-time guard, after its members are set up:
+                        // applied anywhere else, the component defaults
+                        // applied here on the first call would overwrite it.
+                        if (struct_skip_bb != nullptr && init_expr != nullptr) {
+                            set_VariableInital_value(v, ptr);
+                            save_struct_initialized = true;
+                        }
                     }
                 } else {
                     bool is_intent_out_var = (v->m_intent == ASR::intentType::Out);
