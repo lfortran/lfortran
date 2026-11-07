@@ -220,11 +220,6 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
                 target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
             endif()
             if (shared_library_files)
-                # CMake does not know LFortran and links shared libraries with
-                # the GCC spelling `-shared`; LFortran spells it `--shared`.
-                # This variable applies to every shared library in this
-                # directory, and with the llvm label all of them use LFortran.
-                set(CMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS "--shared")
                 add_library(${name}_lib SHARED ${shared_library_files})
                 target_compile_options(${name}_lib PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
                 target_link_libraries(${name} PRIVATE ${name}_lib)
