@@ -2605,6 +2605,7 @@ public:
                         diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {x.base.base.loc})}));
                     if (compiler_options.continue_compilation) {
+                        incomplete_procedures.insert(current_scope);
                         continue;
                     } else {
                         throw SemanticAbort();
@@ -4942,6 +4943,182 @@ public:
         return ep_s;
     }
 
+    // The procedures left without some dummy arguments by an error.
+    std::set<SymbolTable*> incomplete_procedures;
+
+    // A specific procedure of a generic and its passed-object dummy (or -1).
+    struct GenericCandidate {
+        std::string name;
+        Location loc;
+        ASR::Function_t *f;
+        int64_t pass;
+    };
+
+    // The dummy arguments of `f` without the passed-object one, if each is
+    // a data object that the C1514 check can decide about: of intrinsic type
+    // or of a nonsequence derived type without type parameters, neither
+    // assumed-rank nor unlimited polymorphic, nor a scalar without INTENT
+    // that `f` references as a procedure (it may still become a dummy
+    // procedure in the body visitor).
+    bool generic_dummies(const GenericCandidate &c,
+            std::vector<ASR::Variable_t*> &dummies) {
+        if (incomplete_procedures.count(c.f->m_symtab)) return false;
+        auto refs = procedure_references.find(c.f->m_symtab->counter);
+        for (size_t i = 0; i < c.f->n_args; i++) {
+            ASR::symbol_t *s = c.f->m_args[i] && ASR::is_a<ASR::Var_t>(*c.f->m_args[i])
+                ? ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(c.f->m_args[i])->m_v) : nullptr;
+            if (!s || !ASR::is_a<ASR::Variable_t>(*s)) return false;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+            ASR::ttype_t *t = ASRUtils::extract_type(v->m_type);
+            ASR::symbol_t *d = v->m_type_declaration
+                ? ASRUtils::symbol_get_past_external(v->m_type_declaration) : nullptr;
+            bool known = ASR::is_a<ASR::StructType_t>(*t)
+                ? d && ASR::is_a<ASR::Struct_t>(*d)
+                    && !ASRUtils::is_unlimited_polymorphic_type(t)
+                : ASR::is_a<ASR::Integer_t>(*t) || ASR::is_a<ASR::Real_t>(*t)
+                    || ASR::is_a<ASR::Complex_t>(*t) || ASR::is_a<ASR::Logical_t>(*t)
+                    || ASR::is_a<ASR::String_t>(*t);
+            // Type parameters can also come from a parent type.
+            for (ASR::Struct_t *st = known && ASR::is_a<ASR::StructType_t>(*t)
+                    ? ASR::down_cast<ASR::Struct_t>(d) : nullptr; st && known;
+                    st = st->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(st->m_parent)) : nullptr) {
+                known = st->n_kind_params == 0 && !st->m_is_sequence
+                    && st->m_abi != ASR::abiType::BindC;
+            }
+            if (!known || std::string(v->m_name) == "__lfortran_alt_ret"
+                    || ASRUtils::is_assumed_rank_array(v->m_type)
+                    || (v->m_intent == ASRUtils::intent_unspecified
+                        && !ASRUtils::is_array(v->m_type)
+                        && refs != procedure_references.end()
+                        && refs->second.count(v->m_name))) {
+                return false;
+            }
+            if ((int64_t)i != c.pass) dummies.push_back(v);
+        }
+        return true;
+    }
+
+    // Whether the dummy data object `a` is TKR compatible with `b` (F2018
+    // 15.5.2.4), both accepted by generic_dummies().
+    static bool generic_tkr_compatible(ASR::Variable_t *a, ASR::Variable_t *b) {
+        ASR::ttype_t *ta = ASRUtils::extract_type(a->m_type);
+        ASR::ttype_t *tb = ASRUtils::extract_type(b->m_type);
+        if (ta->type != tb->type || ASRUtils::extract_n_dims_from_ttype(
+                a->m_type) != ASRUtils::extract_n_dims_from_ttype(b->m_type)) {
+            return false;
+        }
+        if (!ASR::is_a<ASR::StructType_t>(*ta)) {
+            return ASRUtils::extract_kind_from_ttype_t(ta)
+                == ASRUtils::extract_kind_from_ttype_t(tb);
+        }
+        ASR::Struct_t *da = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(a->m_type_declaration));
+        ASR::Struct_t *db = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(b->m_type_declaration));
+        return da == db || (ASRUtils::is_class_type(ta)
+            && ASRUtils::is_parent(da, db));
+    }
+
+    // F2018 15.4.3.4.5 p3, with the F2008 rule for ALLOCATABLE and POINTER,
+    // which makes more dummy arguments distinguishable.
+    static bool generic_distinguishable(ASR::Variable_t *a, ASR::Variable_t *b) {
+        return (ASRUtils::is_allocatable(a->m_type) && ASRUtils::is_pointer(b->m_type))
+            || (ASRUtils::is_pointer(a->m_type) && ASRUtils::is_allocatable(b->m_type))
+            || (!generic_tkr_compatible(a, b) && !generic_tkr_compatible(b, a));
+    }
+
+    // Whether the counting rule or the position rule of F2018 C1514 holds
+    // for `one` against `other` (their dummy arguments without the
+    // passed-object ones). For the counting rule, the dummy data object X is
+    // taken from either, which makes more procedures distinguishable.
+    static bool generic_counting_or_position_rule(const std::vector<ASR::Variable_t*> &one,
+            const std::vector<ASR::Variable_t*> &other) {
+        auto optional = [](ASR::Variable_t *v) {
+            return v->m_presence == ASR::presenceType::Optional;
+        };
+        for (const std::vector<ASR::Variable_t*> *xs : {&one, &other}) {
+            for (ASR::Variable_t *x : *xs) {
+                auto n_compatible = std::count_if(one.begin(), one.end(),
+                    [&](ASR::Variable_t *y) {
+                        return !optional(y) && generic_tkr_compatible(x, y); });
+                auto n_not_distinguishable = std::count_if(other.begin(),
+                    other.end(), [&](ASR::Variable_t *z) {
+                        return !generic_distinguishable(x, z); });
+                if (n_compatible > n_not_distinguishable) return true;
+            }
+        }
+        // The position rule, without its name part: a nonoptional dummy argument that
+        // `other` has none or a distinguishable one at the position of. Not
+        // checking the name too only makes more procedures distinguishable.
+        for (size_t i = 0; i < one.size(); i++) {
+            if (!optional(one[i]) && (i >= other.size()
+                    || generic_distinguishable(one[i], other[i]))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Reports each pair of the specific procedures of the generic `generic`
+    // that violates F2018 C1514. A pair is taken to be distinguishable
+    // whenever generic_dummies() cannot decide.
+    void check_generic_distinguishable(const std::string &generic,
+            const std::vector<GenericCandidate> &specifics) {
+        for (size_t j = 1; j < specifics.size(); j++) {
+            for (size_t i = 0; i < j; i++) {
+                const GenericCandidate &a = specifics[i], &b = specifics[j];
+                std::vector<ASR::Variable_t*> da, db;
+                if (a.f == b.f || (a.f->m_return_var == nullptr)
+                            != (b.f->m_return_var == nullptr)
+                        || !generic_dummies(a, da) || !generic_dummies(b, db)
+                        || (a.pass >= 0 && b.pass >= 0 && generic_distinguishable(
+                            ASRUtils::EXPR2VAR(a.f->m_args[a.pass]),
+                            ASRUtils::EXPR2VAR(b.f->m_args[b.pass])))
+                        || generic_counting_or_position_rule(da, db)
+                        || generic_counting_or_position_rule(db, da)) {
+                    continue;
+                }
+                std::vector<Label> labels = {Label("'" + b.name + "' is not "
+                    "distinguishable from '" + a.name + "' by its arguments",
+                    {b.loc})};
+                if (a.loc.first != b.loc.first) {
+                    labels.push_back(Label("'" + a.name + "' is specified here",
+                        {a.loc}, false));
+                }
+                diag.add(Diagnostic("ambiguous interfaces in generic '" + generic
+                    + "' for '" + a.name + "' and '" + b.name + "'",
+                    Level::Error, Stage::Semantic, labels));
+                if (!compiler_options.continue_compilation) {
+                    throw SemanticAbort();
+                }
+            }
+        }
+    }
+
+    // The specific bindings `bindings` of a generic binding that are bound to
+    // a procedure (not deferred), and pass the object as the first dummy
+    // argument or not at all (PASS(arg) is not checked).
+    std::vector<GenericCandidate> generic_binding_specifics(
+            const Vec<ASR::symbol_t*> &bindings) {
+        std::vector<GenericCandidate> specifics;
+        for (ASR::symbol_t *binding : bindings) {
+            if (!ASR::is_a<ASR::StructMethodDeclaration_t>(*binding)) continue;
+            ASR::StructMethodDeclaration_t *d
+                = ASR::down_cast<ASR::StructMethodDeclaration_t>(binding);
+            ASR::symbol_t *p = d->m_proc && !d->m_is_deferred
+                ? ASRUtils::symbol_get_past_external(d->m_proc) : nullptr;
+            if (p && ASR::is_a<ASR::Function_t>(*p) && !is_pending_proc_placeholder(p)
+                    && (d->m_is_nopass || (!d->m_self_argument
+                        && ASR::down_cast<ASR::Function_t>(p)->n_args > 0))) {
+                specifics.push_back({d->m_name, binding->base.loc,
+                    ASR::down_cast<ASR::Function_t>(p), d->m_is_nopass ? -1 : 0});
+            }
+        }
+        return specifics;
+    }
+
     void add_generic_procedures() {
         // Interface blocks of the same name in different scopes declare
         // different generic interfaces: build one in each of those scopes.
@@ -5006,6 +5183,15 @@ public:
                 symbols.push_back(al, x);
             }
             if (any_error) continue;
+            std::vector<GenericCandidate> specifics;
+            for (size_t i = 0; i < symbols.size(); i++) {
+                ASR::symbol_t *f = ASRUtils::symbol_get_past_external(symbols[i]);
+                if (ASR::is_a<ASR::Function_t>(*f)) {
+                    specifics.push_back({proc.second[i].name, proc.second[i].loc,
+                        ASR::down_cast<ASR::Function_t>(f), -1});
+                }
+            }
+            check_generic_distinguishable(proc.first, specifics);
             std::string sym_name_str = proc.first;
             if( current_scope->get_symbol(proc.first) != nullptr ) {
                 ASR::symbol_t* der_type_name = current_scope->get_symbol(proc.first);
@@ -5237,6 +5423,10 @@ public:
                                 diag::Label("", {loc})}));
                         throw SemanticAbort();
                     }
+                }
+                if (!startswith(pname.first, "~")) {
+                    check_generic_distinguishable(pname.first,
+                        generic_binding_specifics(cand_procs));
                 }
                 Str s;
                 s.from_str_view(pname.first);
