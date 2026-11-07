@@ -1331,7 +1331,7 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
-        if (next_is(cur, "interface")) {
+        if (next_is(cur, "interface") || is_abstract_interface(cur)) {
             lex_interface(cur);
             return true;
         }
@@ -1413,6 +1413,24 @@ struct FixedFormRecursiveDescent {
 
         if (next_is(cur, "use")) {
             lex_use(cur);
+            return true;
+        }
+
+        // `import`, `import k`, `import :: a, b`, `import, only: a`,
+        // `import, none`, `import, all`; assignments such as `import = 2`
+        // or `importx = 1` were already handled above
+        if (next_is(cur, "import")) {
+            push_token_advance(cur, "import");
+            tokenize_line(cur);
+            return true;
+        }
+
+        // procedure declaration statement, e.g. `procedure(a) :: p`,
+        // `procedure(a) p`, `procedure(), pointer :: q => null()`;
+        // assignments such as `procedure(i) = 1` were already handled above
+        if (next_is(cur, "procedure(")) {
+            push_token_advance(cur, "procedure");
+            tokenize_line(cur);
             return true;
         }
 
@@ -2167,7 +2185,17 @@ struct FixedFormRecursiveDescent {
         }
     }
 
+    // `ABSTRACT INTERFACE` has no generic specification, so the statement
+    // must end right after the keywords
+    bool is_abstract_interface(unsigned char *cur) {
+        const std::string header = "abstractinterface";
+        return next_is(cur, header) && next_is_eos(cur + header.size());
+    }
+
     void lex_interface(unsigned char *&cur) {
+        if (is_abstract_interface(cur)) {
+            push_token_advance(cur, "abstract");
+        }
         push_token_advance(cur, "interface");
         tokenize_line(cur);
 
