@@ -783,7 +783,13 @@ an `intent(in)` dummy -- and *written* otherwise.
   managed memory models it first waits for a pending launch that uses the
   range in place.
 * A range that overlaps a dirty one without being the same range makes the
-  runtime wait first, so that the bytes it copies are current.
+  runtime wait first, so that the bytes it copies are current. The Metal
+  runtime does not wait for a range a kernel only reads that holds the
+  dirty ones whole (and that no range the kernel writes overlaps): it
+  copies the host bytes and then, on the device, the dirty ranges over them
+  (a blit). A program that writes the newest positions of a cache and then
+  reads all of it, as attention over a KV cache does, so keeps the launches
+  going.
 * The runtime never writes a device buffer that a pending launch may still
   use: a copy into a resident buffer that is still in use goes into a fresh
   buffer, and pooled buffers are reused once the launches that used them

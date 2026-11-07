@@ -37,7 +37,12 @@ Launches are asynchronous, and the device keeps what a kernel writes.
   again (the next chunk of a launch that runs in chunks) reads it without a
   copy.
 * A range that overlaps a dirty one without being the same range makes the
-  runtime sync first, so that the host bytes it copies are current.
+  runtime sync first, so that the host bytes it copies are current. Except
+  a range a kernel only reads that holds the dirty ones whole, which no
+  range the kernel writes overlaps: the kernel is handed a copy of the host
+  bytes with those dirty ranges copied over them by a blit in the command
+  buffer, after the launches that wrote them, so that writing part of an
+  array and then reading all of it does not wait for the device.
 * A device buffer is never written by the host while a launch that uses it
   may still run: a copy into a resident buffer still in use goes into a fresh
   buffer instead, and pooled buffers are reused only once the launches that
@@ -508,6 +513,30 @@ static id<MTLBuffer> dirty_resident(void *host, size_t size) {
     int i = find_entry(host);
     if (i < 0 || !entries[i].dirty || entries[i].size != size) return nil;
     return entries[i].buffer;
+}
+
+// Whether every dirty range that overlaps the range lies inside it, and
+// none is the range itself: a launch that only reads it can be handed the
+// host bytes with the newer values of those ranges copied in on the device.
+// A blit copies between buffers at offsets and sizes that are multiples of
+// 4 bytes only.
+static int holds_dirty(void *host, size_t size) {
+    int any = 0;
+    for (int d = 0; d < n_dirty; d++) {
+        resident *e = &entries[dirty_list[d]];
+        if (!overlaps(e->host, e->size, host, size)) continue;
+        if (e->host == host && e->size == size) return 0;
+        if ((char *)e->host < (char *)host
+                || (char *)e->host + e->size > (char *)host + size) {
+            return 0;
+        }
+        if (((size_t)((char *)e->host - (char *)host)) % 4 != 0
+                || e->size % 4 != 0) {
+            return 0;
+        }
+        any = 1;
+    }
+    return any;
 }
 
 // Whether a range overlaps a dirty one without being the same range.
@@ -1312,9 +1341,20 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         // to be done.
         if (copies_written) wait_all(ctx);
         // The host bytes of a range that overlaps one the device holds
-        // newer values for are not current: get them back first.
+        // newer values for are not current: get them back first. A range
+        // the kernel only reads that holds such ranges, and that no range
+        // it writes overlaps, is put together on the device instead (the
+        // part of an array that earlier launches wrote, when the kernel
+        // reads all of it).
+        int merge[MAX_ARGS];
         for (int i = 0; i < k->n_args; i++) {
-            if (is_buffer[i] && !in_place[i]
+            merge[i] = is_buffer[i] && !in_place[i]
+                && k->access[i] == LFORTRAN_GPU_READ
+                && k->sizes[i] > 0 && !overlaps_written_arg(k, i)
+                && holds_dirty(k->ptrs[i], k->sizes[i]);
+        }
+        for (int i = 0; i < k->n_args; i++) {
+            if (is_buffer[i] && !in_place[i] && !merge[i]
                     && overlaps_dirty(k->ptrs[i], k->sizes[i])) {
                 sync_all(ctx);
                 break;
@@ -1347,6 +1387,48 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         k->serial = serial;
         if (!ctx->open_command_buffer) {
             ctx->open_command_buffer = [ctx->queue commandBuffer];
+            ctx->encoder = [ctx->open_command_buffer
+                computeCommandEncoderWithDispatchType:
+                    MTLDispatchTypeConcurrent];
+            ctx->n_reads = ctx->n_writes = 0;
+        }
+        // The ranges put together on the device: the host bytes, and the
+        // dirty ranges inside copied over them by a blit that the command
+        // buffer runs after the launches that wrote them. A sync above
+        // leaves nothing to put together.
+        id<MTLBuffer> merged[MAX_ARGS];
+        id<MTLBlitCommandEncoder> blit = nil;
+        for (int i = 0; i < k->n_args; i++) {
+            merged[i] = nil;
+            if (!merge[i] || !holds_dirty(k->ptrs[i], k->sizes[i])) continue;
+            // The chunks of a launch hand the argument over once.
+            merged[i] = k->read_buffers[i];
+            if (merged[i]) continue;
+            merged[i] = acquire_buffer(ctx, k->sizes[i]);
+            if (ctx->profile_enabled) {
+                ctx->telemetry.memcpy_h2d_bytes += k->sizes[i];
+            }
+            memcpy([merged[i] contents], k->ptrs[i], k->sizes[i]);
+            k->read_buffers[i] = merged[i];
+            if (!blit) {
+                [ctx->encoder endEncoding];
+                blit = [ctx->open_command_buffer blitCommandEncoder];
+            }
+            for (int d = 0; d < n_dirty; d++) {
+                resident *e = &entries[dirty_list[d]];
+                if (!overlaps(e->host, e->size, k->ptrs[i], k->sizes[i])) {
+                    continue;
+                }
+                [blit copyFromBuffer:e->buffer sourceOffset:0
+                    toBuffer:merged[i]
+                    destinationOffset:(NSUInteger)((char *)e->host
+                        - (char *)k->ptrs[i])
+                    size:e->size];
+                e->last_use = serial;
+            }
+        }
+        if (blit) {
+            [blit endEncoding];
             ctx->encoder = [ctx->open_command_buffer
                 computeCommandEncoderWithDispatchType:
                     MTLDispatchTypeConcurrent];
@@ -1390,6 +1472,12 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                     }
                     if (k->access[i] != LFORTRAN_GPU_READ
                             || in_place[i]) {
+                        break;
+                    }
+                    if (merged[i]) {
+                        uses[n_uses].buffer = (__bridge void *)merged[i];
+                        uses[n_uses++].write = 0;
+                        [encoder setBuffer:merged[i] offset:0 atIndex:i];
                         break;
                     }
                     id<MTLBuffer> buffer = dirty_resident(k->ptrs[i],
