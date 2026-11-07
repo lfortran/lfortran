@@ -104,6 +104,47 @@ void transform_stmts_impl(Allocator& al, ASR::stmt_t**& m_body, size_t& n_body,
         end if
     end subroutine
 */
+/*
+Records the rank of the assumed-rank selector in each `rank (N)` block of a
+select rank statement without an associate name: in the block the selector
+keeps its assumed-rank type, and this rank is the only record of it.
+*/
+class SelectRankBlockCollector: public ASR::BaseWalkVisitor<SelectRankBlockCollector> {
+    public:
+
+    // The block scope, mapped to the selector and its rank in the block.
+    std::map<SymbolTable*, std::pair<ASR::symbol_t*, int64_t>> blocks;
+
+    void visit_SelectRank(const ASR::SelectRank_t& x) {
+        ASR::expr_t* selector = ASRUtils::get_past_array_physical_cast(x.m_selector);
+        if ( ASR::is_a<ASR::Var_t>(*selector) &&
+             ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(selector)) ) {
+            ASR::symbol_t* selector_sym = ASR::down_cast<ASR::Var_t>(selector)->m_v;
+            for ( size_t i = 0; i < x.n_body; i++ ) {
+                if ( !ASR::is_a<ASR::RankExpr_t>(*x.m_body[i]) ) {
+                    continue;
+                }
+                ASR::RankExpr_t* rank_expr = ASR::down_cast<ASR::RankExpr_t>(x.m_body[i]);
+                int64_t rank = -1;
+                if ( !ASRUtils::extract_value(ASRUtils::expr_value(rank_expr->m_rank), rank) ) {
+                    continue;
+                }
+                for ( size_t j = 0; j < rank_expr->n_body; j++ ) {
+                    if ( ASR::is_a<ASR::BlockCall_t>(*rank_expr->m_body[j]) ) {
+                        ASR::symbol_t* block = ASR::down_cast<ASR::BlockCall_t>(
+                            rank_expr->m_body[j])->m_m;
+                        if ( ASR::is_a<ASR::Block_t>(*block) ) {
+                            blocks[ASR::down_cast<ASR::Block_t>(block)->m_symtab] =
+                                {selector_sym, rank};
+                        }
+                    }
+                }
+            }
+        }
+        ASR::BaseWalkVisitor<SelectRankBlockCollector>::visit_SelectRank(x);
+    }
+};
+
 class CallVisitor : public ASR::CallReplacerOnExpressionsVisitor<CallVisitor>
 {
 public:
@@ -123,6 +164,21 @@ public:
     //   a(:, j): it is known to be contiguous at compile time, so no
     //   run-time contiguity check is needed.
     std::set<ASR::symbol_t*> vars_from_uncopied_sections;
+
+    // See SelectRankBlockCollector.
+    std::map<SymbolTable*, std::pair<ASR::symbol_t*, int64_t>> select_rank_blocks;
+
+    // The rank of the assumed-rank variable `sym` in the innermost enclosing
+    // `rank (N)` block of a select rank statement on it, or -1 if unknown.
+    int64_t get_select_rank(ASR::symbol_t* sym) {
+        for ( SymbolTable* scope = current_scope; scope; scope = scope->parent ) {
+            auto it = select_rank_blocks.find(scope);
+            if ( it != select_rank_blocks.end() && it->second.first == sym ) {
+                return it->second.second;
+            }
+        }
+        return -1;
+    }
 
     CallVisitor(Allocator &al_, const LCompilers::PassOptions& pass_options_) : al(al_), pass_options(pass_options_) {}
 
@@ -148,10 +204,18 @@ public:
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
             if ( !((cast->m_new == ASR::array_physical_typeType::PointerArray ||
                      cast->m_new == ASR::array_physical_typeType::UnboundedPointerArray) &&
-                    cast->m_old == ASR::array_physical_typeType::DescriptorArray) ) {
+                    (cast->m_old == ASR::array_physical_typeType::DescriptorArray ||
+                     cast->m_old == ASR::array_physical_typeType::AssumedRankArray)) ) {
                 return false;
             }
             ASR::expr_t* inner = cast->m_arg;
+            // An assumed-rank array needs its rank, from select rank, to be
+            // copied.
+            if ( cast->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+                 !(ASR::is_a<ASR::Var_t>(*inner) &&
+                   get_select_rank(ASR::down_cast<ASR::Var_t>(inner)->m_v) >= 1) ) {
+                return false;
+            }
             // Contiguous arrays can pass their data without a copy-in temporary.
             ASR::ttype_t* inner_type = ASRUtils::expr_type(inner);
             if ( (ASRUtils::is_allocatable(inner_type) ||
@@ -812,6 +876,12 @@ public:
                     ASR::dimension_t* m_dims;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
                         ASRUtils::expr_type(value), m_dims);
+                    // An assumed-rank array has no static rank: use the
+                    // rank of the temporary.
+                    if ( ASRUtils::extract_physical_type(ASRUtils::expr_type(value)) ==
+                            ASR::array_physical_typeType::AssumedRankArray ) {
+                        n_dims = target_n_dims;
+                    }
                     allocate_dims.reserve(al, n_dims);
                     for( size_t i = 0; i < n_dims; i++ ) {
                         ASR::dimension_t allocate_dim;
@@ -871,8 +941,21 @@ public:
                 ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
                 ASR::expr_t* arg_expr_past_cast = ASRUtils::get_past_array_physical_cast(arg_expr);
                 const Location& loc = arg_expr->base.loc;
+                // A descriptor view of the array with a static rank: an
+                // assumed-rank array is viewed with its rank in the
+                // enclosing `rank (N)` block.
+                ASR::expr_t* array_view = arg_expr_past_cast;
+                if ( array_physical_cast->m_old == ASR::array_physical_typeType::AssumedRankArray ) {
+                    int64_t rank = get_select_rank(
+                        ASR::down_cast<ASR::Var_t>(arg_expr_past_cast)->m_v);
+                    ASR::ttype_t* view_type = ASRUtils::create_array_type_with_empty_dims(al,
+                        rank, ASRUtils::extract_type(ASRUtils::expr_type(arg_expr_past_cast)));
+                    array_view = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, loc,
+                        arg_expr_past_cast, ASR::array_physical_typeType::AssumedRankArray,
+                        ASR::array_physical_typeType::DescriptorArray, view_type, nullptr));
+                }
                 ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
-                    al, arg_expr_past_cast, current_scope, name_hint, true);
+                    al, array_view, current_scope, name_hint, true);
                 ASR::call_arg_t array_var_temporary_arg;
                 array_var_temporary_arg.loc = loc;
                 const bool unhandled_case = ASRUtils::is_unlimited_polymorphic_type(ASRUtils::expr_type(arg_expr)) || 
@@ -892,7 +975,7 @@ public:
                     size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_var_temporary));
                     if( !set_allocation_size(al, arg_expr_past_cast, allocate_dims, target_n_dims, len_expr) ) {
                         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
-                            al, loc, array_var_temporary, arg_expr_past_cast, ASR::pointer_bounds_formType::NoPointerBounds)));
+                            al, loc, array_var_temporary, array_view, ASR::pointer_bounds_formType::NoPointerBounds)));
                         return;
                     }
                     LCOMPILERS_ASSERT(target_n_dims == allocate_dims.size());
@@ -935,15 +1018,15 @@ public:
                             ASRUtils::STMT(ASR::make_Allocate_t(al,
                                 array_var_temporary->base.loc, alloc_args.p, alloc_args.size(),
                                 nullptr, nullptr, nullptr)),
-                                create_do_loop(al, loc, do_loop_variables, array_var_temporary, arg_expr_past_cast, array_rank, integer_kind)
+                                create_do_loop(al, loc, do_loop_variables, array_var_temporary, array_view, array_rank, integer_kind)
                         }, {
                             ASRUtils::STMT(ASR::make_Associate_t(
-                                al, loc, array_var_temporary, arg_expr_past_cast, ASR::pointer_bounds_formType::NoPointerBounds))
+                                al, loc, array_var_temporary, array_view, ASR::pointer_bounds_formType::NoPointerBounds))
                         })
                     );
                     if ( is_arg_intent_out.size() > 0 && is_arg_intent_out[i] ) {
                         body_after_curr_stmt->push_back(al, b.If(not_is_contiguous, {
-                            create_do_loop(al, loc, do_loop_variables, arg_expr_past_cast, array_var_temporary, array_rank, integer_kind)
+                            create_do_loop(al, loc, do_loop_variables, array_view, array_var_temporary, array_rank, integer_kind)
                         }, {}));
                     }
                     // Nullify the pointer after the call if it was associated (contiguous case).
@@ -1138,7 +1221,10 @@ public:
 
 void pass_replace_array_passed_in_function_call(Allocator &al, ASR::TranslationUnit_t &unit,
                         const LCompilers::PassOptions& pass_options) {
+    SelectRankBlockCollector select_rank_collector;
+    select_rank_collector.visit_TranslationUnit(unit);
     CallVisitor v(al, pass_options);
+    v.select_rank_blocks = std::move(select_rank_collector.blocks);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);
