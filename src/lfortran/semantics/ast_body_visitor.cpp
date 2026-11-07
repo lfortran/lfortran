@@ -9970,15 +9970,9 @@ public:
                             final_sym, current_scope);
                         ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(final_sym));
                         nopass = cp->m_is_nopass;
-                        Vec<ASR::call_arg_t> cp_args;
-                        if (nopass && is_dt_present) {
-                            cp_args.from_pointer_n(args_with_mdt.p + 1, args_with_mdt.n - 1);
-                        } else {
-                            cp_args.from_pointer_n(args_with_mdt.p, args_with_mdt.n);
-                        }
                         Location l = x.base.base.loc;
                         // TODO: Add error message here
-                        if (ASRUtils::select_func_subrout(ASRUtils::symbol_get_past_external(cp->m_proc), cp_args, l,
+                        if (ASRUtils::select_type_bound_proc(&cp->base, args_with_mdt, l,
                             [&](const std::string &msg, const Location &loc) {
                                 diag.add(Diagnostic(
                                     msg,

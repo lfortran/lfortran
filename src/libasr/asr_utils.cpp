@@ -4422,6 +4422,36 @@ bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& 
     return result;
 }
 
+bool select_type_bound_proc(ASR::symbol_t* method, const Vec<ASR::call_arg_t>& args,
+                            Location& loc, const std::function<void (const std::string &, const Location &)> err) {
+    ASR::StructMethodDeclaration_t* clss_fn = ASR::down_cast<ASR::StructMethodDeclaration_t>(
+        ASRUtils::symbol_get_past_external(method));
+    const ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
+    if (args.n == 0) {
+        return select_func_subrout(proc, args, loc, err);
+    }
+    if (clss_fn->m_is_nopass) {
+        Vec<ASR::call_arg_t> args_no_dt;
+        args_no_dt.from_pointer_n(args.p + 1, args.n - 1);
+        return select_func_subrout(proc, args_no_dt, loc, err);
+    }
+    size_t pass_idx = get_pass_arg_index(method);
+    if (pass_idx == 0) {
+        return select_func_subrout(proc, args, loc, err);
+    }
+    // Omitting an optional dummy that precedes the passed-object dummy is
+    // not supported by the call construction (`insert_self_arg`), so such a
+    // specific does not match.
+    if (args.n - 1 < pass_idx) {
+        return false;
+    }
+    std::vector<ASR::call_arg_t> reordered(args.p + 1, args.p + args.n);
+    reordered.insert(reordered.begin() + pass_idx, args[0]);
+    Vec<ASR::call_arg_t> args_reordered;
+    args_reordered.from_pointer_n(reordered.data(), reordered.size());
+    return select_func_subrout(proc, args_reordered, loc, err);
+}
+
 ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
             const Location &loc,
             ASR::symbol_t *v, Vec<ASR::call_arg_t>& args,
