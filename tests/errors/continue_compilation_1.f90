@@ -4577,3 +4577,12 @@ subroutine cc1_char_len_entity_override()
     implicit none
     character(len=cc1_char_len_nundef) :: c*4  ! {Error} Variable 'cc1_char_len_nundef' is not declared
 end subroutine
+
+! The `&` that starts a continuation line is dropped by the prescanner; later
+! errors must still be reported at their own column
+subroutine cc1_continuation_ampersand_location()
+    integer :: i
+    i = 1 + &
+        & 2
+    i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+end subroutine
