@@ -5293,14 +5293,14 @@ public:
                     std::string proc_name = ASRUtils::symbol_name(specific);
                     ASR::symbol_t *proc = resolve_type_bound_proc_in_parent_chain(
                         clss, proc_name);
-                    // An inherited private binding that is not accessible in
-                    // the module of `clss` is not copied into `clss`: the copy
-                    // would count as declared in that module, so an extension
-                    // declared there could override it.
+                    // An inherited private binding that cannot be overridden
+                    // in the module of `clss` is not copied into `clss`: the
+                    // copy would count as declared in that module, so an
+                    // extension declared there could override it.
                     bool inaccessible = proc &&
                         ASR::is_a<ASR::StructMethodDeclaration_t>(*proc) &&
                         ASRUtils::symbol_parent_symtab(proc) != clss->m_symtab &&
-                        !ASRUtils::is_binding_accessible_in_extension(
+                        !ASRUtils::is_binding_overridable_in_extension(
                             *ASR::down_cast<ASR::StructMethodDeclaration_t>(proc),
                             &clss->base);
                     if (!inaccessible) {

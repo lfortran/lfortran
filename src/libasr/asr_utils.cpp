@@ -6543,6 +6543,17 @@ bool is_binding_accessible_in_extension(
     return has_private_access(get_sym_module0(extension), owner);
 }
 
+bool is_binding_overridable_in_extension(
+    const ASR::StructMethodDeclaration_t &binding,
+    const ASR::symbol_t *extension)
+{
+    // A deferred binding is overridden even where it is private and not
+    // accessible: otherwise an abstract type with a private deferred binding
+    // could never be completed outside its module. GFortran accepts this too.
+    if (binding.m_is_deferred) return true;
+    return is_binding_accessible_in_extension(binding, extension);
+}
+
 ASR::StructMethodDeclaration_t* overridden_binding(
     const ASR::StructMethodDeclaration_t &x)
 {
@@ -6556,6 +6567,9 @@ ASR::StructMethodDeclaration_t* overridden_binding(
     ASR::symbol_t *parent = ASR::down_cast<ASR::Struct_t>(owner)->m_parent;
     // A parent cycle is diagnosed on its own; here it must only not loop.
     std::set<const ASR::Struct_t*> seen;
+    // Only the nearest binding of the name is the one in effect in the parent
+    // type; a deferred binding further up is already implemented by it.
+    bool nearest = true;
     while (parent != nullptr) {
         parent = ASRUtils::symbol_get_past_external(parent);
         if (parent == nullptr || !ASR::is_a<ASR::Struct_t>(*parent)) {
@@ -6568,9 +6582,11 @@ ASR::StructMethodDeclaration_t* overridden_binding(
                 ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
             ASR::StructMethodDeclaration_t *b =
                 ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
-            if (is_binding_accessible_in_extension(*b, owner)) {
+            if (nearest ? is_binding_overridable_in_extension(*b, owner)
+                    : is_binding_accessible_in_extension(*b, owner)) {
                 return b;
             }
+            nearest = false;
         }
         parent = s->m_parent;
     }

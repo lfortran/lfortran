@@ -4586,10 +4586,21 @@ bool is_binding_accessible_in_extension(
     const ASR::StructMethodDeclaration_t &binding,
     const ASR::symbol_t *extension);
 
+// Whether a binding of the same name declared in the derived type `extension`
+// overrides `binding`, the nearest binding of that name of its ancestors:
+// `binding` is accessible there (Fortran 2023 7.5.7.3), or it is deferred. A
+// private deferred binding that is not accessible is still overridden, as
+// GFortran does, because an abstract type with one could otherwise never be
+// completed outside its module.
+bool is_binding_overridable_in_extension(
+    const ASR::StructMethodDeclaration_t &binding,
+    const ASR::symbol_t *extension);
+
 // The binding of the same name that `x` overrides, searched up the parent
 // chain of the derived type `x` belongs to, or nullptr. Fortran 2023 7.5.7.3:
 // only an accessible binding is overridden; a binding with the name of an
-// inaccessible private one is a new binding.
+// inaccessible private one is a new binding, unless that one is deferred and
+// the nearest of its name (see `is_binding_overridable_in_extension`).
 ASR::StructMethodDeclaration_t* overridden_binding(
     const ASR::StructMethodDeclaration_t &x);
 
