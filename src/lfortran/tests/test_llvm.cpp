@@ -7065,3 +7065,33 @@ TEST_CASE("FortranEvaluator module character variables across cells") {
     REQUIRE(r.ok);
     CHECK(r.result.str == "modq1");
 }
+
+// A global declared in a cell with the TYPE(intrinsic-type-spec) form keeps
+// its initializer in later cells, as one declared with `integer` does
+// (#16972, #16973).
+TEST_CASE("FortranEvaluator type(intrinsic-type-spec) global initializer") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2("type(integer) :: sc_16972 = 5");
+    REQUIRE(r.ok);
+    r = e.evaluate2("sc_16972");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 5);
+    r = e.evaluate2("type(integer) :: tj_16972(2) = 5");
+    REQUIRE(r.ok);
+    r = e.evaluate2("tj_16972(1) + 10 * tj_16972(2)");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 55);
+    r = e.evaluate2("type(integer) :: ti_16973(3) = [1, 2, 3]");
+    REQUIRE(r.ok);
+    r = e.evaluate2("ti_16973(1) + 10 * ti_16973(2) + 100 * ti_16973(3)");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 321);
+}
