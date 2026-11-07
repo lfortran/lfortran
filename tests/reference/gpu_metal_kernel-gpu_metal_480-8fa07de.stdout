@@ -3,7 +3,17 @@ using namespace metal;
 
 inline int _lcompilers_optimization_modulo_i32_gpu_19(int a_gpu, int p_gpu) {
     int _lcompilers_optimization_modulo_i32_gpu{};
-    _lcompilers_optimization_modulo_i32_gpu = ((a_gpu) % (((int)p_gpu)));
+    int _lcompilers_optimization_mod_i32_result;
+    {
+        int _lcompilers_optimization_mod_i32_gpu;
+        int a_gpu_1;
+        int p_gpu_1;
+        a_gpu_1 = a_gpu;
+        p_gpu_1 = ((int)p_gpu);
+        _lcompilers_optimization_mod_i32_gpu = (((int)a_gpu_1) - (((int)p_gpu_1) * (((int)a_gpu_1) / ((int)p_gpu_1))));
+        _lcompilers_optimization_mod_i32_result = _lcompilers_optimization_mod_i32_gpu;
+    }
+    _lcompilers_optimization_modulo_i32_gpu = _lcompilers_optimization_mod_i32_result;
     if (((int)((_lcompilers_optimization_modulo_i32_gpu != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i32_gpu < 0) && (((int)p_gpu) > 0))) || ((int)((_lcompilers_optimization_modulo_i32_gpu > 0) && (((int)p_gpu) < 0)))))))) {
         _lcompilers_optimization_modulo_i32_gpu = (_lcompilers_optimization_modulo_i32_gpu + ((int)p_gpu));
     }
@@ -36,6 +46,42 @@ kernel void __lfortran_gpu_kernel_0(
         int __gpu_loop_end_gpu;
         int __gpu_loop_group1_gpu;
         int __gpu_loop_group_gpu;
+        int _lcompilers_optimization_modulo_i32_result;
+        float _lcompilers_real_i321_result;
+        float _lcompilers_real_i321_result1;
+        float _lcompilers_real_i321_result10;
+        float _lcompilers_real_i321_result11;
+        float _lcompilers_real_i321_result12;
+        float _lcompilers_real_i321_result13;
+        float _lcompilers_real_i321_result14;
+        float _lcompilers_real_i321_result15;
+        float _lcompilers_real_i321_result16;
+        float _lcompilers_real_i321_result2;
+        float _lcompilers_real_i321_result3;
+        float _lcompilers_real_i321_result4;
+        float _lcompilers_real_i321_result5;
+        float _lcompilers_real_i321_result6;
+        float _lcompilers_real_i321_result7;
+        float _lcompilers_real_i321_result8;
+        float _lcompilers_real_i321_result9;
+        float _lcompilers_real_i322_result;
+        float _lcompilers_real_i32_result;
+        float _lcompilers_real_i32_result1;
+        float _lcompilers_real_i32_result10;
+        float _lcompilers_real_i32_result11;
+        float _lcompilers_real_i32_result12;
+        float _lcompilers_real_i32_result13;
+        float _lcompilers_real_i32_result14;
+        float _lcompilers_real_i32_result15;
+        float _lcompilers_real_i32_result16;
+        float _lcompilers_real_i32_result2;
+        float _lcompilers_real_i32_result3;
+        float _lcompilers_real_i32_result4;
+        float _lcompilers_real_i32_result5;
+        float _lcompilers_real_i32_result6;
+        float _lcompilers_real_i32_result7;
+        float _lcompilers_real_i32_result8;
+        float _lcompilers_real_i32_result9;
         int j_gpu;
         int n_gpu;
         float value_gpu;
@@ -48,119 +94,376 @@ kernel void __lfortran_gpu_kernel_0(
             if ((__gpu_loop_end_gpu >= 1)) {
                 for (__gpu_loop_group_gpu = 1; __gpu_loop_group_gpu <= (__gpu_loop_end_gpu - 15); __gpu_loop_group_gpu += 16) {
                     j_gpu = __gpu_loop_group_gpu;
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 1);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result1 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result1;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 2);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result2 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result2;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 3);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result3 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result3;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 4);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result4 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result4;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 5);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result5 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result5;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 6);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result6 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result6;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 7);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result7 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result7;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 8);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result8 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result8;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 9);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result9 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result9;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 10);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result10 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result10;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 11);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result11 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result11;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 12);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result12 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result12;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 13);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result13 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result13;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 14);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result14 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result14;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                     j_gpu = (__gpu_loop_group_gpu + 15);
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result15 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result15;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                 }
                 for (j_gpu = __gpu_loop_group_gpu; j_gpu <= __gpu_loop_end_gpu; j_gpu++) {
-                    x_gpu = ((float)j_gpu);
+                    {
+                        float _lcompilers_real_i32_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i32_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i32_result16 = _lcompilers_real_i32_gpu;
+                    }
+                    x_gpu = _lcompilers_real_i32_result16;
                     value_gpu = ((value_gpu + sqrt(((x_gpu * x_gpu) +   1.00000000000000000e+00))) + (x_gpu *   2.50000000000000000e-01));
                     n_gpu = (n_gpu - 1);
                 }
             }
-            __gpu_loop_end1_gpu = (_lcompilers_optimization_modulo_i32_gpu_19(i__dc_gpu, 23) - 1);
+            {
+                int _lcompilers_optimization_modulo_i32_gpu;
+                int a_gpu;
+                int p_gpu;
+                a_gpu = i__dc_gpu;
+                p_gpu = 23;
+                _lcompilers_optimization_modulo_i32_gpu = ((a_gpu) % (((int)p_gpu)));
+                if (((int)((_lcompilers_optimization_modulo_i32_gpu != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i32_gpu < 0) && (((int)p_gpu) > 0))) || ((int)((_lcompilers_optimization_modulo_i32_gpu > 0) && (((int)p_gpu) < 0)))))))) {
+                    _lcompilers_optimization_modulo_i32_gpu = (_lcompilers_optimization_modulo_i32_gpu + ((int)p_gpu));
+                }
+                _lcompilers_optimization_modulo_i32_result = _lcompilers_optimization_modulo_i32_gpu;
+            }
+            __gpu_loop_end1_gpu = (_lcompilers_optimization_modulo_i32_result - 1);
             j_gpu = 0;
             if ((__gpu_loop_end1_gpu >= 0)) {
                 for (__gpu_loop_group1_gpu = 0; __gpu_loop_group1_gpu <= (__gpu_loop_end1_gpu - 15); __gpu_loop_group1_gpu += 16) {
                     j_gpu = __gpu_loop_group1_gpu;
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 1);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result1 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result1 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 2);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result2 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result2 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 3);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result3 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result3 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 4);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result4 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result4 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 5);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result5 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result5 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 6);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result6 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result6 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 7);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result7 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result7 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 8);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result8 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result8 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 9);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result9 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result9 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 10);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result10 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result10 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 11);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result11 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result11 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 12);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result12 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result12 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 13);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result13 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result13 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 14);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result14 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result14 *   5.00000000000000000e-01));
                     j_gpu = (__gpu_loop_group1_gpu + 15);
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result15 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result15 *   5.00000000000000000e-01));
                 }
                 for (j_gpu = __gpu_loop_group1_gpu; j_gpu <= __gpu_loop_end1_gpu; j_gpu++) {
-                    value_gpu = (value_gpu + (((float)j_gpu) *   5.00000000000000000e-01));
+                    {
+                        float _lcompilers_real_i321_gpu;
+                        int x_gpu_1;
+                        x_gpu_1 = j_gpu;
+                        _lcompilers_real_i321_gpu = ((float)x_gpu_1);
+                        _lcompilers_real_i321_result16 = _lcompilers_real_i321_gpu;
+                    }
+                    value_gpu = (value_gpu + (_lcompilers_real_i321_result16 *   5.00000000000000000e-01));
                 }
             }
             for (j_gpu = 10; j_gpu >= 2; j_gpu -= 2) {
-                value_gpu = (value_gpu + (((float)j_gpu) *   1.25000000000000000e-01));
+                {
+                    float _lcompilers_real_i322_gpu;
+                    int x_gpu_1;
+                    x_gpu_1 = j_gpu;
+                    _lcompilers_real_i322_gpu = ((float)x_gpu_1);
+                    _lcompilers_real_i322_result = _lcompilers_real_i322_gpu;
+                }
+                value_gpu = (value_gpu + (_lcompilers_real_i322_result *   1.25000000000000000e-01));
             }
             result_gpu[((int)(i__dc_gpu) - (1))] = value_gpu;
         }

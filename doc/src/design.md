@@ -100,6 +100,28 @@ dummy has its own template parameter: equal element kind and rank do not imply
 equal descriptor types or extents. This is a C++ representation choice; the
 Fortran interface and argument conversion remain determined by ASR.
 
+## The ASR Pass Pipeline
+
+The ASR passes run in one ordered pipeline (`PassManager` in
+`src/libasr/pass/pass_manager.h`). Each pass in it is marked with when it
+runs:
+
+* Without `--fast` (the default, a Debug build) only the passes that produce
+  a program that runs are applied. A pass that is an optimization is marked
+  `RunFast` and runs only with `--fast` (a Release build), where it is
+  listed: an optimization that has to run at a particular point, such as
+  the GPU loop transformations before `gpu_offload`, stays at that point.
+  Nothing a program needs to compile and run may depend on a `RunFast`
+  pass.
+* A pass that works on device code, or on what the host does around a
+  kernel launch, is marked `RunGpu` and runs only when `--gpu` selects a
+  device.
+
+A new optimization pass is marked `RunFast`, so that a compilation without
+`--fast` does not pay for it. `--pass` runs exactly the passes it names,
+whatever they are marked with; `--cumulative` runs the passes the default
+pipeline runs with the same options up to the passes it names, and those.
+
 ## Compilation Modes
 
 We support two compilation modes:

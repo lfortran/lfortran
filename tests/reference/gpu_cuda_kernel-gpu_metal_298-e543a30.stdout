@@ -6,6 +6,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 {
     int __flat_idx;
     int i__dc;
+    const int n = 4;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
         return;
     }
@@ -14,10 +15,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         int __gpu_sum_k;
         int __gpu_sum_res;
+        int k;
         int s;
+        int tmp[4];
+        for (k = 1; k <= n; k++) {
+            tmp[((int)(k) - (1))] = 2;
+        }
         __gpu_sum_res = 0;
         for (__gpu_sum_k = 1; __gpu_sum_k <= 4; __gpu_sum_k++) {
-            __gpu_sum_res = (__gpu_sum_res + 2);
+            __gpu_sum_res = (__gpu_sum_res + tmp[((int)(__gpu_sum_k) - (1))]);
         }
         s = __gpu_sum_res;
         a[((int)(i__dc) - (1))] = s;

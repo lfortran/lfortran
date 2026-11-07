@@ -173,6 +173,15 @@ still shown. A failure of the offloading pipeline is an error there too.
 
 ## The offloading pipeline
 
+The passes of the pipeline run only when `--gpu` selects a device. Those
+that only make the program faster -- the loop transformations of the [GPU
+loop optimization passes](gpu_optimization_passes.md), `dead_array_store`,
+`gpu_call_guards`, `gpu_array_statements`, `gpu_private_map_forwarding`,
+`gpu_private_reduction_fusion`, `gpu_residue_unroll`, `gpu_vector_lanes` and
+`gpu_sequential_unroll` -- run only with `--fast` (see the ASR pass pipeline
+in [the design](design.md)); without it, a kernel is what the lowering alone
+makes of the loop.
+
 Once a loop is assigned to the device, the offloading pipeline extracts the
 kernel, lowers it through the shared ASR passes, lays out its arguments and
 generates the device source. It never falls back to the CPU:
@@ -1016,13 +1025,13 @@ stop. It waits:
 * before any statement it does not know.
 
 A wait in a loop that launches nothing is placed before the loop instead.
-A call of a subroutine whose first statement is `if (c) return`, such as a
-debug hook that returns unless a dump directory is set, tests `c` first
-(the `gpu_call_guards` pass, which runs before the temporaries of actual
-arguments are made), so its wait goes into the branch that calls it. It does
-so only when that is not observable: `c` calls no function and names no
-dummy or local of the subroutine, the subroutine has no `intent(out)` dummy,
-and the actual arguments call no function.
+With `--fast`, a call of a subroutine whose first statement is
+`if (c) return`, such as a debug hook that returns unless a dump directory
+is set, tests `c` first (the `gpu_call_guards` pass, which runs before the
+temporaries of actual arguments are made), so its wait goes into the branch
+that calls it. It does so only when that is not observable: `c` calls no
+function and names no dummy or local of the subroutine, the subroutine has
+no `intent(out)` dummy, and the actual arguments call no function.
 After every `GpuSync` the pass runs the stop replay of each launch that may
 be pending there (`GpuKernelLaunch.stop_replay`), in launch order.
 
@@ -1132,9 +1141,9 @@ the kernels use -- clearing an accumulator (`dcdw = 0.`), or reducing what a
 kernel wrote (`dcdb = sum(reduce_dcdb, dim=3)`) -- would make the host wait
 for the device and copy the data back in every iteration, only to hand it to
 the next launch again. Such an assignment is a loop over the elements of its
-target whose iterations are independent, so the `gpu_array_statements` pass,
-which runs right after `parallel_dispatch`, makes it a parallel loop and
-sends it to the device too:
+target whose iterations are independent, so with `--fast` the
+`gpu_array_statements` pass, which runs right after `parallel_dispatch`, makes
+it a parallel loop and sends it to the device too:
 
 ```fortran
 dcdb = sum(reduce_dcdb, dim=3)
@@ -1173,7 +1182,8 @@ read only the shape of the arrays.
 
 An assignment whose every element is assigned again before anything reads it
 (`dcdw = 0.` followed by `dcdw = sum(reduce_dcdw, dim=4)`) is removed before
-this, by the `dead_array_store` pass, so it costs no launch at all.
+this, with `--fast`, by the `dead_array_store` pass, so it costs no launch at
+all.
 
 ### Fast math in device code
 
@@ -1196,7 +1206,7 @@ do d = (g - 1)*64 + 1, g*64
 end do
 ```
 
-The `gpu_residue_unroll` pass unrolls such a loop (a `do` or a one-index
+With `--fast`, the `gpu_residue_unroll` pass unrolls such a loop (a `do` or a one-index
 `do concurrent` of device code) by the constant divisor, in groups that
 start where the numerator `d - 1` is a multiple of it. In each of the four
 copies the part is a constant and the quotient the same, so the word is
@@ -1233,7 +1243,7 @@ loop over the layers of a network -- leaves most of the GPU idle, and runs
 each iteration as one long chain of dependent memory accesses on one
 thread: a GPU thread does not run ahead of a load the way a CPU core does,
 so every element of every array statement inside the iteration costs a
-memory latency. The `gpu_vector_lanes` pass, right after
+memory latency. With `--fast`, the `gpu_vector_lanes` pass, right after
 `gpu_kernel_finalize`, rewrites such a kernel so that each iteration runs on
 the lanes of a SIMD-group, which share the loops inside it (Metal only, 32
 lanes; a device's capabilities say how many, see `GpuDeviceCapabilities::

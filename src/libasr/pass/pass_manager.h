@@ -385,19 +385,19 @@ namespace LCompilers {
                 {"parallel_dispatch"},
                 // A whole-array assignment that is assigned again before
                 // anything reads it goes, before it can cost a launch.
-                {"dead_array_store"},
+                {"dead_array_store", RunFast},
                 // A call its subroutine returns from at once on a condition
                 // tests that condition itself, so that the host need not
                 // wait for the device before evaluating its arguments.
-                {"gpu_call_guards", RunGpu},
+                {"gpu_call_guards", RunFast | RunGpu},
                 // Parallel loops assigned to the device are fused, skewed
                 // and split while they are still loops of the source
                 // (gpu_loop_fusion.cpp, gpu_time_skew.cpp,
                 // gpu_index_set_split.cpp).
-                {"gpu_loop_transforms", RunGpu},
+                {"gpu_loop_transforms", RunFast | RunGpu},
                 // A whole-array assignment in a host loop that launches
                 // kernels, on the data they use, runs on the device too.
-                {"gpu_array_statements", RunGpu},
+                {"gpu_array_statements", RunFast | RunGpu},
                 // Each statement that references a function whose result is
                 // finalized after the statement becomes a BLOCK here, before
                 // the passes below split it into several statements.
@@ -442,13 +442,13 @@ namespace LCompilers {
                 // procedure of this file whose dummy only calls it becomes a
                 // direct call of a copy of that procedure in the host, so
                 // nested_vars below needs no procedure value for it.
-                {"specialize_procedure_arguments"},
+                {"specialize_procedure_arguments", RunFast},
                 // With --fast, a procedure of this file whose dummy
                 // procedures are only called or passed on gets a copy that
                 // takes each as a code pointer and the address of a frame,
                 // so that nested_vars below passes an internal procedure to
                 // it with the frame of its host instead of a thunk.
-                {"specialize_frame_arguments"},
+                {"specialize_frame_arguments", RunFast},
                 {"nested_vars"},
                 {"class_constructor"},
                 {"pass_list_expr"},
@@ -456,16 +456,16 @@ namespace LCompilers {
                 {"array_op"},
                 // A block-private map read element by element after it
                 // is written needs no per-thread device storage at all.
-                {"gpu_private_map_forwarding", RunGpu},
+                {"gpu_private_map_forwarding", RunFast | RunGpu},
                 // A block-private map read once by an ordered scalar fold
                 // needs only a scalar, not a per-thread device workspace.
-                {"gpu_private_reduction_fusion", RunGpu},
+                {"gpu_private_reduction_fusion", RunFast | RunGpu},
                 // A device loop over packed data, reading `(d + r)/K` and
                 // `modulo(d + r, K)` of its index, is unrolled by K so that
                 // each copy has constant residues, while `modulo` is still
                 // an intrinsic and the checks of small functions are still
                 // IF and STOP statements.
-                {"gpu_residue_unroll", RunGpu},
+                {"gpu_residue_unroll", RunFast | RunGpu},
                 {"symbolic"},
                 {"intrinsic_function"},
                 {"intrinsic_subroutine"},
@@ -517,7 +517,7 @@ namespace LCompilers {
                 {"gpu_kernel_finalize", RunGpu},
                 // An iteration of a kernel with few runs on the lanes of a
                 // SIMD-group, which share the loops inside it.
-                {"gpu_vector_lanes", RunGpu},
+                {"gpu_vector_lanes", RunFast | RunGpu},
                 // A launch does not wait for its kernel: the host waits
                 // where it next needs what a kernel wrote.
                 {"gpu_launch_sync", RunGpu},
@@ -532,7 +532,7 @@ namespace LCompilers {
                 // loops are lowered.
                 {"string_format_array_args"},
                 // The short loops of Metal device code are unrolled.
-                {"gpu_sequential_unroll", RunGpu},
+                {"gpu_sequential_unroll", RunFast | RunGpu},
                 {"while_else"},
                 // Every call the passes above can create is in place, so each
                 // character dummy gets its hidden length argument here, and

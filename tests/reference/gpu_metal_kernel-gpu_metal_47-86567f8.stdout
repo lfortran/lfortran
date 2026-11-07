@@ -6,21 +6,16 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __lb_n_0_gpu;
     int __lfortran_gpu_dim__gpu;
     int __workspace_extent_gpu;
-    int __gpu_lanes_gpu;
 };
 
 kernel void __lfortran_gpu_kernel_0(
     device int* n_gpu [[buffer(0)]],
     constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],
     device float* __workspace_2 [[buffer(2)]],
-    uint __gpu_grid_thread [[thread_position_in_grid]],
-    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+    uint __thread_id [[thread_position_in_grid]])
 {
     int __lfortran_gpu_dim__gpu = __scalar_args.__lfortran_gpu_dim__gpu;
     int __workspace_extent_gpu = __scalar_args.__workspace_extent_gpu;
-    int __gpu_lanes_gpu = __scalar_args.__gpu_lanes_gpu;
-    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes_gpu;
-    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes_gpu);
     int __flat_idx_gpu;
     int __gpu_bc_i_gpu;
     int pair__dc_gpu;
@@ -31,10 +26,9 @@ kernel void __lfortran_gpu_kernel_0(
     pair__dc_gpu = (__flat_idx_gpu + 1);
     {
         device float* a_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_2 + ((long)__thread_id) * __workspace_extent_gpu) : nullptr;
-        for (__gpu_bc_i_gpu = (1 + (((int)__gpu_lane) * 1)); __gpu_bc_i_gpu <= __lfortran_gpu_dim__gpu; __gpu_bc_i_gpu += (1 * ((int)__gpu_lanes_gpu))) {
+        for (__gpu_bc_i_gpu = 1; __gpu_bc_i_gpu <= __lfortran_gpu_dim__gpu; __gpu_bc_i_gpu++) {
             a_gpu[((int)(__gpu_bc_i_gpu) - (1))] =   0.00000000000000000e+00;
         }
-        if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
 }
 

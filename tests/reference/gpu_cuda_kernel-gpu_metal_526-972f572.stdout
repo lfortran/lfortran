@@ -24,8 +24,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     {
         long __gpu_frame;
         int __gpu_frame_i__dc;
-        if ((((long)i__dc) < (((long)1) + ((long)1)))) {
-            __gpu_frame = ((((long)i__dc) - ((((long)1) + ((long)1)) - ((((long)2) + (((long)1) - ((long)1))) / ((long)1)))) * ((long)1));
+        if ((((long)i__dc) < ((long)2))) {
+            __gpu_frame = ((((long)i__dc) - (((long)2) - (((long)2) / ((long)1)))) * ((long)1));
             if ((__gpu_frame < ((long)2))) {
                 if ((__gpu_frame < ((long)1))) {
                     __gpu_frame_i__dc = ((int)(((long)1) + __gpu_frame));
@@ -112,8 +112,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     {
         long __gpu_frame1;
         int __gpu_frame_i__dc1;
-        if ((((long)i__dc1) < (((long)1) + ((long)1)))) {
-            __gpu_frame1 = ((((long)i__dc1) - ((((long)1) + ((long)1)) - ((((long)1) + (((long)1) - ((long)1))) / ((long)1)))) * ((long)1));
+        if ((((long)i__dc1) < ((long)2))) {
+            __gpu_frame1 = ((((long)i__dc1) - (((long)2) - (((long)1) / ((long)1)))) * ((long)1));
             if ((__gpu_frame1 < ((long)1))) {
                 if ((__gpu_frame1 < ((long)1))) {
                     __gpu_frame_i__dc1 = ((int)(((long)1) + __gpu_frame1));

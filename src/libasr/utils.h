@@ -97,10 +97,10 @@ struct PassOptions {
     // construct on the unsupported list then runs on the CPU with a warning,
     // so that the kernels of the other loops are still produced.
     bool gpu_kernel_source_only = false;
-    // The loop transformations applied to parallel loops assigned to the
-    // device before they are offloaded (gpu_loop_fusion.cpp and the passes
-    // after it): "all", "none", or a comma separated list of `fuse`, `swap`,
-    // `split`, `jam` and `skew`.
+    // The loop transformations applied with --fast to parallel loops
+    // assigned to the device before they are offloaded (gpu_loop_fusion.cpp
+    // and the passes after it): "all", "none", or a comma separated list of
+    // `fuse`, `swap`, `split`, `jam` and `skew`.
     std::string gpu_loop_transforms = "all";
     // The size in bytes of the device's last-level cache that the loop
     // transformations assume, or -1 to ask the device at run time.
