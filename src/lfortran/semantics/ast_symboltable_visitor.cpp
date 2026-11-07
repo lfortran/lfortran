@@ -592,6 +592,7 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -601,7 +602,7 @@ public:
         std::set<ASR::symbol_t*> &getter_functions, LCompilers::LocationManager &lm)
       : CommonVisitor(
             al, symbol_table, diagnostics, compiler_options, implicit_mapping,
-            external_procedures_mapping,
+            external_procedures_mapping, procedure_references,
             explicit_intrinsic_procedures_mapping,
             instantiate_types, instantiate_symbols, entry_functions,
             entry_function_arguments_mapping, data_structure, getter_functions, lm
@@ -7911,6 +7912,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         SymbolTable *symbol_table, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -7921,7 +7923,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         const std::map<std::string, ASR::ttype_t*> *interactive_implicit_types)
 {
     SymbolTableVisitor v(al, symbol_table, diagnostics, compiler_options,
-                         implicit_mapping, external_procedures_mapping,
+                         implicit_mapping, external_procedures_mapping, procedure_references,
                          explicit_intrinsic_procedures_mapping,
                          instantiate_types, instantiate_symbols, entry_functions,
                          entry_function_arguments_mapping, data_structure, getter_functions, lm);
@@ -7942,6 +7944,7 @@ BlockInterfaceVisitor::BlockInterfaceVisitor(Allocator &al, SymbolTable *block_s
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -7951,7 +7954,7 @@ BlockInterfaceVisitor::BlockInterfaceVisitor(Allocator &al, SymbolTable *block_s
         std::set<ASR::symbol_t*> &getter_functions,
         LCompilers::LocationManager &lm)
     : v(std::make_unique<SymbolTableVisitor>(al, block_scope, diagnostics,
-        compiler_options, implicit_mapping, external_procedures_mapping,
+        compiler_options, implicit_mapping, external_procedures_mapping, procedure_references,
         explicit_intrinsic_procedures_mapping, instantiate_types,
         instantiate_symbols, entry_functions, entry_function_arguments_mapping,
         data_structure, getter_functions, lm))

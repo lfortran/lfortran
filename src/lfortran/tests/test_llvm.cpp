@@ -4780,6 +4780,61 @@ end function
     CHECK(r.result.i32 == 5);
 }
 
+TEST_CASE("FortranEvaluator interface body to a function of the same cell as actual argument") {
+    // {implicit_interface, implicit_typing}
+    for (auto mode : {std::make_pair(false, false), std::make_pair(true, false),
+            std::make_pair(true, true)}) {
+        CAPTURE(mode.first);
+        CAPTURE(mode.second);
+        CompilerOptions cu;
+        cu.interactive = true;
+        cu.implicit_interface = mode.first;
+        cu.implicit_typing = mode.second;
+        cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+        FortranEvaluator e(cu);
+        REQUIRE(e.evaluate2("integer :: z0").ok);
+        REQUIRE(e.evaluate2(R"(integer function app(f)
+interface
+integer function f()
+end function
+end interface
+app = f() + 1
+end function
+)").ok);
+        // `gg` is declared by an interface body, so passing it is not a
+        // reference to a variable.
+        REQUIRE(e.evaluate2(R"(integer function gg()
+gg = 8
+end function
+
+integer function c_iface()
+interface
+integer function gg()
+end function
+end interface
+c_iface = app(gg) + 300
+end function
+)").ok);
+        LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("c_iface()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 309);
+        if (!mode.first) continue;
+        // The same with `integer, external`.
+        REQUIRE(e.evaluate2(R"(integer function hh()
+hh = 9
+end function
+
+integer function c_ext()
+integer, external :: hh
+c_ext = app(hh) + 310
+end function
+)").ok);
+        r = e.evaluate2("c_ext()");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 320);
+    }
+}
+
 TEST_CASE("FortranEvaluator external statement for an earlier cell's function") {
     CompilerOptions cu;
     cu.interactive = true;
@@ -4877,8 +4932,8 @@ fn = 1
 end function
 )").ok);
     // The generic interface refers to the interface body, so it stays and
-    // the cell compiles; as without an earlier `fn`, a call of `c` would
-    // then not link.
+    // the cell compiles; as without an earlier `fn`, a call of `c` then
+    // does not link.
     LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(R"(integer function c()
 interface gen
 integer function fn()
@@ -4888,6 +4943,13 @@ c = gen()
 end function
 )");
     CHECK(r.ok);
+    bool linked = false;
+    try {
+        r = e.evaluate2("c()");
+        linked = r.ok;
+    } catch (const LCompilers::LCompilersException &) {
+    }
+    CHECK(!linked);
 }
 
 TEST_CASE("FortranEvaluator abstract interface named as an earlier cell's function") {

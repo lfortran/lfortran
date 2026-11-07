@@ -1850,6 +1850,7 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -2544,7 +2545,9 @@ public:
     std::vector<std::string> external_procedures;
     // The names that each scoping unit references as a procedure, keyed by
     // the `counter` of its symbol table, see `record_procedure_references()`.
-    std::map<uint32_t, std::set<std::string>> procedure_references;
+    // The symbol table and body visitors share it, so that the body visitor
+    // sees what `access_cell_procedure()` recorded.
+    std::map<uint32_t, std::set<std::string>> &procedure_references;
 
     // Attributes defined before declaration
     std::map<std::string, ASR::symbol_t*> symbols_having_only_attributes_without_type;
@@ -2894,6 +2897,7 @@ public:
         diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint32_t, std::set<std::string>> &procedure_references,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
@@ -2905,6 +2909,7 @@ public:
     ): diag{diagnostics}, al{al}, compiler_options{compiler_options},
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           external_procedures_mapping{external_procedures_mapping},
+          procedure_references{procedure_references},
           explicit_intrinsic_procedures_mapping{explicit_intrinsic_procedures_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
