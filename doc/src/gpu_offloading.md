@@ -1012,12 +1012,46 @@ stop. It waits:
 * before a launch of a kernel that can stop while a launch of another such
   kernel is pending, so that the stop reported is the first one;
 * before `return`, `goto` and the end of the procedure while any launch is
-  pending;
+  pending, except in a deferring twin (below);
 * before any statement it does not know.
 
 A wait in a loop that launches nothing is placed before the loop instead.
+A call of a subroutine whose first statement is `if (c) return`, such as a
+debug hook that returns unless a dump directory is set, tests `c` first
+(the `gpu_call_guards` pass, which runs before the temporaries of actual
+arguments are made), so its wait goes into the branch that calls it. It does
+so only when that is not observable: `c` calls no function and names no
+dummy or local of the subroutine, the subroutine has no `intent(out)` dummy,
+and the actual arguments call no function.
 After every `GpuSync` the pass runs the stop replay of each launch that may
 be pending there (`GpuKernelLaunch.stop_replay`), in launch order.
+
+A module subroutine with an array or derived-type dummy -- not `bind(c)`,
+elemental, a separate module procedure or device code, and with no pointer,
+target, procedure or frame dummy -- gets a *deferring twin*,
+`<name>__gpu_deferred`, which takes over its body, while the subroutine
+itself only calls the twin and then waits as before. The pass makes the
+twins first, of the modules of the file and of those loaded from module
+files alike: the choice depends only on the declaration, which is in the
+module file, so every file that uses the module makes the same twins. The
+calls the pass sees by name are redirected to the twin; a call through a
+procedure pointer, a dummy procedure or a binding, and one from a file
+compiled without a GPU device or from C, reaches the subroutine, which
+waits. The twin may return with launches pending, provided they write and
+read only what its dummy arguments hold -- not what an intent(in) dummy
+holds, a module variable, what a pointer points to -- and none may have
+recorded a stop (whose replay reads a status buffer that is a local of the
+twin): otherwise it waits at its exits as before, once the launches on its
+locals are discarded. A call of a twin is followed like a launch: it may
+leave launches pending that write the actual arguments of the dummies that
+are not intent(in), and read the others -- or, for a twin of this file, only
+those that the launches pending at its exits do. A caller does not wait
+before the call for the launches pending on an array actual argument that
+only the twin can name (a local or dummy no pointer reaches); the twin
+starts as if launches its caller made were pending on what its array
+dummies hold, and waits where it accesses them on the host. Before any other
+actual argument, a module variable, and when a launch that may have
+recorded a stop is pending, the caller waits as before.
 
 Storage that a launch only reads the runtime may hand the kernel in place
 (the unified and managed memory models), and the host must not change it
@@ -1067,12 +1101,23 @@ overlap when one is a prefix of the other, except that a copy of only the
 bytes of a derived-type value itself (a polymorphic value the host copies
 for a launch) does not reach the data of its allocatable components. Asking
 about the shape of an array (`size`, `lbound`, `allocated`) does not access
-its elements. A call accesses its actual arguments, and may access every
+its elements, and neither does disassociating a pointer (`nullify`) or
+storing the address of a variable in the frame of a contained procedure. A call accesses its actual arguments, and may access every
 variable that a pointer may point to or that another procedure can reach (a
 module variable, a variable of a procedure this one is contained in, a
-`target`); a call to a procedure contained in this one may access anything.
+`target`, a variable a pointer that another procedure can name may point
+to: not one only a local pointer of this procedure points to, such as the
+pointer the compiler makes for a section it hands to a procedure); a call to
+a procedure contained in this one may access anything.
 Of a derived-type value it is handed, a call whose callee's body is known
-accesses only the components the body names.
+accesses only the components the body names. A call of a procedure whose
+body is known, launches nothing and has no pointer, target or procedure
+dummy accesses what that body accesses: the same parts of its actual
+arguments, the variables of its host procedure it names, what another
+procedure can reach only when the body names or calls something that can,
+and it acts outside the program when the body may, `stop` included. So a
+call that only asks for the shapes of its arguments (`call
+check_shapes(x, y)`) does not wait for the launch that writes them.
 
 The data the host copies for a launch itself -- a contiguous copy of a
 strided array, the components of an array of derived type, the arrays of a

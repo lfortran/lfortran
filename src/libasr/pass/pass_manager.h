@@ -75,6 +75,7 @@
 #include <libasr/pass/gpu_time_skew.h>
 #include <libasr/pass/gpu_index_set_split.h>
 #include <libasr/pass/gpu_array_statements.h>
+#include <libasr/pass/gpu_call_guards.h>
 #include <libasr/pass/dead_array_store.h>
 #include <libasr/pass/gpu_vector_lanes.h>
 #include <libasr/pass/gpu_memory_space.h>
@@ -151,6 +152,7 @@ namespace LCompilers {
             {"parallel_dispatch", &pass_parallel_dispatch},
             {"dead_array_store", &pass_dead_array_store},
             {"gpu_array_statements", &pass_gpu_array_statements},
+            {"gpu_call_guards", &pass_gpu_call_guards},
             {"omp_region_flatten", &pass_flatten_omp_regions},
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
@@ -340,6 +342,10 @@ namespace LCompilers {
                 // A whole-array assignment that is assigned again before
                 // anything reads it goes, before it can cost a launch.
                 "dead_array_store",
+                // A call its subroutine returns from at once on a condition
+                // tests that condition itself, so that the host need not
+                // wait for the device before evaluating its arguments.
+                "gpu_call_guards",
                 // Parallel loops assigned to the device are fused, skewed
                 // and split while they are still loops of the source
                 // (gpu_loop_fusion.cpp, gpu_time_skew.cpp,

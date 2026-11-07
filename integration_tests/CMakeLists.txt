@@ -7261,6 +7261,13 @@ RUN(NAME gpu_reduction_overwrite_01_chunks FILE gpu_reduction_overwrite_01 LABEL
 RUN(NAME gpu_metal_731 LABELS gfortran llvm metal cuda)
 # The same for arrays with bounds set on entry (automatic arrays).
 RUN(NAME gpu_metal_732 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_deferred_sync_01 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_deferred_sync_02 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_deferred_sync_03 LABELS gfortran llvm metal cuda)
+RUN(NAME gpu_deferred_sync_04 LABELS gfortran llvm metal cuda EXTRAFILES gpu_deferred_sync_04_mod.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME gpu_deferred_sync_05 FAIL LABELS gfortran llvm metal cuda) # stops: a part of 4 fails the check
+RUN(NAME gpu_deferred_sync_06 FAIL LABELS gfortran llvm metal cuda) # stops: a negative value
+RUN(NAME gpu_deferred_sync_07 FAIL LABELS gfortran llvm metal cuda EXTRAFILES gpu_deferred_sync_07_mod.f90 EXTRA_ARGS --separate-compilation) # stops: a negative value
 # Logical reductions (lfortran/lfortran#16725), in one launch and in many.
 RUN(NAME gpu_metal_728 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_729 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)
