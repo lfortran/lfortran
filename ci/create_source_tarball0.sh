@@ -26,6 +26,9 @@ cmake -E copy integration_tests/gpu_metal_485.f90 \
     integration_tests/gpu_guard_fold_01.f90 \
     integration_tests/gpu_guard_fold_02.f90 \
     integration_tests/gpu_inline_loop_calls_01.f90 \
+    integration_tests/gpu_lanes_columns_02.f90 \
+    integration_tests/gpu_lanes_parts_01.f90 \
+    integration_tests/gpu_private_reduction_02.f90 \
     integration_tests/gpu_optional_launch_04.f90 \
     integration_tests/gpu_scalar_reduction_actual_01.f90 \
     integration_tests/gpu_private_reduction_01.f90 \
