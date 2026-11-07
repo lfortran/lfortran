@@ -7151,3 +7151,37 @@ TEST_CASE("FortranEvaluator module character variables across cells") {
     REQUIRE(r.ok);
     CHECK(r.result.str == "modq1");
 }
+
+// The parent component of an extended type (#13073), named after the parent
+// type, written and read in one cell and across cells.
+TEST_CASE("FortranEvaluator parent component reference") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(type :: point_13073
+integer :: x, y
+end type
+type, extends(point_13073) :: p3_13073
+integer :: z
+end type
+type(p3_13073) :: q_13073
+type(point_13073) :: pp_13073
+q_13073%point_13073%x = 4
+q_13073%y = 5
+pp_13073 = q_13073%point_13073
+)");
+    REQUIRE(r.ok);
+    r = e.evaluate2("pp_13073%x + pp_13073%y");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 9);
+    r = e.evaluate2("q_13073%point_13073 = point_13073(6, 7)");
+    REQUIRE(r.ok);
+    r = e.evaluate2("q_13073%point_13073%x + q_13073%y");
+    REQUIRE(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+    CHECK(r.result.i32 == 13);
+}
