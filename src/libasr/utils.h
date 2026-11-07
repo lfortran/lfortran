@@ -85,6 +85,11 @@ struct PassOptions {
     bool gpu_offload_cuda = false;
     // The CUDA offload is compiled for an AMD GPU with HIP (`--gpu=hip`).
     bool gpu_offload_hip = false;
+    // The CUDA device code runs on an NVIDIA GPU (--gpu=cuda), rather than
+    // in the CPU emulation or on an AMD GPU through HIP: its threads run
+    // together in warps, which the lanes of an iteration need
+    // (gpu_vector_lanes.cpp).
+    bool gpu_cuda_warps = false;
     // `!$omp parallel do` asks for host threads. Offloading one onto a device
     // is a choice the user has to make, so it is off unless asked for.
     bool gpu_offload_omp_loops = false;

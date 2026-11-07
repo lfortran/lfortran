@@ -5681,6 +5681,62 @@ filename = "../integration_tests/gpu_metal_636.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
+# The lanes of a SIMD-group on Metal (gpu_vector_lanes.cpp): a kernel that
+# has no loop to share out keeps one thread per iteration, and a block that
+# holds none runs on the first lane, handing on what lives on after it.
+[[test]]
+filename = "../integration_tests/gpu_lanes_blocks_01.f90"
+gpu_metal_kernel = true
+
+# The lanes share loops out that call functions the compiler implements
+# intrinsics with (`modulo`, `ibits`, `int`), which are not declared pure
+# but have no effect besides their value.
+[[test]]
+filename = "../integration_tests/gpu_lanes_calls_01.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+# Reductions shared out between the lanes of a SIMD-group on Metal and
+# combined with simd_sum, simd_product, simd_min and simd_max.
+[[test]]
+filename = "../integration_tests/gpu_lanes_reduce_02.f90"
+gpu_metal_kernel = true
+
+# A loop whose body is a block with locals, shared out between the lanes.
+[[test]]
+filename = "../integration_tests/gpu_lanes_blocks_02.f90"
+gpu_metal_kernel = true
+
+# A loop whose variable a later loop reuses inside a loop of its own,
+# shared out between the lanes.
+[[test]]
+filename = "../integration_tests/gpu_lanes_reuse_01.f90"
+gpu_metal_kernel = true
+
+# The loops shared out between the lanes, which step by the lanes, are
+# unrolled on Metal like the sequential loops of device code.
+[[test]]
+filename = "../integration_tests/gpu_lanes_unroll_01.f90"
+gpu_metal_kernel = true
+
+# A kernel's calls of small pure functions that run a loop are inlined, so
+# that the lanes of an iteration share the loop and combine its sum.
+[[test]]
+filename = "../integration_tests/gpu_inline_loop_calls_01.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+# Nested `do concurrent` loops shared out between the lanes.
+[[test]]
+filename = "../integration_tests/gpu_lanes_nested_01.f90"
+gpu_metal_kernel = true
+
+# A loop in one branch of an `if` inside a loop, shared out between the
+# lanes.
+[[test]]
+filename = "../integration_tests/gpu_lanes_branches_01.f90"
+gpu_metal_kernel = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true

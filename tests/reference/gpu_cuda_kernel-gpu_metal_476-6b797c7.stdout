@@ -1,5 +1,18 @@
 #include <stdint.h>
 
+// The combination of what the `lanes` lanes of an iteration hold,
+// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
+// largest. With one lane, the lane's own value.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce(T v, int lanes) {
+    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {
+        T w = __shfl_xor_sync(0xffffffffu, v, offset, lanes);
+        v = op == 0 ? v + w : op == 1 ? v * w
+            : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+    }
+    return v;
+}
+
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __restrict__ y)
 {
@@ -22,6 +35,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int n;
     int __dim_y_0;
     int __loop_end_0;
+    int __gpu_lanes;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
@@ -30,21 +44,39 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
 {
     int __gpu_private_shape = __scalar_args.__gpu_private_shape;
     int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
     int j__dc1;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     j__dc1 = (__flat_idx + 1);
     {
         int __gpu_sum_k;
         float __gpu_sum_res;
         __gpu_sum_res =   0.00000000000000000e+00f;
-        for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k++) {
-            __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
+        if ((__gpu_lanes > 1)) {
+            if ((__gpu_lane != 0)) {
+                __gpu_sum_res =   0.00000000000000000e+00f;
+            }
+            for (__gpu_sum_k = (1 + (((int)__gpu_lane) * 1)); __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k += (1 * ((int)__gpu_lanes))) {
+                __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
+            }
+            __gpu_sum_res = __lfortran_lane_reduce<0>(__gpu_sum_res, __gpu_lanes_n);
+        } else {
+            for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k++) {
+                __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
+            }
         }
-        y[((int)(j__dc1) - (1))] = __gpu_sum_res;
+        if ((__gpu_lane == 0)) {
+            y[((int)(j__dc1) - (1))] = __gpu_sum_res;
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
     }
 }
 
@@ -55,6 +87,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
     int n;
     int __dim_y_0;
     int __loop_end_0;
+    int __gpu_lanes;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_2(
@@ -63,23 +96,41 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
 {
     int __gpu_private_shape = __scalar_args.__gpu_private_shape;
     int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
     int j__dc1;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     j__dc1 = (__flat_idx + 1);
     {
         int __gpu_sum_k;
         float __gpu_sum_res;
         float __gpu_sum_tmp;
         __gpu_sum_res =   0.00000000000000000e+00f;
-        for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k++) {
-            __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
+        if ((__gpu_lanes > 1)) {
+            if ((__gpu_lane != 0)) {
+                __gpu_sum_res =   0.00000000000000000e+00f;
+            }
+            for (__gpu_sum_k = (1 + (((int)__gpu_lane) * 1)); __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k += (1 * ((int)__gpu_lanes))) {
+                __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
+            }
+            __gpu_sum_res = __lfortran_lane_reduce<0>(__gpu_sum_res, __gpu_lanes_n);
+        } else {
+            for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k++) {
+                __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
+            }
         }
         __gpu_sum_tmp = __gpu_sum_res;
-        y[((int)(j__dc1) - (1))] = ((__gpu_sum_tmp + ((float)j__dc1)) + ((float)j__dc1));
+        if ((__gpu_lane == 0)) {
+            y[((int)(j__dc1) - (1))] = ((__gpu_sum_tmp + ((float)j__dc1)) + ((float)j__dc1));
+        }
+        if (__gpu_lanes_n > 1) __syncwarp();
     }
 }
 

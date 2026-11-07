@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_inline_loop_calls_01-dc0b4f6",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_inline_loop_calls_01.f90",
+    "infile_hash": "297f16d87554703104289c5ae884270196de4edb23ec0b7fb394e3c8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_inline_loop_calls_01-dc0b4f6.stdout",
+    "stdout_hash": "5f73bcafcf308a97c660c3a756892c93154724da56561f379a3934d9",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
