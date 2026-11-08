@@ -8292,8 +8292,9 @@ attributes #0 = { "target-features"="+avx" }
 
 // The Fortran integration tests stay numerically correct when the SLP
 // vectorizer never emits the four-wide chain, so they do not notice a
-// rewrite that stopped firing. On Haswell the chain is four wide. This
-// compiles the same sums and requires the horizontal add.
+// rewrite that stopped firing. LLVM 11's SLP emits that chain for Haswell,
+// so the horizontal add is required there. A later LLVM may pick another
+// width; the add is then required only if the four-wide gather survived.
 #ifdef HAVE_TARGET_X86
 TEST_CASE("Fortran sum of squares becomes a horizontal add on Haswell") {
 #if !defined(__x86_64__) && !defined(__i386__)
@@ -8374,8 +8375,25 @@ end module
             }
         }
         REQUIRE(fn != nullptr);
+        std::string body;
+        llvm::raw_string_ostream os(body);
+        fn->print(os);
+        os.flush();
         INFO(fn->getName().str());
-        CHECK(calls_intrinsic_like(*fn, "hadd"));
+        bool hadd = calls_intrinsic_like(*fn, "hadd");
+        // Last step of the gather the pass matches, for lanes 0, 1 and 2.
+        bool gather = body.find("i32 2, i32 4>") != std::string::npos
+            || body.find("i32 2, i32 5>") != std::string::npos
+            || body.find("i32 2, i32 6>") != std::string::npos;
+        // Doctest forbids || inside CHECK. A four-wide gather that is still
+        // present must have been rewritten; another SLP width may omit both.
+        bool rewrite_holds = hadd || !gather;
+        std::string shown = rewrite_holds ? std::string() : body;
+        INFO(shown);
+        CHECK(rewrite_holds);
+#if LLVM_VERSION_MAJOR == 11
+        CHECK(hadd);
+#endif
     };
     requires_hadd("distances");
     requires_hadd("products");
