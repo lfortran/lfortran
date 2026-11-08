@@ -18067,10 +18067,85 @@ public:
             compiler_options.implicit_argument_casting);
     }
 
+    // F2018 17.11: these IEEE inquiries accept a scalar or an array X and
+    // return a scalar logical. The result depends only on the type and kind
+    // of X. The runtime specifics are scalar (and some are elemental, which
+    // would make an array X return an array), and that module is compiled
+    // with the C++ backend, which has no assumed-rank argument ABI. An array
+    // actual is therefore represented by a scalar of the same real kind.
+    bool is_ieee_support_scalar_inquiry(ASR::symbol_t *sym) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (sym == nullptr || !ASR::is_a<ASR::GenericProcedure_t>(*sym)) {
+            return false;
+        }
+        ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(sym);
+        if (gp->n_procs == 0) {
+            return false;
+        }
+        ASR::symbol_t *spec = gp->m_procs[0];
+        std::string mod_name;
+        std::string orig_name;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*spec)) {
+            ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(spec);
+            mod_name = ext->m_module_name;
+            orig_name = ext->m_original_name;
+        } else {
+            ASR::Module_t *mod = ASRUtils::get_sym_module0(
+                ASRUtils::symbol_get_past_external(spec));
+            if (mod == nullptr) {
+                return false;
+            }
+            mod_name = mod->m_name;
+            orig_name = ASRUtils::symbol_name(spec);
+        }
+        if (mod_name != "lfortran_intrinsic_ieee_arithmetic") {
+            return false;
+        }
+        const char *inquiries[] = {
+            "support_sqrt", "support_divide", "support_denormal",
+            "support_standard", "support_io", "support_nan",
+            "support_inf", "support_datatype"
+        };
+        for (const char *inquiry : inquiries) {
+            std::string suffix = inquiry;
+            if (orig_name == "spieee_" + suffix || orig_name == "dpieee_" + suffix) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void scalarize_ieee_support_inquiry_args(ASR::symbol_t *sym,
+            Vec<ASR::call_arg_t> &args) {
+        if (!is_ieee_support_scalar_inquiry(sym)) {
+            return;
+        }
+        for (size_t i = 0; i < args.size(); i++) {
+            ASR::expr_t *value = args.p[i].m_value;
+            if (value == nullptr) {
+                continue;
+            }
+            ASR::ttype_t *type = ASRUtils::expr_type(value);
+            if (!ASRUtils::is_array(type)) {
+                continue;
+            }
+            ASR::ttype_t *elem = ASRUtils::extract_type(type);
+            if (!ASRUtils::is_real(*elem)) {
+                continue;
+            }
+            int64_t kind = ASRUtils::extract_kind_from_ttype_t(elem);
+            ASR::ttype_t *scalar_type = ASRUtils::TYPE(ASR::make_Real_t(
+                al, args.p[i].loc, kind));
+            args.p[i].m_value = ASRUtils::EXPR(ASR::make_RealConstant_t(
+                al, args.p[i].loc, 0.0, scalar_type));
+        }
+    }
+
     ASR::asr_t* create_GenericProcedureWithASTNode(const AST::FuncCallOrArray_t& x,
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
         const Location& loc = x.base.base.loc;
         ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(v);
+        scalarize_ieee_support_inquiry_args(&p->base, args);
         int idx = ASRUtils::select_generic_procedure(args, *p, loc,
                 [&](const std::string &msg, const Location &loc) {
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -25637,6 +25712,7 @@ public:
                         if( diags.has_error() ) {
                             continue ;
                         }
+                        scalarize_ieee_support_inquiry_args(f2, args_copy);
                         int idx = ASRUtils::select_generic_procedure(args_copy, *gp, x.base.base.loc,
                                         [&](const std::string &msg, const Location &loc) {
                                                 diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
