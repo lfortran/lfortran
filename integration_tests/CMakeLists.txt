@@ -7342,6 +7342,7 @@ RUN(NAME gpu_ending_locals_02 LABELS gfortran llvm metal cuda EXTRAFILES gpu_end
 RUN(NAME gpu_partial_read_01 LABELS gfortran llvm metal cuda)
 # The kernels of two files compiled separately (lfortran/lfortran#17143).
 RUN(NAME gpu_kernel_name_01 LABELS gfortran llvm metal cuda EXTRAFILES gpu_kernel_name_01_ext.f90)
+RUN(NAME gpu_kernel_name_02 LABELS gfortran llvm metal cuda EXTRAFILES gpu_kernel_name_02_a.f90 gpu_kernel_name_02_b.f90)
 # Logical reductions (lfortran/lfortran#16725), in one launch and in many.
 RUN(NAME gpu_metal_728 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_729 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-chunk-limit=7)

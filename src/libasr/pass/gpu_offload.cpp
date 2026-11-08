@@ -45,10 +45,13 @@ static int gpu_kernel_counter = 0;
 // is in, from the outermost one (a program, a module or an external
 // procedure, which has a name of its own in the program), each name
 // prefixed by its length so that no two chains of scopes give the same
-// name: `__lfortran_gpu_kernel_<n>_<len><name>...`. Only the procedure
-// a BLOCK is in is named, and a character no identifier of the kernel
-// languages may hold becomes `_`. A chain too long for the names the
-// runtimes accept is replaced by its FNV-1a hash.
+// name: `__lfortran_gpu_kernel_<n>_<len><name>...`. A procedure with a
+// binding label is named `b<len><label>` instead: its label is a global
+// identifier, its Fortran name is not, so two external procedures of one
+// name may be linked into a program by distinct labels. Only the
+// procedure a BLOCK is in is named, and a character no identifier of the
+// kernel languages may hold becomes `_`. A chain too long for the names
+// the runtimes accept is replaced by `h` and its FNV-1a hash.
 static std::string gpu_kernel_name(SymbolTable *scope) {
     std::string chain;
     for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
@@ -59,10 +62,21 @@ static std::string gpu_kernel_name(SymbolTable *scope) {
         ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
         if (ASR::is_a<ASR::Block_t>(*owner)) continue;
         std::string name = ASRUtils::symbol_name(owner);
+        std::string marker;
+        if (ASR::is_a<ASR::Function_t>(*owner)) {
+            ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(
+                ASR::down_cast<ASR::Function_t>(owner));
+            if (ftype->m_abi == ASR::abiType::BindC
+                    && ftype->m_bindc_name != nullptr
+                    && ftype->m_bindc_name[0] != '\0') {
+                name = ftype->m_bindc_name;
+                marker = "b";
+            }
+        }
         for (char &c : name) {
             if (!std::isalnum(static_cast<unsigned char>(c))) c = '_';
         }
-        chain = std::to_string(name.size()) + name + chain;
+        chain = marker + std::to_string(name.size()) + name + chain;
     }
     if (chain.size() > 128) {
         uint64_t hash = 14695981039346656037ULL;
