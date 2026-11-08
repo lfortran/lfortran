@@ -2,7 +2,7 @@
     "basename": "asr-gpu_kernel_launch_scratch_not_allocatable-5c7defd",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/gpu_kernel_launch_scratch_not_allocatable.asr",
-    "infile_hash": "c0e203d17c511d29163a03f980e63a40a5c26db77e2220599041ff09",
+    "infile_hash": "f839e380137f216a89119fd5f414b04e85e12a0b3cdf449667ebd962",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

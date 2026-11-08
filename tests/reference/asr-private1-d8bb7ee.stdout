@@ -15,6 +15,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             foo2:
@@ -107,6 +108,7 @@
                     foo2
                     ()
                     []
+                    .false.
                     .false.
                     .false.
                     .false.

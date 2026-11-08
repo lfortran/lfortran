@@ -411,6 +411,7 @@ def module(symtab_id, name, symbols, dependencies=(), parent_module=None,
         f":dependencies [{names}] :loaded_from_mod false "
         f":intrinsic false "
         f":has_submodules {'true' if has_submodules else 'false'} "
+        f":host_only_object false "
         f":global_init nil)"
     )
 

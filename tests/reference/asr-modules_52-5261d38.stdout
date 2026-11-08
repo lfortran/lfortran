@@ -184,6 +184,7 @@
                     .false.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             module_52_tomlf_de:
@@ -537,6 +538,7 @@
                     .true.
                     .false.
                     .false.
+                    .false.
                     ()
                 ),
             module_52_tomlf_error:
@@ -633,6 +635,7 @@
                     ()
                     []
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()
@@ -739,6 +742,7 @@
                     ()
                     []
                     .true.
+                    .false.
                     .false.
                     .false.
                     ()

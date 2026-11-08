@@ -62,7 +62,7 @@ elseif (NOT LFORTRAN_BACKEND AND APPLE)
     endif()
 endif()
 
-macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES RUN_STATIC_LIBRARY_FILES)
+macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES RUN_STATIC_LIBRARY_FILES RUN_HOST_STATIC_LIBRARY)
     set(fail ${${RUN_FAIL}})
     set(name ${${RUN_NAME}})
     set(file_name ${${RUN_FILE_NAME}})
@@ -73,9 +73,17 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
     set(gfortran_args ${${RUN_GFORTRAN_ARGS}})
     set(shared_library_files ${${RUN_SHARED_LIBRARY_FILES}})
     set(static_library_files ${${RUN_STATIC_LIBRARY_FILES}})
+    # HOST_STATIC_LIBRARY: the metal and cuda backends compile
+    # STATIC_LIBRARY_FILES without their device flags, like a library built
+    # for the host only, and the program with them.
+    set(host_static_library ${${RUN_HOST_STATIC_LIBRARY}})
 
     if (NOT name)
         message(FATAL_ERROR "Must specify the NAME argument")
+    endif()
+
+    if (host_static_library AND NOT static_library_files)
+        message(FATAL_ERROR "${name}: HOST_STATIC_LIBRARY requires STATIC_LIBRARY_FILES")
     endif()
 
     # One `cuda` label selects a test for every mode of the CUDA device code:
@@ -272,6 +280,15 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             add_executable(${name} ${file_name}.f90 ${extra_files})
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:--gpu=metal ${extra_args}>)
             target_link_options(${name} PUBLIC --gpu=metal)
+            if (static_library_files)
+                set(library_device_args --gpu=metal)
+                if (host_static_library)
+                    set(library_device_args "")
+                endif()
+                add_library(${name}_staticlib STATIC ${static_library_files})
+                target_compile_options(${name}_staticlib PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${library_device_args} ${extra_args}>)
+                target_link_libraries(${name} PRIVATE ${name}_staticlib)
+            endif()
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "cuda" OR LFORTRAN_BACKEND STREQUAL "cuda_cpu"
                 OR LFORTRAN_BACKEND STREQUAL "hip")
@@ -279,8 +296,12 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_compile_options(${name} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:--gpu=${LFORTRAN_BACKEND} ${extra_args}>)
             target_link_options(${name} PUBLIC --gpu=${LFORTRAN_BACKEND})
             if (static_library_files)
+                set(library_device_args --gpu=${LFORTRAN_BACKEND})
+                if (host_static_library)
+                    set(library_device_args "")
+                endif()
                 add_library(${name}_staticlib STATIC ${static_library_files})
-                target_compile_options(${name}_staticlib PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:--gpu=${LFORTRAN_BACKEND} ${extra_args}>)
+                target_compile_options(${name}_staticlib PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${library_device_args} ${extra_args}>)
                 target_link_libraries(${name} PRIVATE ${name}_staticlib)
             endif()
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
@@ -325,7 +346,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 endmacro(RUN_UTIL)
 
 macro(RUN)
-    set(options FAIL NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC)
+    set(options FAIL NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC HOST_STATIC_LIBRARY)
     set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES)
     set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS SHARED_LIBRARY_FILES STATIC_LIBRARY_FILES)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
@@ -375,9 +396,9 @@ macro(RUN)
         endif()
         set(RUN_NAME "${RUN_NAME}_FAST")
         list(REMOVE_ITEM RUN_LABELS gfortran) # remove gfortran from --fast test
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES RUN_STATIC_LIBRARY_FILES)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES RUN_STATIC_LIBRARY_FILES RUN_HOST_STATIC_LIBRARY)
     else ()
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES RUN_STATIC_LIBRARY_FILES)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES RUN_STATIC_LIBRARY_FILES RUN_HOST_STATIC_LIBRARY)
     endif()
 
 endmacro(RUN)
@@ -7301,6 +7322,11 @@ RUN(NAME gpu_deferred_sync_04 LABELS gfortran llvm metal cuda EXTRAFILES gpu_def
 RUN(NAME gpu_deferred_sync_05 FAIL LABELS gfortran llvm metal cuda) # stops: a part of 4 fails the check
 RUN(NAME gpu_deferred_sync_06 FAIL LABELS gfortran llvm metal cuda) # stops: a negative value
 RUN(NAME gpu_deferred_sync_07 FAIL LABELS gfortran llvm metal cuda EXTRAFILES gpu_deferred_sync_07_mod.f90 EXTRA_ARGS --separate-compilation) # stops: a negative value
+# A module of a library compiled without a device (lfortran/lfortran#17131).
+RUN(NAME gpu_deferred_sync_08 LABELS gfortran llvm metal cuda STATIC_LIBRARY_FILES gpu_deferred_sync_08_mod.f90 HOST_STATIC_LIBRARY EXTRA_ARGS --separate-compilation)
+# The same in the default mode, where the unit with the main program compiles
+# the module's procedures, also for a file of external procedures.
+RUN(NAME gpu_deferred_sync_09 LABELS gfortran llvm metal cuda STATIC_LIBRARY_FILES gpu_deferred_sync_09_mod.f90 HOST_STATIC_LIBRARY EXTRAFILES gpu_deferred_sync_09_ext.f90)
 RUN(NAME gpu_ending_locals_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_ending_locals_02 LABELS gfortran llvm metal cuda EXTRAFILES gpu_ending_locals_02_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_partial_read_01 LABELS gfortran llvm metal cuda)
