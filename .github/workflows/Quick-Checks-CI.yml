@@ -245,14 +245,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The later steps run in this environment with `pixi run`; activating
+      # it provides sccache for ccache-action.
       - uses: prefix-dev/setup-pixi@v0.11.3
         with:
           pixi-version: v0.83.0
           environments: llvm19-wasm
+          activate-environment: llvm19-wasm
           cache: false
 
-      - uses: hendrikmuhs/ccache-action@main
+      # `install: "no"`: use the environment's sccache rather than
+      # downloading one with a plain curl.
+      - uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
+          install: "no"
           variant: sccache
           key: ${{ github.job }}-pixi-ubuntu-latest-19-o2
           # Both jobs build the same compiler; one copy of the cache is enough.
@@ -323,14 +329,20 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The later steps run in this environment with `pixi run`; activating
+      # it provides sccache for ccache-action.
       - uses: prefix-dev/setup-pixi@v0.11.3
         with:
           pixi-version: v0.83.0
           environments: mlir
+          activate-environment: mlir
           cache: false
 
-      - uses: hendrikmuhs/ccache-action@main
+      # `install: "no"`: use the environment's sccache rather than
+      # downloading one with a plain curl.
+      - uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
+          install: "no"
           variant: sccache
           key: ${{ github.job }}-pixi-ubuntu-latest
           save: ${{ github.ref == 'refs/heads/main' }}
@@ -366,10 +378,24 @@ jobs:
           environments: llvm11 wasm-build
           cache: false
 
+      # ccache-action needs ccache on PATH. Activating llvm11 would leak its
+      # activation, such as the conda GCC's CFLAGS/CXXFLAGS, into the
+      # wasm-build steps (em++ must not inherit them), so put only the llvm11
+      # ccache on PATH. Each build runs the ccache of its own environment,
+      # the same version.
+      - name: Put the Pixi ccache on PATH
+        shell: bash -e {0}
+        run: |
+            mkdir -p "$RUNNER_TEMP/ccache-bin"
+            ln -s "$(pixi run -e llvm11 bash -c 'command -v ccache')" "$RUNNER_TEMP/ccache-bin/ccache"
+            echo "$RUNNER_TEMP/ccache-bin" >> "$GITHUB_PATH"
+
       # ccache wraps both the native compiler and em++ (Emscripten documents
-      # `ccache emcc`). The cache holds both builds.
-      - uses: hendrikmuhs/ccache-action@main
+      # `ccache emcc`). The cache holds both builds. `install: "no"`: use the
+      # Pixi ccache rather than installing one with apt-get.
+      - uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
         with:
+          install: "no"
           key: ${{ github.job }}-pixi-ubuntu-latest
           max-size: 1500M
           save: ${{ github.ref == 'refs/heads/main' }}

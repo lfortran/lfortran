@@ -94,13 +94,7 @@ jobs:
             > "$RUNNER_TEMP/pixi-config.toml"
           echo "PIXI_CONFIG_FILE=$RUNNER_TEMP/pixi-config.toml" >> "$GITHUB_ENV"
 
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-pixi-ubuntu-latest
-          save: ${{ github.ref == 'refs/heads/main' }}
-
-      # After ccache-action, which prepends the runner's /usr/local/bin to PATH.
+      # The activated environment provides sccache for ccache-action.
       - uses: prefix-dev/setup-pixi@v0.11.3
         with:
           pixi-version: v0.83.0
@@ -108,6 +102,15 @@ jobs:
           environments: llvm11-noshell
           activate-environment: llvm11-noshell
           cache: false
+
+      # `install: "no"`: use the environment's sccache rather than
+      # downloading one with a plain curl.
+      - uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          install: "no"
+          variant: sccache
+          key: ${{ github.job }}-pixi-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Check that the Prefix shell is absent
         shell: bash -e {0}
@@ -193,19 +196,22 @@ jobs:
             > "$RUNNER_TEMP/pixi-config.toml"
           echo "PIXI_CONFIG_FILE=$RUNNER_TEMP/pixi-config.toml" >> "$GITHUB_ENV"
 
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-pixi-ubuntu-latest
-          save: ${{ github.ref == 'refs/heads/main' }}
-
-      # After ccache-action, which prepends the runner's /usr/local/bin to PATH.
+      # The activated environment provides sccache for ccache-action.
       - uses: prefix-dev/setup-pixi@v0.11.3
         with:
           pixi-version: v0.83.0
           environments: llvm11
           activate-environment: llvm11
           cache: false
+
+      # `install: "no"`: use the environment's sccache rather than
+      # downloading one with a plain curl.
+      - uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          install: "no"
+          variant: sccache
+          key: ${{ github.job }}-pixi-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build Linux
         shell: bash -e {0}
@@ -336,20 +342,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-pixi-ubuntu-latest
-          save: ${{ github.ref == 'refs/heads/main' }}
-
       # The docs environment adds Sphinx to the LLVM 11 build environment.
-      # It comes after ccache-action, which prepends /usr/local/bin to PATH.
+      # Activating it also provides sccache for ccache-action.
       - uses: prefix-dev/setup-pixi@v0.11.3
         with:
           pixi-version: v0.83.0
           environments: docs
           activate-environment: docs
           cache: false
+
+      # `install: "no"`: use the environment's sccache rather than
+      # downloading one with a plain curl.
+      - uses: hendrikmuhs/ccache-action@f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24
+        with:
+          install: "no"
+          variant: sccache
+          key: ${{ github.job }}-pixi-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       # doc/build.py runs the notebooks with the installed Jupyter kernel.
       - name: Build Kernel
