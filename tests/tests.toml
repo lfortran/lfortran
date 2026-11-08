@@ -7870,3 +7870,9 @@ options = "--implicit-interface --implicit-typing"
 [[test]]
 filename = "../integration_tests/type_bound_private_01.f90"
 fortran = true
+
+# Passing a procedure to an external dummy inserts FunctionPointerCast.
+[[test]]
+filename = "../integration_tests/implicit_interface_114.f90"
+fortran = true
+options = "--implicit-interface"

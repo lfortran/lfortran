@@ -154,6 +154,12 @@ public:
         }
     }
 
+    // `~` is not a Fortran name character. The compiler uses it for symbols
+    // it declares (a procedure-pointer temporary, a call-site interface).
+    static bool compiler_generated_name(const std::string &name) {
+        return name.find('~') != std::string::npos;
+    }
+
     // Whether `x` is an import of a specific procedure of a generic, such as
     // `f@g`, whose name is not a Fortran name.
     static bool is_specific_import(const ASR::ExternalSymbol_t &x) {
@@ -819,6 +825,10 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (compiler_generated_name(x.m_name)) {
+            src.clear();
+            return;
+        }
         if (ASRUtils::is_device_kernel(&x.base)) {
             visit_device_kernel(x);
             return;
@@ -991,7 +1001,9 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::is_bare_implicit_interface(*f)) {
+                if (compiler_generated_name(f->m_name)) {
+                    continue;
+                } else if (ASRUtils::is_bare_implicit_interface(*f)) {
                     visit_symbol(*item.second);
                     r += src;
                 } else if (ASRUtils::get_FunctionType(f)->m_deftype == ASR::deftypeType::Interface) {
@@ -1252,6 +1264,10 @@ public:
     // void visit_Union(const ASR::Union_t &x) {}
 
     void visit_Variable(const ASR::Variable_t &x) {
+        if (compiler_generated_name(x.m_name)) {
+            src.clear();
+            return;
+        }
         std::string r = indent;
         std::string dims = "(";
         std::string var_type = get_type(x.m_type, x.m_type_declaration);
@@ -1600,6 +1616,14 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t &x) {
+        // Association of a compiler temporary that holds a procedure cast.
+        // The cast is not Fortran; the call prints the procedure itself.
+        if (ASR::is_a<ASR::Var_t>(*x.m_target)
+                && compiler_generated_name(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(x.m_target)->m_v))) {
+            src.clear();
+            return;
+        }
         std::string t;
         if (x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec) {
             // The upper bounds follow from the data target: `p(lb:) => a`
@@ -2300,7 +2324,14 @@ public:
             r += src + "%";
             r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         } else {
-            r += call_name(x.m_name);
+            std::string name = call_name(x.m_name);
+            // A call through the temporary for a procedure cast names the
+            // procedure that was cast, which is what Fortran source can call.
+            if (compiler_generated_name(name) && x.m_original_name
+                    && !compiler_generated_name(call_name(x.m_original_name))) {
+                name = call_name(x.m_original_name);
+            }
+            r += name;
         }
         r += "(";
         bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
@@ -3582,6 +3613,11 @@ public:
     // void visit_OverloadedBinOp(const ASR::OverloadedBinOp_t &x) {}
 
     // void visit_OverloadedUnaryMinus(const ASR::OverloadedUnaryMinus_t &x) {}
+
+    // A procedure-type view is not Fortran syntax. Print the procedure.
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
+        visit_expr(*x.m_arg);
+    }
 
     void visit_Cast(const ASR::Cast_t &x) {
         visit_expr(*x.m_arg);
