@@ -56,6 +56,7 @@ GpuBlockIndex
 GpuBlockSize
 GpuLaneBroadcast
 GpuLaneIndex
+GpuLaneReduce
 GpuThreadIndex
 Iachar
 Ichar

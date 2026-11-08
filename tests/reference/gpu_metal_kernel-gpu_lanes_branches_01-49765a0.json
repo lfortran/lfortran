@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_metal_kernel-gpu_lanes_branches_01-49765a0",
+    "cmd": "lfortran --no-color --gpu=metal --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_branches_01.f90",
+    "infile_hash": "11fa9be7f4397e930325575a8b1cd2db7b2ac02d6d726148214b7cb8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_metal_kernel-gpu_lanes_branches_01-49765a0.stdout",
+    "stdout_hash": "a8302a87819c6a4aa05850aa0a039cae2288d9a373ed2ec5e6bf8d95",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
