@@ -132,6 +132,7 @@ set(SRC
     pass/gpu_integer_powers.cpp
     pass/gpu_device_guard_fold.cpp
     pass/gpu_affine.cpp
+    pass/gpu_inline_loop_calls.cpp
     pass/gpu_loop_utils.cpp
     pass/gpu_loop_fusion.cpp
     pass/gpu_time_skew.cpp
