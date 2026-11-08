@@ -1,12 +1,12 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_474 {
     int it;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_474(
     float* __restrict__ g,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_474 __scalar_args)
 {
     int it = __scalar_args.it;
     int __flat_idx;
@@ -25,7 +25,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_474(
     float* __restrict__ g,
     float* __restrict__ x,
     float* __restrict__ xr,
@@ -56,7 +56,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_474(
     float* __restrict__ y)
 {
     int __flat_idx;
@@ -69,7 +69,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     y[((int)(j__dc2) - (1))] = ((float)(3 * j__dc2));
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_474(
     float* __restrict__ u,
     float* __restrict__ y)
 {

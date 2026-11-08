@@ -5,7 +5,7 @@ target datalayout = "..."
 %string_descriptor = type { i8*, i64 }
 %array.2 = type { i8*, i64, i32, i8, i8, i8, i8, i64, [2 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
-%__ScalarArgs___lfortran_gpu_kernel_0.9 = type { i32, i32, i32, i32 }
+%__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9 = type { i32, i32, i32, i32 }
 
 @0 = private unnamed_addr constant [2 x i8] c"b\00", align 1
 @1 = private unnamed_addr constant [45 x i8] c"tests/../integration_tests/gpu_metal_597.f90\00", align 1
@@ -19,10 +19,10 @@ target datalayout = "..."
 @string_const = private global %string_descriptor { i8* getelementptr inbounds ([97 x i8], [97 x i8]* @string_const_data, i32 0, i32 0), i64 97 }
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @8 = private unnamed_addr constant [10 x i8] c"%s %.*s%s\00", align 1
-@string_const_data.1 = private constant [23 x i8] c"__lfortran_gpu_kernel_0"
-@string_const.2 = private global %string_descriptor { i8* getelementptr inbounds ([23 x i8], [23 x i8]* @string_const_data.1, i32 0, i32 0), i64 23 }
-@string_const_data.3 = private constant [23 x i8] c"__lfortran_gpu_kernel_0"
-@string_const.4 = private global %string_descriptor { i8* getelementptr inbounds ([23 x i8], [23 x i8]* @string_const_data.3, i32 0, i32 0), i64 23 }
+@string_const_data.1 = private constant [39 x i8] c"__lfortran_gpu_kernel_0_13gpu_metal_597"
+@string_const.2 = private global %string_descriptor { i8* getelementptr inbounds ([39 x i8], [39 x i8]* @string_const_data.1, i32 0, i32 0), i64 39 }
+@string_const_data.3 = private constant [39 x i8] c"__lfortran_gpu_kernel_0_13gpu_metal_597"
+@string_const.4 = private global %string_descriptor { i8* getelementptr inbounds ([39 x i8], [39 x i8]* @string_const_data.3, i32 0, i32 0), i64 39 }
 @9 = private unnamed_addr constant [11 x i8] c"__gpu_grid\00", align 1
 @10 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
 @11 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([45 x i8], [45 x i8]* @1, i32 0, i32 0), i32 15, i32 5, i32 17, i32 10 }]
@@ -47,9 +47,9 @@ target datalayout = "..."
 @29 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @10, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @28, i32 0, i32 0), i32 1 }]
 @30 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([103 x i8], [103 x i8]* @22, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @29, i32 0, i32 0), i32 1 }
 @31 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@__lfortran_gpu_metal_source = private unnamed_addr constant [1034 x i8] c"#include <metal_stdlib>\0Ausing namespace metal;\0A\0Astruct __ScalarArgs___lfortran_gpu_kernel_0 {\0A    int __dim_b_0_gpu;\0A    int __lb_b_0_gpu;\0A    int __dim_b_1_gpu;\0A    int __lb_b_1_gpu;\0A};\0A\0Akernel void __lfortran_gpu_kernel_0(\0A    device char* b_gpu [[buffer(0)]],\0A    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],\0A    uint __thread_id [[thread_position_in_grid]])\0A{\0A    int __dim_b_0_gpu = __scalar_args.__dim_b_0_gpu;\0A    int __lb_b_0_gpu = __scalar_args.__lb_b_0_gpu;\0A    int __lb_b_1_gpu = __scalar_args.__lb_b_1_gpu;\0A    int __flat_idx_gpu;\0A    int i__dc_gpu;\0A    int j__dc_gpu;\0A    if ((((0 * 0) + __thread_id) >= (2 * 3))) {\0A        return;\0A    }\0A    __flat_idx_gpu = ((0 * 0) + __thread_id);\0A    i__dc_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((3 - 1) + 1)) * ((3 - 1) + 1))) + 1);\0A    __flat_idx_gpu = (__flat_idx_gpu / ((3 - 1) + 1));\0A    j__dc_gpu = (__flat_idx_gpu + 1);\0A    b_gpu[((int)(i__dc_gpu) - (__lb_b_0_gpu)) + (__dim_b_0_gpu * ((int)(j__dc_gpu) - (__lb_b_1_gpu)))] = ((char)1);\0A}\0A\0A\00", align 1
-@32 = private unnamed_addr constant [24 x i8] c"__lfortran_gpu_kernel_0\00", align 1
-@llvm.global_ctors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lfortran_gpu_metal_registrar___lfortran_gpu_kernel_0, i8* null }]
+@__lfortran_gpu_metal_source = private unnamed_addr constant [1082 x i8] c"#include <metal_stdlib>\0Ausing namespace metal;\0A\0Astruct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597 {\0A    int __dim_b_0_gpu;\0A    int __lb_b_0_gpu;\0A    int __dim_b_1_gpu;\0A    int __lb_b_1_gpu;\0A};\0A\0Akernel void __lfortran_gpu_kernel_0_13gpu_metal_597(\0A    device char* b_gpu [[buffer(0)]],\0A    constant __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597& __scalar_args [[buffer(1)]],\0A    uint __thread_id [[thread_position_in_grid]])\0A{\0A    int __dim_b_0_gpu = __scalar_args.__dim_b_0_gpu;\0A    int __lb_b_0_gpu = __scalar_args.__lb_b_0_gpu;\0A    int __lb_b_1_gpu = __scalar_args.__lb_b_1_gpu;\0A    int __flat_idx_gpu;\0A    int i__dc_gpu;\0A    int j__dc_gpu;\0A    if ((((0 * 0) + __thread_id) >= (2 * 3))) {\0A        return;\0A    }\0A    __flat_idx_gpu = ((0 * 0) + __thread_id);\0A    i__dc_gpu = ((__flat_idx_gpu - ((__flat_idx_gpu / ((3 - 1) + 1)) * ((3 - 1) + 1))) + 1);\0A    __flat_idx_gpu = (__flat_idx_gpu / ((3 - 1) + 1));\0A    j__dc_gpu = (__flat_idx_gpu + 1);\0A    b_gpu[((int)(i__dc_gpu) - (__lb_b_0_gpu)) + (__dim_b_0_gpu * ((int)(j__dc_gpu) - (__lb_b_1_gpu)))] = ((char)1);\0A}\0A\0A\00", align 1
+@32 = private unnamed_addr constant [40 x i8] c"__lfortran_gpu_kernel_0_13gpu_metal_597\00", align 1
+@llvm.global_ctors = appending global [1 x { i32, void ()*, i8* }] [{ i32, void ()*, i8* } { i32 65535, void ()* @__lfortran_gpu_metal_registrar___lfortran_gpu_kernel_0_13gpu_metal_597, i8* null }]
 
 declare void* @lfortran_gpu_init()
 
@@ -89,11 +89,11 @@ define i32 @main(i32 %0, i8** %1) {
   %__gpu_grid = alloca [3 x i32], align 4
   %__gpu_iteration_count = alloca i64, align 8
   %__gpu_kernel = alloca void*, align 8
-  %__gpu_scalar_args = alloca %__ScalarArgs___lfortran_gpu_kernel_0.9, align 8
-  %13 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 0
-  %14 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 2
-  %15 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 1
-  %16 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 3
+  %__gpu_scalar_args = alloca %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9, align 8
+  %13 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9, %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9* %__gpu_scalar_args, i32 0, i32 0
+  %14 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9, %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9* %__gpu_scalar_args, i32 0, i32 2
+  %15 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9, %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9* %__gpu_scalar_args, i32 0, i32 1
+  %16 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9, %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9* %__gpu_scalar_args, i32 0, i32 3
   %__gpu_threads = alloca i64, align 8
   %b = alloca %array.2*, align 8
   store %array.2* null, %array.2** %b, align 8
@@ -276,7 +276,7 @@ ifcont13:                                         ; preds = %else12, %then11
   %93 = load void*, void** %__gpu_ctx, align 8
   %94 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
   %95 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
-  %96 = call void* @lfortran_gpu_load_kernel(void* %93, i8* %95, i32 23)
+  %96 = call void* @lfortran_gpu_load_kernel(void* %93, i8* %95, i32 39)
   store void* %96, void** %__gpu_kernel, align 8
   %97 = load void*, void** %__gpu_kernel, align 8
   %98 = load %array.2*, %array.2** %b, align 8
@@ -412,7 +412,7 @@ else24:                                           ; preds = %ifcont22
 ifcont25:                                         ; preds = %else24, %then23
   %187 = load i32, i32* %6, align 4
   call void @lfortran_gpu_set_buffer_arg(void* %97, i32 0, void* %101, i64 %127, i32 %187)
-  %188 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 0
+  %188 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9, %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9* %__gpu_scalar_args, i32 0, i32 0
   %189 = load %array.2*, %array.2** %b, align 8
   %190 = getelementptr %array.2, %array.2* %189, i32 0, i32 8
   %191 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %190, i32 0, i32 0
@@ -421,7 +421,7 @@ ifcont25:                                         ; preds = %else24, %then23
   %194 = load i64, i64* %193, align 1
   %195 = trunc i64 %194 to i32
   store i32 %195, i32* %188, align 4
-  %196 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 1
+  %196 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9, %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9* %__gpu_scalar_args, i32 0, i32 1
   %197 = load %array.2*, %array.2** %b, align 8
   %198 = getelementptr %array.2, %array.2* %197, i32 0, i32 8
   %199 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %198, i32 0, i32 0
@@ -435,7 +435,7 @@ ifcont25:                                         ; preds = %else24, %then23
   %207 = select i1 %204, i64 1, i64 %206
   %208 = trunc i64 %207 to i32
   store i32 %208, i32* %196, align 4
-  %209 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 2
+  %209 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9, %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9* %__gpu_scalar_args, i32 0, i32 2
   %210 = load %array.2*, %array.2** %b, align 8
   %211 = getelementptr %array.2, %array.2* %210, i32 0, i32 8
   %212 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %211, i32 0, i32 0
@@ -444,7 +444,7 @@ ifcont25:                                         ; preds = %else24, %then23
   %215 = load i64, i64* %214, align 1
   %216 = trunc i64 %215 to i32
   store i32 %216, i32* %209, align 4
-  %217 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0.9, %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args, i32 0, i32 3
+  %217 = getelementptr %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9, %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9* %__gpu_scalar_args, i32 0, i32 3
   %218 = load %array.2*, %array.2** %b, align 8
   %219 = getelementptr %array.2, %array.2* %218, i32 0, i32 8
   %220 = getelementptr [2 x %dimension_descriptor], [2 x %dimension_descriptor]* %219, i32 0, i32 0
@@ -459,7 +459,7 @@ ifcont25:                                         ; preds = %else24, %then23
   %229 = trunc i64 %228 to i32
   store i32 %229, i32* %217, align 4
   %230 = load void*, void** %__gpu_kernel, align 8
-  %231 = bitcast %__ScalarArgs___lfortran_gpu_kernel_0.9* %__gpu_scalar_args to void*
+  %231 = bitcast %__ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_597.9* %__gpu_scalar_args to void*
   call void @lfortran_gpu_set_scalar_arg(void* %230, i32 1, void* %231, i64 16)
   br i1 false, label %then26, label %ifcont27
 
@@ -791,9 +791,9 @@ ifcont:                                           ; preds = %else, %then
 
 declare void @lfortran_gpu_register_metal_source(i8*, i8*)
 
-define internal void @__lfortran_gpu_metal_registrar___lfortran_gpu_kernel_0() {
+define internal void @__lfortran_gpu_metal_registrar___lfortran_gpu_kernel_0_13gpu_metal_597() {
 entry:
-  call void @lfortran_gpu_register_metal_source(i8* getelementptr inbounds ([24 x i8], [24 x i8]* @32, i32 0, i32 0), i8* getelementptr inbounds ([1034 x i8], [1034 x i8]* @__lfortran_gpu_metal_source, i32 0, i32 0))
+  call void @lfortran_gpu_register_metal_source(i8* getelementptr inbounds ([40 x i8], [40 x i8]* @32, i32 0, i32 0), i8* getelementptr inbounds ([1082 x i8], [1082 x i8]* @__lfortran_gpu_metal_source, i32 0, i32 0))
   ret void
 }
 

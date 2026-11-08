@@ -22,14 +22,14 @@ __device__ inline int f_gpu_10(int m, int* work) {
     return r;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_37 {
     int n;
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_37(
     int* __restrict__ out,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_37 __scalar_args,
     int* __restrict__ __workspace_2)
 {
     int n = __scalar_args.n;
@@ -45,14 +45,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     out[((int)(i__dc) - (1))] = f_gpu_10(n, work);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_37 {
     int n;
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_37(
     int* __restrict__ out,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_37 __scalar_args,
     int* __restrict__ __workspace_2)
 {
     int n = __scalar_args.n;

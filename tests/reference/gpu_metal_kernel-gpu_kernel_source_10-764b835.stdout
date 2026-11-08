@@ -7,7 +7,7 @@ inline float multiply_add_gpu_7(float a_gpu, float b_gpu) {
     return multiply_add_gpu;
 }
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_20gpu_kernel_source_10(
     device float* x_gpu [[buffer(0)]],
     device float* y_gpu [[buffer(1)]],
     device float* z_gpu [[buffer(2)]],

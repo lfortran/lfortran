@@ -1,15 +1,15 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_3m475learn {
     int __dim_n_0;
     int __lb_n_0;
     int __lfortran_gpu_dim_;
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_3m475learn(
     int* __restrict__ n,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_3m475learn __scalar_args,
     float* __restrict__ __workspace_2)
 {
     int __lfortran_gpu_dim_ = __scalar_args.__lfortran_gpu_dim_;

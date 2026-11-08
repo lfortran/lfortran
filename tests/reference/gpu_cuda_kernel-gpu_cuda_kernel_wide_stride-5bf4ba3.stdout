@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_stride {
     long n;
     long __dim_c_0;
     long __lb_c_0;
@@ -11,9 +11,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_stride(
     char* __restrict__ c,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_stride __scalar_args)
 {
     long __dim_c_0 = __scalar_args.__dim_c_0;
     long __lb_c_0 = __scalar_args.__lb_c_0;
@@ -52,7 +52,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     c[((long)(k__dc) - (__lb_c_0)) + (__dim_c_0 * ((long)(l__dc) - (__lb_c_1)))] = ((char)1);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_stride {
     int m;
     long __dim_e_0;
     long __lb_e_0;
@@ -62,9 +62,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     long __lb_e_2;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_stride(
     char* __restrict__ e,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_stride __scalar_args)
 {
     int m = __scalar_args.m;
     long __dim_e_0 = __scalar_args.__dim_e_0;

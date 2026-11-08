@@ -52,19 +52,19 @@ __device__ inline void pair_values_device_t_gpu_74(float x, float* pair) {
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_277 {
     int __workspace_extent;
     int __workspace_extent1;
     int __workspace_extent2;
     int __workspace_extent3;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_277(
     float* __restrict__ c,
     float* __restrict__ out,
     float* __restrict__ pairs,
     float* __restrict__ w,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_277 __scalar_args,
     float* __restrict__ __workspace_5,
     float* __restrict__ __workspace_6,
     float* __restrict__ __workspace_7,
@@ -169,7 +169,7 @@ __device__ inline void face_values_gpu_43(float* w, int __1w, float* c, int __1c
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_15gpu_metal_277_m13check_runtime {
     int __libasr_extent_c_1;
     int __libasr_extent_out_1;
     int __dim_c_0;
@@ -180,11 +180,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __workspace_extent3;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_15gpu_metal_277_m13check_runtime(
     float* __restrict__ c,
     float* __restrict__ out,
     float* __restrict__ w,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_1_15gpu_metal_277_m13check_runtime __scalar_args,
     float* __restrict__ __workspace_4,
     float* __restrict__ __workspace_5,
     float* __restrict__ __workspace_6,

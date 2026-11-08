@@ -28,7 +28,7 @@ __device__ inline void fixed_result_device_t_gpu_52(int n, float* r) {
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_328(
     float* __restrict__ results)
 {
     int __flat_idx;
@@ -71,7 +71,7 @@ __device__ inline void reallocated_result_device_t_gpu_53(int n, float* r) {
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_328(
     float* __restrict__ reallocated)
 {
     int __flat_idx;

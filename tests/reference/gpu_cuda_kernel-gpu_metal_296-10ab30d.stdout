@@ -5,7 +5,7 @@ struct pair_t {
     long b_;
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_29610run_from_b {
     int nn;
     int __dim_out_0;
     int __lb_out_0;
@@ -17,7 +17,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_29610run_from_b(
     float* __restrict__ out,
     pair_t* __restrict__ s,
     float* __restrict__ __data_s_a_,
@@ -26,7 +26,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __restrict__ __data_s_b_,
     int* __restrict__ __offsets_s_b_,
     int* __restrict__ __sizes_s_b_,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_29610run_from_b __scalar_args,
     float* __restrict__ __workspace_9)
 {
     int __dim_out_0 = __scalar_args.__dim_out_0;

@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_731(
     int* __restrict__ out)
 {
     int __flat_idx;
@@ -23,7 +23,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_731(
     int* __restrict__ out)
 {
     int __flat_idx;
@@ -38,7 +38,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_731(
     int* __restrict__ out)
 {
     int __flat_idx;
@@ -58,7 +58,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_731(
     int* __restrict__ out)
 {
     int __flat_idx;
@@ -73,7 +73,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_4(
+extern "C" __global__ void __lfortran_gpu_kernel_4_13gpu_metal_731(
     int* __restrict__ out)
 {
     int __flat_idx;
@@ -97,7 +97,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_5(
+extern "C" __global__ void __lfortran_gpu_kernel_5_13gpu_metal_731(
     int* __restrict__ out)
 {
     int __flat_idx;
@@ -120,14 +120,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_5(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_6 {
+struct __ScalarArgs___lfortran_gpu_kernel_6_13gpu_metal_731 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_6(
+extern "C" __global__ void __lfortran_gpu_kernel_6_13gpu_metal_731(
     int* __restrict__ out,
     int* __restrict__ tmp,
-    __ScalarArgs___lfortran_gpu_kernel_6 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_6_13gpu_metal_731 __scalar_args,
     int* __restrict__ __workspace_3)
 {
     int __workspace_extent = __scalar_args.__workspace_extent;

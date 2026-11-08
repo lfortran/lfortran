@@ -12,16 +12,16 @@ __device__ inline float vla_fill_gpu_9(int m, float v) {
     return s;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_3103run {
     int nn;
     int __dim_r_0;
     int __lb_r_0;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_3103run(
     float* __restrict__ r,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_3103run __scalar_args)
 {
     int nn = __scalar_args.nn;
     int __lb_r_0 = __scalar_args.__lb_r_0;

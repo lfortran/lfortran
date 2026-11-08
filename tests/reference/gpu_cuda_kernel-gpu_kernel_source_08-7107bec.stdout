@@ -10,7 +10,7 @@ __device__ inline void row_sum_device_t_gpu_56(float* a, int __1a, float& r) {
     r = __gpu_sum_res;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_08(
     float* __restrict__ __gpu_buf_r,
     float* __restrict__ xr,
     float* __restrict__ y)
@@ -49,14 +49,14 @@ __device__ inline void row_sum_device_t_gpu_57(float* a, int __1a, float& r) {
     r = __gpu_sum_res;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_08 {
     float r;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_08(
     float* __restrict__ xs,
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_08 __scalar_args)
 {
     float r = __scalar_args.r;
     int __flat_idx;
@@ -83,7 +83,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_20gpu_kernel_source_08(
     float* __restrict__ w1,
     float* __restrict__ y)
 {
@@ -111,7 +111,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_20gpu_kernel_source_08(
     float* __restrict__ w2,
     float* __restrict__ y)
 {

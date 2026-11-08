@@ -9,13 +9,13 @@ struct field_t_gpu {
     float u_gpu[100000];
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_13 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_24gpu_derived_component_13(
     device work_t_gpu& w_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_13& __scalar_args [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
@@ -29,14 +29,14 @@ kernel void __lfortran_gpu_kernel_0(
     w_gpu.t_gpu[((int)(((1 + __gpu_array_i_gpu) - 1)) - (1))] = ((float)0);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_24gpu_derived_component_13 {
     int step_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_24gpu_derived_component_13(
     device float* c_gpu [[buffer(0)]],
     device work_t_gpu& w_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_24gpu_derived_component_13& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int step_gpu = __scalar_args.step_gpu;
@@ -225,7 +225,7 @@ kernel void __lfortran_gpu_kernel_1(
     c_gpu[((int)(i__dc_gpu) - (1))] = (__gpu_private_w_t_gpu[((int)(1) - (1))] + ((float)step_gpu));
 }
 
-kernel void __lfortran_gpu_kernel_2(
+kernel void __lfortran_gpu_kernel_2_26gpu_derived_component_13_m8boundary(
     device field_t_gpu& f_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -243,7 +243,7 @@ kernel void __lfortran_gpu_kernel_2(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
+struct __ScalarArgs___lfortran_gpu_kernel_3_26gpu_derived_component_13_m8elements {
     int __dim_b_0_gpu;
     int __lb_b_0_gpu;
     int __dim_x_0_gpu;
@@ -251,11 +251,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_3(
+kernel void __lfortran_gpu_kernel_3_26gpu_derived_component_13_m8elements(
     device float* b_gpu [[buffer(0)]],
     device work_t_gpu& w_gpu [[buffer(1)]],
     device float* x_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_3& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_3_26gpu_derived_component_13_m8elements& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_b_0_gpu = __scalar_args.__lb_b_0_gpu;
@@ -341,7 +341,7 @@ kernel void __lfortran_gpu_kernel_3(
     b_gpu[((int)(i__dc_gpu) - (__lb_b_0_gpu))] = (__gpu_private_w_t_gpu[((int)(1) - (1))] + __gpu_private_w_t_gpu[((int)(2) - (1))]);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_4 {
+struct __ScalarArgs___lfortran_gpu_kernel_4_26gpu_derived_component_13_m5whole {
     int __dim_b_0_gpu;
     int __lb_b_0_gpu;
     int __dim_x_0_gpu;
@@ -349,11 +349,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_4 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_4(
+kernel void __lfortran_gpu_kernel_4_26gpu_derived_component_13_m5whole(
     device float* b_gpu [[buffer(0)]],
     device work_t_gpu& w_gpu [[buffer(1)]],
     device float* x_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_4& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_4_26gpu_derived_component_13_m5whole& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_b_0_gpu = __scalar_args.__lb_b_0_gpu;

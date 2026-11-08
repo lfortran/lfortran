@@ -52,7 +52,7 @@ inline void fill_device_t_gpu_18(thread float* a_gpu, int n_gpu) {
     }
 }
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_14gpu_do_loop_02(
     device float* x_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {

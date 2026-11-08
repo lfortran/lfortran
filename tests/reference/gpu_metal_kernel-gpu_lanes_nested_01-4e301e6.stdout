@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_21gpu_lanes_nested_01_m5nests {
     int __dim_out_0_gpu;
     int __lb_out_0_gpu;
     int __dim_out_1_gpu;
@@ -28,12 +28,12 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_21gpu_lanes_nested_01_m5nests(
     device float* out_gpu [[buffer(0)]],
     device float* q_gpu [[buffer(1)]],
     device float* sums_gpu [[buffer(2)]],
     device float* two_gpu [[buffer(3)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(4)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_21gpu_lanes_nested_01_m5nests& __scalar_args [[buffer(4)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {
@@ -205,7 +205,7 @@ kernel void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_21gpu_lanes_nested_01_m4norm {
     float eps_gpu;
     int __dim_x_0_gpu;
     int __lb_x_0_gpu;
@@ -221,11 +221,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_21gpu_lanes_nested_01_m4norm(
     device float* x_gpu [[buffer(0)]],
     device float* y_gpu [[buffer(1)]],
     device float* z_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_21gpu_lanes_nested_01_m4norm& __scalar_args [[buffer(3)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {

@@ -5,13 +5,13 @@ struct g_t {
     int c[300];
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_08 {
     int __size_g_w;
     int __lb_g_w_dim1;
     int __1__data_g_w;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_liveout_08(
     int* __restrict__ __gpu_buf_e,
     int* __restrict__ __gpu_buf_m,
     int* __restrict__ __gpu_buf_s,
@@ -19,7 +19,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     g_t& g,
     float* __data_g_w,
     int* __restrict__ __gpu_stop_status,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_08 __scalar_args)
 {
     int __flat_idx;
     int e;

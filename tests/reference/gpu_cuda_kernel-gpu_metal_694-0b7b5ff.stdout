@@ -13,7 +13,7 @@ __device__ inline T __lfortran_lane_reduce(T v, int lanes) {
     return v;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_694 {
     long __dim_y_0;
     long __lb_y_0;
     long __dim_y_1;
@@ -25,9 +25,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_694(
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_694 __scalar_args)
 {
     long __dim_y_0 = __scalar_args.__dim_y_0;
     long __lb_y_0 = __scalar_args.__lb_y_0;
@@ -68,7 +68,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     y[((long)(((((long)__lb_y_0) + __gpu_array_i) - ((long)1))) - (__lb_y_0)) + (__dim_y_0 * ((long)(((((long)__lb_y_1) + __gpu_array_i1) - ((long)1))) - (__lb_y_1)))] = ((float)0);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_694 {
     long __dim_a_0;
     long __lb_a_0;
     long __dim_a_1;
@@ -87,12 +87,12 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     long __lb_z_1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_694(
     float* __restrict__ a,
     float* __restrict__ x,
     float* __restrict__ y,
     float* __restrict__ z,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_694 __scalar_args)
 {
     long __dim_a_0 = __scalar_args.__dim_a_0;
     long __lb_a_0 = __scalar_args.__lb_a_0;
@@ -126,7 +126,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_694 {
     long __dim_y_0;
     long __lb_y_0;
     long __dim_y_1;
@@ -138,9 +138,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_694(
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_694 __scalar_args)
 {
     long __dim_y_0 = __scalar_args.__dim_y_0;
     long __lb_y_0 = __scalar_args.__lb_y_0;
@@ -181,7 +181,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     y[((long)(((((long)__lb_y_0) + __gpu_array_i2) - ((long)1))) - (__lb_y_0)) + (__dim_y_0 * ((long)(((((long)__lb_y_1) + __gpu_array_i3) - ((long)1))) - (__lb_y_1)))] = ((float)0);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
+struct __ScalarArgs___lfortran_gpu_kernel_3_13gpu_metal_694 {
     long lo8;
     long __dim_b_0;
     long __lb_b_0;
@@ -198,11 +198,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_694(
     float* __restrict__ b,
     float* __restrict__ w,
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_3_13gpu_metal_694 __scalar_args)
 {
     long lo8 = __scalar_args.lo8;
     long __dim_b_0 = __scalar_args.__dim_b_0;
@@ -252,7 +252,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_4 {
+struct __ScalarArgs___lfortran_gpu_kernel_4_13gpu_metal_694 {
     long __dim_c_0;
     long __lb_c_0;
     long __dim_c_1;
@@ -268,9 +268,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_4 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4(
+extern "C" __global__ void __lfortran_gpu_kernel_4_13gpu_metal_694(
     float* __restrict__ c,
-    __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_4_13gpu_metal_694 __scalar_args)
 {
     long __dim_c_0 = __scalar_args.__dim_c_0;
     long __lb_c_0 = __scalar_args.__lb_c_0;
@@ -320,7 +320,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
     c[((long)(((((long)__lb_c_0) + __gpu_array_i4) - ((long)1))) - (__lb_c_0)) + (__dim_c_0 * ((long)(((((long)__lb_c_1) + __gpu_array_i5) - ((long)1))) - (__lb_c_1))) + ((((long)(__dim_c_0)) * __dim_c_1) * ((long)(((((long)__lb_c_2) + __gpu_array_i6) - ((long)1))) - (__lb_c_2)))] = ((float)0);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_5 {
+struct __ScalarArgs___lfortran_gpu_kernel_5_13gpu_metal_694 {
     long __dim_c_0;
     long __lb_c_0;
     long __dim_c_1;
@@ -341,11 +341,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_5 {
     long __lb_q_2;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_5(
+extern "C" __global__ void __lfortran_gpu_kernel_5_13gpu_metal_694(
     float* __restrict__ c,
     float* __restrict__ p,
     float* __restrict__ q,
-    __ScalarArgs___lfortran_gpu_kernel_5 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_5_13gpu_metal_694 __scalar_args)
 {
     long __dim_c_0 = __scalar_args.__dim_c_0;
     long __lb_c_0 = __scalar_args.__lb_c_0;

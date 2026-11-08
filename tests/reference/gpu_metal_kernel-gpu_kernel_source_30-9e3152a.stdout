@@ -1,17 +1,17 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_30 {
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
     int __dim_b_0_gpu;
     int __lb_b_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_20gpu_kernel_source_30(
     device float* a_gpu [[buffer(0)]],
     device float* b_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_30& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_a_0_gpu = __scalar_args.__lb_a_0_gpu;
@@ -27,18 +27,18 @@ kernel void __lfortran_gpu_kernel_0(
     b_gpu[((int)(i__dc_gpu) - (__lb_b_0_gpu))] = ((float)(2 * i__dc_gpu));
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_30 {
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
     int __dim_p_0_gpu;
     int __lb_p_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_20gpu_kernel_source_30(
     device float* a_gpu [[buffer(0)]],
     device float* p_gpu [[buffer(1)]],
     device float* t_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_30& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_a_0_gpu = __scalar_args.__lb_a_0_gpu;
@@ -53,14 +53,14 @@ kernel void __lfortran_gpu_kernel_1(
     t_gpu[((int)(i__dc1_gpu) - (1))] = (p_gpu[((int)(i__dc1_gpu) - (__lb_p_0_gpu))] + a_gpu[((int)(i__dc1_gpu) - (__lb_a_0_gpu))]);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_30 {
     int __dim_f__q_0_gpu;
     int __lb_f__q_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_2(
+kernel void __lfortran_gpu_kernel_2_20gpu_kernel_source_30(
     device float* f__q_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_2& __scalar_args [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_30& __scalar_args [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_f__q_0_gpu = __scalar_args.__lb_f__q_0_gpu;
@@ -74,7 +74,7 @@ kernel void __lfortran_gpu_kernel_2(
     f__q_gpu[((int)(i__dc2_gpu) - (__lb_f__q_0_gpu))] = ((float)(10 * i__dc2_gpu));
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
+struct __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_30 {
     int __dim_f__q_0_gpu;
     int __lb_f__q_0_gpu;
     int __dim_f__r_0_gpu;
@@ -83,11 +83,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
     int __lb_b_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_3(
+kernel void __lfortran_gpu_kernel_3_20gpu_kernel_source_30(
     device float* b_gpu [[buffer(0)]],
     device float* f__q_gpu [[buffer(1)]],
     device float* f__r_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_3& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_30& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_f__q_0_gpu = __scalar_args.__lb_f__q_0_gpu;
@@ -103,15 +103,15 @@ kernel void __lfortran_gpu_kernel_3(
     f__r_gpu[((int)(i__dc3_gpu) - (__lb_f__r_0_gpu))] = (f__q_gpu[((int)(i__dc3_gpu) - (__lb_f__q_0_gpu))] + b_gpu[((int)(i__dc3_gpu) - (__lb_b_0_gpu))]);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_4 {
+struct __ScalarArgs___lfortran_gpu_kernel_4_20gpu_kernel_source_30 {
     int __dim_e1_0_gpu;
     int __lb_e1_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_4(
+kernel void __lfortran_gpu_kernel_4_20gpu_kernel_source_30(
     device float* e1_gpu [[buffer(0)]],
     device float* e2_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_4& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_4_20gpu_kernel_source_30& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_e1_0_gpu = __scalar_args.__lb_e1_0_gpu;
@@ -125,7 +125,7 @@ kernel void __lfortran_gpu_kernel_4(
     e1_gpu[((int)(i__dc4_gpu) - (__lb_e1_0_gpu))] = (e2_gpu[((int)(i__dc4_gpu) - (1))] + ((float)i__dc4_gpu));
 }
 
-kernel void __lfortran_gpu_kernel_5(
+kernel void __lfortran_gpu_kernel_5_20gpu_kernel_source_30(
     device float* c1_gpu [[buffer(0)]],
     device float* c2_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
@@ -140,15 +140,15 @@ kernel void __lfortran_gpu_kernel_5(
     c1_gpu[((int)(i__dc5_gpu) - (1))] = (c2_gpu[((int)(i__dc5_gpu) - (1))] * ((float)i__dc5_gpu));
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_6 {
+struct __ScalarArgs___lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_block {
     int __dim_s_0_gpu;
     int __lb_s_0_gpu;
     int __workspace_extent_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_6(
+kernel void __lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_block(
     device float* s_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_6& __scalar_args [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_block& __scalar_args [[buffer(1)]],
     device float* __workspace_2 [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -233,7 +233,7 @@ kernel void __lfortran_gpu_kernel_6(
     s_gpu[((int)(i__dc2_gpu) - (__lb_s_0_gpu))] = (__libasr_created__array_section__gpu[((int)(i__dc2_gpu) - (1))] * ((float)2));
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_7 {
+struct __ScalarArgs___lfortran_gpu_kernel_7_24gpu_kernel_source_30_mod4axpy {
     int __libasr_extent_x_1_gpu;
     int __libasr_extent_y_1_gpu;
     float alpha_gpu;
@@ -243,10 +243,10 @@ struct __ScalarArgs___lfortran_gpu_kernel_7 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_7(
+kernel void __lfortran_gpu_kernel_7_24gpu_kernel_source_30_mod4axpy(
     device float* x_gpu [[buffer(0)]],
     device float* y_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_7& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_7_24gpu_kernel_source_30_mod4axpy& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     float alpha_gpu = __scalar_args.alpha_gpu;

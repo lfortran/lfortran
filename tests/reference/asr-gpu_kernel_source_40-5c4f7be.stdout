@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            __lfortran_gpu_kernel_0:
+            __lfortran_gpu_kernel_0_24descriptor_inquiry_entry:
                 (Function
                     (SymbolTable
                         23
@@ -751,7 +751,7 @@
                                     ()
                                 )
                         })
-                    __lfortran_gpu_kernel_0
+                    __lfortran_gpu_kernel_0_24descriptor_inquiry_entry
                     (FunctionType
                         [(Integer 4)
                         (Array
@@ -2277,7 +2277,7 @@
                             ()
                         )
                         [(GpuKernelLaunch
-                            1 __lfortran_gpu_kernel_0
+                            1 __lfortran_gpu_kernel_0_24descriptor_inquiry_entry
                             (Var 2 __gpu_iteration_count)
                             (IntegerConstant 256 (Integer 4) Decimal)
                             [((Var 2 n))

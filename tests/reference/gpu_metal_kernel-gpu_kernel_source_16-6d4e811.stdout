@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_20gpu_kernel_source_16(
     device float* g_gpu [[buffer(0)]],
     device float* t_gpu [[buffer(1)]],
     device float* x_gpu [[buffer(2)]],
@@ -61,7 +61,7 @@ kernel void __lfortran_gpu_kernel_0(
     g_gpu[((int)(j__dc_gpu) - (1))] = t_gpu[((int)(1) - (1))];
 }
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_20gpu_kernel_source_16(
     device float* g_gpu [[buffer(0)]],
     device float* u_gpu [[buffer(1)]],
     device float* x_gpu [[buffer(2)]],

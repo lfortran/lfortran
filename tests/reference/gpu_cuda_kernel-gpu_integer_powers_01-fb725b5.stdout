@@ -6,7 +6,7 @@ __device__ inline float half_gpu_23(float x) {
     return y;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_21gpu_integer_powers_01(
     float* __restrict__ p,
     float* __restrict__ q,
     float* __restrict__ s,

@@ -1,15 +1,15 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_7101s {
     int m_gpu;
     int __workspace_extent_gpu;
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_13gpu_metal_7101s(
     device float* y_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_7101s& __scalar_args [[buffer(1)]],
     device float* __workspace_2 [[buffer(2)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
@@ -40,7 +40,7 @@ kernel void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_7101s {
     int m_gpu;
     int n_gpu;
     int __workspace_extent_gpu;
@@ -48,9 +48,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_13gpu_metal_7101s(
     device float* z_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_7101s& __scalar_args [[buffer(1)]],
     device float* __workspace_2 [[buffer(2)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])

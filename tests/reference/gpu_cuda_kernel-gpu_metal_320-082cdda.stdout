@@ -9,18 +9,18 @@ struct base_t {
     float c;
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_17gpu_metal_320_mod10work_class {
     int __size_self_op__a;
     int __lb_self_op__a_dim1;
     int __1__data_self_op__a;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_17gpu_metal_320_mod10work_class(
     float* __restrict__ r,
     base_t& self,
     inner_t& self_op_,
     float* __restrict__ __data_self_op__a,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_17gpu_metal_320_mod10work_class __scalar_args)
 {
     int __lb_self_op__a_dim1 = __scalar_args.__lb_self_op__a_dim1;
     int __flat_idx;
@@ -33,18 +33,18 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     r[((int)(i__dc) - (1))] = (self.c + __data_self_op__a[((int)(i__dc) - (__lb_self_op__a_dim1))]);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_17gpu_metal_320_mod9work_type {
     int __size_self_op__a;
     int __lb_self_op__a_dim1;
     int __1__data_self_op__a;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_17gpu_metal_320_mod9work_type(
     float* __restrict__ r,
     base_t& self,
     inner_t& self_op_,
     float* __restrict__ __data_self_op__a,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_17gpu_metal_320_mod9work_type __scalar_args)
 {
     int __lb_self_op__a_dim1 = __scalar_args.__lb_self_op__a_dim1;
     int __flat_idx;

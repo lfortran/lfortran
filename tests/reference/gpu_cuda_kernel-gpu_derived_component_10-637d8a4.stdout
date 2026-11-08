@@ -5,7 +5,7 @@ struct big_t {
     int k;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_26gpu_derived_component_10_m4fill(
     big_t& p)
 {
     int __flat_idx;

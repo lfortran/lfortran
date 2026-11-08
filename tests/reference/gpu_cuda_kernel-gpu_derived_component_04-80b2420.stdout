@@ -10,7 +10,7 @@ struct outer {
     int k;
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_04 {
     int __dim_r_0;
     int __lb_r_0;
     int __dim_x_0;
@@ -19,12 +19,12 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __lb_y_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_24gpu_derived_component_04(
     point& last,
     float* __restrict__ r,
     float* __restrict__ x,
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_04 __scalar_args)
 {
     int __lb_r_0 = __scalar_args.__lb_r_0;
     int __lb_x_0 = __scalar_args.__lb_x_0;
@@ -49,7 +49,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_26gpu_derived_component_04_m1s {
     int __dim_r_0;
     int __lb_r_0;
     int __dim_x_0;
@@ -59,12 +59,12 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_26gpu_derived_component_04_m1s(
     point& p,
     float* __restrict__ r,
     float* __restrict__ x,
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_26gpu_derived_component_04_m1s __scalar_args)
 {
     int __lb_r_0 = __scalar_args.__lb_r_0;
     int __lb_x_0 = __scalar_args.__lb_x_0;
@@ -115,16 +115,16 @@ __device__ inline float _lcompilers_anint_f32_gpu_28(float a) {
     return _lcompilers_anint_f32;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_26gpu_derived_component_04_m1t {
     int __dim_a_0;
     int __lb_a_0;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_26gpu_derived_component_04_m1t(
     int* __restrict__ a,
     outer& o,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_26gpu_derived_component_04_m1t __scalar_args)
 {
     int __lb_a_0 = __scalar_args.__lb_a_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;

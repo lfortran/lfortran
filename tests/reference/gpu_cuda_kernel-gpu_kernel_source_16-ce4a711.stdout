@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_16(
     float* __restrict__ g,
     float* __restrict__ t,
     float* __restrict__ x)
@@ -19,7 +19,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     g[((int)(j__dc) - (1))] = t[((int)(1) - (1))];
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_16(
     float* __restrict__ g,
     float* __restrict__ u,
     float* __restrict__ x)

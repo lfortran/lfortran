@@ -4,17 +4,17 @@ struct leaf_t {
     long m_;
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_303 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_303(
     leaf_t* __restrict__ c,
     float* __restrict__ __data_c_m_,
     int* __restrict__ __offsets_c_m_,
     int* __restrict__ __sizes_c_m_,
     float* __restrict__ o,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_303 __scalar_args,
     float* __restrict__ __workspace_6)
 {
     int __workspace_extent = __scalar_args.__workspace_extent;

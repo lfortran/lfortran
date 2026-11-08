@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_3073run {
     int nn;
     int __dim_r_0;
     int __lb_r_0;
@@ -8,9 +8,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_3073run(
     float* __restrict__ r,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_3073run __scalar_args,
     float* __restrict__ __workspace_2)
 {
     int __lb_r_0 = __scalar_args.__lb_r_0;

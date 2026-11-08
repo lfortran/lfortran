@@ -13,7 +13,7 @@ __device__ inline T __lfortran_lane_reduce(T v, int lanes) {
     return v;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_476(
     float* __restrict__ y)
 {
     int __flat_idx;
@@ -29,7 +29,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_47616captured_private {
     int __gpu_private_shape;
     int __libasr_extent_y_1;
     int n;
@@ -38,9 +38,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_47616captured_private(
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_47616captured_private __scalar_args)
 {
     int __gpu_private_shape = __scalar_args.__gpu_private_shape;
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -80,7 +80,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_47615runtime_private {
     int __gpu_private_shape;
     int __libasr_extent_y_1;
     int m;
@@ -90,9 +90,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_47615runtime_private(
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_47615runtime_private __scalar_args)
 {
     int __gpu_private_shape = __scalar_args.__gpu_private_shape;
     int __loop_end_0 = __scalar_args.__loop_end_0;

@@ -1,13 +1,13 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_13 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_13(
     int* __restrict__ a,
     int* __restrict__ b,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_13 __scalar_args)
 {
     int __tiled = __scalar_args.__tiled;
     int __flat_idx;
@@ -46,14 +46,14 @@ __device__ inline void put_element_gpu_13(int& destination, int value) {
     destination = value;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_13 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_13(
     int* __restrict__ a,
     int* __restrict__ b,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_13 __scalar_args)
 {
     int __tiled = __scalar_args.__tiled;
     int __flat_idx;
@@ -95,14 +95,14 @@ __device__ inline void put_array_gpu_18(int* destination, int __1destination, in
     destination[((int)(row) - (1)) + (__1destination * ((int)(column) - (1)))] = value;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_13 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_20gpu_kernel_source_13(
     int* __restrict__ a,
     int* __restrict__ b,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_13 __scalar_args)
 {
     int __tiled = __scalar_args.__tiled;
     int __flat_idx;
@@ -147,15 +147,15 @@ __device__ inline int read_element_gpu_24(int* source, int __1source, int __2sou
     return value;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
+struct __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_13 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_20gpu_kernel_source_13(
     int* __restrict__ a,
     int* __restrict__ b,
     int* __restrict__ c,
-    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_13 __scalar_args)
 {
     int __tiled = __scalar_args.__tiled;
     int __flat_idx;
@@ -197,13 +197,13 @@ __device__ inline void put_element_gpu_29(int& destination, int value) {
     destination = value;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_4 {
+struct __ScalarArgs___lfortran_gpu_kernel_4_20gpu_kernel_source_13 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4(
+extern "C" __global__ void __lfortran_gpu_kernel_4_20gpu_kernel_source_13(
     int* __restrict__ a,
-    __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_4_20gpu_kernel_source_13 __scalar_args)
 {
     int __tiled = __scalar_args.__tiled;
     int __flat_idx;

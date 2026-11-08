@@ -1,13 +1,13 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_41 {
     int n;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_41(
     float* __restrict__ x,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_41 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
@@ -20,15 +20,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     x[((int)(i__dc) - (1))] = ((float)i__dc);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_41 {
     int n;
     int __loop_start_0;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_41(
     float* __restrict__ w,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_41 __scalar_args)
 {
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -42,16 +42,16 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     w[((int)(i__dc1) - (0))] = ((float)i__dc1);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_41 {
     int m;
     int __loop_start_1;
     int __loop_end_1;
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_20gpu_kernel_source_41(
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_41 __scalar_args)
 {
     int __loop_start_1 = __scalar_args.__loop_start_1;
     int __loop_end_1 = __scalar_args.__loop_end_1;
@@ -87,16 +87,16 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     y[((int)(i__dc2) - (1)) + (64 * ((int)(j__dc) - (1)))] = ((float)(i__dc2 + j__dc));
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
+struct __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_41 {
     int m;
     int __loop_start_0;
     int __loop_end_0;
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_20gpu_kernel_source_41(
     float* __restrict__ v,
-    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_41 __scalar_args)
 {
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -132,13 +132,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     v[((int)(i__dc3) - (1)) + (100 * ((int)(c__dc) - (1)))] = ((float)(i__dc3 * c__dc));
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_4 {
+struct __ScalarArgs___lfortran_gpu_kernel_4_20gpu_kernel_source_41 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4(
+extern "C" __global__ void __lfortran_gpu_kernel_4_20gpu_kernel_source_41(
     float* __restrict__ z,
-    __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_4_20gpu_kernel_source_41 __scalar_args)
 {
     int __tiled = __scalar_args.__tiled;
     int __flat_idx;

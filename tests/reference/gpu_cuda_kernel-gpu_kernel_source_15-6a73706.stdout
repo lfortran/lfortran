@@ -6,7 +6,7 @@ __device__ inline float twice_gpu_11(float v) {
     return twice;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_15 {
     float a;
     int __dim_x_0;
     int __lb_x_0;
@@ -18,11 +18,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __lb_z_1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_15(
     float* __restrict__ x,
     float* __restrict__ y,
     float* __restrict__ z,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_15 __scalar_args)
 {
     float a = __scalar_args.a;
     int __lb_x_0 = __scalar_args.__lb_x_0;

@@ -13,7 +13,7 @@ __device__ inline T __lfortran_lane_reduce(T v, int lanes) {
     return v;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_636_m5learn {
     int __dim_n_0;
     int __lb_n_0;
     int __dim_y_0;
@@ -22,10 +22,10 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_15gpu_metal_636_m5learn(
     int* __restrict__ n,
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_636_m5learn __scalar_args)
 {
     int __lb_y_0 = __scalar_args.__lb_y_0;
     int __lfortran_gpu_dim_ = __scalar_args.__lfortran_gpu_dim_;

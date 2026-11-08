@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_20gpu_kernel_source_43(
     device int* out_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -110,7 +110,7 @@ kernel void __lfortran_gpu_kernel_0(
     }
 }
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_20gpu_kernel_source_43(
     device int* head_gpu [[buffer(0)]],
     device int* out_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
@@ -169,7 +169,7 @@ kernel void __lfortran_gpu_kernel_1(
     out_gpu[((int)(i__dc1_gpu) - (1))] = head_gpu[((int)((((i__dc1_gpu) % (3)) + 1)) - (1))];
 }
 
-kernel void __lfortran_gpu_kernel_2(
+kernel void __lfortran_gpu_kernel_2_20gpu_kernel_source_43(
     device int* out_gpu [[buffer(0)]],
     device int* tail_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
@@ -228,7 +228,7 @@ kernel void __lfortran_gpu_kernel_2(
     out_gpu[((int)(i__dc2_gpu) - (1))] = tail_gpu[((int)((((i__dc2_gpu) % (3)) + 2)) - (1))];
 }
 
-kernel void __lfortran_gpu_kernel_3(
+kernel void __lfortran_gpu_kernel_3_20gpu_kernel_source_43(
     device int* odd_gpu [[buffer(0)]],
     device int* out_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
@@ -287,7 +287,7 @@ kernel void __lfortran_gpu_kernel_3(
     out_gpu[((int)(i__dc3_gpu) - (1))] = odd_gpu[((int)(((2 * ((i__dc3_gpu) % (2))) + 1)) - (1))];
 }
 
-kernel void __lfortran_gpu_kernel_4(
+kernel void __lfortran_gpu_kernel_4_20gpu_kernel_source_43(
     device int* col_gpu [[buffer(0)]],
     device int* out_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
@@ -346,15 +346,15 @@ kernel void __lfortran_gpu_kernel_4(
     out_gpu[((int)(i__dc4_gpu) - (1))] = col_gpu[((int)((((i__dc4_gpu) % (3)) + 1)) - (1)) + (3 * ((int)(2) - (1)))];
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_5 {
+struct __ScalarArgs___lfortran_gpu_kernel_5_20gpu_kernel_source_43 {
     int __workspace_extent_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_5(
+kernel void __lfortran_gpu_kernel_5_20gpu_kernel_source_43(
     device int* lo_gpu [[buffer(0)]],
     device int* out_gpu [[buffer(1)]],
     device int* sz_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_5& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_5_20gpu_kernel_source_43& __scalar_args [[buffer(3)]],
     device int* __workspace_4 [[buffer(4)]],
     uint __thread_id [[thread_position_in_grid]])
 {

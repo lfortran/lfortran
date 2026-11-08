@@ -930,8 +930,17 @@ void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
 
 // The Metal Shading Language source is registered by a constructor the host
 // code generator emits, so that loading a kernel only needs its name, exactly
-// like the CUDA and CPU runtimes.
+// like the CUDA and CPU runtimes. A kernel is found by its name, so two
+// different sources registered under one name would run one of them in
+// place of the other: that is an error rather than a wrong result.
 void lfortran_gpu_register_metal_source(const char *name, const char *source) {
+    for (int i = 0; i < n_registered; i++) {
+        if (strcmp(source_registry[i].name, name) != 0) continue;
+        if (strcmp(source_registry[i].source, source) == 0) return;
+        fprintf(stderr, "lfortran_gpu_register_metal_source: two different "
+            "kernels are named '%s'\n", name);
+        exit(1);
+    }
     if (n_registered >= MAX_KERNELS) {
         fprintf(stderr, "lfortran_gpu_register_metal_source: too many kernels\n");
         exit(1);

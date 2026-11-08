@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_13gpu_metal_731(
     device int* out_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -65,7 +65,7 @@ kernel void __lfortran_gpu_kernel_0(
     }
 }
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_13gpu_metal_731(
     device int* out_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -81,7 +81,7 @@ kernel void __lfortran_gpu_kernel_1(
     }
 }
 
-kernel void __lfortran_gpu_kernel_2(
+kernel void __lfortran_gpu_kernel_2_13gpu_metal_731(
     device int* out_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -142,7 +142,7 @@ kernel void __lfortran_gpu_kernel_2(
     }
 }
 
-kernel void __lfortran_gpu_kernel_3(
+kernel void __lfortran_gpu_kernel_3_13gpu_metal_731(
     device int* out_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -158,7 +158,7 @@ kernel void __lfortran_gpu_kernel_3(
     }
 }
 
-kernel void __lfortran_gpu_kernel_4(
+kernel void __lfortran_gpu_kernel_4_13gpu_metal_731(
     device int* out_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -223,7 +223,7 @@ kernel void __lfortran_gpu_kernel_4(
     }
 }
 
-kernel void __lfortran_gpu_kernel_5(
+kernel void __lfortran_gpu_kernel_5_13gpu_metal_731(
     device int* out_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -287,14 +287,14 @@ kernel void __lfortran_gpu_kernel_5(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_6 {
+struct __ScalarArgs___lfortran_gpu_kernel_6_13gpu_metal_731 {
     int __workspace_extent_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_6(
+kernel void __lfortran_gpu_kernel_6_13gpu_metal_731(
     device int* out_gpu [[buffer(0)]],
     device int* tmp_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_6& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_6_13gpu_metal_731& __scalar_args [[buffer(2)]],
     device int* __workspace_3 [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {

@@ -6,15 +6,15 @@ __device__ inline void maybe_set_gpu_9(float& x, int i) {
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_10 {
     int __dim_a_0;
     int __lb_a_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_liveout_10(
     float* __restrict__ __gpu_buf_x,
     int* __restrict__ a,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_10 __scalar_args)
 {
     int __lb_a_0 = __scalar_args.__lb_a_0;
     int __flat_idx;

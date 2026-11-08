@@ -50,7 +50,7 @@ inline int _lcompilers_optimization_modulo_i32_gpu_26(int a_gpu, int p_gpu) {
     return _lcompilers_optimization_modulo_i32_gpu;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_23gpu_residue_unroll_03_m6decode {
     int __dim_w_0_gpu;
     int __lb_w_0_gpu;
     int __dim_w_1_gpu;
@@ -60,11 +60,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_23gpu_residue_unroll_03_m6decode(
     device int* w_gpu [[buffer(0)]],
     device int* y_gpu [[buffer(1)]],
     device int* __gpu_stop_status_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_23gpu_residue_unroll_03_m6decode& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __dim_w_0_gpu = __scalar_args.__dim_w_0_gpu;

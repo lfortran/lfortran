@@ -7,7 +7,7 @@ inline float half_gpu_23(float x_gpu) {
     return y_gpu;
 }
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_21gpu_integer_powers_01(
     device float* p_gpu [[buffer(0)]],
     device float* q_gpu [[buffer(1)]],
     device float* s_gpu [[buffer(2)]],

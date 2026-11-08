@@ -10,7 +10,7 @@ struct aggregate {
     float a[120000];
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_09(
     float* __restrict__ y)
 {
     int __flat_idx;
@@ -40,7 +40,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_09(
     float* __restrict__ y)
 {
     int __flat_idx;
@@ -69,7 +69,7 @@ __device__ inline void update_gpu_40(aggregate& q, int j) {
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_20gpu_kernel_source_09(
     aggregate* __restrict__ shared,
     float* __restrict__ y,
     float* __restrict__ __workspace_2)
@@ -101,7 +101,7 @@ __device__ inline float read_value_gpu_49(aggregate q) {
     return read_value;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_20gpu_kernel_source_09(
     aggregate* __restrict__ shared,
     float* __restrict__ y)
 {

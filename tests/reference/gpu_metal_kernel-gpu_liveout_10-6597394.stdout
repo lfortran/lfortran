@@ -7,15 +7,15 @@ inline void maybe_set_gpu_9(thread float& x_gpu, int i_gpu) {
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_10 {
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_14gpu_liveout_10(
     device float* __gpu_buf_x_gpu [[buffer(0)]],
     device int* a_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_10& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_a_0_gpu = __scalar_args.__lb_a_0_gpu;

@@ -13,7 +13,7 @@ inline void upd_gpu_9(int i_gpu, thread acc_t_gpu& self_gpu, thread float& y_gpu
     }
 }
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_14gpu_liveout_15(
     device acc_t_gpu& m_gpu [[buffer(0)]],
     device float* y_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])

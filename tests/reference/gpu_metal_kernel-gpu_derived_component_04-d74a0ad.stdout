@@ -11,7 +11,7 @@ struct outer_gpu {
     int k_gpu;
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_04 {
     int __dim_r_0_gpu;
     int __lb_r_0_gpu;
     int __dim_x_0_gpu;
@@ -20,12 +20,12 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __lb_y_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_24gpu_derived_component_04(
     device point_gpu& last_gpu [[buffer(0)]],
     device float* r_gpu [[buffer(1)]],
     device float* x_gpu [[buffer(2)]],
     device float* y_gpu [[buffer(3)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(4)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_04& __scalar_args [[buffer(4)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_r_0_gpu = __scalar_args.__lb_r_0_gpu;
@@ -51,7 +51,7 @@ kernel void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_26gpu_derived_component_04_m1s {
     int __dim_r_0_gpu;
     int __lb_r_0_gpu;
     int __dim_x_0_gpu;
@@ -61,12 +61,12 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_26gpu_derived_component_04_m1s(
     device point_gpu& p_gpu [[buffer(0)]],
     device float* r_gpu [[buffer(1)]],
     device float* x_gpu [[buffer(2)]],
     device float* y_gpu [[buffer(3)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(4)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_26gpu_derived_component_04_m1s& __scalar_args [[buffer(4)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_r_0_gpu = __scalar_args.__lb_r_0_gpu;
@@ -118,16 +118,16 @@ inline float _lcompilers_anint_f32_gpu_28(float a_gpu) {
     return _lcompilers_anint_f32_gpu;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_26gpu_derived_component_04_m1t {
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_2(
+kernel void __lfortran_gpu_kernel_2_26gpu_derived_component_04_m1t(
     device int* a_gpu [[buffer(0)]],
     device outer_gpu& o_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_2& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_2_26gpu_derived_component_04_m1t& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_a_0_gpu = __scalar_args.__lb_a_0_gpu;
