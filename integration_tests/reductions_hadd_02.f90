@@ -51,7 +51,7 @@ subroutine check(x, d2)
     integer :: k
     do k = 1, npair
         expected = sum((x(1:3,pair_i(k)) * x(1:3,pair_j(k)))**2)
-        if (abs(d2(k) - expected) > 1d-12 * expected) error stop 1
+        if (d2(k) /= d2(k) .or. abs(d2(k) - expected) > 1d-12 * expected) error stop 1
     end do
 end subroutine
 

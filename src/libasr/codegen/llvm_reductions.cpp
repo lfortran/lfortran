@@ -28,9 +28,12 @@ Pairwise horizontal reductions of a four-wide sum of squares.
 
 SLP turns a sum of squares of components 0, 1 and 2 of four `<4 x double>`
 vectors into a transpose. `vhaddpd` computes the same sums but also adds
-component 3, so that component is cleared unless it is known to be zero.
-The rewrite runs after the vectorizer, only on x86 with AVX and only on a
-tree of fast additions: a value used more than once is left unchanged.
+component 3, so that component is replaced by a constant zero unless every
+bit of it is known to be +0.0 or -0.0. A fast multiply is not enough: 0*Inf
+is NaN, and under `nnan`/`ninf` that lane is poison, which the original
+shuffles never read. The rewrite runs after the vectorizer, only on x86
+with AVX and only on a tree of fast additions: a value used more than once
+is left unchanged.
 */
 
 namespace LCompilers {
@@ -161,11 +164,9 @@ public:
 private:
     using Element = std::pair<Value *, unsigned>;
 
-    // The element is zero if all operand elements are zero, or with `any`,
-    // if one of them is.
+    // The element is zero only if every operand element is zero.
     struct Node {
         SmallVector<Element, 3> operands;
-        bool any = false;
         bool zero = true;
     };
 
@@ -206,12 +207,15 @@ private:
     }
 
     bool holds(const Node &node) const {
+        if (node.operands.empty()) {
+            return false;
+        }
         for (const Element &e : node.operands) {
-            if (value_of(e) == node.any) {
-                return node.any;
+            if (!value_of(e)) {
+                return false;
             }
         }
-        return !node.any && !node.operands.empty();
+        return true;
     }
 
     // The operand elements that decide element `lane` of instruction `i`, or
@@ -225,9 +229,9 @@ private:
                 same(i->getOperand(1));
                 return true;
             case Instruction::FMul:
-                // With fast math a zero times any value is zero; without it
-                // the other value could be an infinity or a NaN.
-                node.any = is_fast(i);
+                // Both factors. 0*Inf and 0*NaN are NaN, and a fast flag
+                // turns that lane into poison. vhaddpd would then poison
+                // the components the original shuffles kept.
                 same(i->getOperand(0));
                 same(i->getOperand(1));
                 return true;
@@ -309,7 +313,6 @@ private:
             Node node;
             if (!rule(i, e.second, node)) {
                 node.operands.clear();
-                node.any = false;
             }
             for (const Element &operand : node.operands) {
                 work.push_back(operand);
@@ -480,16 +483,12 @@ bool recombine_horizontal_reductions(llvm::Function &f,
             zero = zero && lanes.is_zero(bases[j], 3);
         }
         if (!zero) {
-            llvm::Type *i64 = llvm::Type::getInt64Ty(f.getContext());
-            llvm::Constant *ones = llvm::ConstantInt::get(i64, -1);
-            llvm::Constant *zeros = llvm::ConstantInt::get(i64, 0);
-            llvm::Constant *mask = llvm::ConstantVector::get(
-                llvm::ArrayRef<llvm::Constant *>{ones, ones, ones, zeros});
+            // A bitwise and does not clear a poison lane. Take lanes 0, 1
+            // and 2 from the square and lane 3 from a constant zero.
+            llvm::Value *zeros = llvm::Constant::getNullValue(vector_type);
             for (unsigned j = 0; j < 4; j++) {
-                llvm::Value *bits = builder.CreateBitCast(x[j],
-                    llvm::FixedVectorType::get(i64, 4));
-                x[j] = builder.CreateBitCast(
-                    builder.CreateAnd(bits, mask), vector_type);
+                x[j] = builder.CreateShuffleVector(x[j], zeros,
+                    llvm::ArrayRef<int>{0, 1, 2, 4});
             }
         }
         llvm::Value *t0 = builder.CreateCall(hadd, {x[0], x[1]});

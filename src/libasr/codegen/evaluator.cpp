@@ -1196,7 +1196,9 @@ void LLVMEvaluator::opt(llvm::Module &m) {
         reduced |= recombine_horizontal_reductions(*f, *TM);
     }
     if (reduced) {
-        // Simplify and schedule the rewritten reductions.
+        // Simplify and schedule the rewritten reductions. This is LLVM's
+        // module O1 pipeline, so it also revisits functions the matcher
+        // left unchanged.
 #if LLVM_VERSION_MAJOR >= 17
         llvm::ModulePassManager Final
             = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);

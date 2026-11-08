@@ -19,8 +19,8 @@ namespace LCompilers {
     // recombine_horizontal_reductions: whether `f` is a definition for x86
     // with AVX that contains a fast sum of three squares of four element
     // double vectors, where every rewrite starts. Only such functions get
-    // the cleanup and the rewrite, so every other function and target keeps
-    // the code of the regular pipeline.
+    // the late cleanup and the rewrite. A rewrite that fires then runs one
+    // module-level O1 cleanup, which also revisits the other functions.
     bool may_recombine_horizontal_reductions(const llvm::Function &f,
         const llvm::TargetMachine &tm);
 

@@ -7984,35 +7984,25 @@ exit:
 attributes #0 = { "target-features"="+avx" }
 )""";
 
-// The mask the pass uses to clear lane 3: `<4 x i64> <-1, -1, -1, 0>`.
-bool is_lane3_clear_mask(const llvm::Value *v) {
-    auto *c = llvm::dyn_cast<llvm::Constant>(v);
-    auto *ty = c ? llvm::dyn_cast<llvm::FixedVectorType>(c->getType())
-        : nullptr;
-    if (!ty || ty->getNumElements() != 4
-            || !ty->getElementType()->isIntegerTy(64)) {
+// The clear of lane 3: shuffle lanes 0, 1 and 2 from the square and lane 3
+// from a constant zero vector. A bitwise and would leave a poison lane
+// poison, and vhaddpd would then read it.
+bool clears_lane3(const llvm::Instruction &i) {
+    auto *shuffle = llvm::dyn_cast<llvm::ShuffleVectorInst>(&i);
+    if (!shuffle) {
         return false;
     }
-    for (unsigned i = 0; i < 4; i++) {
-        auto *el = llvm::dyn_cast_or_null<llvm::ConstantInt>(
-            c->getAggregateElement(i));
-        if (!el) {
-            return false;
-        }
-        if (i < 3) {
-            if (!el->isMinusOne()) {
-                return false;
-            }
-        } else if (!el->isZero()) {
-            return false;
-        }
+    llvm::ArrayRef<int> mask = shuffle->getShuffleMask();
+    if (mask.size() != 4 || mask[0] != 0 || mask[1] != 1 || mask[2] != 2
+            || mask[3] != 4) {
+        return false;
     }
-    return true;
+    auto *zero = llvm::dyn_cast<llvm::Constant>(shuffle->getOperand(1));
+    return zero && zero->isNullValue();
 }
 
 // Whether the pass rewrites `reductions_loop_ir` with the given bases and
-// update for `tm`, and clears the fourth component when it does. Any `and`
-// that is not the lane-3 clear fails the test.
+// update for `tm`, and replaces the fourth component with a constant zero.
 bool reductions_loop_masks(const std::string &bases,
         const std::string &update, const llvm::TargetMachine &tm) {
     std::string ir = reductions_loop_ir;
@@ -8028,13 +8018,7 @@ bool reductions_loop_masks(const std::string &bases,
     bool masked = false;
     for (llvm::BasicBlock &bb : f) {
         for (llvm::Instruction &i : bb) {
-            if (i.getOpcode() != llvm::Instruction::And) {
-                continue;
-            }
-            bool clear = is_lane3_clear_mask(i.getOperand(0))
-                || is_lane3_clear_mask(i.getOperand(1));
-            CHECK(clear);
-            masked = masked || clear;
+            masked = masked || clears_lane3(i);
         }
     }
     return masked;
@@ -8110,6 +8094,48 @@ entry:
 attributes #0 = { "target-features"="+avx" }
 )""";
 
+// Lane 3 starts at 0 and is multiplied by +Inf. The gathers never read it,
+// so lane 0 of the last iteration is the first vector's 0^2+1^2+2^2 = 5.
+// Folding the Inf into vhaddpd would make that lane NaN.
+const std::string reductions_inf_ir = R"""(
+define double @reductions_inf() #0 {
+entry:
+  br label %loop
+
+loop:
+  %x = phi <4 x double> [ <double 1.0, double 2.0, double 3.0, double 0.0>, %entry ], [ %x.next, %loop ]
+  %i = phi i32 [ 0, %entry ], [ %i.next, %loop ]
+  %v0 = fsub fast <4 x double> %x, <double 1.0, double 1.0, double 1.0, double 0.0>
+  %v1 = fsub fast <4 x double> %x, <double 2.0, double 1.0, double 1.0, double 0.0>
+  %v2 = fsub fast <4 x double> %x, <double 3.0, double 1.0, double 1.0, double 0.0>
+  %v3 = fsub fast <4 x double> %x, <double 4.0, double 1.0, double 1.0, double 0.0>
+  %g0a = shufflevector <4 x double> %v0, <4 x double> %v1, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
+  %g0b = shufflevector <4 x double> %g0a, <4 x double> %v2, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
+  %g0c = shufflevector <4 x double> %g0b, <4 x double> %v3, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
+  %s0 = fmul fast <4 x double> %g0c, %g0c
+  %g1a = shufflevector <4 x double> %v0, <4 x double> %v1, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
+  %g1b = shufflevector <4 x double> %g1a, <4 x double> %v2, <4 x i32> <i32 0, i32 1, i32 5, i32 undef>
+  %g1c = shufflevector <4 x double> %g1b, <4 x double> %v3, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
+  %s1 = fmul fast <4 x double> %g1c, %g1c
+  %g2a = shufflevector <4 x double> %v0, <4 x double> %v1, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
+  %g2b = shufflevector <4 x double> %g2a, <4 x double> %v2, <4 x i32> <i32 0, i32 1, i32 6, i32 undef>
+  %g2c = shufflevector <4 x double> %g2b, <4 x double> %v3, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
+  %s2 = fmul fast <4 x double> %g2c, %g2c
+  %t0 = fadd fast <4 x double> %s0, %s1
+  %t1 = fadd fast <4 x double> %t0, %s2
+  %d = fmul fast <4 x double> <double 0.0, double 0.0, double 0.0, double 0x7FF0000000000000>, %v0
+  %x.next = fadd fast <4 x double> %x, %d
+  %i.next = add i32 %i, 1
+  %c = icmp slt i32 %i.next, 2
+  br i1 %c, label %loop, label %exit
+
+exit:
+  %r = extractelement <4 x double> %t1, i32 0
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
 std::string reductions_replace(std::string ir, const std::string &from,
         const std::string &to) {
     size_t pos = 0;
@@ -8152,14 +8178,19 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         // A term added twice is not a tree. Rewriting it as one sum would
         // drop the repeated factor.
         CHECK(!reductions_rewrite(reductions_diamond_ir, *x86));
-        // A fourth component that is zero on entry to the loop and that the
-        // update keeps zero needs no mask: a zero times any value is zero.
+        // A fourth component that is zero on entry stays zero when the
+        // update only squares it: 0*0 is 0. A product with a loaded vector
+        // is not, because 0*Inf is NaN and the original shuffles never
+        // read that lane.
         const std::string differences =
             "  %v0 = fsub fast <4 x double> %x, <double 1.0, double 1.0, double 1.0, double 0.0>\n"
             "  %v1 = fsub fast <4 x double> %x, <double 2.0, double 1.0, double 1.0, double 0.0>\n"
             "  %v2 = fsub fast <4 x double> %x, <double 3.0, double 1.0, double 1.0, double 0.0>\n"
             "  %v3 = fsub fast <4 x double> %x, <double 4.0, double 1.0, double 1.0, double 0.0>\n";
         CHECK(!reductions_loop_masks(differences,
+            "  %d = fmul fast <4 x double> %v0, %v0\n"
+            "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
+        CHECK(reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> %la, %v0\n"
             "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
         // Adding a loaded vector can make it nonzero after the first
@@ -8208,13 +8239,7 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         bool masked = false;
         for (llvm::BasicBlock &bb : lanes_f) {
             for (llvm::Instruction &i : bb) {
-                if (i.getOpcode() != llvm::Instruction::And) {
-                    continue;
-                }
-                bool clear = is_lane3_clear_mask(i.getOperand(0))
-                    || is_lane3_clear_mask(i.getOperand(1));
-                CHECK(clear);
-                masked = masked || clear;
+                masked = masked || clears_lane3(i);
             }
         }
         CHECK(masked);
@@ -8229,6 +8254,22 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
             *diamond_m->getFunction("reductions_sum"), *x86));
         diamond.add_module(std::move(diamond_m));
         CHECK(diamond.execfn<double>("reductions_sum") == 15.0);
+
+        // 0*Inf in the unused lane must not reach the horizontal add.
+        LCompilers::LLVMEvaluator inf;
+        std::unique_ptr<llvm::Module> inf_m
+            = inf.parse_module(reductions_inf_ir, "");
+        llvm::Function &inf_f = *inf_m->getFunction("reductions_inf");
+        CHECK(LCompilers::recombine_horizontal_reductions(inf_f, *x86));
+        bool inf_cleared = false;
+        for (llvm::BasicBlock &bb : inf_f) {
+            for (llvm::Instruction &i : bb) {
+                inf_cleared = inf_cleared || clears_lane3(i);
+            }
+        }
+        CHECK(inf_cleared);
+        inf.add_module(std::move(inf_m));
+        CHECK(inf.execfn<double>("reductions_inf") == 5.0);
     }
 #endif
 }
