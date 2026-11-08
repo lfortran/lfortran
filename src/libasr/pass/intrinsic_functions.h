@@ -1397,6 +1397,15 @@ namespace StorageSize {
             
         } else { // Handles Integers, Reals, Logicals
             int64_t kind = ASRUtils::extract_kind_from_ttype_t(type); // FIX: Use 'type'
+            // real(10) is not 10 bytes. Its storage is the platform long
+            // double (16 bytes on Linux x86-64), the same size c_sizeof uses.
+            if (kind == 10 && ASR::is_a<ASR::Real_t>(*type)) {
+                int64_t bytes = ASRUtils::get_type_byte_size(type);
+                if (bytes > 0) {
+                    return make_ConstantWithType(make_IntegerConstant_t,
+                        bytes * 8, t1, loc);
+                }
+            }
             if (kind == 1) return make_ConstantWithType(make_IntegerConstant_t, 8, t1, loc);
             else if (kind == 2) return make_ConstantWithType(make_IntegerConstant_t, 16, t1, loc);
             else if (kind == 4) return make_ConstantWithType(make_IntegerConstant_t, 32, t1, loc);
