@@ -16,6 +16,9 @@ from unittest.mock import call, patch
 
 ROOT = Path(__file__).resolve().parent.parent
 INTEGRATION = ROOT / "integration_tests"
+# Pinned to a release commit; every use must name the same one.
+CCACHE_ACTION = ("uses: hendrikmuhs/ccache-action@"
+                 "f09c25b45002a07be2955cbe52e8cee55643f89d # v1.2.24\n")
 
 
 class SmokeSelectionTests(unittest.TestCase):
@@ -186,10 +189,9 @@ class MacOSEnvironmentTests(unittest.TestCase):
         setup = source.split("uses: prefix-dev/setup-pixi@", 1)[1].split("\n\n", 1)[0]
         self.assertIn("environments: llvm${{ matrix.llvm-version }}\n", setup)
         self.assertIn("activate-environment: llvm${{ matrix.llvm-version }}\n", setup)
-        # ccache-action prepends /usr/local/bin to PATH; the environment's
-        # tools, such as CMake, must stay ahead of it.
-        self.assertLess(source.index("uses: hendrikmuhs/ccache-action@"),
-                        source.index("uses: prefix-dev/setup-pixi@"))
+        # ccache-action uses the sccache of the activated environment.
+        self.assertLess(source.index("uses: prefix-dev/setup-pixi@"),
+                        source.index("uses: hendrikmuhs/ccache-action@"))
 
     def checker(self):
         spec = importlib.util.spec_from_file_location(
@@ -795,7 +797,7 @@ class WorkflowPolicyTests(unittest.TestCase):
                  *(ROOT / ".github/actions").glob("*/action.yml")]
         steps = 0
         for path in paths:
-            for step in path.read_text().split("uses: hendrikmuhs/ccache-action@main\n")[1:]:
+            for step in path.read_text().split(CCACHE_ACTION)[1:]:
                 steps += 1
                 self.assertRegex(step.split("\n\n", 1)[0] + "\n", save, path)
         self.assertGreaterEqual(steps, 8)
@@ -821,31 +823,55 @@ class WorkflowPolicyTests(unittest.TestCase):
                     continue
                 self.assertIsNone(installer.search(line), f"{path}:{number}: {line.strip()}")
 
-    def test_activated_pixi_environments_come_after_ccache(self):
-        # ccache-action prepends the runner's /usr/local/bin to PATH. An
-        # environment activated before it loses to the runner's tools, such
-        # as a newer CMake, in every later step.
+    def test_ccache_action_uses_the_pixi_compiler_cache(self):
+        # Pixi provides ccache and sccache. With `install: "no"` the action
+        # never downloads them (a plain curl without retries, which failed
+        # jobs on transient GitHub errors) and fails if they are missing, so
+        # a Pixi step must put them on PATH first.
         paths = [*(ROOT / ".github/workflows").glob("*.yml"),
                  *(ROOT / ".github/actions").glob("*/action.yml")]
-        activated = 0
+        steps = 0
         for path in paths:
             source = path.read_text()
+            self.assertEqual(source.count("hendrikmuhs/ccache-action@"),
+                             source.count(CCACHE_ACTION), path)
             jobs = ([source] if path.name == "action.yml"
                     else re.split(r"\n  [A-Za-z0-9_-]+:\n", source))
             for job in jobs:
-                if "uses: hendrikmuhs/ccache-action@" not in job:
-                    continue
-                for setup in re.finditer(r"uses: prefix-dev/setup-pixi@", job):
-                    if "activate-environment:" not in job[setup.start():].split("\n\n", 1)[0]:
-                        continue
-                    activated += 1
-                    self.assertLess(job.index("uses: hendrikmuhs/ccache-action@"),
-                                    setup.start(), path)
-        self.assertGreaterEqual(activated, 4)
+                for use in re.finditer(re.escape(CCACHE_ACTION), job):
+                    steps += 1
+                    step = job[use.end():].split("\n\n", 1)[0]
+                    self.assertIn('install: "no"\n', step, path)
+                    before = job[:use.start()]
+                    activations = [
+                        setup.start() for setup in
+                        re.finditer(r"uses: prefix-dev/setup-pixi@", before)
+                        if "activate-environment:"
+                        in before[setup.start():].split("\n\n", 1)[0]]
+                    self.assertTrue(activations
+                                    or "- name: Put the Pixi ccache on PATH\n" in before,
+                                    path)
+        self.assertGreaterEqual(steps, 8)
+
+    def test_pixi_provides_the_compiler_caches(self):
+        manifest = (ROOT / "pixi.toml").read_text()
+
+        def table(name):
+            return manifest.split(f"\n[{name}]\n", 1)[1].split("\n[", 1)[0]
+
+        self.assertRegex(table("feature.build.dependencies"), r'(?m)^sccache = "==')
+        ccache = re.search(r'(?m)^ccache = "==[^"]+"$', table("feature.ccache.dependencies"))
+        self.assertTrue(ccache)
+        # The WASM build shares one cache between both environments.
+        self.assertIn(ccache.group(0), table("feature.wasm-build.dependencies"))
+        environments = table("environments")
+        for name in ("llvm11", "llvm21"):
+            line = re.search(rf"^{name} = .*$", environments, re.M).group(0)
+            self.assertIn('"ccache"', line, name)
 
     def test_platform_ccache_fits_a_debug_build(self):
         action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
-        step = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        step = action.split(CCACHE_ACTION, 1)[1].split("\n\n", 1)[0]
         self.assertIn("max-size: 1500M", step)
 
     def test_only_quick_saves_platform_caches(self):
@@ -853,7 +879,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         # keys; two ~1.5 GB copies per platform overflow the 10 GB cache limit.
         workflows = ROOT / ".github/workflows"
         action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
-        step = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        step = action.split(CCACHE_ACTION, 1)[1].split("\n\n", 1)[0]
         self.assertIn("save: ${{ github.ref == 'refs/heads/main' && inputs.save-cache == 'true' }}", step)
         self.assertIn("    default: 'true'\n", action.split("  save-cache:\n", 1)[1].split("\nruns:", 1)[0])
         for name, saves in (("Quick-Checks-CI.yml", True), ("Exhaustive-Checks-CI.yml", False)):
@@ -900,7 +926,7 @@ class WorkflowPolicyTests(unittest.TestCase):
     def test_wasm_build_uses_the_compiler_cache(self):
         quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
         wasm = quick.split("\n  build_to_wasm_and_upload:\n", 1)[1]
-        cache = wasm.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        cache = wasm.split(CCACHE_ACTION, 1)[1].split("\n\n", 1)[0]
         self.assertNotIn("variant: sccache", cache)
         self.assertIn("key: ${{ github.job }}-pixi-ubuntu-latest\n", cache)
         self.assertIn("max-size: 1500M", cache)
@@ -977,7 +1003,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         build = source.split("      - name: Build\n", 1)[1].split("\n      - name:", 1)[0]
         self.assertIn('if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "${{ matrix.llvm-version }}" == "11" ]]; then\n'
                       "                BUILD_TYPE=Debug", build)
-        cache = source.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        cache = source.split(CCACHE_ACTION, 1)[1].split("\n\n", 1)[0]
         self.assertIn("key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}"
                       "${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') && '-debug' || '' }}\n",
                       cache)
@@ -1399,12 +1425,12 @@ class QuickScriptTests(unittest.TestCase):
         step = action.split("    - name: Select compiler optimization\n", 1)[1].split("\n\n", 1)[0]
         self.assertIn("id: optimize\n", step)
         script = step.split("      run: |\n", 1)[1]
-        cache = action.split("uses: hendrikmuhs/ccache-action@main\n", 1)[1].split("\n\n", 1)[0]
+        cache = action.split(CCACHE_ACTION, 1)[1].split("\n\n", 1)[0]
         # -O2 objects get their own cache instead of mixing with -O0 ones.
         self.assertIn("key: Build-pixi-${{ inputs.os }}-${{ inputs.llvm-version }}"
                       "${{ steps.optimize.outputs.key-suffix }}\n", cache)
         self.assertLess(action.index("name: Select compiler optimization"),
-                        action.index("uses: hendrikmuhs/ccache-action@main"))
+                        action.index(CCACHE_ACTION))
         for platform, llvm, optimized in (
                 ("ubuntu-latest", "21", True), ("ubuntu-latest", "11", False),
                 ("macos-latest", "11", False), ("windows-2025", "11", False),
