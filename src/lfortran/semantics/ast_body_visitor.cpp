@@ -688,10 +688,196 @@ public:
         }
     }
 
+    // A call such as `f(3.0)` makes a scalar dummy `real :: f` a dummy
+    // procedure only once that statement is visited. Record such dummies so
+    // a generic call resolved earlier can match a procedure actual of the
+    // same result type. A section (`f(1:2)`) is not a call. An interface
+    // body is not scanned with its host.
+    struct ImplicitDummyProcedureFinder
+            : public AST::BaseWalkVisitor<ImplicitDummyProcedureFinder> {
+        std::set<std::string> &names;
+        explicit ImplicitDummyProcedureFinder(std::set<std::string> &names)
+            : names{names} {}
+
+        static bool is_section(const AST::FuncCallOrArray_t &x) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_start != nullptr || x.m_args[i].m_step != nullptr) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+            if (x.n_member == 0 && !is_section(x)) {
+                names.insert(to_lower(x.m_func));
+            }
+            AST::BaseWalkVisitor<ImplicitDummyProcedureFinder>
+                ::visit_FuncCallOrArray(x);
+        }
+
+        void visit_Interface(const AST::Interface_t &/*x*/) {}
+    };
+
+    ASR::Function_t* implementation_function(SymbolTable* scope,
+            const std::string &name) {
+        ASR::symbol_t* sym = scope->get_symbol(name);
+        if (sym && ASR::is_a<ASR::GenericProcedure_t>(
+                *ASRUtils::symbol_get_past_external(sym))) {
+            sym = scope->get_symbol(name + ASRUtils::genericprocedure_suffix);
+        }
+        if (!sym) {
+            return nullptr;
+        }
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (!ASR::is_a<ASR::Function_t>(*sym)) {
+            return nullptr;
+        }
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
+        if (ASRUtils::get_FunctionType(fn)->m_deftype
+                != ASR::deftypeType::Implementation) {
+            return nullptr;
+        }
+        // ENTRY copies its dummies into a master function. The body visitor
+        // types those copies when it builds the master.
+        std::string fname = fn->m_name;
+        const std::string master_suffix = "_main__lcompilers";
+        if (entry_functions.find(fname) != entry_functions.end()
+                || (fname.size() >= master_suffix.size()
+                    && fname.compare(fname.size() - master_suffix.size(),
+                        master_suffix.size(), master_suffix) == 0)) {
+            return nullptr;
+        }
+        return fn;
+    }
+
+    void record_referenced_dummy_procedures(ASR::Function_t* fn,
+            AST::decl_stmt_t** items, size_t n_items) {
+        std::set<std::string> names;
+        ImplicitDummyProcedureFinder finder(names);
+        for (size_t i = 0; i < n_items; i++) {
+            finder.visit_decl_stmt(*items[i]);
+        }
+        if (names.empty()) {
+            return;
+        }
+        for (size_t i = 0; i < fn->n_args; i++) {
+            if (!fn->m_args[i] || !ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+                continue;
+            }
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+            if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)
+                    || ASRUtils::is_symbol_procedure_variable(sym)) {
+                continue;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (!ASRUtils::is_arg_dummy(v->m_intent)
+                    || ASRUtils::is_array(v->m_type)
+                    || names.count(to_lower(v->m_name)) == 0) {
+                continue;
+            }
+            pending_implicit_dummy_procedures.insert(&v->base);
+        }
+    }
+
+    void record_contained_procedures(SymbolTable* scope,
+            AST::program_unit_t** contains, size_t n_contains) {
+        for (size_t i = 0; i < n_contains; i++) {
+            record_program_unit(scope, *contains[i]);
+        }
+    }
+
+    void record_program_unit(SymbolTable* scope, const AST::program_unit_t &unit) {
+        if (AST::is_a<AST::Subroutine_t>(unit)) {
+            const AST::Subroutine_t &x = *AST::down_cast<AST::Subroutine_t>(&unit);
+            ASR::Function_t* fn = implementation_function(scope, to_lower(x.m_name));
+            if (!fn) {
+                return;
+            }
+            record_referenced_dummy_procedures(fn, x.m_items, x.n_items);
+            record_contained_procedures(fn->m_symtab, x.m_contains, x.n_contains);
+        } else if (AST::is_a<AST::Function_t>(unit)) {
+            const AST::Function_t &x = *AST::down_cast<AST::Function_t>(&unit);
+            ASR::Function_t* fn = implementation_function(scope, to_lower(x.m_name));
+            if (!fn) {
+                return;
+            }
+            record_referenced_dummy_procedures(fn, x.m_items, x.n_items);
+            record_contained_procedures(fn->m_symtab, x.m_contains, x.n_contains);
+        } else if (AST::is_a<AST::Procedure_t>(unit)) {
+            const AST::Procedure_t &x = *AST::down_cast<AST::Procedure_t>(&unit);
+            ASR::Function_t* fn = implementation_function(scope, to_lower(x.m_name));
+            if (!fn) {
+                return;
+            }
+            record_referenced_dummy_procedures(fn, x.m_items, x.n_items);
+            record_contained_procedures(fn->m_symtab, x.m_contains, x.n_contains);
+        }
+    }
+
+    void record_mod(SymbolTable* scope, const AST::mod_t &mod) {
+        SymbolTable* inner = nullptr;
+        AST::program_unit_t** contains = nullptr;
+        size_t n_contains = 0;
+        if (AST::is_a<AST::Program_t>(mod)) {
+            const AST::Program_t &x = *AST::down_cast<AST::Program_t>(&mod);
+            ASR::symbol_t* sym = scope->get_symbol(to_lower(x.m_name));
+            if (sym && ASR::is_a<ASR::Program_t>(*sym)) {
+                inner = ASR::down_cast<ASR::Program_t>(sym)->m_symtab;
+            }
+            contains = x.m_contains;
+            n_contains = x.n_contains;
+        } else if (AST::is_a<AST::Module_t>(mod)) {
+            const AST::Module_t &x = *AST::down_cast<AST::Module_t>(&mod);
+            ASR::symbol_t* sym = scope->get_symbol(to_lower(x.m_name));
+            if (sym && ASR::is_a<ASR::Module_t>(*sym)) {
+                inner = ASR::down_cast<ASR::Module_t>(sym)->m_symtab;
+            }
+            contains = x.m_contains;
+            n_contains = x.n_contains;
+        } else if (AST::is_a<AST::Submodule_t>(mod)) {
+            const AST::Submodule_t &x = *AST::down_cast<AST::Submodule_t>(&mod);
+            ASR::symbol_t* sym = scope->get_symbol(to_lower(x.m_name));
+            if (sym && ASR::is_a<ASR::Module_t>(*sym)) {
+                inner = ASR::down_cast<ASR::Module_t>(sym)->m_symtab;
+            }
+            contains = x.m_contains;
+            n_contains = x.n_contains;
+        }
+        if (inner) {
+            record_contained_procedures(inner, contains, n_contains);
+        }
+    }
+
+    void record_implicit_dummy_procedures(const AST::TranslationUnit_t &x) {
+        if (!compiler_options.implicit_interface) {
+            return;
+        }
+        ASR::TranslationUnit_t* unit = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
+        for (size_t i = 0; i < x.n_items; i++) {
+            if (AST::is_a<AST::mod_t>(*x.m_items[i])) {
+                record_mod(unit->m_symtab, *AST::down_cast<AST::mod_t>(x.m_items[i]));
+            } else if (AST::is_a<AST::program_unit_t>(*x.m_items[i])) {
+                record_program_unit(unit->m_symtab,
+                    *AST::down_cast<AST::program_unit_t>(x.m_items[i]));
+            }
+        }
+        if (!pending_implicit_dummy_procedures.empty()) {
+            pending_implicit_dummy_procedure =
+                [this](const ASR::Variable_t *v) {
+                    return pending_implicit_dummy_procedures.find(
+                            const_cast<ASR::symbol_t*>(&v->base))
+                        != pending_implicit_dummy_procedures.end();
+                };
+        }
+    }
+
     void visit_TranslationUnit(const AST::TranslationUnit_t &x) {
         program_count = 0;
         ASR::TranslationUnit_t *unit = ASR::down_cast2<ASR::TranslationUnit_t>(asr);
         current_scope = unit->m_symtab;
+        record_implicit_dummy_procedures(x);
         Vec<ASR::asr_t*> items;
         items.reserve(al, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
@@ -9427,7 +9613,7 @@ public:
                                         Label("", {loc})
                                     }));
                                 throw SemanticAbort();
-                            }, false)) == i) {
+                            }, false, false, &pending_implicit_dummy_procedure)) == i) {
                             function_found = true;
                             args.n = 0;
                             if (is_class_procedure && !is_nopass) {
@@ -9989,7 +10175,7 @@ public:
                                         Label("",{loc})
                                     }));
                                 throw SemanticAbort();
-                                })) {
+                                }, &pending_implicit_dummy_procedure)) {
                                     break;
                                 }
                     }
@@ -10006,7 +10192,7 @@ public:
                                         Label("",{loc})
                                     }));
                                 throw SemanticAbort();
-                                }, true, is_dt_present);
+                                }, true, is_dt_present, &pending_implicit_dummy_procedure);
                 } else {
                     idx = ASRUtils::select_generic_procedure(args, *p, x.base.base.loc,
                             [&](const std::string &msg, const Location &loc) {
@@ -10016,7 +10202,7 @@ public:
                                         Label("",{loc})
                                     }));
                                 throw SemanticAbort();
-                                });
+                                }, true, false, &pending_implicit_dummy_procedure);
                 }
                 ASR::symbol_t* func_sym = p->m_procs[idx];
 

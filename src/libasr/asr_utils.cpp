@@ -4279,7 +4279,7 @@ bool is_op_overloaded(ASR::logicalbinopType op, std::string& intrinsic_op_name,
 
 template <typename T>
 bool argument_types_match(const Vec<ASR::call_arg_t>& args,
-        const T &sub) {
+        const T &sub, const pending_implicit_dummy_fn* pending_dummy) {
     if (args.size() <= sub.n_args) {
         size_t i;
         for (i = 0; i < args.size(); i++) {
@@ -4300,6 +4300,30 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 }
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = v->m_type;
+
+                // The dummy is still declared with a data type. It is a
+                // procedure because its body references it as a function,
+                // which has not been visited yet. A procedure actual matches
+                // when its result type is that data type.
+                if (pending_dummy && *pending_dummy && (*pending_dummy)(v)) {
+                    ASR::ttype_t* formal_type =
+                        ASRUtils::type_get_past_allocatable_pointer(arg2);
+                    if (!ASR::is_a<ASR::FunctionType_t>(*formal_type)) {
+                        ASR::ttype_t* actual_type =
+                            ASRUtils::type_get_past_allocatable_pointer(arg1);
+                        if (!ASR::is_a<ASR::FunctionType_t>(*actual_type)) {
+                            return false;
+                        }
+                        ASR::ttype_t* actual_result =
+                            ASR::down_cast<ASR::FunctionType_t>(actual_type)
+                                ->m_return_var_type;
+                        if (actual_result == nullptr || !types_equal(
+                                actual_result, formal_type, nullptr, nullptr, true)) {
+                            return false;
+                        }
+                        continue;
+                    }
+                }
 
                 // Check if formal argument is an implicit interface procedure (e.g. procedure() :: f)
                 // If it is, it accepts any explicit interface procedure as actual argument.
@@ -4427,7 +4451,8 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 }
 
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
-                         Location& loc, const std::function<void (const std::string &, const Location &)> err) {
+                         Location& loc, const std::function<void (const std::string &, const Location &)> err,
+                         const pending_implicit_dummy_fn* pending_dummy) {
     bool result = false;
     proc = ASRUtils::symbol_get_past_external(proc);
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
@@ -4437,7 +4462,7 @@ bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& 
     if (ASR::is_a<ASR::Function_t>(*proc)) {
         ASR::Function_t *fn
             = ASR::down_cast<ASR::Function_t>(proc);
-        if (argument_types_match(args, *fn)) {
+        if (argument_types_match(args, *fn, pending_dummy)) {
             result = true;
         }
     } else {
@@ -4447,21 +4472,22 @@ bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& 
 }
 
 bool select_type_bound_proc(ASR::symbol_t* method, const Vec<ASR::call_arg_t>& args,
-                            Location& loc, const std::function<void (const std::string &, const Location &)> err) {
+                            Location& loc, const std::function<void (const std::string &, const Location &)> err,
+                            const pending_implicit_dummy_fn* pending_dummy) {
     ASR::StructMethodDeclaration_t* clss_fn = ASR::down_cast<ASR::StructMethodDeclaration_t>(
         ASRUtils::symbol_get_past_external(method));
     const ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
     if (args.n == 0) {
-        return select_func_subrout(proc, args, loc, err);
+        return select_func_subrout(proc, args, loc, err, pending_dummy);
     }
     if (clss_fn->m_is_nopass) {
         Vec<ASR::call_arg_t> args_no_dt;
         args_no_dt.from_pointer_n(args.p + 1, args.n - 1);
-        return select_func_subrout(proc, args_no_dt, loc, err);
+        return select_func_subrout(proc, args_no_dt, loc, err, pending_dummy);
     }
     size_t pass_idx = get_pass_arg_index(method);
     if (pass_idx == 0) {
-        return select_func_subrout(proc, args, loc, err);
+        return select_func_subrout(proc, args, loc, err, pending_dummy);
     }
     // Omitting an optional dummy that precedes the passed-object dummy is
     // not supported by the call construction (`insert_self_arg`), so such a
@@ -4473,7 +4499,7 @@ bool select_type_bound_proc(ASR::symbol_t* method, const Vec<ASR::call_arg_t>& a
     reordered.insert(reordered.begin() + pass_idx, args[0]);
     Vec<ASR::call_arg_t> args_reordered;
     args_reordered.from_pointer_n(reordered.data(), reordered.size());
-    return select_func_subrout(proc, args_reordered, loc, err);
+    return select_func_subrout(proc, args_reordered, loc, err, pending_dummy);
 }
 
 ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
