@@ -1,15 +1,15 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_42 {
     int __loop_start_1;
     int __loop_end_1;
     int __loop_start_2;
     int __loop_end_2;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_42(
     int* __restrict__ a,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_42 __scalar_args)
 {
     int __loop_start_1 = __scalar_args.__loop_start_1;
     int __loop_end_1 = __scalar_args.__loop_end_1;
@@ -31,14 +31,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     a[((int)(i__dc) - (1)) + (10 * ((int)(j__dc) - (1))) + ((10 * 10) * ((int)(k__dc) - (1)))] = (((100 * i__dc) + (10 * j__dc)) + k__dc);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_42 {
     int __loop_start_1;
     int __loop_end_1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_42(
     int* __restrict__ b,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_42 __scalar_args)
 {
     int __loop_start_1 = __scalar_args.__loop_start_1;
     int __loop_end_1 = __scalar_args.__loop_end_1;

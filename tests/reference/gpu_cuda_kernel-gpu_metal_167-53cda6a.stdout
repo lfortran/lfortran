@@ -27,7 +27,7 @@ __device__ inline void get_vals_gpu_19(float* a, int __1a, int __2a, int i, floa
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_167_m3run {
     int nb;
     int __dim_a_0;
     int __lb_a_0;
@@ -40,12 +40,12 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __workspace_extent1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_15gpu_metal_167_m3run(
     float* __restrict__ a,
     float* __restrict__ d,
     t& self,
     float* __restrict__ z,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_167_m3run __scalar_args,
     float* __restrict__ __workspace_5,
     float* __restrict__ __workspace_6)
 {

@@ -15,13 +15,13 @@ __device__ inline void values_gpu_18(tensor_t self, float* __data_self_values_, 
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_452 {
     int __workspace_extent;
     int __workspace_extent1;
     int __workspace_extent2;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_452(
     float* __restrict__ a,
     float* __restrict__ c,
     float* __restrict__ d,
@@ -29,7 +29,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __restrict__ __data_outs_values_,
     int* __restrict__ __offsets_outs_values_,
     int* __restrict__ __sizes_outs_values_,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_452 __scalar_args,
     float* __restrict__ __workspace_8,
     float* __restrict__ __workspace_9,
     float* __restrict__ __workspace_10)

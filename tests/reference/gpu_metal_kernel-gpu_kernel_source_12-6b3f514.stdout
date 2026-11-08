@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_20gpu_kernel_source_12(
     device int* a_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -18,7 +18,7 @@ kernel void __lfortran_gpu_kernel_0(
     a_gpu[((int)(i__dc_gpu) - (((-(2))))) + (7 * ((int)(j__dc_gpu) - (3)))] = (i__dc_gpu + (10 * j__dc_gpu));
 }
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_20gpu_kernel_source_12(
     device int* a_gpu [[buffer(0)]],
     device int* b_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
@@ -37,7 +37,7 @@ kernel void __lfortran_gpu_kernel_1(
     b_gpu[((int)(j__dc1_gpu) - (3)) + (5 * ((int)(i__dc1_gpu) - (((-(2))))))] = (i__dc1_gpu + j__dc1_gpu);
 }
 
-kernel void __lfortran_gpu_kernel_2(
+kernel void __lfortran_gpu_kernel_2_20gpu_kernel_source_12(
     device int* c_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -57,7 +57,7 @@ kernel void __lfortran_gpu_kernel_2(
     c_gpu[((int)(i__dc2_gpu) - (1)) + (2 * ((int)(j__dc2_gpu) - (1))) + ((2 * 3) * ((int)(k__dc_gpu) - (1)))] = ((i__dc2_gpu + (2 * j__dc2_gpu)) + (3 * k__dc_gpu));
 }
 
-kernel void __lfortran_gpu_kernel_3(
+kernel void __lfortran_gpu_kernel_3_20gpu_kernel_source_12(
     device int* a_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -74,7 +74,7 @@ kernel void __lfortran_gpu_kernel_3(
     a_gpu[((int)(i__dc3_gpu) - (((-(2))))) + (7 * ((int)(j__dc3_gpu) - (3)))] = 0;
 }
 
-kernel void __lfortran_gpu_kernel_4(
+kernel void __lfortran_gpu_kernel_4_20gpu_kernel_source_12(
     device int* a_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -95,7 +95,7 @@ kernel void __lfortran_gpu_kernel_4(
     }
 }
 
-kernel void __lfortran_gpu_kernel_5(
+kernel void __lfortran_gpu_kernel_5_20gpu_kernel_source_12(
     device int* a_gpu [[buffer(0)]],
     device int* b_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])

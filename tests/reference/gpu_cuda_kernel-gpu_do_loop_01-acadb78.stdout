@@ -10,7 +10,7 @@ __device__ inline int triangle_gpu_53(int n) {
     return s;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_do_loop_01(
     int* __restrict__ lim,
     int* __restrict__ r)
 {

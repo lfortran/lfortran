@@ -13,7 +13,7 @@ __device__ inline T __lfortran_lane_reduce(T v, int lanes) {
     return v;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_601 {
     long __dim_v_0;
     long __lb_v_0;
     long __dim_v_1;
@@ -24,10 +24,10 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     long __lb_z_1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_601(
     float* __restrict__ v,
     float* __restrict__ z,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_601 __scalar_args)
 {
     long __dim_v_0 = __scalar_args.__dim_v_0;
     long __lb_v_0 = __scalar_args.__lb_v_0;
@@ -48,7 +48,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_601 {
     long lo8;
     long __dim_r_0;
     long __lb_r_0;
@@ -62,13 +62,13 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     long __lb_z_1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_601(
     float* __restrict__ r,
     float* __restrict__ rt,
     float* __restrict__ tot,
     float* __restrict__ v,
     float* __restrict__ z,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_601 __scalar_args)
 {
     long lo8 = __scalar_args.lo8;
     long __dim_r_0 = __scalar_args.__dim_r_0;
@@ -119,7 +119,7 @@ __device__ inline float f_gpu_30(float* a, long __size_a_dim1, long __stride_a_d
     return f;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_601 {
     long lo8;
     long __dim_z_0;
     long __lb_z_0;
@@ -128,12 +128,12 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_601(
     float* __restrict__ t1,
     float* __restrict__ t2,
     float* __restrict__ t3,
     float* __restrict__ z,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_601 __scalar_args)
 {
     long lo8 = __scalar_args.lo8;
     long __dim_z_0 = __scalar_args.__dim_z_0;
@@ -199,7 +199,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     if (__gpu_lanes_n > 1) __syncwarp();
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
+struct __ScalarArgs___lfortran_gpu_kernel_3_13gpu_metal_601 {
     long lo8;
     long __dim_w_0;
     long __lb_w_0;
@@ -208,11 +208,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_601(
     float* __restrict__ t1,
     float* __restrict__ w,
     float* __restrict__ wt,
-    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_3_13gpu_metal_601 __scalar_args)
 {
     long lo8 = __scalar_args.lo8;
     long __dim_w_0 = __scalar_args.__dim_w_0;

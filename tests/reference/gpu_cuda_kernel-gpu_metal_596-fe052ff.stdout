@@ -1,16 +1,16 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_5961s {
     long __libasr_extent_t_1;
     long __libasr_lbound_t_1;
     long lo;
     int __dim_t_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_5961s(
     float* __restrict__ t,
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_5961s __scalar_args)
 {
     long __libasr_lbound_t_1 = __scalar_args.__libasr_lbound_t_1;
     long lo = __scalar_args.lo;

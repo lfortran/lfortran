@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_14gpu_liveout_09(
     device int* __gpu_buf_k_gpu [[buffer(0)]],
     device int* __gpu_buf_m_gpu [[buffer(1)]],
     device int* __gpu_buf_s_gpu [[buffer(2)]],

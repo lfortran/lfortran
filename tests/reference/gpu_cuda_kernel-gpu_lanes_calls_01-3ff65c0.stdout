@@ -24,7 +24,7 @@ __device__ inline int _lcompilers_ibits_i323_gpu_32(int x, int y, int z) {
     return _lcompilers_ibits_i323;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_18gpu_lanes_calls_01(
     int* __restrict__ codes,
     int* __restrict__ w)
 {
@@ -71,7 +71,7 @@ __device__ inline int _lcompilers_ibits_i327_gpu_36(int x, int y, int z) {
     return _lcompilers_ibits_i327;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_18gpu_lanes_calls_01(
     int* __restrict__ total,
     int* __restrict__ w)
 {
@@ -101,14 +101,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_18gpu_lanes_calls_01 {
     long offset;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_18gpu_lanes_calls_01(
     float* __restrict__ o,
     float* __restrict__ q,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_18gpu_lanes_calls_01 __scalar_args)
 {
     long offset = __scalar_args.offset;
     int __flat_idx;

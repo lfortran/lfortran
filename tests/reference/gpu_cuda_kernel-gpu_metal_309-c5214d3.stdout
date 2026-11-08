@@ -9,17 +9,17 @@ struct child_t {
     float x;
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_3093run {
     int __dim_r_0;
     int __lb_r_0;
     int __loop_end_0;
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_3093run(
     float* __restrict__ r,
     child_t& self,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_3093run __scalar_args,
     float* __restrict__ __workspace_3)
 {
     int __lb_r_0 = __scalar_args.__lb_r_0;

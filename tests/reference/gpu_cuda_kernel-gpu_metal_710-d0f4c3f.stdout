@@ -1,13 +1,13 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_7101s {
     int m;
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_7101s(
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_7101s __scalar_args,
     float* __restrict__ __workspace_2)
 {
     int m = __scalar_args.m;
@@ -29,16 +29,16 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_7101s {
     int m;
     int n;
     int __workspace_extent;
     int __workspace_extent1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_7101s(
     float* __restrict__ z,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_7101s __scalar_args,
     float* __restrict__ __workspace_2)
 {
     int m = __scalar_args.m;

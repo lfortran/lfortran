@@ -105,14 +105,14 @@ inline int f_gpu_10(int m_gpu, device int* work_gpu) {
     return r_gpu;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_37 {
     int n_gpu;
     int __workspace_extent_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_20gpu_kernel_source_37(
     device int* out_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_37& __scalar_args [[buffer(1)]],
     device int* __workspace_2 [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -129,15 +129,15 @@ kernel void __lfortran_gpu_kernel_0(
     out_gpu[((int)(i__dc_gpu) - (1))] = f_gpu_10(n_gpu, work_gpu);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_37 {
     int n_gpu;
     int __workspace_extent_gpu;
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_20gpu_kernel_source_37(
     device int* out_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_37& __scalar_args [[buffer(1)]],
     device int* __workspace_2 [[buffer(2)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])

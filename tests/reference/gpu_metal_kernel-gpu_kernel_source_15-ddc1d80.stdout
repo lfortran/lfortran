@@ -7,7 +7,7 @@ inline float twice_gpu_11(float v_gpu) {
     return twice_gpu;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_15 {
     float a_gpu;
     int __dim_x_0_gpu;
     int __lb_x_0_gpu;
@@ -19,11 +19,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __lb_z_1_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_20gpu_kernel_source_15(
     device float* x_gpu [[buffer(0)]],
     device float* y_gpu [[buffer(1)]],
     device float* z_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_15& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     float a_gpu = __scalar_args.a_gpu;

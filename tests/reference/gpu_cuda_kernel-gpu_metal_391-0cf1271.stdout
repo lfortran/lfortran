@@ -7,17 +7,17 @@ __device__ inline void ramp_gpu_17(float x, int n, float* y) {
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_391 {
     int __gpu_heap_cap_r4;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_391(
     float* __restrict__ r,
     float* __restrict__ x,
     float* __restrict__ __gpu_heap_r4,
     int* __restrict__ __gpu_heap_state,
     int* __restrict__ __gpu_stop_status,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_391 __scalar_args)
 {
     int __gpu_heap_cap_r4 = __scalar_args.__gpu_heap_cap_r4;
     int __flat_idx;

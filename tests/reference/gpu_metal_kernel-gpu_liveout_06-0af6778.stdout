@@ -18,16 +18,16 @@ inline void maybe_set_gpu_14(thread int& k_gpu, int i_gpu) {
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_06 {
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_14gpu_liveout_06(
     device int* __gpu_buf_k_gpu [[buffer(0)]],
     device int* a_gpu [[buffer(1)]],
     device pt_gpu& p_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_06& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_a_0_gpu = __scalar_args.__lb_a_0_gpu;
@@ -66,7 +66,7 @@ inline void set_gpu_22(thread int& k_gpu, int i_gpu) {
     k_gpu = (2 * i_gpu);
 }
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_14gpu_liveout_06(
     device int* __gpu_buf_m_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {

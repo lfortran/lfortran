@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_arrays {
     long n;
     long __dim_a_0;
     long __lb_a_0;
@@ -8,9 +8,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_arrays(
     char* __restrict__ a,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_arrays __scalar_args)
 {
     long __lb_a_0 = __scalar_args.__lb_a_0;
     long __loop_start_0 = __scalar_args.__loop_start_0;
@@ -25,7 +25,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     a[((long)(k__dc) - (__lb_a_0))] = ((char)1);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_arrays {
     int m;
     long __dim_b_0;
     long __lb_b_0;
@@ -36,9 +36,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_arrays(
     char* __restrict__ b,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_arrays __scalar_args)
 {
     long __dim_b_0 = __scalar_args.__dim_b_0;
     long __lb_b_0 = __scalar_args.__lb_b_0;

@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_28gpu_discard_guard_extremes_m10compare_i4 {
     int edge_gpu;
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
@@ -10,10 +10,10 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_28gpu_discard_guard_extremes_m10compare_i4(
     device float* a_gpu [[buffer(0)]],
     device float* b_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_28gpu_discard_guard_extremes_m10compare_i4& __scalar_args [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int edge_gpu = __scalar_args.edge_gpu;
@@ -35,7 +35,7 @@ kernel void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_28gpu_discard_guard_extremes_m10compare_i8 {
     long edge_gpu;
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
@@ -48,12 +48,12 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_28gpu_discard_guard_extremes_m10compare_i8(
     device float* a_gpu [[buffer(0)]],
     device float* b_gpu [[buffer(1)]],
     device float* c_gpu [[buffer(2)]],
     device float* d_gpu [[buffer(3)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(4)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_28gpu_discard_guard_extremes_m10compare_i8& __scalar_args [[buffer(4)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     long edge_gpu = __scalar_args.edge_gpu;
@@ -83,15 +83,15 @@ kernel void __lfortran_gpu_kernel_1(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_28gpu_discard_guard_extremes_m14constant_empty {
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_2(
+kernel void __lfortran_gpu_kernel_2_28gpu_discard_guard_extremes_m14constant_empty(
     device float* a_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_2& __scalar_args [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_2_28gpu_discard_guard_extremes_m14constant_empty& __scalar_args [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
@@ -104,7 +104,7 @@ kernel void __lfortran_gpu_kernel_2(
     i__dc_gpu = (__flat_idx_gpu + 1);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
+struct __ScalarArgs___lfortran_gpu_kernel_3_28gpu_discard_guard_extremes_m11interval_i8 {
     long hi_gpu;
     long lo_gpu;
     int __dim_a_0_gpu;
@@ -113,9 +113,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_3(
+kernel void __lfortran_gpu_kernel_3_28gpu_discard_guard_extremes_m11interval_i8(
     device float* a_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_3& __scalar_args [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_3_28gpu_discard_guard_extremes_m11interval_i8& __scalar_args [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     long hi_gpu = __scalar_args.hi_gpu;

@@ -17,14 +17,14 @@ __device__ inline int f_gpu_8(int m, int v, int* work) {
     return r;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_711 {
     int n;
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_711(
     int* __restrict__ out,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_711 __scalar_args,
     int* __restrict__ __workspace_2)
 {
     int n = __scalar_args.n;

@@ -6,13 +6,13 @@ struct g_t_gpu {
     int c_gpu[300];
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_08 {
     int __size_g_w_gpu;
     int __lb_g_w_dim1_gpu;
     int __1__data_g_w_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_14gpu_liveout_08(
     device int* __gpu_buf_e_gpu [[buffer(0)]],
     device int* __gpu_buf_m_gpu [[buffer(1)]],
     device int* __gpu_buf_s_gpu [[buffer(2)]],
@@ -20,7 +20,7 @@ kernel void __lfortran_gpu_kernel_0(
     device g_t_gpu& g_gpu [[buffer(4)]],
     device float* __data_g_w_gpu [[buffer(5)]],
     device int* __gpu_stop_status_gpu [[buffer(6)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(7)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_08& __scalar_args [[buffer(7)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __flat_idx_gpu;

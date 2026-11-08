@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_lanes_reuse_01_m6scores {
     int __dim_last_0_gpu;
     int __lb_last_0_gpu;
     int __dim_last_1_gpu;
@@ -26,11 +26,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_20gpu_lanes_reuse_01_m6scores(
     device int* last_gpu [[buffer(0)]],
     device float* out_gpu [[buffer(1)]],
     device float* q_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_20gpu_lanes_reuse_01_m6scores& __scalar_args [[buffer(3)]],
     device float* __workspace_4 [[buffer(4)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])

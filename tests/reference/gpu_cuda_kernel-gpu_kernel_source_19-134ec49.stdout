@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_19 {
     int __gpu_skew_hi;
     int __gpu_skew_lo;
     long __gpu_window_end;
@@ -9,10 +9,10 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_19 __scalar_args)
 {
     int __gpu_skew_hi = __scalar_args.__gpu_skew_hi;
     int __gpu_skew_lo = __scalar_args.__gpu_skew_lo;
@@ -55,17 +55,17 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_19 {
     int __gpu_skew_hi;
     int __gpu_skew_lo;
     int __loop_start_0;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_19 __scalar_args)
 {
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -88,17 +88,17 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_19 {
     int __gpu_skew_hi1;
     int __gpu_skew_lo1;
     int __loop_start_0;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_19 __scalar_args)
 {
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -112,15 +112,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     u[((int)(k__dc1) - (1))] = (u[((int)(k__dc1) - (1))] + (  2.00000002980232239e-01f * d[((int)(k__dc1) - (1))]));
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
+struct __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_19 {
     int __loop_start_0;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u,
-    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_19 __scalar_args)
 {
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -159,7 +159,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_4(
+extern "C" __global__ void __lfortran_gpu_kernel_4_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u)
 {
@@ -182,7 +182,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_5(
+extern "C" __global__ void __lfortran_gpu_kernel_5_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u)
 {

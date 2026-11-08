@@ -1,16 +1,16 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_09 {
     int __loop_start_0;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_liveout_09(
     int* __restrict__ __gpu_buf_k,
     int* __restrict__ __gpu_buf_m,
     int* __restrict__ __gpu_buf_s,
     int* __restrict__ a,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_09 __scalar_args)
 {
     int __loop_start_0 = __scalar_args.__loop_start_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -79,7 +79,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_14gpu_liveout_09(
     int* __restrict__ __gpu_buf_k1,
     int* __restrict__ __gpu_buf_m1,
     int* __restrict__ __gpu_buf_s1,

@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            __lfortran_gpu_kernel_0:
+            __lfortran_gpu_kernel_0_13gpu_metal_702:
                 (Function
                     (SymbolTable
                         5
@@ -620,7 +620,7 @@
                                     ()
                                 )
                         })
-                    __lfortran_gpu_kernel_0
+                    __lfortran_gpu_kernel_0_13gpu_metal_702
                     (FunctionType
                         [(Integer 4)
                         (Array
@@ -4018,7 +4018,7 @@
                             ()
                         )
                         (GpuKernelLaunch
-                            1 __lfortran_gpu_kernel_0
+                            1 __lfortran_gpu_kernel_0_13gpu_metal_702
                             (Var 2 __gpu_launch_threads)
                             (IntegerConstant 256 (Integer 4) Decimal)
                             [((Var 2 n))

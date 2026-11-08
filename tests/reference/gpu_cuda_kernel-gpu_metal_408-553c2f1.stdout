@@ -53,17 +53,17 @@ __device__ inline float f_gpu_8(int n, float x, float* __gpu_heap_r4, int __gpu_
     return r;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_408 {
     int __gpu_heap_cap_r4;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_408(
     float* __restrict__ x,
     float* __restrict__ y,
     float* __restrict__ __gpu_heap_r4,
     int* __restrict__ __gpu_heap_state,
     int* __restrict__ __gpu_stop_status,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_408 __scalar_args)
 {
     int __gpu_heap_cap_r4 = __scalar_args.__gpu_heap_cap_r4;
     int __flat_idx;

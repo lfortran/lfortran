@@ -100,14 +100,14 @@ inline int f_gpu_8(int m_gpu, int v_gpu, device int* work_gpu) {
     return r_gpu;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_711 {
     int n_gpu;
     int __workspace_extent_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_13gpu_metal_711(
     device int* out_gpu [[buffer(0)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_711& __scalar_args [[buffer(1)]],
     device int* __workspace_2 [[buffer(2)]],
     uint __thread_id [[thread_position_in_grid]])
 {

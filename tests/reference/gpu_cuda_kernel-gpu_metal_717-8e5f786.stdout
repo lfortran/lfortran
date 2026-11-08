@@ -8,7 +8,7 @@ struct t {
     long v;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_717(
     s* a,
     int* __data_a_v,
     long* __offsets_a_v,
@@ -38,16 +38,16 @@ __device__ inline void shifted_gpu_14(t self, int* __data_self_v, long __size_se
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_717 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_717(
     t* b,
     int* __data_b_v,
     long* __offsets_b_v,
     long* __sizes_b_v,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_717 __scalar_args,
     int* __restrict__ __workspace_5)
 {
     int __workspace_extent = __scalar_args.__workspace_extent;

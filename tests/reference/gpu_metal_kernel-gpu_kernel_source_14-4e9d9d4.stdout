@@ -1,14 +1,14 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_14 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_20gpu_kernel_source_14(
     device float* g_gpu [[buffer(0)]],
     device float* x_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_14& __scalar_args [[buffer(2)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {
@@ -89,14 +89,14 @@ kernel void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_14 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_20gpu_kernel_source_14(
     device float* g_gpu [[buffer(0)]],
     device float* x_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_14& __scalar_args [[buffer(2)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {

@@ -6,7 +6,7 @@ __device__ inline float first_device_t_gpu_17(float* a, int __1a) {
     return first;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_479(
     float* __restrict__ y)
 {
     int __flat_idx;

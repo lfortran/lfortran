@@ -10,7 +10,7 @@ struct model_t {
     int offset;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_206(
     float* __restrict__ a,
     model_t& m)
 {

@@ -15,7 +15,7 @@ inline void eval_gpu_14(float x_gpu, thread float& y_gpu) {
     y_gpu = (((float)2) * x_gpu);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_16gpu_liveout_14_m3run {
     int __dim_x_0_gpu;
     int __lb_x_0_gpu;
     int __dim_y_0_gpu;
@@ -23,11 +23,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_16gpu_liveout_14_m3run(
     device model_t_gpu& m_gpu [[buffer(0)]],
     device float* x_gpu [[buffer(1)]],
     device float* y_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_16gpu_liveout_14_m3run& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_x_0_gpu = __scalar_args.__lb_x_0_gpu;
@@ -51,7 +51,7 @@ inline void eval_poly_gpu_20(float x_gpu, thread float& y_gpu) {
     y_gpu = (((float)2) * x_gpu);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_16gpu_liveout_14_m8run_poly {
     int __dim_x_0_gpu;
     int __lb_x_0_gpu;
     int __dim_y_0_gpu;
@@ -59,11 +59,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_16gpu_liveout_14_m8run_poly(
     device poly_t_gpu& m_gpu [[buffer(0)]],
     device float* x_gpu [[buffer(1)]],
     device float* y_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_16gpu_liveout_14_m8run_poly& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_x_0_gpu = __scalar_args.__lb_x_0_gpu;

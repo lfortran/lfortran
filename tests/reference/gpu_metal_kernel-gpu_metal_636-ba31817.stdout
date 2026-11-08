@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_636_m5learn {
     int __dim_n_0_gpu;
     int __lb_n_0_gpu;
     int __dim_y_0_gpu;
@@ -10,10 +10,10 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_15gpu_metal_636_m5learn(
     device int* n_gpu [[buffer(0)]],
     device float* y_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_636_m5learn& __scalar_args [[buffer(2)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {

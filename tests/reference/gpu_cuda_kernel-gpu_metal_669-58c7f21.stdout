@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_669 {
     int n;
     int __dim_s_0;
     int __lb_s_0;
@@ -9,9 +9,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __gpu_first_chunk;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_669(
     int* __restrict__ s,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_669 __scalar_args)
 {
     int __lb_s_0 = __scalar_args.__lb_s_0;
     int __loop_start_0 = __scalar_args.__loop_start_0;
@@ -63,7 +63,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     s[((int)((__gpu_slot + 1)) - (__lb_s_0))] = (s[((int)((__gpu_slot + 1)) - (__lb_s_0))] + __gpu_accumulator);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_669 {
     int __dim_t_0;
     int __lb_t_0;
     int __loop_start_1;
@@ -71,10 +71,10 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __gpu_first_chunk;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_669(
     float* __restrict__ a,
     float* __restrict__ t,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_669 __scalar_args)
 {
     int __lb_t_0 = __scalar_args.__lb_t_0;
     int __loop_start_1 = __scalar_args.__loop_start_1;
@@ -139,14 +139,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_669 {
     int __dim_s_0;
     int __lb_s_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_669(
     int* __restrict__ s,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_669 __scalar_args)
 {
     int __lb_s_0 = __scalar_args.__lb_s_0;
     int __flat_idx;

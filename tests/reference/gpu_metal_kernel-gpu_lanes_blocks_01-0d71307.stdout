@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_19gpu_lanes_blocks_01(
     device float* a_gpu [[buffer(0)]],
     device float* g_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
@@ -22,16 +22,16 @@ kernel void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_19gpu_lanes_blocks_01 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_19gpu_lanes_blocks_01(
     device float* a_gpu [[buffer(0)]],
     device float* w_gpu [[buffer(1)]],
     device float* y_gpu [[buffer(2)]],
     device float* z_gpu [[buffer(3)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(4)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_19gpu_lanes_blocks_01& __scalar_args [[buffer(4)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {

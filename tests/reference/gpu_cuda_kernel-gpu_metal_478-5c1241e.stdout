@@ -1,15 +1,15 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_478_m21changed_pointer_bound {
     int __libasr_extent_t_1;
     int m;
     int __dim_t_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_15gpu_metal_478_m21changed_pointer_bound(
     float* __restrict__ t,
     float* __restrict__ y,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_478_m21changed_pointer_bound __scalar_args)
 {
     int m = __scalar_args.m;
     int __flat_idx;

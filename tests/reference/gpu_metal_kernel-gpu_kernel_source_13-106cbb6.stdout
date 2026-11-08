@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_20gpu_kernel_source_13(
     device int* a_gpu [[buffer(0)]],
     device int* b_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
@@ -24,7 +24,7 @@ inline void put_element_gpu_13(thread int& destination_gpu, int value_gpu) {
     destination_gpu = value_gpu;
 }
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_20gpu_kernel_source_13(
     device int* a_gpu [[buffer(0)]],
     device int* b_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
@@ -50,7 +50,7 @@ inline void put_array_gpu_18(device int* destination_gpu, int __1destination_gpu
     destination_gpu[((int)(row_gpu) - (1)) + (__1destination_gpu * ((int)(column_gpu) - (1)))] = value_gpu;
 }
 
-kernel void __lfortran_gpu_kernel_2(
+kernel void __lfortran_gpu_kernel_2_20gpu_kernel_source_13(
     device int* a_gpu [[buffer(0)]],
     device int* b_gpu [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
@@ -79,7 +79,7 @@ inline int read_element_gpu_24(device int* source_gpu, int __1source_gpu, int __
     return value_gpu;
 }
 
-kernel void __lfortran_gpu_kernel_3(
+kernel void __lfortran_gpu_kernel_3_20gpu_kernel_source_13(
     device int* a_gpu [[buffer(0)]],
     device int* b_gpu [[buffer(1)]],
     device int* c_gpu [[buffer(2)]],
@@ -106,7 +106,7 @@ inline void put_element_gpu_29(thread int& destination_gpu, int value_gpu) {
     destination_gpu = value_gpu;
 }
 
-kernel void __lfortran_gpu_kernel_4(
+kernel void __lfortran_gpu_kernel_4_20gpu_kernel_source_13(
     device int* a_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {

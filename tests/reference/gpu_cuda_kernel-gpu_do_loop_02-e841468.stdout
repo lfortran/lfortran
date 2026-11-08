@@ -11,7 +11,7 @@ __device__ inline void fill_device_t_gpu_18(float* a, int n) {
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_do_loop_02(
     float* __restrict__ x)
 {
     int __flat_idx;

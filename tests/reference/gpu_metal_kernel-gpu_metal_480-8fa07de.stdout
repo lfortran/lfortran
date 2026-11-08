@@ -10,14 +10,14 @@ inline int _lcompilers_optimization_modulo_i32_gpu_19(int a_gpu, int p_gpu) {
     return _lcompilers_optimization_modulo_i32_gpu;
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_480 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_13gpu_metal_480(
     device int* limits_gpu [[buffer(0)]],
     device float* result_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_480& __scalar_args [[buffer(2)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {

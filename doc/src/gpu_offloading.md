@@ -1379,7 +1379,17 @@ environment variable `LFORTRAN_GPU_PROFILE` is set:
 At exit, or at `lfortran_gpu_shutdown`, the runtime waits for the launches
 still pending and prints the totals and a table of the kernels, sorted by GPU
 time, to stderr, or to the file `LFORTRAN_GPU_PROFILE_FILE` names. A kernel is
-named by its entry point, `__lfortran_gpu_kernel_<n>_<id>`. The totals are
+named by its entry point, `__lfortran_gpu_kernel_<n>_<scopes>`: the number
+of the kernel in its file and the names of the program units and procedures
+the loop is in, each prefixed by its length (for example
+`__lfortran_gpu_kernel_0_6solver6update` for the first kernel of the file,
+in the procedure `update` of the module `solver`), followed by `_<id>` with
+`--separate-compilation`. A procedure with a binding label,
+`bind(c, name="<label>")`, is named by its label, prefixed by `b` and its
+length (`__lfortran_gpu_kernel_0_b8solve_c1` for `name="solve_c1"`), since
+only the label of such a procedure is global. Scopes whose names together are
+longer than 128 characters are replaced by `h` and a hash of them,
+`__lfortran_gpu_kernel_<n>_h<digits>`. The totals are
 also available to C code through `lfortran_gpu_metal_telemetry_snapshot`
 (`lfortran_gpu_runtime.h`). To get the cost of one step of a program, such as
 one generated token, run it for two numbers of steps and subtract the

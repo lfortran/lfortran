@@ -7,7 +7,7 @@ struct u_gpu {
     int last_gpu;
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_03 {
     int __dim_b_0_gpu;
     int __lb_b_0_gpu;
     int __size_z_w_gpu;
@@ -15,11 +15,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __1__data_z_w_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_24gpu_derived_component_03(
     device int* b_gpu [[buffer(0)]],
     device u_gpu& z_gpu [[buffer(1)]],
     device float* __data_z_w_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_03& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __lb_b_0_gpu = __scalar_args.__lb_b_0_gpu;
@@ -43,7 +43,7 @@ kernel void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_26gpu_derived_component_03_m1s {
     int __dim_a_0_gpu;
     int __lb_a_0_gpu;
     int __size_self_w_gpu;
@@ -52,11 +52,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __loop_end_0_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_26gpu_derived_component_03_m1s(
     device int* a_gpu [[buffer(0)]],
     device u_gpu& self_gpu [[buffer(1)]],
     device float* __data_self_w_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1_26gpu_derived_component_03_m1s& __scalar_args [[buffer(3)]],
     uint __thread_id [[thread_position_in_grid]])
 {
     int __dim_a_0_gpu = __scalar_args.__dim_a_0_gpu;

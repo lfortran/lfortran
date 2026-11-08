@@ -2,9 +2,7 @@
 ! compiled without a device has an empty object, and this unit compiles its
 ! procedure, which it calls itself and through an external subroutine
 ! compiled in another file after a kernel. Both calls must reach a defined
-! symbol and see what was written before them. (Only one of the two files
-! has a kernel: in the default mode the kernels of separately compiled files
-! get the same names.)
+! symbol and see what was written before them.
 program gpu_deferred_sync_09
 use gpu_deferred_sync_09_mod, only: add_one
 implicit none

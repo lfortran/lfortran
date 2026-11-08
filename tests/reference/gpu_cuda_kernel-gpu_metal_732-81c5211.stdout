@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_17gpu_metal_732_mod3run {
     int __gpu_private_shape;
     int n;
     int __dim_out_0;
@@ -9,9 +9,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_17gpu_metal_732_mod3run(
     int* __restrict__ out,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_0_17gpu_metal_732_mod3run __scalar_args,
     int* __restrict__ __workspace_2)
 {
     int __gpu_private_shape = __scalar_args.__gpu_private_shape;
@@ -39,7 +39,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_17gpu_metal_732_mod3run {
     int __gpu_private_shape1;
     int __gpu_private_shape2;
     int m;
@@ -50,9 +50,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_17gpu_metal_732_mod3run(
     int* __restrict__ out,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_1_17gpu_metal_732_mod3run __scalar_args,
     int* __restrict__ __workspace_2)
 {
     int __gpu_private_shape1 = __scalar_args.__gpu_private_shape1;
@@ -79,7 +79,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_17gpu_metal_732_mod3run {
     int __gpu_private_shape3;
     int n;
     int __dim_out_0;
@@ -88,9 +88,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_17gpu_metal_732_mod3run(
     int* __restrict__ out,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_2_17gpu_metal_732_mod3run __scalar_args,
     int* __restrict__ __workspace_2)
 {
     int __gpu_private_shape3 = __scalar_args.__gpu_private_shape3;
@@ -119,7 +119,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
+struct __ScalarArgs___lfortran_gpu_kernel_3_17gpu_metal_732_mod3run {
     int __gpu_private_shape4;
     int n;
     int __dim_out_0;
@@ -128,9 +128,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_17gpu_metal_732_mod3run(
     int* __restrict__ out,
-    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_3_17gpu_metal_732_mod3run __scalar_args,
     int* __restrict__ __workspace_2)
 {
     int __gpu_private_shape4 = __scalar_args.__gpu_private_shape4;
@@ -155,7 +155,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_4 {
+struct __ScalarArgs___lfortran_gpu_kernel_4_17gpu_metal_732_mod3run {
     int __gpu_private_shape5;
     int __gpu_private_shape6;
     int m;
@@ -166,9 +166,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_4 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4(
+extern "C" __global__ void __lfortran_gpu_kernel_4_17gpu_metal_732_mod3run(
     int* __restrict__ out,
-    __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args,
+    __ScalarArgs___lfortran_gpu_kernel_4_17gpu_metal_732_mod3run __scalar_args,
     int* __restrict__ __workspace_2)
 {
     int __gpu_private_shape5 = __scalar_args.__gpu_private_shape5;

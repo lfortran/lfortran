@@ -6,7 +6,7 @@ struct u {
     int last;
 };
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_03 {
     int __dim_b_0;
     int __lb_b_0;
     int __size_z_w;
@@ -14,11 +14,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __1__data_z_w;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_24gpu_derived_component_03(
     int* __restrict__ b,
     u& z,
     float* __data_z_w,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_03 __scalar_args)
 {
     int __lb_b_0 = __scalar_args.__lb_b_0;
     int __flat_idx;
@@ -41,7 +41,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_26gpu_derived_component_03_m1s {
     int __dim_a_0;
     int __lb_a_0;
     int __size_self_w;
@@ -50,11 +50,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_26gpu_derived_component_03_m1s(
     int* __restrict__ a,
     u& self,
     float* __data_self_w,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_26gpu_derived_component_03_m1s __scalar_args)
 {
     int __dim_a_0 = __scalar_args.__dim_a_0;
     int __lb_a_0 = __scalar_args.__lb_a_0;

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
@@ -36,6 +37,59 @@ using ASR::down_cast;
 using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
+
+// A kernel is a global symbol of its object file, and the Metal runtime
+// finds its source by its name, so the kernels of all the files linked
+// into a program need distinct names; the counter only numbers those of
+// one file. The kernel is therefore also named after the scopes the loop
+// is in, from the outermost one (a program, a module or an external
+// procedure, which has a name of its own in the program), each name
+// prefixed by its length so that no two chains of scopes give the same
+// name: `__lfortran_gpu_kernel_<n>_<len><name>...`. A procedure with a
+// binding label is named `b<len><label>` instead: its label is a global
+// identifier, its Fortran name is not, so two external procedures of one
+// name may be linked into a program by distinct labels. Only the
+// procedure a BLOCK is in is named, and a character no identifier of the
+// kernel languages may hold becomes `_`. A chain too long for the names
+// the runtimes accept is replaced by `h` and its FNV-1a hash.
+static std::string gpu_kernel_name(SymbolTable *scope) {
+    std::string chain;
+    for (SymbolTable *s = scope; s != nullptr; s = s->parent) {
+        if (s->asr_owner == nullptr || !ASR::is_a<ASR::symbol_t>(
+                *s->asr_owner)) {
+            break;
+        }
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+        if (ASR::is_a<ASR::Block_t>(*owner)) continue;
+        std::string name = ASRUtils::symbol_name(owner);
+        std::string marker;
+        if (ASR::is_a<ASR::Function_t>(*owner)) {
+            ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(
+                ASR::down_cast<ASR::Function_t>(owner));
+            if (ftype->m_abi == ASR::abiType::BindC
+                    && ftype->m_bindc_name != nullptr
+                    && ftype->m_bindc_name[0] != '\0') {
+                name = ftype->m_bindc_name;
+                marker = "b";
+            }
+        }
+        for (char &c : name) {
+            if (!std::isalnum(static_cast<unsigned char>(c))) c = '_';
+        }
+        chain = marker + std::to_string(name.size()) + name + chain;
+    }
+    if (chain.size() > 128) {
+        uint64_t hash = 14695981039346656037ULL;
+        for (char c : chain) {
+            hash = (hash ^ static_cast<unsigned char>(c)) * 1099511628211ULL;
+        }
+        chain = "h" + std::to_string(hash);
+    }
+    std::string name = "__lfortran_gpu_kernel_"
+        + std::to_string(gpu_kernel_counter++);
+    if (!chain.empty()) name += "_" + chain;
+    return name;
+}
 
 // Replaces each expression that stands for an extent the host computes
 // -- the extent node of a BLOCK local's declaration, or a copy a
@@ -822,7 +876,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // 2. Create kernel scope and parameters
     SymbolTable *tu_symtab = tu.m_symtab;
     std::string kernel_name = tu_symtab->get_unique_name(
-        "__lfortran_gpu_kernel_" + std::to_string(gpu_kernel_counter++));
+        gpu_kernel_name(this->current_scope));
     SymbolTable *kernel_scope = al.make_new<SymbolTable>(tu_symtab);
 
     Vec<ASR::expr_t*> kernel_args;

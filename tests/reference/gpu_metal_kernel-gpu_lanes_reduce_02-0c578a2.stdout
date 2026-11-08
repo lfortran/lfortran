@@ -1,14 +1,14 @@
 #include <metal_stdlib>
 using namespace metal;
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_19gpu_lanes_reduce_02 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_0(
+kernel void __lfortran_gpu_kernel_0_19gpu_lanes_reduce_02(
     device float* a_gpu [[buffer(0)]],
     device float* s_gpu [[buffer(1)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0_19gpu_lanes_reduce_02& __scalar_args [[buffer(2)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {
@@ -87,7 +87,7 @@ kernel void __lfortran_gpu_kernel_0(
     }
 }
 
-kernel void __lfortran_gpu_kernel_1(
+kernel void __lfortran_gpu_kernel_1_19gpu_lanes_reduce_02(
     device float* a_gpu [[buffer(0)]],
     device float* x_gpu [[buffer(1)]],
     device float* y_gpu [[buffer(2)]],
@@ -153,18 +153,18 @@ kernel void __lfortran_gpu_kernel_1(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_19gpu_lanes_reduce_02 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_2(
+kernel void __lfortran_gpu_kernel_2_19gpu_lanes_reduce_02(
     device float* a_gpu [[buffer(0)]],
     device float* d_gpu [[buffer(1)]],
     device int* k_gpu [[buffer(2)]],
     device float* mn_gpu [[buffer(3)]],
     device float* mx_gpu [[buffer(4)]],
     device float* p_gpu [[buffer(5)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_2& __scalar_args [[buffer(6)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_2_19gpu_lanes_reduce_02& __scalar_args [[buffer(6)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {
@@ -627,7 +627,7 @@ kernel void __lfortran_gpu_kernel_2(
     }
 }
 
-kernel void __lfortran_gpu_kernel_3(
+kernel void __lfortran_gpu_kernel_3_19gpu_lanes_reduce_02(
     device long* l_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -690,7 +690,7 @@ kernel void __lfortran_gpu_kernel_3(
     }
 }
 
-kernel void __lfortran_gpu_kernel_4(
+kernel void __lfortran_gpu_kernel_4_19gpu_lanes_reduce_02(
     device int* h_gpu [[buffer(0)]],
     uint __thread_id [[thread_position_in_grid]])
 {
@@ -772,15 +772,15 @@ kernel void __lfortran_gpu_kernel_4(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_5 {
+struct __ScalarArgs___lfortran_gpu_kernel_5_19gpu_lanes_reduce_02 {
     int __gpu_lanes_gpu;
 };
 
-kernel void __lfortran_gpu_kernel_5(
+kernel void __lfortran_gpu_kernel_5_19gpu_lanes_reduce_02(
     device float* a_gpu [[buffer(0)]],
     device float* e_gpu [[buffer(1)]],
     device int* kb_gpu [[buffer(2)]],
-    constant __ScalarArgs___lfortran_gpu_kernel_5& __scalar_args [[buffer(3)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_5_19gpu_lanes_reduce_02& __scalar_args [[buffer(3)]],
     uint __gpu_grid_thread [[thread_position_in_grid]],
     uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {

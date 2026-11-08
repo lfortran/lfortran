@@ -4,7 +4,7 @@ struct point_t {
     float v;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_315(
     point_t* __restrict__ p,
     float* __restrict__ r)
 {
@@ -18,7 +18,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     r[((int)(i__dc) - (1))] = (p[((int)(i__dc) - (1)) + (2 * ((int)(2) - (1))) + ((2 * 2) * ((int)(1) - (1))) + (((2 * 2) * 2) * ((int)(2) - (1)))].v *   2.00000000000000000e+00f);
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_315(
     point_t* __restrict__ p)
 {
     int __flat_idx;

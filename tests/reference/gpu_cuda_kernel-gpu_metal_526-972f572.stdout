@@ -1,14 +1,14 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_526 {
     int n;
     int __loop_start_0;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_526(
     int* __restrict__ b,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_526 __scalar_args)
 {
     int n = __scalar_args.n;
     int __loop_start_0 = __scalar_args.__loop_start_0;
@@ -55,14 +55,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_1 {
+struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_526 {
     int n;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1(
+extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_526(
     int* __restrict__ b,
-    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_526 __scalar_args)
 {
     int n = __scalar_args.n;
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -88,15 +88,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2 {
+struct __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_526 {
     int n;
     int __loop_start_0;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2(
+extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_526(
     int* __restrict__ c,
-    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_526 __scalar_args)
 {
     int n = __scalar_args.n;
     int __loop_start_0 = __scalar_args.__loop_start_0;
@@ -154,14 +154,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_3 {
+struct __ScalarArgs___lfortran_gpu_kernel_3_13gpu_metal_526 {
     int n;
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3(
+extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_526(
     int* __restrict__ c,
-    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_3_13gpu_metal_526 __scalar_args)
 {
     int n = __scalar_args.n;
     int __loop_end_0 = __scalar_args.__loop_end_0;

@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-struct __ScalarArgs___lfortran_gpu_kernel_0 {
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_565 {
     int k;
     int m;
     int n;
@@ -11,9 +11,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0(
+extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_565(
     int* __restrict__ c,
-    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_565 __scalar_args)
 {
     int m = __scalar_args.m;
     int __loop_start_0 = __scalar_args.__loop_start_0;
