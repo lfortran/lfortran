@@ -2777,6 +2777,13 @@ RUN(NAME generic_interface_dummy_procedure_07 LABELS gfortran llvm)
 RUN(NAME generic_interface_dummy_procedure_08 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME generic_interface_external_procedure_01 LABELS gfortran llvm)
 RUN(NAME generic_interface_external_procedure_02 LABELS gfortran llvm)
+RUN(NAME generic_interface_distinguishable_01 LABELS gfortran llvm)
+RUN(NAME generic_interface_distinguishable_02 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing)
+# No gfortran label: GFortran 15 rejects the kind-specific passed-object
+# dummies class(pt(4))/class(pt(8)) of a type-bound generic (valid per F2018
+# C760, which constrains only length type parameters); GFortran 16 and Flang
+# accept it.
+RUN(NAME generic_interface_distinguishable_03 LABELS llvm)
 RUN(NAME operator_interface_dummy_procedure_01 LABELS gfortran llvm)
 RUN(NAME operator_interface_scope_01 LABELS gfortran llvm)
 
