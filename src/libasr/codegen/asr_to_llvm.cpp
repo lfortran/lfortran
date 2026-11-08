@@ -27777,15 +27777,8 @@ public:
                         // The box of a `type(*)` dummy already holds the
                         // address of the data. A `class(*)` box holds a
                         // character value through its string descriptor.
-                        bool actual_is_assumed_type = false;
-                        if (ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
-                            ASR::symbol_t* actual_sym = ASRUtils::symbol_get_past_external(
-                                ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v);
-                            actual_is_assumed_type =
-                                ASR::is_a<ASR::Variable_t>(*actual_sym) &&
-                                ASRUtils::is_assumed_type_dummy(
-                                    ASR::down_cast<ASR::Variable_t>(actual_sym));
-                        }
+                        bool actual_is_assumed_type =
+                            ASRUtils::is_assumed_type_dummy(x.m_args[i].m_value);
                         llvm::Value* is_char = actual_is_assumed_type
                             ? llvm::ConstantInt::getFalse(context)
                             : builder->CreateICmpEQ(

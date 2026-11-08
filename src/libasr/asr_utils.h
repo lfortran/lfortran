@@ -3814,6 +3814,21 @@ static inline bool is_assumed_type_dummy(const ASR::Variable_t* v)
     return ASR::is_a<ASR::Struct_t>(*sym) &&
         std::string(symbol_name(sym)) == "~assumed_type";
 }
+
+// Whether `expr` designates a `type(*)` dummy argument, possibly behind an
+// array physical cast (e.g. an assumed-shape or assumed-size `type(*)` dummy
+// passed on to an assumed-rank dummy).
+static inline bool is_assumed_type_dummy(ASR::expr_t* expr)
+{
+    expr = get_past_array_physical_cast(expr);
+    if (!ASR::is_a<ASR::Var_t>(*expr)) {
+        return false;
+    }
+    ASR::symbol_t* sym = symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(expr)->m_v);
+    return ASR::is_a<ASR::Variable_t>(*sym) &&
+        is_assumed_type_dummy(ASR::down_cast<ASR::Variable_t>(sym));
+}
 /// Check if type is a class + not unlimited-polymorphic one
 inline bool non_unlimited_polymorphic_class(ASR::ttype_t* const t){
     return is_class_type(extract_type(t)) && !is_unlimited_polymorphic_type(t);
