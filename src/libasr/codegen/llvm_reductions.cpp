@@ -24,39 +24,13 @@
 #include <vector>
 
 /*
-Pairwise horizontal reductions of four vector squares.
+Pairwise horizontal reductions of a four-wide sum of squares.
 
-When a loop computes a sum of squares over the first two components of a
-fixed-size, four element vector and the loop is unrolled by four, the SLP
-vectorizer gathers each component of the four vectors with a chain of
-shuffles, squares the gathered vectors and adds them:
-
-    g0 = shuffle v0, v1, <0,4,undef,undef>
-    ...
-    g0 = shuffle g0, v3, <0,1,2,4>          ; component 0 of v0..v3
-    ... the same for components 1 and 2 ...
-    s = g0*g0 + g1*g1 + g2*g2               ; per vector: v[0]^2 + v[1]^2 + v[2]^2
-
-That is a transpose of four vectors followed by a vertical sum: nine shuffles,
-three multiplies and two adds per group of four vectors. The code generator
-cannot recover a horizontal instruction from it, so the loop carries the
-shuffles and the register pressure of the transpose.
-
-The same result is computed pairwise, which is what a hand-written SIMD
-kernel does:
-
-    t0 = hadd(v0*v0, v1*v1)                 ; partial sums of v0 and v1
-    t1 = hadd(v2*v2, v3*v3)
-    s  = (t0[2],t0[3],t1[0],t1[1]) + (t0[0],t0[1],t1[2],t1[3])
-
-Two horizontal adds, two shuffles and one add per group. The horizontal add
-sums all four components, so the fourth component of the vectors is cleared
-first unless it is known to be zero; the reduction above only sums the first
-three.
-
-This runs after the optimization pipeline, once the vectorizer has chosen the
-transpose. It only rewrites groups whose three gathered components are
-0, 1 and 2 of the same four vectors, and only on x86 with AVX.
+SLP turns a sum of squares of components 0, 1 and 2 of four `<4 x double>`
+vectors into a transpose. `vhaddpd` computes the same sums but also adds
+component 3, so that component is cleared unless it is known to be zero.
+The rewrite runs after the vectorizer, only on x86 with AVX and only on a
+tree of fast additions: a value used more than once is left unchanged.
 */
 
 namespace LCompilers {
@@ -138,19 +112,21 @@ bool match_square(Value *v, Value *&x) {
 }
 
 // Collect the leaves of a tree of fast additions. Anything that is not such
-// an addition is a leaf.
-void collect_terms(Value *v, SmallVectorImpl<Value *> &terms,
+// an addition is a leaf. Returns false when a value is reached twice: the
+// expression is a DAG, and counting that value once would drop a repeated
+// term (s + s is 2*s, not s).
+bool collect_terms(Value *v, SmallVectorImpl<Value *> &terms,
         SmallPtrSetImpl<Value *> &seen) {
     if (!seen.insert(v).second) {
-        return;
+        return false;
     }
     auto *i = dyn_cast<Instruction>(v);
     if (i && i->getOpcode() == Instruction::FAdd && is_fast(i)) {
-        collect_terms(i->getOperand(0), terms, seen);
-        collect_terms(i->getOperand(1), terms, seen);
-    } else {
-        terms.push_back(v);
+        return collect_terms(i->getOperand(0), terms, seen)
+            && collect_terms(i->getOperand(1), terms, seen);
     }
+    terms.push_back(v);
+    return true;
 }
 
 // Whether element `lane` of `v` is known to be +0.0 or -0.0 (a scalar is
@@ -393,8 +369,8 @@ bool may_recombine_horizontal_reductions(const llvm::Function &f,
             }
             llvm::SmallVector<llvm::Value *, 4> terms;
             llvm::SmallPtrSet<llvm::Value *, 8> seen;
-            collect_terms(const_cast<Instruction *>(&i), terms, seen);
-            if (terms.size() != 3) {
+            if (!collect_terms(const_cast<Instruction *>(&i), terms, seen)
+                    || terms.size() != 3) {
                 continue;
             }
             bool squares = true;
@@ -432,8 +408,7 @@ bool recombine_horizontal_reductions(llvm::Function &f,
             }
             llvm::SmallVector<llvm::Value *, 4> terms;
             llvm::SmallPtrSet<llvm::Value *, 8> seen;
-            collect_terms(&i, terms, seen);
-            if (terms.size() == 3) {
+            if (collect_terms(&i, terms, seen) && terms.size() == 3) {
                 roots.push_back(&i);
             }
         }
@@ -441,8 +416,7 @@ bool recombine_horizontal_reductions(llvm::Function &f,
     for (llvm::Instruction *root : roots) {
         llvm::SmallVector<llvm::Value *, 4> terms;
         llvm::SmallPtrSet<llvm::Value *, 8> seen;
-        collect_terms(root, terms, seen);
-        if (terms.size() != 3) {
+        if (!collect_terms(root, terms, seen) || terms.size() != 3) {
             continue;
         }
         llvm::Value *bases[4] = {nullptr, nullptr, nullptr, nullptr};

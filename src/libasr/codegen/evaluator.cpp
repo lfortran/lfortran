@@ -1125,9 +1125,22 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     mpm.add(llvm::createVerifierPass());
     mpm.run(m);
 #endif
+    // expand_reciprocal_sqrt edits the IR outside the pass managers. On
+    // LLVM 17 and later the function analyses filled by MPM are then stale,
+    // and the late SROA round below would read them. The legacy pipeline
+    // has no analysis cache.
+#if LLVM_VERSION_MAJOR >= 17
+    std::vector<llvm::Function *> rsqrt_changed;
+    for (llvm::Function &f : m) {
+        if (expand_reciprocal_sqrt(f, TM->getTargetTriple())) {
+            rsqrt_changed.push_back(&f);
+        }
+    }
+#else
     for (llvm::Function &f : m) {
         expand_reciprocal_sqrt(f, TM->getTargetTriple());
     }
+#endif
 
     // The late cleanup and the horizontal reduction rewrite only run on
     // functions that the rewrite may apply to: definitions for x86 with AVX
@@ -1150,6 +1163,9 @@ void LLVMEvaluator::opt(llvm::Module &m) {
             llvm::SROAOptions::ModifyCFG)));
         LateFPM.addPass(llvm::InstCombinePass());
         LateFPM.addPass(llvm::SimplifyCFGPass());
+        for (llvm::Function *f : rsqrt_changed) {
+            FAM.invalidate(*f, llvm::PreservedAnalyses::none());
+        }
         for (llvm::Function *f : late_functions) {
             LateFPM.run(*f, FAM);
         }
