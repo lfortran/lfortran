@@ -7327,6 +7327,8 @@ RUN(NAME gpu_reduction_overwrite_01_chunks FILE gpu_reduction_overwrite_01 LABEL
 RUN(NAME gpu_metal_731 LABELS gfortran llvm metal cuda)
 # The same for arrays with bounds set on entry (automatic arrays).
 RUN(NAME gpu_metal_732 LABELS gfortran llvm metal cuda)
+# Section subscripts are evaluated before the element stores (#17018).
+RUN(NAME gpu_metal_733 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_deferred_sync_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_deferred_sync_02 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_deferred_sync_03 LABELS gfortran llvm metal cuda)

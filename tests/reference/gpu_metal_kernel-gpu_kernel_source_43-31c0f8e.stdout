@@ -366,6 +366,7 @@ kernel void __lfortran_gpu_kernel_5_20gpu_kernel_source_43(
     int __gpu_loop_group1_gpu;
     int __gpu_loop_group_gpu;
     int __gpu_loop_start_gpu;
+    int __gpu_sec_b_gpu;
     int __gpu_sec_i7_gpu;
     device int* __libasr_created__array_bound_v_gpu = ((__workspace_extent_gpu) > 0) ? (__workspace_4 + ((long)__thread_id) * __workspace_extent_gpu) : nullptr;
     device int* __libasr_created__array_section_pointer__gpu;
@@ -377,45 +378,46 @@ kernel void __lfortran_gpu_kernel_5_20gpu_kernel_source_43(
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
     i__dc5_gpu = (__flat_idx_gpu + 1);
-    __gpu_loop_end_gpu = ((4 - lo_gpu[((int)(4) - (1))]) + 1);
+    __gpu_sec_b_gpu = lo_gpu[((int)(4) - (1))];
+    __gpu_loop_end_gpu = ((4 - __gpu_sec_b_gpu) + 1);
     __gpu_sec_i7_gpu = 1;
     if ((__gpu_loop_end_gpu >= 1)) {
         for (__gpu_loop_group_gpu = 1; __gpu_loop_group_gpu <= (__gpu_loop_end_gpu - 15); __gpu_loop_group_gpu += 16) {
             __gpu_sec_i7_gpu = __gpu_loop_group_gpu;
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 1);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 2);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 3);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 4);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 5);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 6);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 7);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 8);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 9);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 10);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 11);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 12);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 13);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 14);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
             __gpu_sec_i7_gpu = (__gpu_loop_group_gpu + 15);
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
         }
         for (__gpu_sec_i7_gpu = __gpu_loop_group_gpu; __gpu_sec_i7_gpu <= __gpu_loop_end_gpu; __gpu_sec_i7_gpu++) {
-            lo_gpu[((int)((lo_gpu[((int)(4) - (1))] + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
+            lo_gpu[((int)((__gpu_sec_b_gpu + (__gpu_sec_i7_gpu - 1))) - (1))] = 7;
         }
     }
     for (__gpu_bc_i_gpu = 1; __gpu_bc_i_gpu <= 4; __gpu_bc_i_gpu++) {
