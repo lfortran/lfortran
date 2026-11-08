@@ -6333,6 +6333,8 @@ RUN(NAME separate_compilation_71 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_72 LABELS gfortran llvm
     EXTRA_ARGS --separate-compilation --implicit-interface
     EXTRAFILES separate_compilation_72a.f90 separate_compilation_72b.f90)
+RUN(NAME separate_compilation_73 LABELS gfortran llvm
+    EXTRAFILES separate_compilation_73a.f90) # real(10) constant round-trip through a mod file (#17032)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
