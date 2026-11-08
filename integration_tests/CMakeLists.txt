@@ -2839,6 +2839,7 @@ RUN(NAME generic_interface_distinguishable_02 LABELS gfortran llvm EXTRA_ARGS --
 # C760, which constrains only length type parameters); GFortran 16 and Flang
 # accept it.
 RUN(NAME generic_interface_distinguishable_03 LABELS llvm)
+RUN(NAME generic_interface_distinguishable_04 LABELS gfortran llvm)
 RUN(NAME operator_interface_dummy_procedure_01 LABELS gfortran llvm)
 RUN(NAME operator_interface_scope_01 LABELS gfortran llvm)
 
