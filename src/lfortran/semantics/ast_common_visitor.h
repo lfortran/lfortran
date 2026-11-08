@@ -23862,6 +23862,12 @@ public:
             void visit_Var(const ASR::Var_t& x) {
                 add(x.m_v);
             }
+            // A component of a use-associated variable, as in `p(d%n)`,
+            // is named by an ExternalSymbol of `fn` that the copy needs too.
+            void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+                add(x.m_m);
+                ASR::BaseWalkVisitor<ReferencedEntities>::visit_StructInstanceMember(x);
+            }
             void visit_FunctionCall(const ASR::FunctionCall_t& x) {
                 add(x.m_name);
                 add(x.m_original_name);
