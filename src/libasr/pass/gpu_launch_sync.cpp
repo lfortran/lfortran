@@ -83,11 +83,16 @@ compiled with a device like this unit, so it defines their twins.
   waits before the call as before any call.
 * An external subroutine or scalar function defined in this file gets a
   twin on the same terms when its body launches or calls a procedure that
-  does, and a target dummy is allowed when the body associates no pointer
-  with it. Another file calls the original procedure, which waits. A call
-  through an explicit interface of that procedure in this file is
-  redirected to the twin too. A module procedure is unchanged: only its
-  declaration decides, so a target dummy still gets no twin.
+  does. A target dummy still gets one unless the body associates a pointer
+  with it: a pointer this body creates could outlive the call under another
+  name. That is not because the dummy is safe when the body associates
+  nothing. The caller may already have associated a pointer with the actual
+  argument, which this body does not see, so a call that may read through
+  it is ordered with the launch here, before the call. Another file calls
+  the original procedure, which waits. A call through an explicit interface
+  of that procedure in this file is redirected to the twin too. A module
+  procedure is unchanged: only its declaration decides, so a target dummy
+  still gets no twin.
 
 Storage a launch only reads the runtime may hand the kernel in place (the
 unified and managed memory models), so a GpuWait -- wait for the launches
@@ -954,8 +959,10 @@ bool target_dummy_escaped(ASR::Function_t *fn) {
 
 // An external procedure of this translation unit. The body is compiled
 // here, so unlike a module procedure the choice may use it: another file
-// calls the original, which waits. A target dummy is allowed when the body
-// keeps no pointer to it.
+// calls the original, which waits. A target dummy still gets a twin unless
+// the body associates a pointer with it. The caller may already have
+// associated one with the actual argument; that does not refuse the twin,
+// but a call here that can read through it waits for the launch first.
 bool external_gets_twin(ASR::Function_t *fn) {
     SymbolTable *parent = fn->m_symtab == nullptr ? nullptr
         : fn->m_symtab->parent;
@@ -1543,9 +1550,13 @@ private:
         return conflicts(acc, s.written);
     }
 
-    // Whether another procedure can reach `root` while this one runs.
-    // A dummy or local of this procedure, even a target, cannot, unless a
-    // pointer that escaped was associated with it (`escaped`).
+    // Whether a call counted as `globals` can reach `root` while this
+    // procedure runs. A local cannot, unless a pointer that escaped was
+    // associated with it (`escaped`). A target dummy can: the caller may
+    // already have associated a pointer with the actual argument, and that
+    // pointer is not visible here, so it is not in `escaped`. A summarized
+    // call that kept its real roots does not use this; it overlaps those
+    // roots, and a module pointer path still overlaps this dummy.
     bool globals_reach(ASR::symbol_t *root) const {
         if (may_point_anywhere(root) || root == nullptr
                 || !ASR::is_a<ASR::Variable_t>(*root)) {
@@ -1553,6 +1564,7 @@ private:
         }
         if (escaped.count(root) > 0) return true;
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(root);
+        if (v->m_target_attr && dummy_index(root) >= 0) return true;
         if (enclosing_routine(v->m_parent_symtab) == routine) return false;
         return reachable_elsewhere(root, routine);
     }
