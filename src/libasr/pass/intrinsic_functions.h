@@ -1962,12 +1962,45 @@ namespace Rand {
     }
 } // namespace Rand
 
+// Whether `expr` is of type ISO_FORTRAN_ENV's TEAM_TYPE
+static inline bool is_intrinsic_team_expr(ASR::expr_t *expr) {
+    if (!ASRUtils::is_struct(*ASRUtils::expr_type(expr))) {
+        return false;
+    }
+    ASR::symbol_t *team_sym = ASRUtils::symbol_get_past_external(
+        ASRUtils::get_struct_sym_from_struct_expr(expr));
+    if (team_sym == nullptr || !ASR::is_a<ASR::Struct_t>(*team_sym)) {
+        return false;
+    }
+    ASR::Struct_t *struct_sym = ASR::down_cast<ASR::Struct_t>(team_sym);
+    SymbolTable *parent_scope = struct_sym->m_symtab->parent;
+    if (parent_scope == nullptr || parent_scope->asr_owner == nullptr
+            || !ASR::is_a<ASR::symbol_t>(*parent_scope->asr_owner)) {
+        return false;
+    }
+    ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(parent_scope->asr_owner);
+    return ASR::is_a<ASR::Module_t>(*owner)
+        && std::string(ASR::down_cast<ASR::Module_t>(owner)->m_name)
+            == "lfortran_intrinsic_iso_fortran_env"
+        && std::string(struct_sym->m_name) == "team_type";
+}
+
 namespace ThisImage {
 
+    // Overloads: 0 = this_image(), 1 = this_image(team); COARRAY forms are
+    // not supported yet
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args == 0,
-            "this_image() takes no argument",
+        ASRUtils::require_impl(x.n_args <= 1,
+            "this_image() takes at most one argument",
             x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(x.m_overload_id == static_cast<int64_t>(x.n_args),
+            "this_image() overload must match its number of arguments",
+            x.base.base.loc, diagnostics);
+        if (x.n_args == 1) {
+            ASRUtils::require_impl(is_intrinsic_team_expr(x.m_args[0]),
+                "The argument of this_image() must be of type team_type",
+                x.base.base.loc, diagnostics);
+        }
     }
 
     static ASR::expr_t *eval_ThisImage(Allocator &/*al*/, const Location &/*loc*/,
@@ -1982,12 +2015,33 @@ namespace ThisImage {
         ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::expr_t *m_value = nullptr;
         return_type = ASRUtils::extract_type(return_type);
+        // Arguments come as (COARRAY, DIM, TEAM); a lone positional argument
+        // is in the COARRAY slot, so its type tells the form
+        ASR::expr_t *team = nullptr;
+        for (size_t i = 0; i < args.size(); i++) {
+            if (args[i] == nullptr) continue;
+            if (i == 1 || team != nullptr || !is_intrinsic_team_expr(args[i])) {
+                if (i == 2) {
+                    append_error(diag, "The `team` argument of `this_image` "
+                        "must be of type team_type", loc);
+                } else {
+                    append_error(diag, "`this_image` with a `coarray` "
+                        "argument is not supported yet", loc);
+                }
+                return nullptr;
+            }
+            team = args[i];
+        }
         m_value = eval_ThisImage(al, loc, return_type, args, diag);
         if (diag.has_error()) {
             return nullptr;
         }
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        if (team != nullptr) {
+            m_args.push_back(al, team);
+        }
         return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::ThisImage),
-                nullptr, 0, 0, return_type, m_value);
+                m_args.p, m_args.n, m_args.n, return_type, m_value);
     }
 
 } // namespace ThisImage
@@ -2111,10 +2165,27 @@ namespace UCoBound {
 }
 namespace NumImages {
 
+    // Overloads: 0 = num_images(), 1 = num_images(team),
+    // 2 = num_images(team_number)
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
-        ASRUtils::require_impl(x.n_args == 0,
-            "num_images() takes no argument",
+        ASRUtils::require_impl(x.n_args <= 1,
+            "num_images() takes at most one argument",
             x.base.base.loc, diagnostics);
+        if (x.n_args == 0) {
+            ASRUtils::require_impl(x.m_overload_id == 0,
+                "num_images() without an argument must be overload 0",
+                x.base.base.loc, diagnostics);
+        } else if (x.m_overload_id == 1) {
+            ASRUtils::require_impl(is_intrinsic_team_expr(x.m_args[0]),
+                "The team argument of num_images() must be of type team_type",
+                x.base.base.loc, diagnostics);
+        } else {
+            ASRUtils::require_impl(x.m_overload_id == 2
+                    && ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[0]))
+                    && !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0])),
+                "The team_number argument of num_images() must be an integer scalar",
+                x.base.base.loc, diagnostics);
+        }
     }
 
     static ASR::expr_t *eval_NumImages(Allocator &/*al*/, const Location &/*loc*/,
@@ -2129,12 +2200,43 @@ namespace NumImages {
         ASR::ttype_t *return_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::expr_t *m_value = nullptr;
         return_type = ASRUtils::extract_type(return_type);
+        // Arguments come as (TEAM, TEAM_NUMBER); a lone positional argument
+        // is in the TEAM slot, so its type tells the form
+        ASR::expr_t *arg = nullptr;
+        int64_t overload_id = 0;
+        for (size_t i = 0; i < args.size(); i++) {
+            if (args[i] == nullptr) continue;
+            if (arg != nullptr) {
+                append_error(diag, "`num_images` accepts either a `team` or "
+                    "a `team_number` argument, not both", loc);
+                return nullptr;
+            }
+            arg = args[i];
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+            if (i == 0 && is_intrinsic_team_expr(arg)) {
+                overload_id = 1;
+            } else if (ASRUtils::is_integer(*arg_type) && !ASRUtils::is_array(arg_type)) {
+                overload_id = 2;
+            } else if (i == 0) {
+                append_error(diag, "The argument of `num_images` must be of "
+                    "type team_type or an integer scalar", loc);
+                return nullptr;
+            } else {
+                append_error(diag, "The `team_number` argument of "
+                    "`num_images` must be an integer scalar", loc);
+                return nullptr;
+            }
+        }
         m_value = eval_NumImages(al, loc, return_type, args, diag);
         if (diag.has_error()) {
             return nullptr;
         }
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 1);
+        if (arg != nullptr) {
+            m_args.push_back(al, arg);
+        }
         return ASR::make_IntrinsicElementalFunction_t(al, loc, static_cast<int64_t>(IntrinsicElementalFunctions::NumImages),
-                nullptr, 0, 0, return_type, m_value);
+                m_args.p, m_args.n, overload_id, return_type, m_value);
     }
 
 } // namespace NumImages
