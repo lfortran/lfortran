@@ -1129,9 +1129,11 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
     // pass_array_by_data specialisation of a procedure that lives in the
     // session. Adding a second definition of a symbol the JIT already holds is
     // an error, and the existing definition is equivalent, so keep the
-    // declaration and drop the body.
+    // declaration and drop the body. A function with local linkage, such as
+    // a finalizer of a type, is private to its module: it does not clash with
+    // the one of an earlier cell, and that one cannot be called from here.
     for (llvm::Function &fn : *m.m_m) {
-        if (fn.isDeclaration()) continue;
+        if (fn.isDeclaration() || fn.hasLocalLinkage()) continue;
         std::string name = fn.getName().str();
         if (!defined_symbols.insert(name).second) {
             fn.deleteBody();
