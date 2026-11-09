@@ -99,6 +99,16 @@ jobs:
         run: |
             pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b cuda_cpu -j3
 
+      # The same tests with the device code generated for HIP and the GPU
+      # runtime on its HIP implementation, run on a CPU emulation of the HIP
+      # runtime API: what --gpu=hip does differently, on a runner without an
+      # AMD GPU or ROCm.
+      - name: Test HIP GPU backend on the CPU (Linux / macOS)
+        shell: bash -e {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b hip_cpu -j3
+
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
         shell: cmd

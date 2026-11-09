@@ -2247,11 +2247,25 @@ int link_executable(const std::vector<std::string> &infiles,
                     + "/../libasr/runtime";
                 // The CPU emulation of the CUDA runtime API, or its HIP
                 // implementation, comes first, so that its cuda_runtime.h is
-                // the one the GPU runtime finds.
-                std::string runtime_include = (emulate_cpu
-                        ? " -I" + runtime_dir + "/cuda_cpu"
-                        : hip ? " -I" + runtime_dir + "/hip" : std::string())
+                // the one the GPU runtime finds. The CPU emulation of HIP
+                // runs the HIP implementation on the emulation of the HIP
+                // runtime API (hip_cpu/), which implements it with the CPU
+                // emulation of the CUDA runtime API.
+                std::string runtime_include = (hip
+                        ? " -I" + runtime_dir + "/hip"
+                            + (emulate_cpu ? " -I" + runtime_dir + "/hip_cpu"
+                                : std::string())
+                        : emulate_cpu ? " -I" + runtime_dir + "/cuda_cpu"
+                        : std::string())
                     + " -I" + runtime_dir;
+                // Emulated device code is host C++ that the device side of
+                // the CPU emulation of CUDA makes compile, under either API.
+                std::string kernel_include = emulate_cpu
+                    ? " -I" + runtime_dir + "/cuda_cpu"
+                        + (hip ? " -I" + runtime_dir + "/hip_cpu"
+                            : std::string())
+                        + " -I" + runtime_dir
+                    : runtime_include;
                 // Every fragment, the runtime and the native link share this
                 // architecture; the CPU-emulation driver must not receive it.
                 std::string device_cc = cuda_device_compiler_command(
@@ -2261,7 +2275,8 @@ int link_executable(const std::vector<std::string> &infiles,
                 // the GPU runtime, and the program finds its HIP runtime
                 // library there, without LD_LIBRARY_PATH.
                 std::string hip_include_dir, hip_lib_dir;
-                if (hip && !hip_toolkit_dirs(compiler_options.device_compiler,
+                if (hip && !emulate_cpu
+                        && !hip_toolkit_dirs(compiler_options.device_compiler,
                         hip_include_dir, hip_lib_dir)) {
                     std::cerr << "The HIP headers of the device compiler `"
                         << compiler_options.device_compiler << "` were not "
@@ -2296,7 +2311,7 @@ int link_executable(const std::vector<std::string> &infiles,
                     // The HIP driver is named the language too, since the
                     // suffix is CUDA's.
                     std::string cuda_kernel_cmd = device_cc + " -c -O2"
-                        + (emulate_cpu ? runtime_include + " -x c++"
+                        + (emulate_cpu ? kernel_include + " -x c++"
                             : hip ? std::string(" -x hip") : std::string())
                         + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
                     int cuda_err = system(cuda_kernel_cmd.c_str());
@@ -2321,6 +2336,10 @@ int link_executable(const std::vector<std::string> &infiles,
                 if (emulate_cpu) {
                     cuda_runtime_srcs.push_back(
                         runtime_dir + "/cuda_cpu/cuda_cpu_runtime.c");
+                    if (hip) {
+                        cuda_runtime_srcs.push_back(
+                            runtime_dir + "/hip_cpu/hip_cpu_runtime.c");
+                    }
                 }
                 std::string cuda_rt_cmd_base;
                 if (emulate_cpu) {

@@ -967,11 +967,12 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         }
     } while (syncs != n_syncs);
 
-#ifdef LFORTRAN_CUDA_CPU_EMULATION
-    // In the CPU emulation, a range the kernel discards holds garbage (0xff
-    // bytes) at every launch, not only in fresh device memory: whatever an
-    // earlier launch left in a reused buffer must not let a kernel that reads
-    // the range before writing all of it pass. A device keeps the old bytes.
+#if defined(LFORTRAN_CUDA_CPU_EMULATION) || defined(LFORTRAN_HIP_CPU_EMULATION)
+    // In the CPU emulation (of CUDA or of HIP), a range the kernel discards
+    // holds garbage (0xff bytes) at every launch, not only in fresh device
+    // memory: whatever an earlier launch left in a reused buffer must not let
+    // a kernel that reads the range before writing all of it pass. A device
+    // keeps the old bytes.
     // In the unified memory model the range is host memory, which the
     // emulated stream, running everything when it is issued, lets the host
     // fill itself.

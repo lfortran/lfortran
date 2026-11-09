@@ -540,6 +540,7 @@ class WorkflowPolicyTests(unittest.TestCase):
         shared = (workflows / "Compiler-Compatibility-CI.yml").read_text()
         self.assertIn("integration_tests -b metal -j3", quick)
         self.assertIn("integration_tests -b cuda_cpu -j3", quick)
+        self.assertIn("integration_tests -b hip_cpu -j3", quick)
         self.assertIn("scope: quick", quick)
         caffeine = shared.split("      - name: Test coarray runtime with Caffeine\n", 1)[1]
         caffeine = caffeine.split("\n  test_llvm_wasm:", 1)[0]
