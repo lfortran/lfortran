@@ -29,11 +29,12 @@ Pairwise horizontal reductions of a four-wide sum of squares.
 SLP turns a sum of squares of components 0, 1 and 2 of four `<4 x double>`
 vectors into a transpose. `vhaddpd` computes the same sums but also adds
 component 3, so that component is replaced by a constant zero unless every
-bit of it is known to be +0.0 or -0.0. A fast multiply is not enough: 0*Inf
-is NaN, and under `nnan`/`ninf` that lane is poison, which the original
-shuffles never read. The rewrite runs after the vectorizer, only on x86
-with AVX and only on a tree of fast additions: a value used more than once
-is left unchanged.
+bit of it is known to be +0.0 or -0.0. Under fast math a zero lane times a
+computed value is zero, which is what lets a loop-carried component stay
+zero. A constant infinity or NaN is not: 0*Inf is NaN, and the horizontal
+add would then read a lane the original shuffles never used. The rewrite
+runs after the vectorizer, only on x86 with AVX and only on a tree of fast
+additions: a value used more than once is left unchanged.
 */
 
 namespace LCompilers {
@@ -164,9 +165,11 @@ public:
 private:
     using Element = std::pair<Value *, unsigned>;
 
-    // The element is zero only if every operand element is zero.
+    // The element is zero if every operand element is zero, or, when `any`
+    // is set, if one of them is.
     struct Node {
         SmallVector<Element, 3> operands;
+        bool any = false;
         bool zero = true;
     };
 
@@ -193,6 +196,25 @@ private:
         return c->isNullValue();
     }
 
+    // A constant element that is an infinity or a NaN. 0 times that element
+    // is NaN, so it must not be treated as a zero lane.
+    static bool nonfinite_constant_lane(Value *v, unsigned lane) {
+        auto *c = dyn_cast<Constant>(v);
+        if (!c) {
+            return false;
+        }
+        if (c->getType()->isVectorTy()) {
+            c = c->getAggregateElement(lane);
+        } else if (lane != 0) {
+            return false;
+        }
+        auto *fp = dyn_cast_or_null<ConstantFP>(c);
+        if (!fp) {
+            return false;
+        }
+        return fp->getValueAPF().isNaN() || fp->getValueAPF().isInfinity();
+    }
+
     static unsigned width(Type *type) {
         auto *vector = dyn_cast<FixedVectorType>(type);
         return vector ? vector->getNumElements() : 1;
@@ -207,15 +229,12 @@ private:
     }
 
     bool holds(const Node &node) const {
-        if (node.operands.empty()) {
-            return false;
-        }
         for (const Element &e : node.operands) {
-            if (!value_of(e)) {
-                return false;
+            if (value_of(e) == node.any) {
+                return node.any;
             }
         }
-        return true;
+        return !node.any && !node.operands.empty();
     }
 
     // The operand elements that decide element `lane` of instruction `i`, or
@@ -228,13 +247,19 @@ private:
                 same(i->getOperand(0));
                 same(i->getOperand(1));
                 return true;
-            case Instruction::FMul:
-                // Both factors. 0*Inf and 0*NaN are NaN, and a fast flag
-                // turns that lane into poison. vhaddpd would then poison
-                // the components the original shuffles kept.
-                same(i->getOperand(0));
-                same(i->getOperand(1));
+            case Instruction::FMul: {
+                Value *a = i->getOperand(0);
+                Value *b = i->getOperand(1);
+                // Under fast math either factor being zero makes the lane
+                // zero, including a computed weight. A constant infinity or
+                // NaN does not: 0*Inf is NaN and vhaddpd would read it.
+                bool unsafe = nonfinite_constant_lane(a, lane)
+                    || nonfinite_constant_lane(b, lane);
+                node.any = is_fast(i) && !unsafe;
+                same(a);
+                same(b);
                 return true;
+            }
             case Instruction::FNeg:
                 same(i->getOperand(0));
                 return true;
@@ -313,6 +338,7 @@ private:
             Node node;
             if (!rule(i, e.second, node)) {
                 node.operands.clear();
+                node.any = false;
             }
             for (const Element &operand : node.operands) {
                 work.push_back(operand);

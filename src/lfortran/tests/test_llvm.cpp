@@ -8200,9 +8200,8 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         // drop the repeated factor.
         CHECK(!reductions_rewrite(reductions_diamond_ir, *x86));
         // A fourth component that is zero on entry stays zero when the
-        // update only squares it: 0*0 is 0. A product with a loaded vector
-        // is not, because 0*Inf is NaN and the original shuffles never
-        // read that lane.
+        // update multiplies it by a loaded value: fast math treats that
+        // product as zero. A constant infinity does not.
         const std::string differences =
             "  %v0 = fsub fast <4 x double> %x, <double 1.0, double 1.0, double 1.0, double 0.0>\n"
             "  %v1 = fsub fast <4 x double> %x, <double 2.0, double 1.0, double 1.0, double 0.0>\n"
@@ -8211,8 +8210,11 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         CHECK(!reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> %v0, %v0\n"
             "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
-        CHECK(reductions_loop_masks(differences,
+        CHECK(!reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> %la, %v0\n"
+            "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
+        CHECK(reductions_loop_masks(differences,
+            "  %d = fmul fast <4 x double> <double 0.0, double 0.0, double 0.0, double 0x7FF0000000000000>, %v0\n"
             "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
         // Adding a loaded vector can make it nonzero after the first
         // iteration.
@@ -8568,7 +8570,7 @@ end module
     bool masked = false;
     for (llvm::BasicBlock &bb : *orbit) {
         for (llvm::Instruction &i : bb) {
-            masked = masked || i.getOpcode() == llvm::Instruction::And;
+            masked = masked || clears_lane3(i);
         }
     }
     if (reduced) {
