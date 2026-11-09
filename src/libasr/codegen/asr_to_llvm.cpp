@@ -27298,15 +27298,7 @@ public:
                             ASRUtils::type_get_past_array(orig_arg_type_past_pointer), module.get(), orig_arg->m_type_declaration);
                         llvm::Value* poly_wrapper = llvm_utils->CreateAlloca(*builder, poly_elem_type);
                     
-                        bool dummy_is_assumed_type = false;
-                        if (orig_arg->m_type_declaration) {
-                            ASR::symbol_t* dummy_decl_sym = ASRUtils::symbol_get_past_external(
-                                orig_arg->m_type_declaration);
-                            if (dummy_decl_sym && std::string(ASRUtils::symbol_name(
-                                    dummy_decl_sym)) == "~assumed_type") {
-                                dummy_is_assumed_type = true;
-                            }
-                        }
+                        bool dummy_is_assumed_type = ASRUtils::is_assumed_type_dummy(orig_arg);
                         if (!ASR::is_a<ASR::StructType_t>(*arg_type_unwrapped)) {
                             struct_api->store_intrinsic_type_vptr(arg_type,
                                 ASRUtils::extract_kind_from_ttype_t(arg_type), poly_wrapper, module.get());
@@ -27330,6 +27322,14 @@ public:
                         if (LLVM::is_llvm_pointer(*arg_type)) {
                             poly_scalar_ptr = llvm_utils->CreateLoad2(
                                 elem_llvm_chk->getPointerTo(), tmp);
+                        }
+                        if (dummy_is_assumed_type &&
+                                ASR::is_a<ASR::String_t>(*elem_asr_chk)) {
+                            // A `type(*)` dummy has no dynamic type: its box
+                            // holds the address of the actual's character
+                            // data, not of its string descriptor.
+                            poly_scalar_ptr = llvm_utils->get_string_data(
+                                ASRUtils::get_string_type(elem_asr_chk), poly_scalar_ptr);
                         }
                         std::vector<FlatCopyback::Member> flat_layout;
                         uint64_t flat_sz = 0;
@@ -27383,6 +27383,18 @@ public:
                     }
                     set_cfi_descriptor_fields(descriptor_type, descriptor,
                         elem_asr_type, elem_size, scalar_type);
+                    if (ASRUtils::is_assumed_type_dummy(orig_arg) &&
+                            ASR::is_a<ASR::String_t>(*elem_asr_type)) {
+                        // The element of a `type(*)` dummy is the character
+                        // data itself, so its length is len * kind bytes.
+                        ASR::String_t* str_type = ASRUtils::get_string_type(elem_asr_type);
+                        llvm::Value* char_bytes = builder->CreateMul(
+                            llvm_utils->get_string_length(str_type, tmp),
+                            llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                                str_type->m_kind));
+                        builder->CreateStore(char_bytes,
+                            llvm_utils->create_gep2(descriptor_type, descriptor, 1));
+                    }
                 }
                 tmp = descriptor;
             }
@@ -27794,9 +27806,16 @@ public:
                             llvm::Type::getInt64Ty(context),
                             llvm_utils->create_gep2(desc_type, internal_desc_ptr, 1));
 
-                        llvm::Value* is_char = builder->CreateICmpEQ(
-                            src_type,
-                            llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 40));
+                        // The box of a `type(*)` dummy already holds the
+                        // address of the data. A `class(*)` box holds a
+                        // character value through its string descriptor.
+                        bool actual_is_assumed_type =
+                            ASRUtils::is_assumed_type_dummy(x.m_args[i].m_value);
+                        llvm::Value* is_char = actual_is_assumed_type
+                            ? llvm::ConstantInt::getFalse(context)
+                            : builder->CreateICmpEQ(
+                                src_type,
+                                llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 40));
                         llvm::Function* fn = builder->GetInsertBlock()->getParent();
                         llvm::BasicBlock* char_bb = llvm::BasicBlock::Create(context, "type_star_char", fn);
                         llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create(context, "type_star_merge", fn);
@@ -28407,6 +28426,13 @@ public:
                         llvm::Value* src_char_data = llvm_utils->CreateLoad2(
                             llvm_utils->i8_ptr,
                             llvm_utils->create_gep2(str_desc_ty, actual_data, 0));
+                        if (ASRUtils::is_assumed_type_dummy(dummy)) {
+                            // A `type(*)` dummy has no dynamic type: its box
+                            // holds the address of the actual's character
+                            // data, not per-element string descriptors.
+                            builder->CreateStore(src_char_data, data_ptr);
+                            return unlimited_polymorphic_type_array;
+                        }
                         llvm::Value* char_len = llvm_utils->CreateLoad2(
                             llvm::Type::getInt64Ty(context),
                             llvm_utils->create_gep2(str_desc_ty, actual_data, 1));
@@ -28477,6 +28503,14 @@ public:
                         llvm::Type* arg_el_type = llvm_utils->get_el_type(
                             arg_expr, ASRUtils::extract_type(arg_type), module.get());
                         dt = llvm_utils->CreateLoad2(arg_el_type->getPointerTo(), dt);
+                    }
+                    if (ASRUtils::is_assumed_type_dummy(dummy) &&
+                            ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))) {
+                        // A `type(*)` dummy has no dynamic type: its box holds
+                        // the address of the actual's character data, not of
+                        // its string descriptor.
+                        dt = llvm_utils->get_string_data(
+                            ASRUtils::get_string_type(arg_type), dt);
                     }
                     builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->i8_ptr), data_ptr);
                     return unlimited_polymorphic_struct;
