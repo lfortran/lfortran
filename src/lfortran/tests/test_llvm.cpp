@@ -8200,9 +8200,8 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         // drop the repeated factor.
         CHECK(!reductions_rewrite(reductions_diamond_ir, *x86));
         // A fourth component that is zero on entry stays zero when the
-        // update only squares it: 0*0 is 0. A product with a loaded vector
-        // is not, because 0*Inf is NaN and the original shuffles never
-        // read that lane.
+        // update multiplies it by a loaded value: fast math treats that
+        // product as zero. A constant infinity does not.
         const std::string differences =
             "  %v0 = fsub fast <4 x double> %x, <double 1.0, double 1.0, double 1.0, double 0.0>\n"
             "  %v1 = fsub fast <4 x double> %x, <double 2.0, double 1.0, double 1.0, double 0.0>\n"
@@ -8211,8 +8210,11 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         CHECK(!reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> %v0, %v0\n"
             "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
-        CHECK(reductions_loop_masks(differences,
+        CHECK(!reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> %la, %v0\n"
+            "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
+        CHECK(reductions_loop_masks(differences,
+            "  %d = fmul fast <4 x double> <double 0.0, double 0.0, double 0.0, double 0x7FF0000000000000>, %v0\n"
             "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
         // Adding a loaded vector can make it nonzero after the first
         // iteration.
@@ -8449,5 +8451,135 @@ end module
 #endif
 }
 #endif // HAVE_TARGET_X86
+#endif
+
+#if defined(__x86_64__)
+TEST_CASE("LLVM horizontal reductions of loop-carried vectors set from constants") {
+    // The positions start from constants whose fourth component is zero, and
+    // the updates keep it zero. The loop passes leave loads of the initial
+    // positions, which the late round of the --fast pipeline forwards, so the
+    // horizontal reduction pass needs no mask in the time step loop.
+    std::string source = R"(module reductions_late_gvn
+implicit none
+integer, parameter :: nb = 5, npair = 10
+integer, parameter :: pair_i(npair) = [2,3,3,4,4,4,5,5,5,5]
+integer, parameter :: pair_j(npair) = [1,1,2,1,2,3,1,2,3,4]
+contains
+
+subroutine init(x, v)
+    real(8), intent(out) :: x(4,nb), v(4,nb)
+    real(8) :: p(4,nb)
+    p(:,1) = [0d0, 0d0, 0d0, 0d0]
+    p(:,2) = [1d0, 2d0, 3d0, 0d0]
+    p(:,3) = [-2d0, 1d0, 4d0, 0d0]
+    p(:,4) = [3d0, -1d0, 2d0, 0d0]
+    p(:,5) = [5d0, 3d0, -2d0, 0d0]
+    x = p
+    v = 0
+end subroutine
+
+real(8) function energy(x) result(e)
+    real(8), intent(in) :: x(4,nb)
+    real(8) :: r(4)
+    integer :: k, d
+    e = 0
+    do k = 1, npair
+        do d = 1, 4
+            r(d) = x(d,pair_i(k)) - x(d,pair_j(k))
+        end do
+        e = e + 1 / sqrt(r(1)*r(1) + r(2)*r(2) + r(3)*r(3))
+    end do
+end function
+
+real(8) function orbit(n) result(e)
+    integer, intent(in) :: n
+    real(8) :: x(4,nb), v(4,nb), r(4,npair), w(npair), d2
+    integer :: step, i, k, d
+    call init(x, v)
+    e = energy(x)
+    do step = 1, n
+        do k = 1, npair
+            do d = 1, 4
+                r(d,k) = x(d,pair_i(k)) - x(d,pair_j(k))
+            end do
+        end do
+        do k = 1, npair
+            d2 = r(1,k)*r(1,k) + r(2,k)*r(2,k) + r(3,k)*r(3,k)
+            w(k) = 0.01d0 / (d2 * sqrt(d2))
+        end do
+        do k = 1, npair
+            do d = 1, 4
+                v(d,pair_i(k)) = v(d,pair_i(k)) - r(d,k) * w(k)
+                v(d,pair_j(k)) = v(d,pair_j(k)) + r(d,k) * w(k)
+            end do
+        end do
+        do i = 1, nb
+            do d = 1, 4
+                x(d,i) = x(d,i) + 0.01d0 * v(d,i)
+            end do
+        end do
+    end do
+    e = e + energy(x)
+end function
+
+end module
+)";
+    Allocator al(64*1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions co;
+    co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    co.platform = LCompilers::get_platform();
+    co.po.fast = true;
+    co.po.bounds_checking = false;
+    co.po.strict_bounds_checking = false;
+    co.mcpu = "haswell";
+    LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(
+        LCompilers::LFortran::parse(al, source, diagnostics, co));
+    LCompilers::LocationManager lm;
+    LCompilers::LocationManager::FileLocations file;
+    file.in_filename = "reductions_late_gvn.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    LCompilers::ASR::TranslationUnit_t* asr = TRY(
+        LCompilers::LFortran::ast_to_asr(al, *tu, diagnostics, nullptr, false,
+            co, lm));
+    LCompilers::LLVMEvaluator e(co);
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
+        res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+            e.get_target_config(), al, lpm, co, "", "", "", lm);
+    REQUIRE(res.ok);
+    e.opt(*res.result->m_m);
+    llvm::Function *orbit = nullptr;
+    for (llvm::Function &f : *res.result->m_m) {
+        std::string name = f.getName().str();
+        if (!f.isDeclaration() && name.size() >= 5
+                && name.compare(name.size() - 5, 5, "orbit") == 0) {
+            orbit = &f;
+        }
+    }
+    REQUIRE(orbit != nullptr);
+    // The rewrite and clears_lane3 exist from LLVM 11. Earlier versions
+    // still compile and optimize this module; they just do not have the pass.
+#if LLVM_VERSION_MAJOR >= 11
+    bool reduced = calls_intrinsic_like(*orbit, "hadd");
+#if LLVM_VERSION_MAJOR == 11
+    // The SLP vectorizer of LLVM 11 gathers the components of the pair
+    // vectors with the transpose the pass matches. Other versions vectorize
+    // this loop differently and the pass leaves it alone.
+    CHECK(reduced);
+#endif
+    bool masked = false;
+    for (llvm::BasicBlock &bb : *orbit) {
+        for (llvm::Instruction &i : bb) {
+            masked = masked || clears_lane3(i);
+        }
+    }
+    if (reduced) {
+        CHECK(!masked);
+    }
+#endif
+}
 #endif
 #endif // __EMSCRIPTEN__
