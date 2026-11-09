@@ -2,11 +2,15 @@ program real80_print_01
     ! Formatted output of real(10) values: literals, values computed at run
     ! time, array elements (element stride) and items that follow a real(10)
     ! item in the same output list (#17031, #13935). All values are exactly
-    ! representable in every real kind.
+    ! representable in every real kind. List-directed output is checked by
+    ! reading it back, since its field width and digit count are processor
+    ! dependent.
     implicit none
     real(10) :: x, y, z, a(3)
     character(len=60) :: s
-    integer :: i
+    character(len=300) :: t
+    real(8) :: d, e, d3(3)
+    integer :: i, j
 
     x = 1.5_10
     i = 3
@@ -36,5 +40,18 @@ program real80_print_01
     if (s /= '  1.50  3  4.50ok') error stop 9
     write(s, '(2f6.2)') a(2:3)
     if (s /= '  2.00  3.00') error stop 10
+
+    write(t, *) x
+    read(t, *) d
+    if (d /= 1.5d0) error stop 11
+    write(t, *) a
+    read(t, *) d3
+    if (any(d3 /= [1.0d0, 2.0d0, 3.0d0])) error stop 12
+    write(t, *) x, i, y
+    read(t, *) d, j, e
+    if (d /= 1.5d0 .or. j /= 3 .or. e /= 4.5d0) error stop 13
+    write(t, *) a(2:3), i
+    read(t, *) d, e, j
+    if (d /= 2.0d0 .or. e /= 3.0d0 .or. j /= 3) error stop 14
     print '(a)', 'ok'
 end program
