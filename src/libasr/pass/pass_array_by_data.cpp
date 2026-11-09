@@ -2171,7 +2171,9 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                     != ASR::deftypeType::Implementation) {
                 return false;
             }
-            return keep_for_a_later_unit(scope, sym);
+            // Compiler-made helpers are not part of the link interface.
+            return fn->m_start_name != nullptr
+                || !ASRUtils::is_compiler_generated_name(fn->m_name);
         }
 
     public:
