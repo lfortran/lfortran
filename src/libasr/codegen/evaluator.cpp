@@ -708,6 +708,22 @@ LLVMTargetConfig resolve_llvm_target_config(
         validate_cpu(*target, triple, config.tune_cpu, "--mtune");
     }
 
+#if LLVM_VERSION_MAJOR < 10
+    // The x86 backends of LLVM 7, 8 and 9 add the fp128 register class (XMM)
+    // to an x86-64 subtarget only when it has MMX (X86ISelLowering.cpp:
+    // `is64Bit() && hasMMX()`). Without it, fp128 arguments are expanded into
+    // integer pairs, so real(16) arithmetic and comparisons call the libgcc
+    // helpers (e.g. __subtf3, __lttf2) with fp128 in general purpose
+    // registers, while libgcc and the psABI expect SSE registers, and every
+    // real(16) result is wrong. The "generic" CPU that we use by default has
+    // only x87 plus the 64-bit baseline SSE2, but no MMX. Target the x86-64
+    // baseline, which clang uses by default and which includes MMX. LLVM 10
+    // removed the MMX condition.
+    if (march.empty() && resolved_cpu.empty()
+            && triple.getArch() == llvm::Triple::x86_64) {
+        config.cpu = "x86-64";
+    }
+#endif
     config.features = join_features(features);
     std::unique_ptr<llvm::TargetMachine> machine
         = create_target_machine(config);
