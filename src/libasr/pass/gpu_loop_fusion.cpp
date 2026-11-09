@@ -5,6 +5,7 @@
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/gpu_offload_designator.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -2225,6 +2226,280 @@ class PrivateReductionFusion {
         return true;
     }
 
+    // A private map `terms(1:n)` that a concurrent loop over 1:n assigns by
+    // the last statement of each iteration, and that only the sum right
+    // after the loop reads -- the groups of a quantized matrix-vector
+    // product -- needs no storage either: the iterations, in order, add
+    // what they would have stored to the sum. The sum is `t = sum(terms)`,
+    // or a fold `t = c; do j = 1, n; t = t + e; end do` whose `e` reads
+    // `terms(j)` once, as gpu_offload lowers `sum` (with an upper bound of
+    // max(0, n)). The other statements of an iteration (the sum of a
+    // group, say) stay as they are. The loop can be in a branch of an `if`
+    // or in a loop of the BLOCK the map is a local of, which must name it
+    // nowhere else. The sum then adds the elements in the order the shared
+    // lowering of SUM does; the lanes of a SIMD-group combine their parts
+    // in another (gpu_vector_lanes.cpp). Returns the number of statements
+    // of `body` from `i` on it replaced by two, or zero.
+    size_t try_fuse_sum(SymbolTable *scope, ASR::stmt_t **body, size_t n,
+            size_t i) {
+        if (!scope->asr_owner || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
+                || !ASR::is_a<ASR::Block_t>(
+                    *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) return 0;
+        auto *owner = ASR::down_cast2<ASR::Block_t>(scope->asr_owner);
+        if (i + 1 >= n || !ASR::is_a<ASR::DoConcurrentLoop_t>(*body[i])
+                || !ASR::is_a<ASR::Assignment_t>(*body[i + 1])) return 0;
+        auto *p = ASR::down_cast<ASR::DoConcurrentLoop_t>(body[i]);
+        if (p->n_head != 1 || p->n_local || p->n_shared || p->n_reduction
+                || p->n_body == 0) return 0;
+        auto &head = p->m_head[0];
+        auto *pi = variable(head.m_v);
+        if (!pi || !head.m_start || !head.m_end || !one(head.m_start)
+                || !one(head.m_increment)) return 0;
+
+        // The sum: `acc` and what to add to it, given the stored element.
+        auto *first = ASR::down_cast<ASR::Assignment_t>(body[i + 1]);
+        if (first->m_overloaded || first->m_realloc_lhs) return 0;
+        ASR::symbol_t *array = nullptr, *acc = variable(first->m_target);
+        ASR::Assignment_t *update = nullptr;
+        ASR::DoLoop_t *fold = nullptr;
+        ASR::ArrayItem_t *read = nullptr;
+        size_t consumed = 0;
+        if (ASR::is_a<ASR::IntrinsicArrayFunction_t>(*first->m_value)) {
+            auto *sum = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(
+                first->m_value);
+            if (static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                    sum->m_arr_intrinsic_id)
+                        != ASRUtils::IntrinsicArrayFunctions::Sum
+                    || sum->n_args != 1) return 0;
+            ASR::expr_t *arg = sum->m_args[0];
+            while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg)) {
+                arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg;
+            }
+            array = variable(arg);
+            consumed = 2;
+        } else if (i + 2 < n && ASR::is_a<ASR::DoLoop_t>(*body[i + 2])
+                && (ASR::is_a<ASR::RealConstant_t>(*first->m_value)
+                    || ASR::is_a<ASR::IntegerConstant_t>(*first->m_value))) {
+            fold = ASR::down_cast<ASR::DoLoop_t>(body[i + 2]);
+            if (fold->n_body != 1 || fold->n_orelse
+                    || !ASR::is_a<ASR::Assignment_t>(*fold->m_body[0])
+                    || !one(fold->m_head.m_start)
+                    || !one(fold->m_head.m_increment)
+                    || !covers(fold->m_head.m_end, head.m_end)) return 0;
+            update = ASR::down_cast<ASR::Assignment_t>(fold->m_body[0]);
+            auto *ci = variable(fold->m_head.m_v);
+            if (!ci || ci == pi || variable(update->m_target) != acc
+                    || update->m_overloaded || update->m_realloc_lhs
+                    || (!ASR::is_a<ASR::RealBinOp_t>(*update->m_value)
+                        && !ASR::is_a<ASR::IntegerBinOp_t>(*update->m_value))) {
+                return 0;
+            }
+            // `acc + e`, where `e` reads one element, terms(j).
+            ASR::expr_t *left, *term;
+            ASR::binopType op;
+            if (ASR::is_a<ASR::RealBinOp_t>(*update->m_value)) {
+                auto *x = ASR::down_cast<ASR::RealBinOp_t>(update->m_value);
+                left = x->m_left; term = x->m_right; op = x->m_op;
+            } else {
+                auto *x = ASR::down_cast<ASR::IntegerBinOp_t>(update->m_value);
+                left = x->m_left; term = x->m_right; op = x->m_op;
+            }
+            if (op != ASR::binopType::Add || variable(left) != acc) return 0;
+            struct Items : public ASR::BaseWalkVisitor<Items> {
+                std::vector<ASR::ArrayItem_t*> items;
+                void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                    items.push_back(const_cast<ASR::ArrayItem_t*>(&x));
+                    ASR::BaseWalkVisitor<Items>::visit_ArrayItem(x);
+                }
+            } items;
+            items.visit_expr(*term);
+            for (auto *x : items.items) {
+                if (x->n_args == 1 && !x->m_args[0].m_left
+                        && !x->m_args[0].m_step
+                        && variable(x->m_args[0].m_right) == ci
+                        && variable(x->m_v)
+                        && ASR::is_a<ASR::Array_t>(*ASRUtils::symbol_type(
+                            variable(x->m_v)))
+                        && ASRUtils::symbol_parent_symtab(variable(x->m_v))
+                            == scope) {
+                    if (read) return 0;
+                    read = x;
+                }
+            }
+            if (!read) return 0;
+            array = variable(read->m_v);
+            std::set<ASR::symbol_t*> named;
+            gpu_collect_symbols(term, named);
+            if (named.count(acc) || !gpu_expr_duplicable(term)
+                    || !stable(term, scope)) return 0;
+            // The other things the term reads are not the map.
+            struct Count : public ASR::BaseWalkVisitor<Count> {
+                ASR::symbol_t *array;
+                size_t found = 0;
+                void visit_Var(const ASR::Var_t &x) {
+                    if (x.m_v == array) found++;
+                }
+            } count;
+            count.array = array;
+            count.visit_expr(*term);
+            if (count.found != 1) return 0;
+            consumed = 3;
+        } else {
+            return 0;
+        }
+        if (!array || !acc || acc == array || acc == pi
+                || ASRUtils::symbol_parent_symtab(array) != scope
+                || ASRUtils::is_array(ASRUtils::symbol_type(acc))) return 0;
+        auto *v = ASR::down_cast<ASR::Variable_t>(array);
+        if (v->m_intent != ASR::intentType::Local
+                || v->m_storage != ASR::storage_typeType::Default
+                || v->m_symbolic_value || v->m_value
+                || !ASR::is_a<ASR::Array_t>(*v->m_type)) return 0;
+        auto *type = ASR::down_cast<ASR::Array_t>(v->m_type);
+        ASR::ttype_t *element = type->m_type;
+        if (type->n_dims != 1 || !type->m_dims[0].m_start
+                || !one(type->m_dims[0].m_start)
+                || !covers(type->m_dims[0].m_length, head.m_end)
+                || !(ASR::is_a<ASR::Real_t>(*element)
+                    || ASR::is_a<ASR::Integer_t>(*element))
+                || (!fold && !ASRUtils::types_equal(element,
+                    ASRUtils::symbol_type(acc), nullptr, nullptr))) return 0;
+        std::set<ASR::symbol_t*> bounds;
+        gpu_collect_symbols(head.m_end, bounds);
+        if (bounds.count(acc) || bounds.count(pi) || bounds.count(array)
+                || !stable(head.m_end, scope)) return 0;
+
+        // The last statement of an iteration stores its element, and no
+        // other statement of the loop names the map or the sum.
+        ASR::stmt_t *last = p->m_body[p->n_body - 1];
+        if (!ASR::is_a<ASR::Assignment_t>(*last)) return 0;
+        auto *store = ASR::down_cast<ASR::Assignment_t>(last);
+        if (store->m_overloaded || store->m_realloc_lhs
+                || !ASR::is_a<ASR::ArrayItem_t>(*store->m_target)) return 0;
+        auto *item = ASR::down_cast<ASR::ArrayItem_t>(store->m_target);
+        if (variable(item->m_v) != array || item->n_args != 1
+                || item->m_args[0].m_left || item->m_args[0].m_step
+                || variable(item->m_args[0].m_right) != pi
+                || !ASRUtils::types_equal(ASRUtils::expr_type(store->m_value),
+                    element, nullptr, nullptr)
+                || has_early_exit(p->m_body, p->n_body)
+                || !stable(store->m_value, scope)
+                || !gpu_calls_self_contained(store->m_value)) return 0;
+        std::set<ASR::symbol_t*> named;
+        gpu_collect_symbols(store->m_value, named);
+        gpu_collect_symbols(p->m_body, p->n_body - 1, named);
+        if (named.count(array) || named.count(acc)) return 0;
+        if (fold && named.count(variable(fold->m_head.m_v))) return 0;
+        // Nor does anything else in the BLOCK, declarations included, nor
+        // does the loop variable outlive the loop.
+        struct References : public ASRUtils::BlockBodyWalkVisitor<References> {
+            std::set<ASR::symbol_t*> symbols;
+            std::set<const ASR::stmt_t*> skip;
+            bool found = false;
+            void visit_stmt(const ASR::stmt_t &x) {
+                if (skip.count(&x)) return;
+                ASRUtils::BlockBodyWalkVisitor<References>::visit_stmt(x);
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                if (symbols.count(x.m_v)) found = true;
+            }
+        } refs;
+        refs.symbols = {array, pi};
+        for (size_t j = i; j < i + consumed; j++) refs.skip.insert(body[j]);
+        for (size_t j = 0; j < owner->n_body; j++) {
+            refs.visit_stmt(*owner->m_body[j]);
+        }
+        if (refs.found) return 0;
+        if (fold) {
+            // The fold's variable is not read after it.
+            refs.symbols = {variable(fold->m_head.m_v)};
+            for (size_t j = 0; j < owner->n_body; j++) {
+                refs.visit_stmt(*owner->m_body[j]);
+            }
+            if (refs.found) return 0;
+        }
+        for (auto &entry : scope->get_scope()) {
+            if (entry.second == array) continue;
+            struct Declared : public ASR::BaseWalkVisitor<Declared> {
+                ASR::symbol_t *array;
+                bool found = false;
+                void visit_Var(const ASR::Var_t &x) {
+                    if (x.m_v == array) found = true;
+                }
+            } declared;
+            declared.array = array;
+            declared.visit_symbol(*entry.second);
+            if (declared.found) return 0;
+        }
+
+        const Location &loc = body[i]->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::expr_t *scalar = b.Variable(scope,
+            scope->get_unique_name("__gpu_map_value", false),
+            ASRUtils::duplicate_type(al, element), ASR::intentType::Local);
+        ASR::stmt_t *init, *add;
+        if (fold) {
+            // The fold's update, reading the stored value at the
+            // producer's index.
+            init = body[i + 1];
+            ASR::symbol_t *ci = variable(fold->m_head.m_v);
+            gpu_replace_exprs(fold->m_body, fold->n_body,
+                    [&](ASR::expr_t *e) -> ASR::expr_t* {
+                if (e == &read->base) return scalar;
+                if (ASR::is_a<ASR::Var_t>(*e) && variable(e) == ci) {
+                    return b.i2i_t(b.Var(pi), ASRUtils::symbol_type(ci));
+                }
+                return nullptr;
+            });
+            add = fold->m_body[0];
+        } else {
+            ASR::expr_t *zero = ASR::is_a<ASR::Real_t>(*element)
+                ? ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, 0,
+                    ASRUtils::duplicate_type(al, element)))
+                : ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                    ASRUtils::duplicate_type(al, element),
+                    ASR::integerbozType::Decimal));
+            init = b.Assignment(first->m_target, zero);
+            add = b.Assignment(b.Var(acc), b.Add(b.Var(acc), scalar));
+        }
+        Vec<ASR::stmt_t*> loop;
+        loop.reserve(al, p->n_body + 1);
+        for (size_t j = 0; j + 1 < p->n_body; j++) loop.push_back(al, p->m_body[j]);
+        loop.push_back(al, b.Assignment(scalar, store->m_value));
+        loop.push_back(al, add);
+        body[i] = init;
+        body[i + 1] = ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc,
+            nullptr, head, loop.p, loop.n, nullptr, 0));
+        scope->erase_symbol(v->m_name);
+        return consumed;
+    }
+
+    // Whether an array of `length` elements has one for each iteration of
+    // a loop from 1 to `end`: the length is `end` or max(0, end), or a
+    // variable declared with such a value, as the extent of an automatic
+    // array is.
+    bool covers(ASR::expr_t *length, ASR::expr_t *end) {
+        if (same(length, end)) return true;
+        if (auto *s = variable(length)) {
+            auto *x = ASR::down_cast<ASR::Variable_t>(s);
+            if (x->m_storage != ASR::storage_typeType::Default
+                    || !x->m_symbolic_value) return false;
+            length = x->m_symbolic_value;
+            if (same(length, end)) return true;
+        }
+        if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*length)) return false;
+        auto *f = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(length);
+        if (f->m_intrinsic_id != static_cast<int64_t>(
+                ASRUtils::IntrinsicElementalFunctions::Max)
+                || f->n_args != 2) return false;
+        auto zero = [](ASR::expr_t *e) {
+            int64_t c = -1;
+            return ASRUtils::extract_value(ASRUtils::expr_value(e), c) && c == 0;
+        };
+        return (zero(f->m_args[0]) && same(f->m_args[1], end))
+            || (zero(f->m_args[1]) && same(f->m_args[0], end));
+    }
+
 public:
     PrivateReductionFusion(Allocator &al_, LoopFusion &fusion_)
         : al(al_), fusion(fusion_) {}
@@ -2253,6 +2528,12 @@ public:
         for (size_t i = 0; i + 2 < n; i++) {
             if (!try_fuse(scope, body, n, i)) continue;
             for (size_t j = i + 1; j < n; j++) body[j - 1] = body[j];
+            n--;
+        }
+        for (size_t i = 0; i + 1 < n; i++) {
+            size_t consumed = try_fuse_sum(scope, body, n, i);
+            if (consumed < 3) continue;
+            for (size_t j = i + 3; j < n; j++) body[j - 1] = body[j];
             n--;
         }
     }

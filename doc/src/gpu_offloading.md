@@ -1298,9 +1298,12 @@ Metal and on an NVIDIA GPU; a device's capabilities say how many, see
   first, and a loop whose body is one more such loop shares out the pairs
   of iterations of both.
 * A loop that accumulates into private scalars -- the inner product of a
-  matrix-vector product, the forces on one body -- by one statement each,
-  `s = s op e` (`+`, `-`, `*`, `max`, `min`), and otherwise only assigns
-  scalars of its own in every iteration, is shared out as well where the
+  matrix-vector product, the forces on one body -- by statements
+  `s = s op e` (`+`, `-`, `*`, `max`, `min`, one operation per scalar),
+  and otherwise only assigns scalars of its own in every iteration and
+  integers it adds constants to (the second index of an array statement
+  whose sections start at different subscripts), in statements, blocks or
+  loops of its body, is shared out as well where the
   lanes can combine values (`lane_reductions`: an NVIDIA GPU, whose warps
   run them, and Metal, for values of 4 bytes): the lanes but the first
   start every accumulator at the identity, and after the loop every lane
@@ -1310,7 +1313,10 @@ Metal and on an NVIDIA GPU; a device's capabilities say how many, see
   the threads of the launch already read a column of it together, and so
   are a loop of fewer than 64 iterations known at compile time and a loop
   whose bounds are read from an array, as the rows of a compressed sparse
-  matrix are, which usually hold a few elements. A launch
+  matrix are, which usually hold a few elements. An independent loop
+  that holds such a loop of a length not known at compile time has that
+  sum shared out rather than its own iterations, which may be fewer than
+  the lanes (a long sum split in a few parts). A launch
   with one lane per iteration runs the loop as it was, in the other branch
   of a test of the lanes. On an H100 the forces of an n-body loop of 32768
   bodies run 1.5 times faster this way and the column sums of a 12288 by
