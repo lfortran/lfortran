@@ -753,10 +753,12 @@ namespace LCompilers {
                     break;
                 case 10:
 #if defined(__APPLE__) && defined(__aarch64__)
-                    // Apple Silicon: long double = 128-bit IEEE quad
+                    // Apple arm64: kind 10 is stored as fp128 (the C long
+                    // double is a double)
                     type_ptr = llvm::Type::getFP128Ty(context)->getPointerTo();
 #elif defined(__APPLE__)
-                    // macOS x86-64: Apple maps long double to 64-bit double
+                    // macOS x86-64: kind 10 is stored as double (the C long
+                    // double is the x87 80-bit type)
                     type_ptr = llvm::Type::getDoubleTy(context)->getPointerTo();
 #else
                     // Linux/Windows x86: 80-bit extended precision
@@ -780,10 +782,12 @@ namespace LCompilers {
                     break;
                 case 10:
 #if defined(__APPLE__) && defined(__aarch64__)
-                    // Apple Silicon: long double = 128-bit IEEE quad
+                    // Apple arm64: kind 10 is stored as fp128 (the C long
+                    // double is a double)
                     type_ptr = llvm::Type::getFP128Ty(context);
 #elif defined(__APPLE__)
-                    // macOS x86-64: Apple maps long double to 64-bit double
+                    // macOS x86-64: kind 10 is stored as double (the C long
+                    // double is the x87 80-bit type)
                     type_ptr = llvm::Type::getDoubleTy(context);
 #else
                     // Linux/Windows x86: 80-bit extended precision

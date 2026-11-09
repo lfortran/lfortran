@@ -25671,8 +25671,9 @@ public:
                 }
                 case ASR::ttypeType::Real: {
                     int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
-                    // A real(10) is walked with `sizeof(long double)`, which
-                    // the compiler cannot reproduce from the LLVM type.
+                    // A real(10) is walked with the runtime's `REAL10_SIZE`,
+                    // which is not the LLVM allocation size of kind 10 on
+                    // every target (e.g. 8 vs 16 bytes on Windows).
                     if( a_kind == 4 || a_kind == 8 || a_kind == 16 ) {
                         walked_size = a_kind;
                     } else {
