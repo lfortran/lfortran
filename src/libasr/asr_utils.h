@@ -3051,6 +3051,15 @@ bool select_type_bound_proc(ASR::symbol_t* method, const Vec<ASR::call_arg_t>& a
     Location& loc, const std::function<void (const std::string &, const Location &)> err,
     const pending_implicit_dummy_fn* pending_dummy = nullptr);
 
+// True when `proc_sym` has an INTENT(IN) pointer dummy paired with an
+// allocatable, nonpointer actual. Such a match is only a target association.
+bool specific_intent_in_pointer_takes_allocatable_actual(
+    const Vec<ASR::call_arg_t>& args, ASR::symbol_t* proc_sym);
+
+// True when `proc_sym` has an allocatable dummy paired with an allocatable actual.
+bool specific_allocatable_dummy_takes_allocatable_actual(
+    const Vec<ASR::call_arg_t>& args, ASR::symbol_t* proc_sym);
+
 template <typename T>
 int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     const T &p, Location loc,
@@ -3076,21 +3085,44 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
             return select_func_subrout(proc_sym, args, loc, err, pending_dummy);
         }
     };
-    for (size_t i=0; i < p.n_procs; i++) {
-        if (is_elemental(p.m_procs[i])) {     // Prioritize direct arg matching, then look for elemental
-            continue;
+    // Non-elemental specifics win over elemental ones. Within one pass, an
+    // allocatable dummy wins over an INTENT(IN) pointer dummy when the actual
+    // is allocatable: generic_distinguishable treats those dummies as
+    // distinguishable, so the allocatable specific is the one for that actual.
+    // An INTENT(IN) pointer remains a match for a nonpointer target when no
+    // allocatable specific matches, including an allocatable with TARGET.
+    auto select_pass = [&](bool want_elemental) -> int {
+        int first = -1;
+        int allocatable_specific = -1;
+        for (size_t i = 0; i < p.n_procs; i++) {
+            if (is_elemental(p.m_procs[i]) != want_elemental) {
+                continue;
+            }
+            if (!matches(p.m_procs[i])) {
+                continue;
+            }
+            if (first < 0) {
+                first = checked_integer_cast<int>(i);
+            }
+            if (allocatable_specific < 0
+                    && specific_allocatable_dummy_takes_allocatable_actual(
+                        args, p.m_procs[i])) {
+                allocatable_specific = checked_integer_cast<int>(i);
+            }
         }
-        if( matches(p.m_procs[i]) ) {
-            return checked_integer_cast<int>(i);
+        if (first >= 0 && allocatable_specific >= 0
+                && specific_intent_in_pointer_takes_allocatable_actual(
+                    args, p.m_procs[first])) {
+            return allocatable_specific;
         }
+        return first;
+    };
+    int selected = select_pass(false);
+    if (selected < 0) {
+        selected = select_pass(true);
     }
-    for (size_t i=0; i < p.n_procs; i++) {
-        if (!is_elemental(p.m_procs[i])) {
-            continue;
-        }
-        if( matches(p.m_procs[i]) ) {
-            return checked_integer_cast<int>(i);
-        }
+    if (selected >= 0) {
+        return selected;
     }
     if( raise_error ) {
         err("Arguments do not match for any generic procedure, " + std::string(p.m_name), loc);

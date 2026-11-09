@@ -2840,6 +2840,12 @@ RUN(NAME generic_interface_distinguishable_02 LABELS gfortran llvm EXTRA_ARGS --
 # accept it.
 RUN(NAME generic_interface_distinguishable_03 LABELS llvm)
 RUN(NAME generic_interface_distinguishable_04 LABELS gfortran llvm)
+# No gfortran label: GFortran rejects an INTENT(IN) pointer specific and an
+# allocatable specific as ambiguous (F2018 15.4.3.4.5). generic_distinguishable
+# keeps them distinguishable, and resolution must pick the allocatable specific
+# for a bare allocatable actual.
+RUN(NAME generic_interface_distinguishable_05 LABELS llvm)
+RUN(NAME generic_interface_distinguishable_06 LABELS gfortran llvm)
 RUN(NAME operator_interface_dummy_procedure_01 LABELS gfortran llvm)
 RUN(NAME operator_interface_scope_01 LABELS gfortran llvm)
 
