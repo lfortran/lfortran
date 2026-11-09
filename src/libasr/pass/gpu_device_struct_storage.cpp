@@ -4,6 +4,7 @@
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_data_layout.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
@@ -1860,7 +1861,8 @@ bool gpu_give_struct_component_storage(Allocator &al,
 }
 
 void pass_gpu_struct_component_copies(Allocator &al,
-        ASR::TranslationUnit_t &unit, const PassOptions &/*pass_options*/) {
+        ASR::TranslationUnit_t &unit, const PassOptions &pass_options) {
+    if (!gpu_device_capabilities(pass_options).device_selected()) return;
     StructStorage storage(al, unit);
     storage.lower_copies();
 }

@@ -4,6 +4,7 @@
 #include <libasr/containers.h>
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/entry_initialized_locals.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <deque>
@@ -305,7 +306,8 @@ private:
 } // namespace
 
 void pass_device_partition(Allocator &al, ASR::TranslationUnit_t &unit,
-        const PassOptions &/*pass_options*/) {
+        const PassOptions &pass_options) {
+    if (!gpu_device_capabilities(pass_options).device_selected()) return;
     DevicePartition partition(al);
     partition.partition(unit);
 
