@@ -25,6 +25,90 @@ namespace {
 GpuOffloadVisitor::GpuVaries gpu_iteration_varies(
         const ParallelLoopNest &nest, ASR::stmt_t **body, size_t n_body);
 
+// The variable (or derived-type component) an index expression designates.
+ASR::symbol_t *designator_symbol(ASR::expr_t *e) {
+    while (e) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+        } else if (ASR::is_a<ASR::Var_t>(*e)) {
+            return ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v);
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            return ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+        } else {
+            return nullptr;
+        }
+    }
+    return nullptr;
+}
+
+// True when re-reading `e` on every element can see a store into the
+// section `target`, or when `e` calls a function. Arithmetic, scalar
+// variables, and inquiries such as size and lbound stay as they are:
+// assigning elements does not change them.
+struct SectionSubscriptUse
+        : public ASR::BaseWalkVisitor<SectionSubscriptUse> {
+    ASR::symbol_t *target = nullptr;
+    bool unstable = false;
+
+    bool reads_target(ASR::expr_t *array) const {
+        ASR::symbol_t *sym = designator_symbol(array);
+        if (!target) return sym == nullptr;
+        return sym == nullptr || sym == target;
+    }
+
+    void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+        if (reads_target(x.m_v)) unstable = true;
+        ASR::BaseWalkVisitor<SectionSubscriptUse>::visit_ArrayItem(x);
+    }
+    void visit_ArraySection(const ASR::ArraySection_t &x) {
+        if (reads_target(x.m_v)) unstable = true;
+        ASR::BaseWalkVisitor<SectionSubscriptUse>::visit_ArraySection(x);
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        unstable = true;
+        ASR::BaseWalkVisitor<SectionSubscriptUse>::visit_FunctionCall(x);
+    }
+    void visit_IntrinsicImpureFunction(
+            const ASR::IntrinsicImpureFunction_t &x) {
+        unstable = true;
+        ASR::BaseWalkVisitor<SectionSubscriptUse>::visit_IntrinsicImpureFunction(
+            x);
+    }
+};
+
+bool section_subscript_is_stable(ASR::expr_t *e, ASR::symbol_t *target) {
+    if (!e) return true;
+    if (ASRUtils::is_value_constant(e)) return true;
+    ASR::expr_t *v = ASRUtils::expr_value(e);
+    if (v && v != e && ASRUtils::is_value_constant(v)) return true;
+    SectionSubscriptUse use;
+    use.target = target;
+    use.visit_expr(*e);
+    return !use.unstable;
+}
+
+// F2023 10.2.1.3: the subscripts of the variable are evaluated before the
+// assignment. Save one that the element stores could change, and leave a
+// stable one in place so a literal section does not grow a temporary.
+ASR::expr_t *save_section_subscript(Allocator &al, const Location &loc,
+        SymbolTable *scope, ASR::expr_t *e, ASR::symbol_t *target,
+        Vec<ASR::stmt_t*> &before) {
+    if (section_subscript_is_stable(e, target)) return e;
+    ASR::symbol_t *sym = gpu_new_variable(al, loc, scope,
+        scope->get_unique_name("__gpu_sec_b"),
+        ASRUtils::duplicate_type(al, ASRUtils::expr_type(e)));
+    ASR::expr_t *var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+    before.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+        al, loc, var, e, nullptr, false, false, false, false)));
+    return var;
+}
+
 } // namespace
 
 // Is `e` the integer literal `value`?
@@ -1254,6 +1338,24 @@ void GpuOffloadVisitor::inline_array_section_in_body(
             var_scope = var_scope->parent;
         }
 
+        // Evaluate subscripts once, before any element is stored. The
+        // extent below is the loop end, which a DO evaluates once, but
+        // the index expression used to re-read the lower bound and the
+        // stride on every element.
+        Vec<ASR::stmt_t*> bound_evals;
+        bound_evals.reserve(al, as->n_args * 3);
+        ASR::symbol_t *target_sym = designator_symbol(as->m_v);
+        std::vector<ASR::array_index_t> saved_args(as->n_args);
+        for (size_t i = 0; i < as->n_args; i++) {
+            saved_args[i] = as->m_args[i];
+            saved_args[i].m_left = save_section_subscript(al, loc,
+                var_scope, saved_args[i].m_left, target_sym, bound_evals);
+            saved_args[i].m_right = save_section_subscript(al, loc,
+                var_scope, saved_args[i].m_right, target_sym, bound_evals);
+            saved_args[i].m_step = save_section_subscript(al, loc,
+                var_scope, saved_args[i].m_step, target_sym, bound_evals);
+        }
+
         // Create a loop variable for each range dimension
         std::vector<ASR::expr_t*> loop_vars(range_dims.size());
         for (size_t ri = 0; ri < range_dims.size(); ri++) {
@@ -1278,7 +1380,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
             for (size_t ri = 0; ri < range_dims.size(); ri++) {
                 if ((int)i == range_dims[ri]) {
                     idx.m_left = nullptr;
-                    idx.m_right = section_index(loc, as->m_args[i],
+                    idx.m_right = section_index(loc, saved_args[i],
                         loop_vars[ri]);
                     idx.m_step = nullptr;
                     is_range = true;
@@ -1286,9 +1388,9 @@ void GpuOffloadVisitor::inline_array_section_in_body(
                 }
             }
             if (!is_range) {
-                idx.m_left = as->m_args[i].m_left;
-                idx.m_right = as->m_args[i].m_right;
-                idx.m_step = as->m_args[i].m_step;
+                idx.m_left = saved_args[i].m_left;
+                idx.m_right = saved_args[i].m_right;
+                idx.m_step = saved_args[i].m_step;
             }
             new_args.push_back(al, idx);
         }
@@ -1316,7 +1418,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
             head.loc = loc;
             head.m_v = loop_vars[ri];
             head.m_start = index_const(loc, 1);
-            head.m_end = section_extent(loc, as->m_args[dim]);
+            head.m_end = section_extent(loc, saved_args[dim]);
             head.m_increment = nullptr;
 
             Vec<ASR::stmt_t*> body;
@@ -1329,6 +1431,9 @@ void GpuOffloadVisitor::inline_array_section_in_body(
             loop_stmt = ASRUtils::STMT(
                 ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                     head, body.p, body.n, nullptr, 0));
+        }
+        for (size_t i = 0; i < bound_evals.n; i++) {
+            new_body.push_back(al, bound_evals[i]);
         }
         new_body.push_back(al, loop_stmt);
 
