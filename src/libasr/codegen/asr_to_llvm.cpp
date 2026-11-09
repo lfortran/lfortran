@@ -2549,8 +2549,10 @@ public:
         bool any = false;
         for (const struct_global& st : struct_global_members_details) {
             std::set<ASR::Struct_t*> visited;
-            any = any || (st.defined_here && ASRUtils::struct_needs_member_init(
-                ASR::down_cast<ASR::Struct_t>(st.type_declaration), visited));
+            ASR::Struct_t* s = ASR::down_cast<ASR::Struct_t>(st.type_declaration);
+            any = any || (st.defined_here && (st.init_sc
+                ? ASRUtils::struct_needs_member_init(s, visited)
+                : default_struct_needs_member_setup(s, visited)));
         }
         for (const struct_array_global& st : struct_array_global_members_details) {
             any = any || st.defined_here;
@@ -2571,6 +2573,71 @@ public:
         builder->CreateRetVoid();
         builder->ClearInsertionPoint();
         llvm::appendToGlobalCtors(*module, F, 65534);
+    }
+
+    // `ASRUtils::struct_needs_member_init` for a global of the derived type
+    // `s` that the static initializer `get_type_default_field_values` builds.
+    // A fixed-length character member that initializer gives storage of its
+    // length needs no setup: setting it up would put it on the heap, where
+    // nothing frees it in a translation unit without a program.
+    bool default_struct_needs_member_setup(ASR::Struct_t* s,
+            std::set<ASR::Struct_t*>& visited) {
+        if (!visited.insert(s).second) {
+            return false;
+        }
+        for (ASR::Struct_t* c = s; c != nullptr;
+                c = c->m_parent == nullptr ? nullptr
+                    : ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(c->m_parent))) {
+            for (size_t i = 0; i < c->n_members; i++) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    c->m_symtab->get_symbol(c->m_members[i]));
+                if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+                    continue;
+                }
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::expr_t* value = v->m_value ? v->m_value : v->m_symbolic_value;
+                ASR::ttype_t* member_type = ASRUtils::extract_type(v->m_type);
+                if (ASRUtils::is_array(v->m_type)
+                        || ASRUtils::is_class_type(member_type)) {
+                    return true;
+                }
+                if (ASRUtils::is_character(*v->m_type)) {
+                    if (!ASRUtils::is_inline_character_struct_member(c, v->m_type)
+                            && !has_fixed_length_string_member_constant(
+                                v->m_type, value)) {
+                        return true;
+                    }
+                    continue;
+                }
+                if (!ASR::is_a<ASR::StructType_t>(*member_type)
+                        || ASRUtils::is_pointer(v->m_type)
+                        || ASRUtils::is_allocatable(v->m_type)) {
+                    continue;
+                }
+                ASR::symbol_t* member_struct = ASRUtils::symbol_get_past_external(
+                    v->m_type_declaration);
+                if (member_struct == nullptr
+                        || !ASR::is_a<ASR::Struct_t>(*member_struct)) {
+                    continue;
+                }
+                ASR::Struct_t* ms = ASR::down_cast<ASR::Struct_t>(member_struct);
+                // Only a member holding its own type's defaults is laid out
+                // by `get_type_default_field_values` again.
+                if (value == nullptr
+                        && ASRUtils::has_only_static_component_targets(member_struct)) {
+                    if (default_struct_needs_member_setup(ms, visited)) {
+                        return true;
+                    }
+                } else {
+                    std::set<ASR::Struct_t*> member_visited;
+                    if (ASRUtils::struct_needs_member_init(ms, member_visited)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     // In interactive mode the members of the derived type globals a cell
@@ -9554,30 +9621,40 @@ public:
     // stays inside it even when no executable code ever sets the member up:
     // under separate compilation that code runs only in a program that sees
     // the module. Returns nullptr for any other member, or when the value is
-    // not a string constant.
-    llvm::Constant* get_fixed_length_string_member_constant(
+    // not a string constant; `has_fixed_length_string_member_constant` tells
+    // which members have one.
+    static bool has_fixed_length_string_member_constant(
             ASR::ttype_t* member_type, ASR::expr_t* value_expr) {
         if (!ASR::is_a<ASR::String_t>(*member_type)) {
-            return nullptr;
+            return false;
         }
         ASR::String_t* str = ASR::down_cast<ASR::String_t>(member_type);
         if (str->m_physical_type != ASR::string_physical_typeType::DescriptorString
                 || str->m_len_kind != ASR::string_length_kindType::ExpressionLength
                 || str->m_len == nullptr
                 || !ASRUtils::is_value_constant(str->m_len)) {
+            return false;
+        }
+        if (value_expr == nullptr) {
+            return true;
+        }
+        ASR::expr_t* value = ASRUtils::expr_value(value_expr);
+        return value != nullptr && ASR::is_a<ASR::StringConstant_t>(*value)
+            && ASRUtils::get_string_type(ASRUtils::expr_type(value))->m_kind
+                == str->m_kind;
+    }
+
+    llvm::Constant* get_fixed_length_string_member_constant(
+            ASR::ttype_t* member_type, ASR::expr_t* value_expr) {
+        if (!has_fixed_length_string_member_constant(member_type, value_expr)) {
             return nullptr;
         }
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(member_type);
         std::string data;
         if (value_expr != nullptr) {
-            ASR::expr_t* value = ASRUtils::expr_value(value_expr);
-            if (value == nullptr || !ASR::is_a<ASR::StringConstant_t>(*value)) {
-                return nullptr;
-            }
-            ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(value);
+            ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(
+                ASRUtils::expr_value(value_expr));
             ASR::String_t* sc_type = ASRUtils::get_string_type(sc->m_type);
-            if (sc_type->m_kind != str->m_kind) {
-                return nullptr;
-            }
             if (sc_type->m_kind > 1) {
                 data = std::string(sc->m_s);
             } else {
