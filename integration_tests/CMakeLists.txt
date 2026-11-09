@@ -2226,6 +2226,7 @@ RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 RUN(NAME storage_size_02 LABELS gfortran llvm) # storage_size of run-time length characters
+RUN(NAME storage_size_03 LABELS gfortran llvm) # storage_size of real(10) (#17030)
 
 RUN(NAME extends_type_of_01 LABELS gfortran llvm)
 RUN(NAME extends_type_of_02 LABELS gfortran llvm) # polymorphic array arguments
@@ -7685,6 +7686,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real_star_02 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
     RUN(NAME real80_literal_01 LABELS gfortran llvm)
     RUN(NAME real80_print_01 LABELS gfortran llvm)
+    # The value check waits on #17031.
+    RUN(NAME separate_compilation_73 LABELS gfortran llvm
+        EXTRAFILES separate_compilation_73a.f90) # real(10) constant round-trip through a mod file (#17032)
 elseif (APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
     # GFortran has no real(10) on arm64. real80_int_to_real_01 is left out
     # because it needs more than double precision, which real(10) constants

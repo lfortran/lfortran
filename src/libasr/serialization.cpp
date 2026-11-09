@@ -40,16 +40,23 @@ public:
         write_string(symbol_name(&x));
     }
 
-    // A kind=16 RealConstant does not keep its value in m_r: a double cannot
-    // hold a binary128, so m_r packs a pointer to 16 separately allocated bytes
-    // (see real_constant_pack_r16() in asr_utils.h). That pointer is worthless
-    // once the module file is read back, so write the payload itself. The kind
-    // is known here because RealConstant serializes `type` before `r` (see
-    // serialization_overrides in asdl_cpp.py).
+    // Kind 16 and kind 10 RealConstants do not keep their value in m_r. A
+    // double cannot hold binary128 or a host long double, so m_r packs a
+    // pointer to arena bytes (real_constant_pack_r16 / real_constant_pack_r10
+    // in asr_utils.h). That pointer is worthless once the module file is read
+    // back, so write the payload itself. The kind is known here because
+    // RealConstant serializes `type` before `r` (see serialization_overrides
+    // in asdl_cpp.py). Kind 10's payload is sizeof(long double) bytes.
     void write_real(double r, ASR::ttype_t *type) {
-        if (ASRUtils::extract_kind_from_ttype_t(type) == 16) {
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(type);
+        if (kind == 16) {
             const uint8_t *bytes = ASRUtils::real_constant_unpack_r16(r);
             for (int i = 0; i < 16; i++) {
+                write_int8(bytes[i]);
+            }
+        } else if (kind == 10) {
+            const uint8_t *bytes = ASRUtils::real_constant_unpack_r10(r);
+            for (size_t i = 0; i < sizeof(long double); i++) {
                 write_int8(bytes[i]);
             }
         } else {
@@ -127,15 +134,24 @@ public:
     }
 
     // Counterpart of ASRSerializationVisitor::write_real(): rebuild the m_r
-    // payload of a RealConstant. For kind=16 the 16 binary128 bytes are copied
-    // into the current allocator and their address is packed back into m_r.
+    // payload of a RealConstant. For kind 16 and kind 10 the payload bytes
+    // are copied into the current allocator and their address is packed back
+    // into m_r. Kind 10 is sizeof(long double) host long-double bytes.
     double read_real(ASR::ttype_t *type) {
-        if (ASRUtils::extract_kind_from_ttype_t(type) == 16) {
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(type);
+        if (kind == 16) {
             uint8_t *bytes = static_cast<uint8_t*>(al.alloc(16));
             for (int i = 0; i < 16; i++) {
                 bytes[i] = read_int8();
             }
             return ASRUtils::real_constant_pack_r16(bytes);
+        } else if (kind == 10) {
+            constexpr size_t n = sizeof(long double);
+            uint8_t *bytes = static_cast<uint8_t*>(al.alloc(n));
+            for (size_t i = 0; i < n; i++) {
+                bytes[i] = read_int8();
+            }
+            return ASRUtils::real_constant_pack_r10(bytes);
         } else {
             return read_float64();
         }
