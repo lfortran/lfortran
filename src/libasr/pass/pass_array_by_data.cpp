@@ -1618,22 +1618,6 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                 ASRUtils::is_dummy_procedure(*ASR::down_cast<ASR::Function_t>(new_sym));
         }
 
-        // A call through the interface of an external procedure links to that procedure by name.
-        void keep_descriptor_procedure(ASR::symbol_t* sym) {
-            not_to_be_erased.insert(sym);
-            if( !ASR::is_a<ASR::Function_t>(*sym) ) {
-                return;
-            }
-            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
-            if( !ASRUtils::is_external_procedure_interface(ASRUtils::get_FunctionType(fn)) ) {
-                return;
-            }
-            ASR::symbol_t* impl = fn->m_symtab->get_tu_scope()->get_symbol(fn->m_name);
-            if( impl != nullptr ) {
-                not_to_be_erased.insert(impl);
-            }
-        }
-
         static bool is_struct_method_declaration(ASR::symbol_t* const sym){
             return ASR::is_a<ASR::StructMethodDeclaration_t>(*ASRUtils::symbol_get_past_external(sym));
         }
@@ -1746,7 +1730,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             if( !can_edit_call(x.m_args, x.n_args)
                     && !is_struct_method_declaration(x.m_name)
                     && !replaces_dummy_procedure(subrout_sym) ) {
-                keep_descriptor_procedure(subrout_sym);
+                not_to_be_erased.insert(subrout_sym);
                 return ;
             }
             if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
@@ -2173,6 +2157,25 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             return false;
         }
 
+        // Other object files can link only to a public external procedure with a body.
+        static bool is_linkable_external_procedure(SymbolTable* scope,
+                ASR::symbol_t* sym) {
+            if (!ASRUtils::is_tu_scope(scope) || !ASR::is_a<ASR::Function_t>(*sym)) {
+                return false;
+            }
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
+            if (fn->m_access == ASR::accessType::Private) {
+                return false;
+            }
+            if (ASRUtils::get_FunctionType(fn)->m_deftype
+                    != ASR::deftypeType::Implementation) {
+                return false;
+            }
+            // Compiler-made helpers are not part of the link interface.
+            return fn->m_start_name != nullptr
+                || !ASRUtils::is_compiler_generated_name(fn->m_name);
+        }
+
     public:
 
         RemoveArrayByDescriptorProceduresVisitor(Allocator& al_, PassArrayByDataProcedureVisitor& v_,
@@ -2223,12 +2226,10 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                     if (not_to_be_erased.find(item.second) != not_to_be_erased.end()) {
                         continue;
                     }
-                    if (skip_removal && keep_for_a_later_unit(
+                    if ((skip_removal && keep_for_a_later_unit(
+                            current_scope, item.second))
+                            || is_linkable_external_procedure(
                             current_scope, item.second)) {
-                        // Separate compilation or an interactive cell: another
-                        // unit or a later cell can link to this user-written
-                        // module or top-level procedure, so its descriptor
-                        // original has to stay.
                         continue;
                     }
                     // If this function is in a submodule, check if the parent
@@ -2518,9 +2519,10 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     u.visit_TranslationUnit(unit);
     /*
         RemoveArrayByDescriptorProceduresVisitor removes original (descriptor-
-        based) procedures that have been replaced by ____N versions, unless
-        skip_removal is set (separate-compilation mode, where other compilation
-        units may still reference the originals).
+        based) procedures that have been replaced by ____N versions. It keeps
+        public external procedures with a body, which other object files link
+        to by name, and with skip_removal set (separate-compilation mode) also
+        module procedures, which other compilation units may still reference.
 
         Note: StructMethodDeclaration.m_proc is intentionally NOT updated to
         point to the ____N version.  The vtable uses linkonce_odr linkage and
