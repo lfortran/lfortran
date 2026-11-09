@@ -1529,9 +1529,10 @@ RUN(NAME format_109 LABELS gfortran llvm)
 RUN(NAME format_110 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME format_111 LABELS gfortran llvm)
 RUN(NAME format_112 LABELS gfortran llvm)
-# real(10) is the x87 80-bit extended type, which is also the C long double
-# the runtime formats it with, only on x86-64 Linux. On other platforms the
-# generated code and the runtime disagree on how a real(10) value is stored:
+# format_113 needs real(10) with more than double precision, which only x86-64
+# Linux has: on Apple arm64 real(10) constants are only as precise as a double,
+# and on Windows and aarch64 Linux the generated code and the runtime disagree
+# on how a real(10) value is stored:
 # https://github.com/lfortran/lfortran/issues/13935
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
     RUN(NAME format_113 LABELS gfortran llvm)
@@ -7628,10 +7629,13 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real80_literal_01 LABELS gfortran llvm)
     RUN(NAME real80_print_01 LABELS gfortran llvm)
 elseif (APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
-    # GFortran has no real(10) on arm64
+    # GFortran has no real(10) on arm64. real80_int_to_real_01 is left out
+    # because it needs more than double precision, which real(10) constants
+    # do not have on arm64.
     RUN(NAME real80_cast_01 LABELS llvm)
     RUN(NAME real80_compare_01 LABELS llvm)
     RUN(NAME real80_unary_minus_01 LABELS llvm)
+    RUN(NAME real_star_02 LABELS llvm EXTRA_ARGS --implicit-typing)
     RUN(NAME real80_literal_01 LABELS llvm)
     RUN(NAME real80_print_01 LABELS llvm)
 endif()
