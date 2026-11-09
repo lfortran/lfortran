@@ -4340,11 +4340,11 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 // associated with a nonpointer that is a valid target
                 // (the TARGET attribute, including on the base of an array
                 // section). A bare allocatable is not a target.
-                // generic_distinguishable treats the two dummies as
-                // distinguishable, so the allocatable specific must be the
-                // one selected for that actual. types_equal strips both
-                // wrappers, so without this a pointer actual matches the
-                // allocatable specific listed first.
+                // types_equal strips both wrappers, so without this a pointer
+                // actual matches an allocatable specific listed first. An
+                // INTENT(IN) pointer and an allocatable dummy are not
+                // distinguishable, so that generic is rejected at its
+                // declaration rather than resolved here.
                 if ((ASRUtils::is_allocatable(arg2) && !ASRUtils::is_allocatable(arg1)) ||
                         (ASRUtils::is_pointer(arg2) && !ASRUtils::is_pointer(arg1)
                             && (v->m_intent != ASR::intentType::In
@@ -4476,76 +4476,6 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
     } else {
         return false;
     }
-}
-
-static ASR::Function_t* function_for_generic_preference(ASR::symbol_t* proc_sym) {
-    proc_sym = ASRUtils::symbol_get_past_external(proc_sym);
-    // Passed-object reordering is select_type_bound_proc's job. The
-    // allocatable-versus-pointer preference below does not apply to it.
-    if (proc_sym == nullptr || ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym)
-            || !ASR::is_a<ASR::Function_t>(*proc_sym)) {
-        return nullptr;
-    }
-    return ASR::down_cast<ASR::Function_t>(proc_sym);
-}
-
-static bool generic_preference_pair(ASR::Function_t* fn, size_t i,
-        const Vec<ASR::call_arg_t>& args, ASR::Variable_t*& dummy,
-        ASR::ttype_t*& actual) {
-    dummy = nullptr;
-    actual = nullptr;
-    if (fn == nullptr || i >= args.size() || i >= fn->n_args
-            || args[i].m_value == nullptr
-            || fn->m_args[i] == nullptr
-            || !ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
-        return false;
-    }
-    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
-        ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
-    if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
-        return false;
-    }
-    dummy = ASR::down_cast<ASR::Variable_t>(sym);
-    actual = ASRUtils::expr_type(args[i].m_value);
-    return actual != nullptr;
-}
-
-bool specific_intent_in_pointer_takes_allocatable_actual(
-        const Vec<ASR::call_arg_t>& args, ASR::symbol_t* proc_sym) {
-    ASR::Function_t* fn = function_for_generic_preference(proc_sym);
-    if (fn == nullptr) {
-        return false;
-    }
-    for (size_t i = 0; i < fn->n_args && i < args.size(); i++) {
-        ASR::Variable_t* dummy = nullptr;
-        ASR::ttype_t* actual = nullptr;
-        if (generic_preference_pair(fn, i, args, dummy, actual)
-                && dummy->m_intent == ASR::intentType::In
-                && ASRUtils::is_pointer(dummy->m_type)
-                && !ASRUtils::is_pointer(actual)
-                && ASRUtils::is_allocatable(actual)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool specific_allocatable_dummy_takes_allocatable_actual(
-        const Vec<ASR::call_arg_t>& args, ASR::symbol_t* proc_sym) {
-    ASR::Function_t* fn = function_for_generic_preference(proc_sym);
-    if (fn == nullptr) {
-        return false;
-    }
-    for (size_t i = 0; i < fn->n_args && i < args.size(); i++) {
-        ASR::Variable_t* dummy = nullptr;
-        ASR::ttype_t* actual = nullptr;
-        if (generic_preference_pair(fn, i, args, dummy, actual)
-                && ASRUtils::is_allocatable(dummy->m_type)
-                && ASRUtils::is_allocatable(actual)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,

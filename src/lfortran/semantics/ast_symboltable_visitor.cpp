@@ -5031,11 +5031,19 @@ public:
             && ASRUtils::is_parent(da, db));
     }
 
-    // F2018 15.4.3.4.5 p3, with the F2008 rule for ALLOCATABLE and POINTER,
-    // which makes more dummy arguments distinguishable.
+    // F2018 15.4.3.4.5: an allocatable dummy and a pointer dummy are
+    // distinguishable only when the pointer does not have INTENT(IN). An
+    // INTENT(IN) pointer may be associated with an allocatable target, so
+    // that pair does not make two specific procedures distinguishable.
     static bool generic_distinguishable(ASR::Variable_t *a, ASR::Variable_t *b) {
-        return (ASRUtils::is_allocatable(a->m_type) && ASRUtils::is_pointer(b->m_type))
-            || (ASRUtils::is_pointer(a->m_type) && ASRUtils::is_allocatable(b->m_type))
+        auto alloc_and_pointer_not_intent_in = [](ASR::Variable_t *alloc,
+                ASR::Variable_t *ptr) {
+            return ASRUtils::is_allocatable(alloc->m_type)
+                && ASRUtils::is_pointer(ptr->m_type)
+                && ptr->m_intent != ASR::intentType::In;
+        };
+        return alloc_and_pointer_not_intent_in(a, b)
+            || alloc_and_pointer_not_intent_in(b, a)
             || (!generic_tkr_compatible(a, b) && !generic_tkr_compatible(b, a));
     }
 

@@ -11,7 +11,8 @@ module conditional_arg_1
     implicit none
 
     interface gen
-        module procedure gen_allocatable, gen_pointer
+        ! An INTENT(IN) pointer is not distinguishable from an allocatable.
+        module procedure gen_allocatable, gen_pointer  ! {Error} ambiguous interfaces in generic 'gen' for 'gen_allocatable' and 'gen_pointer'
     end interface
 contains
     subroutine required(x)
