@@ -5291,16 +5291,6 @@ filename = "../integration_tests/gpu_kernel_source_11.f90"
 asr = true
 options = "--gpu=metal --pass=gpu_offload --cumulative"
 
-# A pointer the caller associated with a target dummy's actual is read by
-# `reader` after the launch. GpuSync is inside the launching procedure,
-# before that call; `tick` does not sync. `g%p` is synced before
-# `reader_component`. `read_a` and the direct `a(1)` read are synced after
-# the assumed-shape target dummy's launch; `tick` still is not.
-[[test]]
-filename = "gpu_target_dummy_reader.f90"
-asr = true
-options = "--gpu=metal --pass=gpu_launch_sync --cumulative"
-
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_35.f90"
 asr = true

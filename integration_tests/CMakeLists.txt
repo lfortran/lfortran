@@ -7529,6 +7529,9 @@ RUN(NAME gpu_deferred_sync_08 LABELS gfortran llvm metal cuda STATIC_LIBRARY_FIL
 RUN(NAME gpu_deferred_sync_09 LABELS gfortran llvm metal cuda STATIC_LIBRARY_FILES gpu_deferred_sync_09_mod.f90 HOST_STATIC_LIBRARY EXTRAFILES gpu_deferred_sync_09_ext.f90)
 RUN(NAME gpu_deferred_sync_10 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_deferred_sync_11 LABELS gfortran llvm metal cuda)
+# A pointer, a pointer component, and the actual's own name read what an
+# assumed-shape target dummy's launch wrote.
+RUN(NAME gpu_target_dummy_reader LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_ending_locals_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_ending_locals_02 LABELS gfortran llvm metal cuda EXTRAFILES gpu_ending_locals_02_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_partial_read_01 LABELS gfortran llvm metal cuda)
