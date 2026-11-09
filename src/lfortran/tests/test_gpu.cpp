@@ -1973,6 +1973,14 @@ public:
             visit_stmt(*block->m_body[i]);
         }
     }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::AssociateBlock_t *block = ASR::down_cast<ASR::AssociateBlock_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
 };
 
 // The SyncTrace of procedure `name` of module `module` (or of the program
@@ -2039,6 +2047,21 @@ std::string gpu_sync_trace(const std::string &source,
     return trace.trace;
 }
 
+}
+
+TEST_CASE("GPU allocatable actuals of contiguous optional dummies are not synced") {
+    // The allocatable actual reaches the CONTIGUOUS optional dummy through a
+    // pointer to it or to an explicit-shape placeholder, which is contiguous:
+    // the calls are not checked and copied on the host, which would sync the
+    // launches before them.
+    std::string source = read_project_file(
+        "integration_tests/gpu_optional_launch_05.f90");
+    for (auto name : {"forward", "forward_whole"}) {
+        std::string trace = gpu_sync_trace(source, "gpu_optional_launch_05_m", name);
+        INFO(name << ": " << trace);
+        CHECK(trace.find('S') == std::string::npos);
+        CHECK(trace.find('W') == std::string::npos);
+    }
 }
 
 TEST_CASE("GPU calls access only what the body of the callee accesses") {
