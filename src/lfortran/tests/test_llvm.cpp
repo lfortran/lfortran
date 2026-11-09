@@ -8560,6 +8560,9 @@ end module
         }
     }
     REQUIRE(orbit != nullptr);
+    // The rewrite and clears_lane3 exist from LLVM 11. Earlier versions
+    // still compile and optimize this module; they just do not have the pass.
+#if LLVM_VERSION_MAJOR >= 11
     bool reduced = calls_intrinsic_like(*orbit, "hadd");
 #if LLVM_VERSION_MAJOR == 11
     // The SLP vectorizer of LLVM 11 gathers the components of the pair
@@ -8576,6 +8579,7 @@ end module
     if (reduced) {
         CHECK(!masked);
     }
+#endif
 }
 #endif
 #endif // __EMSCRIPTEN__
