@@ -771,6 +771,13 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 pointer_variable_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, pointer_variable_type->base.loc, pointer_variable_type));
                 ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(
                     x.m_args[i].loc, pointer_name, al, scope, pointer_variable_type, ASR::intentType::Local, pointer_decl, pointer_decl_var);
+                // The pointer points to the allocated actual, an allocatable
+                // array, or to the local placeholder below, an explicit-shape
+                // array: both are contiguous. Declaring it CONTIGUOUS keeps a
+                // CONTIGUOUS dummy from checking and copying it at every call.
+                if (ASRUtils::is_array(pointer_variable_type)) {
+                    ASRUtils::EXPR2VAR(pointer_variable)->m_contiguous_attr = true;
+                }
 
                 ASRUtils::ASRBuilder builder(al, x.base.base.loc);
 

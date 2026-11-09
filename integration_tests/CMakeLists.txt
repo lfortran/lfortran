@@ -7600,6 +7600,7 @@ RUN(NAME gpu_optional_launch_02 LABELS gfortran llvm metal cuda
     EXTRAFILES gpu_optional_launch_02_mod.f90 EXTRA_ARGS --separate-compilation --verify-all-passes)
 RUN(NAME gpu_optional_launch_03 LABELS gfortran llvm metal cuda EXTRA_ARGS --verify-all-passes)
 RUN(NAME gpu_optional_launch_04 LABELS gfortran llvm metal cuda EXTRA_ARGS --verify-all-passes)
+RUN(NAME gpu_optional_launch_05 LABELS gfortran llvm metal cuda EXTRA_ARGS --verify-all-passes)
 RUN(NAME gpu_liveout_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_liveout_03 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_derived_component_01 LABELS gfortran llvm metal cuda)
