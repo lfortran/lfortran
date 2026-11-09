@@ -701,14 +701,15 @@ public:
             : public AST::BaseWalkVisitor<ImplicitDummyProcedureFinder> {
         std::set<std::string> &names;
         // The procedure scope, used to read public names of a blanket use.
-        // Those module symbols already exist.
         SymbolTable *scope;
+        // Loads a module that the symbol-table pass has not seen yet.
+        BodyVisitor *visitor;
         // Names bound by each enclosing nested scope, innermost last.
         std::vector<std::set<std::string>> block_locals;
 
         explicit ImplicitDummyProcedureFinder(std::set<std::string> &names,
-                SymbolTable *scope)
-            : names{names}, scope{scope} {}
+                SymbolTable *scope, BodyVisitor *visitor)
+            : names{names}, scope{scope}, visitor{visitor} {}
 
         static bool is_section(const AST::FuncCallOrArray_t &x) {
             for (size_t i = 0; i < x.n_args; i++) {
@@ -779,15 +780,31 @@ public:
         }
 
         void add_blanket_use_names(const char *module_name,
-                std::set<std::string> &locals) const {
-            if (!module_name || !scope) {
+                const Location &loc, std::set<std::string> &locals) {
+            if (!module_name || !scope || !visitor) {
                 return;
             }
             std::string msym = to_lower(module_name);
             if (msym == "ieee_arithmetic") {
                 msym = "lfortran_intrinsic_" + msym;
             }
-            ASR::symbol_t *sym = scope->get_tu_scope()->get_symbol(msym);
+            SymbolTable *tu = scope->get_tu_scope();
+            ASR::symbol_t *sym = tu->get_symbol(msym);
+            if (!sym) {
+                // A use inside BLOCK is not loaded by the symbol-table pass.
+                // An empty import would record the host dummy.
+                std::set<std::string> loaded_submodules;
+                sym = (ASR::symbol_t*)ASRUtils::load_module(visitor->al, tu,
+                    msym, loc, false, loaded_submodules,
+                    visitor->compiler_options.po, !visitor->diag.has_error(),
+                    [&](const std::string &msg, const Location &err_loc) {
+                        visitor->diag.add(diag::Diagnostic(
+                            msg, diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {err_loc})}));
+                        throw SemanticAbort();
+                    }, visitor->lm, visitor->compiler_options.separate_compilation,
+                    false);
+            }
             if (!sym || !ASR::is_a<ASR::Module_t>(*sym)) {
                 return;
             }
@@ -800,7 +817,7 @@ public:
         }
 
         void add_use_names(const AST::Use_t &x,
-                std::set<std::string> &locals) const {
+                std::set<std::string> &locals) {
             std::set<std::string> local_names;
             std::set<std::string> renamed_away;
             for (size_t i = 0; i < x.n_symbols; i++) {
@@ -824,7 +841,7 @@ public:
             }
             std::set<std::string> imported = local_names;
             if (!x.m_only_present) {
-                add_blanket_use_names(x.m_module, imported);
+                add_blanket_use_names(x.m_module, x.base.base.loc, imported);
                 for (const std::string &name : renamed_away) {
                     if (local_names.count(name) == 0) {
                         imported.erase(name);
@@ -873,7 +890,7 @@ public:
         }
 
         void collect_block_locals(const AST::Block_t &x,
-                std::set<std::string> &locals) const {
+                std::set<std::string> &locals) {
             for (size_t i = 0; i < x.n_items; i++) {
                 AST::decl_stmt_t *item = x.m_items[i];
                 if (AST::is_a<AST::Declaration_t>(*item)) {
@@ -1039,7 +1056,7 @@ public:
     void record_referenced_dummy_procedures(ASR::Function_t* fn,
             AST::decl_stmt_t** items, size_t n_items) {
         std::set<std::string> names;
-        ImplicitDummyProcedureFinder finder(names, fn->m_symtab);
+        ImplicitDummyProcedureFinder finder(names, fn->m_symtab, this);
         for (size_t i = 0; i < n_items; i++) {
             finder.visit_decl_stmt(*items[i]);
         }
