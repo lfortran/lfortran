@@ -875,12 +875,14 @@ public:
         ASR::symbol_t* type_declaration; // The derived type of the global.
         llvm::Value* ptr; // Corresponds to the global in llvm IR.
         ASR::StructConstant_t* init_sc; // The global's constant initializer, or nullptr.
+        bool defined_here; // This translation unit defines the global.
     };
     std::vector<struct_global> struct_global_members_details;
     struct struct_array_global { /* A module level array of a derived type, whose elements' members are set up once, inside `program` */
         ASR::symbol_t* type_declaration; // The derived type of the module variable.
         llvm::Value* ptr; // Corresponds to the module variable in llvm IR.
         ASR::ttype_t* var_type; // The array type of the module variable.
+        bool defined_here; // This translation unit defines the module variable.
     };
     std::vector<struct_array_global> struct_array_global_members_details;
     struct variable_inital_value { /* Saves information for variables that need to be initialized once. To be initialized in `program`*/
@@ -2480,6 +2482,12 @@ public:
             }
         }
 
+        // A program has set the derived type globals up already; without one
+        // the target's startup does (see emit_global_struct_members_setup).
+        if (!compiler_options.interactive) {
+            emit_global_struct_members_ctor();
+        }
+
         // An initializer this translation unit owns belongs to no program
         // unit, so nothing in ASR calls it: it is the target's own startup
         // that has to. A module or program initializer needs nothing here —
@@ -2508,17 +2516,61 @@ public:
     // type globals `visit_Variable` queued: the parts a static initializer
     // cannot describe, with the values a declaration initializer gave them
     // when it has one.
+    //
+    // Outside interactive mode only the globals this translation unit
+    // defines: one defined elsewhere is set up by the translation unit that
+    // defines it, before any program runs (see
+    // `emit_global_struct_members_ctor`), so a program sets it up neither
+    // twice nor too late for code a non-Fortran program calls.
     void emit_global_struct_members_setup() {
+        bool all = compiler_options.interactive;
         for(struct_global& st : struct_global_members_details) {
+            if (!all && !st.defined_here) continue;
             allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(st.type_declaration),
                 st.ptr, ASRUtils::symbol_type(st.type_declaration), false, true,
                 false, st.init_sc);
         }
         struct_global_members_details.clear();
         for(struct_array_global& st : struct_array_global_members_details) {
+            if (!all && !st.defined_here) continue;
             allocate_array_members_of_struct_arrays(st.type_declaration, st.ptr, st.var_type);
         }
         struct_array_global_members_details.clear();
+    }
+
+    // A translation unit without a program -- a module compiled on its own,
+    // or a library that a C or C++ program calls -- sets the members of the
+    // derived type globals it defines up in a static constructor, as there is
+    // no program to do it. It runs before the translation unit's own
+    // initializer, which may assign to those members.
+    void emit_global_struct_members_ctor() {
+        // Only a global whose members executable code has to set up needs
+        // it; the static initializer already describes the others.
+        bool any = false;
+        for (const struct_global& st : struct_global_members_details) {
+            std::set<ASR::Struct_t*> visited;
+            any = any || (st.defined_here && ASRUtils::struct_needs_member_init(
+                ASR::down_cast<ASR::Struct_t>(st.type_declaration), visited));
+        }
+        for (const struct_array_global& st : struct_array_global_members_details) {
+            any = any || st.defined_here;
+        }
+        if (!any) {
+            struct_global_members_details.clear();
+            struct_array_global_members_details.clear();
+            return;
+        }
+        llvm::FunctionType *function_type = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {}, false);
+        llvm::Function *F = llvm::Function::Create(function_type,
+            llvm::Function::InternalLinkage, "_lfortran_global_struct_members_setup",
+            module.get());
+        builder->SetInsertPoint(llvm::BasicBlock::Create(context, ".entry", F));
+        builder->SetCurrentDebugLocation(nullptr);
+        emit_global_struct_members_setup();
+        builder->CreateRetVoid();
+        builder->ClearInsertionPoint();
+        llvm::appendToGlobalCtors(*module, F, 65534);
     }
 
     // In interactive mode the members of the derived type globals a cell
@@ -7895,7 +7947,7 @@ public:
                     && !is_earlier_cell_global(x)) {
                 if (ASRUtils::needs_struct_array_member_init(x.m_type_declaration, x.m_type)) {
                     struct_array_global_members_details.push_back(
-                        { x.m_type_declaration, ptr, x.m_type });
+                        { x.m_type_declaration, ptr, x.m_type, !external });
                 }
             }
         } else if (x.m_type->type == ASR::ttypeType::Logical) {
@@ -8076,7 +8128,7 @@ public:
                 }
                 struct_global_members_details.push_back({
                     ASRUtils::symbol_get_past_external(x.m_type_declaration),
-                    llvm_symtab[h], init_sc});
+                    llvm_symtab[h], init_sc, !external});
             }
         } else if(x.m_type->type == ASR::ttypeType::Pointer ||
                     x.m_type->type == ASR::ttypeType::Allocatable) {

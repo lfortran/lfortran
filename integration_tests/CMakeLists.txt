@@ -3290,6 +3290,7 @@ RUN(NAME derived_types_251 LABELS gfortran llvm EXTRAFILES derived_types_251_mod
 RUN(NAME derived_types_252 LABELS gfortran llvm) # element of an array component of each element of a derived-type array, a%x(2)%u(2) (#13629)
 RUN(NAME derived_types_253 LABELS gfortran llvm) # scalar component of an element of an array component, a%x(2)%u (#13629)
 RUN(NAME derived_types_254 LABELS gfortran llvm) # pointer array component of a component, a%b%p, passed to an explicit-shape dummy (#16887)
+RUN(NAME derived_types_255 LABELS gfortran llvm EXTRAFILES derived_types_255c.c EXTRA_ARGS --separate-compilation) # default initialization of an array component of a module variable, used from a C main
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
