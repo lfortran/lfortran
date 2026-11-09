@@ -2135,19 +2135,26 @@ ASR::Variable_t* get_storage_designator_offset(ASR::expr_t *designator,
     return base;
 }
 
-// The kinds of C `long double` and of its complex counterpart depend on the
-// target, so the intrinsic iso_c_binding module gets them when it is loaded
-// instead of keeping the values its modfile was compiled with
+// The kinds of C `long double` and of its complex counterpart, and of the
+// pointer-sized integers, depend on the target, so the intrinsic iso_c_binding
+// module gets them when it is loaded instead of keeping the values its modfile
+// was compiled with
 static void set_iso_c_binding_target_kinds(Allocator &al,
-        ASR::TranslationUnit_t &tu, int c_long_double_kind)
+        ASR::TranslationUnit_t &tu, int c_long_double_kind, int c_pointer_kind)
 {
     // Only kinds 4 and 8 of complex are supported; the standard gives an
     // unsupported kind as a negative value
     int complex_kind = (c_long_double_kind == 4 || c_long_double_kind == 8)
         ? c_long_double_kind : -1;
-    const std::pair<std::string, int> kinds[] = {
+    // `long` is as wide as a pointer on the targets with 32-bit pointers
+    // (ILP32); the 64-bit ones keep the modfile's 8
+    std::vector<std::pair<std::string, int>> kinds = {
         {"c_long_double", c_long_double_kind},
-        {"c_long_double_complex", complex_kind}};
+        {"c_long_double_complex", complex_kind},
+        {"c_size_t", c_pointer_kind},
+        {"c_intptr_t", c_pointer_kind},
+        {"c_ptrdiff_t", c_pointer_kind}};
+    if (c_pointer_kind == 4) kinds.push_back({"c_long", 4});
     ASR::Module_t *m = extract_module(tu);
     for (const auto &[name, kind] : kinds) {
         ASR::symbol_t *sym = m->m_symtab->get_symbol(name);
@@ -2192,7 +2199,8 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
                     set_intrinsic(asr);
                     if (msym == "lfortran_intrinsic_iso_c_binding") {
                         set_iso_c_binding_target_kinds(al, *asr,
-                            pass_options.c_long_double_kind);
+                            pass_options.c_long_double_kind,
+                            pass_options.c_pointer_kind);
                     }
                 }
                 return asr;
