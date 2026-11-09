@@ -9,7 +9,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_17gpu_metal_732_mod3run {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_17gpu_metal_732_mod3run(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_17gpu_metal_732_mod3run(
     int* __restrict__ out,
     __ScalarArgs___lfortran_gpu_kernel_0_17gpu_metal_732_mod3run __scalar_args,
     int* __restrict__ __workspace_2)
@@ -29,6 +29,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_17gpu_metal_732_mod3run(
     i__dc = (__flat_idx + 1);
     {
         int* a = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        #pragma unroll 16
         for (__gpu_sec_i = 1; __gpu_sec_i <= (1 + __gpu_private_shape - 1); __gpu_sec_i++) {
             a[((int)(__gpu_sec_i) - (1))] = i__dc;
         }
@@ -50,7 +51,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_17gpu_metal_732_mod3run {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_17gpu_metal_732_mod3run(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_17gpu_metal_732_mod3run(
     int* __restrict__ out,
     __ScalarArgs___lfortran_gpu_kernel_1_17gpu_metal_732_mod3run __scalar_args,
     int* __restrict__ __workspace_2)
@@ -72,6 +73,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1_17gpu_metal_732_mod3run(
     i__dc1 = (__flat_idx + 1);
     {
         int* b = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        #pragma unroll 16
         for (__gpu_sec_i1 = 1; __gpu_sec_i1 <= (((__gpu_private_shape2 + __gpu_private_shape1 - 1) - __gpu_private_shape2) + 1); __gpu_sec_i1++) {
             b[((int)((__gpu_private_shape2 + (__gpu_sec_i1 - 1))) - (__gpu_private_shape2))] = (2 * i__dc1);
         }
@@ -88,7 +90,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_17gpu_metal_732_mod3run {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_17gpu_metal_732_mod3run(
+extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_2_17gpu_metal_732_mod3run(
     int* __restrict__ out,
     __ScalarArgs___lfortran_gpu_kernel_2_17gpu_metal_732_mod3run __scalar_args,
     int* __restrict__ __workspace_2)
@@ -110,6 +112,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2_17gpu_metal_732_mod3run(
     {
         int* c = ((__workspace_extent * 2) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent * 2) : nullptr;
         for (__gpu_sec_i2 = 1; __gpu_sec_i2 <= (1 + __gpu_private_shape3 - 1); __gpu_sec_i2++) {
+            #pragma unroll 16
             for (__gpu_sec_i3 = 1; __gpu_sec_i3 <= 2; __gpu_sec_i3++) {
                 c[((int)(__gpu_sec_i2) - (1)) + (__gpu_private_shape3 * ((int)(__gpu_sec_i3) - (1)))] = (3 * i__dc2);
             }
@@ -128,7 +131,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3_17gpu_metal_732_mod3run {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3_17gpu_metal_732_mod3run(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_17gpu_metal_732_mod3run(
     int* __restrict__ out,
     __ScalarArgs___lfortran_gpu_kernel_3_17gpu_metal_732_mod3run __scalar_args,
     int* __restrict__ __workspace_2)
@@ -148,6 +151,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3_17gpu_metal_732_mod3run(
     i__dc3 = (__flat_idx + 1);
     {
         int* d = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        #pragma unroll 16
         for (__gpu_sec_i4 = 1; __gpu_sec_i4 <= (((1 + __gpu_private_shape4 - 1) - 1) + 1); __gpu_sec_i4++) {
             d[((int)((1 + (__gpu_sec_i4 - 1))) - (1))] = (4 * i__dc3);
         }
@@ -166,7 +170,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_4_17gpu_metal_732_mod3run {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4_17gpu_metal_732_mod3run(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_17gpu_metal_732_mod3run(
     int* __restrict__ out,
     __ScalarArgs___lfortran_gpu_kernel_4_17gpu_metal_732_mod3run __scalar_args,
     int* __restrict__ __workspace_2)
@@ -188,6 +192,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4_17gpu_metal_732_mod3run(
     i__dc4 = (__flat_idx + 1);
     {
         int* e = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        #pragma unroll 16
         for (j = __gpu_private_shape6; j <= (__gpu_private_shape6 + __gpu_private_shape5 - 1); j++) {
             e[((int)(j) - (__gpu_private_shape6))] = (i__dc4 + j);
         }
