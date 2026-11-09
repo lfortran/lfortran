@@ -14766,16 +14766,16 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
     }
 
     if (!unit_file_bin) {
-        // The contents of `c` are ignored
         int c = input_getc(fp);
+        bool read_any = (c != EOF);
         while (c != '\n' && c != EOF) {
             c = input_getc(fp);
         }
 
-        if (input_eof(fp)) {
-            if (iostat) *iostat = -1;
-        } else if (input_error(fp)) {
+        if (input_error(fp)) {
             if (iostat) *iostat = 1;
+        } else if (c == EOF && !read_any && no_values) {
+            if (iostat) *iostat = -1;
         }
     } else if (access_id == 0) {
         if (no_values) {
