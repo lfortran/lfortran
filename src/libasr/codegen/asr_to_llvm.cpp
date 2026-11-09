@@ -1460,6 +1460,33 @@ public:
     }
 
 
+    // Length of a character(len=*) bind(c) assumed-rank dummy, or of a select
+    // rank view of it, from its descriptor's elem_len. Null for anything else.
+    llvm::Value* get_assumed_rank_cchar_length(ASR::expr_t* str_expr) {
+        ASR::String_t* str = ASRUtils::get_string_type(ASRUtils::expr_type(str_expr));
+        if (str->m_physical_type != ASR::CChar ||
+                str->m_len_kind != ASR::string_length_kindType::AssumedLength) {
+            return nullptr;
+        }
+        ASR::expr_t* desc_expr = str_expr;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*str_expr)) {
+            desc_expr = ASR::down_cast<ASR::ArrayPhysicalCast_t>(str_expr)->m_arg;
+        }
+        ASR::ttype_t* desc_asr_type = ASRUtils::expr_type(desc_expr);
+        if (!ASRUtils::is_assumed_rank_array(desc_asr_type)) {
+            return nullptr;
+        }
+        llvm::Value* tmp_copy = tmp;
+        visit_expr_load_wrapper(desc_expr, 0);
+        llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(
+            desc_expr, desc_asr_type, module.get());
+        llvm::Value* elem_len = llvm_utils->CreateLoad2(
+            llvm::Type::getInt64Ty(context), llvm_utils->create_gep2(desc_type, tmp, 1));
+        tmp = tmp_copy;
+        return builder->CreateUDiv(elem_len,
+            llvm::ConstantInt::get(context, llvm::APInt(64, str->m_kind)));
+    }
+
     std::pair<llvm::Value*, llvm::Value*> get_string_data_and_length(ASR::expr_t* str_expr){
         LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*
             ASRUtils::extract_type(ASRUtils::expr_type(str_expr))))
@@ -1522,7 +1549,10 @@ public:
                 }
                 // tmp is i8* (pointer to the character byte)
                 data_and_length.first = llvm_utils->get_string_data(str, tmp);
-                data_and_length.second = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+                data_and_length.second = get_assumed_rank_cchar_length(str_expr);
+                if (!data_and_length.second) {
+                    data_and_length.second = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+                }
                 break;
             }
             default:
@@ -1693,8 +1723,12 @@ public:
                     }
                 }
             }
-            case ASR::CChar:
+            case ASR::CChar: {
+                if (llvm::Value* len = get_assumed_rank_cchar_length(str_expr)) {
+                    return len;
+                }
                 return llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+            }
             default:
                 throw LCompilersException("Unsupported string physical type.");
         }
@@ -16180,8 +16214,11 @@ public:
                 llvm::Value* src_len_val;
                 if (src_str_type->m_physical_type == ASR::CChar) {
                     src_data = value;
-                    src_len_val = llvm::ConstantInt::get(
-                        context, llvm::APInt(64, 1));
+                    src_len_val = get_assumed_rank_cchar_length(x.m_value);
+                    if (!src_len_val) {
+                        src_len_val = llvm::ConstantInt::get(
+                            context, llvm::APInt(64, 1));
+                    }
                 } else {
                     // DescriptorString
                     src_data = llvm_utils->CreateLoad2(character_type,
@@ -16198,8 +16235,11 @@ public:
                             llvm_utils->create_gep2(llvm_utils->string_descriptor, value, 1));
                     }
                 }
-                llvm::Value* dst_len_val = llvm::ConstantInt::get(
-                    context, llvm::APInt(64, dst_len));
+                llvm::Value* dst_len_val = get_assumed_rank_cchar_length(x.m_target);
+                if (!dst_len_val) {
+                    dst_len_val = llvm::ConstantInt::get(
+                        context, llvm::APInt(64, dst_len));
+                }
                 // copy_len = min(src_len, dst_len)
                 llvm::Value* cmp = builder->CreateICmpULT(src_len_val, dst_len_val);
                 llvm::Value* copy_len = builder->CreateSelect(cmp, src_len_val, dst_len_val);
