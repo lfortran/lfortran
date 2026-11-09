@@ -4650,3 +4650,32 @@ module cc1_data_implied_do_component_mixed
     integer :: cc1_data_mixed_y(2)
     data (cc1_data_mixed_a(i)%x(1), cc1_data_mixed_y(i), i=1,2) / 1, 10, 2, 20 /  ! {Error} a DATA implied do loop that initializes both a structure component of an array element and another array, with the structure component first, is not supported in a module yet
 end module
+
+! A host's access statement on a use-associated name changes only the host's
+! re-export, so importing that name from the host by `use host, only:` fails.
+module cc1_priv_reexport_m0
+    integer :: x = 3
+    integer :: y = 4
+end module
+
+module cc1_priv_reexport_named
+    use cc1_priv_reexport_m0, only: x, z => y
+    private :: x, z
+end module
+
+module cc1_priv_reexport_default
+    use cc1_priv_reexport_m0, only: x
+    private
+end module
+
+subroutine cc1_priv_reexport_use_named()
+    use cc1_priv_reexport_named, only: x  ! {Error} Private variable `x` cannot be imported
+end subroutine
+
+subroutine cc1_priv_reexport_use_default()
+    use cc1_priv_reexport_default, only: x  ! {Error} Private variable `x` cannot be imported
+end subroutine
+
+subroutine cc1_priv_reexport_use_renamed()
+    use cc1_priv_reexport_named, only: z  ! {Error} Private variable `z` cannot be imported
+end subroutine
