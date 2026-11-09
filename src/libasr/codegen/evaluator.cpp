@@ -1127,8 +1127,9 @@ void LLVMEvaluator::opt(llvm::Module &m) {
 #endif
     // The late cleanup and the horizontal reduction rewrite only run on
     // functions that the rewrite may apply to: definitions for x86 with AVX
-    // that contain a fast sum of three vector squares. Other functions and
-    // targets (such as AArch64) keep the code of the pipeline above.
+    // that contain a vector whose lanes are sums of three squares. Other
+    // functions and targets (such as AArch64) keep the code of the pipeline
+    // above.
     std::vector<llvm::Function *> late_functions;
     for (llvm::Function &f : m) {
         if (may_recombine_horizontal_reductions(f, *TM)) {
@@ -1173,10 +1174,11 @@ void LLVMEvaluator::opt(llvm::Module &m) {
 #endif
     }
 
-    // The horizontal reduction pass matches the lane transpose the SLP
-    // vectorizer builds for a four-way sum of squares and rewrites it as
-    // pairwise horizontal additions. It only matches fast math instructions,
-    // so ordinary compilations keep their existing output.
+    // The horizontal reduction pass finds the sums of squares of three
+    // vector components that the SLP vectorizer builds, in whatever lane
+    // layout, and rewrites them as pairwise horizontal additions. It only
+    // matches fast math instructions, so ordinary compilations keep their
+    // existing output.
     bool reduced = false;
     for (llvm::Function *f : late_functions) {
         reduced |= recombine_horizontal_reductions(*f, *TM);
