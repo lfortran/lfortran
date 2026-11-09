@@ -4742,3 +4742,19 @@ end subroutine
 
 subroutine cc1_bind_name_undecl() bind(C, name=cc1_bind_name_nodecl)  ! {Error} Variable 'cc1_bind_name_nodecl' is not declared
 end subroutine
+
+! An INTENT(IN) pointer dummy is not distinguishable from an allocatable
+! dummy (F2018 15.4.3.4.5). The generic is invalid in either order.
+module cc1_intent_in_pointer_allocatable
+    implicit none
+    interface cc1_ptr_in_alloc
+        module procedure cc1_ptr_in, cc1_alloc_s  ! {Error} ambiguous interfaces in generic 'cc1_ptr_in_alloc' for 'cc1_ptr_in' and 'cc1_alloc_s'
+    end interface
+contains
+    subroutine cc1_ptr_in(x)
+        real, pointer, intent(in) :: x(:)
+    end subroutine
+    subroutine cc1_alloc_s(x)
+        real, allocatable, intent(inout) :: x(:)
+    end subroutine
+end module

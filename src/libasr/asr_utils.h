@@ -3076,21 +3076,27 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
             return select_func_subrout(proc_sym, args, loc, err, pending_dummy);
         }
     };
-    for (size_t i=0; i < p.n_procs; i++) {
-        if (is_elemental(p.m_procs[i])) {     // Prioritize direct arg matching, then look for elemental
-            continue;
+    // Non-elemental specifics win over elemental ones. The first matching
+    // specific in that pass is selected. An INTENT(IN) pointer dummy and an
+    // allocatable dummy are not distinguishable (F2018 15.4.3.4.5), so a
+    // generic that identifies both is rejected when it is declared.
+    auto select_pass = [&](bool want_elemental) -> int {
+        for (size_t i = 0; i < p.n_procs; i++) {
+            if (is_elemental(p.m_procs[i]) != want_elemental) {
+                continue;
+            }
+            if (matches(p.m_procs[i])) {
+                return checked_integer_cast<int>(i);
+            }
         }
-        if( matches(p.m_procs[i]) ) {
-            return checked_integer_cast<int>(i);
-        }
+        return -1;
+    };
+    int selected = select_pass(false);
+    if (selected < 0) {
+        selected = select_pass(true);
     }
-    for (size_t i=0; i < p.n_procs; i++) {
-        if (!is_elemental(p.m_procs[i])) {
-            continue;
-        }
-        if( matches(p.m_procs[i]) ) {
-            return checked_integer_cast<int>(i);
-        }
+    if (selected >= 0) {
+        return selected;
     }
     if( raise_error ) {
         err("Arguments do not match for any generic procedure, " + std::string(p.m_name), loc);

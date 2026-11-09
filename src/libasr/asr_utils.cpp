@@ -4333,6 +4333,26 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     }
                 }
 
+                // ALLOCATABLE versus POINTER is part of the specific match
+                // (F2018 15.5.2.5 and 15.5.2.7). An allocatable dummy takes
+                // only an allocatable actual. A pointer dummy takes only a
+                // pointer actual, except INTENT(IN), which may also be
+                // associated with a nonpointer that is a valid target
+                // (the TARGET attribute, including on the base of an array
+                // section). A bare allocatable is not a target.
+                // types_equal strips both wrappers, so without this a pointer
+                // actual matches an allocatable specific listed first. An
+                // INTENT(IN) pointer and an allocatable dummy are not
+                // distinguishable, so that generic is rejected at its
+                // declaration rather than resolved here.
+                if ((ASRUtils::is_allocatable(arg2) && !ASRUtils::is_allocatable(arg1)) ||
+                        (ASRUtils::is_pointer(arg2) && !ASRUtils::is_pointer(arg1)
+                            && (v->m_intent != ASR::intentType::In
+                                || !ASRUtils::is_valid_pointer_assignment_target(
+                                    args[i].m_value)))) {
+                    return false;
+                }
+
                 // Check if formal argument is an implicit interface procedure (e.g. procedure() :: f)
                 // If it is, it accepts any explicit interface procedure as actual argument.
                 if (v->m_type_declaration && ASR::is_a<ASR::FunctionType_t>(*arg1)) {
