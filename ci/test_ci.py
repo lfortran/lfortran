@@ -95,6 +95,19 @@ class SmokeSelectionTests(unittest.TestCase):
             "preprocessor_define_equals", "fixed_form_module_01",
         } <= smoke)
 
+    def test_gpu_smoke_keeps_a_capability_check(self):
+        expected = {
+            "gpu_metal_01", "gpu_metal_02", "gpu_metal_03",
+            "gpu_scalar_reduction_actual_01",
+        }
+        for backend in ("metal", "cuda", "cuda_cpu"):
+            with self.subTest(backend=backend):
+                smoke, _ = self.configure(backend)
+                full, _ = self.configure(backend, smoke=False)
+                self.assertTrue(expected <= smoke, smoke)
+                self.assertLess(len(smoke), 20)
+                self.assertGreater(len(full), 300)
+
     def test_option_suffixes_do_not_change_selection(self):
         names, _ = self.configure("llvm", flags=(
             "-DFAST=ON", "-DSTD_F23=ON", "-DLLVM_GOC=ON", "-DDETECT_LEAKS=ON",
@@ -538,8 +551,21 @@ class WorkflowPolicyTests(unittest.TestCase):
         workflows = ROOT / ".github/workflows"
         quick = (workflows / "Quick-Checks-CI.yml").read_text()
         shared = (workflows / "Compiler-Compatibility-CI.yml").read_text()
-        self.assertIn("integration_tests -b metal -j3", quick)
-        self.assertIn("integration_tests -b cuda_cpu -j3", quick)
+        metal = quick.split("      - name: Test Metal GPU backend (macOS)\n", 1)[1]
+        metal = metal.split("\n      - ", 1)[0]
+        self.assertIn("if: contains(matrix.os, 'macos')", metal)
+        self.assertIn("integration_tests -b metal --smoke -j3", metal)
+        self.assertNotIn("integration_tests -b metal -j3\n", metal)
+        cuda = quick.split("      - name: Test CUDA GPU backend on the CPU (Linux / macOS)\n", 1)[1]
+        cuda = cuda.split("\n      - ", 1)[0]
+        self.assertIn("integration_tests -b cuda_cpu -j3", cuda)
+        self.assertIn("integration_tests -b cuda_cpu --smoke -j3", cuda)
+        exhaustive = (workflows / "Exhaustive-Checks-CI.yml").read_text()
+        full_metal = exhaustive.split("      - name: Test full Metal GPU backend (macOS)\n", 1)[1]
+        full_metal = re.split(r"\n  [A-Za-z0-9_-]+:\n", full_metal, maxsplit=1)[0]
+        self.assertIn("if: contains(matrix.os, 'macos')", full_metal)
+        self.assertIn("integration_tests -b metal -j3", full_metal)
+        self.assertNotIn("--smoke", full_metal)
         self.assertIn("scope: quick", quick)
         caffeine = shared.split("      - name: Test coarray runtime with Caffeine\n", 1)[1]
         caffeine = caffeine.split("\n  test_llvm_wasm:", 1)[0]
@@ -1192,7 +1218,7 @@ class QuickScriptTests(unittest.TestCase):
         source = (ROOT / ".github/workflows/Exhaustive-Checks-CI.yml").read_text()
         platform = source.split("\n  platform:\n", 1)[1].split("\n  debug_outOfSource:\n", 1)[0]
         step = platform.split("      - name: Test full platform coverage\n", 1)[1]
-        script = step.split("        run: |\n", 1)[1]
+        script = step.split("        run: |\n", 1)[1].split("\n      - ", 1)[0]
         (self.directory / "ci").mkdir()
         (self.directory / "ci/test_llvm_integration.sh").symlink_to(
             ROOT / "ci/test_llvm_integration.sh"
@@ -1420,7 +1446,7 @@ class QuickScriptTests(unittest.TestCase):
         self.assertIn("-DCMAKE_BUILD_TYPE=Debug", build1)
         self.assertIn("-DWITH_INTERNAL_ALLOC_CHECK=yes", build1)
 
-    def test_only_linux_llvm_21_platform_compiler_is_optimized(self):
+    def test_linux_platform_compilers_are_optimized(self):
         action = (ROOT / ".github/actions/build-platform/action.yml").read_text()
         step = action.split("    - name: Select compiler optimization\n", 1)[1].split("\n\n", 1)[0]
         self.assertIn("id: optimize\n", step)
@@ -1432,7 +1458,7 @@ class QuickScriptTests(unittest.TestCase):
         self.assertLess(action.index("name: Select compiler optimization"),
                         action.index(CCACHE_ACTION))
         for platform, llvm, optimized in (
-                ("ubuntu-latest", "21", True), ("ubuntu-latest", "11", False),
+                ("ubuntu-latest", "21", True), ("ubuntu-latest", "11", True),
                 ("macos-latest", "11", False), ("windows-2025", "11", False),
                 ("macos-latest", "21", False)):
             with self.subTest(platform=platform, llvm=llvm):
@@ -1449,6 +1475,32 @@ class QuickScriptTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 self.assertEqual(env_file.read_text(), "LFORTRAN_CI_OPTIMIZE=yes\n" if optimized else "")
                 self.assertEqual(output_file.read_text(), "key-suffix=-o2\n" if optimized else "")
+
+    def test_cuda_cpu_full_suite_runs_on_linux_llvm_21_only(self):
+        quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        build = quick.split("\n  Build:\n", 1)[1].split("\n  compatibility:\n", 1)[0]
+        script = build.split(
+            "      - name: Test CUDA GPU backend on the CPU (Linux / macOS)\n", 1)[1]
+        script = script.split("        run: |\n", 1)[1].split("\n      - ", 1)[0]
+        for platform, llvm, full in (
+                ("ubuntu-latest", "21", True),
+                ("ubuntu-latest", "11", False),
+                ("macos-latest", "11", False)):
+            with self.subTest(platform=platform, llvm=llvm):
+                self.calls.write_text("")
+                rendered = script.replace("${{ matrix.os }}", platform)
+                rendered = rendered.replace("${{ matrix.llvm-version }}", llvm)
+                result = subprocess.run(
+                    ["bash", "-e"], input=rendered, cwd=self.directory,
+                    env=self.env, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                calls = [json.loads(line)[1] for line in self.calls.read_text().splitlines()]
+                expected = ["run", "-e", f"llvm{llvm}", "integration_tests",
+                            "-b", "cuda_cpu", "-j3"]
+                if not full:
+                    expected = ["run", "-e", f"llvm{llvm}", "integration_tests",
+                                "-b", "cuda_cpu", "--smoke", "-j3"]
+                self.assertEqual(calls, [expected])
 
     def test_build_types_preserve_existing_platform_configuration(self):
         # LLVM is a Release build on Windows: mixing build modes fails to link.

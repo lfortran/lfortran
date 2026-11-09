@@ -230,11 +230,11 @@ compiler. Both are Debug builds, so every full Quick suite runs with
 assertions and per-pass ASR verification. The LLVM 11 compiler runs four full
 passes, so it is compiled with `-O2` (`CMAKE_CXX_FLAGS_DEBUG`); it stays a
 Debug build, so `WITH_LFORTRAN_ASSERT` stays on and nothing defines `NDEBUG`.
-This makes each pass about 1.6 times faster. The Linux/LLVM 21 platform
-compiler is compiled with `-O2` the same way: `.github/actions/build-platform`
-adds `-O2` to `CFLAGS`/`CXXFLAGS` for that platform only, so Exhaustive's
-Linux/LLVM 21 platform job builds the same compiler and restores the same
-cache (key suffix `-o2`). The macOS, Windows and Linux/LLVM 11 platform builds
+This makes each pass about 1.6 times faster. Both Linux platform compilers
+are compiled with `-O2` the same way: `.github/actions/build-platform`
+adds `-O2` to `CFLAGS`/`CXXFLAGS` for Linux LLVM 11 and 21, so Exhaustive's
+copies of those jobs build the same compilers and restore the same
+cache (key suffix `-o2`). The macOS and Windows platform builds
 keep their defaults, so Quick still tests a `-O0` compiler.
 Both also use the platform C/C++
 diagnostic and standard-library hardening flags, including `-Werror`, and
@@ -243,11 +243,13 @@ jobs reduces the critical path without sampling those suites or adding
 another dependent job/queue.
 
 The Linux/LLVM 11 platform build retains full reference coverage, platform smoke tests,
-and the full GFortran, C/C++, Fortran, direct-WASM, OpenMP and CUDA-on-CPU
-backend suites. Linux/LLVM 21 Debug also runs normal/fast smoke coverage, and
+and the full GFortran, C/C++, Fortran, direct-WASM and OpenMP
+backend suites, plus the CUDA-on-CPU smoke check. Linux/LLVM 21 Debug runs the
+full CUDA-on-CPU suite once, along with normal/fast smoke coverage, and
 Linux/LLVM 7/23 Release provide additional smoke coverage. macOS/LLVM 11 keeps
 platform smoke coverage and
-the full Metal and CUDA-on-CPU suites. Windows keeps its native Release
+the Metal and CUDA-on-CPU smoke checks. The full Metal suite runs in
+Exhaustive's macOS platform job. Windows keeps its native Release
 build and supported compile/link/run checks. Caffeine/coarrays run on the
 LLVM 11 Debug compatibility compiler. The standalone compiler-to-WASM build is also retained;
 its native phase is Quick's Linux GCC Release build, so it uses `-Werror`
@@ -261,8 +263,9 @@ every compatibility job runs Caffeine/coarrays. Three supplemental platform buil
 LLVM 11/21 Debug and full normal/reference suites on macOS LLVM 11 Debug.
 These retain the full platform coverage that used to run only in main's Quick.
 Quick and Exhaustive share `.github/actions/build-platform` so these compiler
-configurations cannot drift. The supplemental jobs do not rerun Quick's GPU,
-alternate-backend or descriptor-mode suites; Linux references stay in Quick.
+configurations cannot drift. The macOS supplemental job runs the full Metal
+suite; the supplemental jobs do not rerun Quick's CUDA-on-CPU,
+alternate-backend or descriptor-mode suites. Linux references stay in Quick.
 
 All native compatibility profiles enable runtime-stacktrace support, including
 the LLVM 11/19 and macOS application compilers. Caffeine removes LFortran

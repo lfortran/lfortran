@@ -72,6 +72,13 @@ jobs:
             fi
             bash ci/test_llvm_integration.sh --platform
 
+      # The only full Metal run. Quick's macOS job keeps the smoke check.
+      - name: Test full Metal GPU backend (macOS)
+        if: contains(matrix.os, 'macos')
+        shell: bash -e {0}
+        run: |
+            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b metal -j3
+
   # Besides the out-of-source configuration, this job builds the way a user
   # without Pixi does: the llvm11-noshell environment has no Prefix `shell`, so
   # CMake must run build0.sh with Bash, and the CI scripts run with Bash too.

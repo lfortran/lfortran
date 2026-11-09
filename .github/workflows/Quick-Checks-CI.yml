@@ -85,19 +85,26 @@ jobs:
             export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
             bash ci/test_llvm_integration.sh --options
 
+      # Capability check. The full Metal suite runs once, on Exhaustive's macOS
+      # platform job, which is the only runner with a Metal GPU.
       - name: Test Metal GPU backend (macOS)
         shell: bash -e {0}
         if: contains(matrix.os, 'macos')
         run: |
-            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b metal -j3
+            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b metal --smoke -j3
 
       # The CUDA device code is compiled and run on the CPU, so this exercises
-      # the whole CUDA path on a runner that has no GPU.
+      # the CUDA path on a runner that has no GPU. Linux LLVM 21 runs the full
+      # suite once. The other platform jobs keep the capability check.
       - name: Test CUDA GPU backend on the CPU (Linux / macOS)
         shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b cuda_cpu -j3
+            if [[ "${{ matrix.os }}" == ubuntu-* && "${{ matrix.llvm-version }}" == "21" ]]; then
+                pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b cuda_cpu -j3
+            else
+                pixi run -e llvm${{ matrix.llvm-version }} integration_tests -b cuda_cpu --smoke -j3
+            fi
 
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
