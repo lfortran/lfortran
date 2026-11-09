@@ -7,6 +7,10 @@
 ! `reader_component` evaluates `g%p` after `g%p => coef`. The pointer
 ! component reaches other storage, so the launch that writes `coef` is
 ! synced before that call.
+!
+! `read_a` and the direct read of `a(1)` name the actual argument of an
+! assumed-shape target dummy. Both are ordered with the launch that writes
+! the dummy. `tick` is not.
 module reader_fields
     implicit none
     real, pointer :: p(:)
@@ -16,6 +20,7 @@ module reader_fields
     end type holder
     type(holder) :: g
     real, target :: coef(4)
+    real, target :: a(4)
 contains
     subroutine reader()
         if (p(1) < -1.0e30) error stop
@@ -34,6 +39,9 @@ contains
     end subroutine
     subroutine reader_component()
         if (g%p(1) < -1.0e30) error stop
+    end subroutine
+    subroutine read_a()
+        if (a(1) < -1.0e30) error stop
     end subroutine
 end module
 
@@ -57,10 +65,21 @@ subroutine helper_coef()
     call reader_component()
 end subroutine
 
+subroutine helper_actual(x)
+    use reader_fields, only: a, tick, read_a
+    real, target :: x(:)
+    integer :: i
+    do concurrent (i = 1:size(x))
+        x(i) = 2*x(i)
+    end do
+    call tick()
+    call read_a()
+    if (a(1) < -1.0e30) error stop
+end subroutine
+
 program reader_sync
     use reader_fields
     implicit none
-    real, target :: a(4)
     a = 1
     coef = 1
     p => a
@@ -68,4 +87,5 @@ program reader_sync
     call helper(a)
     call helper_mod(a)
     call helper_coef()
+    call helper_actual(a)
 end program

@@ -1092,9 +1092,11 @@ private:
                 // hides that path. A pointer component is not a root, so
                 // `may_point_anywhere` does not see it, but the pointer
                 // reaches other storage: the path stays and the call is
-                // also `globals`. `globals` is not set for a path that names
-                // only this root: that would also reach a target dummy the
-                // body does not touch.
+                // also `globals`. Leaving `globals` unset does not mean a
+                // non-pointer root is safe against every launch. An
+                // assumed-shape or scalar target dummy may still be this
+                // variable (RoutineSync::may_overlap); `globals` would also
+                // reach a target dummy the body does not touch.
                 s.named.push_back(p);
                 if (reaches_other_storage(p)) s.globals = true;
             }

@@ -88,8 +88,14 @@ compiled with a device like this unit, so it defines their twins.
   name. That is not because the dummy is safe when the body associates
   nothing. The caller may already have associated a pointer with the actual
   argument, which this body does not see, so a call that may read through
-  it is ordered with the launch here, before the call. Another file calls
-  the original procedure, which waits. A call through an explicit interface
+  it is ordered with the launch here, before the call. A name that is not a
+  pointer is not always safe either: while a scalar or assumed-shape target
+  dummy that is not intent(in) is associated, the actual argument may be
+  referenced by its own name, so that dummy overlaps a non-local variable of
+  the same declared type, kind, and rank. An explicit-shape or assumed-size
+  dummy does not. A pointer component reaches other storage even though its
+  root is not a pointer variable. Another file calls the original
+  procedure, which waits. A call through an explicit interface
   of that procedure in this file is redirected to the twin too. A module
   procedure is unchanged: only its declaration decides, so a target dummy
   still gets no twin.
@@ -1532,6 +1538,50 @@ private:
             && escaped.count(root) == 0;
     }
 
+    // Fortran 2018 15.5.2.13: while a scalar or assumed-shape target dummy
+    // that is not intent(in) is associated, the actual argument may be
+    // referenced by its own name. An explicit-shape dummy, and an
+    // assumed-size dummy, are not that case. `pending` is the launch;
+    // `other` is storage that is not local to this procedure and whose
+    // declared type, kind, and rank match the dummy.
+    bool actual_name_overlaps(const Path &pending, const Path &other) const {
+        if (pending.root == nullptr || other.root == nullptr
+                || pending.root == other.root
+                || !ASR::is_a<ASR::Variable_t>(*pending.root)
+                || !ASR::is_a<ASR::Variable_t>(*other.root)) {
+            return false;
+        }
+        if (dummy_index(pending.root) < 0) return false;
+        ASR::Variable_t *dummy = ASR::down_cast<ASR::Variable_t>(pending.root);
+        if (!dummy->m_target_attr
+                || dummy->m_intent == ASR::intentType::In) {
+            return false;
+        }
+        ASR::ttype_t *dtype = dummy->m_type;
+        bool scalar = !ASRUtils::is_array(dtype);
+        bool assumed_shape = false;
+        if (!scalar && !ASRUtils::has_explicit_dimension_bounds(dtype)
+                && !ASRUtils::is_assumed_size_array(dtype)
+                && !ASRUtils::is_assumed_rank_array(dtype)) {
+            ASR::ttype_t *array = ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(dtype));
+            assumed_shape = ASR::is_a<ASR::Array_t>(*array)
+                && ASR::down_cast<ASR::Array_t>(array)->m_physical_type
+                    == ASR::array_physical_typeType::DescriptorArray;
+        }
+        if (!scalar && !assumed_shape) return false;
+        ASR::Variable_t *named = ASR::down_cast<ASR::Variable_t>(other.root);
+        if (enclosing_routine(named->m_parent_symtab) == routine) {
+            return false;
+        }
+        if (!ASRUtils::types_equal(dtype, named->m_type, nullptr, nullptr,
+                false)) {
+            return false;
+        }
+        return ASRUtils::extract_n_dims_from_ttype(dtype)
+            == ASRUtils::extract_n_dims_from_ttype(named->m_type);
+    }
+
     bool may_overlap(const Path &a, const Path &b) const {
         if (a.root != b.root
                 && (out_of_reach(a.root) || out_of_reach(b.root))) {
@@ -1543,6 +1593,9 @@ private:
                 || (may_point_anywhere(b.root) && reached.count(a.root) > 0)) {
             return true;
         }
+        // `b` is the pending launch at both call sites. A non-pointer root
+        // is not safe when it can be this dummy's actual argument.
+        if (actual_name_overlaps(b, a)) return true;
         return overlap(a, b);
     }
 
@@ -1556,7 +1609,10 @@ private:
     // already have associated a pointer with the actual argument, and that
     // pointer is not visible here, so it is not in `escaped`. A summarized
     // call that kept its real roots does not use this; it overlaps those
-    // roots, and a module pointer path still overlaps this dummy.
+    // roots. A module pointer path still overlaps this dummy, and so does
+    // a non-local variable of the same type, kind, and rank when the dummy
+    // is a scalar or assumed-shape target that is not intent(in): that
+    // name may be the actual argument. An explicit-shape dummy does not.
     bool globals_reach(ASR::symbol_t *root) const {
         if (may_point_anywhere(root) || root == nullptr
                 || !ASR::is_a<ASR::Variable_t>(*root)) {

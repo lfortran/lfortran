@@ -2,11 +2,11 @@
     "basename": "asr-gpu_target_dummy_reader-31fb138",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/gpu_target_dummy_reader.f90",
-    "infile_hash": "6adaa8b5219b8a35313d4002445eec1940900cfceb7fd5f08e723271",
+    "infile_hash": "357118c1df6ef919faa85b883c4d022af63ef30362a6233667e4d099",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-gpu_target_dummy_reader-31fb138.stdout",
-    "stdout_hash": "6aeaaddce2330e4378881f3dc9ee16199368a01d7f9dfee4dd713d4e",
+    "stdout_hash": "35307906174bbee594ecf0a116027b93738ad258d4ed9181001319f2",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
