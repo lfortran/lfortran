@@ -3619,6 +3619,18 @@ public:
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
     }
 
+    // True for the types an intrinsic-type-spec names (not the `list`,
+    // `set`, `dict` and `tuple` extensions).
+    static bool is_fortran_intrinsic_type(AST::decl_typeType t) {
+        return t == AST::decl_typeType::TypeInteger
+            || t == AST::decl_typeType::TypeReal
+            || t == AST::decl_typeType::TypeComplex
+            || t == AST::decl_typeType::TypeLogical
+            || t == AST::decl_typeType::TypeCharacter
+            || t == AST::decl_typeType::TypeDoublePrecision
+            || t == AST::decl_typeType::TypeDoubleComplex;
+    }
+
     // True for `procedure(real)`, `procedure(integer)`, ...: the interface
     // name of a procedure declaration is an intrinsic type name.
     static bool procedure_names_intrinsic_type(const AST::AttrType_t &t) {
@@ -10881,6 +10893,16 @@ public:
 
                 LCOMPILERS_ASSERT(sym_type);
 
+                // `type(integer)`, `type(real(8))`, ... (TYPE(intrinsic-type-spec))
+                // declares an entity of the intrinsic type, exactly as
+                // `integer`, `real(8)`, ... do, so it is processed as one.
+                if (sym_type->m_type == AST::decl_typeType::TypeType
+                        && sym_type->m_attr
+                        && AST::is_a<AST::AttrType_t>(*sym_type->m_attr)
+                        && is_fortran_intrinsic_type(
+                            AST::down_cast<AST::AttrType_t>(sym_type->m_attr)->m_type)) {
+                    sym_type = AST::down_cast<AST::AttrType_t>(sym_type->m_attr);
+                }
 
                 bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
                
