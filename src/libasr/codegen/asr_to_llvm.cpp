@@ -28097,8 +28097,11 @@ public:
                         tmp = desc_copy;
                         llvm::Value* base_addr_gep = llvm_utils->create_gep2(
                             desc_type, tmp, 0);
-                        llvm::Value* str_desc = llvm_utils->CreateLoad2(
-                            elem_llvm_type->getPointerTo(), base_addr_gep);
+                        // An assumed-rank descriptor made for a scalar has an i8* base_addr
+                        llvm::Type* base_addr_type = desc_type->getStructElementType(0);
+                        llvm::Value* str_desc = builder->CreateBitCast(
+                            llvm_utils->CreateLoad2(base_addr_type, base_addr_gep),
+                            elem_llvm_type->getPointerTo());
                         ASR::String_t* str_type = ASRUtils::get_string_type(elem_asr_type);
                         bool is_const_len = str_type->m_len &&
                             ASRUtils::is_value_constant(str_type->m_len);
@@ -28123,8 +28126,7 @@ public:
                                 llvm::Type::getInt8Ty(context)->getPointerTo(),
                                 data_gep);
                             builder->CreateStore(
-                                builder->CreateBitCast(raw_data,
-                                    elem_llvm_type->getPointerTo()),
+                                builder->CreateBitCast(raw_data, base_addr_type),
                                 base_addr_gep);
                             if (str_len_ptr) {
                                 builder->CreateStore(llvm_utils->get_string_length(

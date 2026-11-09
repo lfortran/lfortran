@@ -14289,7 +14289,8 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 a_args[i] = physical_cast_arg;
             }
         }
-        if(is_stringToArray_cast_needed(arg_type, orig_arg_type)){
+        if(is_stringToArray_cast_needed(arg_type, orig_arg_type) &&
+                !ASRUtils::is_assumed_rank_array(orig_arg_type)){
             ASR::ttype_t* string_array_target = orig_arg_type;
             //handle assumed rank case also
             if (ASRUtils::is_assumed_rank_array(orig_arg_type)) {
