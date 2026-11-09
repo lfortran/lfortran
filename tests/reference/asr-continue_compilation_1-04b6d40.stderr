@@ -2028,6 +2028,24 @@ semantic error: ambiguous interfaces in generic 'cc1_ptr_in_alloc' for 'cc1_ptr_
 4751 |         module procedure cc1_ptr_in, cc1_alloc_s  ! {Error} ambiguous interfaces in generic 'cc1_ptr_in_alloc' for 'cc1_ptr_in' and 'cc1_alloc_s'
      |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'cc1_alloc_s' is not distinguishable from 'cc1_ptr_in' by its arguments
 
+semantic error: different shape for array initialization on dimension 1 (3 and 2)
+    --> tests/errors/continue_compilation_1.f90:4765:16
+     |
+4765 |     integer :: cc1_xi(3) = [1, 2]  ! {Error} different shape for array initialization on dimension 1 (3 and 2)
+     |                ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: different shape for array initialization on dimension 2 (3 and 2)
+    --> tests/errors/continue_compilation_1.f90:4769:20
+     |
+4769 |         integer :: yi(2, 3) = p  ! {Error} different shape for array initialization on dimension 2 (3 and 2)
+     |                    ^^^^^^^^^^^^ 
+
+semantic error: different shape for array initialization on dimension 1 (3 and 2)
+    --> tests/errors/continue_compilation_1.f90:4781:29
+     |
+4781 |     type(cc1_dt_shape_t) :: cc1_xt(3) = [cc1_dt_shape_t(1), cc1_dt_shape_t(2)]  ! {Error} different shape for array initialization on dimension 1 (3 and 2)
+     |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
