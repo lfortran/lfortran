@@ -1530,9 +1530,10 @@ RUN(NAME format_110 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME format_111 LABELS gfortran llvm)
 RUN(NAME format_112 LABELS gfortran llvm)
 # format_113 needs real(10) with more than double precision, which only x86-64
-# Linux has: on Apple arm64 real(10) constants are only as precise as a double,
-# and on Windows and aarch64 Linux the generated code and the runtime disagree
-# on how a real(10) value is stored:
+# Linux has: on Apple arm64 real(10) constants and real(10) output are only as
+# precise as a double (https://github.com/lfortran/lfortran/issues/17203), and
+# on Windows and aarch64 Linux the generated code and the runtime disagree on
+# how a real(10) value is stored:
 # https://github.com/lfortran/lfortran/issues/13935
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
     RUN(NAME format_113 LABELS gfortran llvm)
