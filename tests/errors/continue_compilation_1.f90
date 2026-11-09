@@ -4679,3 +4679,44 @@ end subroutine
 subroutine cc1_priv_reexport_use_renamed()
     use cc1_priv_reexport_named, only: z  ! {Error} Private variable `z` cannot be imported
 end subroutine
+
+! A function reference to a generic cannot resolve to a specific subroutine.
+module cc1_generic_subroutine_m
+implicit none
+interface cc1_gen_sub
+    module procedure cc1_gen_sub_spec
+end interface
+contains
+    subroutine cc1_gen_sub_spec(i)
+        integer, intent(in) :: i
+    end subroutine cc1_gen_sub_spec
+    subroutine cc1_gen_sub_local()
+        integer :: b
+        b = cc1_gen_sub(1)
+    end subroutine cc1_gen_sub_local
+end module cc1_generic_subroutine_m
+
+subroutine cc1_gen_sub_use()
+    use cc1_generic_subroutine_m, only: cc1_gen_sub
+    integer :: b
+    b = cc1_gen_sub(1)
+end subroutine cc1_gen_sub_use
+
+module cc1_generic_binding_m
+implicit none
+type :: cc1_gen_binding_t
+contains
+    procedure :: cc1_gen_binding_spec
+    generic :: cc1_gen_binding => cc1_gen_binding_spec
+end type cc1_gen_binding_t
+contains
+    subroutine cc1_gen_binding_spec(self, x)
+        class(cc1_gen_binding_t), intent(in) :: self
+        real, intent(in) :: x
+    end subroutine cc1_gen_binding_spec
+    subroutine cc1_gen_binding_use()
+        type(cc1_gen_binding_t) :: t
+        real :: y
+        y = t%cc1_gen_binding(1.0)
+    end subroutine cc1_gen_binding_use
+end module cc1_generic_binding_m
