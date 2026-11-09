@@ -710,7 +710,7 @@
                             (Cast
                                 (FunctionCall
                                     2 alnorm~fpcast_ptr
-                                    ()
+                                    2 alnorm
                                     [((Var 2 x))
                                     ((LogicalConstant
                                         .true.

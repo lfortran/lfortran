@@ -354,7 +354,7 @@
                             (LogicalNot
                                 (FunctionCall
                                     2 lsame~fpcast_ptr
-                                    ()
+                                    2 lsame
                                     [((Var 2 uplo))
                                     ((StringConstant
                                         "U"
@@ -371,7 +371,7 @@
                             (LogicalNot
                                 (FunctionCall
                                     2 lsame~fpcast_ptr
-                                    ()
+                                    2 lsame
                                     [((Var 2 uplo))
                                     ((StringConstant
                                         "L"
