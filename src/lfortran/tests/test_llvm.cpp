@@ -2813,6 +2813,51 @@ TEST_CASE("c_long_double is the kind of C long double of the target") {
     }
 }
 
+TEST_CASE("iso_c_binding pointer-sized kinds of the target") {
+    const std::vector<std::pair<std::string, int>> triples = {
+        {"x86_64-unknown-linux-gnu", 8},
+        {"x86_64-linux-gnux32", 4},
+        {"i686-pc-linux-gnu", 4},
+        {"aarch64-apple-darwin", 8},
+        {"arm64_32-apple-watchos", 4},
+        {"armv7-unknown-linux-gnueabihf", 4},
+        {"thumbv7em-none-eabi", 4},
+        {"x86_64-pc-windows-msvc", 8},
+        {"riscv32-unknown-elf", 4},
+        {"riscv64-unknown-linux-gnu", 8},
+        {"wasm32-unknown-emscripten", 4},
+        {"wasm32-wasi", 4},
+        {"wasm64-unknown-unknown", 8},
+    };
+    for (auto &t : triples) {
+        INFO(t.first);
+        CHECK(LCompilers::get_c_pointer_kind(t.first) == t.second);
+    }
+
+    // The intrinsic module gives the sizes of the target it is used for; on
+    // a 32-bit target `long` is as wide as a pointer
+    for (int kind : {4, 8}) {
+        CompilerOptions cu;
+        cu.interactive = true;
+        cu.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        cu.po.c_pointer_kind = kind;
+        FortranEvaluator e(cu);
+        LCompilers::Result<FortranEvaluator::EvalResult>
+        r = e.evaluate2("use iso_c_binding, only: c_size_t, c_intptr_t, c_ptrdiff_t, c_long");
+        CHECK(r.ok);
+        for (const char *name : {"c_size_t", "c_intptr_t", "c_ptrdiff_t"}) {
+            INFO(name);
+            r = e.evaluate2(name);
+            CHECK(r.ok);
+            CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
+            CHECK(r.result.i32 == kind);
+        }
+        r = e.evaluate2("c_long");
+        CHECK(r.ok);
+        CHECK(r.result.i32 == kind);
+    }
+}
+
 TEST_CASE("FortranEvaluator character result") {
     CompilerOptions cu;
     cu.interactive = true;

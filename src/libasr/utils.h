@@ -23,6 +23,7 @@ Platform get_platform();
 // The kind of the real type that is C `long double` on the target given by
 // its triple, or on the host when the triple is empty or not recognized
 int get_c_long_double_kind(const std::string &target_triple);
+int get_c_pointer_kind(const std::string &target_triple);
 
 std::string get_unique_ID();
 int visualize_json(std::string &astr_data_json, LCompilers::Platform os);
@@ -40,6 +41,10 @@ struct PassOptions {
     // The kind of C `long double` on the target, which the intrinsic
     // iso_c_binding module gives as `c_long_double`
     int c_long_double_kind = get_c_long_double_kind("");
+    // The size of a pointer on the target, which the intrinsic iso_c_binding
+    // module gives as `c_size_t`, `c_intptr_t` and `c_ptrdiff_t`, and as
+    // `c_long` where `long` has that size too (ILP32)
+    int c_pointer_kind = get_c_pointer_kind("");
 
     std::string run_fun; // for global_stmts pass
     // TODO: Convert to std::filesystem::path (also change find_and_load_module())

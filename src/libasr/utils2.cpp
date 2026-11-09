@@ -259,6 +259,29 @@ Platform get_platform()
 #endif
 }
 
+int get_c_pointer_kind(const std::string &target_triple)
+{
+    // The size of a pointer, of `size_t` and of `ptrdiff_t`: 4 on the
+    // targets with 32-bit addresses, 8 on the others. As in llvm::Triple, the
+    // components after the architecture may come in any order.
+    std::vector<std::string> c = string_split(target_triple, "-", false);
+    if (c.empty() || c[0].empty()) return sizeof(void*);
+    std::string arch = c[0];
+    for (size_t i = 1; i < c.size(); i++) {
+        // x32: the x86-64 instruction set with 32-bit pointers
+        if (endswith(c[i], "x32")) return 4;
+    }
+    bool i386 = arch.size() == 4 && arch[0] == 'i' && endswith(arch, "86");
+    bool arm32 = (startswith(arch, "arm") && !startswith(arch, "arm64"))
+        || startswith(arch, "thumb");
+    if (i386 || arm32 || arch == "arm64_32" || arch == "wasm32"
+            || arch == "riscv32" || arch == "mips" || arch == "mipsel"
+            || arch == "powerpc" || arch == "ppc" || arch == "sparc") {
+        return 4;
+    }
+    return 8;
+}
+
 int get_c_long_double_kind(const std::string &target_triple)
 {
     // The values of clang. As in llvm::Triple, the components after the
