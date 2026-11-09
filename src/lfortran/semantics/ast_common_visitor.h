@@ -19800,8 +19800,15 @@ public:
                     current_scope)) {
                 array_item_value = nullptr;
             }
+            ASR::ttype_t* item_type = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(expr));
+            if (ASRUtils::is_array_indexed_with_array_indices(indices.p, indices.size())) {
+                item_type = vector_subscript_result_type(item_type, indices);
+            } else {
+                item_type = ASRUtils::duplicate_type(al, item_type);
+            }
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
-                indices.size(), ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr))),
+                indices.size(), item_type,
                 ASR::arraystorageType::ColMajor, array_item_value, in_bounds);
             // Selecting an element of an array component of an array, as in
             // `a%x(2)` reached through a longer component chain, is an array
@@ -19809,6 +19816,29 @@ public:
             // as well.
             give_struct_member_item_shape_of_base(ASRUtils::EXPR(array_item_node));
         }
+    }
+
+    // `a(idx)` has one dimension per vector subscript, as long as that subscript.
+    ASR::ttype_t* vector_subscript_result_type(ASR::ttype_t* array_type,
+            const Vec<ASR::array_index_t> &indices) {
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, indices.size());
+        for (size_t i = 0; i < indices.size(); i++) {
+            ASR::expr_t* index = indices[i].m_right;
+            if (index == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(index))) {
+                continue;
+            }
+            ASR::dimension_t* index_dims = nullptr;
+            ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(index), index_dims);
+            ASR::dimension_t dim;
+            dim.loc = index->base.loc;
+            dim.m_length = index_dims[0].m_length;
+            dim.m_start = dim.m_length ? ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, index->base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(
+                al, index->base.loc, compiler_options.po.default_integer_kind)))) : nullptr;
+            dims.push_back(al, dim);
+        }
+        return ASRUtils::duplicate_type(al, array_type, &dims);
     }
 
     ASR::asr_t* resolve_variable2(const Location &loc, const std::string &var_name,
