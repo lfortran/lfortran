@@ -2173,6 +2173,23 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             return false;
         }
 
+        // Other object files can link only to a public external procedure with a body.
+        static bool is_linkable_external_procedure(SymbolTable* scope,
+                ASR::symbol_t* sym) {
+            if (!ASRUtils::is_tu_scope(scope) || !ASR::is_a<ASR::Function_t>(*sym)) {
+                return false;
+            }
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
+            if (fn->m_access == ASR::accessType::Private) {
+                return false;
+            }
+            if (ASRUtils::get_FunctionType(fn)->m_deftype
+                    != ASR::deftypeType::Implementation) {
+                return false;
+            }
+            return keep_for_a_later_unit(scope, sym);
+        }
+
     public:
 
         RemoveArrayByDescriptorProceduresVisitor(Allocator& al_, PassArrayByDataProcedureVisitor& v_,
@@ -2223,12 +2240,10 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                     if (not_to_be_erased.find(item.second) != not_to_be_erased.end()) {
                         continue;
                     }
-                    if (skip_removal && keep_for_a_later_unit(
+                    if ((skip_removal && keep_for_a_later_unit(
+                            current_scope, item.second))
+                            || is_linkable_external_procedure(
                             current_scope, item.second)) {
-                        // Separate compilation or an interactive cell: another
-                        // unit or a later cell can link to this user-written
-                        // module or top-level procedure, so its descriptor
-                        // original has to stay.
                         continue;
                     }
                     // If this function is in a submodule, check if the parent
@@ -2518,9 +2533,10 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     u.visit_TranslationUnit(unit);
     /*
         RemoveArrayByDescriptorProceduresVisitor removes original (descriptor-
-        based) procedures that have been replaced by ____N versions, unless
-        skip_removal is set (separate-compilation mode, where other compilation
-        units may still reference the originals).
+        based) procedures that have been replaced by ____N versions. It keeps
+        public external procedures with a body, which other object files link
+        to by name, and with skip_removal set (separate-compilation mode) also
+        module procedures, which other compilation units may still reference.
 
         Note: StructMethodDeclaration.m_proc is intentionally NOT updated to
         point to the ____N version.  The vtable uses linkonce_odr linkage and
