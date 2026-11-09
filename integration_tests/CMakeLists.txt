@@ -7629,6 +7629,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real80_print_01 LABELS gfortran llvm)
 elseif (APPLE AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
     # GFortran has no real(10) on arm64
+    RUN(NAME real80_cast_01 LABELS llvm)
+    RUN(NAME real80_compare_01 LABELS llvm)
+    RUN(NAME real80_unary_minus_01 LABELS llvm)
     RUN(NAME real80_literal_01 LABELS llvm)
     RUN(NAME real80_print_01 LABELS llvm)
 endif()
