@@ -20015,6 +20015,12 @@ public:
                 al, index->base.loc, compiler_options.po.default_integer_kind)))) : nullptr;
             dims.push_back(al, dim);
         }
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(array_type))) {
+            // Constant dimensions would make it a FixedSizeArray, which an
+            // array of polymorphic elements cannot be.
+            return ASRUtils::duplicate_type(al, array_type, &dims,
+                ASR::array_physical_typeType::DescriptorArray, true);
+        }
         return ASRUtils::duplicate_type(al, array_type, &dims);
     }
 
