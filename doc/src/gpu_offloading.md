@@ -1075,21 +1075,35 @@ compiled with `--gpu` too when other files that call them are. The
 calls the pass sees by name are redirected to the twin; a call through a
 procedure pointer, a dummy procedure or a binding, and one from a file
 compiled without a GPU device or from C, reaches the subroutine, which
-waits. The twin may return with launches pending, provided they write and
-read only what its dummy arguments hold -- not what an intent(in) dummy
-holds, a module variable, what a pointer points to -- and none may have
+waits. The twin may return with launches pending, provided they write only
+what its dummy arguments hold -- not what an intent(in) dummy holds, and
+not what a pointer points to -- and read only that or a variable of a module
+or of this file that is not a target or a pointer, and none may have
 recorded a stop (whose replay reads a status buffer that is a local of the
 twin): otherwise it waits at its exits as before, once the launches on its
 locals are discarded. A call of a twin is followed like a launch: it may
 leave launches pending that write the actual arguments of the dummies that
-are not intent(in), and read the others -- or, for a twin of this file, only
-those that the launches pending at its exits do. A caller does not wait
-before the call for the launches pending on an array actual argument that
-only the twin can name (a local or dummy no pointer reaches); the twin
-starts as if launches its caller made were pending on what its array
-dummies hold, and waits where it accesses them on the host. Before any other
-actual argument, a module variable, and when a launch that may have
-recorded a stop is pending, the caller waits as before.
+are not intent(in), and read the others and those module or file variables
+-- or, for a twin of this file, only what the launches pending at its exits
+do. A caller does not wait before the call for the launches pending on an
+array actual argument the twin is handed, a module array included, and not
+only one that only the twin can name; the twin starts as if launches its
+caller made were pending on what its array dummies hold, and waits where it
+accesses them on the host. When every exit of that twin has waited, the
+wait covered the launches pending at the call, and the caller keeps only
+what the twin still leaves pending. Before any other actual argument, what
+other procedures can reach, and when a launch that may have recorded a stop
+is pending, the caller waits as before.
+
+An external subroutine or scalar function defined in this file gets a twin
+on the same terms when its body launches a kernel or calls a procedure that
+does. The body is compiled here, so the choice may use it, and a target
+dummy is allowed when the body associates no pointer with it. A module
+procedure is not: only its declaration decides, and a target dummy still
+gets no twin. Another file calls the original procedure, which waits. A
+call through an explicit interface of that procedure in this file is
+redirected to the twin too. A scalar function's twin returns the same
+result; the original assigns that result and then waits.
 
 Storage that a launch only reads the runtime may hand the kernel in place
 (the unified and managed memory models), and the host must not change it
