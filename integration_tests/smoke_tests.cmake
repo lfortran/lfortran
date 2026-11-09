@@ -11,6 +11,7 @@ set(LFORTRAN_SMOKE_TESTS
     system_clock_02
     abs_01 complex_01 complex_02 complex_03 complex_07
     enum_01 enum_02 enum_07
+    real80_literal_01 real80_print_01
 
     # Arrays: descriptors, sections, bounds, constructors and reductions.
     arrays_01 arrays_01_size arrays_02_size arrays_03_size

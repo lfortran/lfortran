@@ -2,6 +2,7 @@
 #include "libasr/string_utils.h"
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <llvm/IR/Value.h>
 #include <memory>
 #include <set>
@@ -87,6 +88,31 @@ using ASRUtils::intent_return_var;
 using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
 using ASRUtils::is_argument_of_type_CPtr;
+
+// Decode the payload of a kind=10 RealConstant, which holds a value of the
+// compiler's host `long double` (see ASRUtils::make_RealConstant_r10), into
+// an APFloat with the matching host format.
+static llvm::APFloat host_long_double_to_apfloat(const uint8_t* bytes) {
+    constexpr int digits = std::numeric_limits<long double>::digits;
+    if constexpr (digits == 53) {
+        double val;
+        std::memcpy(&val, bytes, sizeof(val));
+        return llvm::APFloat(val);
+    } else if constexpr (digits == 64) {
+        uint64_t words[2] = {0, 0};
+        std::memcpy(words, bytes, 10);
+        return llvm::APFloat(llvm::APFloat::x87DoubleExtended(),
+            llvm::APInt(80, llvm::ArrayRef<uint64_t>(words, 2)));
+    } else if constexpr (digits == 113) {
+        uint64_t words[2] = {0, 0};
+        std::memcpy(words, bytes, 16);
+        return llvm::APFloat(llvm::APFloat::IEEEquad(),
+            llvm::APInt(128, llvm::ArrayRef<uint64_t>(words, 2)));
+    } else {
+        throw CodeGenError("real(10) constants are not supported for this "
+            "host long double format");
+    }
+}
 
 // Helper functions for LLVM function name mangling
 namespace {
@@ -19507,29 +19533,15 @@ public:
                 break;
             }
             case 10 : {
-                // kind=10 = C long double; byte layout is platform-native
-                // (produced by strtold + memcpy(sizeof(long double)) at parse time).
-                const uint8_t* bytes = ASRUtils::real_constant_get_r10_bytes(&x);
-#if defined(__APPLE__) && defined(__aarch64__)
-                // Apple Silicon: long double = 128-bit IEEE quad (fp128)
-                uint64_t words[2] = {0, 0};
-                std::memcpy(words, bytes, 16);
-                llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
-                llvm::APFloat apf(llvm::APFloat::IEEEquad(), bits);
+                // The payload is a host `long double`, whose format can
+                // differ from the LLVM type of kind=10 (e.g. double vs fp128
+                // on Apple arm64): decode it, then convert it to that type.
+                llvm::APFloat apf = host_long_double_to_apfloat(
+                    ASRUtils::real_constant_get_r10_bytes(&x));
+                bool loses_info;
+                apf.convert(llvm_utils->getFPType(a_kind)->getFltSemantics(),
+                    llvm::APFloat::rmNearestTiesToEven, &loses_info);
                 tmp = llvm::ConstantFP::get(context, apf);
-#elif defined(__APPLE__)
-                // macOS x86-64: Apple maps long double to 64-bit double
-                double val;
-                std::memcpy(&val, bytes, 8);
-                tmp = llvm::ConstantFP::get(context, llvm::APFloat(val));
-#else
-                // Linux/Windows x86: 80-bit extended precision (x86_fp80)
-                uint64_t words[2] = {0, 0};
-                std::memcpy(words, bytes, 10);
-                llvm::APInt bits(80, llvm::ArrayRef<uint64_t>(words, 2));
-                llvm::APFloat apf(llvm::APFloat::x87DoubleExtended(), bits);
-                tmp = llvm::ConstantFP::get(context, apf);
-#endif
                 break;
             }
             case 16 : {
@@ -25674,8 +25686,9 @@ public:
                 }
                 case ASR::ttypeType::Real: {
                     int a_kind = ASRUtils::extract_kind_from_ttype_t(type);
-                    // A real(10) is walked with `sizeof(long double)`, which
-                    // the compiler cannot reproduce from the LLVM type.
+                    // A real(10) is walked with the runtime's `REAL10_SIZE`,
+                    // which is not the LLVM allocation size of kind 10 on
+                    // every target (e.g. 8 vs 16 bytes on Windows).
                     if( a_kind == 4 || a_kind == 8 || a_kind == 16 ) {
                         walked_size = a_kind;
                     } else {

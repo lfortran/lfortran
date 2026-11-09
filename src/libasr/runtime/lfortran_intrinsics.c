@@ -2773,6 +2773,37 @@ static inline bool logical_value_from_ptr(void *arg, Primitive_Types t) {
     }
 }
 
+// A real(10) item is stored in the LLVM type that the compiler uses for kind
+// 10 (`LLVMUtils::getFPType`), which is not always the C long double. On
+// Apple arm64 it is a 16-byte binary128, while the C long double is a double;
+// the value is then read with the binary128 routines and has the precision of
+// a double. On macOS x86-64 it is a double, while the C long double is the
+// x87 extended type. Elsewhere the C long double is read, which is the x87
+// extended type of the generated code on x86-64 Linux (other targets:
+// https://github.com/lfortran/lfortran/issues/13935).
+#if defined(__APPLE__) && defined(__aarch64__)
+enum { REAL10_SIZE = 16 };
+static inline long double load_real10(const void *p) {
+    lf_float128 v;
+    memcpy(&v, p, sizeof(v));
+    return lf_f128_to_double(v);
+}
+#elif defined(__APPLE__)
+enum { REAL10_SIZE = sizeof(double) };
+static inline long double load_real10(const void *p) {
+    double v;
+    memcpy(&v, p, sizeof(v));
+    return v;
+}
+#else
+enum { REAL10_SIZE = sizeof(long double) };
+static inline long double load_real10(const void *p) {
+    long double v;
+    memcpy(&v, p, sizeof(v));
+    return v;
+}
+#endif
+
 
 char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
     switch(primitive_enum){
@@ -3294,7 +3325,7 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         sizeof(int32_t)/*LOGICAL_32*/, sizeof(int16_t)/*LOGICAL_16*/,
         sizeof(int64_t)/*LOGICAL_64*/,
         16/*FLOAT_128: 16 bytes = 128 bits*/,
-        sizeof(long double)/*FLOAT_80: actual sizeof(long double) on this platform*/,
+        REAL10_SIZE/*FLOAT_80*/,
         0/*DTIO: the size is serialized with each element*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
@@ -3813,13 +3844,7 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result, int decimal
             break;
         }
         case FLOAT_80_TYPE: {
-            /* Load the native platform long double from memory.
-             * sizeof(long double) = 16 on Linux x86-64 (x86_fp80 padded),
-             *                    = 16 on Apple Silicon (fp128),
-             *                    =  8 on macOS x86-64 (mapped to double). */
-            long double val = 0.0L;
-            memcpy(&val, arg, sizeof(val));
-            format_long_double_fortran(result, val);
+            format_long_double_fortran(result, load_real10(arg));
             apply_decimal_edit_mode(result, decimal_mode);
             break;
         }
@@ -4751,14 +4776,9 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         real_val = lf_f128_to_double(q128);
                         break;
                     }
-                    case FLOAT_80_TYPE: {
-                        // Same layout as the list-directed `FLOAT_80_TYPE` case:
-                        // the native platform long double.
-                        long double ld;
-                        memcpy(&ld, s_info.current_arg_info.current_arg, sizeof(ld));
-                        real_val = ld;
+                    case FLOAT_80_TYPE:
+                        real_val = load_real10(s_info.current_arg_info.current_arg);
                         break;
-                    }
                     case CHAR_PTR_TYPE:
                     case STRING_DESCRIPTOR_TYPE:
                         char_val = *(char**)s_info.current_arg_info.current_arg;
