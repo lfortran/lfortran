@@ -35,12 +35,14 @@ counts a call of a procedure whose body it knows, and which launches nothing,
 more precisely: such a call accesses what that body accesses, with what the
 body names through a dummy argument replaced by the same part of the actual
 argument, the variables of the procedures it is contained in that it names,
-and the module or file variables it names (a pointer among them stays a
-path, so it overlaps every target, including a target dummy of the caller).
-It may access what another procedure can reach, beyond those roots, only
-when the body calls a procedure whose accesses are not known that way, or
-names a pointer; it acts outside the program when the body may, `stop`
-included.
+and the module or file variables it names. A pointer variable among them
+stays a path, so it overlaps every target, including a target dummy of the
+caller, and a pointer component stays a path too: the component is not a
+root, but the call also reaches other storage. It may access what another
+procedure can reach, beyond those roots, only when the body calls a
+procedure whose accesses are not known that way, or a path's root or a
+component is a pointer; it acts outside the program when the body may,
+`stop` included.
 */
 
 namespace AccessPaths {
@@ -94,9 +96,25 @@ inline bool is_pointer_variable(ASR::symbol_t *s) {
 }
 
 // Whether a path with root `root` is whatever a pointer may point to: no
-// root (`Path::pointee()`), or a pointer variable.
+// root (`Path::pointee()`), or a pointer variable. A pointer component is
+// not a root; `reaches_other_storage` is what sees it. `same_storage_root`
+// stays on this test alone.
 inline bool may_point_anywhere(ASR::symbol_t *root) {
     return root == nullptr || is_pointer_variable(root);
+}
+
+// Whether a path can name storage other than the bytes of its root. The
+// root may be a pointer variable, or a component may be a pointer. The
+// path is still kept: a pointer variable has to overlap every target, and
+// a pointer component is part of the root the body named.
+inline bool reaches_other_storage(const Path &p) {
+    if (may_point_anywhere(p.root)) return true;
+    for (ASR::symbol_t *m : p.members) {
+        if (m != nullptr && ASRUtils::is_pointer(ASRUtils::symbol_type(m))) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // A root a pointer may point into, or that another procedure can reach.
@@ -1071,11 +1089,14 @@ private:
                 // Keep the root. A module pointer overlaps every target,
                 // including a target dummy the caller associated it with
                 // and this body never names; collapsing it to `globals`
-                // hides that path. A variable that is not a pointer is
-                // only this root: `globals` would also reach a target
-                // dummy the body does not touch.
+                // hides that path. A pointer component is not a root, so
+                // `may_point_anywhere` does not see it, but the pointer
+                // reaches other storage: the path stays and the call is
+                // also `globals`. `globals` is not set for a path that names
+                // only this root: that would also reach a target dummy the
+                // body does not touch.
                 s.named.push_back(p);
-                if (may_point_anywhere(p.root)) s.globals = true;
+                if (reaches_other_storage(p)) s.globals = true;
             }
         }
         return true;
@@ -1123,9 +1144,9 @@ inline bool AccessCollector::summarized_call(ASR::Function_t *fn,
     }
     for (const Path &p : body->named) {
         acc.paths.push_back(p);
-        // A pointer may also reach a local that escaped, which overlap
-        // with this path does not name. The path itself stays.
-        if (may_point_anywhere(p.root)) acc.globals = true;
+        // A pointer, or a pointer component, may also reach storage this
+        // path does not name. The path itself stays.
+        if (reaches_other_storage(p)) acc.globals = true;
     }
     acc.globals = acc.globals || body->globals;
     acc.everything = acc.everything || body->everything;

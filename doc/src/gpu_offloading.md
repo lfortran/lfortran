@@ -1106,9 +1106,10 @@ associated a pointer with the actual argument, and this body does not see
 that pointer. A call that may read or write through it is ordered with the
 launch inside the procedure that launched the kernel, before the call. That
 is a call whose body is not summarized, and a summarized call whose roots
-can alias the dummy: a module or file pointer stays a path, so it overlaps
-the dummy. A summarized call that only names some other variable, such as a
-module integer a timer increments, does not. A module procedure is not given
+can alias the dummy. A module or file pointer stays a path, so it overlaps
+the dummy, and a pointer component makes the call reach other storage. A
+summarized call that only names some other variable, such as a module
+integer a timer increments, does not. A module procedure is not given
 a twin: only its declaration decides, and a target dummy still gets no twin.
 Another file calls the original procedure, which waits. A call through an
 explicit interface of that procedure in this file is redirected to the twin
@@ -1187,13 +1188,16 @@ accesses only the components the body names. A call of a procedure whose
 body is known, launches nothing and has no pointer, target or procedure
 dummy accesses what that body accesses: the same parts of its actual
 arguments, the variables of its host procedure it names, and the module or
-file variables it names. A pointer among those stays a path, so it overlaps
-every target, including a target dummy of the caller that this body never
-associates a pointer with. What another procedure can reach, beyond those
-roots, counts only when the body calls a procedure whose accesses are not
-known that way, or names a pointer; such a call also reaches a target dummy,
-because the caller may already have associated a pointer with its actual
-argument. The call acts outside the program when the body may, `stop`
+file variables it names. A pointer variable among those stays a path, so it
+overlaps every target, including a target dummy of the caller that this body
+never associates a pointer with. A pointer component is not itself a root,
+but it reaches other storage, so that path is kept and the call also counts
+as reaching what another procedure can reach. What another procedure can
+reach, beyond those roots, counts when the body calls a procedure whose
+accesses are not known that way, or a path's root or a component is a
+pointer; such a call also reaches a target dummy, because the caller may
+already have associated a pointer with its actual argument. The call acts
+outside the program when the body may, `stop`
 included. So a call that only asks for the shapes of its arguments (`call
 check_shapes(x, y)`) does not wait for the launch that writes them, and
 neither does one that only increments a module integer.

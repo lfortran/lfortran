@@ -5293,7 +5293,8 @@ options = "--gpu=metal --pass=gpu_offload --cumulative"
 
 # A pointer the caller associated with a target dummy's actual is read by
 # `reader` after the launch. GpuSync is inside the launching procedure,
-# before that call; `tick` does not sync.
+# before that call; `tick` does not sync. `g%p` is synced before
+# `reader_component`.
 [[test]]
 filename = "gpu_target_dummy_reader.f90"
 asr = true

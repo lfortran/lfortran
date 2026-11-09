@@ -5,11 +5,11 @@
             __lfortran_gpu_kernel_0_6helper:
                 (Function
                     (SymbolTable
-                        9
+                        12
                         {
                             __dim_x_0:
                                 (Variable
-                                    9
+                                    12
                                     __dim_x_0
                                     []
                                     InOut
@@ -35,7 +35,7 @@
                                 ),
                             __flat_idx:
                                 (Variable
-                                    9
+                                    12
                                     __flat_idx
                                     []
                                     Local
@@ -61,7 +61,7 @@
                                 ),
                             __lb_x_0:
                                 (Variable
-                                    9
+                                    12
                                     __lb_x_0
                                     []
                                     InOut
@@ -87,14 +87,14 @@
                                 ),
                             __libasr_extent_x_1:
                                 (Variable
-                                    9
+                                    12
                                     __libasr_extent_x_1
                                     [__dim_x_0]
                                     Local
                                     (IntrinsicElementalFunction
                                         Max
                                         [(IntegerConstant 0 (Integer 4) Decimal)
-                                        (Var 9 __dim_x_0)]
+                                        (Var 12 __dim_x_0)]
                                         0
                                         (Integer 4)
                                         ()
@@ -120,11 +120,11 @@
                                 ),
                             __libasr_lbound_x_1:
                                 (Variable
-                                    9
+                                    12
                                     __libasr_lbound_x_1
                                     [__lb_x_0]
                                     Local
-                                    (Var 9 __lb_x_0)
+                                    (Var 12 __lb_x_0)
                                     ()
                                     Default
                                     (Integer 4)
@@ -146,7 +146,7 @@
                                 ),
                             __loop_end_0:
                                 (Variable
-                                    9
+                                    12
                                     __loop_end_0
                                     []
                                     InOut
@@ -172,7 +172,7 @@
                                 ),
                             i__dc:
                                 (Variable
-                                    9
+                                    12
                                     i__dc
                                     []
                                     Local
@@ -198,7 +198,7 @@
                                 ),
                             x:
                                 (Variable
-                                    9
+                                    12
                                     x
                                     [__libasr_lbound_x_1
                                     __libasr_extent_x_1]
@@ -208,8 +208,8 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((Var 9 __libasr_lbound_x_1)
-                                        (Var 9 __libasr_extent_x_1))]
+                                        [((Var 12 __libasr_lbound_x_1)
+                                        (Var 12 __libasr_extent_x_1))]
                                         DescriptorArray
                                         Global
                                     )
@@ -256,10 +256,10 @@
                         Kernel
                     )
                     []
-                    [(Var 9 x)
-                    (Var 9 __dim_x_0)
-                    (Var 9 __lb_x_0)
-                    (Var 9 __loop_end_0)]
+                    [(Var 12 x)
+                    (Var 12 __dim_x_0)
+                    (Var 12 __lb_x_0)
+                    (Var 12 __loop_end_0)]
                     [(If
                         ()
                         (IntegerCompare
@@ -291,7 +291,7 @@
                             GtE
                             (IfExp
                                 (IntegerCompare
-                                    (Var 9 __loop_end_0)
+                                    (Var 12 __loop_end_0)
                                     GtE
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (Logical 4)
@@ -299,7 +299,7 @@
                                 )
                                 (IntegerBinOp
                                     (IntegerBinOp
-                                        (Var 9 __loop_end_0)
+                                        (Var 12 __loop_end_0)
                                         Sub
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (Integer 4)
@@ -321,7 +321,7 @@
                         []
                     )
                     (Assignment
-                        (Var 9 __flat_idx)
+                        (Var 12 __flat_idx)
                         (IntegerBinOp
                             (IntegerBinOp
                                 (GpuBlockIndex
@@ -354,9 +354,9 @@
                         .false.
                     )
                     (Assignment
-                        (Var 9 i__dc)
+                        (Var 12 i__dc)
                         (IntegerBinOp
-                            (Var 9 __flat_idx)
+                            (Var 12 __flat_idx)
                             Add
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
@@ -370,9 +370,9 @@
                     )
                     (Assignment
                         (ArrayItem
-                            (Var 9 x)
+                            (Var 12 x)
                             [(()
-                            (Var 9 i__dc)
+                            (Var 12 i__dc)
                             ())]
                             (Real 4)
                             ColMajor
@@ -392,9 +392,9 @@
                             )
                             Mul
                             (ArrayItem
-                                (Var 9 x)
+                                (Var 12 x)
                                 [(()
-                                (Var 9 i__dc)
+                                (Var 12 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -415,7 +415,7 @@
                     .false.
                     .false.
                     ()
-                    ([(9 x
+                    ([(12 x
                     ()
                     (Real 4)
                     GpuArray
@@ -423,7 +423,7 @@
                     -1
                     .true.
                     .false.)]
-                    [(9 __dim_x_0
+                    [(12 __dim_x_0
                     ()
                     (Integer 4)
                     GpuScalar
@@ -431,7 +431,7 @@
                     -1
                     .false.
                     .false.)
-                    (9 __lb_x_0
+                    (12 __lb_x_0
                     ()
                     (Integer 4)
                     GpuScalar
@@ -439,7 +439,7 @@
                     -1
                     .false.
                     .false.)
-                    (9 __loop_end_0
+                    (12 __loop_end_0
                     ()
                     (Integer 4)
                     GpuScalar
@@ -453,14 +453,274 @@
                     []
                     ())
                 ),
-            __lfortran_gpu_kernel_1_13reader_fields10helper_mod:
+            __lfortran_gpu_kernel_1_11helper_coef:
                 (Function
                     (SymbolTable
-                        11
+                        14
+                        {
+                            __flat_idx:
+                                (Variable
+                                    14
+                                    __flat_idx
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            coef:
+                                (Variable
+                                    14
+                                    coef
+                                    []
+                                    InOut
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i__dc:
+                                (Variable
+                                    14
+                                    i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    __lfortran_gpu_kernel_1_11helper_coef
+                    (FunctionType
+                        [(Array
+                            (Real 4)
+                            [((IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 4 (Integer 4) Decimal))]
+                            FixedSizeArray
+                            Global
+                        )]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Kernel
+                    )
+                    []
+                    [(Var 14 coef)]
+                    [(If
+                        ()
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (GpuBlockIndex
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Mul
+                                    (GpuBlockSize
+                                        0
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    ()
+                                )
+                                Add
+                                (GpuThreadIndex
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            GtE
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Return)]
+                        []
+                    )
+                    (Assignment
+                        (Var 14 __flat_idx)
+                        (IntegerBinOp
+                            (IntegerBinOp
+                                (GpuBlockIndex
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                Mul
+                                (GpuBlockSize
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                (Integer 4)
+                                ()
+                            )
+                            Add
+                            (GpuThreadIndex
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 14 i__dc)
+                        (IntegerBinOp
+                            (Var 14 __flat_idx)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 14 coef)
+                            [(()
+                            (Var 14 i__dc)
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                            .false.
+                        )
+                        (RealBinOp
+                            (Cast
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    2.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            Mul
+                            (ArrayItem
+                                (Var 14 coef)
+                                [(()
+                                (Var 14 i__dc)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                                .false.
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                    ([(14 coef
+                    ()
+                    (Real 4)
+                    GpuArray
+                    0
+                    -1
+                    .true.
+                    .false.)]
+                    []
+                    []
+                    .false.
+                    1
+                    []
+                    ())
+                ),
+            __lfortran_gpu_kernel_2_13reader_fields10helper_mod:
+                (Function
+                    (SymbolTable
+                        16
                         {
                             __dim_x_0:
                                 (Variable
-                                    11
+                                    16
                                     __dim_x_0
                                     []
                                     InOut
@@ -486,7 +746,7 @@
                                 ),
                             __flat_idx:
                                 (Variable
-                                    11
+                                    16
                                     __flat_idx
                                     []
                                     Local
@@ -512,7 +772,7 @@
                                 ),
                             __lb_x_0:
                                 (Variable
-                                    11
+                                    16
                                     __lb_x_0
                                     []
                                     InOut
@@ -538,14 +798,14 @@
                                 ),
                             __libasr_extent_x_1:
                                 (Variable
-                                    11
+                                    16
                                     __libasr_extent_x_1
                                     [__dim_x_0]
                                     Local
                                     (IntrinsicElementalFunction
                                         Max
                                         [(IntegerConstant 0 (Integer 4) Decimal)
-                                        (Var 11 __dim_x_0)]
+                                        (Var 16 __dim_x_0)]
                                         0
                                         (Integer 4)
                                         ()
@@ -571,11 +831,11 @@
                                 ),
                             __libasr_lbound_x_1:
                                 (Variable
-                                    11
+                                    16
                                     __libasr_lbound_x_1
                                     [__lb_x_0]
                                     Local
-                                    (Var 11 __lb_x_0)
+                                    (Var 16 __lb_x_0)
                                     ()
                                     Default
                                     (Integer 4)
@@ -597,7 +857,7 @@
                                 ),
                             __loop_end_0:
                                 (Variable
-                                    11
+                                    16
                                     __loop_end_0
                                     []
                                     InOut
@@ -623,7 +883,7 @@
                                 ),
                             i__dc:
                                 (Variable
-                                    11
+                                    16
                                     i__dc
                                     []
                                     Local
@@ -649,7 +909,7 @@
                                 ),
                             x:
                                 (Variable
-                                    11
+                                    16
                                     x
                                     [__libasr_lbound_x_1
                                     __libasr_extent_x_1]
@@ -659,8 +919,8 @@
                                     Default
                                     (Array
                                         (Real 4)
-                                        [((Var 11 __libasr_lbound_x_1)
-                                        (Var 11 __libasr_extent_x_1))]
+                                        [((Var 16 __libasr_lbound_x_1)
+                                        (Var 16 __libasr_extent_x_1))]
                                         DescriptorArray
                                         Global
                                     )
@@ -681,7 +941,7 @@
                                     ()
                                 )
                         })
-                    __lfortran_gpu_kernel_1_13reader_fields10helper_mod
+                    __lfortran_gpu_kernel_2_13reader_fields10helper_mod
                     (FunctionType
                         [(Array
                             (Real 4)
@@ -707,10 +967,10 @@
                         Kernel
                     )
                     []
-                    [(Var 11 x)
-                    (Var 11 __dim_x_0)
-                    (Var 11 __lb_x_0)
-                    (Var 11 __loop_end_0)]
+                    [(Var 16 x)
+                    (Var 16 __dim_x_0)
+                    (Var 16 __lb_x_0)
+                    (Var 16 __loop_end_0)]
                     [(If
                         ()
                         (IntegerCompare
@@ -742,7 +1002,7 @@
                             GtE
                             (IfExp
                                 (IntegerCompare
-                                    (Var 11 __loop_end_0)
+                                    (Var 16 __loop_end_0)
                                     GtE
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (Logical 4)
@@ -750,7 +1010,7 @@
                                 )
                                 (IntegerBinOp
                                     (IntegerBinOp
-                                        (Var 11 __loop_end_0)
+                                        (Var 16 __loop_end_0)
                                         Sub
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (Integer 4)
@@ -772,7 +1032,7 @@
                         []
                     )
                     (Assignment
-                        (Var 11 __flat_idx)
+                        (Var 16 __flat_idx)
                         (IntegerBinOp
                             (IntegerBinOp
                                 (GpuBlockIndex
@@ -805,9 +1065,9 @@
                         .false.
                     )
                     (Assignment
-                        (Var 11 i__dc)
+                        (Var 16 i__dc)
                         (IntegerBinOp
-                            (Var 11 __flat_idx)
+                            (Var 16 __flat_idx)
                             Add
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
@@ -821,9 +1081,9 @@
                     )
                     (Assignment
                         (ArrayItem
-                            (Var 11 x)
+                            (Var 16 x)
                             [(()
-                            (Var 11 i__dc)
+                            (Var 16 i__dc)
                             ())]
                             (Real 4)
                             ColMajor
@@ -843,9 +1103,9 @@
                             )
                             Mul
                             (ArrayItem
-                                (Var 11 x)
+                                (Var 16 x)
                                 [(()
-                                (Var 11 i__dc)
+                                (Var 16 i__dc)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -866,7 +1126,7 @@
                     .false.
                     .false.
                     ()
-                    ([(11 x
+                    ([(16 x
                     ()
                     (Real 4)
                     GpuArray
@@ -874,7 +1134,7 @@
                     -1
                     .true.
                     .false.)]
-                    [(11 __dim_x_0
+                    [(16 __dim_x_0
                     ()
                     (Integer 4)
                     GpuScalar
@@ -882,7 +1142,7 @@
                     -1
                     .false.
                     .false.)
-                    (11 __lb_x_0
+                    (16 __lb_x_0
                     ()
                     (Integer 4)
                     GpuScalar
@@ -890,7 +1150,7 @@
                     -1
                     .false.
                     .false.)
-                    (11 __loop_end_0
+                    (16 __loop_end_0
                     ()
                     (Integer 4)
                     GpuScalar
@@ -907,11 +1167,11 @@
             helper:
                 (Function
                     (SymbolTable
-                        12
+                        17
                         {
                             reader:
                                 (ExternalSymbol
-                                    12
+                                    17
                                     reader
                                     2 reader
                                     reader_fields
@@ -921,7 +1181,7 @@
                                 ),
                             tick:
                                 (ExternalSymbol
-                                    12
+                                    17
                                     tick
                                     2 tick
                                     reader_fields
@@ -931,7 +1191,7 @@
                                 ),
                             x:
                                 (Variable
-                                    12
+                                    17
                                     x
                                     []
                                     Unspecified
@@ -985,11 +1245,11 @@
                         Host
                     )
                     [helper__gpu_deferred]
-                    [(Var 12 x)]
+                    [(Var 17 x)]
                     [(SubroutineCall
                         1 helper__gpu_deferred
                         ()
-                        [((Var 12 x))]
+                        [((Var 17 x))]
                         ()
                         .false.
                     )]
@@ -1002,11 +1262,11 @@
             helper__gpu_deferred:
                 (Function
                     (SymbolTable
-                        6
+                        8
                         {
                             __gpu_iteration_count:
                                 (Variable
-                                    6
+                                    8
                                     __gpu_iteration_count
                                     []
                                     Local
@@ -1032,7 +1292,7 @@
                                 ),
                             __gpu_loop_end:
                                 (Variable
-                                    6
+                                    8
                                     __gpu_loop_end
                                     []
                                     Local
@@ -1058,7 +1318,7 @@
                                 ),
                             i:
                                 (Variable
-                                    6
+                                    8
                                     i
                                     []
                                     Local
@@ -1084,7 +1344,7 @@
                                 ),
                             i__dc:
                                 (Variable
-                                    6
+                                    8
                                     i__dc
                                     []
                                     Local
@@ -1110,7 +1370,7 @@
                                 ),
                             reader:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     reader
                                     2 reader
                                     reader_fields
@@ -1120,7 +1380,7 @@
                                 ),
                             tick:
                                 (ExternalSymbol
-                                    6
+                                    8
                                     tick
                                     2 tick
                                     reader_fields
@@ -1130,7 +1390,7 @@
                                 ),
                             x:
                                 (Variable
-                                    6
+                                    8
                                     x
                                     []
                                     Unspecified
@@ -1184,11 +1444,11 @@
                         Host
                     )
                     []
-                    [(Var 6 x)]
+                    [(Var 8 x)]
                     [(Assignment
-                        (Var 6 __gpu_loop_end)
+                        (Var 8 __gpu_loop_end)
                         (ArraySize
-                            (Var 6 x)
+                            (Var 8 x)
                             ()
                             (Integer 4)
                             ()
@@ -1200,11 +1460,11 @@
                         .false.
                     )
                     (Assignment
-                        (Var 6 __gpu_iteration_count)
+                        (Var 8 __gpu_iteration_count)
                         (IfExp
                             (IntegerCompare
                                 (Cast
-                                    (Var 6 __gpu_loop_end)
+                                    (Var 8 __gpu_loop_end)
                                     IntegerToInteger
                                     (Integer 8)
                                     ()
@@ -1224,7 +1484,7 @@
                             (IntegerBinOp
                                 (IntegerBinOp
                                     (Cast
-                                        (Var 6 __gpu_loop_end)
+                                        (Var 8 __gpu_loop_end)
                                         IntegerToInteger
                                         (Integer 8)
                                         ()
@@ -1259,7 +1519,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (Var 6 __gpu_iteration_count)
+                            (Var 8 __gpu_iteration_count)
                             Gt
                             (IntegerConstant 0 (Integer 8) Decimal)
                             (Logical 4)
@@ -1268,23 +1528,23 @@
                         [(GpuSync)
                         (GpuKernelLaunch
                             1 __lfortran_gpu_kernel_0_6helper
-                            (Var 6 __gpu_iteration_count)
+                            (Var 8 __gpu_iteration_count)
                             (IntegerConstant 64 (Integer 4) Decimal)
-                            [((Var 6 x))
+                            [((Var 8 x))
                             ((ArraySize
-                                (Var 6 x)
+                                (Var 8 x)
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 ()
                             ))
                             ((ArrayBound
-                                (Var 6 x)
+                                (Var 8 x)
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 LBound
                                 ()
                             ))
-                            ((Var 6 __gpu_loop_end))]
+                            ((Var 8 __gpu_loop_end))]
                             ()
                             []
                             ()
@@ -1298,7 +1558,7 @@
                         []
                     )
                     (SubroutineCall
-                        6 tick
+                        8 tick
                         ()
                         []
                         ()
@@ -1306,7 +1566,266 @@
                     )
                     (GpuSync)
                     (SubroutineCall
-                        6 reader
+                        8 reader
+                        ()
+                        []
+                        ()
+                        .false.
+                    )]
+                    ()
+                    Public
+                    .true.
+                    .true.
+                    ()
+                ),
+            helper_coef:
+                (Function
+                    (SymbolTable
+                        9
+                        {
+                            __gpu_iteration_count:
+                                (Variable
+                                    9
+                                    __gpu_iteration_count
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __gpu_loop_end:
+                                (Variable
+                                    9
+                                    __gpu_loop_end
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            coef:
+                                (ExternalSymbol
+                                    9
+                                    coef
+                                    2 coef
+                                    reader_fields
+                                    []
+                                    coef
+                                    Public
+                                ),
+                            i:
+                                (Variable
+                                    9
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            i__dc:
+                                (Variable
+                                    9
+                                    i__dc
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            reader_component:
+                                (ExternalSymbol
+                                    9
+                                    reader_component
+                                    2 reader_component
+                                    reader_fields
+                                    []
+                                    reader_component
+                                    Public
+                                )
+                        })
+                    helper_coef
+                    (FunctionType
+                        []
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    []
+                    [(Assignment
+                        (Var 9 __gpu_loop_end)
+                        (ArraySize
+                            (Var 9 coef)
+                            ()
+                            (Integer 4)
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 9 __gpu_iteration_count)
+                        (IfExp
+                            (IntegerCompare
+                                (Cast
+                                    (Var 9 __gpu_loop_end)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
+                                    ()
+                                )
+                                GtE
+                                (Cast
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    (IntegerConstant 1 (Integer 8) Decimal)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (IntegerBinOp
+                                (IntegerBinOp
+                                    (Cast
+                                        (Var 9 __gpu_loop_end)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        ()
+                                        ()
+                                    )
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToInteger
+                                        (Integer 8)
+                                        (IntegerConstant 1 (Integer 8) Decimal)
+                                        ()
+                                    )
+                                    (Integer 8)
+                                    ()
+                                )
+                                Add
+                                (IntegerConstant 1 (Integer 8) Decimal)
+                                (Integer 8)
+                                ()
+                            )
+                            (IntegerConstant 0 (Integer 8) Decimal)
+                            (Integer 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 9 __gpu_iteration_count)
+                            Gt
+                            (IntegerConstant 0 (Integer 8) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(GpuKernelLaunch
+                            1 __lfortran_gpu_kernel_1_11helper_coef
+                            (Var 9 __gpu_iteration_count)
+                            (IntegerConstant 64 (Integer 4) Decimal)
+                            [((Var 9 coef))]
+                            ()
+                            []
+                            ()
+                            []
+                            []
+                            []
+                            []
+                            0
+                            ()
+                        )]
+                        []
+                    )
+                    (GpuSync)
+                    (SubroutineCall
+                        9 reader_component
                         ()
                         []
                         ()
@@ -1323,14 +1842,85 @@
                     (SymbolTable
                         2
                         {
+                            coef:
+                                (Variable
+                                    2
+                                    coef
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            g:
+                                (Variable
+                                    2
+                                    g
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(Pointer
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                                Global
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    2 holder
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             helper_mod:
                                 (Function
                                     (SymbolTable
-                                        5
+                                        6
                                         {
                                             __gpu_iteration_count:
                                                 (Variable
-                                                    5
+                                                    6
                                                     __gpu_iteration_count
                                                     []
                                                     Local
@@ -1356,7 +1946,7 @@
                                                 ),
                                             __gpu_loop_end:
                                                 (Variable
-                                                    5
+                                                    6
                                                     __gpu_loop_end
                                                     []
                                                     Local
@@ -1382,7 +1972,7 @@
                                                 ),
                                             i:
                                                 (Variable
-                                                    5
+                                                    6
                                                     i
                                                     []
                                                     Local
@@ -1408,7 +1998,7 @@
                                                 ),
                                             i__dc:
                                                 (Variable
-                                                    5
+                                                    6
                                                     i__dc
                                                     []
                                                     Local
@@ -1434,7 +2024,7 @@
                                                 ),
                                             x:
                                                 (Variable
-                                                    5
+                                                    6
                                                     x
                                                     []
                                                     Unspecified
@@ -1489,11 +2079,11 @@
                                     )
                                     [tick
                                     reader]
-                                    [(Var 5 x)]
+                                    [(Var 6 x)]
                                     [(Assignment
-                                        (Var 5 __gpu_loop_end)
+                                        (Var 6 __gpu_loop_end)
                                         (ArraySize
-                                            (Var 5 x)
+                                            (Var 6 x)
                                             ()
                                             (Integer 4)
                                             ()
@@ -1505,11 +2095,11 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 5 __gpu_iteration_count)
+                                        (Var 6 __gpu_iteration_count)
                                         (IfExp
                                             (IntegerCompare
                                                 (Cast
-                                                    (Var 5 __gpu_loop_end)
+                                                    (Var 6 __gpu_loop_end)
                                                     IntegerToInteger
                                                     (Integer 8)
                                                     ()
@@ -1529,7 +2119,7 @@
                                             (IntegerBinOp
                                                 (IntegerBinOp
                                                     (Cast
-                                                        (Var 5 __gpu_loop_end)
+                                                        (Var 6 __gpu_loop_end)
                                                         IntegerToInteger
                                                         (Integer 8)
                                                         ()
@@ -1564,31 +2154,31 @@
                                     (If
                                         ()
                                         (IntegerCompare
-                                            (Var 5 __gpu_iteration_count)
+                                            (Var 6 __gpu_iteration_count)
                                             Gt
                                             (IntegerConstant 0 (Integer 8) Decimal)
                                             (Logical 4)
                                             ()
                                         )
                                         [(GpuKernelLaunch
-                                            1 __lfortran_gpu_kernel_1_13reader_fields10helper_mod
-                                            (Var 5 __gpu_iteration_count)
+                                            1 __lfortran_gpu_kernel_2_13reader_fields10helper_mod
+                                            (Var 6 __gpu_iteration_count)
                                             (IntegerConstant 64 (Integer 4) Decimal)
-                                            [((Var 5 x))
+                                            [((Var 6 x))
                                             ((ArraySize
-                                                (Var 5 x)
+                                                (Var 6 x)
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 ()
                                             ))
                                             ((ArrayBound
-                                                (Var 5 x)
+                                                (Var 6 x)
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 (Integer 4)
                                                 LBound
                                                 ()
                                             ))
-                                            ((Var 5 __gpu_loop_end))]
+                                            ((Var 6 __gpu_loop_end))]
                                             ()
                                             []
                                             ()
@@ -1621,6 +2211,74 @@
                                     .true.
                                     .true.
                                     ()
+                                ),
+                            holder:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            p:
+                                                (Variable
+                                                    3
+                                                    p
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    holder
+                                    (StructType
+                                        [(Pointer
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                                Global
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [p]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
                                 ),
                             p:
                                 (Variable
@@ -1659,7 +2317,7 @@
                             reader:
                                 (Function
                                     (SymbolTable
-                                        3
+                                        4
                                         {
                                             
                                         })
@@ -1720,10 +2378,96 @@
                                     .true.
                                     ()
                                 ),
+                            reader_component:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            1_holder_p:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_holder_p
+                                                    3 p
+                                                    reader_fields
+                                                    [holder]
+                                                    p
+                                                    Public
+                                                )
+                                        })
+                                    reader_component
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    []
+                                    [(If
+                                        ()
+                                        (RealCompare
+                                            (ArrayItem
+                                                (StructInstanceMember
+                                                    (Var 2 g)
+                                                    7 1_holder_p
+                                                    (Pointer
+                                                        (Array
+                                                            (Real 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                )
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Real 4)
+                                                ColMajor
+                                                ()
+                                                .false.
+                                            )
+                                            Lt
+                                            (RealUnaryMinus
+                                                (RealConstant
+                                                    1000000015047466219876688855040.000000
+                                                    (Real 4)
+                                                )
+                                                (Real 4)
+                                                (RealConstant
+                                                    -1000000015047466219876688855040.000000
+                                                    (Real 4)
+                                                )
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
                             tick:
                                 (Function
                                     (SymbolTable
-                                        4
+                                        5
                                         {
                                             
                                         })
@@ -1805,12 +2549,48 @@
             reader_sync:
                 (Program
                     (SymbolTable
-                        7
+                        10
                         {
+                            1_holder_p:
+                                (ExternalSymbol
+                                    10
+                                    1_holder_p
+                                    3 p
+                                    reader_fields
+                                    [holder]
+                                    p
+                                    Public
+                                ),
                             __libasr_index_0_:
                                 (Variable
-                                    7
+                                    10
                                     __libasr_index_0_
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_index_0_1:
+                                (Variable
+                                    10
+                                    __libasr_index_0_1
                                     []
                                     Local
                                     ()
@@ -1835,7 +2615,7 @@
                                 ),
                             a:
                                 (Variable
-                                    7
+                                    10
                                     a
                                     []
                                     Local
@@ -1865,9 +2645,29 @@
                                     []
                                     ()
                                 ),
+                            coef:
+                                (ExternalSymbol
+                                    10
+                                    coef
+                                    2 coef
+                                    reader_fields
+                                    []
+                                    coef
+                                    Public
+                                ),
+                            g:
+                                (ExternalSymbol
+                                    10
+                                    g
+                                    2 g
+                                    reader_fields
+                                    []
+                                    g
+                                    Public
+                                ),
                             helper_mod:
                                 (ExternalSymbol
-                                    7
+                                    10
                                     helper_mod
                                     2 helper_mod
                                     reader_fields
@@ -1875,9 +2675,19 @@
                                     helper_mod
                                     Public
                                 ),
+                            holder:
+                                (ExternalSymbol
+                                    10
+                                    holder
+                                    2 holder
+                                    reader_fields
+                                    []
+                                    holder
+                                    Public
+                                ),
                             p:
                                 (ExternalSymbol
-                                    7
+                                    10
                                     p
                                     2 p
                                     reader_fields
@@ -1887,7 +2697,7 @@
                                 ),
                             reader:
                                 (ExternalSymbol
-                                    7
+                                    10
                                     reader
                                     2 reader
                                     reader_fields
@@ -1895,9 +2705,19 @@
                                     reader
                                     Public
                                 ),
+                            reader_component:
+                                (ExternalSymbol
+                                    10
+                                    reader_component
+                                    2 reader_component
+                                    reader_fields
+                                    []
+                                    reader_component
+                                    Public
+                                ),
                             tick:
                                 (ExternalSymbol
-                                    7
+                                    10
                                     tick
                                     2 tick
                                     reader_fields
@@ -1907,7 +2727,7 @@
                                 ),
                             ticks:
                                 (ExternalSymbol
-                                    7
+                                    10
                                     ticks
                                     2 ticks
                                     reader_fields
@@ -1920,16 +2740,16 @@
                     [reader_fields]
                     [(DoLoop
                         ()
-                        ((Var 7 __libasr_index_0_)
+                        ((Var 10 __libasr_index_0_)
                         (ArrayBound
-                            (Var 7 a)
+                            (Var 10 a)
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
-                            (Var 7 a)
+                            (Var 10 a)
                             (IntegerConstant 1 (Integer 4) Decimal)
                             (Integer 4)
                             UBound
@@ -1938,9 +2758,56 @@
                         (IntegerConstant 1 (Integer 4) Decimal))
                         [(Assignment
                             (ArrayItem
-                                (Var 7 a)
+                                (Var 10 a)
                                 [(()
-                                (Var 7 __libasr_index_0_)
+                                (Var 10 __libasr_index_0_)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                                .true.
+                            )
+                            (Cast
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 10 __libasr_index_0_1)
+                        (ArrayBound
+                            (Var 10 coef)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        (ArrayBound
+                            (Var 10 coef)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            UBound
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4) Decimal))
+                        [(Assignment
+                            (ArrayItem
+                                (Var 10 coef)
+                                [(()
+                                (Var 10 __libasr_index_0_1)
                                 ())]
                                 (Real 4)
                                 ColMajor
@@ -1966,9 +2833,39 @@
                         []
                     )
                     (Associate
-                        (Var 7 p)
+                        (Var 10 p)
                         (ArrayPhysicalCast
-                            (Var 7 a)
+                            (Var 10 a)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        )
+                        NoPointerBounds
+                    )
+                    (Associate
+                        (StructInstanceMember
+                            (Var 10 g)
+                            10 1_holder_p
+                            (Pointer
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                    Global
+                                )
+                            )
+                            ()
+                        )
+                        (ArrayPhysicalCast
+                            (Var 10 coef)
                             FixedSizeArray
                             DescriptorArray
                             (Array
@@ -1986,7 +2883,7 @@
                         1 helper__gpu_deferred
                         ()
                         [((ArrayPhysicalCast
-                            (Var 7 a)
+                            (Var 10 a)
                             FixedSizeArray
                             DescriptorArray
                             (Array
@@ -2002,10 +2899,10 @@
                         .false.
                     )
                     (SubroutineCall
-                        7 helper_mod
+                        10 helper_mod
                         ()
                         [((ArrayPhysicalCast
-                            (Var 7 a)
+                            (Var 10 a)
                             FixedSizeArray
                             DescriptorArray
                             (Array
@@ -2017,6 +2914,13 @@
                             )
                             ()
                         ))]
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        1 helper_coef
+                        ()
+                        []
                         ()
                         .false.
                     )]
