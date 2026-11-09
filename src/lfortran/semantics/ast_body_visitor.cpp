@@ -692,10 +692,15 @@ public:
     // procedure only once that statement is visited. Record such dummies so
     // a generic call resolved earlier can match a procedure actual of the
     // same result type. A section (`f(1:2)`) is not a call. An interface
-    // body is not scanned with its host.
+    // body is not scanned with its host. A name declared in a BLOCK is a
+    // different entity inside that block and nested blocks, so it does not
+    // mark the host dummy. A reference that is not declared there still does.
     struct ImplicitDummyProcedureFinder
             : public AST::BaseWalkVisitor<ImplicitDummyProcedureFinder> {
         std::set<std::string> &names;
+        // Declared names of each enclosing BLOCK, innermost last.
+        std::vector<std::set<std::string>> block_locals;
+
         explicit ImplicitDummyProcedureFinder(std::set<std::string> &names)
             : names{names} {}
 
@@ -708,12 +713,50 @@ public:
             return false;
         }
 
+        bool declared_in_block(const std::string &name) const {
+            for (auto it = block_locals.rbegin(); it != block_locals.rend(); ++it) {
+                if (it->find(name) != it->end()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        static void collect_block_locals(const AST::Block_t &x,
+                std::set<std::string> &locals) {
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) {
+                    continue;
+                }
+                const AST::Declaration_t &decl =
+                    *AST::down_cast<AST::Declaration_t>(x.m_items[i]);
+                for (size_t j = 0; j < decl.n_syms; j++) {
+                    if (decl.m_syms[j].m_sym == AST::symbolType::Slash
+                            || !decl.m_syms[j].m_name) {
+                        continue;
+                    }
+                    locals.insert(to_lower(decl.m_syms[j].m_name));
+                }
+            }
+        }
+
         void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
             if (x.n_member == 0 && !is_section(x)) {
-                names.insert(to_lower(x.m_func));
+                std::string name = to_lower(x.m_func);
+                if (!declared_in_block(name)) {
+                    names.insert(std::move(name));
+                }
             }
             AST::BaseWalkVisitor<ImplicitDummyProcedureFinder>
                 ::visit_FuncCallOrArray(x);
+        }
+
+        void visit_Block(const AST::Block_t &x) {
+            std::set<std::string> locals;
+            collect_block_locals(x, locals);
+            block_locals.push_back(std::move(locals));
+            AST::BaseWalkVisitor<ImplicitDummyProcedureFinder>::visit_Block(x);
+            block_locals.pop_back();
         }
 
         void visit_Interface(const AST::Interface_t &/*x*/) {}
