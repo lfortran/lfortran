@@ -1917,6 +1917,10 @@ public:
     // Procedures with a dummy argument found to be a procedure while their
     // body is visited, after calls to them may have been built.
     std::set<ASR::symbol_t*> procedures_with_late_procedure_dummies;
+    // Scalar dummies referenced as functions. Generic resolution matches a
+    // procedure actual against them before their bodies are visited.
+    std::set<ASR::symbol_t*> pending_implicit_dummy_procedures;
+    ASRUtils::pending_implicit_dummy_fn pending_implicit_dummy_procedure;
     std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
     std::map<std::string, int> assumed_rank_arrays;
     std::map<AST::operatorType, std::string> binop2str = {
@@ -18499,7 +18503,7 @@ public:
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     },
-                false);
+                false, false, &pending_implicit_dummy_procedure);
         if( idx == -1 ) {
             std::string v_name = ASRUtils::symbol_name(v);
             v = resolve_intrinsic_function(loc, v_name);
@@ -18552,7 +18556,7 @@ public:
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     },
-                false, is_dt_present);
+                false, is_dt_present, &pending_implicit_dummy_procedure);
         if( idx == -1 ) {
             ASR::symbol_t* tmp_v = current_scope->resolve_symbol(to_lower(x.m_func));
             if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
@@ -26140,7 +26144,7 @@ public:
                                                 diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                                                 throw SemanticAbort();
                                             },
-                                        false);
+                                        false, false, &pending_implicit_dummy_procedure);
                         if( idx == i ) {
                             function_found = true;
                             args.n = 0;
@@ -31696,7 +31700,7 @@ public:
             [&](const std::string &msg, const Location &loc) {
                     diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
-                }, raise_error);
+                }, raise_error, false, &pending_implicit_dummy_procedure);
 
         if (i != -1) {
             return custom_op->m_procs[i];

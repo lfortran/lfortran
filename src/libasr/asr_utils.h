@@ -3035,21 +3035,28 @@ inline bool is_unlimited_polymorphic_to_specific_type(ASR::ttype_t* variable_typ
 bool is_elemental(ASR::symbol_t* x);
 
 
+// A data dummy the caller will later treat as an implicit-interface
+// procedure. Null leaves argument matching unchanged.
+using pending_implicit_dummy_fn = std::function<bool(const ASR::Variable_t*)>;
+
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
-    Location& loc, const std::function<void (const std::string &, const Location &)> err);
+    Location& loc, const std::function<void (const std::string &, const Location &)> err,
+    const pending_implicit_dummy_fn* pending_dummy = nullptr);
 
 // Matches the type-bound specific procedure `method` (a StructMethodDeclaration)
 // against `args`, whose first element is the passed-object (the `dt` of the
 // call). The passed-object is dropped for a `nopass` binding and otherwise
 // moved to the position of the binding's passed-object dummy argument.
 bool select_type_bound_proc(ASR::symbol_t* method, const Vec<ASR::call_arg_t>& args,
-    Location& loc, const std::function<void (const std::string &, const Location &)> err);
+    Location& loc, const std::function<void (const std::string &, const Location &)> err,
+    const pending_implicit_dummy_fn* pending_dummy = nullptr);
 
 template <typename T>
 int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     const T &p, Location loc,
     const std::function<void (const std::string &, const Location &)> err,
-    bool raise_error=true, bool is_dt_present=false) {
+    bool raise_error=true, bool is_dt_present=false,
+    const pending_implicit_dummy_fn* pending_dummy = nullptr) {
     // When `is_dt_present` is true, `args[0]` is the passed-object (the `dt`
     // of a type-bound procedure call), which is matched against the
     // passed-object dummy argument of each specific procedure.
@@ -3059,14 +3066,14 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
         proc_sym = symbol_get_past_external(proc_sym);
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
             if( is_dt_present ) {
-                return select_type_bound_proc(proc_sym, args, loc, err);
+                return select_type_bound_proc(proc_sym, args, loc, err, pending_dummy);
             }
             ASR::StructMethodDeclaration_t *clss_fn
                 = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
             const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
-            return select_func_subrout(proc, args, loc, err);
+            return select_func_subrout(proc, args, loc, err, pending_dummy);
         } else {
-            return select_func_subrout(proc_sym, args, loc, err);
+            return select_func_subrout(proc_sym, args, loc, err, pending_dummy);
         }
     };
     for (size_t i=0; i < p.n_procs; i++) {
