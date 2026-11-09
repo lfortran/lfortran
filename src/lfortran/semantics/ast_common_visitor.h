@@ -27273,13 +27273,19 @@ public:
         }
 
         std::string new_op = op;
+        ASR::symbol_t* op_sym = nullptr;
+        ASR::symbol_t* operator_sym = nullptr;
 
-        // Append "~~" to the begining of any custom defined operator, that is not inside a struct
+        // Interface operators are stored as `~~op`. Do not look the operator
+        // up under the bare name when an operand is a derived type: that name
+        // is a specific procedure when the operator and one of its procedures
+        // are both called `op`, and the procedure would be called for every
+        // operand type. Type-bound generics are `~def_op~op` on the type.
         if (first_struct == nullptr) {
             new_op = update_custom_op_name(new_op);
+            op_sym = current_scope->resolve_symbol(to_lower(new_op));
+            operator_sym = ASRUtils::symbol_get_past_external(op_sym);
         }
-        ASR::symbol_t* op_sym = current_scope->resolve_symbol(to_lower(new_op));
-        ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
 
         if (first_struct != nullptr && operator_sym == nullptr) {
             // Walk up the inheritance chain to find the operator
