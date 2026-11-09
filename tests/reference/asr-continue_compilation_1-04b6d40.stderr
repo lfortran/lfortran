@@ -2022,6 +2022,12 @@ semantic error: Variable 'cc1_bind_name_nodecl' is not declared
 4743 | subroutine cc1_bind_name_undecl() bind(C, name=cc1_bind_name_nodecl)  ! {Error} Variable 'cc1_bind_name_nodecl' is not declared
      |                                                ^^^^^^^^^^^^^^^^^^^^ 'cc1_bind_name_nodecl' is undeclared
 
+semantic error: ambiguous interfaces in generic 'cc1_ptr_in_alloc' for 'cc1_ptr_in' and 'cc1_alloc_s'
+    --> tests/errors/continue_compilation_1.f90:4751:9
+     |
+4751 |         module procedure cc1_ptr_in, cc1_alloc_s  ! {Error} ambiguous interfaces in generic 'cc1_ptr_in_alloc' for 'cc1_ptr_in' and 'cc1_alloc_s'
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'cc1_alloc_s' is not distinguishable from 'cc1_ptr_in' by its arguments
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
