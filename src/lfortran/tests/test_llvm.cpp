@@ -7954,6 +7954,99 @@ pp_13073 = q_13073%point_13073
     CHECK(r.result.i32 == 13);
 }
 
+// Each cell's module defines its own internal finalizer functions, under the
+// same names as those of earlier cells (#14395).
+TEST_CASE("FortranEvaluator finalizers in several cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Allocatable array temporaries.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("integer :: i");
+    REQUIRE(r.ok);
+    REQUIRE(e.evaluate2("print \"(i0)\", (i, i = 1, 3)").ok);
+    REQUIRE(e.evaluate2("print \"(i0)\", (i, i = 1, 5)").ok);
+    REQUIRE(e.evaluate2("real(8) :: a(3, 0:2), b(3, 0:2)\na = 1\nb = 2").ok);
+    r = e.evaluate2("norm2(a(:, 0) - b(:, 0))");
+    REQUIRE(r.ok);
+    CHECK(std::abs(r.result.f64 - std::sqrt(3.0)) < 1e-14);
+    r = e.evaluate2("norm2(a(:, 1) - b(:, 1))");
+    REQUIRE(r.ok);
+    CHECK(std::abs(r.result.f64 - std::sqrt(3.0)) < 1e-14);
+    REQUIRE(e.evaluate2("real(8) :: c\nc = norm2(a(:, 2) - b(:, 2))").ok);
+    r = e.evaluate2("c");
+    REQUIRE(r.ok);
+    CHECK(std::abs(r.result.f64 - std::sqrt(3.0)) < 1e-14);
+    REQUIRE(e.evaluate2("real(8) :: d(0:2)").ok);
+    REQUIRE(e.evaluate2("d = sqrt(sum((a - b)**2, dim=1))").ok);
+    r = e.evaluate2("sum(d)");
+    REQUIRE(r.ok);
+    CHECK(std::abs(r.result.f64 - 3 * std::sqrt(3.0)) < 1e-14);
+
+    // The finalizer of a type with an allocatable component.
+    REQUIRE(e.evaluate2(R"(type :: t_14395
+    integer, allocatable :: x(:)
+end type
+type(t_14395), allocatable :: q
+)").ok);
+    for (int k = 0; k < 2; k++) {
+        REQUIRE(e.evaluate2("allocate(q)\nallocate(q%x(3))\n"
+            "q%x = [1, 2, 3]").ok);
+        r = e.evaluate2("sum(q%x)");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 6);
+        REQUIRE(e.evaluate2("if (allocated(q)) deallocate(q)").ok);
+        r = e.evaluate2("allocated(q)");
+        REQUIRE(r.ok);
+        CHECK(r.result.b == false);
+    }
+}
+
+// Class pointers across cells hang on Windows, as in the tests of
+// https://github.com/lfortran/lfortran/pull/14350 above.
+#if !defined(_WIN32)
+TEST_CASE("FortranEvaluator finalizers of class pointers in several cells") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    LCompilers::Result<FortranEvaluator::EvalResult>
+    r = e.evaluate2(R"(module m_14395
+implicit none
+type :: s
+    integer :: i = 0
+end type
+class(s), pointer :: p => null()
+end module
+)");
+    REQUIRE(r.ok);
+    REQUIRE(e.evaluate2("use m_14395").ok);
+    // A top-level `deallocate(p)` is taken for a function call (#13455).
+    REQUIRE(e.evaluate2("if (associated(p)) deallocate(p)").ok);
+    REQUIRE(e.evaluate2("if (associated(p)) deallocate(p)").ok);
+    r = e.evaluate2("associated(p)");
+    REQUIRE(r.ok);
+    CHECK(r.result.b == false);
+
+    REQUIRE(e.evaluate2(R"(type :: t_14395
+    integer, allocatable :: x(:)
+end type
+class(t_14395), pointer :: q => null()
+)").ok);
+    for (int k = 0; k < 2; k++) {
+        REQUIRE(e.evaluate2("if (.not. associated(q)) allocate(q)\n"
+            "allocate(q%x(3))\nq%x = [1, 2, 3]").ok);
+        r = e.evaluate2("sum(q%x)");
+        REQUIRE(r.ok);
+        CHECK(r.result.i32 == 6);
+        REQUIRE(e.evaluate2("if (associated(q)) deallocate(q)").ok);
+        r = e.evaluate2("associated(q)");
+        REQUIRE(r.ok);
+        CHECK(r.result.b == false);
+    }
+}
+#endif
+
 #ifndef __EMSCRIPTEN__
 namespace {
 
