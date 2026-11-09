@@ -1,3 +1,5 @@
+#include <cstdint>
+
 #include <llvm/Config/llvm-config.h>
 #if LLVM_VERSION_MAJOR >= 17
 #include <llvm/TargetParser/Triple.h>
