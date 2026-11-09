@@ -2711,8 +2711,10 @@ public:
             if (n_dims == 0 && curr_arg.n_dims > 0) {
                 n_dims = curr_arg.n_dims;
             }
+            // A rank-0 assumed-rank array is still allocated through its descriptor.
+            bool is_assumed_rank = ASRUtils::is_assumed_rank_array(curr_arg_m_a_type);
             curr_arg_m_a_type = ASRUtils::type_get_past_array(curr_arg_m_a_type);
-            if( n_dims == 0 ) {
+            if( n_dims == 0 && !is_assumed_rank ) {
                 if (ASRUtils::is_character(*curr_arg_m_a_type)) {
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)));
                     llvm::Value* amount_to_allocate{};
