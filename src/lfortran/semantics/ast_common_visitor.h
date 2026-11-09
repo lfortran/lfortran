@@ -17244,8 +17244,6 @@ public:
         type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(f2));
         ASR::expr_t *arr_ref_val = nullptr;
         bool all_args_eval = ASRUtils::all_args_evaluated(args);
-        Vec<ASR::dimension_t> res_dims_vec;
-        res_dims_vec.reserve(al, n_args);
         bool is_arg_array = false;
         for( auto& a : args ) {
             // Assume that indices are constant integers
@@ -17278,7 +17276,6 @@ public:
                             Level::Error, Stage::Semantic, {Label("", {a.m_right->base.loc})}));
                         throw SemanticAbort();
                     }
-                    res_dims_vec.push_back(al, arg_dim[0]);
                 } else if( all_args_eval ) {
                     flag = true;
                     ASR::expr_t* m_right_expr = ASRUtils::expr_value(a.m_right);
@@ -17520,7 +17517,7 @@ public:
                 ASR::ttype_t* final_type;
                 if (is_arg_array) {
                   ASR::ttype_t *op_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_Var));
-                  final_type = ASRUtils::duplicate_type(al, op_type, &res_dims_vec);
+                  final_type = vector_subscript_result_type(op_type, args);
                 } else {
                   final_type = ASRUtils::type_get_past_pointer(
                         ASRUtils::type_get_past_allocatable(type));
