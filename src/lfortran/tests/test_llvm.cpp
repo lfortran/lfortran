@@ -27,7 +27,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
-#include <llvm/Support/DynamicLibrary.h>
 #endif
 #include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
@@ -6645,18 +6644,20 @@ extern "C" void cancellation_foreign_invoke_sub(void *(*callback)()) {
 }
 
 TEST_CASE("FortranEvaluator execute: defer cancellation across foreign callbacks") {
-    llvm::sys::DynamicLibrary::AddSymbol("cancellation_foreign_wait",
-        reinterpret_cast<void *>(&cancellation_foreign_wait));
-    llvm::sys::DynamicLibrary::AddSymbol("cancellation_foreign_invoke",
-        reinterpret_cast<void *>(&cancellation_foreign_invoke));
-    llvm::sys::DynamicLibrary::AddSymbol("cancellation_foreign_invoke_sub",
-        reinterpret_cast<void *>(&cancellation_foreign_invoke_sub));
     for (int mode = 0; mode < 3; mode++) {
         CAPTURE(mode);
         auto options = execute_options();
         options.po.fast = mode == 1;
         options.std_f23_conformance = mode == 2;
         FortranEvaluator e(options);
+        // Windows does not resolve symbols added with DynamicLibrary::AddSymbol.
+        e.get_llvm_evaluator().define_host_symbol("cancellation_foreign_wait",
+            reinterpret_cast<void *>(&cancellation_foreign_wait));
+        e.get_llvm_evaluator().define_host_symbol("cancellation_foreign_invoke",
+            reinterpret_cast<void *>(&cancellation_foreign_invoke));
+        e.get_llvm_evaluator().define_host_symbol(
+            "cancellation_foreign_invoke_sub",
+            reinterpret_cast<void *>(&cancellation_foreign_invoke_sub));
         REQUIRE(e.execute(R"(
 module foreign_cancellation
 use iso_c_binding
