@@ -22,7 +22,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_636_m5learn {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_15gpu_metal_636_m5learn(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_15gpu_metal_636_m5learn(
     int* __restrict__ n,
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0_15gpu_metal_636_m5learn __scalar_args)
@@ -49,11 +49,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_15gpu_metal_636_m5learn(
             if ((__gpu_lane != 0)) {
                 __gpu_sum_res =   0.00000000000000000e+00f;
             }
+            #pragma unroll 16
             for (__gpu_sum_k = (1 + (((int)__gpu_lane) * 1)); __gpu_sum_k <= __lfortran_gpu_dim_; __gpu_sum_k += (1 * ((int)__gpu_lanes))) {
                 __gpu_sum_res = (__gpu_sum_res + ((float)pair__dc));
             }
             __gpu_sum_res = __lfortran_lane_reduce<0>(__gpu_sum_res, __gpu_lanes_n);
         } else {
+            #pragma unroll 16
             for (__gpu_sum_k = 1; __gpu_sum_k <= __lfortran_gpu_dim_; __gpu_sum_k++) {
                 __gpu_sum_res = (__gpu_sum_res + ((float)pair__dc));
             }

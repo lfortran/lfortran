@@ -7,7 +7,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_16gpu_liveout_05_m1s {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_16gpu_liveout_05_m1s(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_16gpu_liveout_05_m1s(
     float* __restrict__ __gpu_buf_tmp,
     float* __restrict__ a,
     __ScalarArgs___lfortran_gpu_kernel_0_16gpu_liveout_05_m1s __scalar_args)
@@ -27,6 +27,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_16gpu_liveout_05_m1s(
     tmp = ((float)0);
     __gpu_buf_tmp[((int)(1) - (1))] = tmp;
     __gpu_defined = 0;
+    #pragma unroll 16
     for (j = 1; j <= 200; j++) {
         tmp = (tmp + (a[((int)(i__dc) - (1))] * ((float)j)));
         __gpu_defined = 1;

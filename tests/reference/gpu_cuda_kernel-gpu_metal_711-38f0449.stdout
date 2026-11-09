@@ -5,11 +5,13 @@ __device__ inline int f_gpu_8(int m, int v, int* work) {
     int __gpu_sum_k;
     int __gpu_sum_res;
     int __libasr_index_0_;
+    #pragma unroll 16
     for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + max(0, m) - 1); __libasr_index_0_++) {
         work[((int)(__libasr_index_0_) - (1))] = v;
     }
     work[((int)(m) - (1))] = (v + 1);
     __gpu_sum_res = 0;
+    #pragma unroll 16
     for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, m); __gpu_sum_k++) {
         __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
     }
@@ -22,7 +24,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_711 {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_711(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_711(
     int* __restrict__ out,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_711 __scalar_args,
     int* __restrict__ __workspace_2)

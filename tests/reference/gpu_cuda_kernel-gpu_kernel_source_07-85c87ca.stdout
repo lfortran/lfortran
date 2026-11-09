@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_07(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_kernel_source_07(
     double* __restrict__ x,
     double* __restrict__ y)
 {

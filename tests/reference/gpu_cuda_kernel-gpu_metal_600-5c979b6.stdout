@@ -20,7 +20,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_600 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_600(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_600(
     int* __restrict__ a,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_600 __scalar_args)
 {
@@ -75,7 +75,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_10_13gpu_metal_6005twice {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_10_13gpu_metal_6005twice(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_10_13gpu_metal_6005twice(
     int* __restrict__ t,
     __ScalarArgs___lfortran_gpu_kernel_10_13gpu_metal_6005twice __scalar_args)
 {
@@ -141,7 +141,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_600 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_600(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_metal_600(
     int* __restrict__ a,
     int* __restrict__ c,
     __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_600 __scalar_args)
@@ -206,7 +206,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_600 {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_600(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_13gpu_metal_600(
     float* __restrict__ x,
     __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_600 __scalar_args)
 {
@@ -232,7 +232,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3_13gpu_metal_600 {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_600(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_13gpu_metal_600(
     long* __restrict__ cb,
     float* __restrict__ x,
     __ScalarArgs___lfortran_gpu_kernel_3_13gpu_metal_600 __scalar_args)
@@ -263,7 +263,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_4_13gpu_metal_600 {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4_13gpu_metal_600(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_13gpu_metal_600(
     t& s,
     float* __restrict__ y,
     float* __restrict__ __data_s_a,
@@ -301,7 +301,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_5_13gpu_metal_600 {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_5_13gpu_metal_600(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_5_13gpu_metal_600(
     t& s,
     float* __restrict__ y,
     float* __restrict__ __data_s_a,
@@ -339,7 +339,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_6_13gpu_metal_600 {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_6_13gpu_metal_600(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_6_13gpu_metal_600(
     float* __restrict__ x,
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_6_13gpu_metal_600 __scalar_args)
@@ -373,7 +373,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_7_13gpu_metal_600 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_7_13gpu_metal_600(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_7_13gpu_metal_600(
     t* __restrict__ u,
     float* __restrict__ __data_u_a,
     long* __restrict__ __offsets_u_a,
@@ -444,7 +444,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_8_13gpu_metal_600 {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_8_13gpu_metal_600(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_8_13gpu_metal_600(
     t* __restrict__ u,
     float* __restrict__ __data_u_a,
     long* __restrict__ __offsets_u_a,
@@ -481,7 +481,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_9_13gpu_metal_600 {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_9_13gpu_metal_600(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_9_13gpu_metal_600(
     t& s,
     float* __restrict__ x,
     float* __restrict__ __data_s_a,

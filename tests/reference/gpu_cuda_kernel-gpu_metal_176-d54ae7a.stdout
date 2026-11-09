@@ -12,7 +12,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_176 {
     int __workspace_extent1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_176(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_176(
     tensor_t* __restrict__ arr,
     float* __restrict__ __data_arr_values_,
     int* __restrict__ __offsets_arr_values_,
@@ -43,14 +43,17 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_176(
         {
             float* v = ((__workspace_extent1) > 0) ? (__workspace_7 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent1) : nullptr;
             const int __lfortran_end_0 = (__sizes_arr_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
+            #pragma unroll 16
             for (__gpu_elem_i = 1; __gpu_elem_i <= __lfortran_end_0; __gpu_elem_i++) {
                 v[((int)((1 + (__gpu_elem_i - 1))) - (1))] = __data_arr_values_[__offsets_arr_values_[((int)(i__dc) - (1))] + ((int)((__sizes_arr_values_[(((int)(i__dc) - (1))) * 2 + 1] + (__gpu_elem_i - 1))) - (__sizes_arr_values_[(((int)(i__dc) - (1))) * 2 + 1]))];
             }
+            #pragma unroll 16
             for (__gpu_elem_i1 = 1; __gpu_elem_i1 <= max(0, n); __gpu_elem_i1++) {
                 a[((int)(__gpu_elem_i1) - (1))] = v[((int)((1 + (__gpu_elem_i1 - 1))) - (1))];
             }
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, n); __gpu_sum_k++) {
             __gpu_power_base = a[((int)(__gpu_sum_k) - (1))];
             __gpu_sum_res = (__gpu_sum_res + (__gpu_power_base * __gpu_power_base));

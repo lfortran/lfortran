@@ -7,7 +7,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_5961s {
     int __dim_t_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_5961s(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_5961s(
     float* __restrict__ t,
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_5961s __scalar_args)

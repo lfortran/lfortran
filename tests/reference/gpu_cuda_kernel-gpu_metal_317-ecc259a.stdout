@@ -20,7 +20,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_17gpu_metal_317_mod4work {
     int __lb___gpu_gather_ops_1__upper__1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_17gpu_metal_317_mod4work(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_17gpu_metal_317_mod4work(
     float* __restrict__ r,
     base_t& self,
     float* __restrict__ __gpu_gather_ops___upper_,

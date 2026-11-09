@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_298(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_298(
     int* __restrict__ a,
     int* __restrict__ __gpu_stop_status)
 {
@@ -16,6 +16,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_298(
         int __gpu_sum_res;
         int s;
         __gpu_sum_res = 0;
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= 4; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + 2);
         }
@@ -30,7 +31,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_298(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_298(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_metal_298(
     int* __restrict__ b,
     int* __restrict__ __gpu_stop_status)
 {
@@ -50,7 +51,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_298(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_298(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_13gpu_metal_298(
     int* __restrict__ d,
     int* __restrict__ __gpu_stop_status)
 {
@@ -72,6 +73,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_298(
             __1__libasr_index_ = (__1__libasr_index_ + 1);
             __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = (i__dc2 + 1);
             __1__libasr_index_ = (__1__libasr_index_ + 1);
+            #pragma unroll 16
             for (__gpu_elem_i = 1; __gpu_elem_i <= 2; __gpu_elem_i++) {
                 t[((int)(__gpu_elem_i) - (1))] = __libasr__created__var__0__array_constructor_[((int)(__gpu_elem_i) - (1))];
             }
@@ -86,7 +88,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_298(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_298(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_13gpu_metal_298(
     int* __restrict__ e,
     int* __restrict__ __gpu_stop_status)
 {
@@ -106,7 +108,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_298(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_4_13gpu_metal_298(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_13gpu_metal_298(
     int* __restrict__ a,
     int* __restrict__ b,
     int* __restrict__ c)

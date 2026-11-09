@@ -12,7 +12,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_692 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_692(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_692(
     float* __restrict__ v,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_692 __scalar_args)
 {
@@ -67,7 +67,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_692 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_692(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_metal_692(
     float* __restrict__ w,
     __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_692 __scalar_args)
 {
@@ -117,7 +117,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_692 {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_692(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_13gpu_metal_692(
     float* __restrict__ s,
     __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_692 __scalar_args)
 {
@@ -148,7 +148,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3_13gpu_metal_692 {
     long __lb_w_1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_692(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_13gpu_metal_692(
     float* __restrict__ s,
     float* __restrict__ v,
     float* __restrict__ w,
@@ -190,7 +190,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_4_13gpu_metal_692 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4_13gpu_metal_692(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_13gpu_metal_692(
     float* __restrict__ v,
     float* __restrict__ w,
     __ScalarArgs___lfortran_gpu_kernel_4_13gpu_metal_692 __scalar_args)
@@ -244,7 +244,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_5_13gpu_metal_692 {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_5_13gpu_metal_692(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_5_13gpu_metal_692(
     float* __restrict__ s,
     __ScalarArgs___lfortran_gpu_kernel_5_13gpu_metal_692 __scalar_args)
 {

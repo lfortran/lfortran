@@ -11,7 +11,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_08 {
     int __1__data_g_w;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_liveout_08(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_liveout_08(
     int* __restrict__ __gpu_buf_e,
     int* __restrict__ __gpu_buf_m,
     int* __restrict__ __gpu_buf_s,
@@ -36,6 +36,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_liveout_08(
     m = __gpu_buf_m[((int)(1) - (1))];
     s = __gpu_buf_s[((int)(1) - (1))];
     if ((i__dc == 3)) {
+        #pragma unroll 16
         for (j = 1; j <= 10; j++) {
             e = (e + j);
             __gpu_buf_e[((int)(1) - (1))] = e;
@@ -45,10 +46,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_liveout_08(
         }
     }
     a[((int)(i__dc) - (1))] = i__dc;
+    #pragma unroll 16
     for (j = 1; j <= 3; j++) {
         g.c[((int)(((3 * (i__dc - 1)) + j)) - (1))] = ((10 * i__dc) + j);
     }
     if ((i__dc == 5)) {
+        #pragma unroll 16
         for (j = 1; j <= 3; j++) {
             m = (50 + j);
             __gpu_buf_m[((int)(1) - (1))] = m;
@@ -57,6 +60,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_liveout_08(
     }
     a[((int)(i__dc) - (1))] = (a[((int)(i__dc) - (1))] + 1);
     if ((i__dc == 9)) {
+        #pragma unroll 16
         for (j = 1; j <= 2; j++) {
             s = (90 + j);
             __gpu_buf_s[((int)(1) - (1))] = s;

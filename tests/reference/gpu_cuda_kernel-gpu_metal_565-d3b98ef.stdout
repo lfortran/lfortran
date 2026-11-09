@@ -11,7 +11,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_565 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_565(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_565(
     int* __restrict__ c,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_565 __scalar_args)
 {

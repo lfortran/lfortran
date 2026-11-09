@@ -11,7 +11,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_stride {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_stride(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_stride(
     char* __restrict__ c,
     __ScalarArgs___lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_stride __scalar_args)
 {
@@ -62,7 +62,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_stride {
     long __lb_e_2;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_stride(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_stride(
     char* __restrict__ e,
     __ScalarArgs___lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_stride __scalar_args)
 {

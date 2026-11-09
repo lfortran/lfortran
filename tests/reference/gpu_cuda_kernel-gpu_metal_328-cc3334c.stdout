@@ -7,6 +7,7 @@ __device__ inline void fixed_result_device_t_gpu_52(int n, float* r) {
     int __libasr_index_0_1;
     int __libasr_index_0_2;
     int __libasr_index_0_3;
+    #pragma unroll 16
     for (__libasr_index_0_ = ((int)1); __libasr_index_0_ <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_++) {
         r[((int)(__libasr_index_0_) - (1))] = ((float)n);
     }
@@ -17,18 +18,20 @@ __device__ inline void fixed_result_device_t_gpu_52(int n, float* r) {
         __libasr__created__var__0__array_constructor_[((int)(__1__libasr_index_) - (1))] = ((float)n);
         __1__libasr_index_ = (__1__libasr_index_ + 1);
         __libasr_index_0_2 = 1;
+        #pragma unroll 16
         for (__libasr_index_0_1 = ((int)1); __libasr_index_0_1 <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_1++) {
             r[((int)(__libasr_index_0_1) - (1))] = __libasr__created__var__0__array_constructor_[((int)(__libasr_index_0_2) - (1))];
             __libasr_index_0_2 = (__libasr_index_0_2 + 1);
         }
     } else {
+        #pragma unroll 16
         for (__libasr_index_0_3 = ((int)1); __libasr_index_0_3 <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_3++) {
             r[((int)(__libasr_index_0_3) - (1))] = (-(((float)n)));
         }
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_328(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_328(
     float* __restrict__ results)
 {
     int __flat_idx;
@@ -47,12 +50,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_328(
         int __libasr_index_0_1;
         fixed_result_device_t_gpu_52(i__dc, __libasr_created__subroutine_from_function_);
         __libasr_index_0_1 = 1;
+        #pragma unroll 16
         for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + 2 - 1); __libasr_index_0_++) {
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
         const int __lfortran_end_0 = (2);
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= __lfortran_end_0; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + __gpu_call_result[((int)((1 + (__gpu_sum_k - 1))) - (1))]);
         }
@@ -63,15 +68,17 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_328(
 __device__ inline void reallocated_result_device_t_gpu_53(int n, float* r) {
     int __libasr_index_0_;
     int __libasr_index_0_1;
+    #pragma unroll 16
     for (__libasr_index_0_ = ((int)1); __libasr_index_0_ <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_++) {
         r[((int)(__libasr_index_0_) - (1))] = (-(((float)n)));
     }
+    #pragma unroll 16
     for (__libasr_index_0_1 = ((int)1); __libasr_index_0_1 <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_1++) {
         r[((int)(__libasr_index_0_1) - (1))] = ((float)n);
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_328(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_metal_328(
     float* __restrict__ reallocated)
 {
     int __flat_idx;
@@ -90,12 +97,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_328(
         int __libasr_index_0_1;
         reallocated_result_device_t_gpu_53(i__dc1, __libasr_created__subroutine_from_function_);
         __libasr_index_0_1 = 1;
+        #pragma unroll 16
         for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + 2 - 1); __libasr_index_0_++) {
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
         const int __lfortran_end_1 = (2);
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= __lfortran_end_1; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + __gpu_call_result[((int)((1 + (__gpu_sum_k - 1))) - (1))]);
         }

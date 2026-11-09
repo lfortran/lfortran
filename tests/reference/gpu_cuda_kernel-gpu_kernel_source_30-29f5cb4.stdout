@@ -7,7 +7,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_30 {
     int __lb_b_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_30(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_kernel_source_30(
     float* __restrict__ a,
     float* __restrict__ b,
     __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_30 __scalar_args)
@@ -32,7 +32,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_30 {
     int __lb_p_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_30(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_20gpu_kernel_source_30(
     float* a,
     float* p,
     float* t,
@@ -55,7 +55,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_30 {
     int __lb_f__q_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_20gpu_kernel_source_30(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_20gpu_kernel_source_30(
     float* __restrict__ f__q,
     __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_30 __scalar_args)
 {
@@ -79,7 +79,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_30 {
     int __lb_b_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3_20gpu_kernel_source_30(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_20gpu_kernel_source_30(
     float* __restrict__ b,
     float* __restrict__ f__q,
     float* __restrict__ f__r,
@@ -103,7 +103,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_4_20gpu_kernel_source_30 {
     int __lb_e1_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4_20gpu_kernel_source_30(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_20gpu_kernel_source_30(
     float* e1,
     float* e2,
     __ScalarArgs___lfortran_gpu_kernel_4_20gpu_kernel_source_30 __scalar_args)
@@ -119,7 +119,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4_20gpu_kernel_source_30(
     e1[((int)(i__dc4) - (__lb_e1_0))] = (e2[((int)(i__dc4) - (1))] + ((float)i__dc4));
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_5_20gpu_kernel_source_30(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_5_20gpu_kernel_source_30(
     float* c1,
     float* c2)
 {
@@ -139,7 +139,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_bl
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_block(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_block(
     float* __restrict__ s,
     __ScalarArgs___lfortran_gpu_kernel_6_20gpu_kernel_source_3015associate_block __scalar_args,
     float* __restrict__ __workspace_2)
@@ -160,6 +160,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_6_20gpu_kernel_source_3015assoc
     i__dc2 = (__flat_idx + 1);
     __libasr_created__array_section_pointer_ = s + ((int)((n + 1)) - (__lb_s_0));
     __libasr_index_0_1 = 1;
+    #pragma unroll 16
     for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + ((((2 * 8) - (8 + 1)) / 1) + 1) - 1); __libasr_index_0_++) {
         __libasr_created__array_section_[((int)(__libasr_index_0_) - (1))] = __libasr_created__array_section_pointer_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -177,7 +178,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_7_24gpu_kernel_source_30_mod4axpy {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_7_24gpu_kernel_source_30_mod4axpy(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_7_24gpu_kernel_source_30_mod4axpy(
     float* __restrict__ x,
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_7_24gpu_kernel_source_30_mod4axpy __scalar_args)

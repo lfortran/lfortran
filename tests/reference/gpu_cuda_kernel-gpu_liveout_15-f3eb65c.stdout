@@ -12,7 +12,7 @@ __device__ inline void upd_gpu_9(int i, acc_t& self, float& y) {
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_liveout_15(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_liveout_15(
     acc_t& m,
     float* __restrict__ y)
 {

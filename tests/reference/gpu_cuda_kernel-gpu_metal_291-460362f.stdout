@@ -6,7 +6,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_29114run_resolvable {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_29114run_resolvable(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_29114run_resolvable(
     float* __restrict__ r,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_29114run_resolvable __scalar_args)
 {

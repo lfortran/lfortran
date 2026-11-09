@@ -22,7 +22,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_14gpu_liveout_06 {
     int __lb_a_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_liveout_06(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_liveout_06(
     int* __restrict__ __gpu_buf_k,
     int* __restrict__ a,
     pt& p,
@@ -64,7 +64,7 @@ __device__ inline void set_gpu_22(int& k, int i) {
     k = (2 * i);
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_14gpu_liveout_06(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_14gpu_liveout_06(
     int* __restrict__ __gpu_buf_m)
 {
     int __flat_idx;

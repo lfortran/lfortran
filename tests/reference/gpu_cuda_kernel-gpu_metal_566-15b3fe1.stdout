@@ -6,7 +6,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_566 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_566(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_566(
     int* __restrict__ c,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_566 __scalar_args)
 {

@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_334(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_334(
     int* __restrict__ a,
     int* __restrict__ __gpu_stop_status)
 {
@@ -20,7 +20,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_334(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_334(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_metal_334(
     int* __restrict__ a,
     int* __restrict__ b,
     int* __restrict__ __gpu_stop_status)
