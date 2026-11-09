@@ -5571,6 +5571,24 @@ semantic error: a DATA implied do loop that initializes both a structure compone
 4651 |     data (cc1_data_mixed_a(i)%x(1), cc1_data_mixed_y(i), i=1,2) / 1, 10, 2, 20 /  ! {Error} a DATA implied do loop that initializes both a structure component of an array element and another array, with the structure component first, is not supported in a module yet
      |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: the generic 'cc1_gen_sub' is referenced as a function, but its specific procedure 'cc1_gen_sub_spec' is a subroutine
+    --> tests/errors/continue_compilation_1.f90:4695:13
+     |
+4695 |         b = cc1_gen_sub(1)
+     |             ^^^^^^^^^^^^^^ a subroutine must be called with a CALL statement
+
+semantic error: the generic 'cc1_gen_sub' is referenced as a function, but its specific procedure 'cc1_gen_sub_spec' is a subroutine
+    --> tests/errors/continue_compilation_1.f90:4702:9
+     |
+4702 |     b = cc1_gen_sub(1)
+     |         ^^^^^^^^^^^^^^ a subroutine must be called with a CALL statement
+
+semantic error: the generic 'cc1_gen_binding' is referenced as a function, but its specific procedure 'cc1_gen_binding_spec' is a subroutine
+    --> tests/errors/continue_compilation_1.f90:4720:13
+     |
+4720 |         y = t%cc1_gen_binding(1.0)
+     |             ^^^^^^^^^^^^^^^^^^^^^^ a subroutine must be called with a CALL statement
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

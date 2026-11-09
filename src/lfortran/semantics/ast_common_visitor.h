@@ -18566,6 +18566,14 @@ public:
             }
             return create_FunctionCall(loc, v, args);
         }
+        ASR::Function_t *specific = ASRUtils::get_function(p->m_procs[idx]);
+        if (specific && specific->m_return_var == nullptr) {
+            diag.add(Diagnostic("the generic '" + to_lower(x.m_func) + "' is referenced as a function, "
+                "but its specific procedure '" + std::string(specific->m_name)
+                + "' is a subroutine", Level::Error, Stage::Semantic,
+                {Label("a subroutine must be called with a CALL statement", {loc})}));
+            throw SemanticAbort();
+        }
         ASR::symbol_t *final_sym = p->m_procs[idx];
 
         ASR::ttype_t *type = nullptr;
