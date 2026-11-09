@@ -953,6 +953,7 @@ RUN(NAME array_bound_7 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c)
 RUN(NAME array_bound_8 LABELS gfortran llvm) # parameter-array element as array bound
 RUN(NAME array_bound_9 LABELS gfortran llvm) # component or array element as assumed-shape lower bound
 RUN(NAME array_bound_10 LABELS gfortran llvm)
+RUN(NAME array_bound_11 LABELS gfortran llvm) # type-bound call as explicit-shape dummy bound
 RUN(NAME array_bound_12 LABELS gfortran llvm)
 RUN(NAME array_bound_13 LABELS gfortran llvm) # allocatable or pointer bound read through a getter
 RUN(NAME array_bound_14 LABELS gfortran llvm) # allocatable integer scalar as a bound
