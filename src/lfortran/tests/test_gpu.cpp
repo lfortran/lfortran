@@ -381,6 +381,7 @@ subroutine invoke(x)
 end subroutine
 )";
     CompilerOptions options;
+    options.po.gpu_offload_cuda = true;
     FortranEvaluator evaluator(options);
     LocationManager lm;
     LocationManager::FileLocations file;
