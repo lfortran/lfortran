@@ -11982,9 +11982,19 @@ public:
                 // Use the array element *storage* type (e.g. logical arrays are i8-backed).
                 llvm::Type *data_type = llvm_utils->get_el_type(nullptr,
                     ASRUtils::extract_type(symbol_type), module.get(), v->m_type_declaration);
-                builder->CreateStore(llvm_utils->create_ptr_gep2(data_type,
-                llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(desc_array_type, arg_array_desc)),
-                    arr_descr->get_offset(desc_array_type, arg_array_desc)), arr_descr->get_pointer_to_data(desc_array_type, array_desc));
+                // Emit each value in its own statement: the evaluation order
+                // of function arguments is unspecified, so nesting these
+                // calls emits the instructions in a compiler-dependent order.
+                llvm::Value* local_data_ptr = arr_descr->get_pointer_to_data(
+                    desc_array_type, array_desc);
+                llvm::Value* arg_offset = arr_descr->get_offset(
+                    desc_array_type, arg_array_desc);
+                llvm::Value* arg_data = llvm_utils->CreateLoad2(
+                    data_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(desc_array_type, arg_array_desc));
+                builder->CreateStore(
+                    llvm_utils->create_ptr_gep2(data_type, arg_data, arg_offset),
+                    local_data_ptr);
                 ASR::dimension_t* m_dims = nullptr;
                 int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(symbol_type, m_dims));
                 Vec<llvm::Value*> lbs, lengths;
