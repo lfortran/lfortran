@@ -1270,6 +1270,7 @@ RUN(NAME select_rank_47 LABELS gfortran llvm EXTRAFILES select_rank_47c.c) # sel
 RUN(NAME select_rank_48 LABELS gfortran llvm)
 RUN(NAME select_rank_49 LABELS gfortran llvm)
 RUN(NAME select_rank_50 LABELS gfortran llvm)
+RUN(NAME select_rank_51 LABELS gfortran llvm)
 RUN(NAME select_rank_logical_01 LABELS gfortran llvm)
 RUN(NAME select_rank_logical_02 LABELS llvm)
 RUN(NAME select_rank_component_01 LABELS gfortran llvm)
