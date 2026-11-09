@@ -208,46 +208,88 @@ public:
                      cast->m_old == ASR::array_physical_typeType::AssumedRankArray)) ) {
                 return false;
             }
-            ASR::expr_t* inner = cast->m_arg;
-            // An assumed-rank array needs its rank, from select rank, to be
-            // copied.
-            if ( cast->m_old == ASR::array_physical_typeType::AssumedRankArray &&
-                 !(ASR::is_a<ASR::Var_t>(*inner) &&
-                   get_select_rank(ASR::down_cast<ASR::Var_t>(inner)->m_v) >= 1) ) {
-                return false;
-            }
-            // Contiguous arrays can pass their data without a copy-in temporary.
-            ASR::ttype_t* inner_type = ASRUtils::expr_type(inner);
-            if ( (ASRUtils::is_allocatable(inner_type) ||
-                    ASRUtils::is_contiguous_array_designator(inner)) &&
-                 !ASRUtils::is_class_type(ASRUtils::extract_type(inner_type)) ) {
-                return false;
-            }
-            // Skip copy-in/copy-out when the inner expression is an ArraySection
-            // whose source array is UnboundedPointerArray (assumed-size) and has
-            // an undefined upper bound on the assumed-size dimension.
-            if ( ASR::is_a<ASR::ArraySection_t>(*inner) ) {
-                ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(inner);
-                ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
-                if ( ASRUtils::is_array(source_type) &&
-                     ASRUtils::extract_physical_type(source_type) ==
-                         ASR::array_physical_typeType::UnboundedPointerArray &&
-                     has_undefined_assumed_size_bound(section) ) {
-                    return false;
-                }
-            }
-            // Also skip when the inner Var was created by an earlier pass
-            // (pass_array_by_data) from an ArraySection of an assumed-size
-            // array or from a contiguous section of a fixed-size array.
-            if ( ASR::is_a<ASR::Var_t>(*inner) ) {
-                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(inner)->m_v;
-                if ( vars_from_uncopied_sections.count(sym) ) {
-                    return false;
-                }
-            }
-            return true;
+            return is_descriptor_array_to_copy(cast->m_arg, cast->m_old);
         }
         return false;
+    }
+
+    // Whether the array `inner`, a descriptor of physical type `old`, may be
+    // discontiguous and can be copied to a contiguous temporary.
+    bool is_descriptor_array_to_copy( ASR::expr_t* inner,
+            ASR::array_physical_typeType old ) {
+        // An assumed-rank array needs its rank, from select rank, to be
+        // copied.
+        if ( old == ASR::array_physical_typeType::AssumedRankArray &&
+             !(ASR::is_a<ASR::Var_t>(*inner) &&
+               get_select_rank(ASR::down_cast<ASR::Var_t>(inner)->m_v) >= 1) ) {
+            return false;
+        }
+        // Contiguous arrays can pass their data without a copy-in temporary.
+        ASR::ttype_t* inner_type = ASRUtils::expr_type(inner);
+        if ( (ASRUtils::is_allocatable(inner_type) ||
+                ASRUtils::is_contiguous_array_designator(inner)) &&
+             !ASRUtils::is_class_type(ASRUtils::extract_type(inner_type)) ) {
+            return false;
+        }
+        // Skip copy-in/copy-out when the inner expression is an ArraySection
+        // whose source array is UnboundedPointerArray (assumed-size) and has
+        // an undefined upper bound on the assumed-size dimension.
+        if ( ASR::is_a<ASR::ArraySection_t>(*inner) ) {
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(inner);
+            ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
+            if ( ASRUtils::is_array(source_type) &&
+                 ASRUtils::extract_physical_type(source_type) ==
+                     ASR::array_physical_typeType::UnboundedPointerArray &&
+                 has_undefined_assumed_size_bound(section) ) {
+                return false;
+            }
+        }
+        // Also skip when the inner Var was created by an earlier pass
+        // (pass_array_by_data) from an ArraySection of an assumed-size
+        // array or from a contiguous section of a fixed-size array.
+        if ( ASR::is_a<ASR::Var_t>(*inner) ) {
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(inner)->m_v;
+            if ( vars_from_uncopied_sections.count(sym) ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Whether `expr`, the actual argument of a CONTIGUOUS assumed-shape or
+    // assumed-rank dummy, is a descriptor that may be discontiguous, so it is
+    // passed through a contiguous temporary (F2018 15.5.2.4), like an actual
+    // argument of an explicit-shape or assumed-size dummy.
+    bool is_discontiguous_actual_of_contiguous_dummy( ASR::expr_t* expr ) {
+        ASR::expr_t* inner = expr;
+        ASR::array_physical_typeType old = ASR::array_physical_typeType::DescriptorArray;
+        if ( ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) ) {
+            ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
+            if ( !(cast->m_old == ASR::array_physical_typeType::DescriptorArray ||
+                   cast->m_old == ASR::array_physical_typeType::AssumedRankArray) ||
+                 !(cast->m_new == ASR::array_physical_typeType::DescriptorArray ||
+                   cast->m_new == ASR::array_physical_typeType::AssumedRankArray) ) {
+                return false;
+            }
+            inner = cast->m_arg;
+            old = cast->m_old;
+        }
+        ASR::ttype_t* inner_type = ASRUtils::expr_type(inner);
+        if ( !ASRUtils::is_array(inner_type) ||
+             ASRUtils::extract_physical_type(inner_type) != old ||
+             ASRUtils::is_class_type(ASRUtils::extract_type(inner_type)) ||
+             ASRUtils::is_simply_contiguous(inner) ) {
+            return false;
+        }
+        // An absent optional dummy forwarded as the actual has no descriptor
+        // to check or copy. Only an optional dummy of a bind(c) procedure is
+        // still optional here: transform_optional_argument_functions makes
+        // the others required, passing a placeholder array when absent.
+        ASR::Variable_t* var = ASRUtils::rightmost_part_variable(inner);
+        if ( var && var->m_presence == ASR::presenceType::Optional ) {
+            return false;
+        }
+        return is_descriptor_array_to_copy(inner, old);
     }
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
@@ -255,6 +297,155 @@ public:
         transform_stmts_impl(al, m_body, n_body, current_body, body_after_curr_stmt,
             [this](const ASR::stmt_t& stmt) { visit_stmt(stmt); });
         is_current_body_set--;
+    }
+
+    /*
+        The copy-out and cleanup of the temporaries for a call go to
+        body_after_curr_stmt, after the statement. For a statement that
+        holds other statements, or jumps, that is too late when the call is
+        in its test or loop bounds: the block would see the old values of
+        the actual, and EXIT, CYCLE, RETURN or a jump would skip the
+        copy-out. So the expression is evaluated into a temporary first:
+
+        if (f(a(::2)) > 0) then   ->   copy-in; tmp = f(t) > 0; copy-out
+                                       if (tmp) then
+
+        do while (f(a(::2)) > 0)  ->   do while (.true.)
+                                           copy-in; tmp = f(t) > 0; copy-out
+                                           if (.not. tmp) exit
+
+        do i = 1, f(a(::2))       ->   copy-in; tmp = f(t); copy-out
+                                       do i = 1, tmp
+    */
+
+    // Visits `expr`, collecting the statements to put after its evaluation
+    // in `after`, and the ones before it in `before` if not null (otherwise
+    // in current_body, before the statement).
+    void visit_expr_with_copy_out(ASR::expr_t* expr, Vec<ASR::stmt_t*>& after,
+            Vec<ASR::stmt_t*>* before=nullptr) {
+        Vec<ASR::stmt_t*>* current_body_copy = current_body;
+        Vec<ASR::stmt_t*>* body_after_curr_stmt_copy = body_after_curr_stmt;
+        if ( before ) {
+            current_body = before;
+        }
+        body_after_curr_stmt = &after;
+        visit_expr(*expr);
+        current_body = current_body_copy;
+        body_after_curr_stmt = body_after_curr_stmt_copy;
+    }
+
+    // Appends `tmp = expr` to `body`, for a new scalar temporary `tmp`,
+    // and returns `tmp`.
+    ASR::expr_t* assign_to_temporary(ASR::expr_t* expr, Vec<ASR::stmt_t*>& body,
+            const std::string& name_hint) {
+        ASRUtils::ASRBuilder b(al, expr->base.loc);
+        ASR::ttype_t* type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr)));
+        ASR::expr_t* tmp = b.Variable(current_scope,
+            current_scope->get_unique_name(name_hint), type, ASR::intentType::Local);
+        body.push_back(al, b.Assignment(tmp, expr));
+        return tmp;
+    }
+
+    void append_stmts(Vec<ASR::stmt_t*>& body, Vec<ASR::stmt_t*>& stmts) {
+        for ( size_t i = 0; i < stmts.size(); i++ ) {
+            body.push_back(al, stmts[i]);
+        }
+    }
+
+    void visit_If(const ASR::If_t& x) {
+        ASR::If_t& xx = const_cast<ASR::If_t&>(x);
+        if ( is_current_body_set == 0 ) {
+            ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_If(x);
+            return;
+        }
+        Vec<ASR::stmt_t*> after; after.reserve(al, 1);
+        visit_expr_with_copy_out(xx.m_test, after);
+        if ( after.size() > 0 ) {
+            xx.m_test = assign_to_temporary(xx.m_test, *current_body, "__lcompilers_if_test");
+            append_stmts(*current_body, after);
+        }
+        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(xx.m_orelse, xx.n_orelse);
+    }
+
+    void visit_IfArithmetic(const ASR::IfArithmetic_t& x) {
+        ASR::IfArithmetic_t& xx = const_cast<ASR::IfArithmetic_t&>(x);
+        if ( is_current_body_set == 0 ) {
+            ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_IfArithmetic(x);
+            return;
+        }
+        Vec<ASR::stmt_t*> after; after.reserve(al, 1);
+        visit_expr_with_copy_out(xx.m_test, after);
+        if ( after.size() > 0 ) {
+            xx.m_test = assign_to_temporary(xx.m_test, *current_body, "__lcompilers_if_test");
+            append_stmts(*current_body, after);
+        }
+    }
+
+    void visit_WhileLoop(const ASR::WhileLoop_t& x) {
+        ASR::WhileLoop_t& xx = const_cast<ASR::WhileLoop_t&>(x);
+        // A loop with an else block (while_else) cannot leave with EXIT.
+        if ( is_current_body_set == 0 || x.n_orelse > 0 ) {
+            ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_WhileLoop(x);
+            return;
+        }
+        // The copy-in, too, is done at each evaluation of the test.
+        Vec<ASR::stmt_t*> body; body.reserve(al, x.n_body + 4);
+        Vec<ASR::stmt_t*> after; after.reserve(al, 1);
+        visit_expr_with_copy_out(xx.m_test, after, &body);
+        transform_stmts(xx.m_body, xx.n_body);
+        if ( body.size() == 0 && after.size() == 0 ) {
+            return;
+        }
+        ASRUtils::ASRBuilder b(al, x.base.base.loc);
+        ASR::expr_t* tmp = assign_to_temporary(xx.m_test, body, "__lcompilers_while_test");
+        append_stmts(body, after);
+        body.push_back(al, b.If(b.Not(tmp), {
+            ASRUtils::STMT(ASR::make_Exit_t(al, x.base.base.loc, x.m_name))
+        }, {}));
+        for ( size_t i = 0; i < xx.n_body; i++ ) {
+            body.push_back(al, xx.m_body[i]);
+        }
+        xx.m_test = b.bool_t(true, ASRUtils::expr_type(tmp));
+        xx.m_body = body.p;
+        xx.n_body = body.size();
+    }
+
+    // Evaluates the bounds of the loops `head` into temporaries before the
+    // copy-out of their calls, if any.
+    void visit_do_loop_heads(ASR::do_loop_head_t* head, size_t n_head) {
+        Vec<ASR::stmt_t*> after; after.reserve(al, 1);
+        Vec<ASR::stmt_t*>* body_after_curr_stmt_copy = body_after_curr_stmt;
+        body_after_curr_stmt = &after;
+        for ( size_t i = 0; i < n_head; i++ ) {
+            visit_do_loop_head(head[i]);
+        }
+        body_after_curr_stmt = body_after_curr_stmt_copy;
+        if ( after.size() == 0 ) {
+            return;
+        }
+        for ( size_t i = 0; i < n_head; i++ ) {
+            for ( ASR::expr_t** bound: {&head[i].m_start, &head[i].m_end,
+                                        &head[i].m_increment} ) {
+                if ( *bound && !ASRUtils::expr_value(*bound) ) {
+                    *bound = assign_to_temporary(*bound, *current_body,
+                        "__lcompilers_loop_bound");
+                }
+            }
+        }
+        append_stmts(*current_body, after);
+    }
+
+    void visit_DoLoop(const ASR::DoLoop_t& x) {
+        ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
+        if ( is_current_body_set == 0 ) {
+            ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_DoLoop(x);
+            return;
+        }
+        visit_do_loop_heads(&xx.m_head, 1);
+        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(xx.m_orelse, xx.n_orelse);
     }
 
     template <typename T>
@@ -929,23 +1120,31 @@ public:
     }
 
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
-        size_t x_n_args, const std::string& name_hint, std::vector<bool> is_arg_intent_out = {}, bool is_func_bind_c = false) {
+        size_t x_n_args, const std::string& name_hint, std::vector<bool> is_arg_intent_out = {}, bool is_func_bind_c = false,
+        std::vector<bool> is_arg_contiguous_dummy = {}) {
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
             ASR::expr_t* arg_expr = x_m_args[i].m_value;
-            if ( x_m_args[i].m_value && is_descriptor_array_casted_to_pointer_to_data(x_m_args[i].m_value) &&
-                 !is_func_bind_c &&
-                 !ASR::is_a<ASR::FunctionParam_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) 
-                 && !ASRUtils::is_stringToArray_cast(ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg)) {
-                ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
+            if ( arg_expr &&
+                 ((!is_func_bind_c && is_descriptor_array_casted_to_pointer_to_data(arg_expr)) ||
+                  (i < is_arg_contiguous_dummy.size() && is_arg_contiguous_dummy[i] &&
+                   is_discontiguous_actual_of_contiguous_dummy(arg_expr))) &&
+                 !ASR::is_a<ASR::FunctionParam_t>(*ASRUtils::get_past_array_physical_cast(arg_expr))
+                 && !ASRUtils::is_stringToArray_cast(ASRUtils::get_past_array_physical_cast(arg_expr))) {
+                // The cast of the actual argument to the physical type of the
+                // dummy, if any. An array descriptor (a pointer, for example)
+                // passed to a descriptor dummy is not cast.
+                ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr) ?
+                    ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr) : nullptr;
                 ASR::expr_t* arg_expr_past_cast = ASRUtils::get_past_array_physical_cast(arg_expr);
                 const Location& loc = arg_expr->base.loc;
                 // A descriptor view of the array with a static rank: an
                 // assumed-rank array is viewed with its rank in the
                 // enclosing `rank (N)` block.
                 ASR::expr_t* array_view = arg_expr_past_cast;
-                if ( array_physical_cast->m_old == ASR::array_physical_typeType::AssumedRankArray ) {
+                if ( array_physical_cast &&
+                     array_physical_cast->m_old == ASR::array_physical_typeType::AssumedRankArray ) {
                     int64_t rank = get_select_rank(
                         ASR::down_cast<ASR::Var_t>(arg_expr_past_cast)->m_v);
                     ASR::ttype_t* view_type = ASRUtils::create_array_type_with_empty_dims(al,
@@ -963,10 +1162,11 @@ public:
                         && ASRUtils::is_unlimited_polymorphic_type(ASRUtils::expr_type(
                             ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr)->m_arg))); // TODO : remove -- Look `class_95.f90`  
                 if( ASRUtils::is_pointer(ASRUtils::expr_type(array_var_temporary)) && !unhandled_case ) {
-                    ASR::expr_t* casted_array_var_temporary_arg = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, loc,
-                        array_var_temporary, ASR::array_physical_typeType::DescriptorArray, array_physical_cast->m_new,
-                        array_physical_cast->m_type, nullptr));
-                    array_var_temporary_arg.m_value = casted_array_var_temporary_arg;
+                    array_var_temporary_arg.m_value = array_physical_cast ?
+                        ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(al, loc,
+                            array_var_temporary, ASR::array_physical_typeType::DescriptorArray, array_physical_cast->m_new,
+                            array_physical_cast->m_type, nullptr)) :
+                        array_var_temporary;
                     x_m_args_vec.push_back(al, array_var_temporary_arg);
                     // This should be always true as we pass `true` to `create_temporary_variable_for_array`
                     ASRUtils::ASRBuilder b(al, arg_expr_past_cast->base.loc);
@@ -1123,15 +1323,27 @@ public:
             ASR::Function_t* func = ASRUtils::get_function(callee);
             bool is_func_bind_c = ASRUtils::get_FunctionType(callee)->m_abi == ASR::abiType::BindC;
             std::vector<bool> is_arg_intent_out(x.n_args, func == nullptr);
+            // CONTIGUOUS assumed-shape and assumed-rank dummies, which take
+            // an array descriptor of contiguous data.
+            std::vector<bool> is_arg_contiguous_dummy(x.n_args, false);
             for (size_t i = 0; func && i < func->n_args && i < x.n_args; i++ ) {
                 ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(func->m_args[i]);
                 is_arg_intent_out[i] = var && (
                     var->m_intent == ASR::intentType::Out ||
                     var->m_intent == ASR::intentType::InOut ||
                     var->m_intent == ASR::intentType::Unspecified);
+                is_arg_contiguous_dummy[i] = var && var->m_contiguous_attr &&
+                    ASRUtils::is_array(var->m_type) &&
+                    !ASRUtils::is_allocatable(var->m_type) &&
+                    !ASRUtils::is_pointer(var->m_type) &&
+                    (ASRUtils::extract_physical_type(var->m_type) ==
+                        ASR::array_physical_typeType::DescriptorArray ||
+                     ASRUtils::extract_physical_type(var->m_type) ==
+                        ASR::array_physical_typeType::AssumedRankArray);
             }
             traverse_call_args(x_m_args, x.m_args, x.n_args,
-                name_hint + ASRUtils::symbol_name(x.m_name), is_arg_intent_out, is_func_bind_c);
+                name_hint + ASRUtils::symbol_name(x.m_name), is_arg_intent_out, is_func_bind_c,
+                is_arg_contiguous_dummy);
         } else {
             traverse_call_args(x_m_args, x.m_args, x.n_args,
                 name_hint + ASRUtils::symbol_name(x.m_name));
