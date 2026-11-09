@@ -7940,6 +7940,18 @@ public:
         return false;
     }
 
+    // A subscript triplet is a section-subscript, not an actual argument, so
+    // `name(a:b)` is an array section or a character substring, never a
+    // function reference. A substring of a function result is `name(arg)(a:b)`.
+    static bool is_section_designator(const AST::FuncCallOrArray_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_step != nullptr) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // Record the names that the scoping unit with the symbol table `scope`
     // and the items `items` (its specification and executable parts)
     // references as a procedure: in a CALL statement, a function reference
@@ -7965,7 +7977,7 @@ public:
             }
 
             void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
-                if (x.n_member == 0) {
+                if (x.n_member == 0 && !is_section_designator(x)) {
                     names.insert(to_lower(x.m_func));
                 }
                 AST::BaseWalkVisitor<ProcedureReferenceFinder>
@@ -25635,6 +25647,14 @@ public:
             v = current_scope->resolve_symbol("~" + var_name);
             if (!v) {
                 v = current_scope->resolve_symbol(var_name);
+            }
+            // `s(2:3)` is a substring of the local variable, not a call to an
+            // external function `s` of another program unit. That function is
+            // not accessible here, so the name is implicitly typed instead.
+            if (v && is_section_designator(x)
+                    && is_inaccessible_external_procedure(v, var_name)) {
+                ASR::asr_t *var_asr = resolve_variable(x.base.base.loc, var_name);
+                v = ASR::down_cast<ASR::Var_t>(ASRUtils::EXPR(var_asr))->m_v;
             }
             if (v && !is_external_procedure && ASR::is_a<ASR::Function_t>(
                     *ASRUtils::symbol_get_past_external(v))) {
