@@ -1,3 +1,5 @@
+// SmallVector.h of LLVM 15-18 uses uint64_t without including <cstdint>.
+#include <cstdint>
 #include <llvm/Config/llvm-config.h>
 #if LLVM_VERSION_MAJOR >= 17
 #include <llvm/TargetParser/Triple.h>
