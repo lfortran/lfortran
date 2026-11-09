@@ -14291,14 +14291,7 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
         }
         if(is_stringToArray_cast_needed(arg_type, orig_arg_type) &&
                 !ASRUtils::is_assumed_rank_array(orig_arg_type)){
-            ASR::ttype_t* string_array_target = orig_arg_type;
-            //handle assumed rank case also
-            if (ASRUtils::is_assumed_rank_array(orig_arg_type)) {
-                Vec<ASR::dimension_t> one_dim; one_dim.reserve(al, 1);
-                one_dim.push_back(al, {arg->base.loc, nullptr, nullptr});
-                string_array_target = ASRUtils::duplicate_type(al, orig_arg_type,&one_dim, ASR::array_physical_typeType::DescriptorArray, true);
-            }
-            a_args[i].m_value = &cast_string_to_array(al, arg, string_array_target)->base;
+            a_args[i].m_value = &cast_string_to_array(al, arg, orig_arg_type)->base;
         }
     }
 }
