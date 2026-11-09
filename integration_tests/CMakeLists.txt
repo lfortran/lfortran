@@ -342,6 +342,14 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         if (copy_to_bin)
             file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${copy_to_bin} DESTINATION ${CURRENT_BINARY_DIR})
         endif()
+
+        # A test that reuses another test's source (FILE) builds the same
+        # modules as that test. Give it its own module directory, so that a
+        # parallel build of the two targets does not write the same .mod file.
+        if (RUN_FILE AND TARGET ${name})
+            set_target_properties(${name} PROPERTIES
+                Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules/${name})
+        endif()
     endif()
 endmacro(RUN_UTIL)
 
