@@ -19779,7 +19779,18 @@ public:
                 validate_function_call_argument_count(loc, args, interface_func);
             }
             validate_create_function_arguments(args, v);
-            return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
+            // The call names the pointer temporary that holds the cast.
+            // Record the procedure that was cast; a subroutine call already does.
+            ASR::symbol_t *cast_source = nullptr;
+            auto found = implicit_call_procedures.find(v);
+            if (found == implicit_call_procedures.end()) {
+                found = implicit_call_procedures.find(
+                    ASRUtils::symbol_get_past_external(v));
+            }
+            if (found != implicit_call_procedures.end()) {
+                cast_source = found->second;
+            }
+            return ASRUtils::make_FunctionCall_t_util(al, loc, v, cast_source,
                 args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
         }

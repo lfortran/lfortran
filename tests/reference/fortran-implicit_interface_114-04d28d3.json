@@ -2,11 +2,11 @@
     "basename": "fortran-implicit_interface_114-04d28d3",
     "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/implicit_interface_114.f90",
-    "infile_hash": "9415fe100fbc6a001f1d81e348f6f175cf6fefdb8899045d6a3ffa8e",
+    "infile_hash": "b05ff25d3ee1f519488337106d448bd09c20f3b16264db454497ea02",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "fortran-implicit_interface_114-04d28d3.f90",
-    "stdout_hash": "6e87b5c3f6b24f09aad03f9a5bb2dccf48bda34670c9080bd0b1641d",
+    "stdout_hash": "44c69f3c28ec56b4a553a5e9555a34ca8a2b30921194e7ec91b67cd8",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

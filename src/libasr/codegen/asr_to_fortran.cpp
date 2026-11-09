@@ -1,4 +1,5 @@
 #include <libasr/asr.h>
+#include <libasr/asr_walk_visitor.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
@@ -7,6 +8,7 @@
 
 #include <map>
 #include <set>
+#include <vector>
 
 using LCompilers::ASR::is_a;
 using LCompilers::ASR::down_cast;
@@ -14,6 +16,106 @@ using LCompilers::ASR::down_cast;
 Allocator al(8);
 
 namespace LCompilers {
+
+// A call through an implicit interface names a pointer temporary (and, for a
+// procedure-pointer component, the call-site interface). Neither is a Fortran
+// name. The interface is that temporary's type declaration, or the `m_to` of
+// the cast in `m_dt`. Symbols used only as the type of a dummy of such an
+// interface are the same kind of thing.
+class CollectUnprintedSymbols : public ASR::BaseWalkVisitor<CollectUnprintedSymbols> {
+public:
+    struct Call {
+        ASR::symbol_t *name;
+        ASR::symbol_t *original;
+        ASR::expr_t *dt;
+    };
+    std::vector<Call> calls;
+    std::map<ASR::symbol_t*, std::vector<ASR::symbol_t*>> type_decl_vars;
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        calls.push_back({x.m_name, x.m_original_name, x.m_dt});
+        ASR::BaseWalkVisitor<CollectUnprintedSymbols>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        calls.push_back({x.m_name, x.m_original_name, x.m_dt});
+        ASR::BaseWalkVisitor<CollectUnprintedSymbols>::visit_SubroutineCall(x);
+    }
+
+    void visit_Variable(const ASR::Variable_t &x) {
+        if (x.m_type_declaration) {
+            ASR::symbol_t *decl = ASRUtils::symbol_get_past_external(x.m_type_declaration);
+            if (ASR::is_a<ASR::Function_t>(*decl)) {
+                type_decl_vars[decl].push_back(const_cast<ASR::symbol_t*>(&x.base));
+            }
+        }
+        ASR::BaseWalkVisitor<CollectUnprintedSymbols>::visit_Variable(x);
+    }
+};
+
+static bool is_procedure_symbol(ASR::symbol_t *sym) {
+    sym = ASRUtils::symbol_get_past_external(sym);
+    return ASR::is_a<ASR::Function_t>(*sym) || ASR::is_a<ASR::Variable_t>(*sym)
+        || ASR::is_a<ASR::StructMethodDeclaration_t>(*sym);
+}
+
+static std::set<ASR::symbol_t*> unprinted_call_symbols(const ASR::TranslationUnit_t &tu) {
+    CollectUnprintedSymbols collector;
+    collector.visit_TranslationUnit(tu);
+    std::set<ASR::symbol_t*> hidden;
+    for (auto &call : collector.calls) {
+        if (call.name == nullptr) continue;
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(call.name);
+        if (call.dt && ASR::is_a<ASR::FunctionPointerCast_t>(*call.dt)) {
+            ASR::FunctionPointerCast_t *cast = ASR::down_cast<ASR::FunctionPointerCast_t>(call.dt);
+            if (cast->m_to) {
+                ASR::symbol_t *to = ASRUtils::symbol_get_past_external(cast->m_to);
+                if (ASR::is_a<ASR::Function_t>(*to)) hidden.insert(to);
+            }
+            if (ASR::is_a<ASR::Function_t>(*callee)) hidden.insert(callee);
+        }
+        if (call.original && ASRUtils::symbol_get_past_external(call.original) != callee
+                && ASR::is_a<ASR::Variable_t>(*callee) && is_procedure_symbol(call.original)) {
+            hidden.insert(callee);
+            ASR::Variable_t *temp = ASR::down_cast<ASR::Variable_t>(callee);
+            if (temp->m_type_declaration) {
+                ASR::symbol_t *decl = ASRUtils::symbol_get_past_external(temp->m_type_declaration);
+                if (ASR::is_a<ASR::Function_t>(*decl)) hidden.insert(decl);
+            }
+        }
+    }
+    bool grew = true;
+    while (grew) {
+        grew = false;
+        for (auto &item : collector.type_decl_vars) {
+            if (hidden.find(item.first) != hidden.end()) continue;
+            bool used_outside = false;
+            bool used_inside = false;
+            for (ASR::symbol_t *var : item.second) {
+                if (hidden.find(var) != hidden.end()) {
+                    used_inside = true;
+                    continue;
+                }
+                SymbolTable *scope = ASRUtils::symbol_parent_symtab(var);
+                ASR::symbol_t *owner = nullptr;
+                if (scope && scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                    owner = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
+                }
+                if (owner && hidden.find(owner) != hidden.end()) {
+                    used_inside = true;
+                } else {
+                    used_outside = true;
+                }
+            }
+            if (used_inside && !used_outside) {
+                hidden.insert(item.first);
+                grew = true;
+            }
+        }
+    }
+    return hidden;
+}
 
 enum Precedence {
     Eqv = 2,
@@ -63,6 +165,10 @@ public:
     // The names the imports of specific procedures are declared under, see
     // `import_name`.
     std::map<const ASR::symbol_t*, std::string> import_names;
+
+    // Call-site interfaces and the pointer temporaries that hold a
+    // FunctionPointerCast. Not Fortran declarations.
+    std::set<ASR::symbol_t*> unprinted_symbols;
 
 public:
     ASRToFortranVisitor(bool _use_colors, int _indent)
@@ -154,10 +260,56 @@ public:
         }
     }
 
-    // `~` is not a Fortran name character. The compiler uses it for symbols
-    // it declares (a procedure-pointer temporary, a call-site interface).
-    static bool compiler_generated_name(const std::string &name) {
-        return name.find('~') != std::string::npos;
+    bool unprinted_symbol(ASR::symbol_t *sym) const {
+        if (sym == nullptr) return false;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        return unprinted_symbols.find(sym) != unprinted_symbols.end();
+    }
+
+    // m_dt is the passed object of a type-bound procedure. A
+    // FunctionPointerCast there is the procedure itself (a component with an
+    // implicit interface), not that object.
+    static bool takes_passed_object(ASR::symbol_t *name, ASR::expr_t *dt) {
+        if (dt == nullptr || ASR::is_a<ASR::FunctionPointerCast_t>(*dt)) {
+            return false;
+        }
+        return !ASRUtils::get_class_proc_nopass_val(name);
+    }
+
+    // The procedure a call spells. A cast's argument is that procedure
+    // (a name, or a component designator). A call through the pointer
+    // temporary names m_original_name, set when the call was built.
+    // `prefer_original` is the function-call rule: a non-generic original
+    // name is the name Fortran uses.
+    void append_called_procedure(std::string &r, ASR::symbol_t *name,
+            ASR::symbol_t *original, ASR::expr_t *dt, bool prefer_original) {
+        if (dt && ASR::is_a<ASR::FunctionPointerCast_t>(*dt)) {
+            visit_expr(*ASR::down_cast<ASR::FunctionPointerCast_t>(dt)->m_arg);
+            r += src;
+            return;
+        }
+        bool named_original = original
+            && !ASR::is_a<ASR::GenericProcedure_t>(
+                *ASRUtils::symbol_get_past_external(original))
+            && !ASR::is_a<ASR::CustomOperator_t>(
+                *ASRUtils::symbol_get_past_external(original));
+        bool cast_temp = named_original && unprinted_symbol(name)
+            && ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(name));
+        if (!dt && cast_temp) {
+            r += call_name(original);
+            return;
+        }
+        if (prefer_original && named_original) {
+            r += ASRUtils::symbol_name(original);
+            return;
+        }
+        if (dt) {
+            visit_expr(*dt);
+            r += src + "%";
+            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(name));
+            return;
+        }
+        r += call_name(name);
     }
 
     // Whether `x` is an import of a specific procedure of a generic, such as
@@ -566,6 +718,7 @@ public:
 
     /********************************** Unit **********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        unprinted_symbols = unprinted_call_symbols(x);
         std::string r = "";
         std::vector<std::string> build_order
             = ASRUtils::determine_module_dependencies(x);
@@ -580,7 +733,7 @@ public:
 
         tu_functions = "";
         for (auto &item : x.m_symtab->get_scope()) {
-            if (is_a<ASR::Function_t>(*item.second)) {
+            if (is_a<ASR::Function_t>(*item.second) && !unprinted_symbol(item.second)) {
                 visit_symbol(*item.second);
                 tu_functions += src;
                 tu_functions += "\n";
@@ -678,6 +831,9 @@ public:
 
         bool prepend_contains_keyword = true;
         for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::Function_t>(*item.second) && unprinted_symbol(item.second)) {
+                continue;
+            }
             if (is_a<ASR::Function_t>(*item.second)
                     && ASRUtils::is_bare_implicit_interface(
                         *down_cast<ASR::Function_t>(item.second))) {
@@ -754,7 +910,9 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (ASRUtils::is_device_kernel(item.second)) {
+                if (unprinted_symbol(item.second)) {
+                    continue;
+                } else if (ASRUtils::is_device_kernel(item.second)) {
                     func_name.push_back(item.first);
                 } else if (ASRUtils::is_bare_implicit_interface(*f)) {
                     visit_symbol(*item.second);
@@ -825,7 +983,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        if (compiler_generated_name(x.m_name)) {
+        if (unprinted_symbol(const_cast<ASR::symbol_t*>(&x.base))) {
             src.clear();
             return;
         }
@@ -1001,7 +1159,7 @@ public:
         for (auto &item : x.m_symtab->get_scope()) {
             if (is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                if (compiler_generated_name(f->m_name)) {
+                if (unprinted_symbol(item.second)) {
                     continue;
                 } else if (ASRUtils::is_bare_implicit_interface(*f)) {
                     visit_symbol(*item.second);
@@ -1264,7 +1422,7 @@ public:
     // void visit_Union(const ASR::Union_t &x) {}
 
     void visit_Variable(const ASR::Variable_t &x) {
-        if (compiler_generated_name(x.m_name)) {
+        if (unprinted_symbol(const_cast<ASR::symbol_t*>(&x.base))) {
             src.clear();
             return;
         }
@@ -1616,11 +1774,10 @@ public:
     }
 
     void visit_Associate(const ASR::Associate_t &x) {
-        // Association of a compiler temporary that holds a procedure cast.
+        // Association of the temporary that holds a procedure cast.
         // The cast is not Fortran; the call prints the procedure itself.
         if (ASR::is_a<ASR::Var_t>(*x.m_target)
-                && compiler_generated_name(ASRUtils::symbol_name(
-                    ASR::down_cast<ASR::Var_t>(x.m_target)->m_v))) {
+                && unprinted_symbol(ASR::down_cast<ASR::Var_t>(x.m_target)->m_v)) {
             src.clear();
             return;
         }
@@ -2319,22 +2476,9 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         std::string r = indent;
         r += "call ";
-        if (x.m_dt) {
-            visit_expr(*x.m_dt);
-            r += src + "%";
-            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
-        } else {
-            std::string name = call_name(x.m_name);
-            // A call through the temporary for a procedure cast names the
-            // procedure that was cast, which is what Fortran source can call.
-            if (compiler_generated_name(name) && x.m_original_name
-                    && !compiler_generated_name(call_name(x.m_original_name))) {
-                name = call_name(x.m_original_name);
-            }
-            r += name;
-        }
+        append_called_procedure(r, x.m_name, x.m_original_name, x.m_dt, false);
         r += "(";
-        bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
+        bool is_method = takes_passed_object(x.m_name, x.m_dt);
         size_t start_idx = is_method ? 1 : 0;
         bool first_arg = true;
         for (size_t i = start_idx; i < x.n_args; i ++) {
@@ -2779,22 +2923,9 @@ public:
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         std::string r = "";
         // A call through a generic or an operator calls its specific.
-        if (x.m_original_name && !ASR::is_a<ASR::GenericProcedure_t>(
-                    *ASRUtils::symbol_get_past_external(x.m_original_name))
-                && !ASR::is_a<ASR::CustomOperator_t>(
-                    *ASRUtils::symbol_get_past_external(x.m_original_name))) {
-            r += ASRUtils::symbol_name(x.m_original_name);
-        } else {
-            if (x.m_dt) {
-                visit_expr(*x.m_dt);
-                r += src + "%";
-                r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
-            } else {
-                r += call_name(x.m_name);
-            }
-        }
+        append_called_procedure(r, x.m_name, x.m_original_name, x.m_dt, true);
         r += "(";
-        bool is_method = (x.m_dt != nullptr) && !ASRUtils::get_class_proc_nopass_val(x.m_name);
+        bool is_method = takes_passed_object(x.m_name, x.m_dt);
         size_t start_idx = is_method ? 1 : 0;
         for (size_t i = start_idx; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
