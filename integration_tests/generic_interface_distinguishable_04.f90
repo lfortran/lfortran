@@ -35,5 +35,6 @@ program generic_interface_distinguishable_04
     if (which /= 1) error stop 3
     call g_ptr_first(xp)
     if (which /= 2) error stop 4
+    deallocate(xa, xp)
     print *, "ok"
 end program

@@ -61,5 +61,6 @@ program generic_interface_distinguishable_05
     if (which /= 1) error stop 8
     call g_alloc_first(xt)
     if (which /= 1) error stop 9
+    deallocate(xa, xt, xp)
     print *, "ok"
 end program
