@@ -4424,7 +4424,7 @@ public:
         llvm::Function *fn = llvm::Intrinsic::getDeclaration(module.get(), llvm::Intrinsic::exp, {item->getType()});
         llvm::Value* exp = builder->CreateCall(fn, {item});
 #endif
-        llvm::Value* one = llvm::ConstantFP::get(builder->getFloatTy(), 1.0);
+        llvm::Value* one = llvm::ConstantFP::get(item->getType(), 1.0);
         tmp = builder->CreateFSub(exp, one);
     }
 
