@@ -1986,6 +1986,42 @@ semantic error: Private variable `z` cannot be imported
 4680 |     use cc1_priv_reexport_named, only: z  ! {Error} Private variable `z` cannot be imported
      |                                        ^ 
 
+semantic error: the name= specifier in bind(c) must be of type character, found integer(4)
+    --> tests/errors/continue_compilation_1.f90:4729:53
+     |
+4729 |         subroutine cc1_bind_name_int() bind(C, name=1)  ! {Error} the name= specifier in bind(c) must be of type character, found integer(4)
+     |                                                     ^ 
+
+semantic error: the name= specifier in bind(c) must be a scalar
+    --> tests/errors/continue_compilation_1.f90:4731:55
+     |
+4731 |         subroutine cc1_bind_name_array() bind(C, name=["ab", "cd"])  ! {Error} the name= specifier in bind(c) must be a scalar
+     |                                                       ^^^^^^^^^^^^ 
+
+semantic error: the name= specifier in bind(c) must be a constant expression
+    --> tests/errors/continue_compilation_1.f90:4734:27
+     |
+4734 |     integer, bind(C, name=cc1_bind_name_var) :: cc1_bind_name_v  ! {Error} the name= specifier in bind(c) must be a constant expression
+     |                           ^^^^^^^^^^^^^^^^^ 
+
+semantic error: the name= specifier in bind(c) must be a constant expression
+    --> tests/errors/continue_compilation_1.f90:4736:49
+     |
+4736 |     subroutine cc1_bind_name_sub() bind(C, name=cc1_bind_name_var)  ! {Error} the name= specifier in bind(c) must be a constant expression
+     |                                                 ^^^^^^^^^^^^^^^^^ 
+
+semantic error: the name= specifier in bind(c) must be of default character kind
+    --> tests/errors/continue_compilation_1.f90:4740:46
+     |
+4740 | subroutine cc1_bind_name_kind() bind(C, name=4_"x")  ! {Error} the name= specifier in bind(c) must be of default character kind
+     |                                              ^^^^^ 
+
+semantic error: Variable 'cc1_bind_name_nodecl' is not declared
+    --> tests/errors/continue_compilation_1.f90:4743:48
+     |
+4743 | subroutine cc1_bind_name_undecl() bind(C, name=cc1_bind_name_nodecl)  ! {Error} Variable 'cc1_bind_name_nodecl' is not declared
+     |                                                ^^^^^^^^^^^^^^^^^^^^ 'cc1_bind_name_nodecl' is undeclared
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

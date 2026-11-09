@@ -4720,3 +4720,25 @@ contains
         y = t%cc1_gen_binding(1.0)
     end subroutine cc1_gen_binding_use
 end module cc1_generic_binding_m
+
+! NAME= of bind(c) is a scalar default character constant expression.
+module cc1_bind_c_name
+    implicit none
+    character(len=8) :: cc1_bind_name_var = "cc1_bnv"
+    interface
+        subroutine cc1_bind_name_int() bind(C, name=1)  ! {Error} the name= specifier in bind(c) must be of type character, found integer(4)
+        end subroutine
+        subroutine cc1_bind_name_array() bind(C, name=["ab", "cd"])  ! {Error} the name= specifier in bind(c) must be a scalar
+        end subroutine
+    end interface
+    integer, bind(C, name=cc1_bind_name_var) :: cc1_bind_name_v  ! {Error} the name= specifier in bind(c) must be a constant expression
+contains
+    subroutine cc1_bind_name_sub() bind(C, name=cc1_bind_name_var)  ! {Error} the name= specifier in bind(c) must be a constant expression
+    end subroutine
+end module
+
+subroutine cc1_bind_name_kind() bind(C, name=4_"x")  ! {Error} the name= specifier in bind(c) must be of default character kind
+end subroutine
+
+subroutine cc1_bind_name_undecl() bind(C, name=cc1_bind_name_nodecl)  ! {Error} Variable 'cc1_bind_name_nodecl' is not declared
+end subroutine

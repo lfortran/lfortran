@@ -38,8 +38,11 @@ namespace LCompilers::LFortran {
 
 static int PDT_SENTINEL = 1000;
 
-template <typename T>
-void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
+// Sets `abi_type` and `bindc_name` from the language-binding-spec of `x`;
+// `visitor` evaluates the NAME= constant expression.
+template <typename T, typename Visitor>
+void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name,
+        diag::Diagnostics &diag, Visitor &visitor) {
     if (x.m_bind) {
         AST::Bind_t *bind = AST::down_cast<AST::Bind_t>(x.m_bind);
         if (bind->n_args == 1) {
@@ -75,16 +78,7 @@ void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnos
             char *arg = bind->m_kwargs[0].m_arg;
             AST::expr_t *value = bind->m_kwargs[0].m_value;
             if (to_lower(std::string(arg)) == "name") {
-                if (AST::is_a<AST::String_t>(*value)) {
-                    AST::String_t *name = AST::down_cast<AST::String_t>(value);
-                    bindc_name = name->m_s;
-                } else {
-                    diag.add(diag::Diagnostic(
-                        "The value of the 'name' keyword argument in bind(c) must be a string",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.base.base.loc})}));
-                    throw SemanticAbort();
-                }
+                bindc_name = visitor.evaluate_bind_name(*value);
             } else {
                 diag.add(diag::Diagnostic(
                     "Unsupported keyword argument in bind()",
@@ -8252,6 +8246,61 @@ public:
             }));
     }
 
+    // The binding label given by the NAME= specifier `value` of bind(c): the
+    // value of the scalar default character constant expression (Fortran 2023
+    // R808, C809), evaluated in the current scope, without its leading and
+    // trailing blanks (18.10.2). An empty label means the entity has no
+    // binding label. Returns nullptr after reporting an invalid NAME= when
+    // compilation continues.
+    char *evaluate_bind_name(AST::expr_t &value) {
+        ASR::asr_t *tmp_copy = tmp;
+        ASR::expr_t *name = nullptr;
+        try {
+            tmp = nullptr;
+            this->visit_expr(value);
+            name = tmp ? ASRUtils::EXPR(tmp) : nullptr;
+        } catch (const SemanticAbort &) {
+            tmp = tmp_copy;
+            if (!compiler_options.continue_compilation) throw;
+            return nullptr;
+        }
+        tmp = tmp_copy;
+        if (name == nullptr) {
+            return nullptr;
+        }
+        ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(name));
+        ASR::expr_t *name_value = ASRUtils::expr_value(name);
+        std::string error;
+        if (ASRUtils::is_array(type)) {
+            error = "must be a scalar";
+        } else if (!ASR::is_a<ASR::String_t>(*type)) {
+            error = "must be of type character, found "
+                + ASRUtils::type_to_str_with_kind(type, name);
+        } else if (ASR::down_cast<ASR::String_t>(type)->m_kind != 1) {
+            error = "must be of default character kind";
+        } else if (name_value == nullptr ||
+                !ASR::is_a<ASR::StringConstant_t>(*name_value)) {
+            error = "must be a constant expression";
+        }
+        if (!error.empty()) {
+            diag.add(Diagnostic(
+                "the name= specifier in bind(c) " + error,
+                Level::Error, Stage::Semantic, {
+                    Label("", {value.base.loc})}));
+            if (!compiler_options.continue_compilation) throw SemanticAbort();
+            return nullptr;
+        }
+        std::string label = ASR::down_cast<ASR::StringConstant_t>(
+            name_value)->m_s;
+        size_t first = label.find_first_not_of(' ');
+        if (first == std::string::npos) {
+            return s2c(al, "");
+        }
+        size_t last = label.find_last_not_of(' ');
+        return s2c(al, label.substr(first, last - first + 1));
+    }
+
     // Declares `sym` as an external procedure with the explicit interface of
     // the procedure `iface` (Fortran 2018, 15.4.3.6): a procedure declaration
     // statement declares an external procedure unless the entity is a
@@ -10863,7 +10912,7 @@ public:
                     AST::AttrBind_t *attr_bind = AST::down_cast<AST::AttrBind_t>(x.m_attributes[i]);
                     ASR::abiType abi_type = ASR::abiType::Source;
                     char *bindc_name = nullptr;
-                    extract_bind(*attr_bind, abi_type, bindc_name, diag);
+                    extract_bind(*attr_bind, abi_type, bindc_name, diag, *this);
                     for (size_t j = 0; j < x.n_syms; j++) {
                         if (x.m_syms[j].m_sym == AST::symbolType::Slash) {
                             // Fortran 2023 18.10.2: without NAME=, the binding
@@ -10878,6 +10927,12 @@ public:
                             }
                             ASR::CommonBlock_t *block = get_or_create_common_block(
                                 common_block_name, x.m_syms[j].loc);
+                            if (bindc_name && bindc_name[0] == '\0') {
+                                // A NAME= that is empty or all blanks: the
+                                // block has no binding label and keeps its
+                                // ordinary link name.
+                                continue;
+                            }
                             block->m_abi = abi_type;
                             block->m_link_name = bindc_name ? bindc_name
                                 : s2c(al, common_block_name);
@@ -11244,7 +11299,7 @@ public:
                                 s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
                         } else if (AST::is_a<AST::AttrBind_t>(*a)) {
                             AST::AttrBind_t attr_bd = *AST::down_cast<AST::AttrBind_t>(a);
-                            extract_bind(attr_bd, s_abi, bindc_name, diag);
+                            extract_bind(attr_bd, s_abi, bindc_name, diag, *this);
                         } else if (AST::is_a<AST::AttrPass_t>(*a)) {
                             AST::AttrPass_t *ap = AST::down_cast<AST::AttrPass_t>(a);
                             if (ap->m_name) {
