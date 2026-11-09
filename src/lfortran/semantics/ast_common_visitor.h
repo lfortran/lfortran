@@ -18067,22 +18067,15 @@ public:
             compiler_options.implicit_argument_casting);
     }
 
-    // F2018 17.11: these IEEE inquiries accept a scalar or an array X and
-    // return a scalar logical. The result depends only on the type and kind
-    // of X. The runtime specifics are scalar (and some are elemental, which
-    // would make an array X return an array), and that module is compiled
-    // with the C++ backend, which has no assumed-rank argument ABI. An array
-    // actual is therefore represented by a scalar of the same real kind.
-    bool is_ieee_support_scalar_inquiry(ASR::symbol_t *sym) {
-        sym = ASRUtils::symbol_get_past_external(sym);
-        if (sym == nullptr || !ASR::is_a<ASR::GenericProcedure_t>(*sym)) {
+    // F2018 17.11: these eight inquiries accept a scalar or an array X and
+    // return a scalar logical that depends only on the kind of X. The runtime
+    // specifics are scalar (nan/inf/datatype are elemental, so an array X
+    // would otherwise return an array). Their module is compiled with the C++
+    // backend, which has no assumed-rank argument ABI.
+    bool is_ieee_support_scalar_inquiry_specific(ASR::symbol_t *spec) {
+        if (spec == nullptr) {
             return false;
         }
-        ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(sym);
-        if (gp->n_procs == 0) {
-            return false;
-        }
-        ASR::symbol_t *spec = gp->m_procs[0];
         std::string mod_name;
         std::string orig_name;
         if (ASR::is_a<ASR::ExternalSymbol_t>(*spec)) {
@@ -18090,13 +18083,16 @@ public:
             mod_name = ext->m_module_name;
             orig_name = ext->m_original_name;
         } else {
-            ASR::Module_t *mod = ASRUtils::get_sym_module0(
-                ASRUtils::symbol_get_past_external(spec));
+            ASR::symbol_t *resolved = ASRUtils::symbol_get_past_external(spec);
+            if (resolved == nullptr) {
+                return false;
+            }
+            ASR::Module_t *mod = ASRUtils::get_sym_module0(resolved);
             if (mod == nullptr) {
                 return false;
             }
             mod_name = mod->m_name;
-            orig_name = ASRUtils::symbol_name(spec);
+            orig_name = ASRUtils::symbol_name(resolved);
         }
         if (mod_name != "lfortran_intrinsic_ieee_arithmetic") {
             return false;
@@ -18115,10 +18111,59 @@ public:
         return false;
     }
 
+    bool has_real_array_actual(const Vec<ASR::call_arg_t> &args) {
+        for (size_t i = 0; i < args.size(); i++) {
+            ASR::expr_t *value = args.p[i].m_value;
+            if (value == nullptr) {
+                continue;
+            }
+            ASR::ttype_t *type = ASRUtils::expr_type(value);
+            if (!ASRUtils::is_array(type)) {
+                continue;
+            }
+            if (ASRUtils::is_real(*ASRUtils::extract_type(type))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Replace a real array actual with a same-kind scalar only when resolution
+    // on the original actuals did not select a non-elemental specific, and the
+    // elemental match (or, if nothing matches, some specific) is one of the
+    // eight inquiries. A user specific that matches the array keeps it.
+    // The caller selects again on the arguments this leaves behind.
     void scalarize_ieee_support_inquiry_args(ASR::symbol_t *sym,
-            Vec<ASR::call_arg_t> &args) {
-        if (!is_ieee_support_scalar_inquiry(sym)) {
+            Vec<ASR::call_arg_t> &args, bool is_dt_present=false) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (sym == nullptr || !ASR::is_a<ASR::GenericProcedure_t>(*sym)) {
             return;
+        }
+        if (!has_real_array_actual(args)) {
+            return;
+        }
+        ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(sym);
+        Location loc = args.size() > 0 ? args.p[0].loc : sym->base.loc;
+        auto ignore_error = [](const std::string &, const Location &) {};
+        int idx = ASRUtils::select_generic_procedure(args, *gp, loc,
+            ignore_error, false, is_dt_present);
+        if (idx != -1) {
+            ASR::symbol_t *spec = gp->m_procs[idx];
+            if (!ASRUtils::is_elemental(spec)
+                    || !is_ieee_support_scalar_inquiry_specific(spec)) {
+                return;
+            }
+        } else {
+            bool inquiry = false;
+            for (size_t i = 0; i < gp->n_procs; i++) {
+                if (is_ieee_support_scalar_inquiry_specific(gp->m_procs[i])) {
+                    inquiry = true;
+                    break;
+                }
+            }
+            if (!inquiry) {
+                return;
+            }
         }
         for (size_t i = 0; i < args.size(); i++) {
             ASR::expr_t *value = args.p[i].m_value;
@@ -18136,8 +18181,10 @@ public:
             int64_t kind = ASRUtils::extract_kind_from_ttype_t(elem);
             ASR::ttype_t *scalar_type = ASRUtils::TYPE(ASR::make_Real_t(
                 al, args.p[i].loc, kind));
-            args.p[i].m_value = ASRUtils::EXPR(ASR::make_RealConstant_t(
-                al, args.p[i].loc, 0.0, scalar_type));
+            // Kind 10/16 constants are not a host double. make_RealConstant_t
+            // would store one; make_RealConstant_util encodes the payload.
+            args.p[i].m_value = ASRUtils::make_RealConstant_util(
+                al, args.p[i].loc, 0.0, scalar_type);
         }
     }
 
@@ -18145,7 +18192,7 @@ public:
                 Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
         const Location& loc = x.base.base.loc;
         ASR::GenericProcedure_t *p = ASR::down_cast<ASR::GenericProcedure_t>(v);
-        scalarize_ieee_support_inquiry_args(&p->base, args);
+        scalarize_ieee_support_inquiry_args(&p->base, args, is_dt_present);
         int idx = ASRUtils::select_generic_procedure(args, *p, loc,
                 [&](const std::string &msg, const Location &loc) {
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
