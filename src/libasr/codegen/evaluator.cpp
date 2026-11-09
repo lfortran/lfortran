@@ -1125,23 +1125,6 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     mpm.add(llvm::createVerifierPass());
     mpm.run(m);
 #endif
-    // expand_reciprocal_sqrt edits the IR outside the pass managers. On
-    // LLVM 17 and later the function analyses filled by MPM are then stale,
-    // and the late SROA round below would read them. The legacy pipeline
-    // has no analysis cache.
-#if LLVM_VERSION_MAJOR >= 17
-    std::vector<llvm::Function *> rsqrt_changed;
-    for (llvm::Function &f : m) {
-        if (expand_reciprocal_sqrt(f, TM->getTargetTriple())) {
-            rsqrt_changed.push_back(&f);
-        }
-    }
-#else
-    for (llvm::Function &f : m) {
-        expand_reciprocal_sqrt(f, TM->getTargetTriple());
-    }
-#endif
-
     // The late cleanup and the horizontal reduction rewrite only run on
     // functions that the rewrite may apply to: definitions for x86 with AVX
     // that contain a fast sum of three vector squares. Other functions and
@@ -1168,9 +1151,6 @@ void LLVMEvaluator::opt(llvm::Module &m) {
         LateFPM.addPass(llvm::GVNPass());
         LateFPM.addPass(llvm::InstCombinePass());
         LateFPM.addPass(llvm::SimplifyCFGPass());
-        for (llvm::Function *f : rsqrt_changed) {
-            FAM.invalidate(*f, llvm::PreservedAnalyses::none());
-        }
         for (llvm::Function *f : late_functions) {
             LateFPM.run(*f, FAM);
         }
@@ -1231,6 +1211,14 @@ void LLVMEvaluator::opt(llvm::Module &m) {
         final_fpm.doFinalization();
         final_mpm.run(m);
 #endif
+    }
+
+    // The Newton step of a reciprocal square root is written in IR, and IR
+    // optimizations (InstCombine in recent LLVM) fold it back into a bare
+    // 1/sqrt(x), which the code generator is then told to estimate without
+    // refinement. So the expansion runs after every IR optimization.
+    for (llvm::Function &f : m) {
+        expand_reciprocal_sqrt(f, TM->getTargetTriple());
     }
 }
 
