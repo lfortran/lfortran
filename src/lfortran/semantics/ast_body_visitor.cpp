@@ -692,17 +692,23 @@ public:
     // procedure only once that statement is visited. Record such dummies so
     // a generic call resolved earlier can match a procedure actual of the
     // same result type. A section (`f(1:2)`) is not a call. An interface
-    // body is not scanned with its host. A name declared in a BLOCK is a
-    // different entity inside that block and nested blocks, so it does not
-    // mark the host dummy. A reference that is not declared there still does.
+    // body is not scanned with its host. A name the body visitor binds in
+    // an enclosing BLOCK, or as an associate name in the body of ASSOCIATE,
+    // SELECT TYPE, or SELECT RANK, is a different entity, so it does not
+    // mark the host dummy. A reference that still resolves to the host
+    // dummy does, including a selector and a SELECT RANK `rank default`.
     struct ImplicitDummyProcedureFinder
             : public AST::BaseWalkVisitor<ImplicitDummyProcedureFinder> {
         std::set<std::string> &names;
-        // Declared names of each enclosing BLOCK, innermost last.
+        // The procedure scope, used to read public names of a blanket use.
+        // Those module symbols already exist.
+        SymbolTable *scope;
+        // Names bound by each enclosing nested scope, innermost last.
         std::vector<std::set<std::string>> block_locals;
 
-        explicit ImplicitDummyProcedureFinder(std::set<std::string> &names)
-            : names{names} {}
+        explicit ImplicitDummyProcedureFinder(std::set<std::string> &names,
+                SymbolTable *scope)
+            : names{names}, scope{scope} {}
 
         static bool is_section(const AST::FuncCallOrArray_t &x) {
             for (size_t i = 0; i < x.n_args; i++) {
@@ -722,22 +728,195 @@ public:
             return false;
         }
 
-        static void collect_block_locals(const AST::Block_t &x,
+        static void add_name(char *name, std::set<std::string> &locals) {
+            if (name) {
+                locals.insert(to_lower(name));
+            }
+        }
+
+        static void add_declaration_names(const AST::Declaration_t &decl,
                 std::set<std::string> &locals) {
-            for (size_t i = 0; i < x.n_items; i++) {
-                if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) {
+            for (size_t j = 0; j < decl.n_syms; j++) {
+                if (decl.m_syms[j].m_sym == AST::symbolType::Slash
+                        || !decl.m_syms[j].m_name) {
                     continue;
                 }
-                const AST::Declaration_t &decl =
-                    *AST::down_cast<AST::Declaration_t>(x.m_items[i]);
-                for (size_t j = 0; j < decl.n_syms; j++) {
-                    if (decl.m_syms[j].m_sym == AST::symbolType::Slash
-                            || !decl.m_syms[j].m_name) {
-                        continue;
-                    }
-                    locals.insert(to_lower(decl.m_syms[j].m_name));
+                add_name(decl.m_syms[j].m_name, locals);
+            }
+        }
+
+        // Same names `import_all` brings in. Private specifics of a generic
+        // stay hidden; enumerators are the module's external symbols.
+        static bool blanket_use_imports(ASR::symbol_t *sym) {
+            if (ASR::is_a<ASR::Function_t>(*sym)) {
+                return ASR::down_cast<ASR::Function_t>(sym)->m_access
+                    != ASR::accessType::Private;
+            }
+            if (ASR::is_a<ASR::GenericProcedure_t>(*sym)) {
+                return ASR::down_cast<ASR::GenericProcedure_t>(sym)->m_access
+                    != ASR::accessType::Private;
+            }
+            if (ASR::is_a<ASR::CustomOperator_t>(*sym)) {
+                return ASR::down_cast<ASR::CustomOperator_t>(sym)->m_access
+                    != ASR::accessType::Private;
+            }
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                return ASR::down_cast<ASR::Variable_t>(sym)->m_access
+                    == ASR::accessType::Public;
+            }
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+                return ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_access
+                    != ASR::accessType::Private;
+            }
+            if (ASR::is_a<ASR::Struct_t>(*sym)) {
+                return ASR::down_cast<ASR::Struct_t>(sym)->m_access
+                    != ASR::accessType::Private;
+            }
+            return ASR::is_a<ASR::Requirement_t>(*sym)
+                || ASR::is_a<ASR::Template_t>(*sym)
+                || ASR::is_a<ASR::Union_t>(*sym)
+                || ASR::is_a<ASR::Namelist_t>(*sym);
+        }
+
+        void add_blanket_use_names(const char *module_name,
+                std::set<std::string> &locals) const {
+            if (!module_name || !scope) {
+                return;
+            }
+            std::string msym = to_lower(module_name);
+            if (msym == "ieee_arithmetic") {
+                msym = "lfortran_intrinsic_" + msym;
+            }
+            ASR::symbol_t *sym = scope->get_tu_scope()->get_symbol(msym);
+            if (!sym || !ASR::is_a<ASR::Module_t>(*sym)) {
+                return;
+            }
+            ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(sym);
+            for (auto &item : mod->m_symtab->get_scope()) {
+                if (blanket_use_imports(item.second)) {
+                    locals.insert(to_lower(item.first));
                 }
             }
+        }
+
+        void add_use_names(const AST::Use_t &x,
+                std::set<std::string> &locals) const {
+            std::set<std::string> local_names;
+            std::set<std::string> renamed_away;
+            for (size_t i = 0; i < x.n_symbols; i++) {
+                if (!AST::is_a<AST::UseSymbol_t>(*x.m_symbols[i])) {
+                    continue;
+                }
+                const AST::UseSymbol_t &sym =
+                    *AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i]);
+                std::string remote = sym.m_remote_sym
+                    ? to_lower(sym.m_remote_sym) : "";
+                std::string local = sym.m_local_rename
+                    ? to_lower(sym.m_local_rename) : remote;
+                if (!local.empty()) {
+                    local_names.insert(local);
+                }
+                // `use m, a => b` does not leave `b` in scope.
+                if (!x.m_only_present && sym.m_local_rename
+                        && !remote.empty() && remote != local) {
+                    renamed_away.insert(remote);
+                }
+            }
+            std::set<std::string> imported = local_names;
+            if (!x.m_only_present) {
+                add_blanket_use_names(x.m_module, imported);
+                for (const std::string &name : renamed_away) {
+                    if (local_names.count(name) == 0) {
+                        imported.erase(name);
+                    }
+                }
+            }
+            locals.insert(imported.begin(), imported.end());
+        }
+
+        static void add_program_unit_name(const AST::program_unit_t &unit,
+                std::set<std::string> &locals) {
+            char *name = nullptr;
+            if (AST::is_a<AST::Function_t>(unit)) {
+                name = AST::down_cast<AST::Function_t>(&unit)->m_name;
+            } else if (AST::is_a<AST::Subroutine_t>(unit)) {
+                name = AST::down_cast<AST::Subroutine_t>(&unit)->m_name;
+            } else if (AST::is_a<AST::Procedure_t>(unit)) {
+                name = AST::down_cast<AST::Procedure_t>(&unit)->m_name;
+            }
+            add_name(name, locals);
+        }
+
+        static void add_interface_names(const AST::Interface_t &iface,
+                std::set<std::string> &locals) {
+            if (iface.m_header && AST::is_a<AST::InterfaceHeaderName_t>(
+                    *iface.m_header)) {
+                add_name(AST::down_cast<AST::InterfaceHeaderName_t>(
+                    iface.m_header)->m_name, locals);
+            }
+            for (size_t i = 0; i < iface.n_items; i++) {
+                AST::interface_item_t *item = iface.m_items[i];
+                if (AST::is_a<AST::InterfaceProc_t>(*item)) {
+                    AST::program_unit_t *proc =
+                        AST::down_cast<AST::InterfaceProc_t>(item)->m_proc;
+                    if (proc) {
+                        add_program_unit_name(*proc, locals);
+                    }
+                } else if (AST::is_a<AST::InterfaceModuleProcedure_t>(*item)) {
+                    const AST::InterfaceModuleProcedure_t &proc =
+                        *AST::down_cast<AST::InterfaceModuleProcedure_t>(item);
+                    for (size_t j = 0; j < proc.n_names; j++) {
+                        add_name(proc.m_names[j], locals);
+                    }
+                }
+            }
+        }
+
+        void collect_block_locals(const AST::Block_t &x,
+                std::set<std::string> &locals) const {
+            for (size_t i = 0; i < x.n_items; i++) {
+                AST::decl_stmt_t *item = x.m_items[i];
+                if (AST::is_a<AST::Declaration_t>(*item)) {
+                    add_declaration_names(
+                        *AST::down_cast<AST::Declaration_t>(item), locals);
+                } else if (AST::is_a<AST::Use_t>(*item)) {
+                    add_use_names(*AST::down_cast<AST::Use_t>(item), locals);
+                } else if (AST::is_a<AST::Interface_t>(*item)) {
+                    add_interface_names(
+                        *AST::down_cast<AST::Interface_t>(item), locals);
+                } else if (AST::is_a<AST::DerivedType_t>(*item)) {
+                    add_name(AST::down_cast<AST::DerivedType_t>(item)->m_name,
+                        locals);
+                } else if (AST::is_a<AST::Enum_t>(*item)) {
+                    const AST::Enum_t &en =
+                        *AST::down_cast<AST::Enum_t>(item);
+                    for (size_t j = 0; j < en.n_items; j++) {
+                        if (AST::is_a<AST::Declaration_t>(*en.m_items[j])) {
+                            add_declaration_names(
+                                *AST::down_cast<AST::Declaration_t>(
+                                    en.m_items[j]), locals);
+                        }
+                    }
+                }
+            }
+        }
+
+        void visit_stmts(AST::decl_stmt_t **body, size_t n_body) {
+            for (size_t i = 0; i < n_body; i++) {
+                visit_decl_stmt(*body[i]);
+            }
+        }
+
+        void shadow_stmts(char *name, AST::decl_stmt_t **body, size_t n_body) {
+            if (!name) {
+                visit_stmts(body, n_body);
+                return;
+            }
+            std::set<std::string> locals;
+            add_name(name, locals);
+            block_locals.push_back(std::move(locals));
+            visit_stmts(body, n_body);
+            block_locals.pop_back();
         }
 
         void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
@@ -757,6 +936,69 @@ public:
             block_locals.push_back(std::move(locals));
             AST::BaseWalkVisitor<ImplicitDummyProcedureFinder>::visit_Block(x);
             block_locals.pop_back();
+        }
+
+        // Selectors are resolved in the enclosing scope. Associate names
+        // shadow only the construct body.
+        void visit_AssociateBlock(const AST::AssociateBlock_t &x) {
+            for (size_t i = 0; i < x.n_syms; i++) {
+                AST::BaseWalkVisitor<ImplicitDummyProcedureFinder>::visit_var_sym(
+                    x.m_syms[i]);
+            }
+            std::set<std::string> locals;
+            for (size_t i = 0; i < x.n_syms; i++) {
+                add_name(x.m_syms[i].m_name, locals);
+            }
+            block_locals.push_back(std::move(locals));
+            visit_stmts(x.m_body, x.n_body);
+            block_locals.pop_back();
+        }
+
+        void visit_SelectType(const AST::SelectType_t &x) {
+            if (x.m_selector) {
+                visit_expr(*x.m_selector);
+            }
+            if (!x.m_assoc_name) {
+                // No new associate name. A scalar selector is still the
+                // host symbol; an array selector is shadowed by the body
+                // visitor, which needs the selector's type to know that.
+                for (size_t i = 0; i < x.n_body; i++) {
+                    visit_type_stmt(*x.m_body[i]);
+                }
+                return;
+            }
+            std::set<std::string> locals;
+            add_name(x.m_assoc_name, locals);
+            block_locals.push_back(std::move(locals));
+            for (size_t i = 0; i < x.n_body; i++) {
+                visit_type_stmt(*x.m_body[i]);
+            }
+            block_locals.pop_back();
+        }
+
+        void visit_SelectRank(const AST::SelectRank_t &x) {
+            if (x.m_selector) {
+                visit_expr(*x.m_selector);
+            }
+            for (size_t i = 0; i < x.n_body; i++) {
+                AST::rank_stmt_t *stmt = x.m_body[i];
+                if (AST::is_a<AST::RankExpr_t>(*stmt)) {
+                    const AST::RankExpr_t &rank =
+                        *AST::down_cast<AST::RankExpr_t>(stmt);
+                    if (rank.m_value) {
+                        visit_expr(*rank.m_value);
+                    }
+                    shadow_stmts(x.m_assoc_name, rank.m_body, rank.n_body);
+                } else if (AST::is_a<AST::RankStar_t>(*stmt)) {
+                    const AST::RankStar_t &rank =
+                        *AST::down_cast<AST::RankStar_t>(stmt);
+                    shadow_stmts(x.m_assoc_name, rank.m_body, rank.n_body);
+                } else if (AST::is_a<AST::RankDefault_t>(*stmt)) {
+                    const AST::RankDefault_t &rank =
+                        *AST::down_cast<AST::RankDefault_t>(stmt);
+                    visit_stmts(rank.m_body, rank.n_body);
+                }
+            }
         }
 
         void visit_Interface(const AST::Interface_t &/*x*/) {}
@@ -797,7 +1039,7 @@ public:
     void record_referenced_dummy_procedures(ASR::Function_t* fn,
             AST::decl_stmt_t** items, size_t n_items) {
         std::set<std::string> names;
-        ImplicitDummyProcedureFinder finder(names);
+        ImplicitDummyProcedureFinder finder(names, fn->m_symtab);
         for (size_t i = 0; i < n_items; i++) {
             finder.visit_decl_stmt(*items[i]);
         }
