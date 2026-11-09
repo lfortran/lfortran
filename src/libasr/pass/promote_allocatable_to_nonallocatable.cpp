@@ -3,6 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/utils.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
@@ -1247,7 +1248,8 @@ inline void rebuild_promoted_signatures(Allocator& al,
 // array's extents, and a device has no runtime descriptor to read them from.
 void pass_promote_device_allocatable(
     Allocator &al, ASR::TranslationUnit_t &unit,
-    const PassOptions &/*pass_options*/) {
+    const PassOptions &pass_options) {
+    if (!gpu_device_capabilities(pass_options).device_selected()) return;
     // An allocation can be sized from another allocatable of the routine,
     // or from a component of a derived-type local, which only has a shape
     // on entry once it is promoted or stored itself, so the promotion is

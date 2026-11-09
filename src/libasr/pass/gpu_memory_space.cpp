@@ -5,6 +5,7 @@
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/gpu_data_layout.h>
+#include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -806,7 +807,8 @@ void gpu_materialize_struct_arguments(Allocator &al,
 }
 
 void pass_gpu_memory_space(Allocator &al, ASR::TranslationUnit_t &unit,
-        const PassOptions &/*pass_options*/) {
+        const PassOptions &pass_options) {
+    if (!gpu_device_capabilities(pass_options).device_selected()) return;
     GpuMemorySpaceAssigner assigner(al);
     assigner.assign(unit);
 

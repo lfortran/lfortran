@@ -543,8 +543,9 @@ private:
 
 void pass_gpu_struct_component_args(Allocator &al,
         ASR::TranslationUnit_t &unit, const PassOptions &pass_options) {
-    StructComponentArgs split(al, unit,
-        gpu_device_capabilities(pass_options).offset_kind);
+    GpuDeviceCapabilities caps = gpu_device_capabilities(pass_options);
+    if (!caps.device_selected()) return;
+    StructComponentArgs split(al, unit, caps.offset_kind);
     bool changed = false;
     while (split.run()) changed = true;
     if (!changed) return;
