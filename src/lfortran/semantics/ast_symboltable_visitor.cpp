@@ -2782,35 +2782,24 @@ public:
         // here, while an array bound or a character length of this
         // specification part may still name one of those objects.
         CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
-        visit_specification_declarations(x, sym_name, deferred_ifaces,
-            &contained_procedures, procedure_decl_indices, later_interface_decls);
-        process_simd_variables();
-        // The internal procedures start from this procedure's implicit
-        // typing rules (F2018 8.7 p4).
-        if (compiler_options.implicit_typing) {
-            implicit_stack.push_back(implicit_dictionary);
-        }
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
-            std::vector<std::string> current_procedure_args_copy = current_procedure_args;
-            current_procedure_args.clear();
-            SymbolTable *host_scope = current_scope;
-            try {
-                visit_program_unit(*x.m_contains[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-                // An abort in the declarations of a procedure leaves its scope
-                // current.
-                current_scope = host_scope;
+        // The subroutine is built in two parts, as a function is, see
+        // visit_Function.
+        std::set<std::string> signature_names;
+        for (size_t i=0; i<x.n_args; i++) {
+            if (x.m_args[i].m_arg) {
+                signature_names.insert(to_lower(x.m_args[i].m_arg));
             }
-            implicit_dictionary = implicit_dictionary_copy;
-            current_procedure_args = current_procedure_args_copy;
-            default_storage_save = current_storage_save;
         }
-        if (compiler_options.implicit_typing) {
-            implicit_stack.pop_back();
+        std::vector<bool> signature;
+        bool split = !is_requirement && signature_statements(x, signature_names,
+            &contained_procedures, signature);
+        visit_specification_declarations(x, sym_name, deferred_ifaces,
+            &contained_procedures, procedure_decl_indices, later_interface_decls,
+            split ? SpecificationPart::Signature : SpecificationPart::All,
+            signature);
+        if (!split) {
+            process_simd_variables();
+            visit_internal_procedures(x);
         }
         visit_later_interface_decls(later_interface_decls);
         Vec<ASR::expr_t*> args;
@@ -3019,11 +3008,7 @@ public:
             }
         }
 
-        SetChar func_deps;
-        func_deps.reserve(al, current_function_dependencies.size());
-        for( auto& itr: current_function_dependencies ) {
-            func_deps.push_back(al, s2c(al, itr));
-        }
+        SetChar func_deps = copy_function_dependencies();
         bool init_deterministic = (deftype == ASR::deftypeType::Implementation);
         bool init_side_effect_free = (deftype == ASR::deftypeType::Implementation)
                                      || is_pure || is_elemental;
@@ -3054,15 +3039,27 @@ public:
             /* m_end_name */ (compiler_options.interactive
                 || compiler_options.separate_compilation) && x.m_end_name
                 ? x.m_end_name : nullptr);
-        PureChecks::check_declaration(
-            *ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp)),
-            to_lower(x.m_name), diag, compiler_options);
-        ElementalChecks::check_procedure(
-            *ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp)),
-            to_lower(x.m_name), diag, compiler_options);
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
-        handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        ASR::Function_t *added = ASR::down_cast2<ASR::Function_t>(tmp);
+        if (split) {
+            Vec<AST::decl_stmt_t*> later_local_decls; later_local_decls.reserve(al, 0);
+            visit_specification_declarations(x, sym_name, deferred_ifaces,
+                &contained_procedures, procedure_decl_indices, later_local_decls,
+                SpecificationPart::Locals, signature);
+            process_simd_variables();
+            visit_internal_procedures(x);
+            visit_later_interface_decls(later_local_decls);
+            SetChar deps = copy_function_dependencies();
+            added->m_dependencies = deps.p;
+            added->n_dependencies = deps.size();
+            tmp = &added->base.base;
+        }
+        PureChecks::check_declaration(*added, to_lower(x.m_name), diag,
+            compiler_options);
+        ElementalChecks::check_procedure(*added, to_lower(x.m_name), diag,
+            compiler_options);
+        handle_save();
 
         // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {

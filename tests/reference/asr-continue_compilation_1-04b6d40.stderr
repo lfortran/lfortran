@@ -1082,12 +1082,6 @@ semantic error: dummy procedure 'f' cannot have an elemental interface
 2404 |     procedure(sin) :: f  ! {Error} dummy procedure 'f' cannot have an elemental interface
      |                       ^ 
 
-semantic error: procedure pointer 'fp' cannot have an elemental interface
-    --> tests/errors/continue_compilation_1.f90:2405:32
-     |
-2405 |     procedure(sin), pointer :: fp  ! {Error} procedure pointer 'fp' cannot have an elemental interface
-     |                                ^^ 
-
 semantic error: Dummy argument 'f' not defined
     --> tests/errors/continue_compilation_1.f90:2401:1 - 2406:50
      |
@@ -1097,6 +1091,12 @@ semantic error: Dummy argument 'f' not defined
      |
 2406 |    end subroutine elemental_procedure_interface_error
      | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: procedure pointer 'fp' cannot have an elemental interface
+    --> tests/errors/continue_compilation_1.f90:2405:32
+     |
+2405 |     procedure(sin), pointer :: fp  ! {Error} procedure pointer 'fp' cannot have an elemental interface
+     |                                ^^ 
 
 semantic error: intrinsic procedure 'floor' is not allowed in a procedure declaration statement
     --> tests/errors/continue_compilation_1.f90:2413:5
