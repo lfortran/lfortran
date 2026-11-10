@@ -6935,6 +6935,81 @@ use cancel_core
     }
 }
 
+// `obj%proc()` is a FunctionPointerCast call. Cancellation has to leave the
+// call before the result is stored, or the session keeps the null return.
+TEST_CASE("FortranEvaluator execute: cancel an implicit procedure component") {
+    for (int mode = 0; mode < 3; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        options.std_f23_conformance = mode == 2;
+        options.implicit_interface = true;
+        FortranEvaluator e(options);
+        auto setup = e.execute(R"(
+module component_cancel
+use lfortran_display, only: clear_output
+implicit none
+type :: holder
+    procedure(integer), pointer, nopass :: proc
+    procedure(), pointer, nopass :: sub
+end type
+type(holder) :: obj
+integer :: answer = 100
+contains
+integer function spinning() result(r)
+    r = 0
+    call clear_output()
+    do
+    end do
+    r = 9
+end function
+subroutine spinning_sub()
+    call clear_output()
+    do
+    end do
+end subroutine
+integer function ready() result(r)
+    r = 9
+end function
+end module
+use component_cancel
+obj%proc => spinning
+obj%sub => spinning_sub
+)");
+        REQUIRE_MESSAGE(setup.ok, setup.error_text());
+        const auto caller = std::this_thread::get_id();
+        bool entered = false;
+        FortranEvaluator::CellIO io;
+        io.clear_output = [&]() {
+            CHECK(std::this_thread::get_id() == caller);
+            entered = true;
+        };
+        io.cancel_requested = [&]() {
+            CHECK(std::this_thread::get_id() == caller);
+            return entered;
+        };
+        auto interrupt = [&](const std::string &code) {
+            CAPTURE(code);
+            entered = false;
+            auto result = e.execute(code, false, io);
+            CHECK(entered);
+            CHECK(!result.ok);
+            CHECK(!result.internal_error);
+            CHECK(result.error_name == "KeyboardInterrupt");
+            CHECK(result.value.type == FortranEvaluator::EvalResult::none);
+        };
+        interrupt("answer = obj%proc()");
+        CHECK(e.execute("answer").value.text() == "100");
+        interrupt("call obj%sub()\nanswer = -1");
+        CHECK(e.execute("answer").value.text() == "100");
+        auto retarget = e.execute("obj%proc => ready");
+        REQUIRE_MESSAGE(retarget.ok, retarget.error_text());
+        auto done = e.execute("answer = obj%proc()");
+        REQUIRE_MESSAGE(done.ok, done.error_text());
+        CHECK(e.execute("answer").value.text() == "9");
+    }
+}
+
 TEST_CASE("FortranEvaluator execute: protected commands and runtime hook lifetime") {
     for (int mode = 0; mode < 3; mode++) {
         CAPTURE(mode);

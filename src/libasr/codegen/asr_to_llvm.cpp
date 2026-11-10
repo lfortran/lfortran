@@ -29904,8 +29904,10 @@ public:
             this->visit_expr_wrapper(x.m_dt, true);
             llvm::Value* callee = tmp;
             args = convert_call_args(x, false);
-            tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
-                callee, args);
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
+            const bool foreign = foreign_cancellation_boundary(*func, true);
+            tmp = create_jit_call(fntype, callee, args, foreign);
+            if (foreign) emit_cancellation_check();
             return;
         }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
@@ -30594,9 +30596,11 @@ public:
             this->visit_expr_wrapper(x.m_dt, true);
             llvm::Value* callee = tmp;
             args = convert_call_args(x, false);
-            tmp = builder->CreateCall(llvm_utils->get_function_type(*func, module.get()),
-                callee, args);
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
+            const bool foreign = foreign_cancellation_boundary(*func, true);
+            tmp = create_jit_call(fntype, callee, args, foreign);
             wrap_string_function_result(x.m_type);
+            if (foreign) emit_cancellation_check();
             return;
         }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
