@@ -23644,6 +23644,38 @@ public:
             size_type, value);
     }
     
+    // `dble`, `float` or `dfloat` of an array is `real(arg, kind)`. Like any
+    // function reference, its result has lower bounds of 1, so it is not
+    // written as a Cast, which ASR keeps for the implicit conversions, such
+    // as that of a whole array in an intrinsic assignment.
+    ASR::asr_t* create_real_of_array(ASR::expr_t *arg, int kind,
+                                     const Location &loc) {
+        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 2);
+        args.push_back(al, arg);
+        args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            kind, int_type)));
+        ASRUtils::create_intrinsic_function create_func =
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("real");
+        std::vector<size_t> array_indices_in_args = find_array_indices_in_args(args);
+        ASR::asr_t *result = nullptr;
+        if (ASRUtils::all_args_evaluated(args) && !array_indices_in_args.empty()) {
+            ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+            ASR::ArrayConstant_t *result_array = ASR::down_cast<ASR::ArrayConstant_t>(
+                expr_duplicator.duplicate_expr(ASRUtils::expr_value(arg)));
+            compiletime_broadcast_elemental_intrinsic(args, &result_array,
+                array_indices_in_args, create_func, loc, al);
+            result = (ASR::asr_t*) result_array;
+        } else {
+            result = create_func(al, loc, args, diag);
+        }
+        if (result == nullptr) {
+            throw SemanticAbort();
+        }
+        return result;
+    }
+
     ASR::asr_t* handle_intrinsic_float_dfloat(Allocator &al, Vec<ASR::call_arg_t> args,
                                         const Location &loc, int kind) {
         ASR::expr_t *arg = nullptr, *value = nullptr;
@@ -23655,6 +23687,9 @@ public:
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
         if (!arg) {
             return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
+        }
+        if (ASRUtils::is_array(type) && ASRUtils::is_integer(*type)) {
+            return create_real_of_array(arg, kind, loc);
         }
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
@@ -23721,6 +23756,10 @@ public:
         // representation of the real(8) result, no numeric conversion happens
         if (is_boz_constant(arg)) {
             return (ASR::asr_t *)boz_literal_to_real(arg, 8);
+        }
+        if (ASRUtils::is_array(type) && (ASRUtils::is_integer(*type) ||
+                ASRUtils::is_real(*type) || ASRUtils::is_complex(*type))) {
+            return create_real_of_array(arg, 8, loc);
         }
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
