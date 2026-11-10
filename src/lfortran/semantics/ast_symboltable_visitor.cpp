@@ -456,6 +456,43 @@ public:
         }
     }
 
+    // Visits one procedure of a CONTAINS part, setting host state aside.
+    void visit_contained_procedure(AST::program_unit_t &unit,
+            bool restore_implicit, bool hide_host_args) {
+        bool current_storage_save = default_storage_save;
+        default_storage_save = false;
+        std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
+        std::vector<std::string> current_procedure_args_copy = current_procedure_args;
+        if (hide_host_args) {
+            current_procedure_args.clear();
+        }
+        SymbolTable *host_scope = current_scope;
+        try {
+            visit_program_unit(unit);
+        } catch (SemanticAbort &e) {
+            if ( !compiler_options.continue_compilation ) throw e;
+            // An abort in the declarations of a procedure leaves its scope
+            // current.
+            current_scope = host_scope;
+        }
+        if (restore_implicit) {
+            implicit_dictionary = implicit_dictionary_copy;
+        }
+        if (hide_host_args) {
+            current_procedure_args = current_procedure_args_copy;
+        }
+        default_storage_save = current_storage_save;
+    }
+
+    // Visits the procedures of a CONTAINS part, see visit_contained_procedure.
+    void visit_contained_procedures(AST::program_unit_t **contains,
+            size_t n_contains, bool restore_implicit, bool hide_host_args) {
+        for (size_t i = 0; i < n_contains; i++) {
+            visit_contained_procedure(*contains[i], restore_implicit,
+                hide_host_args);
+        }
+    }
+
     // A module procedure, or a procedure of an interface body in the
     // module's specification part, is not defined until its turn comes, so
     // until then its name must not be taken to be an intrinsic procedure.
@@ -1200,20 +1237,7 @@ public:
         // procedures can then find these names via parent-scope mapping
         // lookup even while their own accumulator is isolated.
         external_procedures_mapping[get_hash(tmp0)] = external_procedures;
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            SymbolTable *host_scope = current_scope;
-            try {
-                visit_program_unit(*x.m_contains[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-                // An abort in the declarations of a procedure leaves its scope
-                // current.
-                current_scope = host_scope;
-            }
-            default_storage_save = current_storage_save;
-        }
+        visit_contained_procedures(x.m_contains, x.n_contains, false, false);
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
         }
@@ -1519,23 +1543,8 @@ public:
         if (compiler_options.implicit_typing) {
             implicit_stack.push_back(implicit_dictionary);
         }
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            // An internal procedure leaves its own implicit typing rules.
-            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
-            SymbolTable *host_scope = current_scope;
-            try {
-                visit_program_unit(*x.m_contains[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-                // An abort in the declarations of a procedure leaves its scope
-                // current.
-                current_scope = host_scope;
-            }
-            implicit_dictionary = implicit_dictionary_copy;
-            default_storage_save = current_storage_save;
-        }
+        // An internal procedure leaves its own implicit typing rules.
+        visit_contained_procedures(x.m_contains, x.n_contains, true, false);
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
         }
@@ -2120,22 +2129,7 @@ public:
         if (compiler_options.implicit_typing) {
             implicit_stack.push_back(implicit_dictionary);
         }
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
-            SymbolTable *host_scope = current_scope;
-            try {
-                visit_program_unit(*x.m_contains[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-                // An abort in the declarations of a procedure leaves its scope
-                // current.
-                current_scope = host_scope;
-            }
-            implicit_dictionary = implicit_dictionary_copy;
-            default_storage_save = current_storage_save;
-        }
+        visit_contained_procedures(x.m_contains, x.n_contains, true, false);
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
         }
@@ -2564,25 +2558,7 @@ public:
         if (compiler_options.implicit_typing) {
             implicit_stack.push_back(implicit_dictionary);
         }
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
-            std::vector<std::string> current_procedure_args_copy = current_procedure_args;
-            current_procedure_args.clear();
-            SymbolTable *host_scope = current_scope;
-            try {
-                visit_program_unit(*x.m_contains[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-                // An abort in the declarations of a procedure leaves its scope
-                // current.
-                current_scope = host_scope;
-            }
-            implicit_dictionary = implicit_dictionary_copy;
-            current_procedure_args = current_procedure_args_copy;
-            default_storage_save = current_storage_save;
-        }
+        visit_contained_procedures(x.m_contains, x.n_contains, true, true);
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
         }
@@ -3577,25 +3553,7 @@ public:
         if (compiler_options.implicit_typing) {
             implicit_stack.push_back(implicit_dictionary);
         }
-        for (size_t i=0; i<x.n_contains; i++) {
-            bool current_storage_save = default_storage_save;
-            default_storage_save = false;
-            std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
-            std::vector<std::string> current_procedure_args_copy = current_procedure_args;
-            current_procedure_args.clear();
-            SymbolTable *host_scope = current_scope;
-            try {
-                visit_program_unit(*x.m_contains[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-                // An abort in the declarations of a procedure leaves its scope
-                // current.
-                current_scope = host_scope;
-            }
-            implicit_dictionary = implicit_dictionary_copy;
-            current_procedure_args = current_procedure_args_copy;
-            default_storage_save = current_storage_save;
-        }
+        visit_contained_procedures(x.m_contains, x.n_contains, true, true);
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
         }
