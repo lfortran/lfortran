@@ -23253,6 +23253,34 @@ public:
         return array_indices_in_args;
     }
 
+    // Creates the elemental intrinsic `create_func` of `args`. If every
+    // argument has a compile-time value and one of them is an array constant,
+    // and `broadcast` is true, the result is the array constant of the
+    // intrinsic broadcast over its elements (see
+    // compiletime_broadcast_elemental_intrinsic).
+    ASR::asr_t* create_elemental_intrinsic(
+            ASRUtils::create_intrinsic_function create_func,
+            Vec<ASR::expr_t*> &args, const Location &loc, bool broadcast=true) {
+        std::vector<size_t> array_indices_in_args = find_array_indices_in_args(args);
+        ASR::asr_t* result = nullptr;
+        if (broadcast && ASRUtils::all_args_evaluated(args, true) &&
+                !array_indices_in_args.empty()) {
+            ASR::expr_t* arg = ASRUtils::expr_value(args[array_indices_in_args[0]]);
+            ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+            ASR::ArrayConstant_t* result_array = ASR::down_cast<ASR::ArrayConstant_t>(
+                expr_duplicator.duplicate_expr(arg));
+            compiletime_broadcast_elemental_intrinsic(args, &result_array,
+                array_indices_in_args, create_func, loc, al);
+            result = (ASR::asr_t*) result_array;
+        } else {
+            result = create_func(al, loc, args, diag);
+        }
+        if (result == nullptr) {
+            throw SemanticAbort();
+        }
+        return result;
+    }
+
     ASR::expr_t* fetch_arrayconstant(ASR::expr_t* var_value) {
         if (!var_value) return nullptr;
         return ASR::is_a<ASR::ArrayConstant_t>(*var_value) ? var_value : ASR::is_a<ASR::Var_t>(*var_value) ?
@@ -23313,7 +23341,6 @@ public:
                     }
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
-                    const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
                     if (is_specific_type_intrinsic && specific_var_name == "dcmplx") {
                         ASR::ttype_t *int4_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                         args.p[2] = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 8, int4_type));
@@ -23356,24 +23383,13 @@ public:
                     ASRUtils::create_intrinsic_function create_func =
                         ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
 
-                    std::vector<size_t> array_indices_in_args = find_array_indices_in_args(args);
                     std::vector<std::string> inquiry_functions = {"epsilon", "radix", "range", "precision", "rank", "tiny", "huge", "bit_size", "new_line", "digits",
                         "maxexponent", "minexponent", "storage_size", "kind", "is_contiguous", "loc"};
-                    if (are_all_args_evaluated &&
-                        (std::find(inquiry_functions.begin(), inquiry_functions.end(), var_name) == inquiry_functions.end()) &&
-                        !array_indices_in_args.empty())
-                    {
-                        ASR::expr_t* arg = ASRUtils::expr_value(args[array_indices_in_args[0]]);
-                        ASRUtils::ExprStmtDuplicator expr_duplicator(al);
-                        ASR::expr_t* arg_ = expr_duplicator.duplicate_expr(arg);
-                        ASR::ArrayConstant_t* result_array = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
+                    bool is_inquiry_function = std::find(inquiry_functions.begin(),
+                        inquiry_functions.end(), var_name) != inquiry_functions.end();
+                    tmp = create_elemental_intrinsic(create_func, args,
+                        x.base.base.loc, !is_inquiry_function);
 
-                        compiletime_broadcast_elemental_intrinsic(args, &result_array, array_indices_in_args, create_func, x.base.base.loc, al);;
-                        tmp = (ASR::asr_t*) result_array;
-                    } else {
-                        tmp = create_func(al, x.base.base.loc, args, diag);
-                    }
-                    
                     if (tmp != nullptr && is_specific_type_intrinsic) {
                         if (specific_var_name == "min1" || specific_var_name == "max1") {
                             ASR::expr_t* result_expr = ASRUtils::EXPR(tmp);
@@ -23644,6 +23660,23 @@ public:
             size_type, value);
     }
     
+    // `dble`, `float` or `dfloat` of an array is `real(arg, kind)`. Like any
+    // function reference, its result has lower bounds of 1, so it is not
+    // written as a Cast, which ASR keeps for the implicit conversions, such
+    // as that of a whole array in an intrinsic assignment.
+    ASR::asr_t* create_real_of_array(ASR::expr_t *arg, int kind,
+                                     const Location &loc) {
+        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 2);
+        args.push_back(al, arg);
+        args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            kind, int_type)));
+        return create_elemental_intrinsic(
+            ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("real"),
+            args, loc);
+    }
+
     ASR::asr_t* handle_intrinsic_float_dfloat(Allocator &al, Vec<ASR::call_arg_t> args,
                                         const Location &loc, int kind) {
         ASR::expr_t *arg = nullptr, *value = nullptr;
@@ -23655,6 +23688,9 @@ public:
         ASR::ttype_t *to_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
         if (!arg) {
             return ASR::make_RealConstant_t(al, loc, 0.0, to_type);
+        }
+        if (ASRUtils::is_array(type) && ASRUtils::is_integer(*type)) {
+            return create_real_of_array(arg, kind, loc);
         }
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);
@@ -23721,6 +23757,10 @@ public:
         // representation of the real(8) result, no numeric conversion happens
         if (is_boz_constant(arg)) {
             return (ASR::asr_t *)boz_literal_to_real(arg, 8);
+        }
+        if (ASRUtils::is_array(type) && (ASRUtils::is_integer(*type) ||
+                ASRUtils::is_real(*type) || ASRUtils::is_complex(*type))) {
+            return create_real_of_array(arg, 8, loc);
         }
         if (ASR::is_a<ASR::Array_t>(*type)) {
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(type);

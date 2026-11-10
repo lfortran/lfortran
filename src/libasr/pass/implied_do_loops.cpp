@@ -944,7 +944,10 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             pass_result.push_back(al, allocate_stmt);
         }
         LCOMPILERS_ASSERT(result_var != nullptr);
-        if (!is_named_constant) {
+        // A zero-size constant leaves nothing to fill the temporary with.
+        // The statement still uses the temporary, e.g. to allocate the
+        // variable it assigns to with size zero, so it is kept.
+        if (!is_named_constant && ASRUtils::get_fixed_size_of_array(x->m_type) > 0) {
             Vec<ASR::stmt_t*>* result_vec = &pass_result;
             PassUtils::ReplacerUtils::replace_ArrayConstant(x, this,
                 remove_original_statement, result_vec);
