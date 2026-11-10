@@ -4,29 +4,43 @@ struct t {
     long v;
 };
 
+struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_175 {
+    int __gpu_lanes;
+};
+
 extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_175(
     float* __restrict__ a,
     t* __restrict__ arr,
     float* __restrict__ __data_arr_v,
     int* __restrict__ __offsets_arr_v,
-    int* __restrict__ __sizes_arr_v)
+    int* __restrict__ __sizes_arr_v,
+    __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_175 __scalar_args)
 {
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
     int __gpu_sec_i;
     int i__dc;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 2)) {
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 2)) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     i__dc = (__flat_idx + 1);
+    __gpu_sec_i = (1 + (((int)__gpu_lane) * 1));
+    const int __lfortran_trips_0 = ((((int)2) + ((int)1)) - 1) >= __gpu_sec_i ? (((((int)2) + ((int)1)) - 1) - __gpu_sec_i) / (1 * ((int)__gpu_lanes)) + 1 : 0;
     #pragma unroll 16
-    for (__gpu_sec_i = 1; __gpu_sec_i <= ((((int)2) + ((int)1)) - 1); __gpu_sec_i++) {
+    for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, __gpu_sec_i += (1 * ((int)__gpu_lanes))) {
         a[((int)(__gpu_sec_i) - (1)) + (2 * ((int)(i__dc) - (1)))] = __data_arr_v[__offsets_arr_v[((int)(i__dc) - (1))] + ((int)((__sizes_arr_v[(((int)(i__dc) - (1))) * 2 + 1] + (__gpu_sec_i - 1))) - (__sizes_arr_v[(((int)(i__dc) - (1))) * 2 + 1]))];
     }
+    if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_175 {
     int __workspace_extent;
+    int __gpu_lanes;
 };
 
 extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_metal_175(
@@ -39,26 +53,37 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_
     float* __restrict__ __workspace_6)
 {
     int __workspace_extent = __scalar_args.__workspace_extent;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
     int __gpu_elem_i;
     int __gpu_sec_i1;
     int i__dc1;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 2)) {
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 2)) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     i__dc1 = (__flat_idx + 1);
     {
-        float* r = ((__workspace_extent) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
-        const int __lfortran_end_0 = (__sizes_arr_v[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
+        float* r = ((__workspace_extent) > 0) ? (__workspace_6 + ((long)(blockIdx.x * __gpu_iteration_block + __gpu_iteration_thread)) * __workspace_extent) : nullptr;
+        const int __lfortran_end_1 = (__sizes_arr_v[(((int)((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) + 1)) - (1))) * 2 + 0]);
+        __gpu_elem_i = (1 + (((int)__gpu_lane) * 1));
+        const int __lfortran_trips_2 = __lfortran_end_1 >= __gpu_elem_i ? (__lfortran_end_1 - __gpu_elem_i) / (1 * ((int)__gpu_lanes)) + 1 : 0;
         #pragma unroll 16
-        for (__gpu_elem_i = 1; __gpu_elem_i <= __lfortran_end_0; __gpu_elem_i++) {
+        for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, __gpu_elem_i += (1 * ((int)__gpu_lanes))) {
             r[((int)((1 + (__gpu_elem_i - 1))) - (1))] = __data_arr_v[__offsets_arr_v[((int)(i__dc1) - (1))] + ((int)((__sizes_arr_v[(((int)(i__dc1) - (1))) * 2 + 1] + (__gpu_elem_i - 1))) - (__sizes_arr_v[(((int)(i__dc1) - (1))) * 2 + 1]))];
         }
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
+        __gpu_sec_i1 = (1 + (((int)__gpu_lane) * 1));
+        const int __lfortran_trips_3 = ((((int)2) + ((int)1)) - 1) >= __gpu_sec_i1 ? (((((int)2) + ((int)1)) - 1) - __gpu_sec_i1) / (1 * ((int)__gpu_lanes)) + 1 : 0;
         #pragma unroll 16
-        for (__gpu_sec_i1 = 1; __gpu_sec_i1 <= ((((int)2) + ((int)1)) - 1); __gpu_sec_i1++) {
+        for (int __lfortran_count_3 = 0; __lfortran_count_3 < __lfortran_trips_3; __lfortran_count_3++, __gpu_sec_i1 += (1 * ((int)__gpu_lanes))) {
             b[((int)(__gpu_sec_i1) - (1)) + (2 * ((int)(i__dc1) - (1)))] = r[((int)((1 + (__gpu_sec_i1 - 1))) - (1))];
         }
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
     }
 }
 

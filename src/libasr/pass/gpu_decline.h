@@ -101,7 +101,7 @@ struct GpuDeviceCapabilities {
     int lane_reduction_max_kind = 8;
     // Whether the lanes of an iteration share loops whose iterations are
     // independent (gpu_vector_lanes.cpp). Off where only reductions are
-    // shared out (NVIDIA GPUs, for now).
+    // shared out (NVIDIA GPUs and Metal do).
     bool lane_independent_loops = true;
 
     int threads_per_block = 256;

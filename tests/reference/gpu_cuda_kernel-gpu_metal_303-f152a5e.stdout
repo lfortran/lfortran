@@ -6,6 +6,7 @@ struct leaf_t {
 
 struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_303 {
     int __workspace_extent;
+    int __gpu_lanes;
 };
 
 extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_303(
@@ -18,29 +19,40 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
     float* __restrict__ __workspace_6)
 {
     int __workspace_extent = __scalar_args.__workspace_extent;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
     int i__dc;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 4)) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     i__dc = (__flat_idx + 1);
     {
         float acc;
         int k;
-        float* w = ((__workspace_extent) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        float* w = ((__workspace_extent) > 0) ? (__workspace_6 + ((long)(blockIdx.x * __gpu_iteration_block + __gpu_iteration_thread)) * __workspace_extent) : nullptr;
         const int __lfortran_end_0 = (__sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 1]);
+        k = (1 + (((int)__gpu_lane) * 1));
+        const int __lfortran_trips_1 = __lfortran_end_0 >= k ? (__lfortran_end_0 - k) / (1 * ((int)__gpu_lanes)) + 1 : 0;
         #pragma unroll 16
-        for (k = 1; k <= __lfortran_end_0; k++) {
+        for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, k += (1 * ((int)__gpu_lanes))) {
             w[((int)(k) - (1))] = ((float)((1000 * i__dc) + k));
         }
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
         acc =   0.00000000000000000e+00f;
-        const int __lfortran_end_1 = (__sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 1]);
+        const int __lfortran_end_2 = (__sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 0] * __sizes_c_m_[(((int)(i__dc) - (1))) * 4 + 1]);
         #pragma unroll 16
-        for (k = 1; k <= __lfortran_end_1; k++) {
+        for (k = 1; k <= __lfortran_end_2; k++) {
             acc = (acc + w[((int)(k) - (1))]);
         }
-        o[((int)(i__dc) - (1))] = acc;
+        if ((__gpu_lane == 0)) {
+            o[((int)(i__dc) - (1))] = acc;
+        }
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
     }
 }
 

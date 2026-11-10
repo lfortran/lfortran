@@ -119,8 +119,12 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
             caps.lanes_column_block = caps.threads_per_block;
         }
         caps.lane_reductions = true;
-        caps.lane_independent_loops = false;
         caps.reduction_warp_slots = true;
+        // The lanes share the loops of an iteration whose iterations are
+        // independent too (the scaling of a vector by its norm, once a
+        // reduction has summed it), where one lane would run them all
+        // while the other 31 wait.
+        caps.lane_independent_loops = true;
     }
     if (pass_options.descriptor_index_64
             && caps.offsets_follow_descriptor_index_64()) {

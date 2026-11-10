@@ -130,6 +130,7 @@ struct MetalDialect {
     // divide up: the block is the whole grid and its index is zero.
     std::string thread_index() const { return "__thread_id"; }
     std::string global_thread_id() const { return "__thread_id"; }
+    std::string lane_global_thread_id() const { return "__thread_id"; }
     std::string block_index() const { return "0"; }
     std::string block_size() const { return "0"; }
 
