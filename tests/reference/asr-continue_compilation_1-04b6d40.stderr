@@ -1460,10 +1460,10 @@ semantic error: Return type not specified
 3381 |    end function
      | ...^^^^^^^^^^^^ 
 
-semantic error: Kind 16 is not supported for Complex
+semantic error: Kind 32 is not supported for Complex
     --> tests/errors/continue_compilation_1.f90:3387:5
      |
-3387 |     complex*32 :: cc1_cs_z32  ! {Error} Kind 16 is not supported for Complex
+3387 |     complex*64 :: cc1_cs_z64  ! {Error} Kind 32 is not supported for Complex
      |     ^^^^^^^^^^ 
 
 semantic error: Kind 10 is not supported for Complex

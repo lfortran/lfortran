@@ -9063,8 +9063,14 @@ public:
                         // ASRUtils::set_ArrayConstant_value(ac, arg, i);
                         args.push_back(al, arg);
                     }
-                    ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, ac->base.base.loc,
-                            args.p, args.n, ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), ac->m_storage_format))));
+                    ASR::expr_t* constructor = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, ac->base.base.loc,
+                            args.p, args.n, ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(target_type)), ac->m_storage_format));
+                    if (ASRUtils::expr_value(constructor) == nullptr) {
+                        // The elements cannot be stored as the data of an
+                        // ArrayConstant (real(16), complex(16)).
+                        value = constructor;
+                    } else {
+                    ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(constructor));
                     value = ASRUtils::EXPR((ASR::asr_t*) ac);
                     LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
                     if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
@@ -9073,6 +9079,7 @@ public:
                             ASRUtils::type_get_past_pointer(
                                 ASRUtils::type_get_past_allocatable(ac->m_type)));
                         array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
+                    }
                     }
                 } else {
                     if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) &&
