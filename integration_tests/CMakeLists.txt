@@ -2223,6 +2223,7 @@ RUN(NAME intrinsics_506 LABELS gfortran llvm) # array reductions with a DIM of k
 RUN(NAME intrinsics_507 LABELS llvm NO_STD_F23) # expm1 with a real(8) argument; expm1 is an LFortran extension (#16904)
 RUN(NAME intrinsics_508 LABELS gfortran llvm) # cshift/eoshift of an allocatable array into an allocated array with lower bound 0 (#16912)
 RUN(NAME intrinsics_509 LABELS gfortran llvm) # selected_real_kind returns kind 16 for precision above kind 8 (#13537)
+RUN(NAME intrinsics_510 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays) # pack/cshift/eoshift/maxval/transpose of characters of non-constant length
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)

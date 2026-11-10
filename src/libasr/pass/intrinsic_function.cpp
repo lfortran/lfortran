@@ -166,7 +166,7 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
                 // every dimension, so the implementation takes them as
                 // assumed-shape dummies. An allocatable or pointer dummy would
                 // keep the lower bounds of the actual argument instead.
-                arg_type = ASRUtils::ArrIntrinsic::assumed_length_if_deferred(al,
+                arg_type = ASRUtils::ArrIntrinsic::assumed_length_if_not_constant(al,
                     ASRUtils::type_get_past_allocatable_pointer(arg_type));
             }
             arg_types.push_back(al, arg_type);
