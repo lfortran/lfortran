@@ -470,10 +470,32 @@ int link_elf_with_lld(
         return 10;
     }
 
-    bool pie = !static_executable && !shared_executable
-        && file_exists(toolchain.crt_dir + "/Scrt1.o")
-        && file_exists(toolchain.gcc_lib + "/crtbeginS.o")
-        && file_exists(toolchain.gcc_lib + "/crtendS.o");
+    // Clang, the previous default driver, links a normal executable as
+    // non-PIE. A PIE link rejects objects compiled without -fPIC, which is
+    // how C files beside the Fortran are usually built. -Wl,-pie still
+    // selects a position-independent executable.
+    bool pie = false;
+    if (!static_executable && !shared_executable) {
+        for (const std::string &flag : linker_flags) {
+            if (flag.rfind("l,", 0) != 0) {
+                continue;
+            }
+            std::stringstream stream(flag.substr(2));
+            std::string part;
+            while (std::getline(stream, part, ',')) {
+                if (part == "-pie") {
+                    pie = true;
+                } else if (part == "-no-pie") {
+                    pie = false;
+                }
+            }
+        }
+        if (pie && !(file_exists(toolchain.crt_dir + "/Scrt1.o")
+                && file_exists(toolchain.gcc_lib + "/crtbeginS.o")
+                && file_exists(toolchain.gcc_lib + "/crtendS.o"))) {
+            pie = false;
+        }
+    }
 
     std::string crt1 = toolchain.crt_dir + (pie ? "/Scrt1.o" : "/crt1.o");
     std::string crti = toolchain.crt_dir + "/crti.o";
