@@ -4916,6 +4916,7 @@ RUN(NAME implicit_deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME deallocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME deallocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME deallocate_03 LABELS gfortran llvm fortran)
+RUN(NAME deallocate_04 LABELS gfortran llvm) # deallocate of a pointer whose target has an allocatable component does not leak (#11076)
 RUN(NAME dead_array_store_01 LABELS gfortran llvm)
 RUN(NAME dead_array_store_02 LABELS gfortran llvm)
 RUN(NAME dead_array_store_03 LABELS gfortran llvm
