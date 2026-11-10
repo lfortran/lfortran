@@ -1,6 +1,7 @@
 program intrinsics_510
     ! Array intrinsics of character arrays whose length is not a constant:
-    ! the length n of the elements of [word(1:n), 'yo'] and of a dummy
+    ! the length n of the elements of [word(1:n), 'yo'] and of a dummy, and
+    ! an assumed length
     implicit none
     character(len=5) :: word
     character(len=:), allocatable :: r(:), r2(:,:), s
@@ -31,10 +32,22 @@ program intrinsics_510
     if (r2(1, 1) /= 'hi' .or. r2(2, 1) /= 'yo') error stop 10
 
     call check(n, ['ab', 'cd'])
+    call assumed_len(['xyz', 'abc'])
 
     print *, "OK"
 
 contains
+
+    ! maxval and minval of an assumed-length array, in the same file as those
+    ! of arrays whose length is a run-time expression
+    subroutine assumed_len(c)
+        character(len=*), intent(in) :: c(:)
+        character(len=:), allocatable :: t
+        t = maxval(c)
+        if (len(t) /= 3 .or. t /= 'xyz') error stop 14
+        if (minval(c) /= 'abc') error stop 15
+        if (len(maxval(c)) /= 3) error stop 16
+    end subroutine assumed_len
 
     subroutine check(m, a)
         integer, intent(in) :: m

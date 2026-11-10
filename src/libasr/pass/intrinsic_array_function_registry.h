@@ -1455,11 +1455,15 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     if (extract_n_dims_from_ttype(return_type) == 0) {
         ASR::ttype_t* result_type = ASRUtils::extract_type(return_type);
         if (ASR::is_a<ASR::String_t>(*result_type) && !ASRUtils::is_allocatable(return_type)
-            && has_non_constant_length(ASR::down_cast<ASR::String_t>(result_type))) {
-            // A scalar result whose length is not a constant has a deferred
-            // length and must be allocatable; it is allocated to `len(array)`
-            // when the reduction is seeded. A call of a function generated
-            // earlier has this type too.
+            && (ASR::down_cast<ASR::String_t>(result_type)->m_len_kind ==
+                    ASR::string_length_kindType::AssumedLength
+                || has_non_constant_length(ASR::down_cast<ASR::String_t>(result_type)))) {
+            // A scalar result whose length is not a constant (assumed,
+            // deferred or an expression) has a deferred length and must be
+            // allocatable; it is allocated to `len(array)` when the reduction
+            // is seeded. Arrays of all these lengths share one generated
+            // function, so a call of a function generated earlier has this
+            // type too.
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(result_type);
             return_type = b.allocatable(b.String(nullptr,
                 ASR::string_length_kindType::DeferredLength,
