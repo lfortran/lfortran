@@ -8232,8 +8232,9 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         // drop the repeated factor.
         CHECK(!reductions_rewrite(reductions_diamond_ir, *x86));
         // A fourth component that is zero on entry stays zero when the
-        // update multiplies it by a loaded value: fast math treats that
-        // product as zero. A constant infinity does not.
+        // update multiplies it by itself or by a finite constant. A loaded
+        // value may be an infinity there, as may a constant one, and 0*Inf
+        // is NaN.
         const std::string differences =
             "  %v0 = fsub fast <4 x double> %x, <double 1.0, double 1.0, double 1.0, double 0.0>\n"
             "  %v1 = fsub fast <4 x double> %x, <double 2.0, double 1.0, double 1.0, double 0.0>\n"
@@ -8242,8 +8243,14 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         CHECK(!reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> %v0, %v0\n"
             "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
-        CHECK(!reductions_loop_masks(differences,
+        CHECK(reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> %la, %v0\n"
+            "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
+        CHECK(!reductions_loop_masks(differences,
+            "  %d = fmul fast <4 x double> %v0, <double 1.0, double 1.0, double 1.0, double 2.0>\n"
+            "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
+        CHECK(reductions_loop_masks(differences,
+            "  %d = fmul fast <4 x double> <double 1.0, double 1.0, double 1.0, double 0.0>, %la\n"
             "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
         CHECK(reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> <double 0.0, double 0.0, double 0.0, double 0x7FF0000000000000>, %v0\n"
@@ -8542,6 +8549,74 @@ TEST_CASE("LLVM horizontal reductions clear lane 3 of rebuilt products") {
     if (__builtin_cpu_supports("avx")) {
         e.add_module(std::move(m));
         CHECK(e.execfn<double>("reductions_rebuilt") == 28.0);
+    }
+#endif
+}
+#endif
+
+#if LLVM_VERSION_MAJOR >= 11
+// The squared vector is a select of a fast product a*w and of w, where
+// component 3 of w is zero. Lane 0 of the sum is 1^2+2^2+3^2 = 14 for
+// a = (1, 2, 3, Inf) and w = 1. The original code never reads component 3 of
+// a*w, which is Inf*0 = NaN, so the rewrite must clear lane 3 of the square.
+const std::string reductions_anyleaf_ir = R"""(
+define double @reductions_anyleaf(<4 x double> %a, <4 x double> %w0, i1 %c) #0 {
+entry:
+  %w = insertelement <4 x double> %w0, double 0.0, i32 3
+  %m = fmul fast <4 x double> %a, %w
+  %v = select i1 %c, <4 x double> %m, <4 x double> %w
+  %g0a = shufflevector <4 x double> %v, <4 x double> %v, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
+  %g0b = shufflevector <4 x double> %g0a, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
+  %g0c = shufflevector <4 x double> %g0b, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
+  %s0 = fmul fast <4 x double> %g0c, %g0c
+  %g1a = shufflevector <4 x double> %v, <4 x double> %v, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
+  %g1b = shufflevector <4 x double> %g1a, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 5, i32 undef>
+  %g1c = shufflevector <4 x double> %g1b, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
+  %s1 = fmul fast <4 x double> %g1c, %g1c
+  %g2a = shufflevector <4 x double> %v, <4 x double> %v, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
+  %g2b = shufflevector <4 x double> %g2a, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 6, i32 undef>
+  %g2c = shufflevector <4 x double> %g2b, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
+  %s2 = fmul fast <4 x double> %g2c, %g2c
+  %t0 = fadd fast <4 x double> %s0, %s1
+  %t1 = fadd fast <4 x double> %t0, %s2
+  %l0 = extractelement <4 x double> %t1, i32 0
+  ret double %l0
+}
+
+define double @reductions_anyleaf_main() #0 {
+  %r = call double @reductions_anyleaf(<4 x double> <double 1.0, double 2.0, double 3.0, double 0x7FF0000000000000>, <4 x double> <double 1.0, double 1.0, double 1.0, double 1.0>, i1 true)
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
+TEST_CASE("LLVM horizontal reductions clear lane 3 of products of the original code") {
+    // A zero factor does not make a product zero where the other factor
+    // may be an infinity, even if the original code computes the product:
+    // it never reads that lane, and vhaddpd does.
+    std::unique_ptr<llvm::TargetMachine> x86
+        = reductions_target_machine("x86_64-unknown-linux-gnu", "x86-64");
+    if (!x86) {
+        return;
+    }
+    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<llvm::Module> m = e.parse_module(reductions_anyleaf_ir, "");
+    llvm::Function &f = *m->getFunction("reductions_anyleaf");
+    CHECK(LCompilers::recombine_horizontal_reductions(f, *x86));
+    std::string err;
+    llvm::raw_string_ostream os(err);
+    CHECK(!llvm::verifyFunction(f, &os));
+    bool masked = false;
+    for (llvm::BasicBlock &bb : f) {
+        for (llvm::Instruction &i : bb) {
+            masked = masked || clears_lane3(i);
+        }
+    }
+    CHECK(masked);
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
+    if (__builtin_cpu_supports("avx")) {
+        e.add_module(std::move(m));
+        CHECK(e.execfn<double>("reductions_anyleaf_main") == 14.0);
     }
 #endif
 }
