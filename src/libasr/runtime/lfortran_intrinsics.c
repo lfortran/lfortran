@@ -160,8 +160,24 @@ static char *input_gets(char *buffer, int size, FILE *file)
     return i || size == 1 ? buffer : NULL;
 }
 
+#if defined(__linux__) && defined(__GLIBC__) \
+        && !defined(__EMSCRIPTEN__) && defined(LFORTRAN_READAHEAD_THREADS)
+#define LFORTRAN_READAHEAD 1
+#include <pthread.h>
+#endif
+
+#ifdef LFORTRAN_READAHEAD
+static int64_t ra_big_read(FILE *file, void *buffer, size_t bytes);
+#endif
+
 static size_t input_read(void *buffer, size_t size, size_t count, FILE *file)
 {
+#ifdef LFORTRAN_READAHEAD
+    if (size && count <= SIZE_MAX / size && size * count >= (1u << 20)) {
+        int64_t got = ra_big_read(file, buffer, size * count);
+        if (got >= 0) return (size_t)got / size;
+    }
+#endif
     if (!provided_stdin(file)) return fread(buffer, size, count, file);
     if (!size || count > SIZE_MAX / size) return 0;
     size_t i = 0, bytes = size * count;
@@ -8786,12 +8802,6 @@ static bool fortran_str_eq(const char *s, int64_t len, const char *word)
     return true;
 }
 
-#if defined(__linux__) && defined(__GLIBC__) \
-        && !defined(__EMSCRIPTEN__) && defined(LFORTRAN_READAHEAD_THREADS)
-#define LFORTRAN_READAHEAD 1
-#include <pthread.h>
-#endif
-
 #ifdef LFORTRAN_READAHEAD
 /*
  A stream file opened for reading only is read through a window of segments
@@ -8831,6 +8841,7 @@ typedef struct ra_file {
     int count;
     int64_t next_start;
     int active;
+    FILE *fp;
 } ra_file;
 
 // The helper threads serve every file with a window, and live until the
@@ -8893,6 +8904,137 @@ static void *ra_worker(void *arg)
         pthread_cond_broadcast(&ra_done);
     }
     return NULL;
+}
+
+
+// A read of at least PAR_READ_BYTES goes straight to the caller's buffer with
+// PAR_READ_THREADS threads, each reading its own part of the range: a single
+// core copies from the page cache at 5-10 GB/s, and into memory that is not
+// yet mapped (the first touch of a managed GPU array, say) at less. The
+// number of threads is LFORTRAN_READ_THREADS (1 turns this off).
+enum { PAR_READ_BYTES = 1 << 20, PAR_READ_PART = 512 << 10,
+    PAR_READ_THREADS = 8, PAR_READ_MAX = 64 };
+
+typedef struct par_read_part {
+    int fd;
+    char *buffer;
+    int64_t length;
+    int64_t offset;
+    ssize_t result;
+} par_read_part;
+
+static void *par_read_main(void *arg)
+{
+    par_read_part *p = (par_read_part*)arg;
+    p->result = ra_pread(p->fd, p->buffer, p->length, p->offset);
+    return NULL;
+}
+
+static int par_read_threads(void)
+{
+    static int threads = 0;
+    if (threads == 0) {
+        const char *value = getenv("LFORTRAN_READ_THREADS");
+        threads = value && value[0] ? atoi(value) : PAR_READ_THREADS;
+        if (threads < 1) threads = 1;
+        if (threads > PAR_READ_MAX) threads = PAR_READ_MAX;
+    }
+    return threads;
+}
+
+// Reads `length` bytes at `offset` of `fd` into `buffer`; returns the number
+// of bytes read, or -1.
+static ssize_t par_pread(int fd, char *buffer, int64_t length, int64_t offset)
+{
+    int threads = par_read_threads();
+    if (threads > length / PAR_READ_PART) threads = (int)(length / PAR_READ_PART);
+    if (threads < 1) threads = 1;
+    int64_t part = (length / threads + 4095) & ~(int64_t)4095;
+    par_read_part parts[PAR_READ_MAX];
+    pthread_t ids[PAR_READ_MAX];
+    int started[PAR_READ_MAX];
+    int n = 0;
+    for (int64_t start = 0; start < length; start += part, n++) {
+        parts[n].fd = fd;
+        parts[n].buffer = buffer + start;
+        parts[n].length = length - start < part ? length - start : part;
+        parts[n].offset = offset + start;
+        parts[n].result = -1;
+    }
+    for (int i = 1; i < n; i++) {
+        started[i] = pthread_create(&ids[i], NULL, par_read_main, &parts[i]) == 0;
+    }
+    par_read_main(&parts[0]);
+    int64_t total = 0;
+    int failed = parts[0].result < 0;
+    for (int i = 1; i < n; i++) {
+        if (started[i]) pthread_join(ids[i], NULL);
+        else par_read_main(&parts[i]);
+        if (parts[i].result < 0) failed = 1;
+    }
+    for (int i = 0; i < n; i++) {
+        if (parts[i].result < 0) break;
+        total += parts[i].result;
+        if (parts[i].result < parts[i].length) break;
+    }
+    return failed && total == 0 ? -1 : (ssize_t)total;
+}
+
+
+// Every stream file opened through a window, by its FILE: a big read finds
+// the file it reads from here.
+static ra_file *ra_open_files[RA_MAX_FILES];
+
+static void ra_register(ra_file *f)
+{
+    pthread_mutex_lock(&ra_lock);
+    for (int j = 0; j < RA_MAX_FILES; j++) {
+        if (!ra_open_files[j]) {
+            ra_open_files[j] = f;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&ra_lock);
+}
+
+static void ra_unregister(ra_file *f)
+{
+    pthread_mutex_lock(&ra_lock);
+    for (int j = 0; j < RA_MAX_FILES; j++) {
+        if (ra_open_files[j] == f) ra_open_files[j] = NULL;
+    }
+    pthread_mutex_unlock(&ra_lock);
+}
+
+// glibc reads a stream whose file is a cookie in pieces of its buffer (8 KiB)
+// however large the fread is, so a program that reads a big array in one
+// statement makes as many calls as the array has pieces, each copying from the
+// page cache and then into the array. A read of at least PAR_READ_BYTES from
+// such a file is made here instead, directly into `buffer` and by several
+// threads. Returns the bytes read, or -1 when `file` is not such a file.
+static int64_t ra_big_read(FILE *file, void *buffer, size_t bytes)
+{
+    if (par_read_threads() < 2) return -1;
+    ra_file *f = NULL;
+    pthread_mutex_lock(&ra_lock);
+    for (int j = 0; j < RA_MAX_FILES; j++) {
+        if (ra_open_files[j] && ra_open_files[j]->fp == file) {
+            f = ra_open_files[j];
+            break;
+        }
+    }
+    pthread_mutex_unlock(&ra_lock);
+    if (!f) return -1;
+    long at = ftell(file);
+    if (at < 0 || at > f->size) return -1;
+    int64_t want = (int64_t)bytes;
+    if (want > f->size - at) want = f->size - at;
+    if (want <= 0) return 0;
+    ssize_t n = par_pread(f->fd, (char*)buffer, want, at);
+    if (n < 0) return -1;
+    // Drop what the stream holds and continue after the bytes read.
+    if (fseek(file, at + n, SEEK_SET) != 0) return -1;
+    return n;
 }
 
 // Waits until no helper is filling a segment, and empties the window.
@@ -9076,6 +9218,7 @@ static int ra_seek(void *cookie, off64_t *offset, int whence)
 static int ra_close(void *cookie)
 {
     ra_file *f = (ra_file*)cookie;
+    ra_unregister(f);
     if (f->active) {
         pthread_mutex_lock(&ra_lock);
         ra_reset_window(f);
@@ -9120,6 +9263,8 @@ static FILE *open_read_ahead(const char *name)
         ra_close(f);
         return NULL;
     }
+    f->fp = fp;
+    ra_register(f);
     return fp;
 }
 #endif
