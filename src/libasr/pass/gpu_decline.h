@@ -103,6 +103,13 @@ struct GpuDeviceCapabilities {
     // independent (gpu_vector_lanes.cpp). Off where only reductions are
     // shared out (NVIDIA GPUs and Metal do).
     bool lane_independent_loops = true;
+    // Whether, in a reduction loop whose body holds a reduction loop of a
+    // fixed number of iterations of at least half the lanes (the 64 codes
+    // of a group of a quantized matrix-vector product), the lanes share
+    // out the inner loop and all go through the outer one, instead of one
+    // iteration of the outer loop per lane: the lanes then read along the
+    // inner loop's consecutive elements, not a group's length apart.
+    bool lane_inner_reductions_first = false;
 
     int threads_per_block = 256;
 

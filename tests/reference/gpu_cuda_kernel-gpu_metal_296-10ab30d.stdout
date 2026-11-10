@@ -38,6 +38,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __gpu_lanes = __scalar_args.__gpu_lanes;
     int __gpu_lanes_n = __gpu_lanes;
+    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
     int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
     unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
     unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
@@ -59,14 +60,14 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_
         for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, k += (1 * ((int)__gpu_lanes))) {
             res[((int)(k) - (1))] = (  2.00000000000000000e+00f * __data_s_b_[__offsets_s_b_[((int)(jj__dc) - (__lb_s_0))] + ((int)(k) - (__sizes_s_b_[(((int)(jj__dc) - (__lb_s_0))) * 2 + 1]))]);
         }
-        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp(__gpu_lane_mask);
         __gpu_sec_i = (1 + (((int)__gpu_lane) * 1));
         const int __lfortran_trips_2 = ((((((int)__dim_out_0) + ((int)__lb_out_0)) - 1) - ((int)__lb_out_0)) + 1) >= __gpu_sec_i ? (((((((int)__dim_out_0) + ((int)__lb_out_0)) - 1) - ((int)__lb_out_0)) + 1) - __gpu_sec_i) / (1 * ((int)__gpu_lanes)) + 1 : 0;
         #pragma unroll 16
         for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, __gpu_sec_i += (1 * ((int)__gpu_lanes))) {
             out[((int)((((int)__lb_out_0) + (__gpu_sec_i - 1))) - (__lb_out_0)) + (__dim_out_0 * ((int)(jj__dc) - (__lb_out_1)))] = res[((int)((1 + (__gpu_sec_i - 1))) - (1))];
         }
-        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp(__gpu_lane_mask);
     }
 }
 

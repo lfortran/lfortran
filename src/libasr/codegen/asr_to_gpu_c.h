@@ -4210,6 +4210,28 @@ public:
         return !h.found;
     }
 
+    // Whether the statements combine the values of the lanes of an
+    // iteration (GpuLaneReduce).
+    static bool holds_lane_reduce(ASR::stmt_t **body, size_t n_body) {
+        class Found : public ASR::BaseWalkVisitor<Found> {
+        public:
+            bool found = false;
+            void visit_GpuLaneReduce(const ASR::GpuLaneReduce_t &) {
+                found = true;
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(x.m_m));
+                for (size_t i = 0; i < block->n_body; i++) {
+                    this->visit_stmt(*block->m_body[i]);
+                }
+            }
+        };
+        Found f;
+        for (size_t i = 0; i < n_body && !f.found; i++) f.visit_stmt(*body[i]);
+        return f.found;
+    }
+
     // Whether `kernel` has a small innermost loop (small_innermost_loop)
     // that reads an array through its variable times a stride that is not
     // a constant: each thread then streams down a row of a matrix that the
@@ -4337,7 +4359,7 @@ public:
     // on it.
     void emit_counted_for(const ASR::do_loop_head_t &head,
             const std::set<ASR::symbol_t*> &written, const Location &loc,
-            bool unroll = false) {
+            bool unroll = false, bool unroll_few = false) {
         if (head.m_v == nullptr) {
             src << get_indent() << "for (;;) {\n";
             return;
@@ -4391,6 +4413,8 @@ public:
         }
         if (pragma) {
             src << get_indent() << dialect.unroll_pragma(deep) << "\n";
+        } else if (unroll_few && !dialect.unroll_few_pragma().empty()) {
+            src << get_indent() << dialect.unroll_few_pragma() << "\n";
         }
         src << get_indent() << "for (" << v << " = ";
         visit_expr(head.m_start);
@@ -5130,7 +5154,8 @@ public:
                     written.insert(gpu_designator_base(dl->m_head.m_v).root);
                 }
                 emit_counted_for(dl->m_head, written, stmt->base.loc,
-                    small_innermost_loop(dl->m_body, dl->n_body));
+                    small_innermost_loop(dl->m_body, dl->n_body),
+                    holds_lane_reduce(dl->m_body, dl->n_body));
                 emit_loop_body(frame, dl->m_body, dl->n_body);
                 break;
             }

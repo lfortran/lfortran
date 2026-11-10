@@ -110,6 +110,16 @@ values in its private scalars, except for these statements:
   of its own iterations, which may be fewer than the lanes (a sum split in
   a few parts); one whose sums have a fixed length (the groups of a
   quantized matrix-vector product) is shared out itself.
+  Where a reduction loop of the iteration holds a reduction loop of a fixed
+  number of iterations (GpuDeviceCapabilities::lane_inner_reductions_first:
+  the 64 codes of a group of a quantized matrix-vector product, a loop of 16
+  after gpu_residue_unroll), the outer one is not shared out: every lane
+  goes through it, and the lanes share the inner one and combine its sum.
+  Lane k then reads the k-th word of a group and the k-th elements of the
+  vector, so the lanes of a warp read consecutive addresses, where one group
+  per lane read 64 elements apart. Such a loop has fewer iterations than a
+  warp has lanes, so the iteration gets as many lanes as that loop has
+  iterations (16), and a warp runs two of them.
 * A *single* statement runs on the first lane only: a statement outside a
   distributed loop that has an effect the lanes must not repeat -- one that
   assigns shared memory, calls a procedure that is not pure, takes elements
@@ -573,6 +583,11 @@ struct KernelInfo {
     // The device's lanes share loops whose iterations are independent
     // (GpuDeviceCapabilities::lane_independent_loops).
     bool independent_loops = true;
+    // The device's lanes share out the sum of a short, fixed length inside
+    // a reduction loop rather than the loop
+    // (GpuDeviceCapabilities::lane_inner_reductions_first).
+    bool inner_reductions_first = false;
+    int lanes_count = 1;
 
     bool local(ASR::symbol_t *s) const {
         if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
@@ -1278,6 +1293,11 @@ public:
 
     bool failed = false;
     bool distributed = false;
+    // The lanes of an iteration the reductions it shares out can all use:
+    // the fewest iterations of one of the loops in which only the inner
+    // sum is shared out (inner_reductions_first), rounded down to a power
+    // of two. Zero when there is no such loop.
+    int64_t lane_limit = 0;
 
     // Whether the lanes pay for themselves however many iterations a launch
     // has, as decided for the statements of `body`: every loop they share
@@ -2195,6 +2215,26 @@ private:
                 std::vector<Induction> counters;
                 if (reducible(ASR::down_cast<ASR::DoLoop_t>(s), frames,
                         accumulators, counters)) {
+                    if (k.inner_reductions_first
+                            && inner_reduction(
+                                ASR::down_cast<ASR::DoLoop_t>(s)->m_body,
+                                ASR::down_cast<ASR::DoLoop_t>(s)->n_body,
+                                s, frames, true)) {
+                        bool was_failed = failed;
+                        size_t n_serialized = serialized.size();
+                        int64_t was_limit = lane_limit;
+                        lane_limit = lane_limit == 0 ? fixed_trips
+                            : std::min(lane_limit, fixed_trips);
+                        if (nested_decide(s, frames) && !failed) {
+                            return Role::Recurse;
+                        }
+                        lane_limit = was_limit;
+                        failed = was_failed;
+                        for (size_t i = serialized.size(); i-- > n_serialized;) {
+                            *serialized[i].first = serialized[i].second;
+                        }
+                        serialized.resize(n_serialized);
+                    }
                     reductions[s] = accumulators;
                     if (!counters.empty()) inductions[s] = counters;
                     distributed = true;
@@ -2272,7 +2312,8 @@ private:
     }
 
     bool inner_reduction(ASR::stmt_t **body, size_t n_body,
-            ASR::stmt_t *owner, std::vector<Frame> &frames) {
+            ASR::stmt_t *owner, std::vector<Frame> &frames,
+            bool fixed_length = false) {
         for (size_t i = 0; i < n_body; i++) {
             ASR::stmt_t *s = body[i];
             frames.push_back({body, n_body, i, owner});
@@ -2281,23 +2322,55 @@ private:
                 auto *d = ASR::down_cast<ASR::DoLoop_t>(s);
                 std::vector<Accumulator> accumulators;
                 std::vector<Induction> counters;
-                found = !constant_trips(d)
+                int64_t trips = 0;
+                found = (fixed_length ? long_constant_trips(d, trips)
+                        : !constant_trips(d))
                     && reducible(d, frames, accumulators, counters);
+                if (found && fixed_length) fixed_trips = trips;
             } else if (ASR::is_a<ASR::BlockCall_t>(*s)) {
                 ASR::Block_t *x = ASR::down_cast<ASR::Block_t>(
                     ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::BlockCall_t>(s)->m_m));
-                found = inner_reduction(x->m_body, x->n_body, s, frames);
+                found = inner_reduction(x->m_body, x->n_body, s, frames,
+                    fixed_length);
             } else if (ASR::is_a<ASR::If_t>(*s)) {
                 auto *x = ASR::down_cast<ASR::If_t>(s);
-                found = inner_reduction(x->m_body, x->n_body, s, frames)
-                    || inner_reduction(x->m_orelse, x->n_orelse, s, frames);
+                found = inner_reduction(x->m_body, x->n_body, s, frames,
+                    fixed_length)
+                    || inner_reduction(x->m_orelse, x->n_orelse, s, frames,
+                        fixed_length);
             }
             frames.pop_back();
             if (found) return true;
         }
         return false;
     }
+
+    // Whether `d` has the same number of iterations in every run, and
+    // enough of them for half of the lanes to have one: the number is then
+    // in `trips`.
+    bool long_constant_trips(ASR::DoLoop_t *d, int64_t &trips) {
+        int64_t step = 1;
+        if (d->m_head.m_increment && !ASRUtils::extract_value(
+                ASRUtils::expr_value(d->m_head.m_increment), step)) {
+            return false;
+        }
+        if (step <= 0) return false;
+        GpuAffineBuilder affine;
+        affine.invariant_variable = [](ASR::symbol_t *) { return true; };
+        GpuAffine start, end;
+        if (!affine.affine(d->m_head.m_start, start)
+                || !affine.affine(d->m_head.m_end, end)) {
+            return false;
+        }
+        GpuAffine span = end.plus(start, -1);
+        if (!span.is_constant()) return false;
+        trips = span.constant / step + 1;
+        return trips >= k.lanes_count / 2;
+    }
+
+    // The number of iterations of the loop inner_reduction found last.
+    int64_t fixed_trips = 0;
 
     // Whether the number of iterations of `d` is the same in every run of
     // it: its bounds differ by a constant, and its step is a constant.
@@ -2385,6 +2458,14 @@ private:
             std::vector<Induction> &counters) {
         if (!k.lane_reductions) return false;
         if (d->n_orelse > 0 || d->m_head.m_v == nullptr) return false;
+        // The copies of the body of a loop unrolled by gpu_residue_unroll
+        // are blocks that each update the accumulator. Only a loop the
+        // lanes share out whatever its caller (inner_reductions_first) has
+        // them read: the sum of any other loop is left in the order it was
+        // written.
+        int64_t fixed = 0;
+        bool blocks_hold_updates = k.inner_reductions_first
+            && long_constant_trips(d, fixed);
         ASR::symbol_t *v = root_of(d->m_head.m_v);
         if (!k.private_scalar(v)) return false;
         if (d->m_head.m_increment) {
@@ -2493,20 +2574,9 @@ private:
             // the statements of the body assigns it.
             std::vector<ASR::Assignment_t*> updates;
             bool read = false;
-            for (size_t i = 0; i < d->n_body; i++) {
-                ASR::stmt_t *x = d->m_body[i];
-                if (ASR::is_a<ASR::Assignment_t>(*x)) {
-                    auto *a = ASR::down_cast<ASR::Assignment_t>(x);
-                    if (ASR::is_a<ASR::Var_t>(*a->m_target)
-                            && root_of(a->m_target) == s) {
-                        updates.push_back(a);
-                        continue;
-                    }
-                }
-                Effects inner(k);
-                inner.visit_stmt(*x);
-                if (inner.scalars.count(s)) return false;
-                if (mentions(*x, s)) read = true;
+            if (!collect_updates(d->m_body, d->n_body, s, updates, read,
+                    blocks_hold_updates)) {
+                return false;
             }
             ASR::ttype_t *t = ASRUtils::symbol_type(s);
             int kind = ASRUtils::extract_kind_from_ttype_t(t);
@@ -2602,6 +2672,41 @@ private:
             if (scattered.found) return false;
         }
         return !accumulators.empty();
+    }
+
+    // The statements `s = ...` of `body`, and, where `blocks`, of the blocks
+    // directly in it (the copies of an unrolled loop body are blocks of
+    // their own), in `updates`; `read` is set when anything else names `s`. False when
+    // `s` is assigned anywhere else.
+    bool collect_updates(ASR::stmt_t **body, size_t n_body,
+            ASR::symbol_t *s, std::vector<ASR::Assignment_t*> &updates,
+            bool &read, bool blocks) {
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *x = body[i];
+            if (ASR::is_a<ASR::Assignment_t>(*x)) {
+                auto *a = ASR::down_cast<ASR::Assignment_t>(x);
+                if (ASR::is_a<ASR::Var_t>(*a->m_target)
+                        && root_of(a->m_target) == s) {
+                    updates.push_back(a);
+                    continue;
+                }
+            }
+            if (blocks && ASR::is_a<ASR::BlockCall_t>(*x)) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::BlockCall_t>(x)->m_m));
+                if (!collect_updates(block->m_body, block->n_body, s,
+                        updates, read, blocks)) {
+                    return false;
+                }
+                continue;
+            }
+            Effects inner(k);
+            inner.visit_stmt(*x);
+            if (inner.scalars.count(s)) return false;
+            if (mentions(*x, s)) read = true;
+        }
+        return true;
     }
 
     // The constant `c` of `value`, the value assigned to the integer `s`,
@@ -3025,7 +3130,7 @@ ASR::symbol_t* add_lanes_parameter(Allocator &al, ASR::Function_t &kernel) {
 // Rewrites `kernel` to run each iteration on lanes, when it has a loop to
 // distribute and nothing in the way.
 bool give_lanes(Allocator &al, ASR::Function_t &kernel,
-        const GpuDeviceCapabilities &caps, bool &any_size) {
+        const GpuDeviceCapabilities &caps, bool &any_size, int &lanes) {
     any_size = false;
     // A kernel whose warps already combine the accumulators of a reduction
     // (gpu_offload.cpp) runs every thread on its own iterations.
@@ -3047,6 +3152,8 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
     k.lane_reductions = caps.lane_reductions;
     k.lane_reduction_max_kind = caps.lane_reduction_max_kind;
     k.independent_loops = caps.lane_independent_loops;
+    k.inner_reductions_first = caps.lane_inner_reductions_first;
+    k.lanes_count = caps.lanes_per_iteration;
     // Where lanes share out only reductions (NVIDIA GPUs), a kernel with
     // workspaces or that takes memory from the device heap keeps one lane
     // per iteration: the lanes would share what the iteration builds there
@@ -3091,6 +3198,10 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
         return false;
     }
     any_size = rewrite.pays_at_any_size(kernel.m_body, kernel.n_body);
+    lanes = caps.lanes_per_iteration;
+    while (rewrite.lane_limit > 0 && lanes > rewrite.lane_limit && lanes > 2) {
+        lanes /= 2;
+    }
     k.lanes = add_lanes_parameter(al, kernel);
     rewrite.apply(kernel.m_body, kernel.n_body);
     return true;
@@ -3112,7 +3223,9 @@ public:
         if (kernel.m_gpu == nullptr) return;
         if (decided.insert(&kernel).second && kernel.m_gpu->m_lanes == nullptr) {
             bool any_size = false;
-            give_lanes(al, kernel, caps, any_size);
+            int kernel_lanes = lanes;
+            give_lanes(al, kernel, caps, any_size, kernel_lanes);
+            kernel_lane_count[&kernel] = kernel_lanes;
             if (any_size) column_kernels.insert(&kernel);
         }
         if (kernel.m_gpu->m_lanes == nullptr
@@ -3136,9 +3249,13 @@ public:
             ? std::max(caps.lanes_iterations_max,
                 caps.lanes_column_iterations_max)
             : caps.lanes_iterations_max;
-        int kernel_lanes = column_kernels.count(&kernel)
-            && caps.lanes_column_block > lanes
-            ? caps.lanes_column_block : lanes;
+        // A kernel whose lanes were cut to the length of a loop they share
+        // keeps that many.
+        int kernel_lanes = kernel_lane_count[&kernel];
+        if (column_kernels.count(&kernel) && kernel_lanes == lanes
+                && caps.lanes_column_block > lanes) {
+            kernel_lanes = caps.lanes_column_block;
+        }
         pass_result.push_back(al, b.If(b.LtE(count,
             b.i_t(iterations_max, count_type)),
             {b.Assignment(n, b.i32(kernel_lanes))}, {}));
@@ -3178,6 +3295,8 @@ private:
     int lanes;
     GpuDeviceCapabilities caps;
     std::set<ASR::Function_t*> decided;
+    // The lanes of an iteration of each kernel that has them.
+    std::map<ASR::Function_t*, int> kernel_lane_count;
     // The kernels whose lanes pay for themselves however many iterations a
     // launch has (LaneRewriter::pays_at_any_size).
     std::set<ASR::Function_t*> column_kernels;
