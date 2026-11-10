@@ -141,7 +141,7 @@ static int unified_memory = 0;
 // The smallest allocation the managed memory model makes managed memory:
 // making managed memory costs much more than malloc, and copying a smaller
 // range at a launch costs little.
-enum { MANAGED_MIN_BYTES = 1 << 20 };
+enum { MANAGED_MIN_BYTES = 4096 };
 
 // The managed allocations, sorted by address.
 typedef struct managed_range {
