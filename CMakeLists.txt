@@ -366,21 +366,39 @@ if (WITH_LLVM)
     # The driver links ELF executables itself with LLD. macOS and Windows keep
     # their platform linkers: LLD's Mach-O and COFF drivers still need the
     # platform SDK, which the system linker already knows.
-    if (NOT EMSCRIPTEN AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        find_package(LLD REQUIRED CONFIG
+    # LLD 7–9 cannot read the SHT_GROUP sections in the current C runtime,
+    # so those builds keep the external compiler driver.
+    if (NOT EMSCRIPTEN AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
+            AND LLVM_VERSION_MAJOR GREATER_EQUAL 10)
+        # LLVM 10 and newer export an LLD CMake package. An older package
+        # layout ships the same static libraries and headers without it.
+        find_package(LLD CONFIG
             HINTS
                 "$ENV{CONDA_PREFIX}/lib/cmake/lld"
                 "${CMAKE_PREFIX_PATH}/lib/cmake/lld"
         )
-        if (NOT TARGET lldELF)
-            message(FATAL_ERROR
-                "LLD was found but did not export the lldELF target. "
-                "Install the lld package that matches this LLVM "
-                "(${LLVM_PACKAGE_VERSION}).")
+        if (TARGET lldELF)
+            set(HAVE_LFORTRAN_LLD yes)
+            message(STATUS "Linking the LFortran driver with LLD ${LLVM_PACKAGE_VERSION}")
+        else()
+            find_library(LFORTRAN_LLD_ELF NAMES liblldELF.a
+                HINTS "${LLVM_LIBRARY_DIR}" "$ENV{CONDA_PREFIX}/lib"
+                NO_DEFAULT_PATH)
+            find_path(LFORTRAN_LLD_INCLUDE_DIR lld/Common/Driver.h
+                HINTS ${LLVM_INCLUDE_DIRS} "$ENV{CONDA_PREFIX}/include"
+                NO_DEFAULT_PATH)
+            if (LFORTRAN_LLD_ELF AND LFORTRAN_LLD_INCLUDE_DIR)
+                set(HAVE_LFORTRAN_LLD yes)
+                set(LLD_INCLUDE_DIRS "${LFORTRAN_LLD_INCLUDE_DIR}")
+                message(STATUS
+                    "Linking the LFortran driver with LLD ${LLVM_PACKAGE_VERSION} from ${LFORTRAN_LLD_ELF}")
+            else()
+                message(FATAL_ERROR
+                    "LLD ${LLVM_PACKAGE_VERSION} was not found. Install the "
+                    "lld package that matches this LLVM.")
+            endif()
         endif()
-        set(HAVE_LFORTRAN_LLD yes)
-        message(STATUS "Linking the LFortran driver with LLD ${LLVM_PACKAGE_VERSION}")
-        # Keep LLVM static. lldELF's imported interface also names the shared
+        # Keep LLVM static. The imported lldELF target also names the shared
         # libLLVM, and the two copies register the same cl::opt options.
         # src/bin links the static LLD archives against the component archives
         # instead of that interface.

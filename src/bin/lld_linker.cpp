@@ -378,20 +378,19 @@ struct ArgList {
 };
 
 // `-W` stores the text after `-W`. `-Wl,-rpath,/dir` is therefore `l,-rpath,/dir`.
+// Other `-W` values are compiler warnings (`-Wno-unused`). Clang accepts them
+// on a link line and ignores them. LLD would try to open them as input files.
 void add_forwarded_linker_flags(ArgList &args, const std::vector<std::string> &flags) {
     for (const std::string &flag : flags) {
-        std::string text = flag;
-        if (text.rfind("l,", 0) == 0) {
-            text = text.substr(2);
-            std::stringstream stream(text);
-            std::string part;
-            while (std::getline(stream, part, ',')) {
-                if (!part.empty()) {
-                    args.add(part);
-                }
+        if (flag.rfind("l,", 0) != 0) {
+            continue;
+        }
+        std::stringstream stream(flag.substr(2));
+        std::string part;
+        while (std::getline(stream, part, ',')) {
+            if (!part.empty()) {
+                args.add(part);
             }
-        } else if (!text.empty()) {
-            args.add(text);
         }
     }
 }
@@ -418,9 +417,14 @@ int invoke_elf_link(const std::vector<const char *> &arguments) {
     bool ok = ::lld::elf::link(arguments, llvm::outs(), llvm::errs(),
         /*exitEarly=*/false, /*disableOutput=*/false);
     return ok ? 0 : 1;
-#else
+#elif LLVM_VERSION_MAJOR >= 10
     bool ok = ::lld::elf::link(arguments, /*canExitEarly=*/false,
         llvm::outs(), llvm::errs());
+    return ok ? 0 : 1;
+#else
+    // LLVM 7–9 take one diagnostic stream.
+    bool ok = ::lld::elf::link(arguments, /*canExitEarly=*/false,
+        llvm::errs());
     return ok ? 0 : 1;
 #endif
 }
