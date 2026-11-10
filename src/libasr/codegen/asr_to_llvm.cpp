@@ -19388,8 +19388,16 @@ public:
                             exponent_type = llvm::Type::getInt32Ty(context);
                         }
                     } else if (ASRUtils::is_real(*ASRUtils::expr_type(x.m_right))) {
-                        func_name = (return_kind == 4) ? "llvm.pow.f32" :
-                                     (return_kind == 8) ? "llvm.pow.f64" : "lf_powq";
+                        // lf_powq is binary128. An x86_fp80 payload is not a
+                        // quad value; passing it there returns NaN. Unlike
+                        // llvm.powi, llvm.pow is not overloaded on an integer
+                        // width, so the name is llvm.pow.f80 on every LLVM.
+                        if (base_type->isX86_FP80Ty()) {
+                            func_name = "llvm.pow.f80";
+                        } else {
+                            func_name = (return_kind == 4) ? "llvm.pow.f32" :
+                                         (return_kind == 8) ? "llvm.pow.f64" : "lf_powq";
+                        }
                         right_val = llvm_utils->convert_kind(right_val, base_type); // `llvm.pow` exponent and base kinds have to match.
                         exponent_type = base_type;
                     } else {
