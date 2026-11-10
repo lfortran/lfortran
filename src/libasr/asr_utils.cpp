@@ -6097,17 +6097,6 @@ ASR::asr_t* make_ArraySize_t_util(
             a_v = inner;
         }
     }
-    if( !ASRUtils::is_array(ASRUtils::expr_type(a_v)) ) {
-        // An assumed-rank dummy `x(..)` may be associated with a scalar
-        // actual, an object of rank zero with one element. A bound `size(x)`
-        // of another dummy or of the function result is rebuilt at the call
-        // with the actual in place of `x`, so the operand here can be any
-        // scalar expression: `s`, `m(1, 1)`, `g(s)` or `sum(m)`. Its size is
-        // 1. There is no valid `dim` for rank zero, so `size(x, dim)` is not
-        // conforming then; give it the same value instead of an ArraySize of
-        // a scalar.
-        return ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
-    }
     if ( ASR::is_a<ASR::IntrinsicArrayFunction_t>(*a_v) && for_type ) {
         ASR::IntrinsicArrayFunction_t* af = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(a_v);
         ASR::asr_t* shape_size = array_intrinsic_shape_size(al, a_loc, af,

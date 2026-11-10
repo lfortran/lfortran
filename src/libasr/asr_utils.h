@@ -2283,6 +2283,21 @@ class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionP
         }
     }
 
+    // An assumed-rank dummy `x(..)` may be associated with a scalar actual,
+    // an object of rank zero with one element: `s`, `m(1, 1)`, `g(s)` or
+    // `sum(m)`. A `size(x)` in a bound or a length then becomes the size of
+    // that scalar, 1. There is no valid `dim` for rank zero, so
+    // `size(x, dim)` is not conforming then; it gets the same value instead
+    // of an ArraySize of a scalar.
+    void replace_ArraySize(ASR::ArraySize_t *x) {
+        ASR::BaseExprReplacer<ReplaceFunctionParamWithArg>::replace_ArraySize(x);
+        if (current_expr && !ASRUtils::is_array(ASRUtils::expr_type(x->m_v))) {
+            replacements.push_back({current_expr, *current_expr});
+            *current_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x->base.base.loc, 1, x->m_type));
+        }
+    }
+
     ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t);
 
     void replace_type(ASR::ttype_t* t);
@@ -3314,7 +3329,12 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
 
     void replace_ArraySize(ASR::ArraySize_t* x) {
         ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_ArraySize(x);
-        if( ASR::is_a<ASR::ArraySection_t>(*x->m_v) ) {
+        if( !ASRUtils::is_array(ASRUtils::expr_type(x->m_v)) ) {
+            // The size of a scalar associated with an assumed-rank dummy,
+            // as in ReplaceFunctionParamWithArg::replace_ArraySize.
+            *current_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, x->base.base.loc, 1, x->m_type));
+        } else if( ASR::is_a<ASR::ArraySection_t>(*x->m_v) ) {
             *current_expr = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
                 al, x->base.base.loc, x->m_v, x->m_dim, x->m_type, x->m_value, true));
         }
