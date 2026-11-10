@@ -14,7 +14,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_03 {
     int __1__data_z_w;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_24gpu_derived_component_03(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_24gpu_derived_component_03(
     int* __restrict__ b,
     u& z,
     float* __data_z_w,
@@ -50,7 +50,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_26gpu_derived_component_03_m1s {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_26gpu_derived_component_03_m1s(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_26gpu_derived_component_03_m1s(
     int* __restrict__ a,
     u& self,
     float* __data_self_w,

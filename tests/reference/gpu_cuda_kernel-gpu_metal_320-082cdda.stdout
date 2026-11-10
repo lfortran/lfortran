@@ -15,7 +15,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_17gpu_metal_320_mod10work_class {
     int __1__data_self_op__a;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_17gpu_metal_320_mod10work_class(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_17gpu_metal_320_mod10work_class(
     float* __restrict__ r,
     base_t& self,
     inner_t& self_op_,
@@ -39,7 +39,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_17gpu_metal_320_mod9work_type {
     int __1__data_self_op__a;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_17gpu_metal_320_mod9work_type(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_17gpu_metal_320_mod9work_type(
     float* __restrict__ r,
     base_t& self,
     inner_t& self_op_,

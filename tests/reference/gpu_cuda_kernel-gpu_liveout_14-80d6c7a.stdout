@@ -22,7 +22,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_16gpu_liveout_14_m3run {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_16gpu_liveout_14_m3run(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_16gpu_liveout_14_m3run(
     model_t& m,
     float* __restrict__ x,
     float* __restrict__ y,
@@ -57,7 +57,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_16gpu_liveout_14_m8run_poly {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_16gpu_liveout_14_m8run_poly(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_16gpu_liveout_14_m8run_poly(
     poly_t& m,
     float* __restrict__ x,
     float* __restrict__ y,

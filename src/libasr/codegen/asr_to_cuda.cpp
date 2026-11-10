@@ -77,8 +77,23 @@ struct CudaDialect {
         return "__device__ inline ";
     }
 
-    std::string kernel_qualifier() const {
-        return "extern \"C\" __global__ void ";
+    // The most threads of a block the launches use (the device's
+    // threads_per_block). For a kernel whose threads stream down the rows of
+    // a matrix (streams_strided_rows), also that one block per
+    // multiprocessor is enough: without it, ptxas keeps the kernel to the
+    // registers that let eight blocks share a multiprocessor, and then
+    // cannot keep the loads of an unrolled loop in flight together (a
+    // matrix-vector product ran at a third of the memory bandwidth). Other
+    // kernels keep the occupancy, which a gather needs to hide its loads (a
+    // sparse matrix-vector product lost a quarter of its speed with the
+    // bound). The CPU emulation's host compiler knows no such attribute, and
+    // HIP, tuned on AMD GPUs without it, is left as it was.
+    std::string kernel_qualifier(int64_t threads_per_block,
+            bool few_blocks) const {
+        if (emulate_cpu || hip) return "extern \"C\" __global__ void ";
+        return "extern \"C\" __global__ void __launch_bounds__("
+            + std::to_string(threads_per_block)
+            + (few_blocks ? ", 1" : "") + ") ";
     }
 
     // A kernel parameter is bound by position, not to a named buffer slot.
@@ -153,6 +168,14 @@ struct CudaDialect {
             "}\n\n";
     }
 
+    // Small innermost loops are unrolled by 16, as nvfortran does, so that
+    // a thread keeps that many iterations' loads in flight. The CPU
+    // emulation's host compiler has its own unrolling, and HIP unrolls such
+    // loops four times in the gpu_sequential_unroll pass instead.
+    std::string unroll_pragma() const {
+        return emulate_cpu || hip ? std::string()
+            : std::string("#pragma unroll 16");
+    }
     // A bare literal is double precision, which would pick the wrong
     // overload of an intrinsic taking single precision arguments.
     std::string real_literal(double value, int kind) const {

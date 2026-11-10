@@ -3,6 +3,7 @@
 __device__ inline void fill_device_t_gpu_18(float* a, int n) {
     int k;
     int k__dc;
+    #pragma unroll 16
     for (k__dc = 1; k__dc <= n; k__dc++) {
         a[((int)(k__dc) - (1))] = ((float)k__dc);
     }
@@ -11,7 +12,7 @@ __device__ inline void fill_device_t_gpu_18(float* a, int n) {
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_14gpu_do_loop_02(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_do_loop_02(
     float* __restrict__ x)
 {
     int __flat_idx;

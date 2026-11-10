@@ -4,7 +4,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_12 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_12(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_kernel_source_12(
     int* __restrict__ a,
     __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_12 __scalar_args)
 {
@@ -44,7 +44,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_12 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_12(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_20gpu_kernel_source_12(
     int* __restrict__ a,
     int* __restrict__ b,
     __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_12 __scalar_args)
@@ -86,7 +86,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_12 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_20gpu_kernel_source_12(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_20gpu_kernel_source_12(
     int* __restrict__ c,
     __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_12 __scalar_args)
 {
@@ -131,7 +131,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_12 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3_20gpu_kernel_source_12(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_20gpu_kernel_source_12(
     int* __restrict__ a,
     __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_12 __scalar_args)
 {
@@ -171,7 +171,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_4_20gpu_kernel_source_12 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4_20gpu_kernel_source_12(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_20gpu_kernel_source_12(
     int* __restrict__ a,
     __ScalarArgs___lfortran_gpu_kernel_4_20gpu_kernel_source_12 __scalar_args)
 {
@@ -215,7 +215,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_5_20gpu_kernel_source_12 {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_5_20gpu_kernel_source_12(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_5_20gpu_kernel_source_12(
     int* __restrict__ a,
     int* __restrict__ b,
     __ScalarArgs___lfortran_gpu_kernel_5_20gpu_kernel_source_12 __scalar_args)

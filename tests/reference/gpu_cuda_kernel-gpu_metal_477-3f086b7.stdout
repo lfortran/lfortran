@@ -6,11 +6,13 @@ __device__ inline void work_device_gt_gpu_28(float* a, int n, float& r, float* w
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = ((int)1);
+    #pragma unroll 16
     for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + max(0, n) - 1); __libasr_index_0_++) {
         w[((int)(__libasr_index_0_) - (1))] = (a[((int)(__libasr_index_0_1) - (1))] + ((float)1));
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
+    #pragma unroll 16
     for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, n); __gpu_sum_k++) {
         __gpu_sum_res = (__gpu_sum_res + w[((int)(__gpu_sum_k) - (1))]);
     }
@@ -21,7 +23,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_477 {
     float r;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_477(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_477(
     float* __restrict__ x,
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_477 __scalar_args)
@@ -50,18 +52,20 @@ __device__ inline void work_device_gt_gpu_29(float* a, int n, float& r, float* w
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = ((int)1);
+    #pragma unroll 16
     for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + max(0, n) - 1); __libasr_index_0_++) {
         w[((int)(__libasr_index_0_) - (1))] = (a[((int)(__libasr_index_0_1) - (1))] + ((float)1));
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
+    #pragma unroll 16
     for (__gpu_sum_k = 1; __gpu_sum_k <= max(0, n); __gpu_sum_k++) {
         __gpu_sum_res = (__gpu_sum_res + w[((int)(__gpu_sum_k) - (1))]);
     }
     r = __gpu_sum_res;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_477(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_metal_477(
     float* __restrict__ x,
     float* __restrict__ y)
 {

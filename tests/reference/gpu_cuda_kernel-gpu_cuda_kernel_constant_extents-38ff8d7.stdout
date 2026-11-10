@@ -7,7 +7,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_32gpu_cuda_kernel_constant_extents {
     int __lb_y_1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_32gpu_cuda_kernel_constant_extents(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_32gpu_cuda_kernel_constant_extents(
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0_32gpu_cuda_kernel_constant_extents __scalar_args)
 {
@@ -31,7 +31,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_32gpu_cuda_kernel_constant_extents {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_32gpu_cuda_kernel_constant_extents(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_32gpu_cuda_kernel_constant_extents(
     float* __restrict__ z,
     __ScalarArgs___lfortran_gpu_kernel_1_32gpu_cuda_kernel_constant_extents __scalar_args)
 {
@@ -76,7 +76,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_32gpu_cuda_kernel_constant_extents {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_32gpu_cuda_kernel_constant_extents(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_32gpu_cuda_kernel_constant_extents(
     float* __restrict__ w,
     __ScalarArgs___lfortran_gpu_kernel_2_32gpu_cuda_kernel_constant_extents __scalar_args)
 {
@@ -117,7 +117,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3_32gpu_cuda_kernel_constant_extents {
     int __lb_s_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3_32gpu_cuda_kernel_constant_extents(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_32gpu_cuda_kernel_constant_extents(
     int* __restrict__ s,
     int* __restrict__ v,
     __ScalarArgs___lfortran_gpu_kernel_3_32gpu_cuda_kernel_constant_extents __scalar_args)
@@ -168,6 +168,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3_32gpu_cuda_kernel_constant_ex
         j__dc3 = (__flat_idx + 1);
         __gpu_accumulator = (__gpu_accumulator + v[((int)(i__dc3) - (1)) + (10 * ((int)(j__dc3) - (1)))]);
     }
+    #pragma unroll 16
     for (__gpu_iteration = (((blockIdx.x * blockDim.x) + threadIdx.x) + (((__gpu_iterations - ((blockIdx.x * blockDim.x) + threadIdx.x)) / (4 * __gpu_stride)) * (4 * __gpu_stride))); __gpu_stride > 0 ? __gpu_iteration <= (__gpu_iterations - 1) : __gpu_iteration >= (__gpu_iterations - 1); __gpu_iteration += __gpu_stride) {
         __flat_idx = __gpu_iteration;
         i__dc3 = ((__flat_idx - ((__flat_idx / ((10 - 1) + 1)) * ((10 - 1) + 1))) + 1);
@@ -183,7 +184,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_4_32gpu_cuda_kernel_constant_extents {
     int __loop_end_1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_4_32gpu_cuda_kernel_constant_extents(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_32gpu_cuda_kernel_constant_extents(
     int* __restrict__ v,
     __ScalarArgs___lfortran_gpu_kernel_4_32gpu_cuda_kernel_constant_extents __scalar_args)
 {

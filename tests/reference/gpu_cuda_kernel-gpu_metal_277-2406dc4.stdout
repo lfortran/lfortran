@@ -4,6 +4,7 @@ __device__ inline float _lcompilers_dot_product_gpu_57(float* matrix_a, int __1m
     float result{};
     int i;
     result =   0.00000000000000000e+00f;
+    #pragma unroll 16
     for (i = ((int)1); i <= ((((int)__1matrix_a) + ((int)1)) - 1); i++) {
         result = (result + (matrix_a[((int)(i) - (1))] * matrix_b[(__stride_matrix_b_dim1 * ((int)(i) - (1)))]));
     }
@@ -21,6 +22,7 @@ __device__ inline void face_values_gpu_18(float* w, int __1w, float* c, int __1c
     __1__libasr_index_ = 1;
     __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = (c[((int)(end_point) - (1))] * w[((int)(end_point) - (1))]);
     __1__libasr_index_ = (__1__libasr_index_ + 1);
+    #pragma unroll 16
     for (lfortran_implied_do_row = end_point; lfortran_implied_do_row <= (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1); lfortran_implied_do_row++) {
         __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(lfortran_implied_do_row) - (1));
         __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = _lcompilers_dot_product_gpu_57(w, __1w, __libasr_created__intrinsic_array_function_DotProduct, ((((((lfortran_implied_do_row + (1 * ((int)__1w))) - 1)) - (lfortran_implied_do_row)) / (1)) + 1), 1);
@@ -29,6 +31,7 @@ __device__ inline void face_values_gpu_18(float* w, int __1w, float* c, int __1c
     __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = (c[((int)((1 * ((int)__1c))) - (1))] * w[((int)(end_point) - (1))]);
     __1__libasr_index_ = (__1__libasr_index_ + 1);
     __libasr_index_0_1 = 1;
+    #pragma unroll 16
     for (__libasr_index_0_ = ((int)1); __libasr_index_0_ <= ((((int)((int)((1 * (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1)) + 2))) + ((int)1)) - 1); __libasr_index_0_++) {
         faces[((int)(__libasr_index_0_) - (1))] = __libasr__created__var__3__array_constructor_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -46,6 +49,7 @@ __device__ inline void pair_values_device_t_gpu_74(float x, float* pair) {
     __libasr__created__var__4__array_constructor_[((int)(__1__libasr_index_) - (1))] = (((float)2) * x);
     __1__libasr_index_ = (__1__libasr_index_ + 1);
     __libasr_index_0_1 = 1;
+    #pragma unroll 16
     for (__libasr_index_0_ = ((int)1); __libasr_index_0_ <= ((((int)2) + ((int)1)) - 1); __libasr_index_0_++) {
         pair[((int)(__libasr_index_0_) - (1))] = __libasr__created__var__4__array_constructor_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -59,7 +63,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_277 {
     int __workspace_extent3;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_277(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_277(
     float* __restrict__ c,
     float* __restrict__ out,
     float* __restrict__ pairs,
@@ -96,15 +100,18 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_277(
         __libasr_created__result_metadata_ = ((int)((1 * (((1 * ((int)6)) - (1 * ((int)2))) + 1)) + 2));
         face_values_gpu_18(w, 2, c, 6, __libasr_created__subroutine_from_function_, __libasr__created__var__3__array_constructor_);
         __libasr_index_0_3 = 1;
+        #pragma unroll 16
         for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + ((int)((1 * (((1 * ((int)6)) - (1 * ((int)2))) + 1)) + 2)) - 1); __libasr_index_0_2++) {
             __libasr_created__function_call_face_values[((int)(__libasr_index_0_2) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_3) - (1))];
             __libasr_index_0_3 = (__libasr_index_0_3 + 1);
         }
         __libasr_index_0_1 = 1;
+        #pragma unroll 16
         for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + ((int)((1 * (((1 * ((int)6)) - (1 * ((int)2))) + 1)) + 2)) - 1); __libasr_index_0_++) {
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_face_values[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
+        #pragma unroll 16
         for (__gpu_sec_i = 1; __gpu_sec_i <= ((((int)7) + ((int)1)) - 1); __gpu_sec_i++) {
             out[((int)(__gpu_sec_i) - (1)) + (7 * ((int)(j__dc) - (1)))] = (__gpu_call_result[((int)((1 + (__gpu_sec_i - 1))) - (1))] * ((float)j__dc));
         }
@@ -119,15 +126,18 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_277(
         int __libasr_index_0_3;
         pair_values_device_t_gpu_74(((float)j__dc), __libasr_created__subroutine_from_function_);
         __libasr_index_0_3 = 1;
+        #pragma unroll 16
         for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + 2 - 1); __libasr_index_0_2++) {
             __libasr_created__function_call_pair_values[((int)(__libasr_index_0_2) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_3) - (1))];
             __libasr_index_0_3 = (__libasr_index_0_3 + 1);
         }
         __libasr_index_0_1 = 1;
+        #pragma unroll 16
         for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + 2 - 1); __libasr_index_0_++) {
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_pair_values[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
+        #pragma unroll 16
         for (__gpu_sec_i1 = 1; __gpu_sec_i1 <= ((((int)2) + ((int)1)) - 1); __gpu_sec_i1++) {
             pairs[((int)(__gpu_sec_i1) - (1)) + (2 * ((int)(j__dc) - (1)))] = __gpu_call_result[((int)(__gpu_sec_i1) - (1))];
         }
@@ -138,6 +148,7 @@ __device__ inline float _lcompilers_dot_product1_gpu_59(float* matrix_a, int __1
     float result{};
     int i;
     result =   0.00000000000000000e+00f;
+    #pragma unroll 16
     for (i = ((int)1); i <= ((((int)__1matrix_a) + ((int)1)) - 1); i++) {
         result = (result + (matrix_a[((int)(i) - (1))] * matrix_b[(__stride_matrix_b_dim1 * ((int)(i) - (1)))]));
     }
@@ -155,6 +166,7 @@ __device__ inline void face_values_gpu_43(float* w, int __1w, float* c, int __1c
     __1__libasr_index_ = 1;
     __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = (c[((int)(end_point) - (1))] * w[((int)(end_point) - (1))]);
     __1__libasr_index_ = (__1__libasr_index_ + 1);
+    #pragma unroll 16
     for (lfortran_implied_do_row = end_point; lfortran_implied_do_row <= (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1); lfortran_implied_do_row++) {
         __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(lfortran_implied_do_row) - (1));
         __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = _lcompilers_dot_product1_gpu_59(w, __1w, __libasr_created__intrinsic_array_function_DotProduct, ((((((lfortran_implied_do_row + (1 * ((int)__1w))) - 1)) - (lfortran_implied_do_row)) / (1)) + 1), 1);
@@ -163,6 +175,7 @@ __device__ inline void face_values_gpu_43(float* w, int __1w, float* c, int __1c
     __libasr__created__var__3__array_constructor_[((int)(__1__libasr_index_) - (1))] = (c[((int)((1 * ((int)__1c))) - (1))] * w[((int)(end_point) - (1))]);
     __1__libasr_index_ = (__1__libasr_index_ + 1);
     __libasr_index_0_1 = 1;
+    #pragma unroll 16
     for (__libasr_index_0_ = ((int)1); __libasr_index_0_ <= ((((int)((int)((1 * (((1 * ((int)__1c)) - (1 * ((int)__1w))) + 1)) + 2))) + ((int)1)) - 1); __libasr_index_0_++) {
         faces[((int)(__libasr_index_0_) - (1))] = __libasr__created__var__3__array_constructor_[((int)(__libasr_index_0_1) - (1))];
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
@@ -180,7 +193,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_15gpu_metal_277_m13check_runtime {
     int __workspace_extent3;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_15gpu_metal_277_m13check_runtime(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_15gpu_metal_277_m13check_runtime(
     float* __restrict__ c,
     float* __restrict__ out,
     float* __restrict__ w,
@@ -217,15 +230,18 @@ extern "C" __global__ void __lfortran_gpu_kernel_1_15gpu_metal_277_m13check_runt
         __libasr_created__result_metadata_ = ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2));
         face_values_gpu_43(w, 2, c, __dim_c_0, __libasr_created__subroutine_from_function_, __libasr__created__var__3__array_constructor_);
         __libasr_index_0_3 = 1;
+        #pragma unroll 16
         for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2)) - 1); __libasr_index_0_2++) {
             __libasr_created__function_call_face_values[((int)(__libasr_index_0_2) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_3) - (1))];
             __libasr_index_0_3 = (__libasr_index_0_3 + 1);
         }
         __libasr_index_0_1 = 1;
+        #pragma unroll 16
         for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2)) - 1); __libasr_index_0_++) {
             __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_face_values[((int)(__libasr_index_0_1) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
+        #pragma unroll 16
         for (__gpu_sec_i = 1; __gpu_sec_i <= ((((int)__dim_out_0) + ((int)1)) - 1); __gpu_sec_i++) {
             out[((int)(__gpu_sec_i) - (1)) + (__dim_out_0 * ((int)(j__dc) - (1)))] = (__gpu_call_result[((int)((1 + (__gpu_sec_i - 1))) - (1))] * ((float)j__dc));
         }

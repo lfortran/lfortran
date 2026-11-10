@@ -29,7 +29,10 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
         }
         src << "};\n\n";
     }
-    src << dialect.kernel_qualifier() << name << "(\n";
+    src << dialect.kernel_qualifier(
+            gpu_device_capabilities(co.po).threads_per_block,
+            streams_strided_rows(kernel))
+        << name << "(\n";
     kernel_params.clear();
     int slot = 0;
     bool previous = false;

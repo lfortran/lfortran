@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_33gpu_cuda_kernel_parameter_extents(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_33gpu_cuda_kernel_parameter_extents(
     int* __restrict__ x)
 {
     int __flat_idx;
@@ -17,7 +17,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_33gpu_cuda_kernel_parameter_extents 
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_33gpu_cuda_kernel_parameter_extents(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_33gpu_cuda_kernel_parameter_extents(
     int* __restrict__ v,
     __ScalarArgs___lfortran_gpu_kernel_1_33gpu_cuda_kernel_parameter_extents __scalar_args)
 {
@@ -59,7 +59,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_33gpu_cuda_kernel_parameter_extents 
     int __lb_s_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_33gpu_cuda_kernel_parameter_extents(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_33gpu_cuda_kernel_parameter_extents(
     int* __restrict__ s,
     int* __restrict__ v,
     __ScalarArgs___lfortran_gpu_kernel_2_33gpu_cuda_kernel_parameter_extents __scalar_args)
@@ -111,6 +111,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2_33gpu_cuda_kernel_parameter_e
         j__dc1 = (__flat_idx + 2);
         __gpu_accumulator = (__gpu_accumulator + v[((int)(i__dc2) - (lo)) + (34 * ((int)(j__dc1) - (1)))]);
     }
+    #pragma unroll 16
     for (__gpu_iteration = (((blockIdx.x * blockDim.x) + threadIdx.x) + (((__gpu_iterations - ((blockIdx.x * blockDim.x) + threadIdx.x)) / (4 * __gpu_stride)) * (4 * __gpu_stride))); __gpu_stride > 0 ? __gpu_iteration <= (__gpu_iterations - 1) : __gpu_iteration >= (__gpu_iterations - 1); __gpu_iteration += __gpu_stride) {
         __flat_idx = __gpu_iteration;
         i__dc2 = ((__flat_idx - ((__flat_idx / ((29 - -2) + 1)) * ((29 - -2) + 1))) + -2);
@@ -121,7 +122,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2_33gpu_cuda_kernel_parameter_e
     s[((int)((__gpu_slot + 1)) - (__lb_s_0))] = (s[((int)((__gpu_slot + 1)) - (__lb_s_0))] + __gpu_accumulator);
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_3_33gpu_cuda_kernel_parameter_extents(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_33gpu_cuda_kernel_parameter_extents(
     long* __restrict__ w)
 {
     long __flat_idx;
@@ -135,7 +136,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3_33gpu_cuda_kernel_parameter_e
     w[((int)((((l__dc - big) + ((long)2))) - (1)))] = l__dc;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_4_33gpu_cuda_kernel_parameter_extents(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_33gpu_cuda_kernel_parameter_extents(
     int* __restrict__ x)
 {
     long __flat_idx;

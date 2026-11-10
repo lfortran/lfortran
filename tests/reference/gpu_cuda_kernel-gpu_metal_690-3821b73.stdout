@@ -12,7 +12,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_690 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_690(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_690(
     float* __restrict__ v,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_690 __scalar_args)
 {
@@ -67,7 +67,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_690 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_690(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_metal_690(
     float* __restrict__ w,
     __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_690 __scalar_args)
 {
@@ -122,7 +122,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_690 {
     long __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_690(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_13gpu_metal_690(
     float* __restrict__ u,
     __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_690 __scalar_args)
 {
@@ -188,7 +188,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3_13gpu_metal_690 {
     long __lb_z_1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_690(
+extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_3_13gpu_metal_690(
     float* __restrict__ r,
     float* __restrict__ rt,
     float* __restrict__ s,
@@ -235,37 +235,46 @@ extern "C" __global__ void __lfortran_gpu_kernel_3_13gpu_metal_690(
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc = (__flat_idx + 1);
+    #pragma unroll 16
     for (__gpu_sec_i = ((long)1); __gpu_sec_i <= ((((lo8 + ((long)6)) - lo8) / (big + ((long)1))) + ((long)1)); __gpu_sec_i++) {
         v[((long)((lo8 + ((__gpu_sec_i - ((long)1)) * (big + ((long)1))))) - (__lb_v_0)) + (__dim_v_0 * ((long)((unsigned int)((j__dc) - (__lb_v_1)))))] = ((float)5);
     }
+    #pragma unroll 16
     for (__gpu_sec_i1 = ((long)1); __gpu_sec_i1 <= (((lo8 + ((long)3)) - (lo8 + big)) + ((long)1)); __gpu_sec_i1++) {
         v[((long)(((lo8 + big) + (__gpu_sec_i1 - ((long)1)))) - (__lb_v_0)) + (__dim_v_0 * ((long)((unsigned int)((j__dc) - (__lb_v_1)))))] = ((float)9);
     }
+    #pragma unroll 16
     for (__gpu_sec_i2 = ((long)1); __gpu_sec_i2 <= ((((lo8 + ((long)6)) - lo8) / (big + ((long)1))) + ((long)1)); __gpu_sec_i2++) {
         w[((long)((lo8 + ((__gpu_sec_i2 - ((long)1)) * (big + ((long)1))))) - (__lb_w_0)) + (__dim_w_0 * ((long)((unsigned int)((j__dc) - (__lb_w_1)))))] = (z[((long)(((lo8 + ((long)6)) + ((__gpu_sec_i2 - ((long)1)) * ((-(big)) - ((long)1))))) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc) - (__lb_z_1)))))] + ((float)1));
     }
+    #pragma unroll 16
     for (__gpu_sec_i3 = ((long)1); __gpu_sec_i3 <= ((((((long)__dim_u_0) + ((long)__lb_u_0)) - ((long)1)) - ((long)__lb_u_0)) + ((long)1)); __gpu_sec_i3++) {
         u[((long)((((long)__lb_u_0) + (__gpu_sec_i3 - ((long)1)))) - (__lb_u_0)) + (__dim_u_0 * ((long)((unsigned int)((j__dc) - (__lb_u_1)))))] = (z[((long)((((long)__lb_z_0) + (__gpu_sec_i3 - ((long)1)))) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc) - (__lb_z_1)))))] * ((float)2));
     }
+    #pragma unroll 16
     for (__gpu_sec_i4 = ((long)1); __gpu_sec_i4 <= ((((lo8 + ((long)5)) - (lo8 + ((long)1))) / ((long)2)) + ((long)1)); __gpu_sec_i4++) {
         u[((long)(((lo8 + ((long)1)) + ((__gpu_sec_i4 - ((long)1)) * ((long)2)))) - (__lb_u_0)) + (__dim_u_0 * ((long)((unsigned int)((j__dc) - (__lb_u_1)))))] = (z[((long)(((lo8 + ((long)6)) + ((__gpu_sec_i4 - ((long)1)) * ((long)-2)))) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc) - (__lb_z_1)))))] + ((float)100));
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
+    #pragma unroll 16
     for (__gpu_sum_k = ((long)1); __gpu_sum_k <= ((((lo8 + ((long)6)) - lo8) / (big + ((long)1))) + ((long)1)); __gpu_sum_k++) {
         __gpu_sum_res = (__gpu_sum_res + (z[((long)((lo8 + ((__gpu_sum_k - ((long)1)) * (big + ((long)1))))) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc) - (__lb_z_1)))))] * ((float)2)));
     }
     s[((long)((unsigned int)((j__dc) - (1))))] = __gpu_sum_res;
     __gpu_sum_res1 =   0.00000000000000000e+00f;
+    #pragma unroll 16
     for (__gpu_sum_k1 = ((long)1); __gpu_sum_k1 <= (((lo8 + ((long)3)) - (lo8 + big)) + ((long)1)); __gpu_sum_k1++) {
         __gpu_sum_res1 = (__gpu_sum_res1 + (z[((long)(((lo8 + big) + (__gpu_sum_k1 - ((long)1)))) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc) - (__lb_z_1)))))] * ((float)2)));
     }
     t[((long)((unsigned int)((j__dc) - (1))))] = __gpu_sum_res1;
     __gpu_sum_res2 =   0.00000000000000000e+00f;
+    #pragma unroll 16
     for (__gpu_sum_k2 = ((long)1); __gpu_sum_k2 <= __dim_r_0; __gpu_sum_k2++) {
         __gpu_sum_res2 = (__gpu_sum_res2 + r[((long)((((long)__lb_r_0) + (__gpu_sum_k2 - ((long)1)))) - (__lb_r_0))]);
     }
     __gpu_sum_tmp = __gpu_sum_res2;
     rt[((long)((unsigned int)((j__dc) - (1))))] = (((float)j__dc) * __gpu_sum_tmp);
+    #pragma unroll 16
     for (__gpu_sec_i5 = ((long)1); __gpu_sec_i5 <= ((((((long)__dim_z_0) + ((long)__lb_z_0)) - ((long)1)) - ((long)__lb_z_0)) + ((long)1)); __gpu_sec_i5++) {
         z[((long)((((long)__lb_z_0) + (__gpu_sec_i5 - ((long)1)))) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc) - (__lb_z_1)))))] = (z[((long)((((long)__lb_z_0) + (__gpu_sec_i5 - ((long)1)))) - (__lb_z_0)) + (__dim_z_0 * ((long)((unsigned int)((j__dc) - (__lb_z_1)))))] + (r[((long)((((long)__lb_r_0) + (__gpu_sec_i5 - ((long)1)))) - (__lb_r_0))] * ((float)j__dc)));
     }

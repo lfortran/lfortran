@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_455(
+extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_13gpu_metal_455(
     float* __restrict__ b,
     float* __restrict__ c,
     float* __restrict__ d,
@@ -42,6 +42,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_455(
     p__dc = (__flat_idx + 1);
     for (__gpu_mm_i = 1; __gpu_mm_i <= n; __gpu_mm_i++) {
         __gpu_mm_acc =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_mm_k = 1; __gpu_mm_k <= m; __gpu_mm_k++) {
             __gpu_mm_acc = (__gpu_mm_acc + (w[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(__gpu_mm_k) - (1)))] * x[((int)(__gpu_mm_k) - (1)) + (4 * ((int)(p__dc) - (1)))]));
         }
@@ -49,6 +50,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_455(
     }
     for (__gpu_mm_i1 = 1; __gpu_mm_i1 <= n; __gpu_mm_i1++) {
         __gpu_mm_acc1 =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_mm_k1 = 1; __gpu_mm_k1 <= m; __gpu_mm_k1++) {
             __gpu_mm_acc1 = (__gpu_mm_acc1 + (w[((int)(__gpu_mm_i1) - (1)) + (3 * ((int)(__gpu_mm_k1) - (1)))] * x0[((int)((0 + (__gpu_mm_k1 - 1))) - (0)) + (4 * ((int)(p__dc) - (1)))]));
         }
@@ -56,6 +58,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_455(
     }
     for (__gpu_mm_i2 = 1; __gpu_mm_i2 <= m; __gpu_mm_i2++) {
         __gpu_mm_acc2 =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_mm_k2 = 1; __gpu_mm_k2 <= n; __gpu_mm_k2++) {
             __gpu_mm_acc2 = (__gpu_mm_acc2 + (w[((int)(__gpu_mm_k2) - (1)) + (3 * ((int)(__gpu_mm_i2) - (1)))] * z[((int)(__gpu_mm_k2) - (1)) + (3 * ((int)(p__dc) - (1)))]));
         }
@@ -63,6 +66,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_455(
     }
     for (__gpu_mm_j = 1; __gpu_mm_j <= m; __gpu_mm_j++) {
         __gpu_mm_acc3 =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_mm_k3 = 1; __gpu_mm_k3 <= n; __gpu_mm_k3++) {
             __gpu_mm_acc3 = (__gpu_mm_acc3 + (z[((int)(__gpu_mm_k3) - (1)) + (3 * ((int)(p__dc) - (1)))] * w[((int)(__gpu_mm_k3) - (1)) + (3 * ((int)(__gpu_mm_j) - (1)))]));
         }
@@ -71,6 +75,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_455(
     for (__gpu_mm_i3 = 1; __gpu_mm_i3 <= n; __gpu_mm_i3++) {
         for (__gpu_mm_j1 = 1; __gpu_mm_j1 <= n; __gpu_mm_j1++) {
             __gpu_mm_acc4 =   0.00000000000000000e+00f;
+            #pragma unroll 16
             for (__gpu_mm_k4 = 1; __gpu_mm_k4 <= m; __gpu_mm_k4++) {
                 __gpu_mm_acc4 = (__gpu_mm_acc4 + (w[((int)(__gpu_mm_i3) - (1)) + (3 * ((int)(__gpu_mm_k4) - (1)))] * w[((int)(__gpu_mm_j1) - (1)) + (3 * ((int)(__gpu_mm_k4) - (1)))]));
             }
@@ -79,6 +84,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_455(
     }
     for (__gpu_mm_i4 = 1; __gpu_mm_i4 <= n; __gpu_mm_i4++) {
         __gpu_mm_acc5 =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_mm_k5 = 1; __gpu_mm_k5 <= m; __gpu_mm_k5++) {
             __gpu_mm_acc5 = (__gpu_mm_acc5 + (w[((int)(__gpu_mm_i4) - (1)) + (3 * ((int)(__gpu_mm_k5) - (1)))] * x[((int)(__gpu_mm_k5) - (1)) + (4 * ((int)(p__dc) - (1)))]));
         }

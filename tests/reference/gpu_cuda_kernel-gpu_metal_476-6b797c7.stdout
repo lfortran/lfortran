@@ -13,7 +13,7 @@ __device__ inline T __lfortran_lane_reduce(T v, int lanes) {
     return v;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_476(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_476(
     float* __restrict__ y)
 {
     int __flat_idx;
@@ -38,7 +38,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_47616captured_private {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_47616captured_private(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_metal_47616captured_private(
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_47616captured_private __scalar_args)
 {
@@ -64,11 +64,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_47616captured_pri
             if ((__gpu_lane != 0)) {
                 __gpu_sum_res =   0.00000000000000000e+00f;
             }
+            #pragma unroll 16
             for (__gpu_sum_k = (1 + (((int)__gpu_lane) * 1)); __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k += (1 * ((int)__gpu_lanes))) {
                 __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
             }
             __gpu_sum_res = __lfortran_lane_reduce<0>(__gpu_sum_res, __gpu_lanes_n);
         } else {
+            #pragma unroll 16
             for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k++) {
                 __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
             }
@@ -90,7 +92,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_47615runtime_private {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_47615runtime_private(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_13gpu_metal_47615runtime_private(
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_2_13gpu_metal_47615runtime_private __scalar_args)
 {
@@ -117,11 +119,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_2_13gpu_metal_47615runtime_priv
             if ((__gpu_lane != 0)) {
                 __gpu_sum_res =   0.00000000000000000e+00f;
             }
+            #pragma unroll 16
             for (__gpu_sum_k = (1 + (((int)__gpu_lane) * 1)); __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k += (1 * ((int)__gpu_lanes))) {
                 __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
             }
             __gpu_sum_res = __lfortran_lane_reduce<0>(__gpu_sum_res, __gpu_lanes_n);
         } else {
+            #pragma unroll 16
             for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_private_shape; __gpu_sum_k++) {
                 __gpu_sum_res = (__gpu_sum_res + ((float)j__dc1));
             }

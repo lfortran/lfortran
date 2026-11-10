@@ -13,7 +13,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_316 {
     int __lb_p_2;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_316(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_316(
     t* __restrict__ p,
     float* __restrict__ __data_p_v,
     int* __restrict__ __offsets_p_v,
@@ -45,7 +45,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_316 {
     int __lb_p_2;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_316(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_13gpu_metal_316(
     t* p,
     float* __data_p_v,
     int* __offsets_p_v,

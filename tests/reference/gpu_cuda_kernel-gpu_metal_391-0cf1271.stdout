@@ -2,6 +2,7 @@
 
 __device__ inline void ramp_gpu_17(float x, int n, float* y) {
     int j;
+    #pragma unroll 16
     for (j = 1; j <= n; j++) {
         y[((int)(j) - (1))] = (x + ((float)j));
     }
@@ -11,7 +12,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_391 {
     int __gpu_heap_cap_r4;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_391(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_391(
     float* __restrict__ r,
     float* __restrict__ x,
     float* __restrict__ __gpu_heap_r4,
@@ -81,11 +82,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_391(
             }
         }
         __libasr_index_0_1 = __gpu_heap___libasr_created__subroutine_from_function__lb1;
+        #pragma unroll 16
         for (__libasr_index_0_ = __gpu_heap___gpu_call_result_lb1; __libasr_index_0_ <= ((__gpu_heap___gpu_call_result_lb1 + __gpu_heap___gpu_call_result_n1) - 1); __libasr_index_0_++) {
             __gpu_heap_r4[((int)(((__gpu_heap___gpu_call_result_base + 1) + (__libasr_index_0_ - __gpu_heap___gpu_call_result_lb1))) - (1))] = __gpu_heap_r4[((int)(((__gpu_heap___libasr_created__subroutine_from_function__base + 1) + (__libasr_index_0_1 - __gpu_heap___libasr_created__subroutine_from_function__lb1))) - (1))];
             __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
+        #pragma unroll 16
         for (__gpu_sum_k = 1; __gpu_sum_k <= __gpu_heap___gpu_call_result_n1; __gpu_sum_k++) {
             __gpu_sum_res = (__gpu_sum_res + __gpu_heap_r4[((int)(((__gpu_heap___gpu_call_result_base + 1) + ((__gpu_heap___gpu_call_result_lb1 + (__gpu_sum_k - 1)) - __gpu_heap___gpu_call_result_lb1))) - (1))]);
         }

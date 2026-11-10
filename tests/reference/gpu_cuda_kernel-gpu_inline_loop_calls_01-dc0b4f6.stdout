@@ -26,7 +26,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_26gpu_inline_loop_calls_01_m4dots {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_26gpu_inline_loop_calls_01_m4dots(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_26gpu_inline_loop_calls_01_m4dots(
     float* __restrict__ t,
     float* __restrict__ w,
     float* __restrict__ x,
@@ -61,12 +61,14 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_26gpu_inline_loop_calls_01_m4
                 __weighted_total =   0.00000000000000000e+00f;
             }
             const int __lfortran_end_0 = ((((((((int)__dim_x_0) + ((int)__lb_x_0)) - 1)) - (((int)__lb_x_0))) / (1)) + 1);
+            #pragma unroll 16
             for (__weighted_k = (1 + (((int)__gpu_lane) * 1)); __weighted_k <= __lfortran_end_0; __weighted_k += (1 * ((int)__gpu_lanes))) {
                 __weighted_total = (__weighted_total + (__libasr_created__function_call_weighted[((int)((__weighted_k + (1 - 1))) - (1))] * w[((int)((__weighted_k + (((int)__lb_w_0) - 1))) - (__lb_w_0))]));
             }
             __weighted_total = __lfortran_lane_reduce<0>(__weighted_total, __gpu_lanes_n);
         } else {
             const int __lfortran_end_1 = ((((((((int)__dim_x_0) + ((int)__lb_x_0)) - 1)) - (((int)__lb_x_0))) / (1)) + 1);
+            #pragma unroll 16
             for (__weighted_k = 1; __weighted_k <= __lfortran_end_1; __weighted_k++) {
                 __weighted_total = (__weighted_total + (__libasr_created__function_call_weighted[((int)((__weighted_k + (1 - 1))) - (1))] * w[((int)((__weighted_k + (((int)__lb_w_0) - 1))) - (__lb_w_0))]));
             }
@@ -99,7 +101,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m10scale_
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m10scale_rows(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m10scale_rows(
     float* __restrict__ s,
     int16_t* __restrict__ x,
     float* __restrict__ y,
@@ -141,6 +143,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m1
                     __sum_squares___gpu_sum_res =   0.00000000000000000e+00f;
                 }
                 const int __lfortran_end_2 = ((((((((int)__dim_x_0) + ((int)__lb_x_0)) - 1)) - (((int)__lb_x_0))) / (1)) + 1);
+                #pragma unroll 16
                 for (__sum_squares___gpu_sum_k = (1 + (((int)__gpu_lane) * 1)); __sum_squares___gpu_sum_k <= __lfortran_end_2; __sum_squares___gpu_sum_k += (1 * ((int)__gpu_lanes))) {
                     __gpu_power_base = widen_gpu_30(__libasr_created__function_call_sum_squares[((int)(((1 + (__sum_squares___gpu_sum_k - 1)) + (1 - 1))) - (1))]);
                     __sum_squares___gpu_sum_res = (__sum_squares___gpu_sum_res + (__gpu_power_base * __gpu_power_base));
@@ -148,6 +151,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m1
                 __sum_squares___gpu_sum_res = __lfortran_lane_reduce<0>(__sum_squares___gpu_sum_res, __gpu_lanes_n);
             } else {
                 const int __lfortran_end_3 = ((((((((int)__dim_x_0) + ((int)__lb_x_0)) - 1)) - (((int)__lb_x_0))) / (1)) + 1);
+                #pragma unroll 16
                 for (__sum_squares___gpu_sum_k = 1; __sum_squares___gpu_sum_k <= __lfortran_end_3; __sum_squares___gpu_sum_k++) {
                     __gpu_power_base = widen_gpu_30(__libasr_created__function_call_sum_squares[((int)(((1 + (__sum_squares___gpu_sum_k - 1)) + (1 - 1))) - (1))]);
                     __sum_squares___gpu_sum_res = (__sum_squares___gpu_sum_res + (__gpu_power_base * __gpu_power_base));

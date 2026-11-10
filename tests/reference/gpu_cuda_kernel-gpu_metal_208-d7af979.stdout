@@ -5,7 +5,7 @@ struct label_t {
     float scale;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_208(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_208(
     float* __restrict__ a,
     label_t& m)
 {

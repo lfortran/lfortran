@@ -37,7 +37,7 @@ __device__ inline int _lcompilers_ibits_i323_gpu_32(int x, int y, int z) {
     return _lcompilers_ibits_i323;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_18gpu_lanes_calls_01(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_18gpu_lanes_calls_01(
     int* __restrict__ codes,
     int* __restrict__ w)
 {
@@ -51,6 +51,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_18gpu_lanes_calls_01(
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     r__dc = (__flat_idx + 1);
+    #pragma unroll 16
     for (__gpu_residue_group = 1; __gpu_residue_group <= (k - 3); __gpu_residue_group += 4) {
         __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc) - (1)))];
         codes[((int)(__gpu_residue_group) - (1)) + (512 * ((int)(r__dc) - (1)))] = _lcompilers_ibits_i32_gpu_29(__gpu_residue_element, (8 * 0), 8);
@@ -88,7 +89,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_18gpu_lanes_calls_01 {
     int __gpu_lanes;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_18gpu_lanes_calls_01(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_18gpu_lanes_calls_01(
     int* __restrict__ total,
     int* __restrict__ w,
     __ScalarArgs___lfortran_gpu_kernel_1_18gpu_lanes_calls_01 __scalar_args)
@@ -116,6 +117,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1_18gpu_lanes_calls_01(
                 if ((__gpu_lane != 0)) {
                     s = 0;
                 }
+                #pragma unroll 16
                 for (__gpu_residue_group = (1 + (((int)__gpu_lane) * 4)); __gpu_residue_group <= (k - 3); __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
                     __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1) - (1)))];
                     s = (s + _lcompilers_ibits_i324_gpu_33(__gpu_residue_element, (8 * 0), 8));
@@ -125,6 +127,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1_18gpu_lanes_calls_01(
                 }
                 s = __lfortran_lane_reduce<0>(s, __gpu_lanes_n);
             } else {
+                #pragma unroll 16
                 for (__gpu_residue_group = 1; __gpu_residue_group <= (k - 3); __gpu_residue_group += 4) {
                     __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1) - (1)))];
                     s = (s + _lcompilers_ibits_i324_gpu_33(__gpu_residue_element, (8 * 0), 8));
@@ -145,7 +148,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_18gpu_lanes_calls_01 {
     long offset;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_18gpu_lanes_calls_01(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_18gpu_lanes_calls_01(
     float* __restrict__ o,
     float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_2_18gpu_lanes_calls_01 __scalar_args)
@@ -163,6 +166,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2_18gpu_lanes_calls_01(
     {
         long position;
         position = (offset + ((long)(r__dc2 - 1)));
+        #pragma unroll 16
         for (d = 1; d <= k; d++) {
             o[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))] = ((((float)2) * q[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))]) + ((float)position));
         }

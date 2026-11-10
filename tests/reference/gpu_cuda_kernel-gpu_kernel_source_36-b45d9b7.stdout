@@ -5,7 +5,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_36 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_36(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_kernel_source_36(
     float* __restrict__ x,
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_36 __scalar_args)

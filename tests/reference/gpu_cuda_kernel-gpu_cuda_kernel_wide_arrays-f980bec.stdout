@@ -8,7 +8,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_arrays {
     long __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_arrays(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_arrays(
     char* __restrict__ a,
     __ScalarArgs___lfortran_gpu_kernel_0_27gpu_cuda_kernel_wide_arrays __scalar_args)
 {
@@ -36,7 +36,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_arrays {
     int __tiled;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_arrays(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_arrays(
     char* __restrict__ b,
     __ScalarArgs___lfortran_gpu_kernel_1_27gpu_cuda_kernel_wide_arrays __scalar_args)
 {

@@ -5,7 +5,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_7101s {
     int __workspace_extent;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_7101s(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_7101s(
     float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0_13gpu_metal_7101s __scalar_args,
     float* __restrict__ __workspace_2)
@@ -22,6 +22,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_7101s(
     j__dc = (__flat_idx + 1);
     {
         float* t = ((__workspace_extent) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
+        #pragma unroll 16
         for (__gpu_bc_i = 1; __gpu_bc_i <= max(0, m); __gpu_bc_i++) {
             t[((int)(__gpu_bc_i) - (1))] = ((float)j__dc);
         }
@@ -36,7 +37,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_7101s {
     int __workspace_extent1;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_7101s(
+extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_1_13gpu_metal_7101s(
     float* __restrict__ z,
     __ScalarArgs___lfortran_gpu_kernel_1_13gpu_metal_7101s __scalar_args,
     float* __restrict__ __workspace_2)
@@ -57,6 +58,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1_13gpu_metal_7101s(
     {
         float* u = ((__workspace_extent * __workspace_extent1) > 0) ? (__workspace_2 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent * __workspace_extent1) : nullptr;
         for (__gpu_bc_i1 = 1; __gpu_bc_i1 <= max(0, m); __gpu_bc_i1++) {
+            #pragma unroll 16
             for (__gpu_bc_i2 = 1; __gpu_bc_i2 <= max(0, n); __gpu_bc_i2++) {
                 u[((int)(__gpu_bc_i1) - (1)) + (__workspace_extent * ((int)(__gpu_bc_i2) - (1)))] = ((float)j__dc1);
             }

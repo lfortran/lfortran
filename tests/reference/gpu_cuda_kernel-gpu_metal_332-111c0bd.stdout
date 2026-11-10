@@ -12,7 +12,7 @@ __device__ inline float second_gpu_10(float x) {
     return f;
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_13gpu_metal_332(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_13gpu_metal_332(
     float* __restrict__ result)
 {
     int __flat_idx;

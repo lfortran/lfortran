@@ -9,7 +9,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_19 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_0_20gpu_kernel_source_19(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u,
     __ScalarArgs___lfortran_gpu_kernel_0_20gpu_kernel_source_19 __scalar_args)
@@ -62,7 +62,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_19 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_1_20gpu_kernel_source_19(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u,
     __ScalarArgs___lfortran_gpu_kernel_1_20gpu_kernel_source_19 __scalar_args)
@@ -95,7 +95,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_19 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_2_20gpu_kernel_source_19(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u,
     __ScalarArgs___lfortran_gpu_kernel_2_20gpu_kernel_source_19 __scalar_args)
@@ -117,7 +117,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_19 {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __lfortran_gpu_kernel_3_20gpu_kernel_source_19(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u,
     __ScalarArgs___lfortran_gpu_kernel_3_20gpu_kernel_source_19 __scalar_args)
@@ -159,7 +159,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_3_20gpu_kernel_source_19(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_4_20gpu_kernel_source_19(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u)
 {
@@ -182,7 +182,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4_20gpu_kernel_source_19(
     }
 }
 
-extern "C" __global__ void __lfortran_gpu_kernel_5_20gpu_kernel_source_19(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_5_20gpu_kernel_source_19(
     float* __restrict__ d,
     float* __restrict__ u)
 {
