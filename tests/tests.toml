@@ -7910,3 +7910,7 @@ asr = true
 [[test]]
 filename = "errors/implied_do_assumed_type_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/equivalence_common_01.f90"
+asr = true

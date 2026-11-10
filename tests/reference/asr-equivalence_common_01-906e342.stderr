@@ -1,0 +1,5 @@
+semantic error: equivalence between two common block variables is not allowed
+ --> tests/errors/equivalence_common_01.f90:6:17
+  |
+6 | equivalence (a, b)  ! {Error} equivalence between two common block variables is not allowed
+  |                 ^ both variables are in a common block

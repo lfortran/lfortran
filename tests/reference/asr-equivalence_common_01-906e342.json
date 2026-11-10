@@ -1,0 +1,13 @@
+{
+    "basename": "asr-equivalence_common_01-906e342",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/equivalence_common_01.f90",
+    "infile_hash": "3a4aee766029622da22cc5519129ce7e21ef593ce8c7179e3e3b9c64",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-equivalence_common_01-906e342.stderr",
+    "stderr_hash": "486180bb05cd96924a7732328f520ebc6aba3aaf0296902e4c0ed7de",
+    "returncode": 2
+}
