@@ -189,7 +189,7 @@ static int managed_contains(const void *p, size_t size) {
     return inside;
 }
 
-static int managed_record(void *p, size_t size) {
+static int managed_record(void *p, size_t size, int fresh) {
     managed_lock();
     if (n_managed == managed_capacity) {
         size_t capacity = managed_capacity ? 2*managed_capacity : 64;
@@ -206,7 +206,7 @@ static int managed_record(void *p, size_t size) {
     memmove(&managed[i + 1], &managed[i], (n_managed - i)*sizeof(managed_range));
     managed[i].base = (char *)p;
     managed[i].size = size;
-    managed[i].fresh = 1;
+    managed[i].fresh = fresh;
     n_managed++;
     managed_unlock();
     return 1;
@@ -246,6 +246,38 @@ static cudaError_t prefetch_to_device(const void *p, size_t size, int device) {
     return cudaMemPrefetchAsync(p, size, location, 0, 0);
 #else
     return cudaMemPrefetchAsync(p, size, device, 0);
+#endif
+}
+
+// The allocations of less than this many bytes are not prefetched but have
+// their pages given a home on the device.
+enum { MANAGED_PREFETCH_MIN_BYTES = 1 << 20 };
+
+// Makes the `size` bytes of managed memory at `p` live on `device`, and maps
+// them for the host: the pages a kernel writes stay on the device while the
+// host reads a few of them (the arrays it checks or samples), which are then
+// read in place across the bus instead of moved to the memory of the host
+// and faulted back by the next kernel. Without this, the small arrays of a
+// program that the host looks at between kernels were migrated back and forth,
+// and now and then a step of a program took 100 to 600 milliseconds instead of
+// 44.
+static void prefer_device(const void *p, size_t size, int device) {
+#if defined(LFORTRAN_GPU_HIP)
+    (void)p; (void)size; (void)device;
+#elif defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+    struct cudaMemLocation on_device, on_host;
+    memset(&on_device, 0, sizeof(on_device));
+    memset(&on_host, 0, sizeof(on_host));
+    on_device.type = cudaMemLocationTypeDevice;
+    on_device.id = device;
+    on_host.type = cudaMemLocationTypeHost;
+    (void)cudaMemAdvise(p, size, cudaMemAdviseSetPreferredLocation, on_device);
+    (void)cudaMemAdvise(p, size, cudaMemAdviseSetAccessedBy, on_host);
+#elif defined(CUDART_VERSION)
+    (void)cudaMemAdvise(p, size, cudaMemAdviseSetPreferredLocation, device);
+    (void)cudaMemAdvise(p, size, cudaMemAdviseSetAccessedBy, cudaCpuDeviceId);
+#else
+    (void)p; (void)size; (void)device;
 #endif
 }
 
@@ -836,7 +868,9 @@ static void* managed_alloc(void *context, int64_t size) {
         void *p = NULL;
         if (cudaMallocManaged(&p, (size_t)size, cudaMemAttachGlobal)
                 == cudaSuccess && p) {
-            if (managed_record(p, (size_t)size)) return p;
+            int large = (size_t)size >= MANAGED_PREFETCH_MIN_BYTES;
+            if (!large) prefer_device(p, (size_t)size, 0);
+            if (managed_record(p, (size_t)size, large)) return p;
             (void)cudaFree(p);
         }
     }
