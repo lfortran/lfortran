@@ -977,16 +977,27 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         arr_intrinsic_args.p, arr_intrinsic_args.n, overload_id, return_type, value);
 }
 
+// Whether the length of a string type is not a constant: either deferred, or
+// an expression such as `n` or `len_trim(s)` of the caller's variables, which
+// a generated function cannot refer to.
+static inline bool has_non_constant_length(ASR::String_t* str_type) {
+    return str_type->m_len_kind == ASR::string_length_kindType::DeferredLength
+        || (str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength
+            && !ASRUtils::is_value_constant(str_type->m_len));
+}
+
 // A `DeferredLength` string is only a valid declaration for an allocatable or a
-// pointer variable. The `array` dummy argument of a generated reduction is
-// neither, so it is declared with an assumed length instead.
-static inline ASR::ttype_t* assumed_length_if_deferred(Allocator& al, ASR::ttype_t* type) {
+// pointer variable, and a length expression of the caller cannot be used in a
+// generated function. A dummy argument of a generated array intrinsic is
+// neither allocatable nor a pointer, so it is declared with an assumed length
+// instead.
+static inline ASR::ttype_t* assumed_length_if_not_constant(Allocator& al, ASR::ttype_t* type) {
     ASR::ttype_t* element_type = ASRUtils::extract_type(type);
     if (!ASR::is_a<ASR::String_t>(*element_type)) {
         return type;
     }
     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(element_type);
-    if (str_type->m_len_kind != ASR::string_length_kindType::DeferredLength) {
+    if (!has_non_constant_length(str_type)) {
         return type;
     }
     ASRBuilder b(al, type->base.loc);
@@ -1010,7 +1021,7 @@ static inline ASR::ttype_t* result_dummy_type(Allocator& al, ASR::ttype_t* type)
     if (ASRUtils::is_allocatable_or_pointer(type)) {
         return type;
     }
-    return assumed_length_if_deferred(al, type);
+    return assumed_length_if_not_constant(al, type);
 }
 
 // Seeds a character reduction with its identity value: a string as long as the
@@ -1441,6 +1452,25 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
         }
     }
 
+    if (extract_n_dims_from_ttype(return_type) == 0) {
+        ASR::ttype_t* result_type = ASRUtils::extract_type(return_type);
+        if (ASR::is_a<ASR::String_t>(*result_type) && !ASRUtils::is_allocatable(return_type)
+            && (ASR::down_cast<ASR::String_t>(result_type)->m_len_kind ==
+                    ASR::string_length_kindType::AssumedLength
+                || has_non_constant_length(ASR::down_cast<ASR::String_t>(result_type)))) {
+            // A scalar result whose length is not a constant (assumed,
+            // deferred or an expression) has a deferred length and must be
+            // allocatable; it is allocated to `len(array)` when the reduction
+            // is seeded. Arrays of all these lengths share one generated
+            // function, so a call of a function generated earlier has this
+            // type too.
+            ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(result_type);
+            return_type = b.allocatable(b.String(nullptr,
+                ASR::string_length_kindType::DeferredLength,
+                str_type->m_physical_type, str_type->m_kind));
+        }
+    }
+
     ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
         ASRUtils::type_get_past_pointer(arg_types[0]));
     int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
@@ -1494,7 +1524,7 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     Vec<ASR::expr_t*> args;
     args.reserve(al, 1);
 
-    ASR::ttype_t* array_type = assumed_length_if_deferred(al,
+    ASR::ttype_t* array_type = assumed_length_if_not_constant(al,
         ASRUtils::duplicate_type_with_empty_dims(al, arg_type));
     fill_func_arg("array", array_type)
     if( overload_id == id_array_dim || overload_id == id_array_dim_mask ) {
@@ -1548,14 +1578,6 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
     } else if( result_dims == 0 ) {
-        ASR::ttype_t* result_type = ASRUtils::extract_type(return_type);
-        if (ASR::is_a<ASR::String_t>(*result_type) && !ASRUtils::is_allocatable(return_type)
-            && ASR::down_cast<ASR::String_t>(result_type)->m_len_kind ==
-                ASR::string_length_kindType::DeferredLength) {
-            // A deferred length result must be allocatable; it is allocated to
-            // `len(array)` when the reduction is seeded
-            return_type = b.allocatable(result_type);
-        }
         return_var = declare("result", return_type, ReturnVar);
     }
 
