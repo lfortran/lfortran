@@ -6049,6 +6049,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(x);
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
+            evaluate_vector_subscripts(x->m_args, x->n_args);
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) ||
                 is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v, dummies_sharing_actual)) {
@@ -6116,6 +6117,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(
                 ASR::down_cast<ASR::ArrayItem_t>(x->m_v));
         }
+        ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
+        ASRUtils::extract_indices(x->m_v, m_args, n_args);
+        evaluate_vector_subscripts(m_args, n_args);
         current_expr = current_expr_copy;
         ASR::ttype_t* declared_type = ASRUtils::make_StructType_t_util(al, loc,
             ASRUtils::symbol_get_past_external(
@@ -6164,9 +6168,30 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr(x, "_array_reshape_");
     }
 
+    // array_op indexes each vector subscript element by element, in the loop
+    // it makes of the reference, which works only for an array designator.
+    // Any other vector subscript, such as `abs(idx)` in `vals(abs(idx))`, is
+    // evaluated into a temporary array before the statement.
+    void evaluate_vector_subscripts(ASR::array_index_t* args, size_t n_args) {
+        for( size_t i = 0; i < n_args; i++ ) {
+            ASR::expr_t* subscript = args[i].m_right;
+            if( args[i].m_left != nullptr || args[i].m_step != nullptr ||
+                subscript == nullptr ||
+                !ASRUtils::is_array(ASRUtils::expr_type(subscript)) ||
+                designator_root_variable(
+                    ASRUtils::get_past_array_physical_cast(subscript)) != nullptr ) {
+                continue;
+            }
+            args[i].m_right = create_and_allocate_temporary_variable_for_array(
+                subscript, "_vector_subscript_", al, current_body,
+                current_scope, exprs_with_target);
+        }
+    }
+
     void replace_ArrayItem(ASR::ArrayItem_t* x) {
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
+            evaluate_vector_subscripts(x->m_args, x->n_args);
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
                 !is_assignment_target_array_section_item) ||
                 is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v, dummies_sharing_actual)) {

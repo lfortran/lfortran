@@ -3350,6 +3350,7 @@ RUN(NAME derived_types_256 LABELS gfortran llvm) # deferred-length character com
 RUN(NAME derived_types_257 LABELS gfortran llvm) # local derived type with the same name as a non-imported module type (#5874)
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
 RUN(NAME derived_types_vector_subscript_01 LABELS gfortran llvm) # vector subscript then component, c(idx)%n and z(idx)%re (#16913)
+RUN(NAME vector_subscript_02 LABELS gfortran llvm) # vector subscript that is an elemental expression, vals(abs(idx)) and v(int(r)) (#17225)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)
