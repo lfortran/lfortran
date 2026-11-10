@@ -3700,6 +3700,7 @@ RUN(NAME allocatable_stmt_03 LABELS gfortran llvm NO_STD_F23) # DIMENSION statem
 RUN(NAME allocatable_stmt_04 LABELS gfortran llvm) # an ALLOCATABLE statement does not apply to a component or a contained procedure's local (#15291)
 RUN(NAME pointer_stmt_01 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # POINTER statement after the deferred-shape type declaration (#15291)
 RUN(NAME pointer_stmt_02 LABELS gfortran llvm EXTRA_ARGS --implicit-interface NO_STD_F23) # DIMENSION statement with a POINTER statement (#15291); --std=f23: #16169
+RUN(NAME pointer_stmt_03 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # a POINTER statement does not apply to a component (#15291)
 RUN(NAME allocate_pointer_associated_01 LABELS gfortran llvm) # allocate an already associated pointer (#16072, #13028)
 RUN(NAME char_array_pointer_01 LABELS gfortran llvm) # allocate an associated character-array pointer (#16206, #13623, #17885)
 RUN(NAME char_array_pointer_02 LABELS gfortran llvm) # c_f_pointer into an associated character-array pointer (#17884)
