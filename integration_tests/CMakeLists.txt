@@ -5773,6 +5773,7 @@ RUN(NAME matmul_13 LABELS gfortran llvm)
 RUN(NAME matmul_14 LABELS gfortran llvm)
 RUN(NAME matmul_15 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME matmul_16 LABELS llvm) # gfortran -O1 and above gives other results; gfortran -O0 and flang agree with the checked values
+RUN(NAME matmul_17 LABELS gfortran llvm) # matmul of explicit-shape dummy arrays in a contained subroutine (#3918)
 RUN(NAME array_size_matmul_01 LABELS gfortran llvm)
 RUN(NAME array_size_empty_triplet_01 LABELS gfortran llvm)
 RUN(NAME array_size_section_01 LABELS gfortran llvm)
