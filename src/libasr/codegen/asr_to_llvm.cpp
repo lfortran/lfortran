@@ -20358,22 +20358,15 @@ public:
         tmp = des_real_arr;
     }
 
-    // Address of the real (is_re) or imaginary part of the scalar complex
-    // `arg`; a complex value that is not in memory is stored to a temporary
+    // Address of the real (is_re) or imaginary part of the scalar complex designator `arg`
     llvm::Value* complex_part_address(ASR::expr_t* arg, bool is_re) {
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = LLVM::is_llvm_pointer(*ASRUtils::expr_type(arg));
         this->visit_expr(*arg);
         ptr_loads = ptr_loads_copy;
-        llvm::Value* complex_ptr = tmp;
-        if (!complex_ptr->getType()->isPointerTy()) {
-            complex_ptr = llvm_utils->CreateAlloca(complex_ptr->getType(),
-                nullptr, "complex_part_storage");
-            builder->CreateStore(tmp, complex_ptr);
-        }
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(arg));
         llvm::Type* complex_type = (kind == 4) ? complex_type_4 : complex_type_8;
-        return llvm_utils->create_gep2(complex_type, complex_ptr, is_re ? 0 : 1);
+        return llvm_utils->create_gep2(complex_type, tmp, is_re ? 0 : 1);
     }
 
     void visit_ComplexRe(const ASR::ComplexRe_t &x) {
