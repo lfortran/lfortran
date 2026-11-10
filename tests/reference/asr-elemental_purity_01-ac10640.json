@@ -1,0 +1,13 @@
+{
+    "basename": "asr-elemental_purity_01-ac10640",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/elemental_purity_01.f90",
+    "infile_hash": "c0389633fa7340a301b8c253372b9f015b0ada1466de306564b0c53b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-elemental_purity_01-ac10640.stderr",
+    "stderr_hash": "e3998b0163400fa79069d41d237d6becf5345c4914fb8afa9541915f",
+    "returncode": 1
+}

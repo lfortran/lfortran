@@ -7918,3 +7918,7 @@ asr = true
 [[test]]
 filename = "errors/type_bound_nopass_outside_module_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/elemental_purity_01.f90"
+semantics_only_cc = true

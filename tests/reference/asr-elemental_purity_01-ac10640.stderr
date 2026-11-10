@@ -1,0 +1,11 @@
+semantic error: Call to impure procedure 'h' is not allowed inside a PURE procedure
+  --> tests/errors/elemental_purity_01.f90:20:23
+   |
+20 |         ef_function = h(x)  ! {Error} Call to impure procedure 'h' is not allowed inside a PURE procedure
+   |                       ^^^^ 
+
+semantic error: Call to impure procedure 's' is not allowed inside a PURE procedure
+  --> tests/errors/elemental_purity_01.f90:25:9
+   |
+25 |         call s(x)  ! {Error} Call to impure procedure 's' is not allowed inside a PURE procedure
+   |         ^^^^^^^^^ 
