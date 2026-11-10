@@ -407,7 +407,7 @@
                         (Var 4 hinit853)
                         (FunctionCall
                             4 f~fpcast_ptr
-                            ()
+                            4 f
                             [((RealConstant
                                 3.000000
                                 (Real 4)

@@ -508,7 +508,7 @@
                             ()
                             [(FunctionCall
                                 2 f~fpcast_ptr
-                                ()
+                                2 f
                                 [((RealBinOp
                                     (Var 2 hlgth)
                                     Add

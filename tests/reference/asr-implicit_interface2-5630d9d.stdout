@@ -457,7 +457,7 @@
                             ()
                             [(FunctionCall
                                 2 f~fpcast_ptr
-                                ()
+                                2 f
                                 [((IntegerConstant 5 (Integer 4) Decimal))]
                                 (Real 8)
                                 ()
@@ -465,7 +465,7 @@
                             )
                             (FunctionCall
                                 2 g~fpcast_ptr
-                                ()
+                                2 g
                                 [((IntegerConstant 1 (Integer 4) Decimal))
                                 ((RealConstant
                                     3.000000

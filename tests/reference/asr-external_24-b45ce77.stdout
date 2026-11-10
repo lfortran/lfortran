@@ -278,7 +278,7 @@
                         (Var 10 i)
                         (FunctionCall
                             10 h~fpcast_ptr
-                            ()
+                            10 h
                             [((Var 10 i))]
                             (Integer 4)
                             ()

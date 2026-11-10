@@ -306,7 +306,7 @@
                         (Var 2 a)
                         (FunctionCall
                             2 f~fpcast_ptr
-                            ()
+                            2 f
                             [((Var 2 b))]
                             (Complex 4)
                             ()

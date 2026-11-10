@@ -479,7 +479,7 @@
                             ()
                             [(FunctionCall
                                 2 f~fpcast_ptr
-                                ()
+                                2 f
                                 [((Var 2 hlgth))]
                                 (Real 8)
                                 ()
@@ -975,7 +975,7 @@
                             ()
                             [(FunctionCall
                                 3 c~fpcast_ptr
-                                ()
+                                3 c
                                 [((Var 3 d))]
                                 (Real 8)
                                 ()
@@ -1403,7 +1403,7 @@
                             ()
                             [(FunctionCall
                                 4 a~fpcast_ptr
-                                ()
+                                4 a
                                 [((Var 4 b))]
                                 (Real 8)
                                 ()
