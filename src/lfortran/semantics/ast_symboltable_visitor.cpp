@@ -498,22 +498,14 @@ public:
     }
 
     // Builds the procedures of a CONTAINS part in two passes: every
-    // signature, then the rest of each procedure.
+    // signature, in order of dependency, then the rest of each procedure.
     void visit_contained_procedures(AST::program_unit_t **contains,
             size_t n_contains, bool restore_implicit, bool hide_host_args) {
-        std::vector<bool> split(n_contains, false);
-        for (size_t i = 0; i < n_contains; i++) {
-            std::vector<bool> signature;
-            if (AST::is_a<AST::Function_t>(*contains[i])) {
-                split[i] = signature_declarations(
-                    *AST::down_cast<AST::Function_t>(contains[i]), signature);
-            } else if (AST::is_a<AST::Subroutine_t>(*contains[i])) {
-                split[i] = signature_declarations(
-                    *AST::down_cast<AST::Subroutine_t>(contains[i]), signature);
-            }
-        }
-        for (size_t i = 0; i < n_contains; i++) {
-            procedure_part = split[i] ? ProcedurePart::Signature : ProcedurePart::All;
+        std::vector<ContainedProcedure> procedures
+            = collect_contained_procedures(contains, n_contains);
+        for (size_t i : order_signatures(procedures)) {
+            procedure_part = procedures[i].split ? ProcedurePart::Signature
+                : ProcedurePart::All;
             visit_contained_procedure(*contains[i], restore_implicit,
                 hide_host_args);
         }
@@ -521,12 +513,269 @@ public:
         resolve_proc_pointer_placeholders();
         for (size_t i = 0; i < n_contains; i++) {
             // There is nothing to complete when the signature part aborted.
-            if (!split[i] || procedure_signatures.count(contains[i]) == 0) continue;
+            if (!procedures[i].split
+                    || procedure_signatures.count(contains[i]) == 0) continue;
             procedure_part = ProcedurePart::Locals;
             visit_contained_procedure(*contains[i], restore_implicit,
                 hide_host_args);
         }
         procedure_part = ProcedurePart::All;
+    }
+
+    // A procedure of a CONTAINS part and what its signature calls.
+    struct ContainedProcedure {
+        std::string name;
+        // Whether its signature is built before its locals.
+        bool split = false;
+        // The procedures of the CONTAINS part that its signature calls.
+        std::vector<std::pair<size_t, Location>> calls;
+        // The generic interfaces it calls, with their specifics in the part.
+        struct GenericCall {
+            std::string name;
+            std::vector<size_t> specifics;
+            Location loc;
+        };
+        std::vector<GenericCall> generic_calls;
+    };
+
+    // Collects the function references of the statements it visits.
+    class FunctionReferences : public AST::BaseWalkVisitor<FunctionReferences> {
+    public:
+        std::vector<std::pair<std::string, Location>> &calls;
+        FunctionReferences(std::vector<std::pair<std::string, Location>> &calls)
+            : calls{calls} {}
+
+        void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+            if (x.n_member == 0) {
+                calls.push_back({to_lower(x.m_func), x.base.base.loc});
+            }
+            AST::BaseWalkVisitor<FunctionReferences>::visit_FuncCallOrArray(x);
+        }
+    };
+
+    // Collects the calls in the declarations of `x`, internal procedures too.
+    template <typename T>
+    static void declaration_references(const T &x, FunctionReferences &refs) {
+        for (size_t i = 0; i < x.n_attributes; i++) {
+            refs.visit_decl_attribute(*x.m_attributes[i]);
+        }
+        for (size_t i = 0; i < x.n_items; i++) {
+            if (AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) {
+                refs.visit_decl_stmt(*x.m_items[i]);
+            }
+        }
+        for (size_t i = 0; i < x.n_contains; i++) {
+            unit_declaration_references(*x.m_contains[i], refs);
+        }
+    }
+
+    static void unit_declaration_references(const AST::program_unit_t &unit,
+            FunctionReferences &refs) {
+        if (AST::is_a<AST::Function_t>(unit)) {
+            declaration_references(*AST::down_cast<AST::Function_t>(&unit), refs);
+        } else if (AST::is_a<AST::Subroutine_t>(unit)) {
+            declaration_references(*AST::down_cast<AST::Subroutine_t>(&unit), refs);
+        } else if (AST::is_a<AST::Procedure_t>(unit)) {
+            declaration_references(*AST::down_cast<AST::Procedure_t>(&unit), refs);
+        }
+    }
+
+    // Collects the calls of the declarations built with the signature of
+    // `x`, and the names and generic interfaces that `x` declares.
+    template <typename T>
+    static bool signature_references(const T &x,
+            std::vector<std::pair<std::string, Location>> &calls,
+            std::set<std::string> &local_names,
+            std::map<std::string, std::set<std::string>> &local_generics) {
+        std::vector<bool> signature;
+        bool split = signature_declarations(x, signature);
+        FunctionReferences refs(calls);
+        if (split) {
+            for (size_t i = 0; i < x.n_attributes; i++) {
+                refs.visit_decl_attribute(*x.m_attributes[i]);
+            }
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (signature[i]) refs.visit_decl_stmt(*x.m_items[i]);
+            }
+        } else {
+            declaration_references(x, refs);
+        }
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_arg) local_names.insert(to_lower(x.m_args[i].m_arg));
+        }
+        std::string result = procedure_result_name(x);
+        if (!result.empty()) local_names.insert(result);
+        for (size_t i = 0; i < x.n_contains; i++) {
+            local_names.insert(to_lower(procedure_name(*x.m_contains[i])));
+        }
+        for (size_t i = 0; i < x.n_items; i++) {
+            AST::decl_stmt_t *item = x.m_items[i];
+            if (AST::is_a<AST::Use_t>(*item)) {
+                AST::Use_t *use = AST::down_cast<AST::Use_t>(item);
+                for (size_t j = 0; j < use->n_symbols; j++) {
+                    if (!AST::is_a<AST::UseSymbol_t>(*use->m_symbols[j])) continue;
+                    AST::UseSymbol_t *s = AST::down_cast<AST::UseSymbol_t>(use->m_symbols[j]);
+                    local_names.insert(to_lower(s->m_local_rename
+                        ? s->m_local_rename : s->m_remote_sym));
+                }
+            }
+            if (!AST::is_kind(*item, AST::DeclStmtKind::Declaration)) continue;
+            declared_names(*item, local_names);
+            if (!AST::is_a<AST::Interface_t>(*item)) continue;
+            AST::Interface_t *interface = AST::down_cast<AST::Interface_t>(item);
+            if (!AST::is_a<AST::InterfaceHeaderName_t>(*interface->m_header)) continue;
+            std::set<std::string> &specifics = local_generics[to_lower(
+                AST::down_cast<AST::InterfaceHeaderName_t>(interface->m_header)->m_name)];
+            for (size_t j = 0; j < interface->n_items; j++) {
+                if (!AST::is_a<AST::InterfaceModuleProcedure_t>(*interface->m_items[j])) {
+                    continue;
+                }
+                AST::InterfaceModuleProcedure_t *procs
+                    = AST::down_cast<AST::InterfaceModuleProcedure_t>(interface->m_items[j]);
+                for (size_t k = 0; k < procs->n_names; k++) {
+                    specifics.insert(to_lower(procs->m_names[k]));
+                }
+            }
+        }
+        return split;
+    }
+
+    // Phase 1: what the signature of each procedure of a CONTAINS part calls.
+    std::vector<ContainedProcedure> collect_contained_procedures(
+            AST::program_unit_t **contains, size_t n_contains) {
+        std::map<std::string, size_t> index;
+        for (size_t i = 0; i < n_contains; i++) {
+            index.insert({to_lower(procedure_name(*contains[i])), i});
+        }
+        std::map<std::string, std::set<std::string>> host_generics;
+        for (auto &generic : generic_procedures) {
+            for (auto &specific : generic.second) {
+                if (specific.scope == current_scope) {
+                    host_generics[generic.first].insert(to_lower(specific.name));
+                }
+            }
+        }
+        std::vector<ContainedProcedure> procedures(n_contains);
+        for (size_t i = 0; i < n_contains; i++) {
+            ContainedProcedure &p = procedures[i];
+            p.name = to_lower(procedure_name(*contains[i]));
+            std::vector<std::pair<std::string, Location>> calls;
+            std::set<std::string> local_names;
+            std::map<std::string, std::set<std::string>> local_generics;
+            if (AST::is_a<AST::Function_t>(*contains[i])) {
+                p.split = signature_references(*AST::down_cast<AST::Function_t>(contains[i]),
+                    calls, local_names, local_generics);
+            } else if (AST::is_a<AST::Subroutine_t>(*contains[i])) {
+                p.split = signature_references(*AST::down_cast<AST::Subroutine_t>(contains[i]),
+                    calls, local_names, local_generics);
+            } else {
+                FunctionReferences refs(calls);
+                unit_declaration_references(*contains[i], refs);
+            }
+            for (auto &[name, loc] : calls) {
+                if (local_generics.count(name)) {
+                    p.generic_calls.push_back({name,
+                        procedures_named(index, local_generics[name]), loc});
+                } else if (local_names.count(name)) {
+                    continue;
+                } else if (host_generics.count(name)) {
+                    p.generic_calls.push_back({name,
+                        procedures_named(index, host_generics[name]), loc});
+                } else if (index.count(name)) {
+                    p.calls.push_back({index[name], loc});
+                }
+            }
+        }
+        return procedures;
+    }
+
+    // The indices in `index` of the procedures among `names`.
+    static std::vector<size_t> procedures_named(
+            const std::map<std::string, size_t> &index,
+            const std::set<std::string> &names) {
+        std::vector<size_t> procedures;
+        for (auto &name : names) {
+            auto it = index.find(name);
+            if (it != index.end()) procedures.push_back(it->second);
+        }
+        return procedures;
+    }
+
+    // Phase 2: an order of the signatures, each after those it calls; a
+    // specific of a called generic whose signature is in progress is skipped.
+    std::vector<size_t> order_signatures(
+            const std::vector<ContainedProcedure> &procedures) {
+        std::vector<size_t> order;
+        std::vector<size_t> in_progress;
+        std::vector<bool> visited(procedures.size(), false);
+        for (size_t i = 0; i < procedures.size(); i++) {
+            if (!visited[i]) {
+                order_signature(procedures, i, visited, in_progress, order);
+            }
+        }
+        return order;
+    }
+
+    void order_signature(const std::vector<ContainedProcedure> &procedures,
+            size_t i, std::vector<bool> &visited, std::vector<size_t> &in_progress,
+            std::vector<size_t> &order) {
+        visited[i] = true;
+        in_progress.push_back(i);
+        for (auto &[callee, loc] : procedures[i].calls) {
+            if (is_in(in_progress, callee)) {
+                warn_circular_signatures(procedures, in_progress, callee,
+                    procedures[callee].name, loc);
+            } else if (!visited[callee]) {
+                order_signature(procedures, callee, visited, in_progress, order);
+            }
+        }
+        for (auto &call : procedures[i].generic_calls) {
+            bool any_specific = call.specifics.empty();
+            for (size_t specific : call.specifics) {
+                if (is_in(in_progress, specific)) continue;
+                any_specific = true;
+                if (!visited[specific]) {
+                    order_signature(procedures, specific, visited, in_progress, order);
+                }
+            }
+            if (!any_specific) {
+                size_t first = in_progress.size();
+                for (size_t specific : call.specifics) {
+                    first = std::min(first, (size_t)(std::find(in_progress.begin(),
+                        in_progress.end(), specific) - in_progress.begin()));
+                }
+                warn_circular_signatures(procedures, in_progress, in_progress[first],
+                    "generic " + call.name, call.loc);
+            }
+        }
+        in_progress.pop_back();
+        order.push_back(i);
+    }
+
+    static bool is_in(const std::vector<size_t> &v, size_t i) {
+        return std::find(v.begin(), v.end(), i) != v.end();
+    }
+
+    // Warns about the cycle from `start` to the call of `callee`.
+    void warn_circular_signatures(const std::vector<ContainedProcedure> &procedures,
+            const std::vector<size_t> &in_progress, size_t start,
+            const std::string &callee, const Location &loc) {
+        std::string path;
+        bool on_path = false;
+        for (size_t j : in_progress) {
+            on_path = on_path || j == start;
+            if (on_path) path += procedures[j].name + " -> ";
+        }
+        path += callee;
+        if (callee != procedures[start].name) {
+            path += " -> " + procedures[start].name;
+        }
+        diag.add(diag::Diagnostic(
+            "circular dependency between procedure signatures: " + path
+                + "; this is a case LFortran should handle, or a false "
+                "warning: please report it",
+            diag::Level::Warning, diag::Stage::Semantic, {
+                diag::Label("", {loc})}));
     }
 
     // Adds the bindings of the local types before the internal procedures.
