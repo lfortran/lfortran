@@ -12,7 +12,9 @@ program array_constructor_18
     character(len=10) :: base, sfx
     character(len=5) :: lines(2)
     character(kind=ucs4, len=6) :: w4
-    integer :: i
+    character(len=:), allocatable :: d(:)
+    character(len=4) :: p4(2)
+    integer :: i, k
 
     word = 'hi'
 
@@ -71,6 +73,21 @@ program array_constructor_18
     if (trim(words(1)) /= 'ab' .or. trim(words(2)) /= 'yo') error stop 25
     if (trim(words(3)) /= 'cd' .or. trim(words(4)) /= 'yo') error stop 26
 
+    ! A function called in the first element is called once
+    d = ['ab ', 'cde']
+    k = 0
+    call check_d([d(nxt()), 'xyz'])
+    if (k /= 1) error stop 27
+    k = 0
+    words = [d(nxt()), 'xyz']
+    if (k /= 1) error stop 28
+    if (len(words) /= 3) error stop 29
+    if (words(1) /= 'ab' .or. words(2) /= 'xyz') error stop 30
+    k = 0
+    p4 = [d(nxt()), 'xyz']
+    if (k /= 1) error stop 31
+    if (p4(1) /= 'ab' .or. p4(2) /= 'xyz') error stop 32
+
     print *, "OK"
 
 contains
@@ -80,5 +97,16 @@ contains
         if (len(a) /= 2) error stop 10
         if (a(1) /= 'hi' .or. a(2) /= 'yo') error stop 11
     end subroutine check
+
+    subroutine check_d(a)
+        character(len=*), intent(in) :: a(:)
+        if (len(a) /= 3) error stop 33
+        if (a(1) /= 'ab' .or. a(2) /= 'xyz') error stop 34
+    end subroutine check_d
+
+    integer function nxt()
+        k = k + 1
+        nxt = k
+    end function nxt
 
 end program array_constructor_18

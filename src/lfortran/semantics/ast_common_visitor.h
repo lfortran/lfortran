@@ -18166,7 +18166,9 @@ public:
     // given explicitly; otherwise return `type`. A length that depends on the variable of an implied-do
     // loop is left out: an implied-do loop as the first element, or this
     // constructor in the values of one, whose type the enclosing constructor
-    // takes.
+    // takes. So is a length that calls a function, such as LEN(d(f())): a
+    // type is an annotation, so the call would be made once more, apart
+    // from the element.
     ASR::ttype_t* get_element_type_with_length(ASR::ttype_t* type, ASR::expr_t* first) {
         if (!ASR::is_a<ASR::String_t>(*type) ||
                 ASR::down_cast<ASR::String_t>(type)->m_len != nullptr ||
@@ -18175,6 +18177,11 @@ public:
             return type;
         }
         ASR::expr_t* len = get_scalar_string_length(first);
+        PassUtils::FunctionCallFinder function_call_finder;
+        function_call_finder.visit_expr(*len);
+        if (function_call_finder.found) {
+            return type;
+        }
         for (const std::string &name : implied_do_variables) {
             ASR::symbol_t* loop_variable = current_scope->resolve_symbol(name);
             if (loop_variable != nullptr &&
