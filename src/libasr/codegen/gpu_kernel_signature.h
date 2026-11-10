@@ -29,9 +29,22 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
         }
         src << "};\n\n";
     }
+    bool streams_rows = streams_strided_rows(kernel);
+    // A launch over one loop (a row of a matrix per thread) has few threads
+    // to hide the loads; one over two or more has plenty, and the registers
+    // of a deep unroll cost it more (a 4096 x 4096 matrix product loses 40%
+    // at 64).
+    size_t loop_dimensions = 0;
+    for (size_t i = 0; i < layout.n_scalars; i++) {
+        if (gpu_argument_name(layout.m_scalars[i], layout).rfind(
+                "__loop_end_", 0) == 0) {
+            loop_dimensions++;
+        }
+    }
+    kernel_streams_strided_rows = streams_rows && loop_dimensions <= 1;
     src << dialect.kernel_qualifier(
             gpu_device_capabilities(co.po).threads_per_block,
-            streams_strided_rows(kernel))
+            streams_rows)
         << name << "(\n";
     kernel_params.clear();
     int slot = 0;

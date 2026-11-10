@@ -1,16 +1,52 @@
 #include <stdint.h>
 
+// The lanes of an iteration are consecutive threads of a warp, or,
+// with more than 32 of them, all the threads of a block.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_combine(T v, T w) {
+    return op == 0 ? v + w : op == 1 ? v * w
+        : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+}
+
 // The combination of what the `lanes` lanes of an iteration hold,
 // in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes) {
-    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {
-        T w = __shfl_xor_sync(0xffffffffu, v, offset, lanes);
-        v = op == 0 ? v + w : op == 1 ? v * w
-            : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+    int width = lanes < 32 ? lanes : 32;
+    for (int offset = width >> 1; offset > 0; offset >>= 1) {
+        v = __lfortran_lane_combine<op>(v,
+            __shfl_xor_sync(0xffffffffu, v, offset, width));
+    }
+    if (lanes > 32) {
+        // Every warp of the block holds the combination of its
+        // own lanes; the warps combine theirs in shared memory.
+        __shared__ T partial[32];
+        if ((threadIdx.x & 31) == 0) partial[threadIdx.x >> 5] = v;
+        __syncthreads();
+        v = partial[0];
+        for (int w = 1; w < (lanes >> 5); w++) {
+            v = __lfortran_lane_combine<op>(v, partial[w]);
+        }
+        __syncthreads();
     }
     return v;
+}
+
+// The value in the first lane of the iteration, in every lane.
+// With one lane per iteration the threads of a warp run different
+// iterations, which need not reach the same shuffle, and the value
+// is the thread's own.
+template <typename T>
+__device__ inline T __lfortran_lane_broadcast(T v, int lanes) {
+    if (lanes <= 1) return v;
+    if (lanes <= 32) return __shfl_sync(0xffffffffu, v, 0, lanes);
+    __shared__ T first;
+    if (threadIdx.x == 0) first = v;
+    __syncthreads();
+    T r = first;
+    __syncthreads();
+    return r;
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_0_14gpu_do_loop_01 {
@@ -63,15 +99,17 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_
         if ((__gpu_lane == 0)) {
             r[((int)(1) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
         }
-        if (__gpu_lanes_n > 1) __syncwarp();
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
         t = 0;
         if ((__gpu_lanes > 1)) {
             if ((__gpu_lane != 0)) {
                 t = 0;
             }
             __gpu_lane_after1 = (1 + (((int)((((((i__dc - 1) + 4) / 4) > 0)) ? ((((i__dc - 1) + 4) / 4)) : (0))) * 4));
+            j = (1 + (((int)__gpu_lane) * 4));
+            const int __lfortran_trips_0 = i__dc >= j ? (i__dc - j) / (4 * ((int)__gpu_lanes)) + 1 : 0;
             #pragma unroll 16
-            for (j = (1 + (((int)__gpu_lane) * 4)); j <= i__dc; j += (4 * ((int)__gpu_lanes))) {
+            for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, j += (4 * ((int)__gpu_lanes))) {
                 t = (t + j);
             }
             t = __lfortran_lane_reduce<0>(t, __gpu_lanes_n);
@@ -85,19 +123,19 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_
         if ((__gpu_lane == 0)) {
             r[((int)(2) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
         }
-        if (__gpu_lanes_n > 1) __syncwarp();
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
         t = 0;
         m = i__dc;
-        const int __lfortran_end_0 = m;
+        const int __lfortran_end_1 = m;
         #pragma unroll 16
-        for (j = 1; j <= __lfortran_end_0; j++) {
+        for (j = 1; j <= __lfortran_end_1; j++) {
             m = (m - 1);
             t = (t + 1);
         }
         if ((__gpu_lane == 0)) {
             r[((int)(3) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
         }
-        if (__gpu_lanes_n > 1) __syncwarp();
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
         {
             int __triangle_k;
             int __triangle_s;
@@ -106,8 +144,10 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_
                 if ((__gpu_lane != 0)) {
                     __triangle_s = 0;
                 }
+                __triangle_k = (1 + (((int)__gpu_lane) * 1));
+                const int __lfortran_trips_2 = i__dc >= __triangle_k ? (i__dc - __triangle_k) / (1 * ((int)__gpu_lanes)) + 1 : 0;
                 #pragma unroll 16
-                for (__triangle_k = (1 + (((int)__gpu_lane) * 1)); __triangle_k <= i__dc; __triangle_k += (1 * ((int)__gpu_lanes))) {
+                for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, __triangle_k += (1 * ((int)__gpu_lanes))) {
                     __triangle_s = (__triangle_s + __triangle_k);
                 }
                 __triangle_s = __lfortran_lane_reduce<0>(__triangle_s, __gpu_lanes_n);
@@ -120,7 +160,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_
             if ((__gpu_lane == 0)) {
                 r[((int)(4) - (1)) + (9 * ((int)(i__dc) - (1)))] = __triangle_s;
             }
-            if (__gpu_lanes_n > 1) __syncwarp();
+            if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
         }
         t = 0;
         int __lfortran_leave_0 = 0;
@@ -146,7 +186,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_
         if ((__gpu_lane == 0)) {
             r[((int)(5) - (1)) + (9 * ((int)(i__dc) - (1)))] = (((t * 100) + (j * 10)) + k);
         }
-        if (__gpu_lanes_n > 1) __syncwarp();
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
         #pragma unroll 16
         for (j = (i__dc + 1); j <= i__dc; j++) {
             t = (-(1));
@@ -158,40 +198,40 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_
         if ((__gpu_lane == 0)) {
             r[((int)(6) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((j * 100) + k);
         }
-        if (__gpu_lanes_n > 1) __syncwarp();
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
         s = ((((i__dc) % (2)) == 0) ? 2 : (-(2)));
         t = 0;
-        const int __lfortran_end_1 = ((s > 0) ? 10 : 1);
+        const int __lfortran_end_3 = ((s > 0) ? 10 : 1);
         #pragma unroll 16
-        for (j = ((s > 0) ? 1 : 10); s > 0 ? j <= __lfortran_end_1 : j >= __lfortran_end_1; j += s) {
+        for (j = ((s > 0) ? 1 : 10); s > 0 ? j <= __lfortran_end_3 : j >= __lfortran_end_3; j += s) {
             t = (t + j);
         }
         if ((__gpu_lane == 0)) {
             r[((int)(7) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
         }
-        if (__gpu_lanes_n > 1) __syncwarp();
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
         s = (1 + ((i__dc) % (3)));
         t = 0;
-        const int __lfortran_step_2 = s;
+        const int __lfortran_step_4 = s;
         #pragma unroll 16
-        for (j = 1; __lfortran_step_2 > 0 ? j <= 10 : j >= 10; j += __lfortran_step_2) {
+        for (j = 1; __lfortran_step_4 > 0 ? j <= 10 : j >= 10; j += __lfortran_step_4) {
             s = (s + 1);
             t = (t + j);
         }
         if ((__gpu_lane == 0)) {
             r[((int)(8) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
         }
-        if (__gpu_lanes_n > 1) __syncwarp();
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
         t = 0;
-        const int __lfortran_end_3 = lim[((int)(i__dc) - (1))];
+        const int __lfortran_end_5 = lim[((int)(i__dc) - (1))];
         #pragma unroll 16
-        for (j = 1; j <= __lfortran_end_3; j++) {
+        for (j = 1; j <= __lfortran_end_5; j++) {
             t = (t + j);
         }
         if ((__gpu_lane == 0)) {
             r[((int)(9) - (1)) + (9 * ((int)(i__dc) - (1)))] = ((t * 100) + j);
         }
-        if (__gpu_lanes_n > 1) __syncwarp();
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
     }
 }
 

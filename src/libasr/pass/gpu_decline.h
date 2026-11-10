@@ -88,6 +88,11 @@ struct GpuDeviceCapabilities {
     // gets them up to this many: one lane per iteration would read 32
     // columns at once there, and lanes read one.
     int64_t lanes_column_iterations_max = 1024;
+    // The lanes a kernel of that second kind gets, when more than
+    // lanes_per_iteration: the whole block of threads (one iteration per
+    // block), which combine and wait for each other through shared memory.
+    // Zero keeps lanes_per_iteration.
+    int lanes_column_block = 0;
     // Whether the lanes of an iteration can share a loop that accumulates
     // into private scalars and combine what each lane accumulated
     // (GpuLaneReduce).
