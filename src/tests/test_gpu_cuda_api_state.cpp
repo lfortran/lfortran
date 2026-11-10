@@ -603,9 +603,13 @@ static int managed_memory_model()
     require(ctx != nullptr, "runtime initialization");
     require(memory_model == MEMORY_MANAGED,
         "LFORTRAN_GPU_MEMORY=managed selects the model");
-    auto *data = (int32_t *)managed_alloc(nullptr, MANAGED_MIN_BYTES);
-    require(data != nullptr && managed_contains(data, MANAGED_MIN_BYTES),
+    auto *data = (int32_t *)managed_alloc(nullptr,
+        MANAGED_PREFETCH_MIN_BYTES);
+    require(data != nullptr
+        && managed_contains(data, MANAGED_PREFETCH_MIN_BYTES),
         "a large allocation is managed memory");
+    require(stats().memory_advice == 0,
+        "a large allocation is prefetched, not advised");
     data[0] = 10;
     lfortran_gpu_register_kernel("managed", entry(managed_entry));
     int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
@@ -630,17 +634,37 @@ static int managed_memory_model()
     managed_dealloc(nullptr, data);
     require(stats().frees == frees,
         "a freed managed block goes to the cache, not to the driver");
-    auto *again = (int32_t *)managed_alloc(nullptr, MANAGED_MIN_BYTES);
+    auto *again = (int32_t *)managed_alloc(nullptr, MANAGED_PREFETCH_MIN_BYTES);
     require(again == data && stats().mallocs == mallocs,
         "an allocation of the size of a cached block reuses it");
     managed_dealloc(nullptr, again);
-    auto *larger = (int32_t *)managed_alloc(nullptr, 2 * MANAGED_MIN_BYTES);
+    auto *larger = (int32_t *)managed_alloc(nullptr, 2 * MANAGED_PREFETCH_MIN_BYTES);
     require(larger != nullptr && larger != data
-        && managed_contains(larger, 2 * MANAGED_MIN_BYTES),
+        && managed_contains(larger, 2 * MANAGED_PREFETCH_MIN_BYTES),
         "a larger allocation does not reuse a smaller cached block");
     managed_dealloc(nullptr, larger);
     managed_cache_flush();
     require(stats().frees == frees + 2, "flushing the cache frees the blocks");
+    // A small allocation is managed memory too, with the device as its
+    // preferred location and mapped for the host, and no prefetch.
+    auto *small = (int32_t *)managed_alloc(nullptr, MANAGED_MIN_BYTES);
+    require(small != nullptr && managed_contains(small, MANAGED_MIN_BYTES),
+        "a small allocation is managed memory");
+    require(stats().memory_advice == 2,
+        "a small allocation is advised: preferred on the device, mapped for the host");
+    small[0] = 5;
+    auto *k = lfortran_gpu_load_kernel(ctx, "managed", 7);
+    int32_t one = 1;
+    lfortran_gpu_set_buffer_arg(k, 0, small, sizeof(int32_t),
+        LFORTRAN_GPU_WRITE);
+    lfortran_gpu_set_scalar_arg(k, 1, &one, sizeof(one));
+    lfortran_gpu_launch(ctx, k, grid, block);
+    lfortran_gpu_release_kernel(k);
+    lfortran_gpu_sync(ctx);
+    require(small[0] == 6, "the kernel wrote the small memory in place");
+    require(stats().device_prefetches == 1,
+        "the launch that uses a small allocation does not prefetch it");
+    managed_dealloc(nullptr, small);
     lfortran_gpu_shutdown(ctx);
     check_api_use();
     // Only once every check passed, since CTest matches this line.

@@ -112,6 +112,23 @@ cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count,
 cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count, int device,
     cudaStream_t stream);
 #endif
+// Advice on where managed memory lives and who accesses it: the host and the
+// device are the same memory, so there is nothing to do but to check it.
+typedef enum cudaMemoryAdvise {
+    cudaMemAdviseSetReadMostly = 1,
+    cudaMemAdviseUnsetReadMostly = 2,
+    cudaMemAdviseSetPreferredLocation = 3,
+    cudaMemAdviseUnsetPreferredLocation = 4,
+    cudaMemAdviseSetAccessedBy = 5,
+    cudaMemAdviseUnsetAccessedBy = 6
+} cudaMemoryAdvise;
+#if CUDART_VERSION >= 13000
+cudaError_t cudaMemAdvise(const void *ptr, size_t count,
+    enum cudaMemoryAdvise advice, struct cudaMemLocation location);
+#else
+cudaError_t cudaMemAdvise(const void *ptr, size_t count,
+    enum cudaMemoryAdvise advice, int device);
+#endif
 cudaError_t cudaMemcpy(void *dst, const void *src, size_t count,
     cudaMemcpyKind kind);
 cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count,
