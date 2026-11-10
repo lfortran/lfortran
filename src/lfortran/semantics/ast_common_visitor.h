@@ -2304,6 +2304,34 @@ public:
     std::set<std::string> assgnd_target;
     std::set<std::string> assgnd_volatile;
     std::set<std::string> assgnd_asynchronous;
+    // The names in the ALLOCATABLE and POINTER statements of the scoping unit
+    // or BLOCK construct being visited. The attribute applies to the entity
+    // even when the statement follows its type declaration (8.6), as in
+    // `real :: a(:)` followed by `allocatable :: a`.
+    std::set<std::string> allocatable_stmt_names;
+    std::set<std::string> pointer_stmt_names;
+
+    static void collect_attribute_statement_names(AST::decl_stmt_t **items,
+            size_t n_items, AST::simple_attributeType attr,
+            std::set<std::string> &names) {
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
+            AST::Declaration_t *decl = AST::down_cast<AST::Declaration_t>(items[i]);
+            if (decl->m_vartype != nullptr) continue;
+            for (size_t a = 0; a < decl->n_attributes; a++) {
+                if (!AST::is_a<AST::SimpleAttribute_t>(*decl->m_attributes[a])
+                        || AST::down_cast<AST::SimpleAttribute_t>(
+                            decl->m_attributes[a])->m_attr != attr) {
+                    continue;
+                }
+                for (size_t j = 0; j < decl->n_syms; j++) {
+                    if (decl->m_syms[j].m_name) {
+                        names.insert(to_lower(decl->m_syms[j].m_name));
+                    }
+                }
+            }
+        }
+    }
     // A PARAMETER, POINTER, ALLOCATABLE, TARGET, VOLATILE or ASYNCHRONOUS
     // statement that names an entity not declared yet is recorded above and
     // applied to the entity when it is declared. Such a statement applies only
@@ -2320,14 +2348,25 @@ public:
         std::set<std::string> target;
         std::set<std::string> volatile_;
         std::set<std::string> asynchronous;
+        std::set<std::string> allocatable_stmt;
+        std::set<std::string> pointer_stmt;
 
-        PendingAttributeScope(CommonVisitor &v_) : v{v_} {
+        PendingAttributeScope(CommonVisitor &v_,
+                AST::decl_stmt_t **items=nullptr, size_t n_items=0) : v{v_} {
             storage.swap(v.assgnd_storage);
             pointer.swap(v.assgnd_pointer);
             allocatable.swap(v.assgnd_allocatable);
             target.swap(v.assgnd_target);
             volatile_.swap(v.assgnd_volatile);
             asynchronous.swap(v.assgnd_asynchronous);
+            allocatable_stmt.swap(v.allocatable_stmt_names);
+            pointer_stmt.swap(v.pointer_stmt_names);
+            collect_attribute_statement_names(items, n_items,
+                AST::simple_attributeType::AttrAllocatable,
+                v.allocatable_stmt_names);
+            collect_attribute_statement_names(items, n_items,
+                AST::simple_attributeType::AttrPointer,
+                v.pointer_stmt_names);
         }
         ~PendingAttributeScope() {
             v.assgnd_storage.swap(storage);
@@ -2336,6 +2375,8 @@ public:
             v.assgnd_target.swap(target);
             v.assgnd_volatile.swap(volatile_);
             v.assgnd_asynchronous.swap(asynchronous);
+            v.allocatable_stmt_names.swap(allocatable_stmt);
+            v.pointer_stmt_names.swap(pointer_stmt);
         }
         PendingAttributeScope(const PendingAttributeScope &) = delete;
         PendingAttributeScope &operator=(const PendingAttributeScope &) = delete;
@@ -11072,10 +11113,12 @@ public:
                     s.m_initializer = assgnd_storage[sym].second;
                 }
                 bool is_pointer = false;
-                if (assgnd_pointer.count(sym)) {
+                if (assgnd_pointer.count(sym)
+                        || (!is_derived_type && pointer_stmt_names.count(sym))) {
                     is_pointer = true;
                 }
-                if (assgnd_allocatable.count(sym)) {
+                if (!is_derived_type && (assgnd_allocatable.count(sym)
+                        || allocatable_stmt_names.count(sym))) {
                     is_allocatable = true;
                 }
                 if (assgnd_target.count(sym)) {
@@ -11172,7 +11215,6 @@ public:
                 AST::dimension_t* dims_ast = nullptr;
                 // location for dimension(...) if present
                 Location dims_attr_loc;
-                is_allocatable = false;
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
                 if (x.n_attributes > 0) {

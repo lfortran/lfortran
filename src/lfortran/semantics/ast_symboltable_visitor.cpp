@@ -974,7 +974,7 @@ public:
         ScopingUnitScope scoping_unit_scope(*this,
             x.class_type == AST::modType::Submodule
                 ? ScopingUnitKind::Submodule : ScopingUnitKind::Module);
-        PendingAttributeScope pending_attribute_scope(*this);
+        PendingAttributeScope pending_attribute_scope(*this, x.m_items, x.n_items);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
@@ -1421,7 +1421,7 @@ public:
             return;
         }
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Program);
-        PendingAttributeScope pending_attribute_scope(*this);
+        PendingAttributeScope pending_attribute_scope(*this, x.m_items, x.n_items);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -2014,7 +2014,7 @@ public:
             throw SemanticAbort();
         }
 
-        PendingAttributeScope pending_attribute_scope(*this);
+        PendingAttributeScope pending_attribute_scope(*this, x.m_items, x.n_items);
         SymbolTable* parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         record_procedure_references(current_scope, x.m_items, x.n_items);
@@ -2333,7 +2333,7 @@ public:
 
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
-        PendingAttributeScope pending_attribute_scope(*this);
+        PendingAttributeScope pending_attribute_scope(*this, x.m_items, x.n_items);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -3011,7 +3011,7 @@ public:
 
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
-        PendingAttributeScope pending_attribute_scope(*this);
+        PendingAttributeScope pending_attribute_scope(*this, x.m_items, x.n_items);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -4518,7 +4518,7 @@ public:
     // storage that every view of a block shares.
     void visit_BlockData(const AST::BlockData_t& x) {
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
-        PendingAttributeScope pending_attribute_scope(*this);
+        PendingAttributeScope pending_attribute_scope(*this, x.m_items, x.n_items);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         std::string name;
