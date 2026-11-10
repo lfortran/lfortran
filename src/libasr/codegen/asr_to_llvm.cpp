@@ -12548,18 +12548,10 @@ public:
     void visit_GetPointer(const ASR::GetPointer_t& x) {
         if (ASR::is_a<ASR::ComplexRe_t>(*x.m_arg) ||
                 ASR::is_a<ASR::ComplexIm_t>(*x.m_arg)) {
-            ASR::expr_t* complex_arg = ASR::is_a<ASR::ComplexRe_t>(*x.m_arg)
-                ? ASR::down_cast<ASR::ComplexRe_t>(x.m_arg)->m_arg
-                : ASR::down_cast<ASR::ComplexIm_t>(x.m_arg)->m_arg;
-            unsigned int member_idx = ASR::is_a<ASR::ComplexRe_t>(*x.m_arg) ? 0 : 1;
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
-            this->visit_expr(*complex_arg);
+            this->visit_expr(*x.m_arg);
             ptr_loads = ptr_loads_copy;
-            ASR::ttype_t* complex_type_asr = ASRUtils::expr_type(complex_arg);
-            int kind = ASRUtils::extract_kind_from_ttype_t(complex_type_asr);
-            llvm::Type* ctype = (kind == 4) ? complex_type_4 : complex_type_8;
-            tmp = llvm_utils->create_gep2(ctype, tmp, (int)member_idx);
             return;
         }
         int64_t ptr_loads_copy = ptr_loads;
@@ -13742,31 +13734,11 @@ public:
         } else if ((ASR::is_a<ASR::ComplexRe_t>(*x.m_value) ||
                     ASR::is_a<ASR::ComplexIm_t>(*x.m_value)) &&
                    !ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
-            // Complex scalar parts are designators in an ASSOCIATE target.
-            // Visit the complex argument without loading it, then associate
-            // the target pointer with the selected component address.
-            bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_value);
-            ASR::expr_t* complex_arg = is_re
-                ? ASR::down_cast<ASR::ComplexRe_t>(x.m_value)->m_arg
-                : ASR::down_cast<ASR::ComplexIm_t>(x.m_value)->m_arg;
+            // A complex scalar part is a designator; the target points to it
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
-            visit_expr(*complex_arg);
-            ptr_loads = ptr_loads_copy;
-            llvm::Value* complex_ptr = tmp;
-            if (!complex_ptr->getType()->isPointerTy()) {
-                llvm::Value* complex_storage = llvm_utils->CreateAlloca(
-                    complex_ptr->getType(), nullptr, "associate_complex_storage");
-                builder->CreateStore(complex_ptr, complex_storage);
-                complex_ptr = complex_storage;
-            }
-            int kind = ASRUtils::extract_kind_from_ttype_t(
-                ASRUtils::expr_type(complex_arg));
-            llvm::Type* complex_type = (kind == 4) ? complex_type_4 : complex_type_8;
-            llvm::Value* component_ptr = llvm_utils->create_gep2(
-                complex_type, complex_ptr, is_re ? 0 : 1);
-
-            ptr_loads = 0;
+            visit_expr(*x.m_value);
+            llvm::Value* component_ptr = tmp;
             visit_expr(*x.m_target);
             llvm::Value* target_ptr = tmp;
             ptr_loads = ptr_loads_copy;
@@ -27145,28 +27117,14 @@ public:
                 tmp = inline_char_member_as_string_descriptor(
                     x.m_args[i].m_value, tmp, "inline_call_arg");
                 llvm::Value *value = tmp;
-            // Force revisit to handle the register/reference issue, plus,
-            // [TODO] We don't properly visit those even if no compile-time value exist -- Example complex_38.90
+            // A complex part is passed by the address of the part
             if ( ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
                   ASR::is_a<ASR::ComplexIm_t>(*x.m_args[i].m_value) ) {
-                bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value);
-                ASR::expr_t* complex_elem_expr = is_re
-                    ? ASR::down_cast<ASR::ComplexRe_t>(x.m_args[i].m_value)->m_arg
-                    : ASR::down_cast<ASR::ComplexIm_t>(x.m_args[i].m_value)->m_arg;
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
-                this->visit_expr(*complex_elem_expr);
+                this->visit_expr(*x.m_args[i].m_value);
                 ptr_loads = ptr_loads_copy;
-                llvm::Value* complex_ptr = tmp;
-                if (!complex_ptr->getType()->isPointerTy()) {
-                    llvm::AllocaInst* alloc = llvm_utils->CreateAlloca(*builder, complex_ptr->getType());
-                    builder->CreateStore(complex_ptr, alloc);
-                    complex_ptr = alloc;
-                }
-                int cplx_kind = ASRUtils::extract_kind_from_ttype_t(
-                    ASRUtils::extract_type(ASRUtils::expr_type(complex_elem_expr)));
-                llvm::Type* cplx_llvm_type = (cplx_kind == 4) ? complex_type_4 : complex_type_8;
-                value = llvm_utils->create_gep2(cplx_llvm_type, complex_ptr, is_re ? 0 : 1);
+                value = tmp;
             }
                 // TODO: we are getting a warning of uninitialized variable,
                 // there might be a bug below.
