@@ -7902,3 +7902,7 @@ options = "--std=f23"
 filename = "errors/exit_status_type_01.f90"
 asr = true
 options = "--implicit-typing"
+
+[[test]]
+filename = "errors/namelist_undeclared_01.f90"
+asr = true

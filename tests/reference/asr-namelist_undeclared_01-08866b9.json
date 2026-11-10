@@ -1,0 +1,13 @@
+{
+    "basename": "asr-namelist_undeclared_01-08866b9",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/namelist_undeclared_01.f90",
+    "infile_hash": "90f19cf93c1cd1613027f67d1d45f4a1b8a4acb2420b5851f95e2954",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-namelist_undeclared_01-08866b9.stderr",
+    "stderr_hash": "85775941c9673a8c051101d53c1e028bd92cff728c268b7e620eb469",
+    "returncode": 2
+}
