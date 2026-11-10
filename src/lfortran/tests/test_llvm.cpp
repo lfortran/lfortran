@@ -8548,6 +8548,77 @@ TEST_CASE("LLVM horizontal reductions clear lane 3 of rebuilt products") {
 #endif
 
 #if LLVM_VERSION_MAJOR >= 11
+// Constant element indices past the end of a vector, whose result is
+// poison. In @reductions_oob a squared element is read through one, and in
+// @reductions_oob_zero the lane 3 proof follows one.
+const std::string reductions_oob_ir = R"""(
+define <4 x double> @reductions_oob(<4 x double> %a, <4 x double> %b) #0 {
+entry:
+  %s = shufflevector <4 x double> %a, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
+  %e = extractelement <4 x double> %s, i32 7
+  %v = insertelement <4 x double> %a, double %e, i32 0
+  %q = fmul fast <4 x double> %v, %v
+  %q1 = fmul fast <4 x double> %b, %b
+  %q2 = fmul fast <4 x double> %a, %a
+  %t = fadd fast <4 x double> %q, %q1
+  %r = fadd fast <4 x double> %t, %q2
+  ret <4 x double> %r
+}
+
+define <4 x double> @reductions_oob_zero(<4 x double> %a, <4 x double> %b, i1 %c) #0 {
+entry:
+  %s = shufflevector <4 x double> %a, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
+  %e = extractelement <4 x double> %s, i32 7
+  %v = insertelement <4 x double> %a, double %e, i32 3
+  %v0 = select i1 %c, <4 x double> %v, <4 x double> %a
+  %g0a = shufflevector <4 x double> %v0, <4 x double> %b, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
+  %g0b = shufflevector <4 x double> %g0a, <4 x double> %a, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
+  %g0c = shufflevector <4 x double> %g0b, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
+  %s0 = fmul fast <4 x double> %g0c, %g0c
+  %g1a = shufflevector <4 x double> %v0, <4 x double> %b, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
+  %g1b = shufflevector <4 x double> %g1a, <4 x double> %a, <4 x i32> <i32 0, i32 1, i32 5, i32 undef>
+  %g1c = shufflevector <4 x double> %g1b, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
+  %s1 = fmul fast <4 x double> %g1c, %g1c
+  %g2a = shufflevector <4 x double> %v0, <4 x double> %b, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
+  %g2b = shufflevector <4 x double> %g2a, <4 x double> %a, <4 x i32> <i32 0, i32 1, i32 6, i32 undef>
+  %g2c = shufflevector <4 x double> %g2b, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
+  %s2 = fmul fast <4 x double> %g2c, %g2c
+  %t0 = fadd fast <4 x double> %s0, %s1
+  %t1 = fadd fast <4 x double> %t0, %s2
+  ret <4 x double> %t1
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
+TEST_CASE("LLVM horizontal reductions through out of range element indices") {
+    // An element read through an index past the end is not a component,
+    // and it is not known to be zero.
+    std::unique_ptr<llvm::TargetMachine> x86
+        = reductions_target_machine("x86_64-unknown-linux-gnu", "x86-64");
+    if (!x86) {
+        return;
+    }
+    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<llvm::Module> m = e.parse_module(reductions_oob_ir, "");
+    llvm::Function &oob = *m->getFunction("reductions_oob");
+    CHECK(!LCompilers::recombine_horizontal_reductions(oob, *x86));
+    CHECK(!calls_intrinsic_like(oob, "hadd"));
+    llvm::Function &zero = *m->getFunction("reductions_oob_zero");
+    CHECK(LCompilers::recombine_horizontal_reductions(zero, *x86));
+    bool masked = false;
+    for (llvm::BasicBlock &bb : zero) {
+        for (llvm::Instruction &i : bb) {
+            masked = masked || clears_lane3(i);
+        }
+    }
+    CHECK(masked);
+    std::string err;
+    llvm::raw_string_ostream os(err);
+    CHECK(!llvm::verifyModule(*m, &os));
+}
+#endif
+
+#if LLVM_VERSION_MAJOR >= 11
 TEST_CASE("LLVM horizontal reductions only where they may apply") {
     // The --fast pipeline runs its late cleanup and the rewrite only on the
     // functions `may_recombine_horizontal_reductions` accepts. Everywhere

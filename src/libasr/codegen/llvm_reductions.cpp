@@ -70,6 +70,13 @@ bool is_fast(Value *v) {
         && cast<Instruction>(v)->getFastMathFlags().isFast();
 }
 
+// Whether the constant element index `at` is inside the vector type
+// `type`. An index past the end makes the result poison.
+bool in_range(ConstantInt *at, Type *type) {
+    auto *vector = dyn_cast<FixedVectorType>(type);
+    return vector && at->getValue().ult(vector->getNumElements());
+}
+
 // The squares that add up to one lane: each squared vector and its lane.
 using Squares = SmallVector<std::pair<Value *, unsigned>, 3>;
 
@@ -96,6 +103,9 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes) {
         return false;
     }
     if (auto *shuffle = dyn_cast<ShuffleVectorInst>(v)) {
+        if (lane >= shuffle->getShuffleMask().size()) {
+            return false;
+        }
         int m = shuffle->getShuffleMask()[lane];
         auto *source = cast<FixedVectorType>(
             shuffle->getOperand(0)->getType());
@@ -105,7 +115,7 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes) {
     }
     if (auto *insert = dyn_cast<InsertElementInst>(v)) {
         auto *at = dyn_cast<ConstantInt>(insert->getOperand(2));
-        if (!at) {
+        if (!at || !in_range(at, insert->getType())) {
             return false;
         }
         return at->getZExtValue() == lane
@@ -114,7 +124,7 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes) {
     }
     if (auto *extract = dyn_cast<ExtractElementInst>(v)) {
         auto *at = dyn_cast<ConstantInt>(extract->getOperand(1));
-        return at && lift(extract->getOperand(0), at->getZExtValue(), nodes);
+        return at && in_range(at, extract->getOperand(0)->getType()) && lift(extract->getOperand(0), at->getZExtValue(), nodes);
     }
     auto *i = dyn_cast<Instruction>(v);
     if (i && is_fast(i) && (i->getOpcode() == Instruction::FAdd
@@ -449,6 +459,9 @@ private:
                 return true;
             case Instruction::ShuffleVector: {
                 auto *shuffle = cast<ShuffleVectorInst>(i);
+                if (lane >= shuffle->getShuffleMask().size()) {
+                    return false;
+                }
                 int m = shuffle->getShuffleMask()[lane];
                 if (m < 0) {
                     return false;
@@ -460,7 +473,7 @@ private:
             }
             case Instruction::InsertElement: {
                 auto *at = dyn_cast<ConstantInt>(i->getOperand(2));
-                if (!at) {
+                if (!at || !in_range(at, i->getType())) {
                     return false;
                 }
                 if (at->getZExtValue() == lane) {
@@ -472,7 +485,8 @@ private:
             }
             case Instruction::ExtractElement: {
                 auto *at = dyn_cast<ConstantInt>(i->getOperand(1));
-                if (!at || lane != 0) {
+                if (!at || lane != 0
+                        || !in_range(at, i->getOperand(0)->getType())) {
                     return false;
                 }
                 node.operands.push_back({i->getOperand(0),
