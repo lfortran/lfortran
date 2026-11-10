@@ -2046,6 +2046,68 @@ semantic error: different shape for array initialization on dimension 1 (3 and 2
 4781 |     type(cc1_dt_shape_t) :: cc1_xt(3) = [cc1_dt_shape_t(1), cc1_dt_shape_t(2)]  ! {Error} different shape for array initialization on dimension 1 (3 and 2)
      |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: symbol 'hc' in namelist 'g3' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
+    --> tests/errors/continue_compilation_1.f90:4795:23
+     |
+4795 |         namelist /g3/ hc  ! {Error} symbol 'hc' in namelist 'g3' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
+     |                       ^^ 
+
+semantic error: equivalence between two common block variables is not allowed
+    --> tests/errors/continue_compilation_1.f90:4811:21
+     |
+4811 |     equivalence (a, b)  ! {Error} equivalence between two common block variables is not allowed
+     |                     ^ both variables are in a common block
+
+semantic error: 'g' must be a module procedure or an external procedure with an explicit interface
+    --> tests/errors/continue_compilation_1.f90:4820:9
+     |
+4820 |         procedure, nopass :: g  ! {Error} 'g' must be a module procedure or an external procedure with an explicit interface
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: requirement argument 'u' has not been declared in requirement 'cc1_op_r'
+    --> tests/errors/continue_compilation_1.f90:4865:31
+     |
+4865 |     requirement cc1_op_r { T, U, V, op_func }  ! {Error} requirement argument 'u' has not been declared in requirement 'cc1_op_r'
+     |                               ^ 
+
+semantic error: No requirement 'cc1_op_r' is defined
+    --> tests/errors/continue_compilation_1.f90:4878:20
+     |
+4878 |         require :: cc1_op_r { T, T, V, op_func }
+     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type parameter 't' is not specified in any requirements
+    --> tests/errors/continue_compilation_1.f90:4881:13
+     |
+4881 |             type(T), intent(in) :: x
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type parameter 'v' is not specified in any requirements
+    --> tests/errors/continue_compilation_1.f90:4882:13
+     |
+4882 |             type(V) :: res
+     |             ^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_1.f90:4880:9 - 4884:20
+     |
+4880 |            pure elemental function cc1_call_op_func(x) result(res)
+     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4884 |            end function
+     | ...^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Template argument t has not been declared in template specification.
+    --> tests/errors/continue_compilation_1.f90:4877:5 - 4885:17
+     |
+4877 |        template cc1_op_t { T, V, op_func }
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4885 |        end template
+     | ...^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -5648,6 +5710,36 @@ semantic error: the generic 'cc1_gen_binding' is referenced as a function, but i
      |
 4720 |         y = t%cc1_gen_binding(1.0)
      |             ^^^^^^^^^^^^^^^^^^^^^^ a subroutine must be called with a CALL statement
+
+warning: Routine `exit` is a non-standard function
+    --> tests/errors/continue_compilation_1.f90:4787:5
+     |
+4787 |     call exit(status)  ! {Error} `status` argument of `exit` must be of integer type, but got real
+     |     ^^^^^^^^^^^^^^^^^ 
+
+semantic error: `status` argument of `exit` must be of integer type, but got real
+    --> tests/errors/continue_compilation_1.f90:4787:15
+     |
+4787 |     call exit(status)  ! {Error} `status` argument of `exit` must be of integer type, but got real
+     |               ^^^^^^ must be of integer type
+
+semantic error: The implied do loop variable 'i' must be a scalar integer, not type(*)
+    --> tests/errors/continue_compilation_1.f90:4803:15
+     |
+4803 |     print *, [(i, i = 1, 1)]  ! {Error} The implied do loop variable 'i' must be a scalar integer, not type(*)
+     |               ^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'cc1_impure_h' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_1.f90:4848:40
+     |
+4848 |         cc1_elemental_calls_function = cc1_impure_h(x)  ! {Error} Call to impure procedure 'cc1_impure_h' is not allowed inside a PURE procedure
+     |                                        ^^^^^^^^^^^^^^^ 
+
+semantic error: Call to impure procedure 'cc1_impure_s' is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_1.f90:4853:9
+     |
+4853 |         call cc1_impure_s(x)  ! {Error} Call to impure procedure 'cc1_impure_s' is not allowed inside a PURE procedure
+     |         ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
