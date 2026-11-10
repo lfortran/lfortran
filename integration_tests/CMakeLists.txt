@@ -6382,6 +6382,7 @@ RUN(NAME separate_compilation_71 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_72 LABELS gfortran llvm
     EXTRA_ARGS --separate-compilation --implicit-interface
     EXTRAFILES separate_compilation_72a.f90 separate_compilation_72b.f90)
+RUN(NAME separate_compilation_74 LABELS gfortran llvm EXTRAFILES separate_compilation_74a.f90) # ieee_value(x, ieee_quiet_nan) and ieee_is_nan in a module compiled to its own object file (#8714)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
