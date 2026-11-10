@@ -5448,6 +5448,7 @@ RUN(NAME data_implied_do_09 LABELS gfortran llvm)
 RUN(NAME data_implied_do_10 LABELS gfortran llvm)
 RUN(NAME data_implied_do_11 LABELS gfortran llvm)
 RUN(NAME data_implied_do_12 LABELS gfortran llvm)
+RUN(NAME data_implied_do_13 LABELS gfortran llvm) # named-constant repeat count of a negative value in a DATA implied-do (#4680)
 
 RUN(NAME save_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME save_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
