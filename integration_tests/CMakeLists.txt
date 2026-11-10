@@ -3473,6 +3473,7 @@ RUN(NAME allocate_77 LABELS gfortran llvm c) # allocation on assignment of a der
 RUN(NAME allocate_78 LABELS gfortran llvm) # typed allocation with a named-constant kind (#14384)
 RUN(NAME allocate_79 LABELS gfortran llvm) # allocate with source= and no shape spec into a previously deallocated array (#8332)
 RUN(NAME allocate_80 LABELS gfortran llvm) # allocate(source=) from a deferred-length character scalar (#3640)
+RUN(NAME allocate_81 LABELS gfortran llvm) # allocate(mold=) and allocate(source=) with derived-type array components (#5400)
 RUN(NAME allocate_pointer_associated_01 LABELS gfortran llvm) # allocate an already associated pointer (#16072, #13028)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
