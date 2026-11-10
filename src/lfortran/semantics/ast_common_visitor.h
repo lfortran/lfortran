@@ -2647,23 +2647,24 @@ public:
         return false;
     }
     /*
-     * A struct to store the information of a postponed call to genericProcedure
-     * The information should be consumed by function `evaluate_delayed_generic_procedure_calls`
+     * A type-bound function call in an array bound, such as
+     * `dimension(self%n())`, whose binding is resolved later. The
+     * information is consumed by `evaluate_postponed_type_bound_calls`.
      */
-    struct postponed_genericProcedure_call{
+    struct postponed_type_bound_call{
         ASR::expr_t** holder; // Pointer to the expre that should hold the `ASR::FunctionCall`
         SymbolTable* current_scope; // The scope where the `AST::FuncCallOrArray` should've been evaluated. 
-        AST::expr_t* func_call; // The expression to visit later, such as `g(n) + 1`
-        const char* var_name; // Name of the `ASR::Variable` that the functionCall is part of [integer :: arr(genericCall())]
+        AST::expr_t* func_call; // The expression to visit later, such as `self%n()`
+        const char* var_name; // Name of the `ASR::Variable` that the functionCall is part of [integer :: arr(self%n())]
         std::function<void(ASR::expr_t*)> check; // Lambda function called with the returning `ASR::expr`, to check it or to build what needs it.
         // Constructor
-        postponed_genericProcedure_call( ASR::expr_t** holder, SymbolTable* current_scope,
+        postponed_type_bound_call( ASR::expr_t** holder, SymbolTable* current_scope,
             AST::expr_t* func_call, const char* var_name,
             std::function<void(ASR::expr_t*)> check
         ) : holder(holder), current_scope(current_scope), func_call(func_call),
             var_name(var_name), check(check) {}
     };
-    std::vector<postponed_genericProcedure_call> postponed_genericProcedure_calls_vec;
+    std::vector<postponed_type_bound_call> postponed_type_bound_calls;
 
     /*
      * A struct to store the information for select type cast
@@ -4146,7 +4147,7 @@ public:
 
     // Whether a bound of `dim` is a postponed call
     bool has_postponed_bound(const ASR::dimension_t &dim) {
-        for (auto &call : postponed_genericProcedure_calls_vec) {
+        for (auto &call : postponed_type_bound_calls) {
             if (call.holder == &dim.m_start || call.holder == &dim.m_length) {
                 return true;
             }
@@ -4600,7 +4601,7 @@ public:
             if (m_dim[i].m_end) {
                 ASR::expr_t* end{};
                 if(is_type_bound_func_call(m_dim[i].m_end)){ // Delay
-                    postponed_genericProcedure_calls_vec.emplace_back(&dim.m_length,
+                    postponed_type_bound_calls.emplace_back(&dim.m_length,
                         current_scope, m_dim[i].m_end, var_name, 
                         [this, dim_ptr = &dim](ASR::expr_t* end){
                             dimension_attribute_error_check(end);

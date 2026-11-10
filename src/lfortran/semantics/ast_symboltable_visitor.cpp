@@ -1233,7 +1233,7 @@ public:
                     // interfaces, or to define the procedures its procedure
                     // placeholders stand for.
                     add_generic_procedures();
-                    evaluate_postponed_calls_to_genericProcedure();
+                    evaluate_postponed_type_bound_calls();
                     resolve_proc_pointer_placeholders();
                     report_unresolved_proc_placeholders();
                 }
@@ -1241,7 +1241,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
                 // Drop what the aborted program unit left pending.
                 generic_procedures.clear();
-                postponed_genericProcedure_calls_vec.clear();
+                postponed_type_bound_calls.clear();
                 // An aborted program unit can leave its scope current.
                 current_scope = global_scope;
                 pending_proc_placeholders.clear();
@@ -1754,7 +1754,7 @@ public:
         add_generic_class_procedures();
         resolve_proc_pointer_placeholders();
         resolve_pending_proc_ptr_inits();
-        evaluate_postponed_calls_to_genericProcedure();
+        evaluate_postponed_type_bound_calls();
         try {
             add_assignment_procedures();
         } catch (SemanticAbort &) {
@@ -1919,10 +1919,11 @@ public:
     // specification part once all of its declarations have been visited: a
     // generic interface can name a specific procedure declared after it.
     void finalize_interfaces() {
-        // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
+        // Build the generic interfaces before the type-bound calls of array
+        // bounds, whose bindings can name them.
         add_generic_procedures();
         add_overloaded_procedures();
-        evaluate_postponed_calls_to_genericProcedure();
+        evaluate_postponed_type_bound_calls();
         resolve_proc_pointer_placeholders();
         resolve_pending_proc_ptr_inits();
         report_unresolved_proc_placeholders();
@@ -5909,15 +5910,15 @@ public:
     }
 
     /* 
-        Evaluate call expressions to genericProcedures that's used in variable declaration.
-        e.g : `integer :: arr(generic_proc(),10)` OR Character(len=len_generic()) :: char
+        Evaluate the type-bound function calls of array bounds, such as
+        `integer :: arr(self%n())`, once the bindings are resolved.
     */
-    void evaluate_postponed_calls_to_genericProcedure(){
+    void evaluate_postponed_type_bound_calls(){
         if(!generic_procedures.empty()){
             throw LCompilersException("generic_procedures should be resolved"
-                "before evaluating calls to genericProcedure");
+                "before evaluating postponed type-bound calls");
         }
-        for(auto &[expr_holder, symtable, funcCall, var_name, CheckFunc] :postponed_genericProcedure_calls_vec){
+        for(auto &[expr_holder, symtable, funcCall, var_name, CheckFunc] :postponed_type_bound_calls){
             // Set current scope
             SymbolTable* current_scope_copy = current_scope;
             current_scope = symtable;
@@ -5998,7 +5999,7 @@ public:
             current_scope = current_scope_copy;
         }
         // Clear the delayed generic procedure calls
-        postponed_genericProcedure_calls_vec.clear();
+        postponed_type_bound_calls.clear();
     }
 
     ASR::symbol_t* resolve_type_bound_proc_in_parent_chain(

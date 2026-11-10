@@ -589,7 +589,7 @@ public:
         // In the body visitor all symbols are already resolved, so
         // we can evaluate them now.
         for (auto &[expr_holder, symtable, funcCall, var_name, CheckFunc]
-                : postponed_genericProcedure_calls_vec) {
+                : postponed_type_bound_calls) {
             SymbolTable* current_scope_copy = current_scope;
             current_scope = symtable;
             this->visit_expr(*funcCall);
@@ -610,7 +610,7 @@ public:
             }
             current_scope = current_scope_copy;
         }
-        postponed_genericProcedure_calls_vec.clear();
+        postponed_type_bound_calls.clear();
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_items);
