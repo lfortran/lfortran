@@ -17,6 +17,8 @@ character(len=24) :: e24
 character(len=8) :: f8
 character(len=12) :: es12
 character(len=46) :: es46
+character(len=48) :: es48
+character(len=40) :: f40
 real(k30) :: xeps
 integer :: p
 
@@ -88,6 +90,14 @@ write(es12, '(RU,ES12.2)') xeps
 if (es12 /= '    1.01E+00') error stop
 write(es46, '(ES46.34E4)') xeps
 if (es46 /= '    1.0000000000000000000000000000000002E+0000') error stop
+
+! One more digit: the 37th is 5 with a nonzero tail, so nearest rounds 8 to 9.
+! An exact power of two must keep its integer digits, not a 36-digit prefix.
+xeps = 1.0_k30 + 2*epsilon(1.0_k30)
+write(es48, '(ES48.35E4)') xeps
+if (es48 /= '     1.00000000000000000000000000000000039E+0000') error stop
+write(f40, '(F40.0)') 2.0_k30**120
+if (f40 /= '  1329227995784915872903807060280344576.') error stop
 contains
     subroutine check_real16_field(field)
         character(len=*), intent(in) :: field
