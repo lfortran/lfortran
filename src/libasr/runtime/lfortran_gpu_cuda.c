@@ -1114,19 +1114,25 @@ static host_allocator *program_allocator(void) {
 }
 #endif
 
+// Only a program on Linux reads a file through the stream that calls it, and
+// a Mach-O link does not accept an undefined weak reference.
+#if !defined(__APPLE__)
 #ifdef __cplusplus
 extern "C"
 #endif
 void _lfortran_set_gpu_fill(int64_t (*function)(void *, int64_t,
     int64_t (*)(void *, char *, int64_t, int64_t), void *))
     __attribute__((weak));
+#endif
 
 __attribute__((constructor)) static void install_managed_allocator(void) {
     host_allocator *a = program_allocator();
     if (!a || a->alloc == managed_alloc) return;
+#if !defined(__APPLE__)
     if (_lfortran_set_gpu_fill) {
         _lfortran_set_gpu_fill(lfortran_gpu_fill_managed);
     }
+#endif
     previous_allocator = *a;
     a->alloc = managed_alloc;
     a->realloc_func = managed_realloc;
