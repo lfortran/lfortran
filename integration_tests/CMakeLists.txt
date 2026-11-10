@@ -1161,6 +1161,7 @@ RUN(NAME arrays_134 LABELS gfortran llvm) # size() of an explicit-shape dummy wi
 RUN(NAME arrays_135 LABELS gfortran llvm llvmStackArray) # loops over 16-byte aligned stack arrays, promoted allocatables under --fast
 RUN(NAME arrays_136 LABELS gfortran llvm) # explicit-shape dummies with integer(int64) and integer(2) extents, int8 element to default integer (#7609)
 RUN(NAME arrays_137 LABELS gfortran llvm) # list-directed write of real arrays with vector subscripts (#3695)
+RUN(NAME arrays_138 LABELS gfortran llvm) # local array with huge(0) elements (#6508)
 
 # DISABLED: #8115 - ICE: get_struct_sym_from_struct_expr returns nullptr for empty struct array constructors [tp ::]
 # RUN(NAME array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
