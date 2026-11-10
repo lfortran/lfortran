@@ -334,8 +334,8 @@ static lf_float128 f128_pack_parts(int sign, int32_t exp, u128 mant) {
     /* Handle subnormal range */
     if (exp <= -16383) {
         /* subnormal: shift mant right to keep true exponent = -16382 */
-        int subnorm_shift = -16382 - exp + 1;
-        if (subnorm_shift >= 113) {
+        int subnorm_shift = -16382 - exp;
+        if (subnorm_shift > 113) {
             /* underflow to zero */
             hi = (uint64_t)sign << 63;
             lo = 0;
@@ -343,8 +343,18 @@ static lf_float128 f128_pack_parts(int sign, int32_t exp, u128 mant) {
             memcpy(r.bytes+8, &hi, 8);
             return r;
         }
-        mant = u128_shr(mant, subnorm_shift);
-        /* biased = 0 for subnormals */
+        {
+            /* round to nearest even while shifting out the low bits */
+            u128 low_mask = u128_sub(u128_shl(u128_one(), subnorm_shift), u128_one());
+            u128 dropped = u128_and(mant, low_mask);
+            u128 half = u128_shl(u128_one(), subnorm_shift - 1);
+            mant = u128_shr(mant, subnorm_shift);
+            if (u128_gt(dropped, half) ||
+                    (u128_eq(dropped, half) && !u128_is_zero(u128_and(mant, u128_one())))) {
+                mant = u128_inc(mant);
+            }
+        }
+        /* biased = 0 for subnormals; a carry into bit 112 makes it normal */
         uint64_t mhi = u128_hi(mant) & 0x0000FFFFFFFFFFFFull;
         uint64_t mlo = u128_lo(mant);
         hi = ((uint64_t)sign << 63) | mhi;
@@ -2196,6 +2206,79 @@ lf_float128 lf_f128_atanh(lf_float128 a) {
 }
 
 /* ========================================================================
+ * erf and erfc
+ *
+ * For |x| < 2, erf is the series
+ *   erf(x) = 2/sqrt(pi) exp(-x^2) sum_n 2^n x^(2n+1) / (1 * 3 * ... * (2n+1))
+ * whose terms are all positive, so nothing cancels. For |x| >= 2, erfc is the
+ * continued fraction
+ *   erfc(x) = exp(-x^2) / sqrt(pi) / (x + (1/2) / (x + 1 / (x + (3/2) / ...)))
+ * evaluated from the bottom, which converges quickly there.
+ * ======================================================================== */
+
+static lf_float128 f128_erf_series(lf_float128 a) {
+    lf_float128 a2 = f_mul(a, a);
+    lf_float128 two_a2 = f128_scale(a2, 1);
+    lf_float128 term = a;
+    lf_float128 sum = a;
+    lf_float128 eps = lf_float128_from_str("1e-36");
+    for (int n = 1; n < 400; n++) {
+        term = f_div(f_mul(term, two_a2), lf_f128_from_int64(2 * (int64_t)n + 1));
+        sum = f_add(sum, term);
+        if (f128_cmp_internal(term, f_mul(sum, eps)) < 0) break;
+    }
+    lf_float128 two_over_sqrt_pi = lf_float128_from_str("1.12837916709551257389615890312154517");
+    return f_mul(f_mul(two_over_sqrt_pi, lf_f128_exp(f_neg(a2))), sum);
+}
+
+static lf_float128 f128_erfc_fraction(lf_float128 a) {
+    lf_float128 t = a;
+    for (int k = 400; k >= 1; k--) {
+        lf_float128 c = f128_scale(lf_f128_from_int64(k), -1);
+        t = f_add(a, f_div(c, t));
+    }
+    lf_float128 sqrt_pi = lf_float128_from_str("1.77245385090551602729816748334114518");
+    return f_div(lf_f128_exp(f_neg(f_mul(a, a))), f_mul(sqrt_pi, t));
+}
+
+lf_float128 lf_f128_erf(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    lf_float128 one = f128_one();
+    if (p.is_nan || p.is_zero) return a;
+    lf_float128 ax = lf_f128_abs(a);
+    lf_float128 r;
+    if (f128_cmp_internal(ax, lf_f128_from_int64(2)) < 0) {
+        r = f128_erf_series(ax);
+    } else if (f128_cmp_internal(ax, lf_f128_from_int64(7)) > 0) {
+        r = one;
+    } else {
+        r = f_sub(one, f128_erfc_fraction(ax));
+    }
+    return f_sign(r, p.sign);
+}
+
+lf_float128 lf_f128_erfc(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    lf_float128 one = f128_one();
+    if (p.is_nan) return a;
+    lf_float128 ax = lf_f128_abs(a);
+    lf_float128 r;
+    if (p.is_zero) {
+        return one;
+    } else if (f128_cmp_internal(ax, lf_f128_from_int64(2)) < 0) {
+        r = f_sub(one, f128_erf_series(ax));
+    } else if (f128_cmp_internal(ax, lf_f128_from_int64(110)) > 0) {
+        r = lf_f128_from_int64(0);
+    } else {
+        r = f128_erfc_fraction(ax);
+    }
+    if (p.sign) {
+        r = f_sub(lf_f128_from_int64(2), r);
+    }
+    return r;
+}
+
+/* ========================================================================
  * N. Formatting (Dragon4) — verbatim from lf_float128_to_str.c
  * ======================================================================== */
 
@@ -2267,6 +2350,10 @@ static int32_t floor_log10_pow2b(int32_t n) {
 }
 
 void lf_float128_to_str(char *result, const uint8_t bytes[16]) {
+    lf_float128_to_str_digits(result, bytes, 34);
+}
+
+void lf_float128_to_str_digits(char *result, const uint8_t bytes[16], int ndigits) {
     uint64_t lo_w, hi_w;
     memcpy(&lo_w, bytes, 8); memcpy(&hi_w, bytes+8, 8);
     int vsign=(int)(hi_w>>63);
@@ -2278,7 +2365,13 @@ void lf_float128_to_str(char *result, const uint8_t bytes[16]) {
         return;
     }
     if(!biased&&!mhi&&!mlo){
-        sprintf(result,"%s0.000000000000000000000000000000000E+0000",vsign?"-":"");
+        {
+        char *z=result;
+        if(vsign) *z++='-';
+        *z++='0'; *z++='.';
+        for(int i=1;i<ndigits;i++) *z++='0';
+        sprintf(z,"E+0000");
+    }
         return;
     }
     uint64_t sig_hi=mhi|(biased?(1ull<<48):0ull);
@@ -2298,9 +2391,9 @@ void lf_float128_to_str(char *result, const uint8_t bytes[16]) {
      if(big_cmp(&R,&S10)>=0){dec_exp++;S_scaled=S10;}
      else if(big_cmp(&R,&S_scaled)<0){dec_exp--;big_mul_small(&R,10);}}
 
-    char digits[36]; int nd=0;
+    char digits[48]; int nd=0;
     digits[nd++]=(char)('0'+big_digit(&R,&S_scaled));
-    for(int i=1;i<34;i++){big_mul_small(&R,10);digits[nd++]=(char)('0'+big_digit(&R,&S_scaled));}
+    for(int i=1;i<ndigits;i++){big_mul_small(&R,10);digits[nd++]=(char)('0'+big_digit(&R,&S_scaled));}
 
     big_mul_small(&R,10);
     if(big_digit(&R,&S_scaled)>=5){
@@ -2314,7 +2407,7 @@ void lf_float128_to_str(char *result, const uint8_t bytes[16]) {
     char *p=result;
     if(vsign) *p++='-';
     *p++=digits[0]; *p++='.';
-    for(int i=1;i<34;i++) *p++=digits[i];
+    for(int i=1;i<ndigits;i++) *p++=digits[i];
     int ae=dec_exp>=0?dec_exp:-dec_exp;
     sprintf(p,"E%c%04d",dec_exp>=0?'+':'-',ae);
 }
@@ -2414,27 +2507,36 @@ lf_float128 lf_float128_from_str(const char *s) {
         /* bit_pos = position of leading 1 (0-indexed) */
         int32_t exp = bit_pos;  /* true exponent */
 
-        /* Extract 113 bits starting from bit_pos */
+        /* Extract the 113 bits starting from bit_pos, rounding to nearest
+         * even with the bits below them. */
         u128 mant = u128_zero();
         int shift = bit_pos - 112;  /* how many bits to shift sig right */
-        if (shift < 0) {
-            /* sig has fewer than 113 bits: shift left */
-            /* Build sig as u128 directly */
+        if (shift <= 0) {
+            /* sig has at most 113 bits: shift left, nothing is lost */
             uint64_t lo2 = sig.d[0];
             uint64_t hi2 = sig.n > 1 ? sig.d[1] : 0;
             mant = u128_shl(u128_make(hi2, lo2), -shift);
         } else {
-            /* shift right: read relevant limbs */
-            int limb = shift / 64;
-            int bit  = shift % 64;
-            uint64_t lo2 = (limb < sig.n) ? sig.d[limb] : 0;
-            uint64_t hi2 = (limb+1 < sig.n) ? sig.d[limb+1] : 0;
-            uint64_t hi3 = (limb+2 < sig.n) ? sig.d[limb+2] : 0;
-            mant = u128_make(hi2, lo2);
-            if (bit) mant = u128_or(u128_shr(mant, bit), u128_shl(u128_from_u64(hi3), 64 - bit));
-            else     mant = u128_make(hi2, lo2);
-            /* Simplified: just take top 2 limbs and shift */
-            mant = u128_shr(u128_make(hi2, lo2), bit);
+            for (int i = 0; i < 113; i++) {
+                int pos = shift + i;
+                int limb = pos / 64;
+                if (limb < sig.n && ((sig.d[limb] >> (pos % 64)) & 1)) {
+                    mant = u128_or(mant, u128_shl(u128_one(), i));
+                }
+            }
+            int rpos = shift - 1;
+            int round_bit = (sig.d[rpos / 64] >> (rpos % 64)) & 1;
+            int sticky = 0;
+            for (int pos = 0; pos < rpos && !sticky; pos++) {
+                sticky = (sig.d[pos / 64] >> (pos % 64)) & 1;
+            }
+            if (round_bit && (sticky || !u128_is_zero(u128_and(mant, u128_one())))) {
+                mant = u128_inc(mant);
+                if (!u128_is_zero(u128_shr(mant, 113))) {
+                    mant = u128_shr(mant, 1);
+                    exp++;
+                }
+            }
         }
         return f128_pack_parts(sign, exp, mant);
     } else {
@@ -2474,6 +2576,15 @@ lf_float128 lf_float128_from_str(const char *s) {
                 k--;
             }
         }
+        /* The estimate of k can also leave the quotient below 2^112, where
+         * its last bit and the rounding would be lost: scale it up. */
+        {
+            Big S112 = S2; big_shl(&S112, 112);
+            while (big_cmp(&sig, &S112) < 0) {
+                big_shl(&sig, 1);
+                k++;
+            }
+        }
         /* Now sig/S2 is close to [2^112, 2^113). Extract the integer
          * quotient directly; this quotient is the binary128 significand. */
         u128 mant2 = u128_zero();
@@ -2488,7 +2599,12 @@ lf_float128 lf_float128_from_str(const char *s) {
 
         /* Round: if remainder*2 >= denominator, round up. */
         big_shl(&sig, 1);
-        if (big_cmp(&sig, &S2) >= 0) mant2 = u128_inc(mant2);
+        {
+            int c = big_cmp(&sig, &S2);
+            if (c > 0 || (c == 0 && !u128_is_zero(u128_and(mant2, u128_one())))) {
+                mant2 = u128_inc(mant2);
+            }
+        }
 
         int32_t exp2 = 112 - k;
         if (!u128_is_zero(u128_shr(mant2, 113))) {
@@ -2615,6 +2731,8 @@ lf_f128_abi lf_tanhq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f
 lf_f128_abi lf_asinhq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_asinh(lf_f128_from_abi(a))); }
 lf_f128_abi lf_acoshq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_acosh(lf_f128_from_abi(a))); }
 lf_f128_abi lf_atanhq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f128_atanh(lf_f128_from_abi(a))); }
+lf_f128_abi lf_erfq(lf_f128_abi a)                  { return lf_f128_to_abi(lf_f128_erf(lf_f128_from_abi(a))); }
+lf_f128_abi lf_erfcq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_erfc(lf_f128_from_abi(a))); }
 lf_f128_abi lf_sindq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_sind(lf_f128_from_abi(a))); }
 lf_f128_abi lf_cosdq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_cosd(lf_f128_from_abi(a))); }
 lf_f128_abi lf_tandq(lf_f128_abi a)                 { return lf_f128_to_abi(lf_f128_tand(lf_f128_from_abi(a))); }
@@ -2933,6 +3051,8 @@ _LF_SHIM1(lf_tanhq,         lf_f128_tanh)
 _LF_SHIM1(lf_asinhq,        lf_f128_asinh)
 _LF_SHIM1(lf_acoshq,        lf_f128_acosh)
 _LF_SHIM1(lf_atanhq,        lf_f128_atanh)
+_LF_SHIM1(lf_erfq,          lf_f128_erf)
+_LF_SHIM1(lf_erfcq,         lf_f128_erfc)
 _LF_SHIM1(lf_sindq,         lf_f128_sind)
 _LF_SHIM1(lf_cosdq,         lf_f128_cosd)
 _LF_SHIM1(lf_tandq,         lf_f128_tand)

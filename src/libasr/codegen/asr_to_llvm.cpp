@@ -700,7 +700,7 @@ public:
     llvm::BasicBlock *proc_return;
     std::string mangle_prefix;
     bool prototype_only;
-    llvm::StructType *complex_type_4, *complex_type_8;
+    llvm::StructType *complex_type_4, *complex_type_8, *complex_type_16;
     llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
     llvm::Type* string_descriptor;
     llvm::PointerType *character_type;
@@ -1902,17 +1902,20 @@ public:
 
         // Inline arithmetic for add, sub, mul, div; fallback to runtime for pow
         if (runtime_func_name == "_lfortran_complex_add_32" ||
-            runtime_func_name == "_lfortran_complex_add_64") {
+            runtime_func_name == "_lfortran_complex_add_64" ||
+            runtime_func_name == "_lfortran_complex_add_128") {
             // (a+bi) + (c+di) = (a+c) + (b+d)i
             result_real = builder->CreateFAdd(left_real, right_real);
             result_imag = builder->CreateFAdd(left_imag, right_imag);
         } else if (runtime_func_name == "_lfortran_complex_sub_32" ||
-                   runtime_func_name == "_lfortran_complex_sub_64") {
+                   runtime_func_name == "_lfortran_complex_sub_64" ||
+            runtime_func_name == "_lfortran_complex_sub_128") {
             // (a+bi) - (c+di) = (a-c) + (b-d)i
             result_real = builder->CreateFSub(left_real, right_real);
             result_imag = builder->CreateFSub(left_imag, right_imag);
         } else if (runtime_func_name == "_lfortran_complex_mul_32" ||
-                   runtime_func_name == "_lfortran_complex_mul_64") {
+                   runtime_func_name == "_lfortran_complex_mul_64" ||
+            runtime_func_name == "_lfortran_complex_mul_128") {
             // (a+bi) * (c+di) = (ac-bd) + (ad+bc)i
             llvm::Value* ac = builder->CreateFMul(left_real, right_real);
             llvm::Value* bd = builder->CreateFMul(left_imag, right_imag);
@@ -1921,7 +1924,8 @@ public:
             result_real = builder->CreateFSub(ac, bd);
             result_imag = builder->CreateFAdd(ad, bc);
         } else if (runtime_func_name == "_lfortran_complex_div_32" ||
-                   runtime_func_name == "_lfortran_complex_div_64") {
+                   runtime_func_name == "_lfortran_complex_div_64" ||
+            runtime_func_name == "_lfortran_complex_div_128") {
             auto create_fabs = [&](llvm::Value* value) -> llvm::Value* {
 #if LLVM_VERSION_MAJOR >= 12
                 return builder->CreateUnaryIntrinsic(llvm::Intrinsic::fabs, value);
@@ -2357,6 +2361,7 @@ public:
         // %complex = type { float, float }
         complex_type_4 = llvm_utils->complex_type_4;
         complex_type_8 = llvm_utils->complex_type_8;
+        complex_type_16 = llvm_utils->complex_type_16;
         complex_type_4_ptr = llvm_utils->complex_type_4_ptr;
         complex_type_8_ptr = llvm_utils->complex_type_8_ptr;
         character_type = llvm_utils->character_type;
@@ -6822,17 +6827,12 @@ public:
                 ASR::ComplexConstant_t* comp_const = ASR::down_cast<ASR::ComplexConstant_t>(elem);
                 llvm::Constant *re, *im;
                 llvm::StructType* struct_type;
-                if (a_kind == 4) {
-                    re = llvm::ConstantFP::get(context, llvm::APFloat((float) comp_const->m_re));
-                    im = llvm::ConstantFP::get(context, llvm::APFloat((float) comp_const->m_im));
-                    struct_type = llvm::cast<llvm::StructType>(complex_type_4);
-                } else if (a_kind == 8) {
-                    re = llvm::ConstantFP::get(context, llvm::APFloat((double) comp_const->m_re));
-                    im = llvm::ConstantFP::get(context, llvm::APFloat((double) comp_const->m_im));
-                    struct_type = llvm::cast<llvm::StructType>(complex_type_8);
-                } else {
+                if (a_kind != 4 && a_kind != 8 && a_kind != 16) {
                     throw CodeGenError("Complex kind " + std::to_string(a_kind) + " not supported in array initializer");
                 }
+                re = llvm::ConstantFP::get(llvm_utils->getFPType(a_kind), comp_const->m_re);
+                im = llvm::ConstantFP::get(llvm_utils->getFPType(a_kind), comp_const->m_im);
+                struct_type = llvm::cast<llvm::StructType>(llvm_utils->getComplexType(a_kind));
                 arr_elements.push_back(llvm::ConstantStruct::get(struct_type, {re, im}));
             }
         }
@@ -8302,7 +8302,13 @@ public:
 
             if (!external) {
                 double x_re = 0.0, x_im = 0.0;
-                if (x.m_value) {
+                if (x.m_value && ASR::is_a<ASR::ComplexConstructor_t>(*x.m_value)) {
+                    init_value = create_llvm_constant_from_asr_expr(x.m_value, x.m_type);
+                    if (!init_value) {
+                        throw CodeGenError("cannot create a constant initializer for complex variable '"
+                            + std::string(x.m_name) + "'");
+                    }
+                } else if (x.m_value) {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::ComplexConstant_t>(*x.m_value));
                     ASR::ComplexConstant_t* x_cc = ASR::down_cast<ASR::ComplexConstant_t>(x.m_value);
                     x_re = x_cc->m_re; x_im = x_cc->m_im;
@@ -8321,6 +8327,12 @@ public:
                             re = llvm::ConstantFP::get(context, llvm::APFloat((double) x_re));
                             im = llvm::ConstantFP::get(context, llvm::APFloat((double) x_im));
                             type = complex_type_8;
+                            break;
+                        }
+                        case 16: {
+                            re = llvm::ConstantFP::get(llvm_utils->getFPType(16), x_re);
+                            im = llvm::ConstantFP::get(llvm_utils->getFPType(16), x_im);
+                            type = complex_type_16;
                             break;
                         }
                         default: {
@@ -9790,8 +9802,30 @@ public:
                     return llvm::ConstantFP::get(llvm_type, static_cast<float>(rc->m_r));
                 } else if (llvm_type->isDoubleTy()) {
                     return llvm::ConstantFP::get(llvm_type, rc->m_r);
+                } else if (llvm_type->isFP128Ty() &&
+                        ASRUtils::extract_kind_from_ttype_t(rc->m_type) == 16) {
+                    const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(rc);
+                    uint64_t words[2];
+                    std::memcpy(&words[0], bytes, sizeof(uint64_t));
+                    std::memcpy(&words[1], bytes + 8, sizeof(uint64_t));
+                    llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
+                    return llvm::ConstantFP::get(context,
+                        llvm::APFloat(llvm::APFloat::IEEEquad(), bits));
                 }
                 break;
+            }
+            case ASR::exprType::ComplexConstructor: {
+                ASR::ComplexConstructor_t* cc = ASR::down_cast<ASR::ComplexConstructor_t>(expr);
+                if (ASRUtils::extract_kind_from_ttype_t(cc->m_type) != 16) {
+                    break;
+                }
+                ASR::ttype_t* real16 = ASRUtils::TYPE(ASR::make_Real_t(al, expr->base.loc, 16));
+                llvm::Constant* re = create_llvm_constant_from_asr_expr(cc->m_re, real16);
+                llvm::Constant* im = create_llvm_constant_from_asr_expr(cc->m_im, real16);
+                if (re == nullptr || im == nullptr) {
+                    break;
+                }
+                return llvm::ConstantStruct::get(complex_type_16, {re, im});
             }
             case ASR::exprType::ComplexConstant: {
                 ASR::ComplexConstant_t* cc = ASR::down_cast<ASR::ComplexConstant_t>(expr);
@@ -9805,6 +9839,12 @@ public:
                         complex_type = complex_type_4;
                         re = llvm::ConstantFP::get(context, llvm::APFloat(static_cast<float>(cc->m_re)));
                         im = llvm::ConstantFP::get(context, llvm::APFloat(static_cast<float>(cc->m_im)));
+                        break;
+                    }
+                    case 16: {
+                        complex_type = complex_type_16;
+                        re = llvm::ConstantFP::get(llvm_utils->getFPType(16), cc->m_re);
+                        im = llvm::ConstantFP::get(llvm_utils->getFPType(16), cc->m_im);
                         break;
                     }
                     case 8: {
@@ -11103,7 +11143,8 @@ public:
                 it != end; ++it) {
             llvm::StructType *st = it.getStructTypeOrNull();
             if (st != nullptr && st != llvm_utils->complex_type_4 &&
-                    st != llvm_utils->complex_type_8) {
+                    st != llvm_utils->complex_type_8 &&
+                    st != llvm_utils->complex_type_16) {
                 return false;
             }
         }
@@ -12419,8 +12460,8 @@ public:
                             tmp = llvm_utils->CreateLoad2(type_fx2, tmp);
                         }
                     } else {
-                        LCOMPILERS_ASSERT(c_kind == 8)
-                        if (compiler_options.platform == Platform::Windows) {
+                        LCOMPILERS_ASSERT(c_kind == 8 || c_kind == 16)
+                        if (c_kind == 8 && compiler_options.platform == Platform::Windows) {
                             // 128 bit aggregate type is passed by reference
                         } else {
                             // Pass by value
@@ -19471,8 +19512,9 @@ public:
         int64_t n = 0;
         if (exponent_value == nullptr ||
                 !ASRUtils::extract_value(exponent_value, n)) {
-            std::string fn_name = (a_kind == 4) ?
-                "_lfortran_complex_pow_int_32" : "_lfortran_complex_pow_int_64";
+            std::string fn_name = (a_kind == 4) ? "_lfortran_complex_pow_int_32"
+                : (a_kind == 16) ? "_lfortran_complex_pow_int_128"
+                : "_lfortran_complex_pow_int_64";
             llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
             llvm::Function *fn = LLVM::get_or_declare_function(*module, fn_name,
                     llvm_utils->void_type, {
@@ -19497,8 +19539,9 @@ public:
         if (n == 0) {
             return make_complex(1.0, 0.0);
         }
-        std::string mul_name = (a_kind == 4) ?
-            "_lfortran_complex_mul_32" : "_lfortran_complex_mul_64";
+        std::string mul_name = (a_kind == 4) ? "_lfortran_complex_mul_32"
+            : (a_kind == 16) ? "_lfortran_complex_mul_128"
+            : "_lfortran_complex_mul_64";
         uint64_t u = n < 0 ? uint64_t{0} - static_cast<uint64_t>(n) : static_cast<uint64_t>(n);
         while ((u & 1) == 0) {
             base = lfortran_complex_bin_op(base, base, mul_name, complex_type);
@@ -19517,7 +19560,8 @@ public:
         if (n < 0) {
             result = lfortran_complex_bin_op(make_complex(1.0, 0.0), result,
                 (a_kind == 4) ? "_lfortran_complex_div_32"
-                              : "_lfortran_complex_div_64", complex_type);
+                : (a_kind == 16) ? "_lfortran_complex_div_128"
+                : "_lfortran_complex_div_64", complex_type);
         }
         return result;
     }
@@ -19555,6 +19599,8 @@ public:
             case ASR::binopType::Add: {
                 if (a_kind == 4) {
                     fn_name = "_lfortran_complex_add_32";
+                } else if (a_kind == 16) {
+                    fn_name = "_lfortran_complex_add_128";
                 } else {
                     fn_name = "_lfortran_complex_add_64";
                 }
@@ -19563,6 +19609,8 @@ public:
             case ASR::binopType::Sub: {
                 if (a_kind == 4) {
                     fn_name = "_lfortran_complex_sub_32";
+                } else if (a_kind == 16) {
+                    fn_name = "_lfortran_complex_sub_128";
                 } else {
                     fn_name = "_lfortran_complex_sub_64";
                 }
@@ -19571,6 +19619,8 @@ public:
             case ASR::binopType::Mul: {
                 if (a_kind == 4) {
                     fn_name = "_lfortran_complex_mul_32";
+                } else if (a_kind == 16) {
+                    fn_name = "_lfortran_complex_mul_128";
                 } else {
                     fn_name = "_lfortran_complex_mul_64";
                 }
@@ -19579,6 +19629,8 @@ public:
             case ASR::binopType::Div: {
                 if (a_kind == 4) {
                     fn_name = "_lfortran_complex_div_32";
+                } else if (a_kind == 16) {
+                    fn_name = "_lfortran_complex_div_128";
                 } else {
                     fn_name = "_lfortran_complex_div_64";
                 }
@@ -19587,6 +19639,8 @@ public:
             case ASR::binopType::Pow: {
                 if (a_kind == 4) {
                     fn_name = "_lfortran_complex_pow_32";
+                } else if (a_kind == 16) {
+                    fn_name = "_lfortran_complex_pow_128";
                 } else {
                     fn_name = "_lfortran_complex_pow_64";
                 }
@@ -19807,13 +19861,7 @@ public:
             el_type = llvm_utils->get_StringType(x_m_type);
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
             int complex_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Complex_t>(x_m_type)->m_kind);
-            if( complex_kind == 4 ) {
-                el_type = llvm_utils->complex_type_4;
-            } else if( complex_kind == 8 ) {
-                el_type = llvm_utils->complex_type_8;
-            } else {
-                LCOMPILERS_ASSERT(false);
-            }
+            el_type = llvm_utils->getComplexType(complex_kind);
         } else if (ASR::is_a<ASR::StructType_t>(*x_m_type)) {
             el_type = llvm_utils->get_type_from_ttype_t_util(
                 x.n_args > 0 ? x.m_args[0] : nullptr, x_m_type, module.get());
@@ -19881,13 +19929,7 @@ public:
             el_type = llvm_utils->get_StringType(x_m_type);
         } else if (ASR::is_a<ASR::Complex_t>(*x_m_type)) {
             int complex_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Complex_t>(x_m_type)->m_kind);
-            if( complex_kind == 4 ) {
-                el_type = llvm_utils->complex_type_4;
-            } else if( complex_kind == 8 ) {
-                el_type = llvm_utils->complex_type_8;
-            } else {
-                LCOMPILERS_ASSERT(false);
-            }
+            el_type = llvm_utils->getComplexType(complex_kind);
         } else if (ASR::is_a<ASR::StructType_t>(*x_m_type)) {
             el_type = llvm_utils->get_type_from_ttype_t_util(
                 const_cast<ASR::expr_t*>(&x.base), x_m_type, module.get());
@@ -19926,15 +19968,11 @@ public:
             for (size_t i=0; i < (size_t) arr_size; i++) {
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
                 ASR::ComplexConstant_t *comp_const = down_cast<ASR::ComplexConstant_t>(el);
-                if (ASRUtils::extract_kind_from_ttype_t(comp_const->m_type) == 4) {
-                    values.push_back(llvm::ConstantStruct::get(llvm_utils->complex_type_4,
-                        {llvm::ConstantFP::get(llvm::Type::getFloatTy(context), comp_const->m_re),
-                        llvm::ConstantFP::get(llvm::Type::getFloatTy(context), comp_const->m_im)}));
-                } else {
-                    values.push_back(llvm::ConstantStruct::get(llvm_utils->complex_type_8,
-                        {llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), comp_const->m_re),
-                        llvm::ConstantFP::get(llvm::Type::getDoubleTy(context), comp_const->m_im)}));
-                }
+                int ckind = ASRUtils::extract_kind_from_ttype_t(comp_const->m_type);
+                values.push_back(llvm::ConstantStruct::get(
+                    llvm::cast<llvm::StructType>(llvm_utils->getComplexType(ckind)),
+                    {llvm::ConstantFP::get(llvm_utils->getFPType(ckind), comp_const->m_re),
+                    llvm::ConstantFP::get(llvm_utils->getFPType(ckind), comp_const->m_im)}));
             }
         } else if (ASR::is_a<ASR::StructType_t>(*x_m_type)) {
             for (size_t i=0; i < (size_t) arr_size; i++) {
@@ -20041,6 +20079,12 @@ public:
                 type = complex_type_8;
                 break;
             }
+            case 16: {
+                re2 = builder->CreateFPExt(re_val, llvm_utils->getFPType(16));
+                im2 = builder->CreateFPExt(im_val, llvm_utils->getFPType(16));
+                type = complex_type_16;
+                break;
+            }
             default: {
                 throw CodeGenError("kind type is not supported");
             }
@@ -20065,6 +20109,12 @@ public:
                 re2 = llvm::ConstantFP::get(context, llvm::APFloat(re));
                 im2 = llvm::ConstantFP::get(context, llvm::APFloat(im));
                 type = complex_type_8;
+                break;
+            }
+            case 16: {
+                re2 = llvm::ConstantFP::get(llvm_utils->getFPType(16), re);
+                im2 = llvm::ConstantFP::get(llvm_utils->getFPType(16), im);
+                type = complex_type_16;
                 break;
             }
             default: {
@@ -20427,7 +20477,7 @@ public:
         this->visit_expr(*arg);
         ptr_loads = ptr_loads_copy;
         int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(arg));
-        llvm::Type* complex_type = (kind == 4) ? complex_type_4 : complex_type_8;
+        llvm::Type* complex_type = llvm_utils->getComplexType(kind);
         return llvm_utils->create_gep2(complex_type, tmp, is_re ? 0 : 1);
     }
 
@@ -20448,10 +20498,8 @@ public:
         ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
         int arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
         llvm::Value *re;
-        if (arg_kind == 4) {
-            re = complex_re(tmp, complex_type_4);
-        } else if (arg_kind == 8) {
-            re = complex_re(tmp, complex_type_8);
+        if (arg_kind == 4 || arg_kind == 8 || arg_kind == 16) {
+            re = complex_re(tmp, llvm_utils->getComplexType(arg_kind));
         } else {
             std::string msg = "Complex kind " + std::to_string(arg_kind) + " not implemented yet.";
             throw CodeGenError(msg);
@@ -20476,10 +20524,8 @@ public:
         ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
         int arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
         llvm::Value *im;
-        if (arg_kind == 4) {
-            im = complex_im(tmp, complex_type_4);
-        } else if (arg_kind == 8) {
-            im = complex_im(tmp, complex_type_8);
+        if (arg_kind == 4 || arg_kind == 8 || arg_kind == 16) {
+            im = complex_im(tmp, llvm_utils->getComplexType(arg_kind));
         } else {
             std::string msg = "Complex kind " + std::to_string(arg_kind) + " not implemented yet.";
             throw CodeGenError(msg);
@@ -20835,8 +20881,13 @@ public:
                         tmp = builder->CreateFPExt(tmp, llvm::Type::getDoubleTy(context));
                         zero = llvm::ConstantFP::get(context, llvm::APFloat(0.0));
                         break;
+                    case 16:
+                        target_type = complex_type_16;
+                        tmp = builder->CreateFPExt(tmp, llvm_utils->getFPType(16));
+                        zero = llvm::ConstantFP::get(llvm_utils->getFPType(16), 0.0);
+                        break;
                     default:
-                        throw CodeGenError("Only 32 and 64 bits real kinds are supported.");
+                        throw CodeGenError("Only 32, 64 and 128 bits real kinds are supported.");
                 }
                 tmp = complex_from_floats(tmp, zero, target_type);
                 break;
@@ -20858,8 +20909,13 @@ public:
                         complex_type = complex_type_8;
                         zero = llvm::ConstantFP::get(context, llvm::APFloat(0.0));
                         break;
+                    case 16:
+                        target_type = llvm_utils->getFPType(16);
+                        complex_type = complex_type_16;
+                        zero = llvm::ConstantFP::get(llvm_utils->getFPType(16), 0.0);
+                        break;
                     default:
-                        throw CodeGenError("Only 32 and 64 bits real kinds are supported.");
+                        throw CodeGenError("Only 32, 64 and 128 bits real kinds are supported.");
                 }
                 tmp = builder->CreateSIToFP(tmp, target_type);
                 tmp = complex_from_floats(tmp, zero, complex_type);
@@ -21041,18 +21097,14 @@ public:
                 if( arg_kind > 0 && dest_kind > 0 &&
                     arg_kind != dest_kind )
                 {
-                    if( arg_kind == 4 && dest_kind == 8 ) {
-                        target_type = complex_type_8;
-                        re = complex_re(tmp, complex_type_4);
-                        re = builder->CreateFPExt(re, llvm::Type::getDoubleTy(context));
-                        im = complex_im(tmp, complex_type_4);
-                        im = builder->CreateFPExt(im, llvm::Type::getDoubleTy(context));
-                    } else if( arg_kind == 8 && dest_kind == 4 ) {
-                        target_type = complex_type_4;
-                        re = complex_re(tmp, complex_type_8);
-                        re = builder->CreateFPTrunc(re, llvm::Type::getFloatTy(context));
-                        im = complex_im(tmp, complex_type_8);
-                        im = builder->CreateFPTrunc(im, llvm::Type::getFloatTy(context));
+                    if ((arg_kind == 4 || arg_kind == 8 || arg_kind == 16) &&
+                            (dest_kind == 4 || dest_kind == 8 || dest_kind == 16)) {
+                        target_type = llvm_utils->getComplexType(dest_kind);
+                        llvm::Type *dest_fp = llvm_utils->getFPType(dest_kind);
+                        re = builder->CreateFPCast(
+                            complex_re(tmp, llvm_utils->getComplexType(arg_kind)), dest_fp);
+                        im = builder->CreateFPCast(
+                            complex_im(tmp, llvm_utils->getComplexType(arg_kind)), dest_fp);
                     } else {
                         std::string msg = "Conversion from " + std::to_string(arg_kind) +
                                           " to " + std::to_string(dest_kind) + " not implemented yet.";
@@ -21070,22 +21122,10 @@ public:
                 llvm::Value *re;
                 if( arg_kind > 0 && dest_kind > 0)
                 {
-                    if( arg_kind == 4 && dest_kind == 4 ) {
-                        // complex(4) -> real(4)
-                        re = complex_re(tmp, complex_type_4);
-                        tmp = re;
-                    } else if( arg_kind == 4 && dest_kind == 8 ) {
-                        // complex(4) -> real(8)
-                        re = complex_re(tmp, complex_type_4);
-                        tmp = builder->CreateFPExt(re, llvm::Type::getDoubleTy(context));
-                    } else if( arg_kind == 8 && dest_kind == 4 ) {
-                        // complex(8) -> real(4)
-                        re = complex_re(tmp, complex_type_8);
-                        tmp = builder->CreateFPTrunc(re, llvm::Type::getFloatTy(context));
-                    } else if( arg_kind == 8 && dest_kind == 8 ) {
-                        // complex(8) -> real(8)
-                        re = complex_re(tmp, complex_type_8);
-                        tmp = re;
+                    if ((arg_kind == 4 || arg_kind == 8 || arg_kind == 16) &&
+                            (dest_kind == 4 || dest_kind == 8 || dest_kind == 16)) {
+                        re = complex_re(tmp, llvm_utils->getComplexType(arg_kind));
+                        tmp = builder->CreateFPCast(re, llvm_utils->getFPType(dest_kind));
                     } else {
                         std::string msg = "Conversion from " + std::to_string(arg_kind) +
                                           " to " + std::to_string(dest_kind) + " not implemented yet.";
@@ -21109,6 +21149,9 @@ public:
                     } else if (arg_kind == 8) {
                         // complex(8) -> real(8)
                         re = complex_re(tmp, complex_type_8);
+                        tmp = re;
+                    } else if (arg_kind == 16) {
+                        re = complex_re(tmp, complex_type_16);
                         tmp = re;
                     } else {
                         std::string msg = "Unsupported Complex type kind: " + std::to_string(arg_kind);
@@ -22015,6 +22058,9 @@ public:
                 if (a_kind == 4) {
                     runtime_func_name = "_lfortran_read_float";
                     type_arg = llvm::Type::getFloatTy(context);
+                } else if (a_kind == 16) {
+                    runtime_func_name = "_lfortran_read_float128";
+                    type_arg = llvm_utils->getFPType(16);
                 } else {
                     runtime_func_name = "_lfortran_read_double";
                     type_arg = llvm::Type::getDoubleTy(context);
@@ -22037,6 +22083,9 @@ public:
                 } else if (a_kind == 8) {
                     runtime_func_name = "_lfortran_read_complex_double";
                     type_arg = complex_type_8;
+                } else if (a_kind == 16) {
+                    runtime_func_name = "_lfortran_read_complex_float128";
+                    type_arg = complex_type_16;
                 } else {
                     throw CodeGenError("Read Complex function not implemented "
                         "for complex kind: " + std::to_string(a_kind));
@@ -22078,6 +22127,9 @@ public:
                     } else if (a_kind == 8) {
                         runtime_func_name = "_lfortran_read_array_double";
                         type_arg = llvm::Type::getDoubleTy(context);
+                    } else if (a_kind == 16) {
+                        runtime_func_name = "_lfortran_read_array_float128";
+                        type_arg = llvm_utils->getFPType(16);
                     } else {
                         throw CodeGenError("Real arrays of kind 4 or 8 only supported for now. Found kind: "
                                             + std::to_string(a_kind));
@@ -22089,6 +22141,9 @@ public:
                     } else if ( a_kind == 8 ) {
                         runtime_func_name = "_lfortran_read_array_complex_double";
                         type_arg = complex_type_8;
+                    } else if ( a_kind == 16 ) {
+                        runtime_func_name = "_lfortran_read_array_complex_float128";
+                        type_arg = complex_type_16;
                     } else {
                         throw CodeGenError("Complex arrays of kind 4 or 8 only supported for now. Found kind: "
                                             + std::to_string(a_kind));
@@ -23497,6 +23552,7 @@ public:
         constexpr int32_t kChar = 0;
         constexpr int32_t kFloat = 4;
         constexpr int32_t kDouble = 5;
+        constexpr int32_t kQuad = 14;
         constexpr int32_t kWideChar = 8;
 
         if (ASR::is_a<ASR::String_t>(*val_type)) {
@@ -23516,10 +23572,9 @@ public:
                 elem_ptr, nullptr, 0}};
         } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
             ASR::Complex_t* complex_type = ASR::down_cast<ASR::Complex_t>(val_type);
-            int32_t component_type_code = (complex_type->m_kind == 4) ? kFloat : kDouble;
-            llvm::Type* llvm_complex_type = (complex_type->m_kind == 4)
-                ? static_cast<llvm::Type*>(complex_type_4)
-                : static_cast<llvm::Type*>(complex_type_8);
+            int32_t component_type_code = (complex_type->m_kind == 4) ? kFloat
+                : (complex_type->m_kind == 16) ? kQuad : kDouble;
+            llvm::Type* llvm_complex_type = llvm_utils->getComplexType(complex_type->m_kind);
             llvm::Value* re_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 0);
             llvm::Value* im_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 1);
             return {{component_type_code, re_ptr, nullptr, 0},
@@ -26770,8 +26825,8 @@ public:
                                                     tmp = llvm_utils->CreateLoad2(type_fx2, c32_as_vec2_ptr);
                                                 }
                                             } else {
-                                                LCOMPILERS_ASSERT(c_kind == 8)
-                                                if (compiler_options.platform == Platform::Windows) {
+                                                LCOMPILERS_ASSERT(c_kind == 8 || c_kind == 16)
+                                                if (c_kind == 8 && compiler_options.platform == Platform::Windows) {
                                                     // 128 bit aggregate type is passed by reference
                                                 } else {
                                                     // Pass by value

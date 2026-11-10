@@ -703,7 +703,20 @@ static inline std::string logicalbinop_to_str_python(const ASR::logicalbinopType
 
 static inline ASR::expr_t* expr_value(ASR::expr_t *f)
 {
-    return ASR::expr_value0(f);
+    ASR::expr_t* value = ASR::expr_value0(f);
+    if (value == nullptr && f->type == ASR::exprType::ComplexConstructor) {
+        // A constant complex(16) value is a constructor from two real(16)
+        // constants (a ComplexConstant holds doubles), which is its own value.
+        ASR::ComplexConstructor_t* c = (ASR::ComplexConstructor_t*)f;
+        ASR::expr_t* re = ASR::expr_value0(c->m_re);
+        ASR::expr_t* im = ASR::expr_value0(c->m_im);
+        if (re && im && re->type == ASR::exprType::RealConstant &&
+                im->type == ASR::exprType::RealConstant &&
+                extract_kind_from_ttype_t(c->m_type) == 16) {
+            return f;
+        }
+    }
+    return value;
 }
 
 std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t *f);
@@ -1161,6 +1174,13 @@ static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args, bool ignore
         if( !is_value_constant(a_value) ) {
             return false;
         }
+        // A ComplexConstant holds its parts as doubles, so a complex(16)
+        // value is never folded: it would lose precision.
+        if( a_value && (ASR::is_a<ASR::ComplexConstant_t>(*a_value) ||
+                ASR::is_a<ASR::ComplexConstructor_t>(*a_value)) &&
+                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(a_value)) == 16 ) {
+            return false;
+        }
     }
     return true;
 }
@@ -1384,6 +1404,18 @@ ASR::expr_t* get_string_filled_with_char(Allocator& al,
 ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_type);
 
 ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_type);
+
+// The cast `cast_kind` (ComplexToComplex or ComplexToReal) of a complex(16)
+// constant `value`: a ComplexConstant, or a ComplexConstructor from real(16)
+// constants. A complex(16) constant is not a ComplexConstant, whose parts are
+// doubles. Returns nullptr if `value` is not such a constant.
+ASR::expr_t* fold_complex16_cast(Allocator& al, const Location& loc,
+    ASR::expr_t* value, ASR::cast_kindType cast_kind, ASR::ttype_t* dest_type);
+
+// The cast of the real(16) constant `value` to the complex(16) type
+// `dest_type`.
+ASR::expr_t* make_complex16_from_real16(Allocator& al, const Location& loc,
+    ASR::expr_t* value, ASR::ttype_t* dest_type);
 
 const ASR::intentType intent_local=ASR::intentType::Local; // local variable (not a dummy argument)
 const ASR::intentType intent_in   =ASR::intentType::In; // dummy argument, intent(in)

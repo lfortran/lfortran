@@ -3384,7 +3384,7 @@ end function
 ! only the semantic error.
 module cc1_complex_star
 implicit none
-    complex*32 :: cc1_cs_z32  ! {Error} Kind 16 is not supported for Complex
+    complex*64 :: cc1_cs_z64  ! {Error} Kind 32 is not supported for Complex
     complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
     complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical

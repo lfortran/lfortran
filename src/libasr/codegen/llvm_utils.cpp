@@ -230,6 +230,9 @@ namespace LCompilers {
             std::vector<llvm::Type*> els_8 = {
                 llvm::Type::getDoubleTy(context),
                 llvm::Type::getDoubleTy(context)};
+            std::vector<llvm::Type*> els_16 = {
+                llvm::Type::getFP128Ty(context),
+                llvm::Type::getFP128Ty(context)};
             std::vector<llvm::Type*> els_4_ptr = {
                 llvm::Type::getFloatTy(context)->getPointerTo(),
                 llvm::Type::getFloatTy(context)->getPointerTo()};
@@ -241,6 +244,7 @@ namespace LCompilers {
                 llvm::Type::getInt64Ty(context)  /*length*/ };
             complex_type_4 = llvm::StructType::create(context, els_4, "complex_4", true);
             complex_type_8 = llvm::StructType::create(context, els_8, "complex_8", true);
+            complex_type_16 = llvm::StructType::create(context, els_16, "complex_16", true);
             complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
             complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
             character_type = llvm::Type::getInt8Ty(context)->getPointerTo();
@@ -814,8 +818,11 @@ namespace LCompilers {
             case 8:
                 type = complex_type_8;
                 break;
+            case 16:
+                type = complex_type_16;
+                break;
             default:
-                throw CodeGenError("Only 32 and 64 bits complex kinds are supported.");
+                throw CodeGenError("Only 32, 64 and 128 bits complex kinds are supported.");
         }
         if( type != nullptr ) {
             if( get_pointer ) {
@@ -1490,8 +1497,8 @@ namespace LCompilers {
             // <2 x float>
             return FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
         }
-        LCOMPILERS_ASSERT(a_kind == 8)
-        if (compiler_options.platform == Platform::Windows) {
+        LCOMPILERS_ASSERT(a_kind == 8 || a_kind == 16)
+        if (a_kind == 8 && compiler_options.platform == Platform::Windows) {
             return nullptr;
         }
         return getComplexType(a_kind);

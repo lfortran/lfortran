@@ -61,6 +61,10 @@ extern "C" {
  */
 void lf_float128_to_str(char *buf, const uint8_t bytes[16]);
 
+/* The same with `ndigits` (at most 40) significant digits; buf must hold
+ * ndigits + 12 bytes. */
+void lf_float128_to_str_digits(char *buf, const uint8_t bytes[16], int ndigits);
+
 /*
  * lf_float128_from_str — decimal string → binary128.
  * Accepts Fortran/C notation: E/e/D/d/Q/q exponent letters.
@@ -125,6 +129,8 @@ lf_float128 lf_f128_tanh   (lf_float128 a);           /* tanhq   */
 lf_float128 lf_f128_asinh  (lf_float128 a);           /* asinhq  */
 lf_float128 lf_f128_acosh  (lf_float128 a);           /* acoshq  */
 lf_float128 lf_f128_atanh  (lf_float128 a);           /* atanhq  */
+lf_float128 lf_f128_erf    (lf_float128 a);           /* erfq    */
+lf_float128 lf_f128_erfc   (lf_float128 a);           /* erfcq   */
 /* Trigonometric functions in degrees (Fortran 2023 sind, ...) */
 lf_float128 lf_f128_sind   (lf_float128 a);
 lf_float128 lf_f128_cosd   (lf_float128 a);
