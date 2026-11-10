@@ -3892,7 +3892,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if( !ASR::is_a<ASR::ArraySection_t>(*member->m_v) ) {
             return designator;
         }
-        ASR::expr_t* section = member->m_v;
+        ASR::expr_t* section_pointer = bind_section_to_pointer(member->m_v, name_hint);
+        return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+            designator->base.loc, section_pointer, member->m_m,
+            member->m_type, nullptr));
+    }
+
+    // Associates a pointer temporary with `section` and returns the pointer
+    ASR::expr_t* bind_section_to_pointer(ASR::expr_t* section,
+        const std::string& name_hint) {
         const Location& loc = section->base.loc;
         ASR::ttype_t* section_type = ASRUtils::create_array_type_with_empty_dims(al,
             ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(section)),
@@ -3902,9 +3910,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             al, loc, current_scope, name_hint + "_section_", section_type, section);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, section_pointer, section, ASR::pointer_bounds_formType::NoPointerBounds)));
-        return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
-            designator->base.loc, section_pointer, member->m_m,
-            member->m_type, nullptr));
+        return section_pointer;
     }
 
     // `ps(1::2)%u(2)` selects one element of the component out of every
