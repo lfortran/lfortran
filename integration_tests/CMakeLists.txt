@@ -5926,6 +5926,7 @@ RUN(NAME transfer_31 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME transfer_32 LABELS gfortran llvm)
 RUN(NAME transfer_33 LABELS gfortran llvm)
 RUN(NAME transfer_34 LABELS gfortran llvm)
+RUN(NAME transfer_35 LABELS gfortran llvm) # transfer of an integer(4) array to integer(1) with a size argument (#7678)
 RUN(NAME transfer_assumed_shape_01 LABELS gfortran llvm)
 
 RUN(NAME present_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
