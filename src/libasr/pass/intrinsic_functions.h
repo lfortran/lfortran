@@ -284,6 +284,10 @@ static inline std::string real_c_func_name(const std::string &name,
     if (kind == 4) {
         return "_lfortran_s" + name;
     }
+    // x87 extended precision uses the C long double libm entry (log10l, ...).
+    if (kind == 10) {
+        return name + "l";
+    }
     if (kind == 16) {
         static const char *const quad_functions[] = {
             "exp", "log", "log10", "sin", "cos", "tan", "asin", "acos",
@@ -5163,6 +5167,19 @@ namespace Real {
                     return ASRUtils::make_RealConstant_r16(al, loc, v, t1);
                 }
                 return ASRUtils::make_RealConstant_util(al, loc, lf_f128_to_double(v), t1);
+            }
+            // kind 10 stores a pointer in m_r, not the numeric value.
+            if (src_kind == 10) {
+                long double v = ASRUtils::real_constant_get_r10(r);
+                if (dest_kind == 10) {
+                    return ASRUtils::make_RealConstant_r10(al, loc, v, t1);
+                }
+                if (dest_kind == 16) {
+                    return ASRUtils::make_RealConstant_r16(al, loc,
+                        lf_f128_from_double(static_cast<double>(v)), t1);
+                }
+                return ASRUtils::make_RealConstant_util(al, loc,
+                    static_cast<double>(v), t1);
             }
             return ASRUtils::make_RealConstant_util(al, loc, r->m_r, t1);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {

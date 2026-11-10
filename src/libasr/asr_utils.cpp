@@ -9056,6 +9056,7 @@ std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::symbol_t* stru
             switch (r->m_kind) {
                 case 4: { res = "f32"; break; }
                 case 8: { res = "f64"; break; }
+                case 10: { res = "f80"; break; }
                 case 16: { res = "f128"; break; }
                 default: { throw LCompilersException("Float kind not supported"); }
             }

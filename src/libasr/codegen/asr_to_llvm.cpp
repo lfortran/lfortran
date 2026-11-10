@@ -19117,13 +19117,16 @@ public:
             else if (fsource->getType()->isFloatingPointTy()) fsource = builder->CreateFPCast(fsource, type);
         }
         // The LLVM intrinsic suffix must match the fp type. kind 16 is
-        // binary128; llvm.copysign.f64 is rejected by the verifier.
+        // binary128 and kind 10 is x87 f80 on this target; llvm.copysign.f64
+        // is rejected by the verifier for either.
         std::string func_name;
-        if (a_kind == 4) {
+        if (type->isFloatTy()) {
             func_name = "llvm.copysign.f32";
-        } else if (a_kind == 8) {
+        } else if (type->isDoubleTy()) {
             func_name = "llvm.copysign.f64";
-        } else if (a_kind == 16) {
+        } else if (type->isX86_FP80Ty()) {
+            func_name = "llvm.copysign.f80";
+        } else if (type->isFP128Ty()) {
             func_name = "llvm.copysign.f128";
         } else {
             throw CodeGenError("sign for real kind " + std::to_string(a_kind) + " is not supported yet.");
@@ -19367,6 +19370,14 @@ public:
                             func_name = "lf_powq";
                             right_val = builder->CreateSIToFP(right_val, base_type);
                             exponent_type = base_type;
+                        } else if (base_type->isX86_FP80Ty()) {
+#if LLVM_VERSION_MAJOR <= 12
+                            func_name = "llvm.powi.f80";
+#else
+                            func_name = "llvm.powi.f80.i32";
+#endif
+                            right_val = llvm_utils->convert_kind(right_val, llvm::Type::getInt32Ty(context));
+                            exponent_type = llvm::Type::getInt32Ty(context);
                         } else {
 #if LLVM_VERSION_MAJOR <= 12
                             func_name = (return_kind == 4) ? "llvm.powi.f32" : "llvm.powi.f64";
