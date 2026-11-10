@@ -20779,6 +20779,42 @@ public:
         return ASRUtils::make_ArraySize_t_util(al, loc, v, dim, type, nullptr, false);
     }
 
+    // The rank of an assumed-rank array is known only when the program runs,
+    // so the bounds of all its dimensions are the array constructor
+    // `[(lbound(v, i), i = 1, rank(v))]` (or `ubound`).
+    ASR::asr_t* make_assumed_rank_bounds(const Location& loc, ASR::expr_t* v,
+            ASR::ttype_t* type, ASR::arrayboundType bound) {
+        // `rank` and a dimension of an array descriptor are integer(4).
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t* dim_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            declare_implicit_variable2(loc,
+                current_scope->get_unique_name("lfortran_implied_do_dim"),
+                ASRUtils::intent_local, int_type)));
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, int_type));
+        Vec<ASR::expr_t*> values;
+        values.reserve(al, 1);
+        values.push_back(al, ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, v,
+            dim_var, type, bound, nullptr)));
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 1);
+        args.push_back(al, ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(al, loc,
+            values.p, values.size(), dim_var, one,
+            ASRUtils::EXPR(ASR::make_ArrayRank_t(al, loc, v, int_type, nullptr)),
+            nullptr, type, nullptr)));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = one;
+        dim.m_length = nullptr;
+        dims.push_back(al, dim);
+        ASR::ttype_t* result_type = ASRUtils::duplicate_type(al, type, &dims,
+            ASR::array_physical_typeType::DescriptorArray, true);
+        return ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p,
+            args.size(), result_type, ASR::arraystorageType::ColMajor);
+    }
+
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
@@ -20796,6 +20832,9 @@ public:
             ASRUtils::is_pointer(ASRUtils::expr_type(v_Var));
         ASR::expr_t* bound_value = nullptr;
         if (dim == nullptr) {
+            if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(v_Var))) {
+                return make_assumed_rank_bounds(x.base.base.loc, v_Var, type, bound);
+            }
             int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
             // For assumed-size arrays (UnboundedPointerArray), ubound requires DIM
             ASR::ttype_t* v_Var_type = ASRUtils::type_get_past_allocatable_pointer(
