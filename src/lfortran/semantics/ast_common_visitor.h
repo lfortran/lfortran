@@ -18124,28 +18124,68 @@ public:
         return total;
     }
 
-    // Without a type-spec, the elements of an array constructor have the
-    // length of its first element. When that element is a scalar TRIM(s),
-    // whose result type has a deferred length, return the element type with
-    // that length, LEN_TRIM(s), given explicitly; otherwise return `type`.
-    ASR::ttype_t* get_trim_element_type(ASR::ttype_t* type, ASR::expr_t* first) {
-        if (!ASR::is_a<ASR::String_t>(*type) ||
-                ASR::down_cast<ASR::String_t>(type)->m_len != nullptr ||
-                !ASR::is_a<ASR::IntrinsicElementalFunction_t>(*first) ||
-                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(first)->m_intrinsic_id !=
-                    static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim) ||
-                ASRUtils::is_array(ASRUtils::expr_type(first))) {
-            return type;
+    // The length of the scalar character expression `x`, as an integer(4):
+    // the sum of the lengths of the operands of a concatenation, the
+    // constant length of the type of `x` when it has one, and LEN(x)
+    // otherwise, which is LEN_TRIM(s) for TRIM(s). It is a constant when
+    // it can be folded.
+    ASR::expr_t* get_scalar_string_length(ASR::expr_t* x) {
+        const Location& loc = x->base.loc;
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*x) &&
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x)->m_intrinsic_id ==
+                    static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringConcat)) {
+            ASR::IntrinsicElementalFunction_t* concat =
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(x);
+            ASR::expr_t* left = get_scalar_string_length(concat->m_args[0]);
+            ASR::expr_t* right = get_scalar_string_length(concat->m_args[1]);
+            int64_t left_len, right_len;
+            if (ASRUtils::extract_value(left, left_len) &&
+                    ASRUtils::extract_value(right, right_len)) {
+                return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                    left_len + right_len, int_type));
+            }
+            return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
+                ASR::binopType::Add, right, int_type, nullptr));
         }
-        ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(type);
-        const Location& loc = first->base.loc;
-        ASR::expr_t* len = ASRUtils::EXPR(create_StringLen_from_expr(first,
-            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc));
+        int64_t type_len;
+        if (ASRUtils::extract_value(ASRUtils::get_string_type(x)->m_len, type_len)) {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, type_len, int_type));
+        }
+        ASR::expr_t* len = ASRUtils::EXPR(create_StringLen_from_expr(x, int_type, loc));
         if (ASRUtils::expr_value(len) != nullptr) {
             len = ASRUtils::expr_value(len);
         }
-        return ASRUtils::TYPE(ASR::make_String_t(al, loc, string_type->m_kind, len,
-            ASR::string_length_kindType::ExpressionLength, string_type->m_physical_type));
+        return len;
+    }
+
+    // Without a type-spec, the elements of an array constructor have the
+    // length of its first element. When that element is a scalar whose type
+    // gives no length, such as TRIM(s), a concatenation with it or a
+    // deferred-length variable, return the element type with that length
+    // given explicitly; otherwise return `type`. A length that depends on the variable of an implied-do
+    // loop is left out: an implied-do loop as the first element, or this
+    // constructor in the values of one, whose type the enclosing constructor
+    // takes.
+    ASR::ttype_t* get_element_type_with_length(ASR::ttype_t* type, ASR::expr_t* first) {
+        if (!ASR::is_a<ASR::String_t>(*type) ||
+                ASR::down_cast<ASR::String_t>(type)->m_len != nullptr ||
+                ASR::is_a<ASR::ImpliedDoLoop_t>(*first) ||
+                ASRUtils::is_array(ASRUtils::expr_type(first))) {
+            return type;
+        }
+        ASR::expr_t* len = get_scalar_string_length(first);
+        for (const std::string &name : implied_do_variables) {
+            ASR::symbol_t* loop_variable = current_scope->resolve_symbol(name);
+            if (loop_variable != nullptr &&
+                    ASRUtils::expr_references_symbol(len, loop_variable)) {
+                return type;
+            }
+        }
+        ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(type);
+        return ASRUtils::TYPE(ASR::make_String_t(al, first->base.loc, string_type->m_kind,
+            len, ASR::string_length_kindType::ExpressionLength,
+            string_type->m_physical_type));
     }
 
     void visit_ArrayInitializer(const AST::ArrayInitializer_t &x) {
@@ -18360,7 +18400,7 @@ public:
         }
 
         if (is_type_spec_ommitted && body.size() > 0) {
-            type = get_trim_element_type(type, body[0]);
+            type = get_element_type_with_length(type, body[0]);
         }
 
         ASR::dimension_t dim;
