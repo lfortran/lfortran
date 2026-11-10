@@ -2919,7 +2919,7 @@ public:
                     if (!is_placeholder && !was_module_procedure && !in_submodule && deftype != ASR::deftypeType::Interface) {
                         std::vector<Location> locs = {f1->base.loc};
                         std::vector<diag::Label> labels;
-                        labels.push_back(diag::Label("", {tmp->loc}));
+                        labels.push_back(diag::Label("", {x.base.base.loc}));
                         labels.push_back(diag::Label("is already defined here", locs, false));
                         diag.add(diag::Diagnostic(
                             "Procedure '" + sym_name + "' is already defined as an interface body",
@@ -2933,7 +2933,7 @@ public:
                     diag.add(diag::Diagnostic(
                         "Subroutine already defined " + sym_name,
                         diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {tmp->loc})}));
+                            diag::Label("", {x.base.base.loc})}));
                     throw SemanticAbort();
                 }
             } else if( ASR::is_a<ASR::GenericProcedure_t>(*f1) ) {
@@ -2969,7 +2969,7 @@ public:
                 diag.add(diag::Diagnostic(
                     "Subroutine already defined " + sym_name,
                     diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("", {tmp->loc})}));
+                        diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
         }
