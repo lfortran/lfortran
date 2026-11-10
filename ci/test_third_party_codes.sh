@@ -624,10 +624,7 @@ time_section "🧪 Testing stdlib" '
     assert_git_commit 176c7a28bbc7a8a9b63441f7dfa980aeafbddd0f
 
     git clean -fdx
-    # selected_real_kind(33) now returns 16, so stdlib would detect quad
-    # precision, but LFortran does not support complex(16) yet (#15472).
-    # Keep the configuration stdlib built in before: no quad precision.
-    FC=$FC cmake . -DWITH_QP=OFF -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs-arrays"
+    FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs-arrays"
     make -j8
     ctest
 '
