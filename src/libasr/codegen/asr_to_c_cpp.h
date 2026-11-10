@@ -1784,6 +1784,27 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         bool is_value_dict = ASR::is_a<ASR::Dict_t>(*m_value_type);
         bool alloc_return_var = false;
         std::string indent(indentation_level*indentation_spaces, ' ');
+        if (ASR::is_a<ASR::ComplexRe_t>(*x.m_target) ||
+                ASR::is_a<ASR::ComplexIm_t>(*x.m_target)) {
+            bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_target);
+            ASR::expr_t* arg = is_re
+                ? ASR::down_cast<ASR::ComplexRe_t>(x.m_target)->m_arg
+                : ASR::down_cast<ASR::ComplexIm_t>(x.m_target)->m_arg;
+            self().visit_expr(*arg);
+            std::string complex_target = src;
+            self().visit_expr(*x.m_value);
+            if (is_c) {
+                // A complex is stored as an array of its two parts
+                std::string real_type = ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(arg)) == 4 ? "float" : "double";
+                src = indent + "((" + real_type + "*)&" + complex_target + ")["
+                    + (is_re ? "0" : "1") + "] = " + src + ";\n";
+            } else {
+                src = indent + complex_target + (is_re ? ".real(" : ".imag(")
+                    + src + ");\n";
+            }
+            return;
+        }
         if (ASRUtils::is_simd_array(x.m_target)) {
             this->visit_expr(*x.m_target);
             target = src;

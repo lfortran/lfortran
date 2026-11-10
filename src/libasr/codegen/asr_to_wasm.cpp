@@ -1712,9 +1712,52 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 *(ASR::down_cast<ASR::ArrayItem_t>(x.m_target)));
             this->visit_expr(*x.m_value);
             emit_memory_store(x.m_value);
+        } else if (ASR::is_a<ASR::ComplexRe_t>(*x.m_target) ||
+                ASR::is_a<ASR::ComplexIm_t>(*x.m_target)) {
+            emit_complex_part_assignment(x);
         } else {
             LCOMPILERS_ASSERT(false)
         }
+    }
+
+    // `z%re = y` or `z%im = y`: y is evaluated before the other part is read
+    void emit_complex_part_assignment(const ASR::Assignment_t &x) {
+        bool is_re = ASR::is_a<ASR::ComplexRe_t>(*x.m_target);
+        ASR::expr_t* arg = is_re
+            ? ASR::down_cast<ASR::ComplexRe_t>(x.m_target)->m_arg
+            : ASR::down_cast<ASR::ComplexIm_t>(x.m_target)->m_arg;
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(arg));
+        if (ASR::is_a<ASR::ArrayItem_t>(*arg)) {
+            emit_array_item_address_onto_stack(*ASR::down_cast<ASR::ArrayItem_t>(arg));
+            this->visit_expr(*x.m_value);
+            uint32_t offset = is_re ? 0 : kind;
+            if (kind == 4) {
+                m_wa.emit_f32_store(wasm::mem_align::b8, offset);
+            } else {
+                m_wa.emit_f64_store(wasm::mem_align::b8, offset);
+            }
+            return;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*arg)) {
+            throw CodeGenError("assignment to a part of this complex expression "
+                "is not supported yet");
+        }
+        uint32_t tmp_reg = m_compiler_globals[(kind == 4) ? tmp_reg_f32 : tmp_reg_f64];
+        this->visit_expr(*x.m_value);
+        if (is_re) {
+            // y, re, im -> y, im
+            this->visit_expr(*arg);
+            m_wa.emit_global_set(tmp_reg);
+            m_wa.emit_drop();
+            m_wa.emit_global_get(tmp_reg);
+        } else {
+            // y -> re, y
+            m_wa.emit_global_set(tmp_reg);
+            this->visit_expr(*arg);
+            m_wa.emit_drop();
+            m_wa.emit_global_get(tmp_reg);
+        }
+        emit_var_set(ASRUtils::EXPR2VAR(arg));
     }
 
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {

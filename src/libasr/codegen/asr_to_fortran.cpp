@@ -1747,7 +1747,15 @@ public:
 
     void visit_Assignment(const ASR::Assignment_t &x) {
         std::string r = indent;
-        visit_expr(*x.m_target);
+        if (ASR::is_a<ASR::ComplexRe_t>(*x.m_target)) {
+            visit_expr(*ASR::down_cast<ASR::ComplexRe_t>(x.m_target)->m_arg);
+            src += "%re";
+        } else if (ASR::is_a<ASR::ComplexIm_t>(*x.m_target)) {
+            visit_expr(*ASR::down_cast<ASR::ComplexIm_t>(x.m_target)->m_arg);
+            src += "%im";
+        } else {
+            visit_expr(*x.m_target);
+        }
         r += src;
         r += " = ";
         visit_expr(*x.m_value);
