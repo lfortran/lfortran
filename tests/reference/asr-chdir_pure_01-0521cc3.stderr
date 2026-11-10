@@ -1,0 +1,5 @@
+semantic error: Call to impure procedure 'chdir' is not allowed inside a PURE procedure
+ --> tests/errors/chdir_pure_01.f90:4:3
+  |
+4 |   call chdir('.')  ! {Error} Call to impure procedure 'chdir' is not allowed inside a PURE procedure
+  |   ^^^^^^^^^^^^^^^ 

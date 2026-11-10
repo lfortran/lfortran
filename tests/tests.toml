@@ -7892,3 +7892,8 @@ options = "--legacy-array-sections"
 [[test]]
 filename = "errors/requirement_undeclared_argument_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/chdir_pure_01.f90"
+asr = true
+options = "--std=f23"
