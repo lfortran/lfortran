@@ -6894,6 +6894,12 @@ if (TEST gpu_memory_02_managed)
 endif()
 RUN(NAME gpu_memory_05 LABELS gfortran llvm cuda EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_memory_05_managed FILE gpu_memory_05 LABELS llvm cuda EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_memory_06 LABELS gfortran llvm cuda)
+RUN(NAME gpu_memory_06_managed FILE gpu_memory_06 LABELS llvm cuda)
+if (TEST gpu_memory_06_managed)
+    set_tests_properties(gpu_memory_06_managed PROPERTIES
+        ENVIRONMENT "LFORTRAN_GPU_MEMORY=managed")
+endif()
 if (TEST gpu_memory_05_managed)
     # The managed memory model, for arrays of a few kilobytes.
     set_tests_properties(gpu_memory_05_managed PROPERTIES
