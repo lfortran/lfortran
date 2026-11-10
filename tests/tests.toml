@@ -7914,3 +7914,7 @@ asr = true
 [[test]]
 filename = "errors/equivalence_common_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/type_bound_nopass_outside_module_01.f90"
+asr = true

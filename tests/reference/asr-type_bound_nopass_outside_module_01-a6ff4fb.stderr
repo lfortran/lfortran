@@ -1,0 +1,5 @@
+semantic error: 'g' must be a module procedure or an external procedure with an explicit interface
+ --> tests/errors/type_bound_nopass_outside_module_01.f90:7:5
+  |
+7 |     procedure, nopass :: g  ! {Error} 'g' must be a module procedure or an external procedure with an explicit interface
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
