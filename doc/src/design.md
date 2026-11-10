@@ -168,6 +168,14 @@ host/use-associated variable without changing its declaration. Such regions
 also exclude the variable from whole-procedure alias promises and dead
 whole-array store elimination.
 
+The data class also includes the elements of numeric and logical
+explicit-shape and assumed-size dummy arguments, TARGET ones too: a TARGET
+dummy argument is the one kind of dummy argument that is not `noalias`, and
+without the data class a store to its elements would force a loop to reload the
+descriptors of the allocatable arrays it reads, and keep it from vectorizing.
+The globals that hold the pointer to the descriptor of a module allocatable or
+pointer array are descriptor memory.
+
 The data class includes owned local automatic and fixed-size arrays, but not
 raw local storage associated through EQUIVALENCE or COMMON, saved storage, or
 storage whose address is taken with C_LOC. Raw local VOLATILE, ASYNCHRONOUS,
