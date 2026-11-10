@@ -7906,3 +7906,7 @@ options = "--implicit-typing"
 [[test]]
 filename = "errors/namelist_undeclared_01.f90"
 asr = true
+
+[[test]]
+filename = "errors/implied_do_assumed_type_01.f90"
+asr = true
