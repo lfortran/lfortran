@@ -11233,6 +11233,44 @@ public:
                 Location dims_attr_loc;
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
+                // The ALLOCATABLE or POINTER attribute may also come from a
+                // statement, so these conflicts are also checked for a
+                // declaration without attributes.
+                auto check_allocatable_pointer_conflicts = [&]() {
+                    if (is_allocatable && is_pointer) {
+                        diag.add(Diagnostic(
+                            "`allocatable` attribute conflicts with `pointer` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                    if (is_allocatable && storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add((Diagnostic(
+                            "`parameter` attribute conflicts with `allocatable` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    } else if (is_pointer && storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add((Diagnostic(
+                            "`parameter` attribute conflicts with `pointer` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    }
+                    if (is_allocatable && s.m_initializer != nullptr) {
+                        diag.add(Diagnostic(
+                            "An 'allocatable' variable cannot have an initialization expression",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {s.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                };
                 if (x.n_attributes > 0) {
                     for (size_t i=0; i < x.n_attributes; i++) {
                         AST::decl_attribute_t *a = x.m_attributes[i];
@@ -11454,33 +11492,7 @@ public:
                         throw SemanticAbort();
                     }
 
-                    if (is_allocatable && storage_type == ASR::storage_typeType::Parameter) {
-                        diag.add((Diagnostic(
-                            "`parameter` attribute conflicts with `allocatable` attribute",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{x.base.base.loc})
-                            }
-                        )));
-                        throw SemanticAbort();
-                    } else if (is_pointer && storage_type == ASR::storage_typeType::Parameter) {
-                        diag.add((Diagnostic(
-                            "`parameter` attribute conflicts with `pointer` attribute",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{x.base.base.loc})
-                            }
-                        )));
-                        throw SemanticAbort();
-                    }
-    
-                    if (is_allocatable && s.m_initializer != nullptr) {
-                        diag.add(Diagnostic(
-                            "An 'allocatable' variable cannot have an initialization expression",
-                            Level::Error, Stage::Semantic, {
-                                Label("", {s.loc})
-                            }));
-                        throw SemanticAbort();
-                    }
-                    
+                    check_allocatable_pointer_conflicts();
                     if (s_intent == ASRUtils::intent_out && value_attr) {
                         diag.add(Diagnostic(
                             "`value` attribute conflicts with `intent(out)` attribute",
@@ -11499,6 +11511,8 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                } else {
+                    check_allocatable_pointer_conflicts();
                 }
                 if (s.n_dim > 0) {
                     if (dims.size() > 0) {
