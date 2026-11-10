@@ -2061,7 +2061,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         return true;
     }
 
-    void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars, bool per_assign_realloc = false) {
+    // `is_intrinsic_assignment` tells that `value` is the value of an
+    // intrinsic assignment to `target`, rather than the source of an ALLOCATE.
+    void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars, bool per_assign_realloc = false,
+            bool is_intrinsic_assignment = false) {
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         ASR::expr_t* underlying_target = ASRUtils::get_past_array_physical_cast(target);
         ASR::ttype_t* underlying_target_type = ASRUtils::expr_type(underlying_target);
@@ -2088,6 +2091,20 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASRUtils::ASRBuilder builder(al, loc);
         ASR::ttype_t* idx_type = get_index_type(loc);
         int idx_kind = get_index_kind();
+        // An intrinsic assignment converts its expr to the type and kind of
+        // the variable (F2018 10.2.1.3), which the frontend writes as a Cast
+        // at the root of the value. That conversion is not part of expr,
+        // whose bounds the variable is allocated with. An explicit
+        // conversion of an array, e.g. dble(a), is an intrinsic function
+        // reference instead, whose result has lower bounds of 1.
+        ASR::expr_t* expr = value;
+        if (is_intrinsic_assignment && ASR::is_a<ASR::Cast_t>(*underlying_value)) {
+            ASR::expr_t* cast_arg = ASR::down_cast<ASR::Cast_t>(underlying_value)->m_arg;
+            if (ASRUtils::is_array(ASRUtils::expr_type(cast_arg))) {
+                expr = ASRUtils::get_past_array_physical_cast(cast_arg);
+            }
+        }
+        ASR::expr_t* underlying_expr = ASRUtils::get_past_array_physical_cast(expr);
         // When assigning back from function result, the LHS
         // allocatable variable must have lower bounds reset to 1, 
         // It should not inherit the bounds set within the function from target. 
@@ -2096,8 +2113,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // extract those flags, which might increase time for this rare edge case.
         // So, using string matching patterns for now.
         bool from_function_result = false;
-        if (ASR::is_a<ASR::Var_t>(*value)) {
-            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(value)->m_v);
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);
             if (ASR::is_a<ASR::Variable_t>(*sym)) {
                 // Temporary allocatable array for return type 
                 // Created inside pass: subroutine_from_function
@@ -2108,10 +2125,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // F2018 10.2.1.3 allocates the variable with LBOUND(expr), which is
         // the operand's lower bound only for a whole array (F2018 16.9.109).
         // Any other array expression has lower bounds of 1.
-        bool value_is_whole_array = ASR::is_a<ASR::Var_t>(*underlying_value) ||
-            (ASR::is_a<ASR::StructInstanceMember_t>(*underlying_value) &&
+        bool value_is_whole_array = ASR::is_a<ASR::Var_t>(*underlying_expr) ||
+            (ASR::is_a<ASR::StructInstanceMember_t>(*underlying_expr) &&
              !ASRUtils::is_array(ASRUtils::expr_type(
-                ASR::down_cast<ASR::StructInstanceMember_t>(underlying_value)->m_v)));
+                ASR::down_cast<ASR::StructInstanceMember_t>(underlying_expr)->m_v)));
         Vec<ASR::dimension_t> realloc_dims;
         size_t target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
         realloc_dims.reserve(al, target_rank);
@@ -3376,7 +3393,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         if (ASRUtils::is_array(ASRUtils::expr_type(xx.m_value))) {
             bool per_assign_realloc = xx.m_realloc_lhs ||
                 should_auto_realloc_component_assignment(xx.m_target);
-            insert_realloc_for_target(xx.m_target, xx.m_value, vars, per_assign_realloc);
+            insert_realloc_for_target(xx.m_target, xx.m_value, vars, per_assign_realloc,
+                true);
         }
 
         if (vars.size() == 1 && !is_looping_necessary_for_bitcast(xx.m_value) && 
