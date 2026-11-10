@@ -876,6 +876,7 @@ RUN(NAME functions_70 LABELS llvm) # function result not returned into a variabl
 RUN(NAME functions_71 LABELS llvm) # procedure-pointer actuals can read the result-assignment target (#16191); not gfortran: GFortran 16.2 writes the target early; not flang: internal procedure actuals unsupported on arm64 macOS
 RUN(NAME functions_72 LABELS llvm) # callback carriers and transitive dispatch (#16191); not gfortran: GFortran 16.2 writes the target early; not flang: internal procedure actuals unsupported on arm64 macOS
 RUN(NAME functions_73 LABELS gfortran llvm)
+RUN(NAME functions_74 LABELS gfortran llvm) # explicit-shape results sized by size() of a dummy, internal function result inside matmul (#2767)
 
 RUN(NAME common_01 LABELS gfortran)
 
