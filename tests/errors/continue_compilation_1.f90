@@ -4869,3 +4869,20 @@ module cc1_requirement_undeclared_argument
         end function
     end template
 end module
+
+! The signatures of two module procedures call each other: a warning names
+! the cycle, and the call that cannot be resolved is reported.
+module cc1_circular_signatures
+    implicit none
+contains
+    pure function cc1_cs_f(n) result(r)
+        integer, intent(in) :: n
+        integer :: r(cc1_cs_g(n))
+        r = 1
+    end function
+    pure function cc1_cs_g(n) result(r)
+        integer, intent(in) :: n
+        integer :: r(size(cc1_cs_f(n)))
+        r = 1
+    end function
+end module

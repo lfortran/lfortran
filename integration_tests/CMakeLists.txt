@@ -1707,6 +1707,8 @@ RUN(NAME procedure_pointer_47 LABELS gfortran llvm EXTRA_ARGS --implicit-interfa
 RUN(NAME procedure_pointer_48 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type of the declaring scope (#16414)
 RUN(NAME procedure_pointer_49 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # typed pointer passed to an external dummy (#16414)
 RUN(NAME procedure_pointer_50 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type in an internal procedure of a program (#16414)
+RUN(NAME procedure_pointer_51 LABELS gfortran llvm) # interface of a local from an internal procedure defined after it
+RUN(NAME procedure_pointer_52 LABELS llvm) # an internal procedure hides the host's procedure of that name in a component interface; not gfortran: GFortran takes the interface from the host's procedure
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
@@ -4812,6 +4814,9 @@ RUN(NAME spec_expr_07 LABELS gfortran llvm)
 RUN(NAME spec_expr_10 LABELS gfortran llvm)
 RUN(NAME spec_expr_11 LABELS gfortran llvm)
 RUN(NAME spec_expr_12 LABELS gfortran llvm) # function result extent from a pure function of a local named constant (#7179)
+RUN(NAME spec_expr_13 LABELS gfortran llvm) # a signature calls a module procedure defined later
+RUN(NAME spec_expr_14 LABELS gfortran llvm) # a local calls a module procedure defined later
+RUN(NAME spec_expr_15 LABELS gfortran llvm) # a signature calls a generic whose specific procedures are defined later
 
 RUN(NAME enum_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME enum_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES

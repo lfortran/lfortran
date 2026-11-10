@@ -2102,6 +2102,44 @@ semantic error: Template argument t has not been declared in template specificat
 4870 |        end template
      | ...^^^^^^^^^^^^^^^^^ 
 
+warning: circular dependency between procedure signatures: cc1_cs_f -> cc1_cs_g -> cc1_cs_f; this is a case LFortran should handle, or a false warning: please report it
+    --> tests/errors/continue_compilation_1.f90:4885:27
+     |
+4885 |         integer :: r(size(cc1_cs_f(n)))
+     |                           ^^^^^^^^^^^ 
+
+semantic error: Function 'cc1_cs_f' not found (not user defined nor intrinsic)
+    --> tests/errors/continue_compilation_1.f90:4885:27
+     |
+4885 |         integer :: r(size(cc1_cs_f(n)))
+     |                           ^^^^^^^^^^^ 
+
+semantic error: Return type not specified
+    --> tests/errors/continue_compilation_1.f90:4883:5 - 4887:16
+     |
+4883 |        pure function cc1_cs_g(n) result(r)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4887 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: Function 'cc1_cs_g' not found (not user defined nor intrinsic)
+    --> tests/errors/continue_compilation_1.f90:4880:22
+     |
+4880 |         integer :: r(cc1_cs_g(n))
+     |                      ^^^^^^^^^^^ 
+
+semantic error: Return type not specified
+    --> tests/errors/continue_compilation_1.f90:4878:5 - 4882:16
+     |
+4878 |        pure function cc1_cs_f(n) result(r)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+4882 |        end function
+     | ...^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
