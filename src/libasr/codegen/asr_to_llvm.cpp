@@ -8219,6 +8219,9 @@ public:
                 if (init_value && init_value->getType() != x_ptr) {
                     init_value = nullptr;
                 }
+                if (alias_info_enabled()) {
+                    descriptor_pointer_globals.insert(ptr->stripPointerCasts());
+                }
                 allocatable_array_details.push_back(
                     { const_cast<ASR::Variable_t*>(&x),
                       ptr,
@@ -10899,6 +10902,50 @@ public:
     // like any descriptor array).
     std::set<llvm::Value*> local_array_storage;
 
+    // The storage of the explicit-shape and assumed-size dummy arguments of
+    // numeric or logical type of the procedures for which
+    // dummies_may_be_noalias holds, TARGET ones included, which is the one
+    // case where the parameter is not noalias: the elements are "data" like
+    // those of any other array, so a store to one cannot change an array
+    // descriptor or a pointer, and LLVM can keep the descriptor of an
+    // allocatable array in registers in a loop that writes the dummy argument.
+    // An actual argument cannot make the elements share storage with a
+    // descriptor or a pointer in a conforming program (see above). The same
+    // exceptions as for local_array_storage apply (see note_address_taken).
+    std::set<llvm::Value*> dummy_array_storage;
+
+    // The globals of the module variables that are arrays with a descriptor
+    // (allocatable and pointer arrays): each holds a pointer to the
+    // descriptor of the variable, which only the code the compiler generates
+    // for the variable reads or writes, so these accesses are "descriptor".
+    std::set<llvm::Value*> descriptor_pointer_globals;
+
+    static bool is_dummy_array_storage(const ASR::Variable_t &arg) {
+        if (arg.m_storage == ASR::storage_typeType::ResultArgument ||
+                arg.m_value_attr ||
+                arg.m_common_block != nullptr ||
+                arg.m_is_volatile || arg.m_is_asynchronous ||
+                arg.n_codims != 0 ||
+                !ASRUtils::is_array(arg.m_type) ||
+                LLVM::is_llvm_pointer(*arg.m_type) ||
+                ASRUtils::is_pointer(arg.m_type) ||
+                ASRUtils::is_allocatable(arg.m_type)) {
+            return false;
+        }
+        ASR::array_physical_typeType physical_type =
+            ASRUtils::extract_physical_type(arg.m_type);
+        if (physical_type != ASR::array_physical_typeType::PointerArray &&
+                physical_type != ASR::array_physical_typeType::FixedSizeArray) {
+            return false;
+        }
+        ASR::ttype_t *element_type = ASRUtils::type_get_past_array(arg.m_type);
+        return ASR::is_a<ASR::Integer_t>(*element_type) ||
+            ASR::is_a<ASR::UnsignedInteger_t>(*element_type) ||
+            ASR::is_a<ASR::Real_t>(*element_type) ||
+            ASR::is_a<ASR::Complex_t>(*element_type) ||
+            ASR::is_a<ASR::Logical_t>(*element_type);
+    }
+
     // An allocatable numeric component owns storage separate from the inline
     // components of any derived-type object. Keep both below "data" so a
     // pointer array, which may alias an inline component, still aliases both.
@@ -11005,7 +11052,7 @@ public:
     // one of its elements) is taken no longer qualifies for
     // local_array_storage.
     void note_address_taken(llvm::Value *ptr) {
-        if (local_array_storage.empty()) {
+        if (local_array_storage.empty() && dummy_array_storage.empty()) {
             return;
         }
         while (true) {
@@ -11013,7 +11060,8 @@ public:
                 ptr = gep->getPointerOperand();
             } else if (llvm::BitCastOperator *cast =
                     llvm::dyn_cast<llvm::BitCastOperator>(ptr)) {
-                if (local_array_storage.find(ptr) != local_array_storage.end()) {
+                if (local_array_storage.find(ptr) != local_array_storage.end() ||
+                        dummy_array_storage.find(ptr) != dummy_array_storage.end()) {
                     break;
                 }
                 ptr = cast->getOperand(0);
@@ -11022,6 +11070,7 @@ public:
             }
         }
         local_array_storage.erase(ptr);
+        dummy_array_storage.erase(ptr);
     }
 
     // The struct type whose field `gep` selects last and that field, or
@@ -11062,7 +11111,8 @@ public:
         if (llvm::isa<llvm::GEPOperator>(base)) {
             return is_array_element_address(base);
         }
-        if (local_array_storage.find(base) != local_array_storage.end()) {
+        if (local_array_storage.find(base) != local_array_storage.end() ||
+                dummy_array_storage.find(base) != dummy_array_storage.end()) {
             return true;
         }
         llvm::LoadInst *base_addr = llvm::dyn_cast<llvm::LoadInst>(base);
@@ -11094,6 +11144,10 @@ public:
             if (allocated_component_data.count(ptr)) {
                 return allocated_component;
             }
+        }
+        if (type->isPointerTy() && descriptor_pointer_globals.find(
+                ptr->stripPointerCasts()) != descriptor_pointer_globals.end()) {
+            return descriptor;
         }
         if (llvm::GEPOperator *gep = llvm::dyn_cast<llvm::GEPOperator>(ptr)) {
             uint64_t field = 0;
@@ -11331,6 +11385,11 @@ public:
                     if (noalias_dummies && llvm_arg.getType()->isPointerTy() &&
                             is_noalias_dummy(*arg, x)) {
                         llvm_arg.addAttr(llvm::Attribute::NoAlias);
+                    }
+                    if (noalias_dummies && llvm_arg.getType()->isPointerTy() &&
+                            is_dummy_array_storage(*arg)) {
+                        dummy_array_storage.insert(&llvm_arg);
+                        dummy_array_storage.insert(llvm_sym);
                     }
                 }
             }

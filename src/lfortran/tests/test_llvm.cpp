@@ -1743,6 +1743,8 @@ end module
     std::string expected =
         // Elements of self%out and self%w.
         "forward:load float:allocated component; "
+        // Elements of x, which is passed by its data pointer.
+        "forward:load float:data; "
         // Offsets, lower bounds and strides of the descriptors.
         "forward:load i64:descriptor; "
         // The class wrapper (self), the descriptor pointers of the
@@ -1750,8 +1752,10 @@ end module
         "forward:load pointer:descriptor; "
         "forward:store float:allocated component; "
         // TRANSFER reinterprets each element through an untagged scalar;
-        // only the integer elements of the local fixed-size temporary that
-        // holds its result are tagged.
+        // only the elements of the explicit-shape dummy argument x and the
+        // integer elements of the local fixed-size temporary that holds its
+        // result are tagged.
+        "pun:load float:data; "
         "pun:load i32:data; "
         "pun:store i32:data; ";
     CHECK(tbaa_accesses(source, true, procedures) == expected);
