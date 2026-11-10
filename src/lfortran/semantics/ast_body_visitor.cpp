@@ -10146,15 +10146,18 @@ public:
                 erase_from_external_mapping(sub_name);
             }
 
-            // Update arguments if the symbol belonged to a function
-            ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
-            if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
-                ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
-                for (size_t i = 0; i < current_function->n_args; i++) {
-                    if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
-                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
-                        if (std::string(ASRUtils::symbol_name(var->m_v)) == sub_name) {
-                            var->m_v = original_sym;
+            // Update arguments if the symbol belonged to a function. In an
+            // interactive cell the owner is the translation unit, not a symbol.
+            if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                ASR::symbol_t* asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner);
+                if (ASR::is_a<ASR::Function_t>(*asr_owner_sym)) {
+                    ASR::Function_t *current_function = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
+                    for (size_t i = 0; i < current_function->n_args; i++) {
+                        if (ASR::is_a<ASR::Var_t>(*current_function->m_args[i])) {
+                            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(current_function->m_args[i]);
+                            if (std::string(ASRUtils::symbol_name(var->m_v)) == sub_name) {
+                                var->m_v = original_sym;
+                            }
                         }
                     }
                 }

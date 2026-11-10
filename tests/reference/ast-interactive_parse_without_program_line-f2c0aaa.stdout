@@ -73,9 +73,8 @@
         []
         ()
     )
-    (FuncCallOrArray
-        open
-        []
+    (Open
+        0
         []
         [(unit
         10)
@@ -83,39 +82,26 @@
         (String "test.txt" ()))
         (status
         (String "old" ()))]
-        []
-        []
-    )
-    (FuncCallOrArray
-        flush
-        []
-        [(()
-        10
         ()
-        0)]
-        []
-        []
-        []
     )
-    (FuncCallOrArray
-        close
+    (Flush
+        0
+        [10]
         []
+        ()
+    )
+    (Close
+        0
         []
         [(unit
         10)]
-        []
-        []
-    )
-    (FuncCallOrArray
-        nullify
-        []
-        [(()
-        p
         ()
-        0)]
+    )
+    (Nullify
+        0
+        [p]
         []
-        []
-        []
+        ()
     )
     exit
     cycle
