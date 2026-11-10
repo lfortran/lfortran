@@ -636,3 +636,34 @@ contains
         y = +x  ! {Error} No matching `operator(+)` found for this operand type
     end subroutine
 end module cc2_unary_plus_array_mod
+
+! An ALLOCATABLE statement applies only to the entity of its own scoping unit,
+! and the attribute it gives conflicts with an explicit shape, an initializer
+! and the POINTER attribute (#15291).
+module cc2_allocatable_stmt_mod
+    implicit none
+    real :: h(:)
+    allocatable :: h
+    type :: cc2_as_t
+        real :: h(:)  ! {Error} deferred shape: the ALLOCATABLE statement is not for the component
+    end type
+contains
+    subroutine cc2_as_contained()
+        real :: h(:)  ! {Error} deferred shape: the host's ALLOCATABLE statement is not for this local
+    end subroutine
+
+    subroutine cc2_as_explicit()
+        real :: a(3)  ! {Error} an allocatable array must have a deferred shape
+        allocatable :: a
+    end subroutine
+
+    subroutine cc2_as_init()
+        allocatable :: n
+        integer :: n = 3  ! {Error} an allocatable variable cannot have an initializer
+    end subroutine
+
+    subroutine cc2_as_pointer()
+        allocatable :: b
+        real, pointer :: b(:)  ! {Error} allocatable conflicts with pointer
+    end subroutine
+end module cc2_allocatable_stmt_mod

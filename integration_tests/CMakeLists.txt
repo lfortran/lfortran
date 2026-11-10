@@ -3464,6 +3464,13 @@ RUN(NAME allocate_75 LABELS gfortran llvm fortran)
 RUN(NAME allocate_76 LABELS gfortran llvm)
 RUN(NAME allocate_77 LABELS gfortran llvm c) # allocation on assignment of a derived-type scalar with the C backend (#15949)
 RUN(NAME allocate_78 LABELS gfortran llvm) # typed allocation with a named-constant kind (#14384)
+RUN(NAME allocatable_stmt_01 LABELS gfortran llvm) # ALLOCATABLE statement after the deferred-shape type declaration (#15291)
+RUN(NAME allocatable_stmt_02 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form) # fixed form (#15291)
+RUN(NAME allocatable_stmt_03 LABELS gfortran llvm NO_STD_F23) # DIMENSION statement with an ALLOCATABLE statement or attribute (#15291); --std=f23: #16169
+RUN(NAME allocatable_stmt_04 LABELS gfortran llvm) # an ALLOCATABLE statement does not apply to a component or a contained procedure's local (#15291)
+RUN(NAME pointer_stmt_01 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # POINTER statement after the deferred-shape type declaration (#15291)
+RUN(NAME pointer_stmt_02 LABELS gfortran llvm EXTRA_ARGS --implicit-interface NO_STD_F23) # DIMENSION statement with a POINTER statement (#15291); --std=f23: #16169
+RUN(NAME pointer_stmt_03 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # a POINTER statement does not apply to a component (#15291)
 RUN(NAME allocate_pointer_associated_01 LABELS gfortran llvm) # allocate an already associated pointer (#16072, #13028)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm

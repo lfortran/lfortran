@@ -317,6 +317,36 @@ semantic error: dummy argument 'y' of pure function 'add' must be intent(in) or 
 585 |         integer :: x, y
     |                       ^ 
 
+semantic error: Array 'h' with a deferred shape cannot be a local variable; it must be a dummy argument, allocatable, or pointer
+   --> tests/errors/continue_compilation_2.f90:648:17
+    |
+648 |         real :: h(:)  ! {Error} deferred shape: the ALLOCATABLE statement is not for the component
+    |                 ^^^^ 
+
+semantic error: Array 'h' with a deferred shape cannot be a local variable; it must be a dummy argument, allocatable, or pointer
+   --> tests/errors/continue_compilation_2.f90:652:17
+    |
+652 |         real :: h(:)  ! {Error} deferred shape: the host's ALLOCATABLE statement is not for this local
+    |                 ^^^^ 
+
+semantic error: Allocatable array 'a' must have a deferred shape or assumed rank
+   --> tests/errors/continue_compilation_2.f90:656:9
+    |
+656 |         real :: a(3)  ! {Error} an allocatable array must have a deferred shape
+    |         ^^^^^^^^^^^^ 
+
+semantic error: An 'allocatable' variable cannot have an initialization expression
+   --> tests/errors/continue_compilation_2.f90:662:20
+    |
+662 |         integer :: n = 3  ! {Error} an allocatable variable cannot have an initializer
+    |                    ^^^^^ 
+
+semantic error: `allocatable` attribute conflicts with `pointer` attribute
+   --> tests/errors/continue_compilation_2.f90:667:9
+    |
+667 |         real, pointer :: b(:)  ! {Error} allocatable conflicts with pointer
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:36:18
    |

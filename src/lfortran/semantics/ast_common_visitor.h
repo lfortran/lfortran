@@ -2304,6 +2304,34 @@ public:
     std::set<std::string> assgnd_target;
     std::set<std::string> assgnd_volatile;
     std::set<std::string> assgnd_asynchronous;
+    // The names in the ALLOCATABLE and POINTER statements of the scoping unit
+    // or BLOCK construct being visited. The attribute applies to the entity
+    // even when the statement follows its type declaration (8.6), as in
+    // `real :: a(:)` followed by `allocatable :: a`.
+    std::set<std::string> allocatable_stmt_names;
+    std::set<std::string> pointer_stmt_names;
+
+    static void collect_attribute_statement_names(AST::decl_stmt_t **items,
+            size_t n_items, AST::simple_attributeType attr,
+            std::set<std::string> &names) {
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
+            AST::Declaration_t *decl = AST::down_cast<AST::Declaration_t>(items[i]);
+            if (decl->m_vartype != nullptr) continue;
+            for (size_t a = 0; a < decl->n_attributes; a++) {
+                if (!AST::is_a<AST::SimpleAttribute_t>(*decl->m_attributes[a])
+                        || AST::down_cast<AST::SimpleAttribute_t>(
+                            decl->m_attributes[a])->m_attr != attr) {
+                    continue;
+                }
+                for (size_t j = 0; j < decl->n_syms; j++) {
+                    if (decl->m_syms[j].m_name) {
+                        names.insert(to_lower(decl->m_syms[j].m_name));
+                    }
+                }
+            }
+        }
+    }
     // A PARAMETER, POINTER, ALLOCATABLE, TARGET, VOLATILE or ASYNCHRONOUS
     // statement that names an entity not declared yet is recorded above and
     // applied to the entity when it is declared. Such a statement applies only
@@ -2320,14 +2348,25 @@ public:
         std::set<std::string> target;
         std::set<std::string> volatile_;
         std::set<std::string> asynchronous;
+        std::set<std::string> allocatable_stmt;
+        std::set<std::string> pointer_stmt;
 
-        PendingAttributeScope(CommonVisitor &v_) : v{v_} {
+        PendingAttributeScope(CommonVisitor &v_,
+                AST::decl_stmt_t **items=nullptr, size_t n_items=0) : v{v_} {
             storage.swap(v.assgnd_storage);
             pointer.swap(v.assgnd_pointer);
             allocatable.swap(v.assgnd_allocatable);
             target.swap(v.assgnd_target);
             volatile_.swap(v.assgnd_volatile);
             asynchronous.swap(v.assgnd_asynchronous);
+            allocatable_stmt.swap(v.allocatable_stmt_names);
+            pointer_stmt.swap(v.pointer_stmt_names);
+            collect_attribute_statement_names(items, n_items,
+                AST::simple_attributeType::AttrAllocatable,
+                v.allocatable_stmt_names);
+            collect_attribute_statement_names(items, n_items,
+                AST::simple_attributeType::AttrPointer,
+                v.pointer_stmt_names);
         }
         ~PendingAttributeScope() {
             v.assgnd_storage.swap(storage);
@@ -2336,6 +2375,8 @@ public:
             v.assgnd_target.swap(target);
             v.assgnd_volatile.swap(volatile_);
             v.assgnd_asynchronous.swap(asynchronous);
+            v.allocatable_stmt_names.swap(allocatable_stmt);
+            v.pointer_stmt_names.swap(pointer_stmt);
         }
         PendingAttributeScope(const PendingAttributeScope &) = delete;
         PendingAttributeScope &operator=(const PendingAttributeScope &) = delete;
@@ -9217,25 +9258,41 @@ public:
     // gives it an array type before its element type is known. Once the
     // element type is known, choose the physical type again, as for a single
     // declaration of the variable: an array of strings can differ from an
-    // array of numbers of the same shape.
+    // array of numbers of the same shape. The ALLOCATABLE or POINTER
+    // attribute of the declared type belongs to the array, not to its
+    // elements. `current_type` is the array type given so far, which may
+    // already be the result of an earlier call.
     ASR::ttype_t* make_array_of_declared_element_type(const Location& loc,
-            ASR::Array_t* array_type, ASR::ttype_t* element_type,
+            ASR::ttype_t* current_type, ASR::ttype_t* declared_type,
             ASR::abiType abi, bool is_argument) {
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
+            ASRUtils::type_get_past_allocatable_pointer(current_type));
+        ASR::ttype_t* element_type =
+            ASRUtils::type_get_past_allocatable_pointer(declared_type);
+        ASR::ttype_t* array = nullptr;
         if (array_type->m_physical_type ==
                 ASR::array_physical_typeType::AssumedRankArray) {
-            return ASRUtils::TYPE(ASR::make_Array_t(al, loc, element_type,
+            array = ASRUtils::TYPE(ASR::make_Array_t(al, loc, element_type,
                 nullptr, 0, ASR::array_physical_typeType::AssumedRankArray,
                 array_type->m_memory_space));
+        } else {
+            // An assumed-size array is the only array without its last
+            // extent that is not a descriptor.
+            bool is_dimension_star = array_type->m_physical_type !=
+                    ASR::array_physical_typeType::DescriptorArray &&
+                array_type->m_dims[array_type->n_dims - 1].m_length == nullptr;
+            array = ASRUtils::make_Array_t_util(al, loc, element_type,
+                array_type->m_dims, array_type->n_dims, abi, is_argument,
+                ASR::array_physical_typeType::DescriptorArray, false,
+                is_dimension_star, true, array_type->m_memory_space);
         }
-        // An assumed-size array is the only array without its last extent
-        // that is not a descriptor.
-        bool is_dimension_star = array_type->m_physical_type !=
-                ASR::array_physical_typeType::DescriptorArray &&
-            array_type->m_dims[array_type->n_dims - 1].m_length == nullptr;
-        return ASRUtils::make_Array_t_util(al, loc, element_type,
-            array_type->m_dims, array_type->n_dims, abi, is_argument,
-            ASR::array_physical_typeType::DescriptorArray, false,
-            is_dimension_star, true, array_type->m_memory_space);
+        if (ASR::is_a<ASR::Allocatable_t>(*declared_type)) {
+            return ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, array));
+        }
+        if (ASR::is_a<ASR::Pointer_t>(*declared_type)) {
+            return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, array));
+        }
+        return array;
     }
 
     void set_scoped_variable_attribute(const std::string &name,
@@ -11072,10 +11129,12 @@ public:
                     s.m_initializer = assgnd_storage[sym].second;
                 }
                 bool is_pointer = false;
-                if (assgnd_pointer.count(sym)) {
+                if (!is_derived_type && (assgnd_pointer.count(sym)
+                        || pointer_stmt_names.count(sym))) {
                     is_pointer = true;
                 }
-                if (assgnd_allocatable.count(sym)) {
+                if (!is_derived_type && (assgnd_allocatable.count(sym)
+                        || allocatable_stmt_names.count(sym))) {
                     is_allocatable = true;
                 }
                 if (assgnd_target.count(sym)) {
@@ -11172,9 +11231,46 @@ public:
                 AST::dimension_t* dims_ast = nullptr;
                 // location for dimension(...) if present
                 Location dims_attr_loc;
-                is_allocatable = false;
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
+                // The ALLOCATABLE or POINTER attribute may also come from a
+                // statement, so these conflicts are also checked for a
+                // declaration without attributes.
+                auto check_allocatable_pointer_conflicts = [&]() {
+                    if (is_allocatable && is_pointer) {
+                        diag.add(Diagnostic(
+                            "`allocatable` attribute conflicts with `pointer` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                    if (is_allocatable && storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add((Diagnostic(
+                            "`parameter` attribute conflicts with `allocatable` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    } else if (is_pointer && storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add((Diagnostic(
+                            "`parameter` attribute conflicts with `pointer` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    }
+                    if (is_allocatable && s.m_initializer != nullptr) {
+                        diag.add(Diagnostic(
+                            "An 'allocatable' variable cannot have an initialization expression",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {s.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                };
                 if (x.n_attributes > 0) {
                     for (size_t i=0; i < x.n_attributes; i++) {
                         AST::decl_attribute_t *a = x.m_attributes[i];
@@ -11396,33 +11492,7 @@ public:
                         throw SemanticAbort();
                     }
 
-                    if (is_allocatable && storage_type == ASR::storage_typeType::Parameter) {
-                        diag.add((Diagnostic(
-                            "`parameter` attribute conflicts with `allocatable` attribute",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{x.base.base.loc})
-                            }
-                        )));
-                        throw SemanticAbort();
-                    } else if (is_pointer && storage_type == ASR::storage_typeType::Parameter) {
-                        diag.add((Diagnostic(
-                            "`parameter` attribute conflicts with `pointer` attribute",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{x.base.base.loc})
-                            }
-                        )));
-                        throw SemanticAbort();
-                    }
-    
-                    if (is_allocatable && s.m_initializer != nullptr) {
-                        diag.add(Diagnostic(
-                            "An 'allocatable' variable cannot have an initialization expression",
-                            Level::Error, Stage::Semantic, {
-                                Label("", {s.loc})
-                            }));
-                        throw SemanticAbort();
-                    }
-                    
+                    check_allocatable_pointer_conflicts();
                     if (s_intent == ASRUtils::intent_out && value_attr) {
                         diag.add(Diagnostic(
                             "`value` attribute conflicts with `intent(out)` attribute",
@@ -11441,6 +11511,8 @@ public:
                             }));
                         throw SemanticAbort();
                     }
+                } else {
+                    check_allocatable_pointer_conflicts();
                 }
                 if (s.n_dim > 0) {
                     if (dims.size() > 0) {
@@ -11822,9 +11894,9 @@ public:
                             if ( symbol_variable->m_type ) {
                                 if (is_argument && is_dimension_star) {
                                     symbol_variable->m_type = type;
-                                } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                                } else if ( ASRUtils::is_array_t(symbol_variable->m_type) ) {
                                     symbol_variable->m_type = make_array_of_declared_element_type(
-                                        s.loc, ASR::down_cast<ASR::Array_t>(symbol_variable->m_type),
+                                        s.loc, symbol_variable->m_type,
                                         type, s_abi, (s_intent != ASRUtils::intent_local) || is_argument);
                                 } else {
                                     symbol_variable->m_type = type;
@@ -11923,9 +11995,9 @@ public:
                         }
                         if (is_argument && is_dimension_star) {
                             symbol_variable->m_type = type;
-                        } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                        } else if ( ASRUtils::is_array_t(symbol_variable->m_type) ) {
                             symbol_variable->m_type = make_array_of_declared_element_type(
-                                s.loc, ASR::down_cast<ASR::Array_t>(symbol_variable->m_type),
+                                s.loc, symbol_variable->m_type,
                                 type, s_abi, (s_intent != ASRUtils::intent_local) || is_argument);
                         } else {
                             symbol_variable->m_type = type;
@@ -13231,9 +13303,9 @@ public:
                             ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[sym];
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                             if ( symbol_variable->m_type ) {
-                                if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                                if ( ASRUtils::is_array_t(symbol_variable->m_type) ) {
                                     symbol_variable->m_type = make_array_of_declared_element_type(
-                                        s.loc, ASR::down_cast<ASR::Array_t>(symbol_variable->m_type),
+                                        s.loc, symbol_variable->m_type,
                                         type, s_abi, (s_intent != ASRUtils::intent_local) || is_argument);
                                 } else {
                                     symbol_variable->m_type = type;
