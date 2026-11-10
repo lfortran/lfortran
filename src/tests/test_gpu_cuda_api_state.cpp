@@ -140,6 +140,14 @@ static void discard_fill_entry(void **args)
     out[1] = value + 1;
 }
 
+static void fill_entry(void **args)
+{
+    unit_launch();
+    int32_t *out = arg<int32_t *>(args, 0);
+    live(out, 1000 * sizeof(int32_t));
+    out[0] = arg<int32_t>(args, 1);
+}
+
 // out[chunk] = chunk + the sum of the 64 read-only values.
 static void read_once_entry(void **args)
 {
@@ -359,8 +367,8 @@ static int keep_reads()
     lfortran_gpu_wait(ctx);
     lfortran_gpu_wait(ctx);
     lfortran_gpu_sync(ctx);
-    require(stats().live_allocations < allocations,
-        "an unused entry frees its memory");
+    require(stats().live_allocations == allocations,
+        "an unused entry gives its memory to the cache, not to the driver");
     lfortran_gpu_shutdown(ctx);
     check_api_use();
     return 0;
@@ -429,6 +437,43 @@ static int failed_free()
     lfortran_gpu_sync(ctx);
     fprintf(stderr, "a failed cudaFree was ignored\n");
     return 1;
+}
+
+// Syncing with nothing issued since the last sync does not wait for the
+// device, and the device memory of a host array that is gone is reused by the
+// next one instead of being freed and allocated again.
+static int idle_sync_and_pool()
+{
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    lfortran_gpu_register_kernel("idle_sync", entry(fill_entry));
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    for (int i = 0; i < 10; i++) lfortran_gpu_sync(ctx);
+    require(stats().synchronizations == 0, "no work, no waiting");
+    unsigned long long mallocs_before = stats().mallocs;
+    for (int32_t i = 0; i < 40; i++) {
+        std::vector<int32_t> out(1000);
+        auto *k = lfortran_gpu_load_kernel(ctx, "idle_sync", 9);
+        lfortran_gpu_set_buffer_arg(k, 0, out.data(), out.size() * 4,
+            LFORTRAN_GPU_WRITE);
+        lfortran_gpu_set_scalar_arg(k, 1, &i, sizeof(i));
+        lfortran_gpu_launch(ctx, k, grid, block);
+        lfortran_gpu_release_kernel(k);
+        lfortran_gpu_discard(ctx, out.data(), out.size() * 4);
+        lfortran_gpu_sync(ctx);
+        for (int j = 0; j < 5; j++) lfortran_gpu_sync(ctx);
+        sync_launches.clear();
+    }
+    printf("idle sync: %llu synchronizations, %llu allocations, %llu frees "
+        "for 40 launches\n", stats().synchronizations,
+        stats().mallocs - mallocs_before, stats().frees);
+    require(stats().synchronizations == 40, "one wait for each launch");
+    require(stats().mallocs - mallocs_before <= 4,
+        "the memory of a finished array serves the next one");
+    require(stats().frees == 0, "freed memory stays in the cache");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    return 0;
 }
 
 // The unified memory model (LFORTRAN_GPU_MEMORY=unified): a kernel uses a
@@ -621,10 +666,10 @@ int main(int argc, char **argv)
             launches, sync_launches.size());
         require(launches == (unsigned long long)expected_launches,
             "each requested dispatch runs once");
-        require(sync_launches.size() == 2
-            && sync_launches[0] == expected_launches
-            && sync_launches[1] == expected_launches,
-            "no synchronization during stable alias preparation");
+        require(sync_launches.size() == 1
+            && sync_launches[0] == expected_launches,
+            "no synchronization during stable alias preparation, and none "
+            "at shutdown when the device is idle");
         if (strncmp(argv[2], "discard-", 8) == 0) {
             require(stats().async_copies[cudaMemcpyHostToDevice] == 1,
                 "aliased discard falls back to one upload");
@@ -645,6 +690,9 @@ int main(int argc, char **argv)
     }
     if (argc == 2 && strcmp(argv[1], "keep-across-waits") == 0) {
         return keep_across_waits();
+    }
+    if (argc == 2 && strcmp(argv[1], "idle-sync-pool") == 0) {
+        return idle_sync_and_pool();
     }
     if (argc == 2 && strcmp(argv[1], "failed-free") == 0) {
         return failed_free();
@@ -672,10 +720,11 @@ int main(int argc, char **argv)
     // With a scratch buffer the read-back syncs once more, and the entry of
     // `output`, which no launch has used in the two wait periods before, is
     // forgotten there and its memory freed.
-    require(s.launches == 201 && s.mallocs == 6031
-        && s.frees == (scratch ? 4111u : 4110u),
+    require(s.launches == 201 && s.mallocs == 6017
+        && s.frees == (scratch ? 4033u : 4032u),
         "per-slot reuse and deferred replacement counts");
-    require(sync_launches.size() == (scratch ? 4 : 3)
+    // The syncs of the read-back and of the shutdown find the device idle.
+    require(sync_launches.size() == 2
         && sync_launches.front() == 200 && sync_launches[1] == 201,
         "one capacity flush before launch 201, no eager launch synchronization");
     require(s.live_allocations == 0, "shutdown releases cached memory");

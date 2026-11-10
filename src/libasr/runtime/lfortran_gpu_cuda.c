@@ -229,6 +229,11 @@ static size_t managed_forget(void *p) {
     return size;
 }
 
+// Whether work was issued to the device since the last time the host waited
+// for it: a launch, an asynchronous copy or a prefetch. The host waits for the
+// device only then, however often the program asks it to sync.
+static int device_busy = 0;
+
 // Prefetches the `size` bytes of managed memory at `p` to `device`, on the
 // default stream. CUDA 13 names the destination by a location rather than a
 // device number; HIP keeps the device number.
@@ -263,6 +268,7 @@ static void managed_to_device(void *p, size_t size) {
     int device = 0;
     check(cudaGetDevice(&device), "cudaGetDevice");
     check(prefetch_to_device(base, length, device), "cudaMemPrefetchAsync");
+    device_busy = 1;
     (void)size;
 }
 
@@ -367,10 +373,166 @@ static void check(cudaError_t err, const char *what) {
     }
 }
 
+static void device_synchronize(void) {
+    if (!device_busy) return;
+    device_busy = 0;
+    check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
+}
+
+// Device memory comes from a cache of freed blocks, since cudaMalloc and
+// cudaFree cost tens of microseconds and the device heap is rebuilt at every
+// call of a procedure that has a temporary array. A block is rounded up to a
+// size class (four to each power of two) and returned to its class when it is
+// freed; it goes back to the driver only when the cache is full, when it is
+// too large to cache, or when the driver is out of memory.
+enum { POOL_MIN_BYTES = 512, POOL_CLASSES = 128 };
+static const size_t POOL_MAX_BLOCK_BYTES = (size_t)256 << 20;
+static const size_t POOL_MAX_CACHED_BYTES = (size_t)2048 << 20;
+
+typedef struct device_block {
+    void *ptr;
+    size_t size;
+} device_block;
+
+// The blocks the driver handed out and that are not freed yet, in a hash table
+// (open addressing, keyed by address): the size of a block is not known when
+// it is freed.
+static device_block *live_blocks = NULL;
+static size_t live_capacity = 0;
+static size_t n_live = 0;
+static device_block free_blocks[POOL_CLASSES][64];
+static int n_free_blocks[POOL_CLASSES];
+static size_t cached_bytes = 0;
+
+static size_t block_slot(const void *p, size_t capacity) {
+    uintptr_t a = (uintptr_t)p;
+    a ^= a >> 17;
+    a *= (uintptr_t)0x9E3779B97F4A7C15ull;
+    return (size_t)(a >> 7) & (capacity - 1);
+}
+
+static void live_insert(void *p, size_t size) {
+    if ((n_live + 1) * 2 > live_capacity) {
+        size_t capacity = live_capacity ? 2 * live_capacity : 1024;
+        device_block *grown = (device_block*)calloc(capacity,
+            sizeof(device_block));
+        if (!grown) {
+            fprintf(stderr, "lfortran_gpu: out of memory\n");
+            exit(1);
+        }
+        for (size_t i = 0; i < live_capacity; i++) {
+            if (!live_blocks[i].ptr) continue;
+            size_t j = block_slot(live_blocks[i].ptr, capacity);
+            while (grown[j].ptr) j = (j + 1) & (capacity - 1);
+            grown[j] = live_blocks[i];
+        }
+        free(live_blocks);
+        live_blocks = grown;
+        live_capacity = capacity;
+    }
+    size_t j = block_slot(p, live_capacity);
+    while (live_blocks[j].ptr) j = (j + 1) & (live_capacity - 1);
+    live_blocks[j].ptr = p;
+    live_blocks[j].size = size;
+    n_live++;
+}
+
+// Removes the block at `p` from the table and returns its size, or 0.
+static size_t live_remove(void *p) {
+    if (!live_capacity) return 0;
+    size_t j = block_slot(p, live_capacity);
+    while (live_blocks[j].ptr) {
+        if (live_blocks[j].ptr == p) {
+            size_t size = live_blocks[j].size;
+            live_blocks[j].ptr = NULL;
+            n_live--;
+            // Shift back the entries that probed past the hole.
+            size_t hole = j;
+            for (size_t k = (j + 1) & (live_capacity - 1); live_blocks[k].ptr;
+                    k = (k + 1) & (live_capacity - 1)) {
+                size_t home = block_slot(live_blocks[k].ptr, live_capacity);
+                if (((k - home) & (live_capacity - 1))
+                        >= ((k - hole) & (live_capacity - 1))) {
+                    live_blocks[hole] = live_blocks[k];
+                    live_blocks[k].ptr = NULL;
+                    hole = k;
+                }
+            }
+            return size;
+        }
+        j = (j + 1) & (live_capacity - 1);
+    }
+    return 0;
+}
+
+// The size class of `size` and the size of the blocks in it.
+static int pool_class(size_t size, size_t *block_size) {
+    size_t n = POOL_MIN_BYTES;
+    int c = 0;
+    while (n < size) {
+        // Four classes to each power of two: n, 5n/4, 3n/2, 7n/4.
+        size_t step = n / 4 ? n / 4 : 1;
+        for (int i = 0; i < 4 && n < size; i++) { n += step; c++; }
+        if (n < size && n > ((size_t)1 << 62)) break;
+    }
+    *block_size = n;
+    return c;
+}
+
+static void pool_flush(void) {
+    for (int c = 0; c < POOL_CLASSES; c++) {
+        for (int i = 0; i < n_free_blocks[c]; i++) {
+            (void)cudaFree(free_blocks[c][i].ptr);
+        }
+        n_free_blocks[c] = 0;
+    }
+    cached_bytes = 0;
+}
+
 static void* device_alloc(size_t size) {
+    if (size == 0) size = 1;
+    size_t block_size = size;
+    int c = -1;
+    if (size <= POOL_MAX_BLOCK_BYTES) {
+        c = pool_class(size, &block_size);
+        if (c >= POOL_CLASSES) c = -1;
+    }
+    if (c >= 0 && n_free_blocks[c] > 0) {
+        device_block b = free_blocks[c][--n_free_blocks[c]];
+        cached_bytes -= b.size;
+        live_insert(b.ptr, b.size);
+        return b.ptr;
+    }
     void *d_ptr = NULL;
-    check(cudaMalloc(&d_ptr, size), "cudaMalloc");
+    cudaError_t err = cudaMalloc(&d_ptr, block_size);
+    if (err != cudaSuccess && cached_bytes > 0) {
+        pool_flush();
+        err = cudaMalloc(&d_ptr, block_size);
+    }
+    check(err, "cudaMalloc");
+    live_insert(d_ptr, block_size);
     return d_ptr;
+}
+
+// Gives the block at `d_ptr` back: to the cache, or to the driver.
+static void device_release(void *d_ptr) {
+    size_t block_size = live_remove(d_ptr);
+    if (block_size == 0) {
+        check(cudaFree(d_ptr), "cudaFree");
+        return;
+    }
+    size_t unused;
+    int c = block_size <= POOL_MAX_BLOCK_BYTES
+        ? pool_class(block_size, &unused) : -1;
+    if (c < 0 || c >= POOL_CLASSES || n_free_blocks[c] == 64
+            || cached_bytes + block_size > POOL_MAX_CACHED_BYTES) {
+        check(cudaFree(d_ptr), "cudaFree");
+        return;
+    }
+    free_blocks[c][n_free_blocks[c]].ptr = d_ptr;
+    free_blocks[c][n_free_blocks[c]].size = block_size;
+    n_free_blocks[c]++;
+    cached_bytes += block_size;
 }
 
 static void sync_all(void);
@@ -406,7 +568,7 @@ static void end_wait_period(void);
 static void sync_all(void) {
     n_syncs++;
     pending_in_place_reads = 0;
-    check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
+    device_synchronize();
     end_wait_period();
     for (int i = 0; i < n_entries; i++) {
         if (!entries[i].used || !entries[i].dirty) continue;
@@ -417,7 +579,7 @@ static void sync_all(void) {
         entries[i].dirty = 0;
     }
     for (int i = 0; i < n_deferred; i++) {
-        check(cudaFree(deferred_free[i]), "cudaFree");
+        device_release(deferred_free[i]);
     }
     n_deferred = 0;
 }
@@ -506,6 +668,7 @@ static void* resident_for_write(void *host, size_t size, int discard) {
     if (!discard && !e->fresh) {
         check(cudaMemcpyAsync(e->device, host, size, cudaMemcpyHostToDevice,
             0), "cudaMemcpyAsync H2D");
+        device_busy = 1;
     }
     e->dirty = 1;
     e->fresh = 0;
@@ -526,6 +689,7 @@ static void* kept_read(void *host, size_t size) {
     if (!e->fresh) {
         check(cudaMemcpyAsync(e->device, host, size, cudaMemcpyHostToDevice,
             0), "cudaMemcpyAsync H2D");
+        device_busy = 1;
         e->fresh = 1;
     }
     return e->device;
@@ -682,7 +846,7 @@ static void* managed_alloc(void *context, int64_t size) {
 static void managed_dealloc(void *context, void *ptr) {
     if (managed_forget(ptr)) {
         // A pending launch may still use the memory.
-        (void)cudaDeviceSynchronize();
+        device_synchronize();
         (void)cudaFree(ptr);
         return;
     }
@@ -952,6 +1116,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                         check(cudaMemcpyAsync(d_ptr, host, size,
                             cudaMemcpyHostToDevice, 0),
                             "cudaMemcpyAsync H2D");
+        device_busy = 1;
                         k->copied[i] = 1;
                         k->cache->filled_by[i] = k;
                     }
@@ -985,6 +1150,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             } else {
                 check(cudaMemsetAsync(k->buffer_device_ptrs[i], 0xff,
                     k->buffer_sizes[i], 0), "cudaMemsetAsync");
+                device_busy = 1;
             }
         }
     }
@@ -1007,6 +1173,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         (unsigned)block[2]};
     check(cudaLaunchKernel((const void*)k->func, grid_dim, block_dim, args, 0,
         0), "cudaLaunchKernel");
+    device_busy = 1;
     if (reads_in_place) pending_in_place_reads = 1;
 }
 
@@ -1020,7 +1187,7 @@ void lfortran_gpu_wait(lfortran_gpu_ctx* ctx) {
     end_wait_period();
     if (!pending_in_place_reads) return;
     pending_in_place_reads = 0;
-    check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
+    device_synchronize();
 }
 
 void lfortran_gpu_keep(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
