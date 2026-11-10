@@ -104,8 +104,11 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes) {
             return false;
         }
         int m = shuffle->getShuffleMask()[lane];
-        auto *source = cast<FixedVectorType>(
+        auto *source = dyn_cast<FixedVectorType>(
             shuffle->getOperand(0)->getType());
+        if (!source) {
+            return false;
+        }
         unsigned n = source->getNumElements();
         return m >= 0 && lift(shuffle->getOperand(m < (int)n ? 0 : 1),
             (unsigned)m % n, nodes);
@@ -267,8 +270,12 @@ bool collect_squares(Value *v, unsigned lane, Squares &squares,
     }
     if (auto *shuffle = dyn_cast<ShuffleVectorInst>(v)) {
         int m = shuffle->getShuffleMask()[lane];
-        unsigned n = cast<FixedVectorType>(
-            shuffle->getOperand(0)->getType())->getNumElements();
+        auto *source = dyn_cast<FixedVectorType>(
+            shuffle->getOperand(0)->getType());
+        if (!source) {
+            return false;
+        }
+        unsigned n = source->getNumElements();
         return m >= 0 && collect_squares(
             shuffle->getOperand(m < (int)n ? 0 : 1), (unsigned)m % n,
             squares, seen);
