@@ -9258,25 +9258,41 @@ public:
     // gives it an array type before its element type is known. Once the
     // element type is known, choose the physical type again, as for a single
     // declaration of the variable: an array of strings can differ from an
-    // array of numbers of the same shape.
+    // array of numbers of the same shape. The ALLOCATABLE or POINTER
+    // attribute of the declared type belongs to the array, not to its
+    // elements. `current_type` is the array type given so far, which may
+    // already be the result of an earlier call.
     ASR::ttype_t* make_array_of_declared_element_type(const Location& loc,
-            ASR::Array_t* array_type, ASR::ttype_t* element_type,
+            ASR::ttype_t* current_type, ASR::ttype_t* declared_type,
             ASR::abiType abi, bool is_argument) {
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(
+            ASRUtils::type_get_past_allocatable_pointer(current_type));
+        ASR::ttype_t* element_type =
+            ASRUtils::type_get_past_allocatable_pointer(declared_type);
+        ASR::ttype_t* array = nullptr;
         if (array_type->m_physical_type ==
                 ASR::array_physical_typeType::AssumedRankArray) {
-            return ASRUtils::TYPE(ASR::make_Array_t(al, loc, element_type,
+            array = ASRUtils::TYPE(ASR::make_Array_t(al, loc, element_type,
                 nullptr, 0, ASR::array_physical_typeType::AssumedRankArray,
                 array_type->m_memory_space));
+        } else {
+            // An assumed-size array is the only array without its last
+            // extent that is not a descriptor.
+            bool is_dimension_star = array_type->m_physical_type !=
+                    ASR::array_physical_typeType::DescriptorArray &&
+                array_type->m_dims[array_type->n_dims - 1].m_length == nullptr;
+            array = ASRUtils::make_Array_t_util(al, loc, element_type,
+                array_type->m_dims, array_type->n_dims, abi, is_argument,
+                ASR::array_physical_typeType::DescriptorArray, false,
+                is_dimension_star, true, array_type->m_memory_space);
         }
-        // An assumed-size array is the only array without its last extent
-        // that is not a descriptor.
-        bool is_dimension_star = array_type->m_physical_type !=
-                ASR::array_physical_typeType::DescriptorArray &&
-            array_type->m_dims[array_type->n_dims - 1].m_length == nullptr;
-        return ASRUtils::make_Array_t_util(al, loc, element_type,
-            array_type->m_dims, array_type->n_dims, abi, is_argument,
-            ASR::array_physical_typeType::DescriptorArray, false,
-            is_dimension_star, true, array_type->m_memory_space);
+        if (ASR::is_a<ASR::Allocatable_t>(*declared_type)) {
+            return ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, array));
+        }
+        if (ASR::is_a<ASR::Pointer_t>(*declared_type)) {
+            return ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, array));
+        }
+        return array;
     }
 
     void set_scoped_variable_attribute(const std::string &name,
@@ -11864,9 +11880,9 @@ public:
                             if ( symbol_variable->m_type ) {
                                 if (is_argument && is_dimension_star) {
                                     symbol_variable->m_type = type;
-                                } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                                } else if ( ASRUtils::is_array_t(symbol_variable->m_type) ) {
                                     symbol_variable->m_type = make_array_of_declared_element_type(
-                                        s.loc, ASR::down_cast<ASR::Array_t>(symbol_variable->m_type),
+                                        s.loc, symbol_variable->m_type,
                                         type, s_abi, (s_intent != ASRUtils::intent_local) || is_argument);
                                 } else {
                                     symbol_variable->m_type = type;
@@ -11965,9 +11981,9 @@ public:
                         }
                         if (is_argument && is_dimension_star) {
                             symbol_variable->m_type = type;
-                        } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                        } else if ( ASRUtils::is_array_t(symbol_variable->m_type) ) {
                             symbol_variable->m_type = make_array_of_declared_element_type(
-                                s.loc, ASR::down_cast<ASR::Array_t>(symbol_variable->m_type),
+                                s.loc, symbol_variable->m_type,
                                 type, s_abi, (s_intent != ASRUtils::intent_local) || is_argument);
                         } else {
                             symbol_variable->m_type = type;
@@ -13273,9 +13289,9 @@ public:
                             ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[sym];
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                             if ( symbol_variable->m_type ) {
-                                if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
+                                if ( ASRUtils::is_array_t(symbol_variable->m_type) ) {
                                     symbol_variable->m_type = make_array_of_declared_element_type(
-                                        s.loc, ASR::down_cast<ASR::Array_t>(symbol_variable->m_type),
+                                        s.loc, symbol_variable->m_type,
                                         type, s_abi, (s_intent != ASRUtils::intent_local) || is_argument);
                                 } else {
                                     symbol_variable->m_type = type;
