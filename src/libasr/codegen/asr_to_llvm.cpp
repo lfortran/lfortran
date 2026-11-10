@@ -13131,9 +13131,15 @@ public:
                             nptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(), nptr);
                             nptr = load_class_wrapper_data(array_inner_type, nptr);
                         } else {
-                            llvm::Type* array_type_desc = llvm_utils->get_type_from_ttype_t_util(x.m_tgt,
-                                ASRUtils::expr_type(x.m_tgt), module.get());
-                            nptr = builder->CreateLoad(array_type_desc, nptr);
+                            // Only a pointer or allocatable array is held through
+                            // a pointer to its descriptor, which is loaded here.
+                            // Any other descriptor array, such as an assumed-shape
+                            // dummy, is visited as the descriptor itself.
+                            if (LLVM::is_llvm_pointer(*tgt_type)) {
+                                llvm::Type* array_type_desc = llvm_utils->get_type_from_ttype_t_util(x.m_tgt,
+                                    ASRUtils::expr_type(x.m_tgt), module.get());
+                                nptr = builder->CreateLoad(array_type_desc, nptr);
+                            }
                             nptr = llvm_utils->CreateLoad2(array_inner_type->getPointerTo(),
                                 arr_descr->get_pointer_to_data(x.m_tgt,
                                     ASRUtils::expr_type(x.m_tgt), nptr, module.get()));
