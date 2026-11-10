@@ -14,6 +14,7 @@
 #define LLVM_EXECUTIONENGINE_ORC_KALEIDOSCOPEJIT_H
 
 #include "llvm/ADT/StringRef.h"
+#include "llvm/BinaryFormat/Magic.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
 #include "llvm/ExecutionEngine/Orc/Core.h"
@@ -26,11 +27,11 @@
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/Support/DynamicLibrary.h"
+#include "llvm/Support/Error.h"
 #if LLVM_VERSION_MAJOR < 8
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/Orc/Legacy.h"
-#include "llvm/Support/Error.h"
-#include "llvm/Support/DynamicLibrary.h"
 #include "llvm/IR/Mangler.h"
 #endif
 #include <cstdint>
@@ -226,6 +227,46 @@ public:
     return CompileLayer.addModule(K, std::move(M));
   }
 #endif
+
+  // Makes the symbols of a shared library or static archive resolvable from
+  // the modules added afterwards.
+  Error addLibrary(StringRef path) {
+    const std::string lib = path.str();
+#if LLVM_VERSION_MAJOR >= 10
+    llvm::file_magic magic;
+    if (auto ec = llvm::identify_magic(lib, magic)) {
+      return llvm::errorCodeToError(ec);
+    }
+    if (magic == llvm::file_magic::archive) {
+      // Archive members are materialised into the JIT on demand, so they
+      // become definitions of this JITDylib instead of process lookups.
+      auto Gen = StaticLibraryDefinitionGenerator::Load(ObjectLayer,
+                                                        lib.c_str());
+      if (!Gen)
+        return Gen.takeError();
+      JITDL.addGenerator(std::move(*Gen));
+      return Error::success();
+    }
+    auto Gen = DynamicLibrarySearchGenerator::Load(lib.c_str(),
+                                                   DL.getGlobalPrefix());
+    if (!Gen)
+      return Gen.takeError();
+    JITDL.addGenerator(std::move(*Gen));
+    return Error::success();
+#else
+    // LLVM 7-9: the process search generator already answers lookups for
+    // libraries loaded into the host process; archives have no such route.
+    // LoadLibraryPermanently returns true on failure.
+    std::string Err;
+    if (llvm::sys::DynamicLibrary::LoadLibraryPermanently(lib.c_str(),
+                                                           &Err))
+      // LLVM 7 takes only std::error_code, not std::errc.
+      return llvm::createStringError(std::make_error_code(std::errc::no_such_file_or_directory),
+                                      "could not load '%s': %s", lib.c_str(),
+                                      Err.c_str());
+    return Error::success();
+#endif
+  }
 
 #if LLVM_VERSION_MAJOR >= 8
 #if LLVM_VERSION_MAJOR < 17
