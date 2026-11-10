@@ -5177,6 +5177,7 @@ RUN(NAME dtio_write_16 LABELS gfortran llvm llvm_single_invocation
     EXTRAFILES dtio_write_16_mod.f90 dtio_write_16_a.f90 dtio_write_16_b.f90
     EXTRA_ARGS --separate-compilation)
 RUN(NAME dtio_write_17 LABELS gfortran llvm)
+RUN(NAME dtio_write_18 LABELS gfortran llvm) # list-directed write through a generic write(formatted) interface, stdlib string_type pattern (#7697)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c cpp wasm mlir x86)
 
