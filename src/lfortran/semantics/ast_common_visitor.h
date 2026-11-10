@@ -7064,6 +7064,9 @@ public:
         if (v.m_common_block != nullptr) {
             reject("variable '" + name + "' is already in a common block");
         }
+        if (v.m_intent == ASR::intentType::ReturnVar) {
+            reject("function result '" + name + "' cannot be in a common block");
+        }
         if (v.m_intent != ASR::intentType::Local) {
             reject("dummy argument '" + name + "' cannot be in a common block");
         }
