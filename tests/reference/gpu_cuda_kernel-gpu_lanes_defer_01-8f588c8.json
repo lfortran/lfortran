@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_defer_01-8f588c8",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_defer_01.f90",
+    "infile_hash": "6ccc432afa33c3732bf8edc5cc5919e2619f7209f6f25f4e508d593c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_defer_01-8f588c8.stdout",
+    "stdout_hash": "9a9d837caa49809b088c12c94423ac02724ff087bf640b07459463d2",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
