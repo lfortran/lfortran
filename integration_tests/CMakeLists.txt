@@ -6406,6 +6406,7 @@ RUN(NAME formatted_read_05 LABELS gfortran llvm)
 RUN(NAME formatted_read_06 LABELS gfortran llvm)
 RUN(NAME formatted_read_07 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME formatted_read_08 LABELS gfortran llvm)
+RUN(NAME formatted_read_09 LABELS gfortran llvm) # B edit descriptor read into integer(int8), then transfer to real64 (#11942)
 
 RUN(NAME format_before_read_01 LABELS gfortran llvm)
 
