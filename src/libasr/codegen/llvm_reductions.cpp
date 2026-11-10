@@ -245,6 +245,9 @@ Value *emit(IRBuilder<> &builder, const SmallVectorImpl<Node> &nodes,
     return builder.CreateShuffleVector(node.leaf, unused(node.leaf), mask);
 }
 
+// A sum of three squares has two additions and the shuffles between them.
+const size_t max_sum_nodes = 32;
+
 // A fast multiply of a value by itself.
 bool match_square(Value *v, Value *&x) {
     auto *mul = dyn_cast<Instruction>(v);
@@ -263,9 +266,11 @@ bool match_square(Value *v, Value *&x) {
 // squared vector and the lane of it. Returns false if anything else is
 // added, or if an element is reached twice: the sum is then a DAG, and
 // counting that element once would drop a repeated term (s + s is 2*s).
+// Stops at a fourth square or past `max_sum_nodes` elements, so a long chain
+// of additions, each of which is tried as a root, is not walked to its end.
 bool collect_squares(Value *v, unsigned lane, Squares &squares,
         DenseSet<std::pair<Value *, unsigned>> &seen) {
-    if (!seen.insert({v, lane}).second) {
+    if (seen.size() >= max_sum_nodes || !seen.insert({v, lane}).second) {
         return false;
     }
     if (auto *shuffle = dyn_cast<ShuffleVectorInst>(v)) {
@@ -286,7 +291,7 @@ bool collect_squares(Value *v, unsigned lane, Squares &squares,
         return false;
     }
     squares.push_back({x, lane});
-    return true;
+    return squares.size() <= 3;
 }
 
 // A root is a fast addition of double vectors (two to eight lanes) where
