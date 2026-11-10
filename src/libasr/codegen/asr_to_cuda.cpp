@@ -234,6 +234,11 @@ struct CudaDialect {
     std::string global_thread_id() const {
         return "(blockIdx.x * blockDim.x + threadIdx.x)";
     }
+    // The same for the lanes of an iteration, which all have the number of
+    // the iteration.
+    std::string lane_global_thread_id() const {
+        return "(blockIdx.x * __gpu_iteration_block + __gpu_iteration_thread)";
+    }
 
     std::string uint_type() const {
         return "unsigned int";

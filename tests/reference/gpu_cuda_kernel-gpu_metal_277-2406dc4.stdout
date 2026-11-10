@@ -1,5 +1,54 @@
 #include <stdint.h>
 
+// The lanes of an iteration are consecutive threads of a warp, or,
+// with more than 32 of them, all the threads of a block.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_combine(T v, T w) {
+    return op == 0 ? v + w : op == 1 ? v * w
+        : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+}
+
+// The combination of what the `lanes` lanes of an iteration hold,
+// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
+// largest. With one lane, the lane's own value.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce(T v, int lanes) {
+    int width = lanes < 32 ? lanes : 32;
+    for (int offset = width >> 1; offset > 0; offset >>= 1) {
+        v = __lfortran_lane_combine<op>(v,
+            __shfl_xor_sync(0xffffffffu, v, offset, width));
+    }
+    if (lanes > 32) {
+        // Every warp of the block holds the combination of its
+        // own lanes; the warps combine theirs in shared memory.
+        __shared__ T partial[32];
+        if ((threadIdx.x & 31) == 0) partial[threadIdx.x >> 5] = v;
+        __syncthreads();
+        v = partial[0];
+        for (int w = 1; w < (lanes >> 5); w++) {
+            v = __lfortran_lane_combine<op>(v, partial[w]);
+        }
+        __syncthreads();
+    }
+    return v;
+}
+
+// The value in the first lane of the iteration, in every lane.
+// With one lane per iteration the threads of a warp run different
+// iterations, which need not reach the same shuffle, and the value
+// is the thread's own.
+template <typename T>
+__device__ inline T __lfortran_lane_broadcast(T v, int lanes) {
+    if (lanes <= 1) return v;
+    if (lanes <= 32) return __shfl_sync(0xffffffffu, v, 0, lanes);
+    __shared__ T first;
+    if (threadIdx.x == 0) first = v;
+    __syncthreads();
+    T r = first;
+    __syncthreads();
+    return r;
+}
+
 __device__ inline float _lcompilers_dot_product_gpu_57(float* matrix_a, int __1matrix_a, float* matrix_b, int __size_matrix_b_dim1, int __stride_matrix_b_dim1) {
     float result{};
     int i;
@@ -191,6 +240,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1_15gpu_metal_277_m13check_runtime {
     int __workspace_extent1;
     int __workspace_extent2;
     int __workspace_extent3;
+    int __gpu_lanes;
 };
 
 extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_15gpu_metal_277_m13check_runtime(
@@ -209,42 +259,63 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_15gpu_
     int __workspace_extent1 = __scalar_args.__workspace_extent1;
     int __workspace_extent2 = __scalar_args.__workspace_extent2;
     int __workspace_extent3 = __scalar_args.__workspace_extent3;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
     int __gpu_sec_i;
     int j__dc;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 3)) {
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 3)) {
         return;
     }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     j__dc = (__flat_idx + 1);
     {
-        float* __gpu_call_result = ((__workspace_extent) > 0) ? (__workspace_4 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent) : nullptr;
-        float* __libasr__created__var__3__array_constructor_ = ((__workspace_extent1) > 0) ? (__workspace_5 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent1) : nullptr;
-        float* __libasr_created__function_call_face_values = ((__workspace_extent2) > 0) ? (__workspace_6 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent2) : nullptr;
+        float* __gpu_call_result = ((__workspace_extent) > 0) ? (__workspace_4 + ((long)(blockIdx.x * __gpu_iteration_block + __gpu_iteration_thread)) * __workspace_extent) : nullptr;
+        float* __libasr__created__var__3__array_constructor_ = ((__workspace_extent1) > 0) ? (__workspace_5 + ((long)(blockIdx.x * __gpu_iteration_block + __gpu_iteration_thread)) * __workspace_extent1) : nullptr;
+        float* __libasr_created__function_call_face_values = ((__workspace_extent2) > 0) ? (__workspace_6 + ((long)(blockIdx.x * __gpu_iteration_block + __gpu_iteration_thread)) * __workspace_extent2) : nullptr;
         int __libasr_created__result_metadata_;
-        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent3) > 0) ? (__workspace_7 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent3) : nullptr;
+        float* __libasr_created__subroutine_from_function_ = ((__workspace_extent3) > 0) ? (__workspace_7 + ((long)(blockIdx.x * __gpu_iteration_block + __gpu_iteration_thread)) * __workspace_extent3) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
         int __libasr_index_0_2;
         int __libasr_index_0_3;
         __libasr_created__result_metadata_ = ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2));
-        face_values_gpu_43(w, 2, c, __dim_c_0, __libasr_created__subroutine_from_function_, __libasr__created__var__3__array_constructor_);
+        if ((__gpu_lane == 0)) {
+            face_values_gpu_43(w, 2, c, __dim_c_0, __libasr_created__subroutine_from_function_, __libasr__created__var__3__array_constructor_);
+        }
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
         __libasr_index_0_3 = 1;
-        #pragma unroll 16
-        for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2)) - 1); __libasr_index_0_2++) {
-            __libasr_created__function_call_face_values[((int)(__libasr_index_0_2) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_3) - (1))];
-            __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+        if ((__gpu_lane == 0)) {
+            #pragma unroll 16
+            for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2)) - 1); __libasr_index_0_2++) {
+                __libasr_created__function_call_face_values[((int)(__libasr_index_0_2) - (1))] = __libasr_created__subroutine_from_function_[((int)(__libasr_index_0_3) - (1))];
+                __libasr_index_0_3 = (__libasr_index_0_3 + 1);
+            }
         }
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
+        __libasr_index_0_2 = __lfortran_lane_broadcast(__libasr_index_0_2, __gpu_lanes_n);
+        __libasr_index_0_3 = __lfortran_lane_broadcast(__libasr_index_0_3, __gpu_lanes_n);
         __libasr_index_0_1 = 1;
-        #pragma unroll 16
-        for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2)) - 1); __libasr_index_0_++) {
-            __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_face_values[((int)(__libasr_index_0_1) - (1))];
-            __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+        if ((__gpu_lane == 0)) {
+            #pragma unroll 16
+            for (__libasr_index_0_ = 1; __libasr_index_0_ <= (1 + ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2)) - 1); __libasr_index_0_++) {
+                __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_face_values[((int)(__libasr_index_0_1) - (1))];
+                __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+            }
         }
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
+        __libasr_index_0_ = __lfortran_lane_broadcast(__libasr_index_0_, __gpu_lanes_n);
+        __libasr_index_0_1 = __lfortran_lane_broadcast(__libasr_index_0_1, __gpu_lanes_n);
+        __gpu_sec_i = (1 + (((int)__gpu_lane) * 1));
+        const int __lfortran_trips_0 = ((((int)__dim_out_0) + ((int)1)) - 1) >= __gpu_sec_i ? (((((int)__dim_out_0) + ((int)1)) - 1) - __gpu_sec_i) / (1 * ((int)__gpu_lanes)) + 1 : 0;
         #pragma unroll 16
-        for (__gpu_sec_i = 1; __gpu_sec_i <= ((((int)__dim_out_0) + ((int)1)) - 1); __gpu_sec_i++) {
+        for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, __gpu_sec_i += (1 * ((int)__gpu_lanes))) {
             out[((int)(__gpu_sec_i) - (1)) + (__dim_out_0 * ((int)(j__dc) - (1)))] = (__gpu_call_result[((int)((1 + (__gpu_sec_i - 1))) - (1))] * ((float)j__dc));
         }
+        if (__gpu_lanes_n > 32) __syncthreads(); else if (__gpu_lanes_n > 1) __syncwarp();
     }
 }
 

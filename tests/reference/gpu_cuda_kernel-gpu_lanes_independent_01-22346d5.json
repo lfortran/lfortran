@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_independent_01-22346d5",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_independent_01.f90",
+    "infile_hash": "057f224edc1864a30676717cee6881a5d6cb5b100625d9d79af5a61b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_independent_01-22346d5.stdout",
+    "stdout_hash": "23850cee501c24096b1c095384ae1804ac7c2b07290758671f0518f7",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

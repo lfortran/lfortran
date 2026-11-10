@@ -265,8 +265,9 @@ public:
     }
 
     // The thread's slice of the workspace, or nullptr when the array is
-    // empty or not allocated. The slice starts at the thread's index times
-    // the slice size, which is multiplied in 64 bits whatever the dialect's
+    // empty or not allocated. The slice starts at the thread's index (the
+    // iteration's, for the lanes of an iteration, which share its slice)
+    // times the slice size, which is multiplied in 64 bits whatever the dialect's
     // kind for element offsets: one thread's slice is an array the kernel
     // indexes in that kind, but the slices of all threads together hold
     // more than 2**32 elements of a buffer with modest slices and many
@@ -283,8 +284,9 @@ public:
             active += ")";
         }
         return active + ") ? (" + gpu_workspace_buffer_name(ws.buffer_index) +
-            " + ((" + gpu_offset_type(8) + ")" + dialect.global_thread_id() +
-            ") * " + slice + ") : nullptr";
+            " + ((" + gpu_offset_type(8) + ")" + (kernel_has_lanes()
+                ? dialect.lane_global_thread_id() : dialect.global_thread_id())
+            + ") * " + slice + ") : nullptr";
     }
 
     // The element count of one thread's slice of a workspace, which the
