@@ -2569,6 +2569,7 @@ RUN(NAME select_type_64 LABELS gfortran llvm)
 RUN(NAME select_type_65 LABELS gfortran llvm)
 RUN(NAME select_type_66 LABELS gfortran llvm)
 RUN(NAME select_type_67 LABELS llvm)
+RUN(NAME select_type_68 LABELS gfortran llvm)
 
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
