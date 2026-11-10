@@ -3892,7 +3892,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if( !ASR::is_a<ASR::ArraySection_t>(*member->m_v) ) {
             return designator;
         }
-        ASR::expr_t* section = member->m_v;
+        ASR::expr_t* section_pointer = bind_section_to_pointer(member->m_v, name_hint);
+        return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
+            designator->base.loc, section_pointer, member->m_m,
+            member->m_type, nullptr));
+    }
+
+    // Associates a pointer temporary with `section` and returns the pointer
+    ASR::expr_t* bind_section_to_pointer(ASR::expr_t* section,
+        const std::string& name_hint) {
         const Location& loc = section->base.loc;
         ASR::ttype_t* section_type = ASRUtils::create_array_type_with_empty_dims(al,
             ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(section)),
@@ -3902,9 +3910,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             al, loc, current_scope, name_hint + "_section_", section_type, section);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
             al, loc, section_pointer, section, ASR::pointer_bounds_formType::NoPointerBounds)));
-        return ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al,
-            designator->base.loc, section_pointer, member->m_m,
-            member->m_type, nullptr));
+        return section_pointer;
     }
 
     // `ps(1::2)%u(2)` selects one element of the component out of every
@@ -4200,29 +4206,38 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_If(x);
     }
 
-    // `z%im = f()` is `z = cmplx(real(z), f())`, and f may change z%re, so f runs before z%re is read
-    void evaluate_imaginary_part_first(ASR::Assignment_t& x) {
-        if (!ASR::is_a<ASR::ComplexConstructor_t>(*x.m_value)) {
-            return;
+    // `za%im = v` writes the parts of `za` in place, so its section is not
+    // copied; an array `v` is evaluated into a temporary first, as it may
+    // read or change `za`, and array_op then loops over both
+    void simplify_complex_part_array_assignment(ASR::Assignment_t& x) {
+        visit_expr(*x.m_value);
+        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
+            x.m_value = call_create_and_allocate_temporary_variable(x.m_value, al,
+                current_body, "_complex_part_value_", current_scope, exprs_with_target);
         }
-        ASR::ComplexConstructor_t* value = ASR::down_cast<ASR::ComplexConstructor_t>(x.m_value);
-        ASR::symbol_t* target_root = get_root_var(
-            ASRUtils::get_past_array_physical_cast(x.m_target));
-        if (target_root == nullptr || !contains_function_reference(value->m_im) ||
-                !ASRUtils::expr_references_symbol(value->m_re, target_root)) {
-            return;
+        ASR::expr_t*& arg = ASR::is_a<ASR::ComplexRe_t>(*x.m_target)
+            ? ASR::down_cast<ASR::ComplexRe_t>(x.m_target)->m_arg
+            : ASR::down_cast<ASR::ComplexIm_t>(x.m_target)->m_arg;
+        ASR::expr_t* designator = ASRUtils::get_past_array_physical_cast(arg);
+        if (ASR::is_a<ASR::ArraySection_t>(*designator)) {
+            arg = bind_section_to_pointer(designator, "complex_part_target");
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*designator)) {
+            ASR::expr_t* bound = bind_struct_member_base_to_pointer(
+                designator, "complex_part_target");
+            if (bound != designator) {
+                arg = bound;
+            }
         }
-        visit_expr(*value->m_im);
-        std::string name_hint = "_complex_constructor_im";
-        value->m_im = ASRUtils::is_array(ASRUtils::expr_type(value->m_im))
-            ? call_create_and_allocate_temporary_variable(value->m_im, al,
-                current_body, name_hint, current_scope, exprs_with_target)
-            : create_and_declare_temporary_variable_for_scalar(value->m_im,
-                name_hint, al, current_body, current_scope, exprs_with_target);
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        if ((ASR::is_a<ASR::ComplexRe_t>(*x.m_target) ||
+                ASR::is_a<ASR::ComplexIm_t>(*x.m_target)) &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
+            simplify_complex_part_array_assignment(xx);
+            return;
+        }
         if (reuse_pure_calls && !inside_where && !x.m_overloaded &&
                 !x.m_move_allocation && ASR::is_a<ASR::Var_t>(*x.m_target)) {
             reuse_pure_array_calls(xx.m_value);
@@ -4256,7 +4271,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
         }
         lhs_var = lhs_array_var;
-        evaluate_imaginary_part_first(xx);
         if( !inside_where && xx.m_overloaded == nullptr && !xx.m_move_allocation ) {
             matmul_target_shape_check.clear();
             matmul_into_target = find_matmul_computable_into_target(

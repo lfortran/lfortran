@@ -3809,14 +3809,29 @@ public:
         this->visit_expr(*x.m_arg);
     }
 
+    // `arg%re` for a designator (it can be an assignment target), else `real(arg)`
+    void visit_complex_part(ASR::expr_t *arg, const std::string &part,
+            const std::string &intrinsic) {
+        visit_expr(*arg);
+        ASR::expr_t *base = arg;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*base)) {
+            base = ASR::down_cast<ASR::ArrayPhysicalCast_t>(base)->m_arg;
+        }
+        if (ASR::is_a<ASR::Var_t>(*base) || ASR::is_a<ASR::ArrayItem_t>(*base) ||
+                ASR::is_a<ASR::ArraySection_t>(*base) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*base)) {
+            src += "%" + part;
+        } else {
+            src = intrinsic + "(" + src + ")";
+        }
+    }
+
     void visit_ComplexRe(const ASR::ComplexRe_t &x) {
-        visit_expr(*x.m_arg);
-        src = "real(" + src + ")";
+        visit_complex_part(x.m_arg, "re", "real");
     }
 
     void visit_ComplexIm(const ASR::ComplexIm_t &x) {
-        visit_expr(*x.m_arg);
-        src = "aimag(" + src + ")";
+        visit_complex_part(x.m_arg, "im", "aimag");
     }
 
     // void visit_CLoc(const ASR::CLoc_t &x) {}

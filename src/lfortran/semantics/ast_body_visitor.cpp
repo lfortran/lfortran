@@ -8984,44 +8984,11 @@ public:
                     al, loc, y, im, ASRUtils::expr_type(target), nullptr));
                 value = cmplx;
             }
-        } else if ( ASR::is_a<ASR::ComplexRe_t>(*target) ) {
-            ASR::ComplexRe_t* re = ASR::down_cast<ASR::ComplexRe_t>(target);
-            /*
-                Case: x % re = y
-                we do: x = cmplx(y, x%im)
-                i.e. target = x, value = cmplx(y, x%im)
-            */
-            target = re->m_arg;
-            ASR::expr_t* y = value;
-            const Location& loc = x.base.base.loc;
-            ASR::expr_t *val = target;
-
-            ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
-                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(val))));
-            convert_to_complex_part(y, real_type);
-            ASR::expr_t *im = ASRUtils::EXPR(ASR::make_ComplexIm_t(al, loc,
-                val, re->m_type, nullptr));
-            ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(
-                al, loc, y, im, ASRUtils::expr_type(target), nullptr));
-            value = cmplx;
-        } else if ( ASR::is_a<ASR::ComplexIm_t>(*target) ) {
-            ASR::ComplexIm_t* im = ASR::down_cast<ASR::ComplexIm_t>(target);
-            /*
-                Case: x % im = y
-                we do: x = cmplx(x%re, y)
-                i.e. target = x, value = cmplx(x%re, y)
-            */
-            target = im->m_arg;
-            ASR::expr_t* y = value;
-            const Location& loc = x.base.base.loc;
-            ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, loc,
+        } else if ( ASR::is_a<ASR::ComplexRe_t>(*target) ||
+                ASR::is_a<ASR::ComplexIm_t>(*target) ) {
+            ASR::ttype_t *real_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc,
                 ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(target))));
-            convert_to_complex_part(y, real_type);
-            ASR::expr_t* re = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, target,
-                ASR::cast_kindType::ComplexToReal, im->m_type, nullptr, nullptr));
-            ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
-                loc, re, y, ASRUtils::expr_type(target), nullptr));
-            value = cmplx;
+            convert_to_complex_part(value, real_type);
         }
 
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
