@@ -11129,8 +11129,8 @@ public:
                     s.m_initializer = assgnd_storage[sym].second;
                 }
                 bool is_pointer = false;
-                if (assgnd_pointer.count(sym)
-                        || (!is_derived_type && pointer_stmt_names.count(sym))) {
+                if (!is_derived_type && (assgnd_pointer.count(sym)
+                        || pointer_stmt_names.count(sym))) {
                     is_pointer = true;
                 }
                 if (!is_derived_type && (assgnd_allocatable.count(sym)
