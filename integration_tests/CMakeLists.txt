@@ -6207,6 +6207,7 @@ RUN(NAME nullify_04 LABELS gfortran llvm)
 RUN(NAME nullify_05 LABELS gfortran llvm)
 RUN(NAME nullify_06 LABELS gfortran llvm)
 RUN(NAME nullify_07 LABELS gfortran llvm)
+RUN(NAME nullify_08 LABELS gfortran llvm) # nullify a recursive pointer component through a pointer (#4673)
 
 RUN(NAME fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME fortran_02 LABELS gfortran fortran)
