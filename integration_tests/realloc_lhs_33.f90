@@ -124,5 +124,22 @@ e = dble(d8)
 if (lbound(e, 1) /= 1 .or. ubound(e, 1) /= 4) error stop
 if (abs(e(4) - 4d0) > 1d-12) error stop
 
+! A function result has lower bounds of 1, also when the function allocates
+! it with others and it is converted to the kind of the variable
+deallocate(dst)
+dst = f8(src)
+if (lbound(dst, 1) /= 1 .or. ubound(dst, 1) /= 4) error stop
+if (abs(dst(4) - 4.0) > 1e-6) error stop
+
 print *, "ok"
+
+contains
+
+function f8(x) result(r)
+real(8), intent(in) :: x(:)
+real(8), allocatable :: r(:)
+allocate(r(7:6 + size(x)))
+r = x
+end function
+
 end program
