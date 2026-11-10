@@ -6432,8 +6432,12 @@ ASR::asr_t* make_ArraySize_t_util(
         else n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(a_v), m_dims);
         bool is_dimension_dependent_only_on_arguments_ = is_dimension_dependent_only_on_arguments(m_dims, n_dims);
 
+        // An assumed-rank array carries no dimensions: its rank and extents
+        // are those of the actual argument, known only at run time.
         bool compute_size = (is_dimension_dependent_only_on_arguments_ &&
-            (is_dimension_constant || a_dim == nullptr));
+            (is_dimension_constant || a_dim == nullptr) &&
+            !ASRUtils::is_assumed_rank_array(array_func_type != nullptr
+                ? array_func_type : ASRUtils::expr_type(a_v)));
         if( compute_size && for_type ) {
             ASR::dimension_t* m_dims = nullptr;
             if (array_func_type != nullptr) n_dims = ASRUtils::extract_dimensions_from_ttype(array_func_type, m_dims);
