@@ -5045,3 +5045,11 @@ module cc1_pack_unpack_kind
     real(16), parameter :: cc1_puk_p(2) = pack([1.5_8, 2.5_8, 3.5_8], [.true., .false., .false.], [9.0_16, 8.0_16])  ! {Error} `array` and `vector` arguments of `pack` must have the same type and kind, but got real(8) and real(16)
     real(16), parameter :: cc1_puk_u(3) = unpack([1.5_16, 2.5_16], [.true., .false., .true.], 7.0)  ! {Error} `vector` and `field` arguments of `unpack` must have the same type and kind, but got real(16) and real(4)
 end module
+
+! The rank of an array is at most 15, so DIM of LBOUND and UBOUND of an
+! assumed-rank array must be between 1 and 15.
+subroutine cc1_assumed_rank_bound_dim(c)
+    real, intent(in) :: c(..)
+    print *, lbound(c, 0)  ! {Error} `dim` argument of `lbound` must be between 1 and 15 for an assumed-rank array
+    print *, ubound(c, 16)  ! {Error} `dim` argument of `ubound` must be between 1 and 15 for an assumed-rank array
+end subroutine
