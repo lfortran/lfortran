@@ -794,17 +794,117 @@ bool streql(const char *s1, const char* s2) {
 #endif
 }
 
+// ---------------------------------------------------------------------
+// Thread-safe pseudo random number generator used by random_number(),
+// random_seed() and related intrinsics.
+//
+// The previous implementation called libc rand()/srand(). In glibc these
+// use one global state protected by a lock, so OpenMP threads serialized on
+// it and ran much slower than a single thread.
+//
+// Here every thread owns an xoshiro256** state (thread local). The seed set
+// by the srand-like calls is global; each thread derives its own stream from
+// that seed and a per-thread stream index, and re-derives it whenever the
+// global seed changes.
+// ---------------------------------------------------------------------
+#ifndef LFORTRAN_TLS
+#  if defined(_MSC_VER)
+#    define LFORTRAN_TLS __declspec(thread)
+#  else
+#    define LFORTRAN_TLS __thread
+#  endif
+#endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#  define LF_RNG_LOAD(p)     __atomic_load_n((p), __ATOMIC_ACQUIRE)
+#  define LF_RNG_STORE(p, v) __atomic_store_n((p), (v), __ATOMIC_RELEASE)
+#  define LF_RNG_ADD(p, v)   __atomic_add_fetch((p), (v), __ATOMIC_ACQ_REL)
+#else
+// Fallback without atomics (e.g. MSVC): plain volatile accesses.
+#  define LF_RNG_LOAD(p)     (*(p))
+#  define LF_RNG_STORE(p, v) (*(p) = (v))
+#  define LF_RNG_ADD(p, v)   (*(p) += (v))
+#endif
+
+static volatile uint64_t lf_rng_seed_g = 1;   // same default seed as rand()
+static volatile unsigned lf_rng_epoch_g = 0;  // bumped on every reseed
+static volatile unsigned lf_rng_streams_g = 0; // number of streams handed out
+
+static LFORTRAN_TLS uint64_t lf_rng_s[4];
+static LFORTRAN_TLS unsigned lf_rng_epoch_l = 0;
+static LFORTRAN_TLS unsigned lf_rng_stream_l = 0;
+static LFORTRAN_TLS int lf_rng_has_stream = 0;
+static LFORTRAN_TLS int lf_rng_ready = 0;
+
+static uint64_t lf_rng_splitmix64(uint64_t *x) {
+    uint64_t z = (*x += 0x9E3779B97F4A7C15ULL);
+    z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
+    z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
+    return z ^ (z >> 31);
+}
+
+static uint64_t lf_rng_rotl(uint64_t x, int k) {
+    return (x << k) | (x >> (64 - k));
+}
+
+static void lf_rng_reseed(void) {
+    unsigned epoch = LF_RNG_LOAD(&lf_rng_epoch_g);
+    uint64_t seed = LF_RNG_LOAD(&lf_rng_seed_g);
+    if (!lf_rng_has_stream) {
+        lf_rng_stream_l = (unsigned)LF_RNG_ADD(&lf_rng_streams_g, 1u) - 1u;
+        lf_rng_has_stream = 1;
+    }
+    uint64_t x = seed ^ ((uint64_t)lf_rng_stream_l * 0x9E3779B97F4A7C15ULL);
+    for (int i = 0; i < 4; i++) {
+        lf_rng_s[i] = lf_rng_splitmix64(&x);
+    }
+    lf_rng_epoch_l = epoch;
+    lf_rng_ready = 1;
+}
+
+static void lf_rng_set_seed(uint64_t seed) {
+    LF_RNG_STORE(&lf_rng_seed_g, seed);
+    LF_RNG_ADD(&lf_rng_epoch_g, 1u);
+}
+
+static uint64_t lf_rng_next_u64(void) {
+    if (!lf_rng_ready || lf_rng_epoch_l != LF_RNG_LOAD(&lf_rng_epoch_g)) {
+        lf_rng_reseed();
+    }
+    uint64_t *s = lf_rng_s;
+    const uint64_t result = lf_rng_rotl(s[1] * 5, 7) * 9;
+    const uint64_t t = s[1] << 17;
+    s[2] ^= s[0];
+    s[3] ^= s[1];
+    s[1] ^= s[2];
+    s[0] ^= s[3];
+    s[2] ^= t;
+    s[3] = lf_rng_rotl(s[3], 45);
+    return result;
+}
+
+// Uniform double in [0, 1) using the top 53 bits.
+static double lf_rng_next_double(void) {
+    return (double)(lf_rng_next_u64() >> 11) * (1.0 / 9007199254740992.0);
+}
+
+// Uniform integer in [0, 2^31 - 1], the same range as rand() with the
+// glibc RAND_MAX.
+static int lf_rng_next_int31(void) {
+    return (int)(lf_rng_next_u64() >> 33);
+}
+
 LFORTRAN_API void _lfortran_random_number(int n, double *v)
 {
     int i;
     for (i=0; i < n; i++) {
-        v[i] = rand() / ((double) RAND_MAX + 1.0);
+        v[i] = lf_rng_next_double();
     }
 }
 
 LFORTRAN_API int _lfortran_init_random_seed(unsigned seed)
 {
-    srand(seed);
+    lf_rng_set_seed(seed);
     return seed;
 }
 
@@ -829,23 +929,23 @@ LFORTRAN_API void _lfortran_init_random_clock()
 #endif
     srand(count);
 */
-    srand(0);
+    lf_rng_set_seed(0);
 }
 
 LFORTRAN_API double _lfortran_random()
 {
-    return rand() / ((double) RAND_MAX + 1.0);
+    return lf_rng_next_double();
 }
 
 LFORTRAN_API int _lfortran_randrange(int lower, int upper)
 {
-    int rr = lower + (rand() % (upper - lower));
+    int rr = lower + (lf_rng_next_int31() % (upper - lower));
     return rr;
 }
 
 LFORTRAN_API int _lfortran_random_int(int lower, int upper)
 {
-    int randint = lower + (rand() % (upper - lower + 1));
+    int randint = lower + (lf_rng_next_int31() % (upper - lower + 1));
     return randint;
 }
 
@@ -8038,20 +8138,20 @@ LFORTRAN_API int32_t _lfortran_values(int32_t n)
 // keeps the largest rand() value below 1.0; the float conversion can still
 // round up to 1.0f, so map that case to the largest float below 1.0.
 LFORTRAN_API float _lfortran_sp_rand_num() {
-    float r = (float) (rand() / ((double) RAND_MAX + 1.0));
+    float r = (float) (lf_rng_next_double());
     return r < 1.0f ? r : 1.0f - FLT_EPSILON / 2;
 }
 
 LFORTRAN_API double _lfortran_dp_rand_num() {
-    return rand() / ((double) RAND_MAX + 1.0);
+    return lf_rng_next_double();
 }
 
 LFORTRAN_API int32_t _lfortran_int32_rand_num() {
-    return rand();
+    return lf_rng_next_int31();
 }
 
 LFORTRAN_API int64_t _lfortran_int64_rand_num() {
-    return rand();
+    return lf_rng_next_int31();
 }
 
 static int32_t _lfortran_seed_buffer[8] = {0};
@@ -8066,7 +8166,7 @@ static void _lfortran_seed_buffer_init_repeatable(void) {
 
 static void _lfortran_seed_buffer_init_random(void) {
     for (int i = 0; i < 8; i++) {
-        _lfortran_seed_buffer[i] = rand();
+        _lfortran_seed_buffer[i] = lf_rng_next_int31();
     }
     _lfortran_seed_initialized = true;
 }
@@ -8090,13 +8190,13 @@ static void _lfortran_seed_buffer_seed_from_time(void) {
         seed = (unsigned int)time(NULL) ^ (++call_count * 2654435761u);
     }
 #endif
-    srand(seed);
+    lf_rng_set_seed(seed);
     _lfortran_seed_buffer_init_random();
 }
 
 LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
     if (repeatable) {
-        srand(0);
+        lf_rng_set_seed(0);
         _lfortran_seed_buffer_init_repeatable();
     } else {
         _lfortran_seed_buffer_seed_from_time();
@@ -8106,7 +8206,7 @@ LFORTRAN_API bool _lfortran_random_init(bool repeatable, bool image_distinct) {
 
 LFORTRAN_API int64_t _lfortran_random_seed(unsigned seed)
 {
-    srand(seed);
+    lf_rng_set_seed(seed);
     // The seed array size is typically 8 elements because Fortran's RNG often uses a seed with a fixed length of 8 integers to ensure sufficient randomness and repeatability in generating sequences of random numbers.
     return 8;
 
@@ -8118,7 +8218,7 @@ LFORTRAN_API void _lfortran_random_seed_put_i32(int32_t value, int32_t index)
         _lfortran_seed_buffer[index - 1] = value;
     }
     if (index == 1) {
-        srand((unsigned)value);
+        lf_rng_set_seed((unsigned)value);
     }
     _lfortran_seed_initialized = true;
 }
