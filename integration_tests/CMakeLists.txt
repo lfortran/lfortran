@@ -1441,6 +1441,7 @@ RUN(NAME namelist_41 LABELS gfortran llvm)
 RUN(NAME namelist_42 LABELS llvm) # GFortran 15 mishandles namelist arrays of extended types
 RUN(NAME namelist_43 LABELS gfortran llvm)
 RUN(NAME namelist_44 LABELS gfortran llvm)
+RUN(NAME namelist_45 LABELS gfortran llvm EXTRA_ARGS --implicit-typing) # implicitly typed namelist object in an internal subroutine (#12375)
 RUN(NAME namelist_iomsg_01 LABELS gfortran llvm)
 RUN(NAME nested_namelist_01 LABELS gfortran llvm)
 RUN(NAME nested_namelist_02 LABELS gfortran llvm)
