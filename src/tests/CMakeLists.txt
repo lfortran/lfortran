@@ -26,6 +26,8 @@ add_test(NAME test_gpu_cuda_api_state_keep_reads
     COMMAND test_gpu_cuda_api_state keep-reads)
 add_test(NAME test_gpu_cuda_api_state_keep_across_waits
     COMMAND test_gpu_cuda_api_state keep-across-waits)
+add_test(NAME test_gpu_cuda_api_state_idle_sync_pool
+    COMMAND test_gpu_cuda_api_state idle-sync-pool)
 add_test(NAME test_gpu_cuda_api_state_failed_free
     COMMAND test_gpu_cuda_api_state failed-free)
 set_tests_properties(test_gpu_cuda_api_state_failed_free PROPERTIES
