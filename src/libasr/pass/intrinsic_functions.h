@@ -1610,6 +1610,8 @@ namespace Range {
                     range_val = 37; break;
                 } case 8: {
                     range_val = 307; break;
+                } case 10: {
+                    range_val = 4931; break;
                 } case 16: {
                     range_val = 4931; break;
                 } default: {
