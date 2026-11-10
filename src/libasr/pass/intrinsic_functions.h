@@ -5784,27 +5784,51 @@ namespace SelectedIntKind {
 
 namespace SelectedRealKind {
 
+    // Decimal precision and range of each real kind, in the order
+    // selected_real_kind searches: increasing precision, then range, then
+    // kind. Kind 10 is x87 80-bit extended precision (precision 18, range
+    // 4931) and is present only when the target's C long double is that type.
+    struct RealKindSpec {
+        int kind;
+        int64_t precision;
+        int64_t range;
+    };
+
+    static inline int supported_real_kinds(RealKindSpec kinds[4]) {
+        int n = 0;
+        kinds[n++] = {4, 6, 37};
+        kinds[n++] = {8, 15, 307};
+        if (get_active_c_long_double_kind() == 10) {
+            kinds[n++] = {10, 18, 4931};
+        }
+        kinds[n++] = {16, 33, 4931};
+        return n;
+    }
+
+    static inline int64_t selected_real_kind_value(int64_t p, int64_t r,
+            int64_t radix) {
+        if (radix != 2) {
+            return -5;
+        }
+        RealKindSpec kinds[4];
+        int n = supported_real_kinds(kinds);
+        for (int i = 0; i < n; i++) {
+            if (p <= kinds[i].precision && r <= kinds[i].range) {
+                return kinds[i].kind;
+            }
+        }
+        // No kind meets the request. -2/-3/-4 (issue 15147) are not
+        // distinguished from -1 here.
+        return -1;
+    }
+
     static inline ASR::expr_t *eval_SelectedRealKind(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t kind;
         ASRUtils::ASRBuilder b(al, loc);
         int64_t p = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t r = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t radix = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-
-        if (p < 7 && r < 38 && radix == 2) {
-            kind = 4;
-        } else if (p < 16 && r < 308 && radix == 2) {
-            kind = 8;
-        } else if (p < 34 && r < 4932 && radix == 2) {
-            // binary128: precision 33, range 4931
-            kind = 16;
-        } else if (radix != 2) {
-            kind = -5;
-        } else {
-            kind = -1;
-        }
-        return b.i32(kind);
+        return b.i32(selected_real_kind_value(p, r, radix));
     }
 
     static inline ASR::expr_t* instantiate_SelectedRealKind(Allocator &al, const Location &loc,
@@ -5822,23 +5846,22 @@ namespace SelectedRealKind {
         body.push_back(al, b.Assignment(p, args[0]));
         body.push_back(al, b.Assignment(r, args[1]));
         body.push_back(al, b.Assignment(radix, args[2]));
-        body.push_back(al, b.If(b.And(b.And(b.Lt(p, b.i_t(7, arg_types[0])), b.Lt(r, b.i_t(38, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
-            b.Assignment(result, b.i32(4))
-        }, {
-            b.If( b.And(b.And(b.Lt(p, b.i_t(16, arg_types[0])), b.Lt(r, b.i_t(308, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
-                b.Assignment(result, b.i32(8))
-            }, {
-                b.If( b.And(b.And(b.Lt(p, b.i_t(34, arg_types[0])), b.Lt(r, b.i_t(4932, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
-                    b.Assignment(result, b.i32(16))
-                }, {
-                    b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
-                        b.Assignment(result, b.i32(-5))
-                    }, {
-                        b.Assignment(result, b.i32(-1))
-                    })
-                })
-            })
-        }));
+
+        // Same kinds and thresholds as selected_real_kind_value.
+        RealKindSpec kinds[4];
+        int n = supported_real_kinds(kinds);
+        std::vector<ASR::stmt_t*> choice = {
+            b.Assignment(result, b.i32(-1))
+        };
+        for (int i = n - 1; i >= 0; i--) {
+            choice = {b.If(b.And(
+                    b.LtE(p, b.i_t(kinds[i].precision, arg_types[0])),
+                    b.LtE(r, b.i_t(kinds[i].range, arg_types[1]))),
+                {b.Assignment(result, b.i32(kinds[i].kind))}, choice)};
+        }
+        body.push_back(al, b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
+            b.Assignment(result, b.i32(-5))
+        }, choice));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
