@@ -4768,6 +4768,7 @@ RUN(NAME external_36 LABELS gfortran llvm EXTRAFILES external_36_procs.f90)
 RUN(NAME external_37 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_38 LABELS llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME external_39 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME external_40 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # specific intrinsics of two kinds passed to typed external dummies (#13166)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
 RUN(NAME external_string_arg_02 LABELS gfortran llvm
