@@ -7897,3 +7897,8 @@ asr = true
 filename = "errors/chdir_pure_01.f90"
 asr = true
 options = "--std=f23"
+
+[[test]]
+filename = "errors/exit_status_type_01.f90"
+asr = true
+options = "--implicit-typing"

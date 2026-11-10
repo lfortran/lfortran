@@ -1,0 +1,11 @@
+warning: Routine `exit` is a non-standard function
+ --> tests/errors/exit_status_type_01.f90:4:3
+  |
+4 |   call exit(status)  ! {Error} `status` argument of `exit` must be of integer type, but got real
+  |   ^^^^^^^^^^^^^^^^^ 
+
+semantic error: `status` argument of `exit` must be of integer type, but got real
+ --> tests/errors/exit_status_type_01.f90:4:13
+  |
+4 |   call exit(status)  ! {Error} `status` argument of `exit` must be of integer type, but got real
+  |             ^^^^^^ must be of integer type
