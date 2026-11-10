@@ -393,7 +393,9 @@ libc and libgcc) and does not invoke clang or gcc for that link. `--linker`
 selects a different linker: `lld` is the built-in one, and `clang` or `gcc`
 is an external compiler driver. `--linker-path` and `LFORTRAN_LINKER` /
 `LFORTRAN_LINKER_PATH` apply to an external driver. macOS keeps Apple's
-linker and Windows keeps `link.exe`.
+linker and Windows keeps `link.exe`. A build with MLIR (`-DWITH_MLIR=yes`)
+also keeps the external linker: the MLIR libraries load `libLLVM.so`, and a
+second static copy of LLVM in that process corrupts the heap.
 
 Native LLVM OpenMP programs use Clang with LLVM's `libomp`. Pass `--openmp`
 during both compilation and linking, and `--openmp-lib-dir=/path/to/lib`

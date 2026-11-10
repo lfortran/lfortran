@@ -180,12 +180,13 @@ wasm-tools = {cmd = "bash ci/wasm_tools.sh"}
 
 # The MLIR backend, with the MLIR release of Quick's MLIR job. Build it with
 # `pixi run -e mlir build -DWITH_MLIR=yes` (see doc/src/installation.md).
+# This build does not link LLD: MLIR loads libLLVM.so, and a static second
+# copy of LLVM corrupts the compiler. clangdev still provides the link driver.
 [feature.mlir]
 platforms = ["linux-64"]
 [feature.mlir.dependencies]
 llvmdev = "==19.1.7"
 mlir = "==19.1.7"
-lld = "==19.1.7"
 clangdev = "==19.1.7"
 libunwind = "==1.7.2"
 

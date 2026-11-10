@@ -368,8 +368,12 @@ if (WITH_LLVM)
     # platform SDK, which the system linker already knows.
     # LLD 7–9 cannot read the SHT_GROUP sections in the current C runtime,
     # so those builds keep the external compiler driver.
+    # MLIR's imported targets link the shared libLLVM.so. Statically linking
+    # LLD pulls a second copy of LLVM into the same process and corrupts the
+    # heap, so an MLIR build keeps the external compiler driver.
     if (NOT EMSCRIPTEN AND CMAKE_SYSTEM_NAME STREQUAL "Linux"
-            AND LLVM_VERSION_MAJOR GREATER_EQUAL 10)
+            AND LLVM_VERSION_MAJOR GREATER_EQUAL 10
+            AND NOT WITH_MLIR)
         # LLVM 10 and newer export an LLD CMake package. An older package
         # layout ships the same static libraries and headers without it.
         find_package(LLD CONFIG
