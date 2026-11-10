@@ -10,6 +10,12 @@ semantic error: Subroutine already defined defined_twice
 45 |     integer :: a(gen(n))
    |                  ^^^^^^ 
 
+semantic error: Variable 'a' is not declared
+  --> tests/errors/continue_compilation_external_procedure.f90:16:5
+   |
+16 |     a = 1
+   |     ^ 'a' is undeclared
+
 semantic error: Type mismatch in assignment, the types must be compatible
   --> tests/errors/continue_compilation_external_procedure.f90:22:5
    |

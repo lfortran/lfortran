@@ -5741,6 +5741,148 @@ public:
         return specifics;
     }
 
+    // Generics built before all their specifics existed, with the generic
+    // each extends; each is completed in place.
+    std::map<ASR::symbol_t*, ASR::symbol_t*> early_generic_procedures;
+
+    // Builds the generic `name` of `scope`; unless `complete`, without the
+    // specifics that are not defined yet and without checks.
+    void build_generic_procedure(const std::string &name, SymbolTable *scope,
+            const std::vector<GenericSpecific> &specifics, bool complete) {
+        SymbolTable *current_scope_copy = current_scope;
+        current_scope = scope;
+        Location loc;
+        loc.first = 1;
+        loc.last = 1;
+        Vec<ASR::symbol_t*> symbols;
+        symbols.reserve(al, specifics.size());
+        bool any_error = false;
+        for (auto &pname : specifics) {
+            std::string specific_name = to_lower(pname.name);
+            // A specific procedure declared in this scope under the name
+            // of a generic interface is stored with the genericprocedure
+            // suffix, see the comment where the suffix is added. That
+            // generic interface is not necessarily the one being built
+            // here, so always look for the suffixed name first.
+            ASR::symbol_t *x = current_scope->resolve_symbol(
+                specific_name + ASRUtils::genericprocedure_suffix);
+            if (!x) {
+                // Otherwise it keeps its plain name, e.g. it comes from
+                // another scope (it is use associated). The generic
+                // interface being built is not a candidate for itself.
+                x = current_scope->resolve_symbol(specific_name);
+                if (specific_name == name && x &&
+                        ASR::is_a<ASR::GenericProcedure_t>(
+                            *ASRUtils::symbol_get_past_external(x))) {
+                    x = nullptr;
+                }
+            }
+            if (!complete) {
+                if (x && ASR::is_a<ASR::Function_t>(
+                        *ASRUtils::symbol_get_past_external(x))) {
+                    symbols.push_back(al, x);
+                }
+                continue;
+            }
+            if (!x) {
+                diag.add(Diagnostic(
+                    "Symbol '" + pname.name + "' not declared",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {pname.loc})
+                    }));
+                if (!compiler_options.continue_compilation) throw SemanticAbort();
+                any_error = true;
+                continue;
+            }
+            if (!check_specific_explicit_interface(x, pname.name, pname.loc)) {
+                any_error = true;
+                continue;
+            }
+            symbols.push_back(al, x);
+        }
+        if (any_error || symbols.empty()) {
+            current_scope = current_scope_copy;
+            return;
+        }
+        if (complete) {
+            std::vector<GenericCandidate> candidates;
+            for (size_t i = 0; i < symbols.size(); i++) {
+                ASR::symbol_t *f = ASRUtils::symbol_get_past_external(symbols[i]);
+                if (ASR::is_a<ASR::Function_t>(*f)) {
+                    candidates.push_back({specifics[i].name, specifics[i].loc,
+                        ASR::down_cast<ASR::Function_t>(f), -1});
+                }
+            }
+            check_generic_distinguishable(name, candidates);
+        }
+        std::string sym_name_str = name;
+        if( current_scope->get_symbol(name) != nullptr ) {
+            ASR::symbol_t* der_type_name = current_scope->get_symbol(name);
+            if( der_type_name->type == ASR::symbolType::Struct ||
+                der_type_name->type == ASR::symbolType::Function ) {
+                sym_name_str = "~" + name;
+            }
+        }
+        Str s;
+        s.from_str_view(sym_name_str);
+        char *generic_name = s.c_str(al);
+        ASR::symbol_t *early = current_scope->get_symbol(sym_name_str);
+        auto early_it = early ? early_generic_procedures.find(early)
+            : early_generic_procedures.end();
+        ASR::symbol_t *extended = early_it != early_generic_procedures.end()
+            ? early_it->second : current_scope->resolve_symbol(generic_name);
+        if (extended && !ASR::is_a<ASR::GenericProcedure_t>(
+                *ASRUtils::symbol_get_past_external(extended))) {
+            extended = nullptr;
+        }
+        if (extended) {
+            // Check for ExternalSymbol (GenericProcedure)
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(extended);
+            ASR::GenericProcedure_t *gp
+                = ASR::down_cast<ASR::GenericProcedure_t>(sym);
+            for (size_t i=0; i < gp->n_procs; i++) {
+                ASR::symbol_t *s = accessible_generic_specific(
+                    gp->m_procs[i], name, sym->base.loc);
+                if (s != nullptr) {
+                    symbols.push_back(al, s);
+                }
+            }
+        }
+        if (early_it != early_generic_procedures.end()) {
+            ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(early);
+            gp->m_procs = symbols.p;
+            gp->n_procs = symbols.size();
+            if (complete) {
+                early_generic_procedures.erase(early_it);
+            }
+        } else {
+            ASR::asr_t *v = ASR::make_GenericProcedure_t(al, loc,
+                current_scope, generic_name,
+                symbols.p, symbols.size(), ASR::Public);
+            current_scope->add_or_overwrite_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
+            if (!complete) {
+                early_generic_procedures[ASR::down_cast<ASR::symbol_t>(v)] = extended;
+            }
+        }
+        current_scope = current_scope_copy;
+    }
+
+    // Builds the pending generic `name` from the specifics defined so far.
+    void build_pending_generic_procedure(const std::string &name) {
+        auto it = generic_procedures.find(name);
+        if (it == generic_procedures.end()) return;
+        for (SymbolTable *scope = current_scope; scope; scope = scope->parent) {
+            std::vector<GenericSpecific> specifics;
+            for (auto &specific : it->second) {
+                if (specific.scope == scope) specifics.push_back(specific);
+            }
+            if (!specifics.empty()) {
+                build_generic_procedure(name, scope, specifics, false);
+                return;
+            }
+        }
+    }
+
     void add_generic_procedures() {
         // Interface blocks of the same name in different scopes declare
         // different generic interfaces: build one in each of those scopes.
@@ -5759,94 +5901,10 @@ public:
                 }
             }
         }
-        SymbolTable *current_scope_copy = current_scope;
         for (auto &proc : generics) {
-            current_scope = proc.second[0].scope;
-            Location loc;
-            loc.first = 1;
-            loc.last = 1;
-            Vec<ASR::symbol_t*> symbols;
-            symbols.reserve(al, proc.second.size());
-            bool any_error = false;
-            for (auto &pname : proc.second) {
-                std::string name = to_lower(pname.name);
-                // A specific procedure declared in this scope under the name
-                // of a generic interface is stored with the genericprocedure
-                // suffix, see the comment where the suffix is added. That
-                // generic interface is not necessarily the one being built
-                // here, so always look for the suffixed name first.
-                ASR::symbol_t *x = current_scope->resolve_symbol(
-                    name + ASRUtils::genericprocedure_suffix);
-                if (!x) {
-                    // Otherwise it keeps its plain name, e.g. it comes from
-                    // another scope (it is use associated). The generic
-                    // interface being built is not a candidate for itself.
-                    x = current_scope->resolve_symbol(name);
-                    if (name == proc.first && x &&
-                            ASR::is_a<ASR::GenericProcedure_t>(
-                                *ASRUtils::symbol_get_past_external(x))) {
-                        x = nullptr;
-                    }
-                }
-                if (!x) {
-                    diag.add(Diagnostic(
-                        "Symbol '" + pname.name + "' not declared",
-                        Level::Error, Stage::Semantic, {
-                            Label("", {pname.loc})
-                        }));
-                    if (!compiler_options.continue_compilation) throw SemanticAbort();
-                    any_error = true;
-                    continue;
-                }
-                if (!check_specific_explicit_interface(x, pname.name, pname.loc)) {
-                    any_error = true;
-                    continue;
-                }
-                symbols.push_back(al, x);
-            }
-            if (any_error) continue;
-            std::vector<GenericCandidate> specifics;
-            for (size_t i = 0; i < symbols.size(); i++) {
-                ASR::symbol_t *f = ASRUtils::symbol_get_past_external(symbols[i]);
-                if (ASR::is_a<ASR::Function_t>(*f)) {
-                    specifics.push_back({proc.second[i].name, proc.second[i].loc,
-                        ASR::down_cast<ASR::Function_t>(f), -1});
-                }
-            }
-            check_generic_distinguishable(proc.first, specifics);
-            std::string sym_name_str = proc.first;
-            if( current_scope->get_symbol(proc.first) != nullptr ) {
-                ASR::symbol_t* der_type_name = current_scope->get_symbol(proc.first);
-                if( der_type_name->type == ASR::symbolType::Struct ||
-                    der_type_name->type == ASR::symbolType::Function ) {
-                    sym_name_str = "~" + proc.first;
-                }
-            }
-            Str s;
-            s.from_str_view(sym_name_str);
-            char *generic_name = s.c_str(al);
-            if (current_scope->resolve_symbol(generic_name)) {
-                // Check for ExternalSymbol (GenericProcedure)
-                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
-                    current_scope->resolve_symbol(generic_name));
-                if(ASR::is_a<ASR::GenericProcedure_t>(*sym)) {
-                    ASR::GenericProcedure_t *gp
-                        = ASR::down_cast<ASR::GenericProcedure_t>(sym);
-                    for (size_t i=0; i < gp->n_procs; i++) {
-                        ASR::symbol_t *s = accessible_generic_specific(
-                            gp->m_procs[i], proc.first, sym->base.loc);
-                        if (s != nullptr) {
-                            symbols.push_back(al, s);
-                        }
-                    }
-                }
-            }
-            ASR::asr_t *v = ASR::make_GenericProcedure_t(al, loc,
-                current_scope, generic_name,
-                symbols.p, symbols.size(), ASR::Public);
-            current_scope->add_or_overwrite_symbol(sym_name_str, ASR::down_cast<ASR::symbol_t>(v));
+            build_generic_procedure(proc.first, proc.second[0].scope,
+                proc.second, true);
         }
-        current_scope = current_scope_copy;
         generic_procedures.clear();
     }
 

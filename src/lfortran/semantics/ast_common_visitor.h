@@ -4135,30 +4135,6 @@ public:
         }
     }
 
-    bool is_funcCall_to_unresolved_genereicProcedure(AST::expr_t* expr){
-        // Also a call inside the expression, such as `g(n) + 1`
-        class PendingGenericCallFinder :
-                public AST::BaseWalkVisitor<PendingGenericCallFinder> {
-        public:
-            CommonVisitor &v;
-            bool found = false;
-            PendingGenericCallFinder(CommonVisitor &v) : v{v} {}
-
-            void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
-                if (v.is_pending_generic_procedure(x.m_func,
-                        v.current_scope, true)) {
-                    found = true;
-                    return;
-                }
-                AST::BaseWalkVisitor<PendingGenericCallFinder>
-                    ::visit_FuncCallOrArray(x);
-            }
-        };
-        PendingGenericCallFinder finder(*this);
-        finder.visit_expr(*expr);
-        return finder.found;
-    }
-
     bool is_type_bound_func_call(AST::expr_t* expr) {
         expr = skip_parentheses(expr);
         if (!AST::is_a<AST::FuncCallOrArray_t>(*expr)) {
@@ -4600,32 +4576,22 @@ public:
 	        ASR::dimension_t &dim  = const_cast<ASR::dimension_t&>(dims[dims.size()-1]);
 	        dim.m_length = nullptr; dim.m_start = nullptr;
 	        dim.loc = m_dim[i].loc;
-            bool start_postponed = false;
-            size_t start_call = postponed_genericProcedure_calls_vec.size();
             if (m_dim[i].m_start) {
-                if(is_funcCall_to_unresolved_genereicProcedure(m_dim[i].m_start)){
-                    postponed_genericProcedure_calls_vec.emplace_back(&dim.m_start,
-                        current_scope, m_dim[i].m_start, var_name, 
-                        [this](ASR::expr_t* start){dimension_attribute_error_check(start);});
-                    dim.m_start = nullptr;
-                    start_postponed = true;
-                } else {
-                    this->visit_expr(*m_dim[i].m_start);
-                    dim.m_start = ASRUtils::EXPR(tmp);
-                    check_specification_expr(dim.m_start,
-                        RestrictedExprContext::ArrayBound);
-                    // A lower bound is never read through a getter.
-                    if (in_signature) {
-                        check_block_variable_reads(dim.m_start, dim.m_start,
-                            false);
-                    }
-                    dimension_attribute_error_check(dim.m_start);
-                    if (is_derived_type
-                            && !depends_on_pdt_kind_param(dim.m_start)) {
-                        ASR::expr_t* start_value = ASRUtils::expr_value(dim.m_start);
-                        if (start_value != nullptr) {
-                            dim.m_start = start_value;
-                        }
+                this->visit_expr(*m_dim[i].m_start);
+                dim.m_start = ASRUtils::EXPR(tmp);
+                check_specification_expr(dim.m_start,
+                    RestrictedExprContext::ArrayBound);
+                // A lower bound is never read through a getter.
+                if (in_signature) {
+                    check_block_variable_reads(dim.m_start, dim.m_start,
+                        false);
+                }
+                dimension_attribute_error_check(dim.m_start);
+                if (is_derived_type
+                        && !depends_on_pdt_kind_param(dim.m_start)) {
+                    ASR::expr_t* start_value = ASRUtils::expr_value(dim.m_start);
+                    if (start_value != nullptr) {
+                        dim.m_start = start_value;
                     }
                 }
             } else {
@@ -4633,8 +4599,7 @@ public:
             }
             if (m_dim[i].m_end) {
                 ASR::expr_t* end{};
-                if(is_funcCall_to_unresolved_genereicProcedure(m_dim[i].m_end) ||
-                   is_type_bound_func_call(m_dim[i].m_end)){ // Delay
+                if(is_type_bound_func_call(m_dim[i].m_end)){ // Delay
                     postponed_genericProcedure_calls_vec.emplace_back(&dim.m_length,
                         current_scope, m_dim[i].m_end, var_name, 
                         [this, dim_ptr = &dim](ASR::expr_t* end){
@@ -4659,21 +4624,13 @@ public:
                     } else {
                         end = end_read;
                     }
-                    if (start_postponed) {
-                        // The length needs the start, so build it when the start is known
-                        postponed_genericProcedure_calls_vec[start_call].check =
-                            [this, dim_ptr = &dim, end](ASR::expr_t* start){
-                                dimension_attribute_error_check(start);
-                                dim_ptr->m_length = ASRUtils::compute_length_from_start_end(
-                                    this->al, start, end);
-                            };
-                    } else if (pdt_kind_bound) {
+                    if (pdt_kind_bound) {
                         dim.m_length = pdt_component_extent(dim.m_start, end);
                     } else {
                         dim.m_length = ASRUtils::compute_length_from_start_end(al,
                             dim.m_start, end);
                     }
-                    if (is_derived_type && !pdt_kind_bound && !start_postponed) {
+                    if (is_derived_type && !pdt_kind_bound) {
                         ASR::expr_t* length_value = ASRUtils::expr_value(dim.m_length);
                         if (length_value != nullptr) {
                             dim.m_length = length_value;
@@ -4683,7 +4640,7 @@ public:
             } else {
                 dim.m_length = nullptr;
             }
-            if ( !dim.m_length && ((!dim.m_start && !start_postponed) ||
+            if ( !dim.m_length && (!dim.m_start ||
                     m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar) ) {
                 is_compile_time = true;
             }
@@ -7991,6 +7948,11 @@ public:
     // order, overrides this; afterwards every procedure is defined.
     ProcedureDeclaredLater procedure_declared_later(const std::string &/*name*/) {
         return ProcedureDeclaredLater::No;
+    }
+
+    // Builds the generic interface `name` if an enclosing scope declares it
+    // and it is not built yet. Only the symbol table visitor overrides this.
+    void build_pending_generic_procedure(const std::string &/*name*/) {
     }
 
     // Whether an internal procedure that is not defined yet hides `sym`,
@@ -26013,6 +25975,7 @@ public:
             check_binding_accessible(v, x.base.base.loc);
             v = ASRUtils::import_class_procedure(al, x.base.base.loc, v, current_scope);
         } else {
+            static_cast<Derived&>(*this).build_pending_generic_procedure(var_name);
             // for a GenericProcedure and a derived type with the same name,
             // we prefer GenericProcedure matching first, if it doesn't workout
             // we eventually try matching it with derived type *constructor* as well
@@ -30551,8 +30514,7 @@ public:
         bool has_entity_length = var_sym && (var_sym->m_length != nullptr
             || var_sym->m_sym == AST::DoubleAsterisk);
         if (len_item && has_entity_length
-                && len_item->m_type == AST::kind_item_typeType::Value
-                && !is_funcCall_to_unresolved_genereicProcedure(len_item->m_value)) {
+                && len_item->m_type == AST::kind_item_typeType::Value) {
             // The overridden type-spec length must still be a valid
             // character length, even though its value is not used.
             _processing_char_len = true;
@@ -30569,28 +30531,20 @@ public:
             switch (len_item->m_type) {
                 case (AST::kind_item_typeType::Value) : {
                     LCOMPILERS_ASSERT(len_item->m_value != nullptr);
-                    if(is_funcCall_to_unresolved_genereicProcedure(len_item->m_value)){ // Postpone the evaluation
-                        postponed_genericProcedure_calls_vec.emplace_back(&str->m_len, current_scope,
-                        len_item->m_value, s2c(al, sym),
-                        [this, require_constant_length](ASR::expr_t* x) {
-                            check_character_length_expr(x, require_constant_length);
-                        });
-                    } else { // Evaluate normally
-                        _processing_char_len = true;
-                        visit_restricted_expr(*len_item->m_value,
-                            RestrictedExprContext::CharacterLength);
-                        ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
-                        check_specification_expr(len_expr,
-                            RestrictedExprContext::CharacterLength);
-                        _processing_char_len = false;
-                        check_character_length_expr(len_expr, require_constant_length);
-                        ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
-                        if (len_value) {
-                            str->m_len = len_value;
-                        } else {
-                            str->m_len = in_signature
-                                ? read_variables_through_getters(len_expr, true) : len_expr;
-                        }
+                    _processing_char_len = true;
+                    visit_restricted_expr(*len_item->m_value,
+                        RestrictedExprContext::CharacterLength);
+                    ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+                    check_specification_expr(len_expr,
+                        RestrictedExprContext::CharacterLength);
+                    _processing_char_len = false;
+                    check_character_length_expr(len_expr, require_constant_length);
+                    ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
+                    if (len_value) {
+                        str->m_len = len_value;
+                    } else {
+                        str->m_len = in_signature
+                            ? read_variables_through_getters(len_expr, true) : len_expr;
                     }
                     str->m_len_kind = ASR::ExpressionLength;
                     break;
@@ -30618,28 +30572,20 @@ public:
                 str->m_len = nullptr; // If it's parameter variable, len will be set later.
                 str->m_len_kind = ASR::AssumedLength;
             } else if(var_sym->m_length){ // `c*4`, `c*(n)`, also with `= init`
-                    if(is_funcCall_to_unresolved_genereicProcedure(var_sym->m_length)){ // Postpone the evaluation
-                        postponed_genericProcedure_calls_vec.emplace_back(&str->m_len, current_scope,
-                        var_sym->m_length, s2c(al, sym),
-                        [this, require_constant_length](ASR::expr_t* x) {
-                            check_character_length_expr(x, require_constant_length);
-                        });
-                    } else { // Evaluate normally
-                        _processing_char_len = true;
-                        visit_restricted_expr(*var_sym->m_length,
-                            RestrictedExprContext::CharacterLength);
-                        ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
-                        check_specification_expr(len_expr,
-                            RestrictedExprContext::CharacterLength);
-                        _processing_char_len = false;
-                        check_character_length_expr(len_expr, require_constant_length);
-                        ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
-                        if (len_value) {
-                            str->m_len = len_value;
-                        } else {
-                            str->m_len = in_signature
-                                ? read_variables_through_getters(len_expr, true) : len_expr;
-                        }
+                    _processing_char_len = true;
+                    visit_restricted_expr(*var_sym->m_length,
+                        RestrictedExprContext::CharacterLength);
+                    ASR::expr_t* len_expr = ASRUtils::EXPR(tmp);
+                    check_specification_expr(len_expr,
+                        RestrictedExprContext::CharacterLength);
+                    _processing_char_len = false;
+                    check_character_length_expr(len_expr, require_constant_length);
+                    ASR::expr_t* len_value = ASRUtils::expr_value(len_expr);
+                    if (len_value) {
+                        str->m_len = len_value;
+                    } else {
+                        str->m_len = in_signature
+                            ? read_variables_through_getters(len_expr, true) : len_expr;
                     }
                     str->m_len_kind = ASR::ExpressionLength;
             } else if(type->m_sym == AST::DoubleAsterisk){
