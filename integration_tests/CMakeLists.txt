@@ -507,6 +507,7 @@ endif()
 RUN(NAME procedure_pointer_array_01 LABELS gfortran llvm)
 
 RUN(NAME label_01 LABELS gfortran llvm)
+RUN(NAME label_02 LABELS gfortran llvm) # END= label on a statement in the same IF block as the READ (#11499)
 RUN(NAME format_hollerith_01 LABELS gfortran llvm)
 RUN(NAME format_hollerith_02 LABELS gfortran llvm)
 
