@@ -4268,12 +4268,22 @@ public:
     // `len` asks about a property of its designator rather than reading it,
     // and 10.1.11 p2 (7) permits it, so the designator inquired about is not
     // walked into; anything else in the inquiry still is.
+    //
+    // The ac-do-variable of an array constructor implied-do loop has the
+    // scope of the implied-do (19.4), so reading it in the values is not
+    // reading a local. Such an implied-do loop is not supported yet in a
+    // specification expression, so the first one whose ac-do-variable is a
+    // local of the scoping unit is found separately, for its own diagnostic.
     class SpecificationExprLocalFinder :
             public ASR::BaseWalkVisitor<SpecificationExprLocalFinder> {
         public:
             CommonVisitor &v;
             ASR::symbol_t *local_sym = nullptr;
             Location local_loc = {};
+            const ASR::ImpliedDoLoop_t *implied_do_loop = nullptr;
+            // The ac-do-variables of the implied-do loops whose values are
+            // being walked.
+            std::vector<ASR::symbol_t*> ac_do_variables;
 
             SpecificationExprLocalFinder(CommonVisitor &v_) : v{v_} {}
 
@@ -4281,10 +4291,36 @@ public:
                 if (local_sym != nullptr) {
                     return;
                 }
+                if (std::find(ac_do_variables.begin(), ac_do_variables.end(),
+                        x.m_v) != ac_do_variables.end()) {
+                    return;
+                }
                 if (v.is_local_of_current_scoping_unit(x.m_v)) {
                     local_sym = x.m_v;
                     local_loc = x.base.base.loc;
                 }
+            }
+
+            // The implied-do control is outside the scope of the
+            // ac-do-variable, and is walked like any other primary.
+            void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
+                this->visit_expr(*x.m_start);
+                this->visit_expr(*x.m_end);
+                if (x.m_increment) {
+                    this->visit_expr(*x.m_increment);
+                }
+                ASR::symbol_t *ac_do_variable = ASR::is_a<ASR::Var_t>(*x.m_var)
+                    ? ASR::down_cast<ASR::Var_t>(x.m_var)->m_v : nullptr;
+                if (implied_do_loop == nullptr &&
+                        v.is_local_of_current_scoping_unit(ac_do_variable)) {
+                    implied_do_loop = &x;
+                }
+                ac_do_variables.push_back(ac_do_variable);
+                for (size_t i = 0; i < x.n_values; i++) {
+                    this->visit_expr(*x.m_values[i]);
+                }
+                this->visit_ttype(*x.m_type);
+                ac_do_variables.pop_back();
             }
 
             void visit_ArraySize(const ASR::ArraySize_t &x) {
@@ -4357,7 +4393,9 @@ public:
     }
 
     // Rejects `e`, the array bound or character length just built for
-    // `context`, when it reads a local of the scoping unit being compiled.
+    // `context`, when it reads a local of the scoping unit being compiled,
+    // or when it has an array constructor implied-do loop whose
+    // ac-do-variable is such a local, which is not supported yet.
     // The context is passed in rather than read from
     // `restricted_expr_context`, because a character length is checked once
     // its `RestrictedExprScope` has already been left.
@@ -4374,12 +4412,23 @@ public:
         }
         SpecificationExprLocalFinder finder(*this);
         finder.visit_expr(*e);
+        std::string what = (context == RestrictedExprContext::CharacterLength)
+            ? "a character length" : "an array bound";
         if (finder.local_sym == nullptr) {
+            // LBOUND and UBOUND without DIM of an assumed-rank array are
+            // also built as one, `[(ubound(c, i), i = 1, rank(c))]`.
+            if (finder.implied_do_loop != nullptr) {
+                diag.add(Diagnostic(
+                    "an array constructor with an implied-do loop in a "
+                    "specification expression is not supported yet",
+                    Level::Error, Stage::Semantic, {
+                        Label("an implied-do loop is evaluated here to give "
+                            + what, {finder.implied_do_loop->base.base.loc})}));
+                throw SemanticAbort();
+            }
             return;
         }
         std::string name = ASRUtils::symbol_name(finder.local_sym);
-        std::string what = (context == RestrictedExprContext::CharacterLength)
-            ? "a character length" : "an array bound";
         diag.add(Diagnostic(
             "the variable '" + name + "' is local to this scoping unit, so it "
             "cannot appear in a specification expression",

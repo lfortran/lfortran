@@ -4788,3 +4788,14 @@ subroutine cc1_assumed_rank_bound_dim(c)
     print *, lbound(c, 0)  ! {Error} `dim` argument of `lbound` must be between 1 and 15 for an assumed-rank array
     print *, ubound(c, 16)  ! {Error} `dim` argument of `ubound` must be between 1 and 15 for an assumed-rank array
 end subroutine
+
+! An array constructor with an implied-do loop is not supported yet in a
+! specification expression. LBOUND and UBOUND without DIM of an assumed-rank
+! array are built as one, `[(ubound(c, i), i = 1, rank(c))]`.
+subroutine cc1_spec_expr_implied_do(n, c)
+    integer, intent(in) :: n
+    real, intent(in) :: c(..)
+    integer :: i
+    integer :: d(sum([(i, i = 1, n)]))  ! {Error} an array constructor with an implied-do loop in a specification expression is not supported yet
+    integer :: b(maxval(ubound(c)))  ! {Error} an array constructor with an implied-do loop in a specification expression is not supported yet
+end subroutine

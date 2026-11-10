@@ -2046,6 +2046,18 @@ semantic error: different shape for array initialization on dimension 1 (3 and 2
 4781 |     type(cc1_dt_shape_t) :: cc1_xt(3) = [cc1_dt_shape_t(1), cc1_dt_shape_t(2)]  ! {Error} different shape for array initialization on dimension 1 (3 and 2)
      |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: an array constructor with an implied-do loop in a specification expression is not supported yet
+    --> tests/errors/continue_compilation_1.f90:4799:23
+     |
+4799 |     integer :: d(sum([(i, i = 1, n)]))  ! {Error} an array constructor with an implied-do loop in a specification expression is not supported yet
+     |                       ^^^^^^^^^^^^^ an implied-do loop is evaluated here to give an array bound
+
+semantic error: an array constructor with an implied-do loop in a specification expression is not supported yet
+    --> tests/errors/continue_compilation_1.f90:4800:25
+     |
+4800 |     integer :: b(maxval(ubound(c)))  ! {Error} an array constructor with an implied-do loop in a specification expression is not supported yet
+     |                         ^^^^^^^^^ an implied-do loop is evaluated here to give an array bound
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
