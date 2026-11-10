@@ -4798,6 +4798,7 @@ RUN(NAME spec_expr_06 LABELS gfortran llvm)
 RUN(NAME spec_expr_07 LABELS gfortran llvm)
 RUN(NAME spec_expr_10 LABELS gfortran llvm)
 RUN(NAME spec_expr_11 LABELS gfortran llvm)
+RUN(NAME spec_expr_12 LABELS gfortran llvm) # function result extent from a pure function of a local named constant (#7179)
 
 RUN(NAME enum_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME enum_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
