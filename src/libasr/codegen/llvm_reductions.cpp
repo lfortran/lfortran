@@ -313,24 +313,46 @@ bool is_root(Instruction &i, SmallVectorImpl<Squares> &lanes) {
 //
 // The facts are the greatest fixed point of the rules below: every element
 // reachable from the query is first assumed to be zero, and the assumption is
-// dropped for each element whose operands no longer justify it, until nothing
-// changes. A cycle through phis is therefore zero only if every value that
-// enters the cycle is zero and every operation on it keeps the element zero,
-// which is induction over the iterations of the loop.
+// dropped for each element with an operand element that is not zero, and
+// then for each element that uses one whose assumption was dropped. A cycle
+// through phis is therefore zero only if every value that enters the cycle
+// is zero and every operation on it keeps the element zero, which is
+// induction over the iterations of the loop.
 class LaneZero {
 public:
     bool is_zero(Value *v, unsigned lane) {
         Element root{v, lane};
+        size_t first = nodes.size();
         if (!add(root)) {
             return constant_is_zero(v, lane);
         }
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            for (Node &node : nodes) {
-                if (node.zero && !holds(node)) {
-                    node.zero = false;
-                    changed = true;
+        // The elements of earlier queries are final, and none of them uses
+        // a new one. A new element is not zero if an operand outside the new
+        // ones is not, and then neither is any new element that uses it.
+        SmallVector<unsigned, 16> work;
+        for (size_t j = first; j < nodes.size(); j++) {
+            Node &node = nodes[j];
+            bool zero = !node.operands.empty();
+            for (const Element &e : node.operands) {
+                auto it = index.find(e);
+                if (it == index.end()) {
+                    zero = zero && constant_is_zero(e.first, e.second);
+                } else if (it->second >= first) {
+                    nodes[it->second].users.push_back(j);
+                } else {
+                    zero = zero && nodes[it->second].zero;
+                }
+            }
+            if (!zero) {
+                node.zero = false;
+                work.push_back(j);
+            }
+        }
+        while (!work.empty()) {
+            for (unsigned user : nodes[work.pop_back_val()].users) {
+                if (nodes[user].zero) {
+                    nodes[user].zero = false;
+                    work.push_back(user);
                 }
             }
         }
@@ -341,9 +363,10 @@ private:
     using Element = std::pair<Value *, unsigned>;
 
     // The element is zero if it has operand elements and every one of them
-    // is zero.
+    // is zero. `users` are the elements that have this one as an operand.
     struct Node {
         SmallVector<Element, 3> operands;
+        SmallVector<unsigned, 2> users;
         bool zero = true;
     };
 
@@ -391,23 +414,6 @@ private:
     static unsigned width(Type *type) {
         auto *vector = dyn_cast<FixedVectorType>(type);
         return vector ? vector->getNumElements() : 1;
-    }
-
-    bool value_of(const Element &e) const {
-        auto it = index.find(e);
-        if (it == index.end()) {
-            return constant_is_zero(e.first, e.second);
-        }
-        return nodes[it->second].zero;
-    }
-
-    bool holds(const Node &node) const {
-        for (const Element &e : node.operands) {
-            if (!value_of(e)) {
-                return false;
-            }
-        }
-        return !node.operands.empty();
     }
 
     // The operand elements that decide element `lane` of instruction `i`, or
