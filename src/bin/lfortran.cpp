@@ -2433,7 +2433,25 @@ int link_executable(const std::vector<std::string> &infiles,
 #else
         std::string host_triple = t;
 #endif
-        bool use_lld = !device_driver_links
+        // LLD links objects. A C, C++ or assembly source still has to be
+        // compiled, which the external compiler driver does as part of its
+        // link. Fortran and LLVM IR are already objects by the time they
+        // reach this function.
+        bool only_linker_inputs = true;
+        for (const auto &infile : infiles) {
+            if (!(LCompilers::endswith(infile, ".o")
+                    || LCompilers::endswith(infile, ".obj")
+                    || LCompilers::endswith(infile, ".a")
+                    || LCompilers::endswith(infile, ".lib")
+                    || LCompilers::endswith(infile, ".so")
+                    || LCompilers::endswith(infile, ".dylib")
+                    || LCompilers::endswith(infile, ".bc"))) {
+                only_linker_inputs = false;
+                break;
+            }
+        }
+        bool use_lld = only_linker_inputs
+            && !device_driver_links
             && compiler_options.gpu_backend != "metal"
             && elf_lld_selected(t, host_triple, requested_linker);
         int err = 0;
