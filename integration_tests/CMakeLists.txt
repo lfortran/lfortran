@@ -1036,6 +1036,7 @@ RUN(NAME arrays_reshape_55 LABELS gfortran llvm) # reshape of a function result 
 RUN(NAME arrays_reshape_56 LABELS gfortran llvm) # reshape whose shape argument is a reshape() call (#4649)
 RUN(NAME arrays_reshape_57 LABELS gfortran llvm) # shape of a reshape of an array constant (#3520)
 RUN(NAME arrays_reshape_58 LABELS gfortran llvm) # reshape of an automatic array into an assumed-shape dummy (#5663)
+RUN(NAME arrays_reshape_59 LABELS gfortran llvm) # integer(8) rank-2 initializer from reshape of a default-kind constructor (#5284)
 RUN(NAME array_reshape_pad_01 LABELS gfortran llvm)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_elemental_16 LABELS gfortran llvm)
