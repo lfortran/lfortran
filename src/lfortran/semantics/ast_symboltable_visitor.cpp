@@ -2319,51 +2319,6 @@ public:
         if (undeclared) throw SemanticAbort();
     }
 
-    // Collects the names that an AST node references, lower cased: variables,
-    // procedures, derived types and interfaces, and some names that are not
-    // entities at all, such as components. Used where more is harmless.
-    class ReferencedNames : public AST::BaseWalkVisitor<ReferencedNames> {
-    public:
-        std::set<std::string> names;
-
-        void add(const char *name, const AST::struct_member_t *members,
-                size_t n_members) {
-            names.insert(to_lower(name));
-            for (size_t i = 0; i < n_members; i++) {
-                names.insert(to_lower(members[i].m_name));
-            }
-        }
-
-        void visit_Name(const AST::Name_t &x) {
-            add(x.m_id, x.m_member, x.n_member);
-            AST::BaseWalkVisitor<ReferencedNames>::visit_Name(x);
-        }
-
-        void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
-            add(x.m_func, x.m_member, x.n_member);
-            AST::BaseWalkVisitor<ReferencedNames>::visit_FuncCallOrArray(x);
-        }
-
-        void visit_CoarrayRef(const AST::CoarrayRef_t &x) {
-            add(x.m_name, x.m_member, x.n_member);
-            AST::BaseWalkVisitor<ReferencedNames>::visit_CoarrayRef(x);
-        }
-
-        void visit_ArrayInitializer(const AST::ArrayInitializer_t &x) {
-            if (x.m_classtype) names.insert(to_lower(x.m_classtype));
-            AST::BaseWalkVisitor<ReferencedNames>::visit_ArrayInitializer(x);
-        }
-
-        void visit_AttrType(const AST::AttrType_t &x) {
-            if (x.m_name) names.insert(to_lower(x.m_name));
-            AST::BaseWalkVisitor<ReferencedNames>::visit_AttrType(x);
-        }
-
-        void visit_AttrExtends(const AST::AttrExtends_t &x) {
-            names.insert(to_lower(x.m_name));
-        }
-    };
-
     static std::string procedure_name(const AST::program_unit_t &p) {
         if (AST::is_a<AST::Function_t>(p)) {
             return to_lower(AST::down_cast<AST::Function_t>(&p)->m_name);
@@ -2416,59 +2371,139 @@ public:
         return names;
     }
 
+    // Whether `x` is a declaration with the PARAMETER attribute, such as
+    // `integer, parameter :: n = 3` or `parameter (n = 3)`.
+    static bool is_parameter_declaration(const AST::decl_stmt_t &x) {
+        if (!AST::is_a<AST::Declaration_t>(x)) return false;
+        const AST::Declaration_t &d = (const AST::Declaration_t &)x;
+        for (size_t i = 0; i < d.n_attributes; i++) {
+            if (AST::is_a<AST::SimpleAttribute_t>(*d.m_attributes[i])
+                    && AST::down_cast<AST::SimpleAttribute_t>(d.m_attributes[i])->m_attr
+                        == AST::simple_attributeType::AttrParameter) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Collects the names that an AST node uses as the interface of a
+    // procedure, as in `procedure(name) :: p`, lower cased.
+    class ProcedureInterfaceNames : public AST::BaseWalkVisitor<ProcedureInterfaceNames> {
+    public:
+        std::set<std::string> names;
+
+        void visit_AttrType(const AST::AttrType_t &x) {
+            if (x.m_type == AST::decl_typeType::TypeProcedure && x.m_name) {
+                names.insert(to_lower(x.m_name));
+            }
+            AST::BaseWalkVisitor<ProcedureInterfaceNames>::visit_AttrType(x);
+        }
+    };
+
+    // Whether an interface body of `x`, an interface block, has an IMPORT
+    // statement, which can make a local variable of the host visible to it.
+    static bool has_import(const AST::Interface_t &x) {
+        for (size_t i = 0; i < x.n_items; i++) {
+            if (!AST::is_a<AST::InterfaceProc_t>(*x.m_items[i])) continue;
+            AST::program_unit_t *p = AST::down_cast<AST::InterfaceProc_t>(x.m_items[i])->m_proc;
+            AST::decl_stmt_t **items = nullptr;
+            size_t n_items = 0;
+            if (AST::is_a<AST::Function_t>(*p)) {
+                items = AST::down_cast<AST::Function_t>(p)->m_items;
+                n_items = AST::down_cast<AST::Function_t>(p)->n_items;
+            } else if (AST::is_a<AST::Subroutine_t>(*p)) {
+                items = AST::down_cast<AST::Subroutine_t>(p)->m_items;
+                n_items = AST::down_cast<AST::Subroutine_t>(p)->n_items;
+            }
+            for (size_t j = 0; j < n_items; j++) {
+                if (AST::is_a<AST::Import_t>(*items[j])) return true;
+            }
+        }
+        return false;
+    }
+
     // Marks in `signature` the declaration statements of `x`, a function or
     // subroutine whose dummy arguments and result are `needed`, that its
-    // signature needs: those that declare a name of `needed`, and in turn
-    // those that declare a name such a statement or the prefix of `x`
-    // references. Returns false when `x` is built in one go instead: it is
-    // templated, or it has a declaration whose names are not followed here,
-    // or one whose interface is an internal procedure in `contained`.
+    // signature can need: those that declare a name of `needed`, a named
+    // constant, a dummy argument of an ENTRY statement or an object of a
+    // COMMON statement, the derived types and enums, and the interface
+    // blocks that declare an interface that one of these statements names.
+    // The other declarations declare local variables, which a specification
+    // expression cannot use, or interfaces, which may import them.
+    // Returns false when `x` is built in one go instead: it is templated, or
+    // it has a declaration of another kind, such as a pragma, or one of
+    // `needed` has an internal procedure of `contained` as its interface, or
+    // a marked interface block has an IMPORT statement.
     template <typename T>
     static bool signature_statements(const T &x, std::set<std::string> needed,
             ContainedProcedureScope *contained, std::vector<bool> &signature) {
         if (x.n_temp_args > 0) return false;
-        std::vector<std::set<std::string>> declared(x.n_items);
         for (size_t i = 0; i < x.n_items; i++) {
             AST::decl_stmt_t *item = x.m_items[i];
+            if (AST::is_a<AST::Entry_t>(*item)) {
+                AST::Entry_t *entry = AST::down_cast<AST::Entry_t>(item);
+                for (size_t j = 0; j < entry->n_args; j++) {
+                    if (entry->m_args[j].m_arg) needed.insert(to_lower(entry->m_args[j].m_arg));
+                }
+            }
             if (!AST::is_kind(*item, AST::DeclStmtKind::Declaration)) continue;
-            if (is_common_declaration(item) || is_equivalence_declaration(item)) continue;
+            if (is_common_declaration(item)) {
+                AST::Declaration_t *d = AST::down_cast<AST::Declaration_t>(item);
+                for (size_t j = 0; j < d->n_attributes; j++) {
+                    if (!AST::is_a<AST::AttrCommon_t>(*d->m_attributes[j])) continue;
+                    AST::AttrCommon_t *c = AST::down_cast<AST::AttrCommon_t>(d->m_attributes[j]);
+                    for (size_t b = 0; b < c->n_blks; b++) {
+                        for (size_t o = 0; o < c->m_blks[b].n_objects; o++) {
+                            if (c->m_blks[b].m_objects[o].m_name) {
+                                needed.insert(to_lower(c->m_blks[b].m_objects[o].m_name));
+                            }
+                        }
+                    }
+                }
+            }
             switch (item->type) {
                 case AST::decl_stmtType::Declaration:
                 case AST::decl_stmtType::DerivedType:
                 case AST::decl_stmtType::Interface:
                 case AST::decl_stmtType::Enum:
-                    declared[i] = declared_names(*item);
                     break;
                 default:
                     return false;
             }
+            if (is_parameter_declaration(*item)) {
+                std::set<std::string> constants = declared_names(*item);
+                needed.insert(constants.begin(), constants.end());
+            }
         }
-        ReferencedNames prefix;
-        for (size_t i = 0; i < x.n_attributes; i++) {
-            prefix.visit_decl_attribute(*x.m_attributes[i]);
-        }
-        needed.insert(prefix.names.begin(), prefix.names.end());
         signature.assign(x.n_items, false);
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            for (size_t i = 0; i < x.n_items; i++) {
-                if (signature[i]) continue;
-                bool declares_needed = false;
-                for (const std::string &name : declared[i]) {
-                    if (needed.count(name) > 0) declares_needed = true;
-                }
-                if (!declares_needed) continue;
-                if (contained && has_interface_declared_later(x.m_items, i,
-                        x.n_items, contained) && !has_interface_declared_later(
-                        x.m_items, i, x.n_items, nullptr)) {
-                    return false;
-                }
+        for (size_t i = 0; i < x.n_items; i++) {
+            AST::decl_stmt_t *item = x.m_items[i];
+            if (!AST::is_kind(*item, AST::DeclStmtKind::Declaration)) continue;
+            if (is_common_declaration(item) || is_equivalence_declaration(item)) continue;
+            if (AST::is_a<AST::DerivedType_t>(*item) || AST::is_a<AST::Enum_t>(*item)) {
                 signature[i] = true;
-                ReferencedNames referenced;
-                referenced.visit_decl_stmt(*x.m_items[i]);
-                needed.insert(referenced.names.begin(), referenced.names.end());
-                changed = true;
+                continue;
+            }
+            for (const std::string &name : declared_names(*item)) {
+                if (needed.count(name) > 0) signature[i] = true;
+            }
+            if (signature[i] && contained && has_interface_declared_later(
+                    x.m_items, i, x.n_items, contained) && !has_interface_declared_later(
+                    x.m_items, i, x.n_items, nullptr)) {
+                return false;
+            }
+        }
+        ProcedureInterfaceNames interfaces;
+        for (size_t i = 0; i < x.n_items; i++) {
+            if (signature[i]) interfaces.visit_decl_stmt(*x.m_items[i]);
+        }
+        for (size_t i = 0; i < x.n_items; i++) {
+            if (!AST::is_a<AST::Interface_t>(*x.m_items[i])) continue;
+            for (const std::string &name : declared_names(*x.m_items[i])) {
+                if (interfaces.names.count(name) > 0) signature[i] = true;
+            }
+            if (signature[i] && has_import(*AST::down_cast<AST::Interface_t>(x.m_items[i]))) {
+                return false;
             }
         }
         return true;
