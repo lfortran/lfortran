@@ -16,16 +16,17 @@ inputs:
 runs:
   using: composite
   steps:
-    # The Linux LLVM 21 compiler runs Quick's full separate-compilation and
-    # leak-detection suites, so it is compiled with -O2 like Quick's LLVM 11
-    # compatibility compiler. It stays a Debug build: assertions, per-pass ASR
-    # verification and the -Werror/hardening flags stay on, nothing defines
-    # NDEBUG. The other platforms keep -O0 coverage.
+    # The Linux platform compilers are Debug builds compiled with -O2. LLVM 21
+    # runs the full separate-compilation and leak-detection suites, and LLVM 11
+    # compiles the reference tests and the full alternate-backend suites. -O2
+    # keeps those lanes fast. Assertions, per-pass ASR verification and the
+    # -Werror/hardening flags stay on; nothing defines NDEBUG. macOS and
+    # Windows keep -O0 coverage.
     - name: Select compiler optimization
       id: optimize
       shell: bash
       run: |
-        if [[ "${{ inputs.os }}" == ubuntu-* && "${{ inputs.llvm-version }}" == "21" ]]; then
+        if [[ "${{ inputs.os }}" == ubuntu-* && ( "${{ inputs.llvm-version }}" == "11" || "${{ inputs.llvm-version }}" == "21" ) ]]; then
           echo "LFORTRAN_CI_OPTIMIZE=yes" >> "$GITHUB_ENV"
           echo "key-suffix=-o2" >> "$GITHUB_OUTPUT"
         fi

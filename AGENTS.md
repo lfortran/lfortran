@@ -379,9 +379,12 @@ only once, redirect to a log file and then examine the log file.
   Every full Quick suite runs with assertions and per-pass ASR verification.
   The LLVM 11 compiler is a Debug build compiled with `-O2` (assertions and
   verification stay on, no `NDEBUG`), which makes its four full passes ~1.6x
-  faster. The Linux LLVM 21 platform compiler is compiled with `-O2` the same
-  way (in `.github/actions/build-platform`, also for Exhaustive's copy); the
-  macOS, Windows and Linux LLVM 11 platform builds keep their defaults.
+  faster. The Linux LLVM 11 and LLVM 21 platform compilers are compiled with
+  `-O2` the same way (in `.github/actions/build-platform`, also for Exhaustive's
+  copies, cache key suffix `-o2`); the macOS and Windows platform builds keep
+  their defaults. Quick runs the full CUDA-on-CPU suite on Linux LLVM 21 only
+  and a smoke check on Linux LLVM 11 and macOS. Quick's macOS job runs the
+  Metal smoke check; Exhaustive's macOS platform job runs the full Metal suite.
   Both full-suite compilers also use the platform C/C++ diagnostic/hardening
   flags (including `-Werror`) and `WITH_INTERNAL_ALLOC_CHECK=yes`.
   These modes are not just smoke selections.

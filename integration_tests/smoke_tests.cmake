@@ -78,7 +78,11 @@ set(LFORTRAN_SMOKE_TESTS
     fixed_form_select_case_01 fixed_form_comment_01 fixed_form_module_01
 
     # Small option-specific backends, legacy interfaces and runtime library.
+    # GPU capability check for the Metal and CUDA-on-CPU smoke jobs. The full
+    # suites stay on Linux LLVM 21 (CUDA-on-CPU) and Exhaustive's macOS job.
     minpack_01 simd_01 simd_02 do_concurrent_01
+    gpu_metal_01 gpu_metal_02 gpu_metal_03
+    gpu_scalar_reduction_actual_01
     implicit_interface_01 implicit_interface_02 implicit_interface_03
     implicit_interface_04 implicit_interface_05 implicit_interface_06
     implicit_interface_07 implicit_interface_08 implicit_interface_09
