@@ -141,15 +141,13 @@ static int unified_memory = 0;
 // The smallest allocation the managed memory model makes managed memory:
 // making managed memory costs much more than malloc (the cache of freed blocks
 // below spares a procedure that allocates at every call most of it), and
-// copying a smaller range at a launch costs little. A range of at least
-// KEEP_READ_MIN_BYTES a launch only reads is copied at every launch that
-// follows a wait, and a loop that reads it at every iteration waits at every
-// iteration: 512 KB of boundary data copied 3000 times costs more than the
-// kernels that read it. So such a range is managed too, from 256 KB on. A
-// smaller one stays out: the slots a reduction fills (64 KB for a dot product)
-// are read by the host right after every launch, which a managed range
-// migrates a page at a time, slower than a copy.
-enum { MANAGED_MIN_BYTES = 256 * 1024 };
+// copying a smaller range at a launch costs little. But a smaller array that
+// the host looks at between kernels (a call of a procedure of the program,
+// which the compiler cannot look into) is copied back and forth around every
+// kernel, and a decode step full of such arrays was idle on the device for a
+// third of its time. So an array of 4 KB and more is managed memory; the
+// allocations of less than 1 MiB prefer the device (see managed_alloc).
+enum { MANAGED_MIN_BYTES = 4096 };
 
 // The managed allocations, sorted by address.
 typedef struct managed_range {
