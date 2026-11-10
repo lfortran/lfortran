@@ -6,7 +6,7 @@ program intrinsic_reduce_02
     real :: cube(2, 3, 4)
     logical :: keep(2, 3)
     integer, allocatable :: res(:)
-    integer :: i, n, total, big, shp(2)
+    integer :: i, d, n, total, big, shp(2)
     real :: rtotal
     grid = reshape([1, 2, 3, 4, 5, 6], [2, 3])
     cube = reshape([(real(i), i = 1, 24)], [2, 3, 4])
@@ -21,6 +21,14 @@ program intrinsic_reduce_02
     if (big /= 12) error stop 4
     total = sum(reduce(grid, plus, 1, mask=keep))
     if (total /= 18) error stop 5
+
+    ! `dim` known only at run time
+    d = 2
+    n = size(reduce(grid, plus, d))
+    if (n /= 2) error stop 10
+    d = 1
+    big = maxval(reduce(grid, plus, d))
+    if (big /= 11) error stop 11
 
     shp = shape(reduce(cube, rplus, 2))
     if (shp(1) /= 2 .or. shp(2) /= 4) error stop 6
