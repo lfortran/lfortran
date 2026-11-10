@@ -18124,6 +18124,30 @@ public:
         return total;
     }
 
+    // Without a type-spec, the elements of an array constructor have the
+    // length of its first element. When that element is a scalar TRIM(s),
+    // whose result type has a deferred length, return the element type with
+    // that length, LEN_TRIM(s), given explicitly; otherwise return `type`.
+    ASR::ttype_t* get_trim_element_type(ASR::ttype_t* type, ASR::expr_t* first) {
+        if (!ASR::is_a<ASR::String_t>(*type) ||
+                ASR::down_cast<ASR::String_t>(type)->m_len != nullptr ||
+                !ASR::is_a<ASR::IntrinsicElementalFunction_t>(*first) ||
+                ASR::down_cast<ASR::IntrinsicElementalFunction_t>(first)->m_intrinsic_id !=
+                    static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim) ||
+                ASRUtils::is_array(ASRUtils::expr_type(first))) {
+            return type;
+        }
+        ASR::String_t* string_type = ASR::down_cast<ASR::String_t>(type);
+        const Location& loc = first->base.loc;
+        ASR::expr_t* len = ASRUtils::EXPR(create_StringLen_from_expr(first,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), loc));
+        if (ASRUtils::expr_value(len) != nullptr) {
+            len = ASRUtils::expr_value(len);
+        }
+        return ASRUtils::TYPE(ASR::make_String_t(al, loc, string_type->m_kind, len,
+            ASR::string_length_kindType::ExpressionLength, string_type->m_physical_type));
+    }
+
     void visit_ArrayInitializer(const AST::ArrayInitializer_t &x) {
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_args);
@@ -18333,6 +18357,10 @@ public:
                 n_elements += 1;
             }
             body.push_back(al, expr);
+        }
+
+        if (is_type_spec_ommitted && body.size() > 0) {
+            type = get_trim_element_type(type, body[0]);
         }
 
         ASR::dimension_t dim;
