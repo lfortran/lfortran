@@ -5,6 +5,8 @@
 #include <libasr/casting_utils.h>
 #include <math.h>
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 #include <limits>
 
 namespace LCompilers::ASRUtils {
@@ -5149,6 +5151,58 @@ namespace Poppar {
 
 namespace Real {
 
+    // Exact widening of a kind-10 payload (host long double) to binary128.
+    // x87 extended and binary128 share exponent bias 16383, so the 63
+    // fraction bits move to binary128 fraction bits [111:49]. Rounding
+    // through double turns 1 + 2^-63 into 1.
+    static lf_float128 widen_long_double_to_f128(long double value) {
+        constexpr int digits = std::numeric_limits<long double>::digits;
+        static_assert(digits == 53 || digits == 64 || digits == 113,
+            "unsupported long double format");
+        if constexpr (digits == 53) {
+            return lf_f128_from_double(static_cast<double>(value));
+        } else if constexpr (digits == 113) {
+            lf_float128 out;
+            std::memcpy(out.bytes, &value, 16);
+            return out;
+        } else {
+            // Kind-10 payloads are a little-endian 80-bit image. binary128
+            // bytes in lf_float128 are little-endian as well.
+            unsigned char raw[10] = {};
+            std::memcpy(raw, &value, 10);
+            uint64_t significand = 0;
+            uint16_t exponent_and_sign = 0;
+            std::memcpy(&significand, raw, 8);
+            std::memcpy(&exponent_and_sign, raw + 8, 2);
+            const int sign = (exponent_and_sign >> 15) & 1;
+            const uint32_t exponent = exponent_and_sign & 0x7FFFu;
+            const uint64_t fraction63 = significand & 0x7FFFFFFFFFFFFFFFULL;
+            uint64_t lo = 0;
+            uint64_t hi = static_cast<uint64_t>(sign) << 63;
+            if (exponent == 0x7FFFu) {
+                hi |= 0x7FFFULL << 48;
+                if (significand != 0x8000000000000000ULL) {
+                    hi |= 1ULL << 47;
+                }
+            } else if (exponent == 0 && significand == 0) {
+                // signed zero
+            } else if ((significand & 0x8000000000000000ULL) != 0) {
+                // Normal, or a pseudo-denormal (exponent 0 with the integer
+                // bit set), which is the minimum binary128 normal.
+                const uint32_t biased = exponent == 0 ? 1u : exponent;
+                lo = fraction63 << 49;
+                hi |= (static_cast<uint64_t>(biased) << 48) | (fraction63 >> 15);
+            } else {
+                lo = significand << 49;
+                hi |= significand >> 15;
+            }
+            lf_float128 out;
+            std::memcpy(out.bytes, &lo, 8);
+            std::memcpy(out.bytes + 8, &hi, 8);
+            return out;
+        }
+    }
+
     static ASR::expr_t *eval_Real(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
@@ -5176,7 +5230,7 @@ namespace Real {
                 }
                 if (dest_kind == 16) {
                     return ASRUtils::make_RealConstant_r16(al, loc,
-                        lf_f128_from_double(static_cast<double>(v)), t1);
+                        widen_long_double_to_f128(v), t1);
                 }
                 return ASRUtils::make_RealConstant_util(al, loc,
                     static_cast<double>(v), t1);
