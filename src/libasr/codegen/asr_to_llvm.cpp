@@ -11883,8 +11883,11 @@ public:
         // ID (--mangle-underscore). Let the linker keep one of the identical
         // definitions. Unlike LinkOnceODR, WeakODR is never discarded, so a
         // later interactive cell can still call an earlier cell's copy. The
-        // COMDAT is what lets a COFF linker merge the copies.
-        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic) {
+        // COMDAT is what lets a COFF linker merge the copies. Some runtime
+        // modules, such as ieee_arithmetic, are loaded as ordinary modules
+        // and keep the Source ABI, so the module is checked as well.
+        if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic
+                || ASRUtils::is_intrinsic_symbol(&x.base)) {
             F->setLinkage(llvm::Function::WeakODRLinkage);
             if (odr_definitions_use_comdat) {
                 F->setComdat(module->getOrInsertComdat(F->getName()));
