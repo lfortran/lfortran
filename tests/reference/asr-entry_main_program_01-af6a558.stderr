@@ -1,0 +1,5 @@
+semantic error: ENTRY statement is only allowed in a subprogram
+ --> tests/errors/entry_main_program_01.f90:2:5
+  |
+2 |     entry e()
+  |     ^^^^^^^^^ 

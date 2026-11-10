@@ -1,0 +1,13 @@
+{
+    "basename": "asr-return_main_program_01-88e7a28",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/return_main_program_01.f90",
+    "infile_hash": "4e61ad2efa34fa45d1724378191250868db6ea5845a42e8eb6c7b580",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-return_main_program_01-88e7a28.stderr",
+    "stderr_hash": "2e5a10846f3431baf50d4b7a2e068ddf6baff3534a80acd4a1ff2719",
+    "returncode": 2
+}
