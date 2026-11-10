@@ -328,6 +328,17 @@ enum { STAGE_BUFFERS = 4, STAGE_BYTES = 32 << 20 };
 static char *stage_buffer[STAGE_BUFFERS];
 static cudaEvent_t stage_event[STAGE_BUFFERS];
 static volatile int stage_lock_word = 0;
+#if defined(__GNUC__)
+static void stage_lock(void) {
+    while (__sync_lock_test_and_set(&stage_lock_word, 1)) {}
+}
+static void stage_unlock(void) {
+    __sync_lock_release(&stage_lock_word);
+}
+#else
+static void stage_lock(void) {}
+static void stage_unlock(void) {}
+#endif
 
 #ifdef __cplusplus
 extern "C"
@@ -335,7 +346,7 @@ extern "C"
 int64_t lfortran_gpu_fill_managed(void *dst, int64_t length,
         lfortran_gpu_fill_t fill, void *context) {
     if (n_managed == 0 || length <= 0) return -1;
-    while (__sync_lock_test_and_set(&stage_lock_word, 1)) {}
+    stage_lock();
     int64_t result = -1, done = 0;
     int chunks = 0, device = 0, usable = 0;
     size_t i = 0, size = 0;
@@ -389,7 +400,7 @@ int64_t lfortran_gpu_fill_managed(void *dst, int64_t length,
     }
     result = done;
 done:
-    __sync_lock_release(&stage_lock_word);
+    stage_unlock();
     return result;
 }
 
