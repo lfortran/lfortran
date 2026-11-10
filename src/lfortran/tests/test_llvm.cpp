@@ -8772,6 +8772,178 @@ end module
     requires_hadd("products");
 #endif
 }
+
+// The tests below compile for the host, which must be x86.
+#if defined(__x86_64__) || defined(__i386__)
+namespace {
+
+// The points of reductions_hadd_03 and reductions_hadd_04: five points that
+// start from constants with a zero fourth component, held as contiguous four
+// element vectors, and move under pairwise forces for a number of steps only
+// known at run time. `force` sets w(k) from the squared distance d2.
+std::string reductions_orbit_source(const std::string &force) {
+    return R"(program reductions_orbit
+implicit none
+integer, parameter :: nb = 5, npair = 10
+integer, parameter :: pair_i(npair) = [2,3,3,4,4,4,5,5,5,5]
+integer, parameter :: pair_j(npair) = [1,1,2,1,2,3,1,2,3,4]
+real(8) :: x(4,nb), v(4,nb)
+call init(x, v)
+call orbit(x, v, 100 + command_argument_count())
+print *, x
+contains
+subroutine init(x, v)
+    real(8), intent(out) :: x(4,nb), v(4,nb)
+    real(8) :: p(4,nb)
+    p(:,1) = [0d0, 0d0, 0d0, 0d0]
+    p(:,2) = [1d0, 2d0, 3d0, 0d0]
+    p(:,3) = [-2d0, 1d0, 4d0, 0d0]
+    p(:,4) = [3d0, -1d0, 2d0, 0d0]
+    p(:,5) = [5d0, 3d0, -2d0, 0d0]
+    x = p
+    v = 0
+end subroutine
+subroutine orbit(x, v, n)
+    real(8), intent(inout) :: x(4,nb), v(4,nb)
+    integer, intent(in) :: n
+    real(8) :: r(4,npair), w(npair), d2
+    real :: s
+    integer :: step, i, k, d
+    do step = 1, n
+        do k = 1, npair
+            do d = 1, 4
+                r(d,k) = x(d,pair_i(k)) - x(d,pair_j(k))
+            end do
+        end do
+        do k = 1, npair
+            d2 = r(1,k)*r(1,k) + r(2,k)*r(2,k) + r(3,k)*r(3,k)
+            )" + force + R"(
+        end do
+        do k = 1, npair
+            do d = 1, 4
+                v(d,pair_i(k)) = v(d,pair_i(k)) - r(d,k) * w(k)
+                v(d,pair_j(k)) = v(d,pair_j(k)) + r(d,k) * w(k)
+            end do
+        end do
+        do i = 1, nb
+            do d = 1, 4
+                x(d,i) = x(d,i) + 0.01d0 * v(d,i)
+            end do
+        end do
+    end do
+end subroutine
+end program
+)";
+}
+
+// Compiles `source` like `lfortran --fast --mcpu=haswell` and passes the
+// optimized module to `check`.
+void check_fast_haswell(const std::string &source,
+        const std::function<void(llvm::Module &)> &check) {
+    CompilerOptions co;
+    co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    co.platform = LCompilers::get_platform();
+    co.po.fast = true;
+    co.po.bounds_checking = false;
+    co.po.strict_bounds_checking = false;
+    co.mcpu = "haswell";
+    LCompilers::FortranEvaluator e(co);
+    LCompilers::LocationManager lm;
+    LCompilers::LocationManager::FileLocations file;
+    file.in_filename = "reductions_orbit.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::PassManager lpm;
+    lpm.skip_llvm_backend_passes();
+    lpm.use_default_passes();
+    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>> res
+        = e.get_llvm2(source, lm, lpm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(res.ok);
+    check(*res.result->m_m);
+}
+
+// A floating point constant or a splat of one, equal to `value`.
+bool is_fp_constant(llvm::Value *v, double value) {
+    auto *c = llvm::dyn_cast<llvm::Constant>(v);
+    if (c && c->getType()->isVectorTy()) {
+        c = c->getSplatValue();
+    }
+    auto *fp = llvm::dyn_cast_or_null<llvm::ConstantFP>(c);
+    return fp && fp->isExactlyValue(value);
+}
+
+// The Newton step `e * (x*e*e - 3)` of the estimate `e = 1/sqrt(x)`: a sum
+// with -3 among the first users of `e`.
+bool has_newton_step(llvm::Instruction *estimate) {
+    std::vector<llvm::Instruction *> level{estimate};
+    for (int depth = 0; depth < 3; depth++) {
+        std::vector<llvm::Instruction *> next;
+        for (llvm::Instruction *i : level) {
+            for (llvm::User *u : i->users()) {
+                auto *ui = llvm::dyn_cast<llvm::Instruction>(u);
+                if (!ui) {
+                    continue;
+                }
+                if (ui->getOpcode() == llvm::Instruction::FAdd
+                        && is_fp_constant(ui->getOperand(1), -3)) {
+                    return true;
+                }
+                next.push_back(ui);
+            }
+        }
+        level = next;
+    }
+    return false;
+}
+
+} // namespace
+
+TEST_CASE("Fortran single precision 1/sqrt keeps its Newton step on Haswell") {
+    // The code generator emits the bare 12 bit estimate for every single
+    // precision 1/sqrt of a function with the attribute
+    // `reciprocal-estimates`, so each must be refined by the Newton step that
+    // expand_reciprocal_sqrt writes in IR. The step must survive the IR
+    // optimizations that follow the horizontal reduction rewrite.
+    check_fast_haswell(reductions_orbit_source(
+            "s = 1 / sqrt(real(d2)); w(k) = 0.01d0 * s**3"),
+            [](llvm::Module &m) {
+        int estimates = 0;
+        for (llvm::Function &f : m) {
+            if (f.isDeclaration()
+                    || !f.hasFnAttribute("reciprocal-estimates")) {
+                continue;
+            }
+            INFO(f.getName().str());
+            for (llvm::BasicBlock &bb : f) {
+                for (llvm::Instruction &i : bb) {
+                    auto *call = llvm::dyn_cast<llvm::CallInst>(&i);
+                    llvm::Function *callee
+                        = call ? call->getCalledFunction() : nullptr;
+                    if (!callee
+                            || callee->getName().str().rfind("llvm.sqrt", 0)
+                                != 0
+                            || !call->getType()->getScalarType()->isFloatTy()) {
+                        continue;
+                    }
+                    for (llvm::User *u : call->users()) {
+                        auto *div = llvm::dyn_cast<llvm::Instruction>(u);
+                        if (div && div->getOpcode() == llvm::Instruction::FDiv
+                                && div->getOperand(1) == call) {
+                            estimates++;
+                            CHECK(is_fp_constant(div->getOperand(0), 1));
+                            CHECK(has_newton_step(div));
+                        }
+                    }
+                }
+            }
+        }
+        // The pass expands the 1/sqrt of the force loop.
+        CHECK(estimates > 0);
+    });
+}
+#endif
 #endif // HAVE_TARGET_X86
 #endif
 
