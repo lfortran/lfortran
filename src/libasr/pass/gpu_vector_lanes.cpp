@@ -3024,6 +3024,21 @@ ASR::symbol_t* add_lanes_parameter(Allocator &al, ASR::Function_t &kernel) {
 bool give_lanes(Allocator &al, ASR::Function_t &kernel,
         const GpuDeviceCapabilities &caps, bool &any_size) {
     any_size = false;
+    // A kernel whose warps already combine the accumulators of a reduction
+    // (gpu_offload.cpp) runs every thread on its own iterations.
+    {
+        class WarpReduce : public ASR::BaseWalkVisitor<WarpReduce> {
+        public:
+            bool found = false;
+            void visit_GpuLaneReduce(const ASR::GpuLaneReduce_t &) {
+                found = true;
+            }
+        } warp_reduce;
+        for (size_t i = 0; i < kernel.n_body; i++) {
+            warp_reduce.visit_stmt(*kernel.m_body[i]);
+        }
+        if (warp_reduce.found) return false;
+    }
     KernelInfo k;
     k.fn = &kernel;
     k.lane_reductions = caps.lane_reductions;

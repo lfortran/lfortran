@@ -599,6 +599,16 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                     nullptr))));
         }
     }
+    if (plan.warp_slots) {
+        // One slot per warp of the launch.
+        ASR::expr_t *warps = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_reduction_warps"),
+            ASRUtils::duplicate_type(al, count_type),
+            ASR::intentType::Local);
+        launch_stmts.push_back(al, b.Assignment(warps, b.Div(b.Add(slots,
+            b.i_t(31, count_type)), b.i_t(32, count_type))));
+        slots = warps;
+    }
     for (auto &r : plan.reductions) {
         if (!r.host_buf_sym) continue;
         Vec<ASR::alloc_arg_t> alloc_args;

@@ -119,6 +119,13 @@ struct GpuDeviceCapabilities {
     // 0.1 ms.
     int64_t reduction_threads = 131072;
 
+    // Whether the threads of a warp combine their accumulators of a
+    // reduction with shuffles (GpuLaneReduce), so that a launch with a
+    // reduction has one slot per warp instead of one per thread. The host
+    // then folds a 32nd of the slots, and a launch can run many more
+    // threads than the host could fold the slots of.
+    bool reduction_warp_slots = false;
+
     // Whether a launch of more iterations than the chunk limit
     // (PassOptions::gpu_chunk_limit) runs its kernel once per chunk of the
     // iteration space (device_launch_expand.cpp). Where it does not, one

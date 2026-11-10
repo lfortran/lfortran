@@ -6115,7 +6115,8 @@ public:
                 int op = r->m_op == ASR::reduction_opType::ReduceAdd ? 0
                     : r->m_op == ASR::reduction_opType::ReduceMul ? 1
                     : r->m_op == ASR::reduction_opType::ReduceMIN ? 2 : 3;
-                src << dialect.lane_reduce(expr_str(r->m_arg), op);
+                src << dialect.lane_reduce(expr_str(r->m_arg), op,
+                    kernel_has_lanes());
                 break;
             }
             case ASR::exprType::GpuLaneIndex: {
