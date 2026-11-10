@@ -11,6 +11,7 @@ integer, parameter :: k33 = selected_real_kind(33)
 real(k16) :: x16
 real(k30) :: x30
 real(k33) :: x33
+character(len=32) :: field
 integer :: p
 
 if (dp /= 8) error stop
@@ -38,4 +39,33 @@ p = 30
 if (selected_real_kind(p) /= 16) error stop
 p = 33
 if (selected_real_kind(p) /= 16) error stop
+
+! E/ES of a binary128 value must keep an exponent outside the real(64) range.
+! selected_real_kind(30) is kind 16 on both LFortran and GFortran.
+write(field, '(E12.3E4)') tiny(x30)
+call check_real16_field(field)
+write(field, '(E12.3E4)') huge(x30)
+call check_real16_field(field)
+write(field, '(ES11.2E4)') tiny(x30)
+call check_real16_field(field)
+write(field, '(ES11.2E4)') huge(x30)
+call check_real16_field(field)
+contains
+    subroutine check_real16_field(field)
+        character(len=*), intent(in) :: field
+        integer :: i, epos
+        logical :: nonzero
+        if (index(field, '493') == 0) error stop
+        if (index(field, 'Infinity') /= 0) error stop
+        if (index(field, 'NaN') /= 0 .or. index(field, 'nan') /= 0) error stop
+        epos = index(field, 'E')
+        if (epos == 0) epos = index(field, 'e')
+        if (epos == 0) epos = index(field, 'D')
+        if (epos <= 1) error stop
+        nonzero = .false.
+        do i = 1, epos - 1
+            if (field(i:i) >= '1' .and. field(i:i) <= '9') nonzero = .true.
+        end do
+        if (.not. nonzero) error stop
+    end subroutine check_real16_field
 end program
