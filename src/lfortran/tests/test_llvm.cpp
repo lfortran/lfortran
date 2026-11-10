@@ -8472,6 +8472,82 @@ TEST_CASE("LLVM horizontal reductions in the lane layouts of newer SLP") {
 #endif
 
 #if LLVM_VERSION_MAJOR >= 11
+// Lanes 0 and 1 of the sum are |(a-b)*c|^2 = 6 and |(a-d)*c|^2 = 11 over
+// components 0 to 2; the function returns 6 + 2*11 = 28. The original code
+// never computes component 3 of a-b, which is Inf - Inf. Component 3 of c is
+// zero, but the rewrite rebuilds (a-b)*c on whole vectors, where it is NaN,
+// so it must clear lane 3 of the square.
+const std::string reductions_rebuilt_ir = R"""(
+define double @reductions_rebuilt() #0 {
+entry:
+  %a = freeze <4 x double> <double 1.0, double 2.0, double 3.0, double 0x7FF0000000000000>
+  %b = freeze <4 x double> <double 2.0, double 3.0, double 5.0, double 0x7FF0000000000000>
+  %d = freeze <4 x double> <double 4.0, double 1.0, double 2.0, double 0.0>
+  %w = freeze <4 x double> <double 1.0, double 1.0, double 1.0, double 1.0>
+  %c = fmul fast <4 x double> %w, <double 1.0, double 1.0, double 1.0, double 0.0>
+  %a0 = shufflevector <4 x double> %a, <4 x double> undef, <2 x i32> <i32 0, i32 0>
+  %bd0 = shufflevector <4 x double> %b, <4 x double> %d, <2 x i32> <i32 0, i32 4>
+  %c0 = shufflevector <4 x double> %c, <4 x double> undef, <2 x i32> <i32 0, i32 0>
+  %e0 = fsub fast <2 x double> %a0, %bd0
+  %f0 = fmul fast <2 x double> %e0, %c0
+  %s0 = fmul fast <2 x double> %f0, %f0
+  %a1 = shufflevector <4 x double> %a, <4 x double> undef, <2 x i32> <i32 1, i32 1>
+  %bd1 = shufflevector <4 x double> %b, <4 x double> %d, <2 x i32> <i32 1, i32 5>
+  %c1 = shufflevector <4 x double> %c, <4 x double> undef, <2 x i32> <i32 1, i32 1>
+  %e1 = fsub fast <2 x double> %a1, %bd1
+  %f1 = fmul fast <2 x double> %e1, %c1
+  %s1 = fmul fast <2 x double> %f1, %f1
+  %a2 = shufflevector <4 x double> %a, <4 x double> undef, <2 x i32> <i32 2, i32 2>
+  %bd2 = shufflevector <4 x double> %b, <4 x double> %d, <2 x i32> <i32 2, i32 6>
+  %c2 = shufflevector <4 x double> %c, <4 x double> undef, <2 x i32> <i32 2, i32 2>
+  %e2 = fsub fast <2 x double> %a2, %bd2
+  %f2 = fmul fast <2 x double> %e2, %c2
+  %s2 = fmul fast <2 x double> %f2, %f2
+  %p = fadd fast <2 x double> %s0, %s1
+  %sum = fadd fast <2 x double> %p, %s2
+  %l0 = extractelement <2 x double> %sum, i32 0
+  %l1 = extractelement <2 x double> %sum, i32 1
+  %w1 = fmul double %l1, 2.0
+  %r = fadd double %l0, %w1
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
+TEST_CASE("LLVM horizontal reductions clear lane 3 of rebuilt products") {
+    // A zero factor makes a fast product zero only where the original code
+    // computes the product. The rewrite computes component 3 of every
+    // vector it rebuilds, so it clears that lane.
+    std::unique_ptr<llvm::TargetMachine> x86
+        = reductions_target_machine("x86_64-unknown-linux-gnu", "x86-64");
+    if (!x86) {
+        return;
+    }
+    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<llvm::Module> m = e.parse_module(reductions_rebuilt_ir, "");
+    llvm::Function &f = *m->getFunction("reductions_rebuilt");
+    CHECK(LCompilers::recombine_horizontal_reductions(f, *x86));
+    std::string err;
+    llvm::raw_string_ostream os(err);
+    CHECK(!llvm::verifyFunction(f, &os));
+    CHECK(calls_intrinsic_like(f, "hadd"));
+    bool masked = false;
+    for (llvm::BasicBlock &bb : f) {
+        for (llvm::Instruction &i : bb) {
+            masked = masked || clears_lane3(i);
+        }
+    }
+    CHECK(masked);
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
+    if (__builtin_cpu_supports("avx")) {
+        e.add_module(std::move(m));
+        CHECK(e.execfn<double>("reductions_rebuilt") == 28.0);
+    }
+#endif
+}
+#endif
+
+#if LLVM_VERSION_MAJOR >= 11
 TEST_CASE("LLVM horizontal reductions only where they may apply") {
     // The --fast pipeline runs its late cleanup and the rewrite only on the
     // functions `may_recombine_horizontal_reductions` accepts. Everywhere

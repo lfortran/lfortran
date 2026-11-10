@@ -6,6 +6,7 @@
 #endif
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/DenseSet.h>
+#include <llvm/ADT/SmallPtrSet.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/CodeGen/TargetSubtargetInfo.h>
 #include <llvm/IR/Constants.h>
@@ -48,7 +49,10 @@ r. The rewrite computes r for every lane and sums its squares with `vhaddpd`.
 zero unless every bit of it is known to be +0.0 or -0.0. Under fast math a
 zero lane times a computed value is zero, which is what lets a loop-carried
 component stay zero. A constant infinity or NaN is not: 0*Inf is NaN, and
-the horizontal add would then read a lane the original code never used. The
+the horizontal add would then read a lane the original code never used.
+Neither is a product the rewrite builds: it computes component 3 of every
+vector it rebuilds, which the original code may never have computed, so a
+rebuilt product is zero only if both of its factors are. The
 rewrite runs after the vectorizer, only on x86 with AVX and only on a tree of
 fast additions: an element added more than once is left unchanged.
 */
@@ -204,15 +208,20 @@ Value *unused(Value *v) {
 
 // Build the four element vector whose components 0, 1 and 2 are the
 // expression `nodes` (starting at `next`), with leaf `j` read from lanes
-// bases[j] to bases[j] + 3. A lane past the end of a leaf is poison.
+// bases[j] to bases[j] + 3. A lane past the end of a leaf is poison. The
+// operations it builds are added to `rebuilt`.
 Value *emit(IRBuilder<> &builder, const SmallVectorImpl<Node> &nodes,
-        const SmallVectorImpl<unsigned> &bases, size_t &next) {
+        const SmallVectorImpl<unsigned> &bases, size_t &next,
+        SmallPtrSetImpl<Value *> &rebuilt) {
     size_t j = next++;
     const Node &node = nodes[j];
     if (node.leaf == nullptr) {
-        Value *a = emit(builder, nodes, bases, next);
-        Value *b = emit(builder, nodes, bases, next);
-        return builder.CreateBinOp((Instruction::BinaryOps)node.opcode, a, b);
+        Value *a = emit(builder, nodes, bases, next, rebuilt);
+        Value *b = emit(builder, nodes, bases, next, rebuilt);
+        Value *op = builder.CreateBinOp((Instruction::BinaryOps)node.opcode,
+            a, b);
+        rebuilt.insert(op);
+        return op;
     }
     unsigned n = cast<FixedVectorType>(node.leaf->getType())
         ->getNumElements();
@@ -303,6 +312,11 @@ bool is_root(Instruction &i, SmallVectorImpl<Squares> &lanes) {
 // which is induction over the iterations of the loop.
 class LaneZero {
 public:
+    // The operations the rewrite builds. They compute component 3, which
+    // the original code may never have computed, so a zero factor does not
+    // make their product zero: the other factor may be an infinity there.
+    SmallPtrSet<Value *, 8> rebuilt;
+
     bool is_zero(Value *v, unsigned lane) {
         Element root{v, lane};
         if (!add(root)) {
@@ -398,7 +412,7 @@ private:
 
     // The operand elements that decide element `lane` of instruction `i`, or
     // false if the element is not known to be zero whatever its operands are.
-    static bool rule(Instruction *i, unsigned lane, Node &node) {
+    bool rule(Instruction *i, unsigned lane, Node &node) const {
         auto same = [&](Value *v) { node.operands.push_back({v, lane}); };
         switch (i->getOpcode()) {
             case Instruction::FAdd:
@@ -411,10 +425,12 @@ private:
                 Value *b = i->getOperand(1);
                 // Under fast math either factor being zero makes the lane
                 // zero, including a computed weight. A constant infinity or
-                // NaN does not: 0*Inf is NaN and vhaddpd would read it.
+                // NaN does not: 0*Inf is NaN and vhaddpd would read it. Nor
+                // does a rebuilt product, whose lane the original code may
+                // never have computed.
                 bool unsafe = nonfinite_constant_lane(a, lane)
                     || nonfinite_constant_lane(b, lane);
-                node.any = is_fast(i) && !unsafe;
+                node.any = is_fast(i) && !unsafe && !rebuilt.count(i);
                 same(a);
                 same(b);
                 return true;
@@ -615,7 +631,8 @@ bool recombine_horizontal_reductions(llvm::Function &f,
         llvm::SmallVector<llvm::Value *, 8> squares;
         for (size_t j = 0; j < expressions.size(); j++) {
             size_t next = 0;
-            llvm::Value *r = emit(builder, expressions[j], bases[j], next);
+            llvm::Value *r = emit(builder, expressions[j], bases[j], next,
+                zeros.rebuilt);
             llvm::Value *square = builder.CreateFMul(r, r);
             if (!zeros.is_zero(r, 3)) {
                 // vhaddpd also adds component 3. A bitwise and does not
