@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_groups_01-7515f7d",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_groups_01.f90",
+    "infile_hash": "dc63ca779a9713399ab246b35d8ba577dc70e704eb17c53e0f023319",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_groups_01-7515f7d.stdout",
+    "stdout_hash": "334eda2a287bd079156aae9ae38e801402f392152c4113eb5e2fa530",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

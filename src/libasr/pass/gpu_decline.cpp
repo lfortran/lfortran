@@ -125,6 +125,7 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
         // reduction has summed it), where one lane would run them all
         // while the other 31 wait.
         caps.lane_independent_loops = true;
+        caps.lane_inner_reductions_first = true;
     }
     if (pass_options.descriptor_index_64
             && caps.offsets_follow_descriptor_index_64()) {

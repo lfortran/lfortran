@@ -5738,6 +5738,13 @@ gpu_metal_kernel = true
 filename = "../integration_tests/gpu_lanes_independent_01.f90"
 gpu_cuda_kernel = true
 
+# On an NVIDIA GPU, the sum over the codes of a group of a quantized
+# matrix-vector product is shared out between 16 lanes, and a warp runs two
+# iterations.
+[[test]]
+filename = "../integration_tests/gpu_lanes_groups_01.f90"
+gpu_cuda_kernel = true
+
 # A loop in one branch of an `if` inside a loop, shared out between the
 # lanes.
 [[test]]

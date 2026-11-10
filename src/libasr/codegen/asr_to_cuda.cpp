@@ -116,14 +116,20 @@ struct CudaDialect {
     // A kernel whose iterations each run on several lanes (see
     // gpu_vector_lanes.cpp; only on an NVIDIA GPU, whose warps run them)
     // takes no parameters for it: the lanes of an iteration are
-    // consecutive threads of a warp, `lanes` (1 or 32) dividing the block,
-    // and the prologue numbers the iterations by dividing the thread
-    // index and the block size by `lanes`.
+    // consecutive threads of a warp, `lanes` (a power of two up to 32)
+    // dividing the block, and the prologue numbers the iterations by
+    // dividing the thread index and the block size by `lanes`. With fewer
+    // than 32 lanes a warp runs several iterations, so a barrier or a
+    // shuffle names the lanes of its own iteration (__gpu_lane_mask) and
+    // does not wait for the others.
     void emit_lane_thread_params(std::stringstream & /*src*/,
             bool /*has_prev*/) const {}
     void emit_lane_prologue(std::stringstream &src, const std::string &indent,
             const std::string &lanes) const {
         src << indent << "int __gpu_lanes_n = " << lanes << ";\n";
+        src << indent << "unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? "
+            "0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << "
+            "(threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));\n";
         src << indent << "int __gpu_lane = (int)(threadIdx.x % "
             "(unsigned)__gpu_lanes_n);\n";
         src << indent << "unsigned __gpu_iteration_thread = threadIdx.x / "
@@ -138,14 +144,15 @@ struct CudaDialect {
     // iteration the threads of a warp run different iterations, which need
     // not reach the same shuffle, and the value is the thread's own.
     std::string lane_broadcast(const std::string &value) const {
-        return "__lfortran_lane_broadcast(" + value + ", __gpu_lanes_n)";
+        return "__lfortran_lane_broadcast(" + value
+            + ", __gpu_lanes_n, __gpu_lane_mask)";
     }
     // The lanes wait for each other: the threads of a warp, or, when the
     // lanes are the whole block (more than a warp), the block.
     void emit_lane_barrier(std::stringstream &src, const std::string &indent,
             const std::string & /*lanes*/) const {
         src << indent << "if (__gpu_lanes_n > 32) __syncthreads(); "
-            "else if (__gpu_lanes_n > 1) __syncwarp();\n";
+            "else if (__gpu_lanes_n > 1) __syncwarp(__gpu_lane_mask);\n";
     }
     // What the lanes of the iteration hold, combined, in every lane
     // (__lfortran_lane_reduce in the prologue of the kernel source).
@@ -153,7 +160,8 @@ struct CudaDialect {
     std::string lane_reduce(const std::string &value, int op,
             bool has_lanes) const {
         return "__lfortran_lane_reduce<" + std::to_string(op) + ">(" + value
-            + ", " + (has_lanes ? "__gpu_lanes_n" : "32") + ")";
+            + ", " + (has_lanes ? "__gpu_lanes_n, __gpu_lane_mask"
+                : "32, 0xffffffffu") + ")";
     }
     // The definition lane_reduce names, written once ahead of the kernels.
     std::string lane_reduce_helper() const {
@@ -169,11 +177,22 @@ struct CudaDialect {
             "// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the\n"
             "// largest. With one lane, the lane's own value.\n"
             "template <int op, typename T>\n"
-            "__device__ inline T __lfortran_lane_reduce(T v, int lanes) {\n"
+            "__device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {\n"
             "    int width = lanes < 32 ? lanes : 32;\n"
-            "    for (int offset = width >> 1; offset > 0; offset >>= 1) {\n"
-            "        v = __lfortran_lane_combine<op>(v,\n"
-            "            __shfl_xor_sync(0xffffffffu, v, offset, width));\n"
+            "    if (width == 32 || width == 16) {\n"
+            "        // The common sizes, with the shuffles unrolled.\n"
+            "        #pragma unroll\n"
+            "        for (int offset = 16; offset > 0; offset >>= 1) {\n"
+            "            if (offset < width) {\n"
+            "                v = __lfortran_lane_combine<op>(v,\n"
+            "                    __shfl_xor_sync(mask, v, offset, width));\n"
+            "            }\n"
+            "        }\n"
+            "    } else {\n"
+            "        for (int offset = width >> 1; offset > 0; offset >>= 1) {\n"
+            "            v = __lfortran_lane_combine<op>(v,\n"
+            "                __shfl_xor_sync(mask, v, offset, width));\n"
+            "        }\n"
             "    }\n"
             "    if (lanes > 32) {\n"
             "        // Every warp of the block holds the combination of its\n"
@@ -194,9 +213,9 @@ struct CudaDialect {
             "// iterations, which need not reach the same shuffle, and the value\n"
             "// is the thread's own.\n"
             "template <typename T>\n"
-            "__device__ inline T __lfortran_lane_broadcast(T v, int lanes) {\n"
+            "__device__ inline T __lfortran_lane_broadcast(T v, int lanes, unsigned mask) {\n"
             "    if (lanes <= 1) return v;\n"
-            "    if (lanes <= 32) return __shfl_sync(0xffffffffu, v, 0, lanes);\n"
+            "    if (lanes <= 32) return __shfl_sync(mask, v, 0, lanes);\n"
             "    __shared__ T first;\n"
             "    if (threadIdx.x == 0) first = v;\n"
             "    __syncthreads();\n"
@@ -217,6 +236,13 @@ struct CudaDialect {
     std::string unroll_pragma(bool deep = false) const {
         return emulate_cpu || hip ? std::string()
             : std::string(deep ? "#pragma unroll 64" : "#pragma unroll 16");
+    }
+    // A loop that combines the values of the lanes of an iteration in each
+    // of its iterations is unrolled by four: the shuffles of one iteration
+    // wait for the loads of the next otherwise.
+    std::string unroll_few_pragma() const {
+        return emulate_cpu || hip ? std::string()
+            : std::string("#pragma unroll 4");
     }
     // A bare literal is double precision, which would pick the wrong
     // overload of an intrinsic taking single precision arguments.

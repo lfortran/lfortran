@@ -118,6 +118,7 @@ struct MetalDialect {
 
     // Metal's short loops are unrolled in the ASR (gpu_sequential_unroll).
     std::string unroll_pragma(bool /*deep*/ = false) const { return ""; }
+    std::string unroll_few_pragma() const { return ""; }
 
     // Every real is single precision, so a literal needs no suffix to say
     // which precision it is.
