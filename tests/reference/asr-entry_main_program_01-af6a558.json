@@ -1,0 +1,13 @@
+{
+    "basename": "asr-entry_main_program_01-af6a558",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/entry_main_program_01.f90",
+    "infile_hash": "2817f4865f5008bbb8e38b8a20a5f16e104b97c223fa892c5a2cabda",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-entry_main_program_01-af6a558.stderr",
+    "stderr_hash": "6a2e3b1a8bcf096fde0ba8799ae0eea47b828b0e404bc148a5fd85b2",
+    "returncode": 2
+}

@@ -1141,6 +1141,20 @@ program continue_compilation_1
         i = [1, 2, 3]  ! {Error} ArrayInitalizer expressions can only be assigned array references
     end subroutine
 
+    subroutine inquire_unit_and_file()
+        implicit none
+        inquire(unit=10, file="a")  ! {Error} INQUIRE cannot contain both UNIT= and FILE= specifiers
+    end subroutine
+
+    subroutine read_write_bad_specifiers()
+        implicit none
+        integer :: y
+        read(10, *, foo=1) y  ! {Error} Unknown specifier `foo` in READ statement
+        write(10, *, foo=1) y  ! {Error} Unknown specifier `foo` in WRITE statement
+        read(10, *, unit=10) y  ! {Error} Duplicate value of `unit` found, `unit` has already been specified via argument or keyword arguments
+        read(10, *, file="a") y  ! {Error} Unknown specifier `file` in READ statement
+    end subroutine
+
     ! Keep the unsupported character kind declarations last: a rejected
     ! declaration makes the symbol table visitor skip the program units that
     ! follow it, which would hide the errors expected above.
@@ -4883,4 +4897,33 @@ module cc1_requirement_undeclared_argument
             res = op_func(x, x)
         end function
     end template
+end module
+
+! Interface bodies contain only the specification of the procedure. The
+! symbol table visitor rejects the body, so this module goes last.
+module interface_body_errors_1
+contains
+    subroutine interface_body_stop()
+        interface
+            subroutine q1()
+                stop  ! {Error} Executable statements are not allowed in an INTERFACE body
+            end subroutine
+        end interface
+    end subroutine
+
+    subroutine interface_body_assignment()
+        interface
+            subroutine q2()
+                v = 1  ! {Error} Executable statements are not allowed in an INTERFACE body
+            end subroutine
+        end interface
+    end subroutine
+
+    subroutine interface_body_entry()
+        interface
+            subroutine q3()
+                entry e3()  ! {Error} Executable statements are not allowed in an INTERFACE body
+            end subroutine
+        end interface
+    end subroutine
 end module

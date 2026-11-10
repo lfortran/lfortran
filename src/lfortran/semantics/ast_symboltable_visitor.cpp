@@ -4109,6 +4109,32 @@ public:
         bool old_is_interface = is_interface;
         bool old_in_Subroutine = in_Subroutine;
         std::vector<std::string> old_procedure_args = current_procedure_args;
+        auto check_interface_body = [&](auto *proc) {
+            for (size_t i = 0; i < proc->n_items; i++) {
+                AST::decl_stmtType t = proc->m_items[i]->type;
+                if (t == AST::decl_stmtType::Stop
+                        || t == AST::decl_stmtType::Assignment
+                        || t == AST::decl_stmtType::Entry) {
+                    diag.add(diag::Diagnostic(
+                        "Executable statements are not allowed in an INTERFACE body",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {proc->m_items[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            if (proc->n_contains > 0) {
+                diag.add(diag::Diagnostic(
+                    "CONTAINS is not allowed in an INTERFACE body",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {x.m_proc->base.loc})}));
+                throw SemanticAbort();
+            }
+        };
+        if (AST::is_a<AST::Subroutine_t>(*x.m_proc)) {
+            check_interface_body(AST::down_cast<AST::Subroutine_t>(x.m_proc));
+        } else if (AST::is_a<AST::Function_t>(*x.m_proc)) {
+            check_interface_body(AST::down_cast<AST::Function_t>(x.m_proc));
+        }
         is_interface = true;
         visit_program_unit(*x.m_proc);
         is_interface = old_is_interface;
