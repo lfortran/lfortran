@@ -64,7 +64,7 @@ program assumed_rank_29
     if (count_local(c) /= 12) error stop 6
 
     if (size(make(m)) /= 6) error stop 7
-    if (any(make(c) /= 3.0)) error stop 8
+    if (size(make(c)) /= 12 .or. any(make(c) /= 3.0)) error stop 8
 
     ! An assumed-rank dummy associated with a scalar has size 1, whatever
     ! form the scalar actual takes.
