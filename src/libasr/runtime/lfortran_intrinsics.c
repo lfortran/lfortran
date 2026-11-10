@@ -1925,19 +1925,44 @@ static void f128_round_sig(f128_dec *o, int keep, char rounding_mode) {
 }
 
 static int f128_exp_overflow(int expv, int exp_digits) {
-    int a = expv < 0 ? -expv : expv;
-    int lim = 1;
-    int i;
+    int a;
+    int digits = 1;
     if (exp_digits < 1) {
         return 0;
     }
-    for (i = 0; i < exp_digits; i++) {
-        if (lim > 100000000) {
-            return 1;
-        }
-        lim *= 10;
+    /* Overflow only when |expv| needs more than exp_digits digits. */
+    a = expv < 0 ? -expv : expv;
+    while (a > 9) {
+        a /= 10;
+        digits++;
     }
-    return a >= lim;
+    return digits > exp_digits;
+}
+
+/* Caller frees. NULL if the exponent text does not fit.
+ * zero_width selects %+02d (Ew.d with w = 0). */
+static char *f128_format_exponent(int expv, int expw, int zero_width) {
+    int width = expw + 1;
+    int cap;
+    int wrote;
+    char *buf;
+    if (zero_width) {
+        cap = 16;
+        buf = (char*)internal_malloc((size_t)cap);
+        wrote = snprintf(buf, (size_t)cap, "%+02d", expv);
+    } else {
+        if (width < 2) {
+            width = 2;
+        }
+        cap = width + 1;
+        buf = (char*)internal_malloc((size_t)cap);
+        wrote = snprintf(buf, (size_t)cap, "%+0*d", width, expv);
+    }
+    if (wrote < 0 || wrote >= cap) {
+        internal_free(buf);
+        return NULL;
+    }
+    return buf;
 }
 
 static void append_n_chars(char **result, char c, int n) {
@@ -2032,11 +2057,11 @@ static int f128_ew_core(f128_dec o, int d, int scale, char rounding_mode,
     int expw;
     int n = 0;
     int drop_e = 0;
-    char expbuf[24];
     int explen;
     int before;
     int after;
     int i;
+    char *expbuf;
     (void)is_es;
     if (d < 0) {
         d = 0;
@@ -2068,13 +2093,12 @@ static int f128_ew_core(f128_dec o, int d, int scale, char rounding_mode,
         }
     }
     if (width == 0 && exp_digits <= 0) {
-        snprintf(expbuf, sizeof(expbuf), "%+02d", expv);
+        expbuf = f128_format_exponent(expv, expw, 1);
     } else {
-        int exp_width = expw + 1;
-        if (exp_width > 12) {
-            exp_width = 12;
-        }
-        snprintf(expbuf, sizeof(expbuf), "%+0*d", exp_width, expv);
+        expbuf = f128_format_exponent(expv, expw, 0);
+    }
+    if (expbuf == NULL) {
+        return -1;
     }
     explen = (int)strlen(expbuf);
     drop_e = (exp_digits <= 0 && width > 0 &&
@@ -2113,6 +2137,7 @@ static int f128_ew_core(f128_dec o, int d, int scale, char rounding_mode,
     memcpy(core + n, expbuf, (size_t)explen);
     n += explen;
     core[n] = '\0';
+    internal_free(expbuf);
     return 0;
 }
 
@@ -2141,6 +2166,9 @@ static void handle_f128_decimal(char *format, lf_float128 val, int scale, char *
         return;
     }
     cap = d + 64;
+    if (exp_digits > 0) {
+        cap += exp_digits;
+    }
     if (cap < 128) {
         cap = 128;
     }
@@ -2171,7 +2199,7 @@ static void handle_f128_en(char *format, lf_float128 val, char **result,
     int expw;
     int n = 0;
     int i;
-    char expbuf[24];
+    char *expbuf;
     char *core;
     f128_load(&val, &o);
     parse_decimal_or_en_format(format, &width, &d, &exp_digits);
@@ -2225,11 +2253,19 @@ static void handle_f128_en(char *format, lf_float128 val, char **result,
         }
     }
     if (width == 0 && exp_digits <= 0) {
-        snprintf(expbuf, sizeof(expbuf), "%+02d", expv);
+        expbuf = f128_format_exponent(expv, expw, 1);
     } else {
-        snprintf(expbuf, sizeof(expbuf), "%+0*d", expw + 1, expv);
+        expbuf = f128_format_exponent(expv, expw, 0);
     }
-    core = (char*)internal_malloc((size_t)d + (size_t)before + 32);
+    if (expbuf == NULL) {
+        if (width > 0) {
+            append_n_chars(result, '*', width);
+        } else {
+            *result = append_to_string(*result, "*");
+        }
+        return;
+    }
+    core = (char*)internal_malloc((size_t)d + (size_t)before + strlen(expbuf) + 8);
     f128_put_sign(core, &n, o.negative, plus);
     for (i = 0; i < before; i++) {
         core[n++] = (i < o.nd) ? o.digits[i] : '0';
@@ -2244,6 +2280,7 @@ static void handle_f128_en(char *format, lf_float128 val, char **result,
     }
     memcpy(core + n, expbuf, strlen(expbuf) + 1);
     emit_real_field(result, width, core, LEADING_ZERO_PROCESSOR_DEFINED);
+    internal_free(expbuf);
     internal_free(core);
 }
 
@@ -2261,6 +2298,7 @@ static void handle_f128_float(char *format, lf_float128 val, int scale, char **r
     int n = 0;
     int i;
     int min_len;
+    int sticky = 0;
     char *buf;
     char *core;
     int omit_zero;
@@ -2300,12 +2338,16 @@ static void handle_f128_float(char *format, lf_float128 val, int scale, char **r
         for (i = 0; i < o.nd && start + i < buf_len; i++) {
             buf[start + i] = o.digits[i];
         }
-        if (start + o.nd > buf_len && start + i <= round_pos) {
-            /* A nonzero digit fell past the buffer; keep a sticky bit. */
-            if (buf[round_pos] == '0') {
-                buf[round_pos] = '1';
-            }
+        /* A significant digit past round_pos did not fit in the guard slot. */
+        if (i < o.nd && start + i > round_pos) {
+            sticky = 1;
         }
+    } else if (!o.zero && start > round_pos) {
+        sticky = 1;
+    }
+    if (sticky && round_pos + 1 >= 0 && round_pos + 1 < buf_len &&
+            buf[round_pos + 1] == '0') {
+        buf[round_pos + 1] = '1';
     }
     if (round_pos >= 0 && round_pos < buf_len &&
             should_round_up_digits(buf, round_pos, rounding_mode, o.negative)) {

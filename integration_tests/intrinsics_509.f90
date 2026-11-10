@@ -12,6 +12,9 @@ real(k16) :: x16
 real(k30) :: x30
 real(k33) :: x33
 character(len=32) :: field
+character(len=22) :: e22
+character(len=24) :: e24
+character(len=8) :: f8
 integer :: p
 
 if (dp /= 8) error stop
@@ -50,6 +53,24 @@ write(field, '(ES11.2E4)') tiny(x30)
 call check_real16_field(field)
 write(field, '(ES11.2E4)') huge(x30)
 call check_real16_field(field)
+
+! e >= 10 is wide enough for the exponent of 1. e >= 12 must not drop a digit.
+write(e22, '(E22.5E10)') 1.0_k30
+if (e22 /= '   0.10000E+0000000001') error stop
+write(e22, '(ES22.5E10)') 1.0_k30
+if (e22 /= '   1.00000E+0000000000') error stop
+write(e22, '(EN22.4E10)') 1.0_k30
+if (e22 /= '    1.0000E+0000000000') error stop
+write(e24, '(E24.5E12)') 1.0_k30
+if (e24 /= '   0.10000E+000000000001') error stop
+
+! A remainder past the last printed digit still rounds under RU and RD.
+write(f8, '(RU,F8.4)') 1.0e-10_k30
+if (f8 /= '  0.0001') error stop
+write(f8, '(RD,F8.4)') -1.0e-10_k30
+if (f8 /= ' -0.0001') error stop
+write(f8, '(F8.4)') 1.0e-10_k30
+if (f8 /= '  0.0000') error stop
 contains
     subroutine check_real16_field(field)
         character(len=*), intent(in) :: field
