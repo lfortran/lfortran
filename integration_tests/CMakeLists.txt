@@ -5992,6 +5992,7 @@ RUN(NAME lbound_02 LABELS gfortran llvm)
 RUN(NAME lbound_03 LABELS gfortran llvm)
 RUN(NAME lbound_04 LABELS gfortran llvm)
 RUN(NAME lbound_05 LABELS gfortran llvm)
+RUN(NAME vector_subscript_01 LABELS gfortran llvm) # lbound, ubound and size of x(idx) when idx does not start at 1 (#16926)
 RUN(NAME module_function_with_nopass LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_function_without_nopass LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
