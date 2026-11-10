@@ -2237,6 +2237,7 @@ RUN(NAME intrinsics_508 LABELS gfortran llvm) # cshift/eoshift of an allocatable
 RUN(NAME intrinsics_509 LABELS gfortran llvm) # selected_real_kind returns kind 16 for precision above kind 8 (#13537)
 RUN(NAME intrinsics_510 LABELS gfortran llvm) # kind and len of array arguments are scalars (#3688)
 RUN(NAME intrinsics_511 LABELS gfortran llvm) # any(isnan()) of a component of a rank-2 array of derived types (#11640)
+RUN(NAME intrinsics_512 LABELS gfortran llvm) # maxloc with mask of a component of an array of derived types (#11639)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)
