@@ -6,10 +6,14 @@ program assumed_rank_28
    real :: x(3, 4)
    integer :: y(4, 3, 7)
    real, allocatable :: a(:, :)
+   real, target :: t(2:4, 0:5, 3)
+   real, pointer :: p(:, :, :)
    call check_rank2(x)
    call check_rank3(y)
    allocate(a(2:4, -1:2))
    call check_allocatable(a)
+   p => t
+   call check_pointer(p)
 contains
    subroutine check_rank2(c)
       real, intent(in) :: c(..)
@@ -38,4 +42,12 @@ contains
       if (ubound(c, 1) /= 4) error stop "ubound(c, 1), allocatable"
       if (ubound(c, 2) /= 2) error stop "ubound(c, 2), allocatable"
    end subroutine check_allocatable
+
+   subroutine check_pointer(c)
+      real, pointer, intent(in) :: c(..)
+      if (lbound(c, 1) /= 2) error stop "lbound(c, 1), pointer"
+      if (lbound(c, 2) /= 0) error stop "lbound(c, 2), pointer"
+      if (ubound(c, 2) /= 5) error stop "ubound(c, 2), pointer"
+      if (ubound(c, 3) /= 3) error stop "ubound(c, 3), pointer"
+   end subroutine check_pointer
 end program assumed_rank_28

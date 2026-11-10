@@ -7,11 +7,15 @@ program assumed_rank_29
    real :: y(4, 3, 7)
    real :: z
    real, allocatable :: a(:, :)
+   real, target :: t(2:4, 0:5, 3)
+   real, pointer :: p(:, :, :)
    call check(x, [1, 1], [3, 4])
    call check(y, [1, 1, 1], [4, 3, 7])
    call check(z, [integer ::], [integer ::])
    allocate(a(2:4, -1:2))
    call check_allocatable(a, [2, -1], [4, 2])
+   p => t
+   call check_pointer(p, [2, 0, 1], [4, 5, 3])
 contains
    subroutine check(c, lb, ub)
       real, intent(in) :: c(..)
@@ -42,4 +46,14 @@ contains
       print *, lbound(c)
       print *, ubound(c)
    end subroutine check_allocatable
+
+   subroutine check_pointer(c, lb, ub)
+      real, pointer, intent(in) :: c(..)
+      integer, intent(in) :: lb(:), ub(:)
+      if (size(ubound(c)) /= size(ub)) error stop "size(ubound(c)), pointer"
+      if (any(lbound(c) /= lb)) error stop "lbound(c), pointer"
+      if (any(ubound(c) /= ub)) error stop "ubound(c), pointer"
+      print *, lbound(c)
+      print *, ubound(c)
+   end subroutine check_pointer
 end program assumed_rank_29
