@@ -79,18 +79,6 @@ semantic error: Global name is already being used
 29 |    
    | ...^ 'myname' defined here again
 
-semantic error: Duplicate DIMENSION attribute specified
-  --> tests/errors/continue_compilation_2.f90:35:24
-   |
-35 |         common /rowns/ rowns(209)
-   |                        ^^^^^^^^^^ 
-
-semantic error: Intent attribute can only be applied to procedure arguments
-  --> tests/errors/continue_compilation_2.f90:58:18
-   |
-58 |         INTEGER, INTENT(IN) :: sub_a
-   |                  ^^^^^^^^^^ 
-
 semantic error: Dummy argument 'a' not defined
   --> tests/errors/continue_compilation_2.f90:57:5 - 59:36
    |
@@ -136,6 +124,18 @@ semantic error: Dummy argument 'x' not defined
    |
 83 |        end subroutine arank
    | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate DIMENSION attribute specified
+  --> tests/errors/continue_compilation_2.f90:35:24
+   |
+35 |         common /rowns/ rowns(209)
+   |                        ^^^^^^^^^^ 
+
+semantic error: Intent attribute can only be applied to procedure arguments
+  --> tests/errors/continue_compilation_2.f90:58:18
+   |
+58 |         INTEGER, INTENT(IN) :: sub_a
+   |                  ^^^^^^^^^^ 
 
 semantic error: OPTIONAL dummy argument 'n' cannot be used for array bounds declaration
    --> tests/errors/continue_compilation_2.f90:107:21

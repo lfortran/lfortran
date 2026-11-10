@@ -69,12 +69,6 @@ semantic error: Dummy argument 'a' not defined
     | ...^^^^^^^^^^^^^^^^ 
 
 semantic error: Derived type `nosuchtype_13216` is not defined
-   --> tests/errors/continue_compilation_3.f90:394:9
-    |
-394 |         type(nosuchtype_13216) :: x
-    |         ^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
-
-semantic error: Derived type `nosuchtype_13216` is not defined
    --> tests/errors/continue_compilation_3.f90:401:9
     |
 401 |         type(nosuchtype_13216), intent(in) :: a
@@ -89,6 +83,12 @@ semantic error: Dummy argument 'a' not defined
     |
 403 |        end function
     | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type `nosuchtype_13216` is not defined
+   --> tests/errors/continue_compilation_3.f90:394:9
+    |
+394 |         type(nosuchtype_13216) :: x
+    |         ^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
 
 semantic error: Derived type `nosuchtype_13216` is not defined
    --> tests/errors/continue_compilation_3.f90:416:13

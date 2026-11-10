@@ -54,11 +54,11 @@
                                             c_strlen:
                                                 (Function
                                                     (SymbolTable
-                                                        16
+                                                        17
                                                         {
                                                             r:
                                                                 (Variable
-                                                                    16
+                                                                    17
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -84,7 +84,7 @@
                                                                 ),
                                                             s:
                                                                 (Variable
-                                                                    16
+                                                                    17
                                                                     s
                                                                     []
                                                                     In
@@ -130,9 +130,9 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 16 s)]
+                                                    [(Var 17 s)]
                                                     []
-                                                    (Var 16 r)
+                                                    (Var 17 r)
                                                     Public
                                                     .false.
                                                     .false.
@@ -285,11 +285,11 @@
                             f_string_cptr_n:
                                 (Function
                                     (SymbolTable
-                                        17
+                                        16
                                         {
                                             cptr:
                                                 (Variable
-                                                    17
+                                                    16
                                                     cptr
                                                     []
                                                     In
@@ -317,7 +317,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    17
+                                                    16
                                                     n
                                                     []
                                                     In
@@ -343,14 +343,14 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    17
+                                                    16
                                                     s
                                                     [n]
                                                     ReturnVar
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (Var 17 n) ExpressionLength DescriptorString)
+                                                    (String 1 (Var 16 n) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -392,10 +392,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 17 cptr)
-                                    (Var 17 n)]
+                                    [(Var 16 cptr)
+                                    (Var 16 n)]
                                     []
-                                    (Var 17 s)
+                                    (Var 16 s)
                                     Public
                                     .true.
                                     .true.

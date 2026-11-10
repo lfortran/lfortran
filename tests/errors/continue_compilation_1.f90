@@ -2458,21 +2458,6 @@ contains
     end function cc1_pcfm_f
 end module cc1_proc_component_forward_mismatch_mod
 
-! An internal procedure named like a specific intrinsic function that its host
-! defines after it is used as the interface is not supported yet.
-subroutine later_internal_procedure_interface_error()
-    implicit none
-contains
-    subroutine use_later_internal(x)
-        real, intent(in) :: x
-        procedure(cos) :: f  ! {Error} using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
-    end subroutine use_later_internal
-    integer function cos(x)
-        real, intent(in) :: x
-        cos = 0
-    end function cos
-end subroutine later_internal_procedure_interface_error
-
 ! The `to` argument of `move_alloc` must be allocatable, type compatible with
 ! `from`, have the same kind and rank, and be polymorphic if `from` is
 ! polymorphic.

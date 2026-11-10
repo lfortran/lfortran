@@ -98,11 +98,11 @@
                                             a:
                                                 (Struct
                                                     (SymbolTable
-                                                        5
+                                                        6
                                                         {
                                                             i:
                                                                 (Variable
-                                                                    5
+                                                                    6
                                                                     i
                                                                     []
                                                                     Local
@@ -207,7 +207,7 @@
                             z:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        5
                                         {
                                             a:
                                                 (Struct
@@ -263,7 +263,7 @@
                                                 ),
                                             b:
                                                 (Variable
-                                                    6
+                                                    5
                                                     b
                                                     []
                                                     Local
@@ -276,7 +276,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    6 a
+                                                    5 a
                                                     Source
                                                     Public
                                                     Required
@@ -294,7 +294,7 @@
                                                 ),
                                             z:
                                                 (Variable
-                                                    6
+                                                    5
                                                     z
                                                     []
                                                     ReturnVar
@@ -338,7 +338,7 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 6 z)
+                                        (Var 5 z)
                                         (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
                                         .false.
@@ -346,7 +346,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 6 z)
+                                    (Var 5 z)
                                     Public
                                     .true.
                                     .true.
