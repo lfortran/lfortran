@@ -11906,10 +11906,8 @@ public:
                     llvm::Value* internal_desc = arr_descr->cfi_to_internal(
                         desc_type, elem_llvm_type, cfi_ptr, n_dims, elem_size);
                     builder->CreateStore(internal_desc, sym_val);
-                    // For intent(out/inout), schedule writeback at function exit
-                    ASR::intentType intent = arg->m_intent;
-                    if (intent == ASRUtils::intent_out ||
-                        intent == ASRUtils::intent_inout) {
+                    // Unless intent(in), schedule writeback at function exit
+                    if (arg->m_intent != ASRUtils::intent_in) {
                         int8_t type_code = get_cfi_type_code(elem_asr_type);
                         int cfi_attr = ASRUtils::is_allocatable(arg_type) ? 2 : 1;
                         // Characters: kind here, times the length at exit
@@ -29880,8 +29878,7 @@ public:
             if (!LLVM::is_llvm_pointer(*orig_arg->m_type)) continue;
             if (ASRUtils::is_character(*ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(orig_arg->m_type)))) continue;
-            if (orig_arg->m_intent != ASR::intentType::Out &&
-                orig_arg->m_intent != ASR::intentType::InOut) continue;
+            if (orig_arg->m_intent == ASR::intentType::In) continue;
 
             // Get the descriptor that was passed to C
             if (arg_idx >= call_args.size()) continue;
