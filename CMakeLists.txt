@@ -362,6 +362,29 @@ if (WITH_LLVM)
     if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND LLVM_VERSION_MAJOR GREATER_EQUAL 12)
         set(WITH_LIBUNWIND_FORCE yes)
     endif()
+
+    # The driver links ELF executables itself with LLD. macOS and Windows keep
+    # their platform linkers: LLD's Mach-O and COFF drivers still need the
+    # platform SDK, which the system linker already knows.
+    if (NOT EMSCRIPTEN AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        find_package(LLD REQUIRED CONFIG
+            HINTS
+                "$ENV{CONDA_PREFIX}/lib/cmake/lld"
+                "${CMAKE_PREFIX_PATH}/lib/cmake/lld"
+        )
+        if (NOT TARGET lldELF)
+            message(FATAL_ERROR
+                "LLD was found but did not export the lldELF target. "
+                "Install the lld package that matches this LLVM "
+                "(${LLVM_PACKAGE_VERSION}).")
+        endif()
+        set(HAVE_LFORTRAN_LLD yes)
+        message(STATUS "Linking the LFortran driver with LLD ${LLVM_PACKAGE_VERSION}")
+        # Keep LLVM static. lldELF's imported interface also names the shared
+        # libLLVM, and the two copies register the same cl::opt options.
+        # src/bin links the static LLD archives against the component archives
+        # instead of that interface.
+    endif()
 endif()
 
 function(configure_lfortran_kernel)

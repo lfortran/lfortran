@@ -590,6 +590,11 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
         options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
     }
     llvm::Triple triple(config.triple);
+    // ELF startup code runs .init_array. LLD leaves .ctors as its own section,
+    // so constructors there never run. Clang emits .init_array on ELF.
+    if (triple.isOSBinFormatELF()) {
+        options.UseInitArray = true;
+    }
     // WebAssembly objects are linked into static executables (wasm-ld for
     // WASI, emcc for Emscripten), which do not need position independent
     // code; clang also defaults to the static model there. In the PIC model

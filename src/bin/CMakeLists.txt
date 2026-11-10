@@ -30,12 +30,64 @@ set(LFORTRAN_SRC
     ${LFORTRAN_SRC}
 )
 
+if (HAVE_LFORTRAN_LLD)
+    list(APPEND LFORTRAN_SRC lld_linker.cpp)
+endif()
+
 if (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM)
 
 add_executable(lfortran ${LFORTRAN_SRC})
 # tpl/ contains only vendored third-party code (cpp-terminal, whereami).
 target_include_directories(lfortran SYSTEM PRIVATE "tpl")
 target_link_libraries(lfortran ${LFORTRAN_LINK_LIBRARIES})
+if (HAVE_LFORTRAN_LLD)
+    target_include_directories(lfortran PRIVATE ${LLD_INCLUDE_DIRS})
+    # The imported lldELF target links the shared libLLVM. This binary already
+    # links the static component archives, and both register the same cl::opt
+    # options. Link the static LLD archives and every static LLVM archive in
+    # one group so the single-pass linker can resolve LLD's references without
+    # loading libLLVM.so. One -Wl item keeps CMake from dropping the second
+    # copy of an archive.
+    set(_lld_group "")
+    foreach(_lld_target lldELF lldCommon)
+        set(_loc "")
+        get_target_property(_configs ${_lld_target} IMPORTED_CONFIGURATIONS)
+        foreach(_cfg IN LISTS _configs)
+            get_target_property(_loc ${_lld_target} IMPORTED_LOCATION_${_cfg})
+            if(_loc)
+                break()
+            endif()
+        endforeach()
+        if(NOT _loc)
+            message(FATAL_ERROR "LLD target ${_lld_target} has no imported archive")
+        endif()
+        if(_lld_group STREQUAL "")
+            set(_lld_group "-Wl,--start-group,${_loc}")
+        else()
+            string(APPEND _lld_group ",${_loc}")
+        endif()
+    endforeach()
+    file(GLOB _llvm_static_libs "${LLVM_LIBRARY_DIR}/libLLVM*.a")
+    if(NOT _llvm_static_libs)
+        message(FATAL_ERROR
+            "No static LLVM archives in ${LLVM_LIBRARY_DIR}. "
+            "LFortran links LLVM statically.")
+    endif()
+    list(SORT _llvm_static_libs)
+    foreach(_llvm_archive IN LISTS _llvm_static_libs)
+        string(APPEND _lld_group ",${_llvm_archive}")
+    endforeach()
+    # LLD and LLVM Support need these. They are not part of libLLVM.
+    foreach(_syslib z zstd pthread dl m rt)
+        string(APPEND _lld_group ",-l${_syslib}")
+    endforeach()
+    string(APPEND _lld_group ",--end-group")
+    target_link_libraries(lfortran "${_lld_group}")
+    if (LFORTRAN_CXX_NO_RTTI_FLAG)
+        set_source_files_properties(lld_linker.cpp PROPERTIES
+            COMPILE_FLAGS "${LFORTRAN_CXX_NO_RTTI_FLAG}")
+    endif()
+endif()
 if (LFORTRAN_STATIC_BIN)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
