@@ -629,11 +629,14 @@ static int managed_memory_model()
     require(stats().async_copies[cudaMemcpyHostToDevice] == 0
         && stats().copies[cudaMemcpyDeviceToHost] == 0,
         "managed memory is not copied");
+    // A freed block goes to a cache, and is handed out again once the host
+    // has waited for the device since.
     unsigned long long frees = stats().frees;
     unsigned long long mallocs = stats().mallocs;
     managed_dealloc(nullptr, data);
     require(stats().frees == frees,
         "a freed managed block goes to the cache, not to the driver");
+    // The device has no work pending, so the block is handed out again.
     auto *again = (int32_t *)managed_alloc(nullptr, MANAGED_PREFETCH_MIN_BYTES);
     require(again == data && stats().mallocs == mallocs,
         "an allocation of the size of a cached block reuses it");

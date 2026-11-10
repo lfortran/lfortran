@@ -411,10 +411,15 @@ static void check(cudaError_t err, const char *what) {
     }
 }
 
+// How many times the host waited for the device: a freed block is reused once
+// the host has waited since it was freed.
+static uint64_t sync_epoch = 0;
+
 static void device_synchronize(void) {
     if (!device_busy) return;
     device_busy = 0;
     check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
+    sync_epoch++;
 }
 
 // Device memory comes from a cache of freed blocks, since cudaMalloc and
@@ -876,7 +881,18 @@ static host_allocator previous_allocator;
 // freed. It goes back to the driver only when its class is full, when the
 // cache holds too much, when it is too large to cache, or when the driver is
 // out of memory. The recorded size of a block is the size of the whole block.
-static device_block managed_free_blocks[POOL_CLASSES][8];
+// A launch that is still pending may use a block when it is freed, so a block
+// is handed out again only after the host has waited for the device since (or
+// when the device has no work pending): the free does not wait for the device,
+// and the host runs ahead of the device through the launches of a procedure
+// that allocates temporaries.
+typedef struct managed_free_block {
+    void *ptr;
+    size_t size;
+    uint64_t epoch;
+} managed_free_block;
+enum { MANAGED_POOL_PER_CLASS = 64 };
+static managed_free_block managed_free_blocks[POOL_CLASSES][MANAGED_POOL_PER_CLASS];
 static int n_managed_free_blocks[POOL_CLASSES];
 static size_t managed_cached_bytes = 0;
 static const size_t MANAGED_MAX_BLOCK_BYTES = (size_t)256 << 20;
@@ -884,6 +900,7 @@ static const size_t MANAGED_MAX_CACHED_BYTES = (size_t)1024 << 20;
 
 // Gives every cached block back to the driver.
 static void managed_cache_flush(void) {
+    device_synchronize();
     managed_lock();
     for (int c = 0; c < POOL_CLASSES; c++) {
         for (int i = 0; i < n_managed_free_blocks[c]; i++) {
@@ -907,9 +924,14 @@ static void* managed_alloc(void *context, int64_t size) {
         void *p = NULL;
         if (c >= 0) {
             managed_lock();
-            if (n_managed_free_blocks[c] > 0) {
-                p = managed_free_blocks[c][--n_managed_free_blocks[c]].ptr;
-                managed_cached_bytes -= block_size;
+            for (int i = n_managed_free_blocks[c]; i-- > 0;) {
+                managed_free_block *b = &managed_free_blocks[c][i];
+                if (b->epoch < sync_epoch || !device_busy) {
+                    p = b->ptr;
+                    *b = managed_free_blocks[c][--n_managed_free_blocks[c]];
+                    managed_cached_bytes -= block_size;
+                    break;
+                }
             }
             managed_unlock();
             if (p) {
@@ -938,27 +960,29 @@ static void* managed_alloc(void *context, int64_t size) {
 static void managed_dealloc(void *context, void *ptr) {
     size_t block_size = managed_forget(ptr);
     if (block_size) {
-        // A pending launch may still use the memory.
-        device_synchronize();
         size_t unused = 0;
         int c = block_size <= MANAGED_MAX_BLOCK_BYTES
             ? pool_class(block_size, &unused) : -1;
-        int cached = 0;
         if (c >= 0 && c < POOL_CLASSES && unused == block_size) {
+            int cached = 0;
             managed_lock();
-            if (n_managed_free_blocks[c] < 8
+            if (n_managed_free_blocks[c] < MANAGED_POOL_PER_CLASS
                     && managed_cached_bytes + block_size
                         <= MANAGED_MAX_CACHED_BYTES) {
-                managed_free_blocks[c][n_managed_free_blocks[c]].ptr = ptr;
-                managed_free_blocks[c][n_managed_free_blocks[c]].size
-                    = block_size;
-                n_managed_free_blocks[c]++;
+                managed_free_block *b
+                    = &managed_free_blocks[c][n_managed_free_blocks[c]++];
+                b->ptr = ptr;
+                b->size = block_size;
+                b->epoch = sync_epoch;
                 managed_cached_bytes += block_size;
                 cached = 1;
             }
             managed_unlock();
+            if (cached) return;
         }
-        if (!cached) (void)cudaFree(ptr);
+        // A pending launch may still use the memory.
+        device_synchronize();
+        (void)cudaFree(ptr);
         return;
     }
     previous_allocator.dealloc(context, ptr);
@@ -1326,7 +1350,7 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
         }
     }
     // A pending launch may read the memory in place too.
-    int read_in_place = pending_in_place_reads && managed_contains(ptr, size);
+    int read_in_place = 0;
     for (int i = 0; i < n_entries && pending_in_place_reads; i++) {
         if (entries[i].used && entries[i].in_place
                 && overlaps(entries[i].host, entries[i].size, ptr, size)) {
