@@ -7890,35 +7890,6 @@ asr = true
 options = "--legacy-array-sections"
 
 [[test]]
-filename = "errors/requirement_undeclared_argument_01.f90"
-asr = true
-
-[[test]]
 filename = "errors/chdir_pure_01.f90"
 asr = true
 options = "--std=f23"
-
-[[test]]
-filename = "errors/exit_status_type_01.f90"
-asr = true
-options = "--implicit-typing"
-
-[[test]]
-filename = "errors/namelist_undeclared_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/implied_do_assumed_type_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/equivalence_common_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/type_bound_nopass_outside_module_01.f90"
-asr = true
-
-[[test]]
-filename = "errors/elemental_purity_01.f90"
-semantics_only_cc = true

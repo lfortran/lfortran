@@ -1,5 +1,0 @@
-semantic error: requirement argument 'u' has not been declared in requirement 'op_r'
- --> tests/errors/requirement_undeclared_argument_01.f90:7:27
-  |
-7 |     requirement op_R { T, U, V, op_func }  ! {Error} requirement argument 'u' has not been declared in requirement 'op_r'
-  |                           ^ 

@@ -1,5 +1,0 @@
-semantic error: symbol 'hc' in namelist 'g3' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
- --> tests/errors/namelist_undeclared_01.f90:6:21
-  |
-6 |       namelist /g3/ hc  ! {Error} symbol 'hc' in namelist 'g3' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
-  |                     ^^ 

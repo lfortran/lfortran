@@ -1,5 +1,0 @@
-semantic error: The implied do loop variable 'i' must be a scalar integer, not type(*)
- --> tests/errors/implied_do_assumed_type_01.f90:5:13
-  |
-5 |   print *, [(i, i = 1,1)]  ! {Error} The implied do loop variable 'i' must be a scalar integer, not type(*)
-  |             ^^^^^^^^^^^^ 

@@ -4780,3 +4780,107 @@ module cc1_dt_initializer_shape
     end type
     type(cc1_dt_shape_t) :: cc1_xt(3) = [cc1_dt_shape_t(1), cc1_dt_shape_t(2)]  ! {Error} different shape for array initialization on dimension 1 (3 and 2)
 end module
+
+! The STATUS argument of the EXIT extension must be an integer (#12319).
+subroutine cc1_exit_status_real(status)
+    real :: status
+    call exit(status)  ! {Error} `status` argument of `exit` must be of integer type, but got real
+end subroutine
+
+! A namelist group object must be declared before the NAMELIST statement when
+! implicit typing is disabled, also in an internal procedure (#12375).
+subroutine cc1_namelist_host()
+contains
+    subroutine cc1_namelist_inner()
+        namelist /g3/ hc  ! {Error} symbol 'hc' in namelist 'g3' must be declared before the namelist statement (or enable implicit typing with --implicit-typing)
+    end subroutine
+end subroutine
+
+! An assumed-type dummy argument cannot be the variable of an implied DO
+! (#12391).
+subroutine cc1_implied_do_assumed_type(i)
+    type(*) :: i
+    print *, [(i, i = 1, 1)]  ! {Error} The implied do loop variable 'i' must be a scalar integer, not type(*)
+end subroutine
+
+! Two scalar variables of the same common block cannot be equivalenced
+! (#12524).
+subroutine cc1_equivalence_two_common_scalars()
+    real :: a, b
+    common /cc1_equivalence_scalars/ a, b
+    equivalence (a, b)  ! {Error} equivalence between two common block variables is not allowed
+end subroutine
+
+! A NOPASS binding of a type declared outside a module must name a module
+! procedure or an external procedure with an explicit interface; the next
+! program unit is still processed (#12720).
+subroutine cc1_nopass_binding_host()
+    type :: cc1_nopass_t
+    contains
+        procedure, nopass :: g  ! {Error} 'g' must be a module procedure or an external procedure with an explicit interface
+    end type
+end subroutine
+
+subroutine cc1_nopass_binding_next()
+    integer :: i
+    forall (i = 1:2)
+    end forall
+end subroutine
+
+! An elemental procedure without the IMPURE prefix is pure, so it can neither
+! reference an impure function nor call an impure subroutine (#12893).
+module cc1_elemental_purity
+    implicit none
+    interface
+        subroutine cc1_impure_s(x)
+            real, intent(in) :: x
+        end subroutine
+    end interface
+contains
+    real function cc1_impure_h(x)
+        real, intent(in) :: x
+        print *, "side effect"
+        cc1_impure_h = x
+    end function
+
+    elemental real function cc1_elemental_calls_function(x)
+        real, intent(in) :: x
+        cc1_elemental_calls_function = cc1_impure_h(x)  ! {Error} Call to impure procedure 'cc1_impure_h' is not allowed inside a PURE procedure
+    end function
+
+    elemental real function cc1_elemental_calls_subroutine(x)
+        real, intent(in) :: x
+        call cc1_impure_s(x)  ! {Error} Call to impure procedure 'cc1_impure_s' is not allowed inside a PURE procedure
+        cc1_elemental_calls_subroutine = x
+    end function
+end module
+
+! A requirement argument that is not declared in the requirement is reported,
+! also when a template then passes the same argument twice in a REQUIRE
+! statement for that requirement; the template only gets follow-on errors
+! (#11344).
+module cc1_requirement_undeclared_argument
+    implicit none
+
+    requirement cc1_op_r { T, U, V, op_func }  ! {Error} requirement argument 'u' has not been declared in requirement 'cc1_op_r'
+        deferred type :: T
+        deferred type :: V
+        deferred interface
+            pure elemental function op_func(lhs, rhs) result(res)
+                type(T), intent(in) :: lhs
+                type(T), intent(in) :: rhs
+                type(V) :: res
+            end function
+        end interface
+    end requirement
+
+    template cc1_op_t { T, V, op_func }
+        require :: cc1_op_r { T, T, V, op_func }
+    contains
+        pure elemental function cc1_call_op_func(x) result(res)
+            type(T), intent(in) :: x
+            type(V) :: res
+            res = op_func(x, x)
+        end function
+    end template
+end module
