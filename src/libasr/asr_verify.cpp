@@ -5858,7 +5858,9 @@ public:
 
             if( x.m_source == nullptr ) {
                 for( size_t i = 0; i < x.n_args; i++ ) {
-                    if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_a)) ) {
+                    // An assumed-rank array may have rank 0 at run time.
+                    if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_a)) &&
+                            !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(x.m_args[i].m_a)) ) {
                         require(x.m_args[i].n_dims > 0,
                             "Allocate for arrays should have dimensions specified, "
                             "found only array variable with no dimensions");

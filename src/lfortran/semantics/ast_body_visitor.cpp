@@ -6004,7 +6004,8 @@ public:
         } else {
             for( size_t i = 0; i < x.n_args; i++ ) {
                 if(alloc_args_vec.p[i].m_a && ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec.p[i].m_a)) &&
-                    alloc_args_vec.p[i].n_dims == 0) {
+                    alloc_args_vec.p[i].n_dims == 0 &&
+                    !is_rank_zero_selector(alloc_args_vec.p[i].m_a)) {
                     diag.add(Diagnostic(
                         "Allocate for arrays should have dimensions specified, "
                         "found only array variable with no dimensions",
@@ -6015,6 +6016,17 @@ public:
                 }
             }
         }
+    }
+
+    // True for the selector inside its `rank (0)` block, where it is a scalar.
+    bool is_rank_zero_selector(ASR::expr_t* expr) {
+        if (!ASR::is_a<ASR::Var_t>(*expr) ||
+                !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
+            return false;
+        }
+        auto it = assumed_rank_arrays.find(ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v));
+        return it != assumed_rank_arrays.end() && it->second == 0;
     }
 
     ASR::symbol_t* get_allocate_expr_sym(ASR::expr_t* v) {
