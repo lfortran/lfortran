@@ -1063,7 +1063,12 @@ bool set_allocation_size(
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinVal):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Norm2):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxLoc):
-                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinLoc): {
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinLoc):
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Reduce): {
+                    // The `dim` argument of `reduce` follows its `operation` argument
+                    ASR::expr_t* dim = intrinsic_array_function->m_args[
+                        intrinsic_array_function->m_arr_intrinsic_id == static_cast<int64_t>(
+                            ASRUtils::IntrinsicArrayFunctions::Reduce) ? 2 : 1];
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_array_function->m_type);
                     allocate_dims.reserve(al, n_dims);
@@ -1086,7 +1091,7 @@ bool set_allocation_size(
                         merge_i_args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                                 al, loc, i + 1, ASRUtils::expr_type(int32_one))), ASR::cmpopType::Lt,
-                                intrinsic_array_function->m_args[1],
+                                dim,
                                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
                         ASR::expr_t* merge_i = ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(
                             al, loc, static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge),
