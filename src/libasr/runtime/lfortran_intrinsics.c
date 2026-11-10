@@ -18,6 +18,12 @@
 #include <stdint.h>
 #include <stddef.h>  /* ptrdiff_t */
 #include <sys/stat.h>
+#if !defined(_WIN32)
+#include <fcntl.h>
+#if defined(__linux__) && defined(__GLIBC__) && !defined(__EMSCRIPTEN__)
+#include <sys/mman.h>
+#endif
+#endif
 #if !defined(COMPILE_TO_WASM)
 #include <fenv.h>
 #endif
@@ -8780,6 +8786,345 @@ static bool fortran_str_eq(const char *s, int64_t len, const char *word)
     return true;
 }
 
+#if defined(__linux__) && defined(__GLIBC__) \
+        && !defined(__EMSCRIPTEN__) && defined(LFORTRAN_READAHEAD_THREADS)
+#define LFORTRAN_READAHEAD 1
+#include <pthread.h>
+#endif
+
+#ifdef LFORTRAN_READAHEAD
+/*
+ A stream file opened for reading only is read through a window of segments
+ that helper threads fill ahead of the reader, once the reader has read
+ sequentially for a while. A program that reads a large file in small pieces
+ (a model of many gigabytes, in 64 KiB pieces, say) then copies from the page
+ cache on several cores while the reader works on the pieces it has, instead
+ of waiting for one core to copy everything and one system call for every
+ piece. A file that is read in a few small reads costs no thread.
+*/
+enum { RA_SEGMENT_BYTES = 1 << 18, RA_SEGMENTS = 32, RA_WORKERS = 4,
+    RA_ENGAGE_BYTES = 1 << 20 };
+enum { RA_FREE = 0, RA_QUEUED, RA_FILLING, RA_READY };
+
+typedef struct ra_segment {
+    int64_t start;
+    int64_t length;
+    int state;
+} ra_segment;
+
+typedef struct ra_file {
+    int fd;
+    int64_t size;
+    int64_t pos;
+    // The bytes read one after the other so far.
+    int64_t sequential;
+    // The segment the last read copied from, which is ready and which only
+    // the reader frees: a read inside it needs no lock.
+    int64_t cur_start;
+    int64_t cur_end;
+    int cur_segment;
+    char *memory;
+    ra_segment segments[RA_SEGMENTS];
+    // The window holds the segments from `first`, `count` of them, which
+    // follow each other in the file; the next one starts at `next_start`.
+    int first;
+    int count;
+    int64_t next_start;
+    int active;
+} ra_file;
+
+// The helper threads serve every file with a window, and live until the
+// program ends. `ra_lock` guards the windows and the list of those files.
+enum { RA_MAX_FILES = 64 };
+static pthread_mutex_t ra_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t ra_work = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t ra_done = PTHREAD_COND_INITIALIZER;
+static ra_file *ra_files[RA_MAX_FILES];
+static int ra_workers = 0;
+// Memory of a window whose file was closed, kept for the next one.
+static char *ra_spare = NULL;
+
+static ssize_t ra_pread(int fd, char *buffer, int64_t length, int64_t offset)
+{
+    int64_t done = 0;
+    while (done < length) {
+        ssize_t n = pread(fd, buffer + done, (size_t)(length - done),
+            (off_t)(offset + done));
+        if (n < 0) {
+            if (errno == EINTR) continue;
+            return -1;
+        }
+        if (n == 0) break;
+        done += n;
+    }
+    return (ssize_t)done;
+}
+
+static void *ra_worker(void *arg)
+{
+    (void)arg;
+    pthread_mutex_lock(&ra_lock);
+    for (;;) {
+        ra_file *f = NULL;
+        int found = -1;
+        for (int j = 0; j < RA_MAX_FILES && found < 0; j++) {
+            if (!ra_files[j]) continue;
+            for (int i = 0; i < ra_files[j]->count && found < 0; i++) {
+                int k = (ra_files[j]->first + i) % RA_SEGMENTS;
+                if (ra_files[j]->segments[k].state == RA_QUEUED) {
+                    found = k;
+                    f = ra_files[j];
+                }
+            }
+        }
+        if (found < 0) {
+            pthread_cond_wait(&ra_work, &ra_lock);
+            continue;
+        }
+        ra_segment *seg = &f->segments[found];
+        seg->state = RA_FILLING;
+        int64_t start = seg->start, length = seg->length;
+        pthread_mutex_unlock(&ra_lock);
+        ssize_t n = ra_pread(f->fd, f->memory + (size_t)found*RA_SEGMENT_BYTES,
+            length, start);
+        pthread_mutex_lock(&ra_lock);
+        seg->length = n < 0 ? 0 : n;
+        seg->state = RA_READY;
+        pthread_cond_broadcast(&ra_done);
+    }
+    return NULL;
+}
+
+// Waits until no helper is filling a segment, and empties the window.
+static void ra_reset_window(ra_file *f)
+{
+    for (;;) {
+        int busy = 0;
+        for (int i = 0; i < f->count; i++) {
+            if (f->segments[(f->first + i) % RA_SEGMENTS].state == RA_FILLING) {
+                busy = 1;
+            }
+        }
+        if (!busy) break;
+        pthread_cond_wait(&ra_done, &ra_lock);
+    }
+    for (int i = 0; i < RA_SEGMENTS; i++) f->segments[i].state = RA_FREE;
+    f->cur_start = f->cur_end = 0;
+    f->count = 0;
+    f->first = 0;
+}
+
+// Queues segments at the end of the window while there is room.
+static void ra_schedule(ra_file *f)
+{
+    int queued = 0;
+    while (f->count < RA_SEGMENTS && f->next_start < f->size) {
+        int k = (f->first + f->count) % RA_SEGMENTS;
+        int64_t length = f->size - f->next_start;
+        if (length > RA_SEGMENT_BYTES) length = RA_SEGMENT_BYTES;
+        f->segments[k].start = f->next_start;
+        f->segments[k].length = length;
+        f->segments[k].state = RA_QUEUED;
+        f->next_start += length;
+        f->count++;
+        queued = 1;
+    }
+    if (queued) pthread_cond_broadcast(&ra_work);
+}
+
+// Gives the file a window and starts the helper threads if they are not
+// running. Returns 0 if it cannot.
+static int ra_start(ra_file *f)
+{
+    pthread_mutex_lock(&ra_lock);
+    while (ra_workers < RA_WORKERS) {
+        pthread_t thread;
+        if (pthread_create(&thread, NULL, ra_worker, NULL) != 0) break;
+        pthread_detach(thread);
+        ra_workers++;
+    }
+    int slot = -1;
+    for (int j = 0; j < RA_MAX_FILES && slot < 0; j++) {
+        if (!ra_files[j]) slot = j;
+    }
+    char *memory = ra_spare;
+    ra_spare = NULL;
+    if (ra_workers == 0 || slot < 0) {
+        pthread_mutex_unlock(&ra_lock);
+        if (memory) munmap(memory, (size_t)RA_SEGMENTS*RA_SEGMENT_BYTES);
+        return 0;
+    }
+    pthread_mutex_unlock(&ra_lock);
+    if (!memory) {
+        void *m = mmap(NULL, (size_t)RA_SEGMENTS*RA_SEGMENT_BYTES,
+            PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        if (m == MAP_FAILED) return 0;
+        memory = (char*)m;
+    }
+    pthread_mutex_lock(&ra_lock);
+    f->memory = memory;
+    f->active = 1;
+    ra_files[slot] = f;
+    pthread_mutex_unlock(&ra_lock);
+    return 1;
+}
+
+static ssize_t ra_read(void *cookie, char *buffer, size_t size)
+{
+    ra_file *f = (ra_file*)cookie;
+    if (f->pos >= f->size || size == 0) return 0;
+    int64_t want = (int64_t)size;
+    if (want > f->size - f->pos) want = f->size - f->pos;
+    int64_t copied = 0;
+    if (!f->memory) {
+        ssize_t n = ra_pread(f->fd, buffer, want, f->pos);
+        if (n < 0) return -1;
+        f->pos += n;
+        f->sequential += n;
+        if (f->sequential < RA_ENGAGE_BYTES || f->pos >= f->size
+                || !ra_start(f)) {
+            return n;
+        }
+        pthread_mutex_lock(&ra_lock);
+        f->next_start = f->pos;
+        ra_schedule(f);
+        pthread_mutex_unlock(&ra_lock);
+        return n;
+    }
+    if (f->pos >= f->cur_start && f->pos + want <= f->cur_end) {
+        memcpy(buffer, f->memory + (size_t)f->cur_segment*RA_SEGMENT_BYTES
+            + (f->pos - f->cur_start), (size_t)want);
+        f->pos += want;
+        f->sequential += want;
+        return (ssize_t)want;
+    }
+    pthread_mutex_lock(&ra_lock);
+    while (copied < want) {
+        int hit = -1;
+        for (int i = 0; i < f->count; i++) {
+            int k = (f->first + i) % RA_SEGMENTS;
+            if (f->pos >= f->segments[k].start
+                    && f->pos < f->segments[k].start + f->segments[k].length) {
+                hit = k;
+                break;
+            }
+        }
+        if (hit < 0) {
+            // Not in the window: the reader jumped, or a segment failed.
+            ra_reset_window(f);
+            ssize_t n;
+            pthread_mutex_unlock(&ra_lock);
+            n = ra_pread(f->fd, buffer + copied, want - copied, f->pos);
+            if (n < 0) return copied > 0 ? (ssize_t)copied : -1;
+            f->pos += n;
+            f->sequential = 0;
+            copied += n;
+            pthread_mutex_lock(&ra_lock);
+            f->next_start = f->pos;
+            if (f->pos < f->size) ra_schedule(f);
+            break;
+        }
+        ra_segment *seg = &f->segments[hit];
+        while (seg->state != RA_READY) {
+            pthread_cond_wait(&ra_done, &ra_lock);
+        }
+        f->cur_start = seg->start;
+        f->cur_end = seg->start + seg->length;
+        f->cur_segment = hit;
+        int64_t offset = f->pos - seg->start;
+        int64_t n = seg->length - offset;
+        if (n > want - copied) n = want - copied;
+        // Only this thread frees a segment, so it may copy without the lock.
+        pthread_mutex_unlock(&ra_lock);
+        memcpy(buffer + copied,
+            f->memory + (size_t)hit*RA_SEGMENT_BYTES + offset, (size_t)n);
+        pthread_mutex_lock(&ra_lock);
+        copied += n;
+        f->pos += n;
+        f->sequential += n;
+        // Free the segments the reader has passed, from the front.
+        while (f->count > 0) {
+            ra_segment *front = &f->segments[f->first];
+            if (front->state != RA_READY
+                    || f->pos < front->start + front->length) {
+                break;
+            }
+            front->state = RA_FREE;
+            f->first = (f->first + 1) % RA_SEGMENTS;
+            f->count--;
+        }
+        ra_schedule(f);
+    }
+    pthread_mutex_unlock(&ra_lock);
+    return (ssize_t)copied;
+}
+
+static int ra_seek(void *cookie, off64_t *offset, int whence)
+{
+    ra_file *f = (ra_file*)cookie;
+    int64_t target;
+    if (whence == SEEK_SET) target = *offset;
+    else if (whence == SEEK_CUR) target = f->pos + *offset;
+    else if (whence == SEEK_END) target = f->size + *offset;
+    else return -1;
+    if (target < 0) return -1;
+    f->pos = target;
+    *offset = target;
+    return 0;
+}
+
+static int ra_close(void *cookie)
+{
+    ra_file *f = (ra_file*)cookie;
+    if (f->active) {
+        pthread_mutex_lock(&ra_lock);
+        ra_reset_window(f);
+        for (int j = 0; j < RA_MAX_FILES; j++) {
+            if (ra_files[j] == f) ra_files[j] = NULL;
+        }
+        char *memory = f->memory;
+        if (!ra_spare) {
+            ra_spare = memory;
+            memory = NULL;
+        }
+        pthread_mutex_unlock(&ra_lock);
+        if (memory) munmap(memory, (size_t)RA_SEGMENTS*RA_SEGMENT_BYTES);
+    }
+    close(f->fd);
+    internal_free(f);
+    return 0;
+}
+
+// Opens the regular file `name` for reading through a read-ahead window, or
+// returns NULL (the caller opens it with fopen).
+static FILE *open_read_ahead(const char *name)
+{
+    int fd = open(name, O_RDONLY);
+    if (fd < 0) return NULL;
+    struct stat st;
+    if (fstat(fd, &st) != 0 || !S_ISREG(st.st_mode)
+            || st.st_size < 4*RA_SEGMENT_BYTES) {
+        close(fd);
+        return NULL;
+    }
+    ra_file *f = (ra_file*)internal_calloc(1, sizeof(ra_file));
+    if (!f) {
+        close(fd);
+        return NULL;
+    }
+    f->fd = fd;
+    f->size = st.st_size;
+    cookie_io_functions_t functions = {ra_read, NULL, ra_seek, ra_close};
+    FILE *fp = fopencookie(f, "r", functions);
+    if (!fp) {
+        ra_close(f);
+        return NULL;
+    }
+    return fp;
+}
+#endif
+
+
 LFORTRAN_API int64_t
 _lfortran_open(int32_t unit_num,
                char* f_name,
@@ -9257,7 +9602,14 @@ _lfortran_open(int32_t unit_num,
             internal_free(pad_c);
             return (int64_t) already_open;
         }
-        FILE* fd = fopen(f_name_c, access_mode);
+        FILE* fd = NULL;
+#ifdef LFORTRAN_READAHEAD
+        if (access_id == 1 && read_access && !write_access
+                && strcmp(access_mode, "r+") == 0) {
+            fd = open_read_ahead(f_name_c);
+        }
+#endif
+        if (!fd) fd = fopen(f_name_c, access_mode);
         if (!fd) {
             if (iostat == NULL) {
                 printf("Runtime error: Error in opening the file!\n");
