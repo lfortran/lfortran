@@ -4227,8 +4227,38 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 name_hint, al, current_body, current_scope, exprs_with_target);
     }
 
+    // `za%im = v` writes the parts of `za` in place, so its section is not
+    // copied; an array `v` is evaluated into a temporary first, as it may
+    // read or change `za`, and array_op then loops over both
+    void simplify_complex_part_array_assignment(ASR::Assignment_t& x) {
+        visit_expr(*x.m_value);
+        if (ASRUtils::is_array(ASRUtils::expr_type(x.m_value))) {
+            x.m_value = call_create_and_allocate_temporary_variable(x.m_value, al,
+                current_body, "_complex_part_value_", current_scope, exprs_with_target);
+        }
+        ASR::expr_t*& arg = ASR::is_a<ASR::ComplexRe_t>(*x.m_target)
+            ? ASR::down_cast<ASR::ComplexRe_t>(x.m_target)->m_arg
+            : ASR::down_cast<ASR::ComplexIm_t>(x.m_target)->m_arg;
+        ASR::expr_t* designator = ASRUtils::get_past_array_physical_cast(arg);
+        if (ASR::is_a<ASR::ArraySection_t>(*designator)) {
+            arg = bind_section_to_pointer(designator, "complex_part_target");
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*designator)) {
+            ASR::expr_t* bound = bind_struct_member_base_to_pointer(
+                designator, "complex_part_target");
+            if (bound != designator) {
+                arg = bound;
+            }
+        }
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+        if ((ASR::is_a<ASR::ComplexRe_t>(*x.m_target) ||
+                ASR::is_a<ASR::ComplexIm_t>(*x.m_target)) &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
+            simplify_complex_part_array_assignment(xx);
+            return;
+        }
         if (reuse_pure_calls && !inside_where && !x.m_overloaded &&
                 !x.m_move_allocation && ASR::is_a<ASR::Var_t>(*x.m_target)) {
             reuse_pure_array_calls(xx.m_value);
