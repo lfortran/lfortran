@@ -8943,6 +8943,22 @@ TEST_CASE("Fortran single precision 1/sqrt keeps its Newton step on Haswell") {
         CHECK(estimates > 0);
     });
 }
+
+TEST_CASE("Fortran pairwise distances become horizontal adds on Haswell") {
+    // reductions_hadd_03. After inlining, the SLP vectorizer of LLVM 23
+    // builds the squared pair distances in a lane layout of newer SLP, which
+    // the horizontal reduction pass must still recognize. LLVM 11 vectorizes
+    // this program differently and the pass leaves it alone.
+    check_fast_haswell(reductions_orbit_source(
+            "w(k) = 0.01d0 / (d2 * sqrt(d2))"),
+            [](llvm::Module &m) {
+        llvm::Function *main_fn = m.getFunction("main");
+        REQUIRE(main_fn != nullptr);
+#if LLVM_VERSION_MAJOR >= 23
+        CHECK(calls_intrinsic_like(*main_fn, "hadd"));
+#endif
+    });
+}
 #endif
 #endif // HAVE_TARGET_X86
 #endif
