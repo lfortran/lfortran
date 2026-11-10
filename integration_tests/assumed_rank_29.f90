@@ -29,12 +29,18 @@ contains
         real :: r(size(src))
         r = 3.0
     end function
+
+    real function g(x)
+        real, intent(in) :: x
+        g = x + 1.0
+    end function
 end module
 
 program assumed_rank_29
     use assumed_rank_29_m
     implicit none
     real :: m(2, 3), flat(6), v(4), dv(4), d3(3), c(2, 3, 2), dc(12)
+    real :: s, d1(1)
     m = 0.0
     flat = 0.0
     call fill(m, flat)
@@ -59,5 +65,32 @@ program assumed_rank_29
 
     if (size(make(m)) /= 6) error stop 7
     if (any(make(c) /= 3.0)) error stop 8
+
+    ! An assumed-rank dummy associated with a scalar has size 1, whatever
+    ! form the scalar actual takes.
+    s = 1.0
+    d1 = 0.0
+    call fill(s, d1)
+    if (any(d1 /= 2.5)) error stop 9
+    d1 = 0.0
+    call fill(m(1, 1), d1)
+    if (any(d1 /= 2.5)) error stop 10
+    d1 = 0.0
+    call fill(g(s), d1)
+    if (any(d1 /= 2.5)) error stop 11
+    d1 = 0.0
+    call fill(sum(m), d1)
+    if (any(d1 /= 2.5)) error stop 12
+    if (count_local(s) /= 1) error stop 13
+    if (count_local(m(2, 3)) /= 1) error stop 14
+    d1 = 0.0
+    d1 = make(m(1, 1))
+    if (any(d1 /= 3.0)) error stop 15
+    d1 = 0.0
+    d1 = make(g(s))
+    if (any(d1 /= 3.0)) error stop 16
+    d1 = 0.0
+    d1 = make(sum(m))
+    if (any(d1 /= 3.0)) error stop 17
     print *, "OK"
 end program
