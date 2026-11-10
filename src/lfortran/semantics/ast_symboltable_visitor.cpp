@@ -2322,7 +2322,6 @@ public:
         current_function_dependencies.clear(al);
         simd_variables.clear();
         ASR::accessType s_access = dflt_access;
-        ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         std::string sym_name = to_lower(x.m_name);
 
         SymbolTable *grandparent_scope = current_scope;
@@ -2563,6 +2562,86 @@ public:
             implicit_stack.pop_back();
         }
         visit_later_interface_decls(later_interface_decls);
+        tmp = make_subroutine_symbol(x, sym_name, parent_scope, s_access,
+            bindc_name);
+
+        // Self referencing procedure declarations
+        for (size_t i : procedure_decl_indices) {
+            try {
+                visit_decl_stmt(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
+        external_procedures = saved_external_procedures;
+        explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
+        assgnd_presence = saved_assgnd_presence;
+        if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
+            /*
+                This subroutine contains an entry function, create
+                template function for each entry and a master function
+            */
+            for (auto &entry_function: entry_functions[sym_name]) {
+                create_template_entry_function(x.base.base.loc, entry_function.first, entry_function_args[entry_function.first]);
+            }
+            std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name);
+
+            create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true);
+        }
+        entry_function_args.clear();
+        try {
+            add_class_procedures();
+        } catch (SemanticAbort &e) {
+            if ( !compiler_options.continue_compilation ) throw e;
+        }
+        if (x.n_temp_args > 0) {
+            current_scope = grandparent_scope;
+        } else {
+            current_scope = parent_scope;
+        }
+        /* FIXME: This can become incorrect/get cleared prematurely, perhaps
+           in nested functions, and also in callback.f90 test, but it may not
+           matter since we would have already checked the intent */
+        current_procedure_args.clear();
+        current_procedure_result = current_procedure_result_copy;
+        current_procedure_result_scope = current_procedure_result_scope_copy;
+        current_procedure_abi_type = current_procedure_abi_type_copy;
+
+        // print_implicit_dictionary(implicit_dictionary);
+        // get hash of the function and add it to the implicit_mapping
+        if (compiler_options.implicit_typing) {
+            uint64_t hash = get_hash(tmp);
+
+            implicit_mapping[hash] = implicit_dictionary;
+
+            implicit_dictionary.clear();
+        }
+
+        current_function_dependencies = current_function_dependencies_copy;
+        in_Subroutine = false;
+        is_template = is_template_copy;
+        is_global_save_enabled = is_global_save_enabled_copy;
+        explicit_save_symbols = explicit_save_symbols_copy;
+        // A templated subroutine is complete; `parent_scope` is the Template
+        // built for it. Checked last, once the enclosing context has been
+        // restored, so that an abort here leaves the visitor in the same state
+        // as a clean return.
+        if (x.n_temp_args > 0) {
+            check_templated_subprogram_args(parent_scope, subroutine_temp_args,
+                x.m_items, x.n_items, "subroutine", x.base.base.loc);
+            check_no_save_in_template(parent_scope);
+        }
+    }
+
+    // Makes the Function symbol of `x` and adds it to `parent_scope`.
+    ASR::asr_t *make_subroutine_symbol(const AST::Subroutine_t &x,
+            std::string &sym_name, SymbolTable *parent_scope,
+            ASR::accessType s_access, char *bindc_name) {
+        ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
         bool has_alternate_returns = false;
@@ -2813,82 +2892,12 @@ public:
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-
-        // Self referencing procedure declarations
-        for (size_t i : procedure_decl_indices) {
-            try {
-                visit_decl_stmt(*x.m_items[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-        }
         if( update_gp ) {
             LCOMPILERS_ASSERT(gp_index_to_be_updated >= 0);
             ASR::GenericProcedure_t* f1_gp = ASR::down_cast<ASR::GenericProcedure_t>(f1_);
             f1_gp->m_procs[gp_index_to_be_updated] = ASR::down_cast<ASR::symbol_t>(tmp);
         }
-        // populate the external_procedures_mapping
-        uint64_t hash = get_hash(tmp);
-        external_procedures_mapping[hash] = external_procedures;
-        external_procedures = saved_external_procedures;
-        explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
-        explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
-        assgnd_presence = saved_assgnd_presence;
-        if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
-            /*
-                This subroutine contains an entry function, create
-                template function for each entry and a master function
-            */
-            for (auto &entry_function: entry_functions[sym_name]) {
-                create_template_entry_function(x.base.base.loc, entry_function.first, entry_function_args[entry_function.first]);
-            }
-            std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name);
-
-            create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true);
-        }
-        entry_function_args.clear();
-        try {
-            add_class_procedures();
-        } catch (SemanticAbort &e) {
-            if ( !compiler_options.continue_compilation ) throw e;
-        }
-        if (x.n_temp_args > 0) {
-            current_scope = grandparent_scope;
-        } else {
-            current_scope = parent_scope;
-        }
-        /* FIXME: This can become incorrect/get cleared prematurely, perhaps
-           in nested functions, and also in callback.f90 test, but it may not
-           matter since we would have already checked the intent */
-        current_procedure_args.clear();
-        current_procedure_result = current_procedure_result_copy;
-        current_procedure_result_scope = current_procedure_result_scope_copy;
-        current_procedure_abi_type = current_procedure_abi_type_copy;
-
-        // print_implicit_dictionary(implicit_dictionary);
-        // get hash of the function and add it to the implicit_mapping
-        if (compiler_options.implicit_typing) {
-            uint64_t hash = get_hash(tmp);
-
-            implicit_mapping[hash] = implicit_dictionary;
-
-            implicit_dictionary.clear();
-        }
-
-        current_function_dependencies = current_function_dependencies_copy;
-        in_Subroutine = false;
-        is_template = is_template_copy;
-        is_global_save_enabled = is_global_save_enabled_copy;
-        explicit_save_symbols = explicit_save_symbols_copy;
-        // A templated subroutine is complete; `parent_scope` is the Template
-        // built for it. Checked last, once the enclosing context has been
-        // restored, so that an abort here leaves the visitor in the same state
-        // as a clean return.
-        if (x.n_temp_args > 0) {
-            check_templated_subprogram_args(parent_scope, subroutine_temp_args,
-                x.m_items, x.n_items, "subroutine", x.base.base.loc);
-            check_no_save_in_template(parent_scope);
-        }
+        return tmp;
     }
 
     AST::AttrType_t* find_return_type(AST::decl_attribute_t** attributes,
@@ -2982,7 +2991,6 @@ public:
         // Extract local (including dummy) variables first
         current_symbol = (int64_t) ASR::symbolType::Function;
         ASR::accessType s_access = dflt_access;
-        ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         std::string sym_name = to_lower(x.m_name);
 
         SymbolTable *grandparent_scope = current_scope;
@@ -3218,6 +3226,107 @@ public:
         visit_later_interface_decls(later_interface_decls);
         process_simd_variables();
 
+        tmp = make_function_symbol(x, sym_name, parent_scope, s_access,
+            bindc_name);
+        ASR::Function_t *func = ASR::down_cast2<ASR::Function_t>(tmp);
+
+        // Self referencing procedure declarations
+        for (size_t i : procedure_decl_indices) {
+            try {
+                visit_decl_stmt(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        // populate the external_procedures_mapping
+        uint64_t hash = get_hash(tmp);
+        external_procedures_mapping[hash] = external_procedures;
+        external_procedures = saved_external_procedures;
+        explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
+        assgnd_presence = saved_assgnd_presence;
+        if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
+            /*
+                This subroutine contains an entry function, create
+                template function for each entry and a master function
+            */
+            ASR::Variable_t* result = ASRUtils::EXPR2VAR(func->m_return_var);
+            std::vector<std::string> result_names = {result->m_name};
+            std::map<std::string, std::string> entry_result;
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (!AST::is_a<AST::Entry_t>(*x.m_items[i])) continue;
+                AST::Entry_t* entry = AST::down_cast<AST::Entry_t>(x.m_items[i]);
+                std::string name = to_lower(entry->m_name);
+                if (entry->m_return_var) {
+                    name = to_lower(AST::down_cast<AST::Name_t>(entry->m_return_var)->m_id);
+                }
+                entry_result[to_lower(entry->m_name)] = name;
+                if (std::find(result_names.begin(), result_names.end(), name) == result_names.end()) {
+                    result_names.push_back(name);
+                }
+                if (current_scope->get_symbol(name) == nullptr) {
+                    // an undeclared entry result takes the type of the function result
+                    current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+                        entry->base.base.loc, current_scope, s2c(al, name), nullptr, 0,
+                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, result->m_type), result->m_type_declaration,
+                        ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false)));
+                }
+            }
+            for (auto &entry_function: entry_functions[sym_name]) {
+                create_template_entry_function(x.base.base.loc, entry_function.first, entry_function_args[entry_function.first],
+                    false, result_names, entry_result[entry_function.first]);
+            }
+            std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name, result_names);
+
+            create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, result_names);
+        }
+        try {
+            add_class_procedures();
+        } catch (SemanticAbort &e) {
+            if ( !compiler_options.continue_compilation ) throw e;
+        }
+        if (x.n_temp_args > 0) {
+            add_overloaded_procedures();
+            current_scope = grandparent_scope;
+        } else {
+            current_scope = parent_scope;
+        }
+        current_procedure_args.clear();
+        current_procedure_result = current_procedure_result_copy;
+        current_procedure_result_scope = current_procedure_result_scope_copy;
+        current_procedure_abi_type = current_procedure_abi_type_copy;
+        current_symbol = -1;
+        // print_implicit_dictionary(implicit_dictionary);
+        // get hash of the function and add it to the implicit_mapping
+        if (compiler_options.implicit_typing) {
+            uint64_t hash = get_hash(tmp);
+
+            implicit_mapping[hash] = implicit_dictionary;
+
+            implicit_dictionary.clear();
+        }
+        current_function_dependencies = current_function_dependencies_copy;
+        in_Subroutine = false;
+        is_template = is_template_copy;
+        is_global_save_enabled = is_global_save_enabled_copy;
+        explicit_save_symbols = explicit_save_symbols_copy;
+        // A templated function is complete; `parent_scope` is the Template
+        // built for it. Checked last, once the enclosing context has been
+        // restored, so that an abort here leaves the visitor in the same state
+        // as a clean return.
+        if (x.n_temp_args > 0) {
+            check_templated_subprogram_args(parent_scope, function_temp_args,
+                x.m_items, x.n_items, "function", x.base.base.loc);
+            check_no_save_in_template(parent_scope);
+        }
+    }
+
+    // Makes the Function symbol of `x` and adds it to `parent_scope`.
+    ASR::asr_t *make_function_symbol(const AST::Function_t &x,
+            std::string &sym_name, SymbolTable *parent_scope,
+            ASR::accessType s_access, char *bindc_name) {
+        ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         // Convert and check arguments
         Vec<ASR::expr_t*> args;
         args.reserve(al, x.n_args);
@@ -3726,97 +3835,7 @@ public:
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
-
-        // Self referencing procedure declarations
-        for (size_t i : procedure_decl_indices) {
-            try {
-                visit_decl_stmt(*x.m_items[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-        }
-        // populate the external_procedures_mapping
-        uint64_t hash = get_hash(tmp);
-        external_procedures_mapping[hash] = external_procedures;
-        external_procedures = saved_external_procedures;
-        explicit_intrinsic_procedures_mapping[hash] = explicit_intrinsic_procedures;
-        explicit_intrinsic_procedures = saved_explicit_intrinsic_procedures;
-        assgnd_presence = saved_assgnd_presence;
-        if (subroutine_contains_entry_function(sym_name, x.m_items, x.n_items)) {
-            /*
-                This subroutine contains an entry function, create
-                template function for each entry and a master function
-            */
-            ASR::Variable_t* result = ASRUtils::EXPR2VAR(func->m_return_var);
-            std::vector<std::string> result_names = {result->m_name};
-            std::map<std::string, std::string> entry_result;
-            for (size_t i = 0; i < x.n_items; i++) {
-                if (!AST::is_a<AST::Entry_t>(*x.m_items[i])) continue;
-                AST::Entry_t* entry = AST::down_cast<AST::Entry_t>(x.m_items[i]);
-                std::string name = to_lower(entry->m_name);
-                if (entry->m_return_var) {
-                    name = to_lower(AST::down_cast<AST::Name_t>(entry->m_return_var)->m_id);
-                }
-                entry_result[to_lower(entry->m_name)] = name;
-                if (std::find(result_names.begin(), result_names.end(), name) == result_names.end()) {
-                    result_names.push_back(name);
-                }
-                if (current_scope->get_symbol(name) == nullptr) {
-                    // an undeclared entry result takes the type of the function result
-                    current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
-                        entry->base.base.loc, current_scope, s2c(al, name), nullptr, 0,
-                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, result->m_type), result->m_type_declaration,
-                        ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false)));
-                }
-            }
-            for (auto &entry_function: entry_functions[sym_name]) {
-                create_template_entry_function(x.base.base.loc, entry_function.first, entry_function_args[entry_function.first],
-                    false, result_names, entry_result[entry_function.first]);
-            }
-            std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name, result_names);
-
-            create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, result_names);
-        }
-        try {
-            add_class_procedures();
-        } catch (SemanticAbort &e) {
-            if ( !compiler_options.continue_compilation ) throw e;
-        }
-        if (x.n_temp_args > 0) {
-            add_overloaded_procedures();
-            current_scope = grandparent_scope;
-        } else {
-            current_scope = parent_scope;
-        }
-        current_procedure_args.clear();
-        current_procedure_result = current_procedure_result_copy;
-        current_procedure_result_scope = current_procedure_result_scope_copy;
-        current_procedure_abi_type = current_procedure_abi_type_copy;
-        current_symbol = -1;
-        // print_implicit_dictionary(implicit_dictionary);
-        // get hash of the function and add it to the implicit_mapping
-        if (compiler_options.implicit_typing) {
-            uint64_t hash = get_hash(tmp);
-
-            implicit_mapping[hash] = implicit_dictionary;
-
-            implicit_dictionary.clear();
-        }
-        current_function_dependencies = current_function_dependencies_copy;
-        in_Subroutine = false;
-        is_template = is_template_copy;
-        is_global_save_enabled = is_global_save_enabled_copy;
-        explicit_save_symbols = explicit_save_symbols_copy;
-        // A templated function is complete; `parent_scope` is the Template
-        // built for it. Checked last, once the enclosing context has been
-        // restored, so that an abort here leaves the visitor in the same state
-        // as a clean return.
-        if (x.n_temp_args > 0) {
-            check_templated_subprogram_args(parent_scope, function_temp_args,
-                x.m_items, x.n_items, "function", x.base.base.loc);
-            check_no_save_in_template(parent_scope);
-        }
+        return tmp;
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
