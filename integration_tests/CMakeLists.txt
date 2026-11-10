@@ -5929,6 +5929,7 @@ RUN(NAME transfer_34 LABELS gfortran llvm)
 RUN(NAME transfer_35 LABELS gfortran llvm) # transfer of an integer(4) array to integer(1) with a size argument (#7678)
 RUN(NAME transfer_36 LABELS gfortran llvm) # transfer with a large size argument does not overflow the stack (#7596)
 RUN(NAME transfer_37 LABELS gfortran llvm) # transfer of an integer(8) scalar to an integer(4) array section (#7217)
+RUN(NAME transfer_38 LABELS gfortran llvm) # transfer of a character array constant to a longer character variable mold (#3494)
 RUN(NAME transfer_assumed_shape_01 LABELS gfortran llvm)
 
 RUN(NAME present_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
