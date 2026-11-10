@@ -108,6 +108,16 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
         // iterations of 32 lanes each still fits it a few times over.
         caps.lanes_per_iteration = 32;
         caps.lanes_iterations_max = 65536;
+        // Lanes that read one column together: 32 of them read 256 bytes of
+        // it at a time, and a whole block 2 KB, which keeps the memory
+        // channels of an H200 busier (a column sum over 12,288 columns of
+        // 12,288 `real(8)` reads 3.2 TB/s with a warp per column and
+        // 4.4 TB/s with a block).
+        // The block combines the sums of its lanes in a different order than
+        // a warp does, which only --fast permits.
+        if (pass_options.fast) {
+            caps.lanes_column_block = caps.threads_per_block;
+        }
         caps.lane_reductions = true;
         caps.lane_independent_loops = false;
         caps.reduction_warp_slots = true;

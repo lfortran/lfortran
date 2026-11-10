@@ -64,6 +64,10 @@ public:
         needs_lane_reduce = true;
         ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuLaneReduce(x);
     }
+    void visit_GpuLaneBroadcast(const ASR::GpuLaneBroadcast_t &x) {
+        needs_lane_reduce = true;
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuLaneBroadcast(x);
+    }
     // The type of an integer power device code computes, by kind.
     std::map<int64_t, ASR::ttype_t*> integer_power_types;
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
@@ -4172,6 +4176,10 @@ public:
 
     size_t loop_control_count = 0;
 
+    // Whether the kernel being written streams down rows of a matrix
+    // (streams_strided_rows).
+    bool kernel_streams_strided_rows = false;
+
     // Whether the kernel being written runs each iteration on lanes.
     bool kernel_has_lanes() const {
         return current_kernel_layout != nullptr
@@ -4346,14 +4354,45 @@ public:
         std::string inc = step_known ? std::string()
             : loop_control(head.m_increment, "step", type, written);
         std::string v = captured_source([&]() { visit_expr(head.m_v); });
-        if (unroll && !dialect.unroll_pragma().empty()) {
-            src << get_indent() << dialect.unroll_pragma() << "\n";
+        int sign = step_known ? (step > 0 ? 1 : -1)
+            : CUtils::loop_step_sign(head.m_increment, positive_scalars());
+        bool pragma = unroll && !dialect.unroll_pragma().empty();
+        // The loops the compiler made of a grid-stride reduction keep the
+        // short unroll: they run few iterations, and a deep one only costs
+        // registers.
+        bool deep = kernel_streams_strided_rows && v.rfind("__gpu_", 0) != 0;
+        if (pragma && !step_known && sign > 0) {
+            // A loop whose step is a run-time value, as the loop of one lane
+            // of an iteration is (gpu_vector_lanes.cpp), is counted by the
+            // number of its iterations: nvcc unrolls this form, but not
+            // `for (i = start + lane; i <= end; i += lanes)`, whose
+            // iterations it cannot count ahead. A column sum over
+            // 12,288 rows reads 3.7 TB/s on an H200 in the second form and
+            // 4.4 TB/s in the first. The index still ends one step past the
+            // last iteration.
+            std::string trips = "__lfortran_trips_"
+                + std::to_string(loop_control_count);
+            std::string count = "__lfortran_count_"
+                + std::to_string(loop_control_count++);
+            std::string type_name = gpu_type(type);
+            src << get_indent() << v << " = ";
+            visit_expr(head.m_start);
+            src << ";\n";
+            src << get_indent() << "const " << type_name << " " << trips
+                << " = " << end << " >= " << v << " ? (" << end << " - " << v
+                << ") / " << inc << " + 1 : 0;\n";
+            src << get_indent() << dialect.unroll_pragma(deep) << "\n";
+            src << get_indent() << "for (" << type_name << " " << count
+                << " = 0; " << count << " < " << trips << "; " << count
+                << "++, " << v << " += " << inc << ") {\n";
+            return;
+        }
+        if (pragma) {
+            src << get_indent() << dialect.unroll_pragma(deep) << "\n";
         }
         src << get_indent() << "for (" << v << " = ";
         visit_expr(head.m_start);
         src << "; ";
-        int sign = step_known ? (step > 0 ? 1 : -1)
-            : CUtils::loop_step_sign(head.m_increment, positive_scalars());
         if (sign != 0) {
             src << v << (sign > 0 ? " <= " : " >= ") << end;
         } else {

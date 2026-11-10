@@ -102,13 +102,13 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_1_17g
             __gpu_matmul_tmp[((int)((1 + (__gpu_mm_i - ((int)__lb_op_0)))) - (1))] = __gpu_mm_acc;
         }
         __1__libasr_index_ = 1;
-        #pragma unroll 16
+        #pragma unroll 64
         for (__1_t = 1; __1_t <= (1 + __dim_op_0 - 1); __1_t++) {
             r[((int)(__1__libasr_index_) - (1))] = __gpu_matmul_tmp[((int)(__1_t) - (1))];
             __1__libasr_index_ = (__1__libasr_index_ + 1);
         }
         const int __lfortran_end_1 = __workspace_extent2;
-        #pragma unroll 16
+        #pragma unroll 64
         for (__1_t1 = 1; __1_t1 <= __lfortran_end_1; __1_t1++) {
             r[((int)(__1__libasr_index_) - (1))] = tail[((int)(__1_t1) - (1))];
             __1__libasr_index_ = (__1__libasr_index_ + 1);

@@ -1,16 +1,52 @@
 #include <stdint.h>
 
+// The lanes of an iteration are consecutive threads of a warp, or,
+// with more than 32 of them, all the threads of a block.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_combine(T v, T w) {
+    return op == 0 ? v + w : op == 1 ? v * w
+        : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+}
+
 // The combination of what the `lanes` lanes of an iteration hold,
 // in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
 // largest. With one lane, the lane's own value.
 template <int op, typename T>
 __device__ inline T __lfortran_lane_reduce(T v, int lanes) {
-    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {
-        T w = __shfl_xor_sync(0xffffffffu, v, offset, lanes);
-        v = op == 0 ? v + w : op == 1 ? v * w
-            : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+    int width = lanes < 32 ? lanes : 32;
+    for (int offset = width >> 1; offset > 0; offset >>= 1) {
+        v = __lfortran_lane_combine<op>(v,
+            __shfl_xor_sync(0xffffffffu, v, offset, width));
+    }
+    if (lanes > 32) {
+        // Every warp of the block holds the combination of its
+        // own lanes; the warps combine theirs in shared memory.
+        __shared__ T partial[32];
+        if ((threadIdx.x & 31) == 0) partial[threadIdx.x >> 5] = v;
+        __syncthreads();
+        v = partial[0];
+        for (int w = 1; w < (lanes >> 5); w++) {
+            v = __lfortran_lane_combine<op>(v, partial[w]);
+        }
+        __syncthreads();
     }
     return v;
+}
+
+// The value in the first lane of the iteration, in every lane.
+// With one lane per iteration the threads of a warp run different
+// iterations, which need not reach the same shuffle, and the value
+// is the thread's own.
+template <typename T>
+__device__ inline T __lfortran_lane_broadcast(T v, int lanes) {
+    if (lanes <= 1) return v;
+    if (lanes <= 32) return __shfl_sync(0xffffffffu, v, 0, lanes);
+    __shared__ T first;
+    if (threadIdx.x == 0) first = v;
+    __syncthreads();
+    T r = first;
+    __syncthreads();
+    return r;
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_0_32gpu_cuda_kernel_constant_extents {

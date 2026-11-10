@@ -45,7 +45,10 @@ iterations, and one otherwise, where the iterations alone fill the GPU and
 the lanes would only repeat each other's work -- unless the lanes read along
 the columns that the iterations take one each of, which one lane per
 iteration would read 32 at a time: then up to `lanes_column_iterations_max`
-(LaneRewriter::pays_at_any_size).
+(LaneRewriter::pays_at_any_size), and on a device whose lanes can be the
+whole block (GpuDeviceCapabilities::lanes_column_block) the lanes of such a
+kernel are all the threads of a block, one iteration per block: they
+combine, broadcast and wait for each other through shared memory.
 
 Every lane of an iteration runs the body of the iteration, with the same
 values in its private scalars, except for these statements:
@@ -3133,9 +3136,12 @@ public:
             ? std::max(caps.lanes_iterations_max,
                 caps.lanes_column_iterations_max)
             : caps.lanes_iterations_max;
+        int kernel_lanes = column_kernels.count(&kernel)
+            && caps.lanes_column_block > lanes
+            ? caps.lanes_column_block : lanes;
         pass_result.push_back(al, b.If(b.LtE(count,
             b.i_t(iterations_max, count_type)),
-            {b.Assignment(n, b.i32(lanes))}, {}));
+            {b.Assignment(n, b.i32(kernel_lanes))}, {}));
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x.n_args + 1);
         for (size_t i = 0; i < x.n_args; i++) args.push_back(al, x.m_args[i]);
@@ -3168,7 +3174,8 @@ void pass_gpu_vector_lanes(Allocator &al, ASR::TranslationUnit_t &unit,
     // iterations, so it starts at most this many threads, also when it runs
     // in chunks (device_launch_expand.cpp): few enough to be numbered in
     // the 32-bit thread index of a Metal kernel.
-    LCOMPILERS_ASSERT(caps.lanes_per_iteration
+    LCOMPILERS_ASSERT(std::max(caps.lanes_per_iteration,
+            caps.lanes_column_block)
         <= std::numeric_limits<int32_t>::max() / std::max(
             caps.lanes_iterations_max, caps.lanes_column_iterations_max));
     VectorLanes v(al, caps);
