@@ -68,6 +68,10 @@ public:
         needs_lane_reduce = true;
         ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuLaneBroadcast(x);
     }
+    void visit_GpuLaneBarrier(const ASR::GpuLaneBarrier_t &x) {
+        needs_lane_reduce = true;
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuLaneBarrier(x);
+    }
     // The type of an integer power device code computes, by kind.
     std::map<int64_t, ASR::ttype_t*> integer_power_types;
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t &x) {
@@ -4188,6 +4192,12 @@ public:
             && current_kernel_layout->m_lanes != nullptr;
     }
 
+    // Whether a launch may give an iteration of the kernel being written
+    // the lanes of a whole block, more than a SIMD-group has.
+    bool kernel_has_block_lanes() const {
+        return kernel_has_lanes() && current_kernel_layout->m_lanes_max > 32;
+    }
+
     // Whether a sequential loop with this body is unrolled
     // (dialect.unroll_pragma): one of at most 8 statements with no loop in
     // it, such as the inner product of a matrix-vector product. Unrolled,
@@ -5113,7 +5123,8 @@ public:
                 LCOMPILERS_ASSERT(current_kernel_layout != nullptr
                     && current_kernel_layout->m_lanes != nullptr);
                 dialect.emit_lane_barrier(src, get_indent(),
-                    ASRUtils::symbol_name(current_kernel_layout->m_lanes));
+                    ASRUtils::symbol_name(current_kernel_layout->m_lanes),
+                    kernel_has_block_lanes());
                 break;
             }
             case ASR::stmtType::Return: {
@@ -6182,7 +6193,7 @@ public:
                     : r->m_op == ASR::reduction_opType::ReduceMul ? 1
                     : r->m_op == ASR::reduction_opType::ReduceMIN ? 2 : 3;
                 src << dialect.lane_reduce(expr_str(r->m_arg), op,
-                    kernel_has_lanes());
+                    kernel_has_lanes(), kernel_has_block_lanes());
                 break;
             }
             case ASR::exprType::GpuLaneIndex: {
@@ -6195,9 +6206,11 @@ public:
                 // A logical travels as an integer.
                 if (ASRUtils::is_logical(*b->m_type)) {
                     src << "(" << dialect.lane_broadcast("(int)("
-                        + expr_str(b->m_arg) + ")") << " != 0)";
+                        + expr_str(b->m_arg) + ")", kernel_has_block_lanes())
+                        << " != 0)";
                 } else {
-                    src << dialect.lane_broadcast(expr_str(b->m_arg));
+                    src << dialect.lane_broadcast(expr_str(b->m_arg),
+                        kernel_has_block_lanes());
                 }
                 break;
             }

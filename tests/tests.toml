@@ -5745,6 +5745,12 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_lanes_groups_01.f90"
 gpu_cuda_kernel = true
 
+# On an NVIDIA GPU, a launch of a few iterations gives each the lanes of a
+# whole block, which combine their values across warps in shared memory.
+[[test]]
+filename = "../integration_tests/gpu_lanes_block_02.f90"
+gpu_cuda_kernel = true
+
 # A loop in one branch of an `if` inside a loop, shared out between the
 # lanes.
 [[test]]

@@ -398,7 +398,11 @@ gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 -- sets to the bounds of its box. The launch reads the bounds of the whole
 -- dimension from its arguments for them.
 gpu_launch_dimension = (symbol start_parameter, symbol end_parameter)
-gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions, symbol? lanes)
+-- `lanes`: the argument that holds the lanes an iteration runs on, if the
+-- kernel shares its iterations between lanes (gpu_vector_lanes.cpp).
+-- `lanes_max`: the most lanes a launch gives an iteration of the kernel (0
+-- without `lanes`): above a warp, the lanes are the warps of a block.
+gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions, symbol? lanes, int lanes_max)
 -- Facts about a Function that is an interface body (deftype Interface).
 -- `abstract`: the body is in an abstract interface block. Its name is not a
 -- global identifier: it only names the characteristics of procedure pointers,
