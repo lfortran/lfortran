@@ -6808,7 +6808,13 @@ TEST_CASE("FortranEvaluator execute: a streaming cell keeps the main thread's st
         MESSAGE("RLIMIT_STACK is below 8 MiB; skipping");
         return;
     }
+// pthread_getattr_default_np and pthread_setattr_default_np were added in
+// glibc 2.18. The conda-forge linux build compiles against the glibc 2.17
+// sysroot, whose pthread.h does not declare them. Keep the __GLIBC__ test
+// outside the version check: Clang rejects an undefined function-like macro
+// in #if, so macOS must not expand __GLIBC_PREREQ.
 #ifdef __GLIBC__
+#if __GLIBC_PREREQ(2, 18)
     struct DefaultStack {
         pthread_attr_t saved;
         DefaultStack() {
@@ -6824,6 +6830,7 @@ TEST_CASE("FortranEvaluator execute: a streaming cell keeps the main thread's st
             pthread_attr_destroy(&saved);
         }
     } default_stack;
+#endif
 #endif
     CompilerOptions cu = execute_options();
     FortranEvaluator e(cu);
