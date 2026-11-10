@@ -92,6 +92,23 @@ static inline cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count,
         int device, cudaStream_t stream) {
     return hipMemPrefetchAsync(ptr, count, device, stream);
 }
+static inline cudaError_t cudaMallocHost(void **ptr, size_t size) {
+    return hipHostMalloc(ptr, size, 0);
+}
+static inline cudaError_t cudaFreeHost(void *ptr) {
+    return hipHostFree(ptr);
+}
+typedef hipEvent_t cudaEvent_t;
+static inline cudaError_t cudaEventCreate(cudaEvent_t *event) {
+    return hipEventCreate(event);
+}
+static inline cudaError_t cudaEventRecord(cudaEvent_t event,
+        cudaStream_t stream) {
+    return hipEventRecord(event, stream);
+}
+static inline cudaError_t cudaEventSynchronize(cudaEvent_t event) {
+    return hipEventSynchronize(event);
+}
 static inline cudaError_t cudaMemcpy(void *dst, const void *src,
         size_t count, cudaMemcpyKind kind) {
     return hipMemcpy(dst, src, count, kind);

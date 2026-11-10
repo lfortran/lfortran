@@ -310,6 +310,89 @@ static void managed_to_device(void *p, size_t size) {
     (void)size;
 }
 
+
+// Fills the `length` bytes at `dst`, the start of or inside a managed
+// allocation no launch has used yet, with `fill`, and puts them on the device.
+// Filling such an array from the host makes the driver map every page of it on
+// the host first (about 20 GB/s) and the first launch then move it all to the
+// device. Here the allocation is placed on the device first, and `fill`
+// (which reads at most `n` bytes of the data at `offset` into `buffer`, and
+// returns the bytes it read) reads into page-locked buffers that are copied to
+// the device while the next one is read: about 35 GB/s, and the array is on the
+// device when the call returns. Returns the bytes filled, or -1 and nothing
+// done when the memory is not such an array or the buffers cannot be made.
+typedef int64_t (*lfortran_gpu_fill_t)(void *context, char *buffer,
+    int64_t n, int64_t offset);
+
+enum { STAGE_BUFFERS = 4, STAGE_BYTES = 32 << 20 };
+static char *stage_buffer[STAGE_BUFFERS];
+static cudaEvent_t stage_event[STAGE_BUFFERS];
+static volatile int stage_lock_word = 0;
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int64_t lfortran_gpu_fill_managed(void *dst, int64_t length,
+        lfortran_gpu_fill_t fill, void *context) {
+    if (n_managed == 0 || length <= 0) return -1;
+    while (__sync_lock_test_and_set(&stage_lock_word, 1)) {}
+    int64_t result = -1, done = 0;
+    int chunks = 0, device = 0, usable = 0;
+    size_t i = 0, size = 0;
+    char *base = NULL;
+    if (!stage_buffer[0]) {
+        for (int i = 0; i < STAGE_BUFFERS; i++) {
+            if (cudaMallocHost((void **)&stage_buffer[i], STAGE_BYTES)
+                    != cudaSuccess || cudaEventCreate(&stage_event[i])
+                    != cudaSuccess) {
+                for (int j = 0; j <= i; j++) {
+                    if (stage_buffer[j]) cudaFreeHost(stage_buffer[j]);
+                    stage_buffer[j] = NULL;
+                }
+                goto done;
+            }
+        }
+    }
+    managed_lock();
+    i = managed_upper(dst);
+    usable = i > 0 && managed[i - 1].fresh
+        && (char *)dst + length <= managed[i - 1].base + managed[i - 1].size;
+    base = usable ? managed[i - 1].base : NULL;
+    size = usable ? managed[i - 1].size : 0;
+    if (usable) managed[i - 1].fresh = 0;
+    managed_unlock();
+    if (!usable) goto done;
+    check(cudaGetDevice(&device), "cudaGetDevice");
+    check(prefetch_to_device(base, size, device), "cudaMemPrefetchAsync");
+    device_busy = 1;
+    while (done < length) {
+        int b = chunks % STAGE_BUFFERS;
+        // The copy that used the buffer last is finished before it is reused.
+        if (chunks >= STAGE_BUFFERS) {
+            check(cudaEventSynchronize(stage_event[b]), "cudaEventSynchronize");
+        }
+        int64_t n = length - done;
+        if (n > STAGE_BYTES) n = STAGE_BYTES;
+        int64_t got = fill(context, stage_buffer[b], n, done);
+        if (got <= 0) break;
+        check(cudaMemcpyAsync((char *)dst + done, stage_buffer[b], (size_t)got,
+            cudaMemcpyHostToDevice, 0), "cudaMemcpyAsync H2D");
+        check(cudaEventRecord(stage_event[b], 0), "cudaEventRecord");
+        done += got;
+        chunks++;
+        if (got < n) break;
+    }
+    // Every copy is finished before the buffers are used again or the caller
+    // looks at the data.
+    for (int j = 0; j < STAGE_BUFFERS && j < chunks; j++) {
+        check(cudaEventSynchronize(stage_event[j]), "cudaEventSynchronize");
+    }
+    result = done;
+done:
+    __sync_lock_release(&stage_lock_word);
+    return result;
+}
+
 static size_t managed_size(void *p) {
     if (n_managed == 0 || !p) return 0;
     managed_lock();
@@ -1020,9 +1103,19 @@ static host_allocator *program_allocator(void) {
 }
 #endif
 
+#ifdef __cplusplus
+extern "C"
+#endif
+void _lfortran_set_gpu_fill(int64_t (*function)(void *, int64_t,
+    int64_t (*)(void *, char *, int64_t, int64_t), void *))
+    __attribute__((weak));
+
 __attribute__((constructor)) static void install_managed_allocator(void) {
     host_allocator *a = program_allocator();
     if (!a || a->alloc == managed_alloc) return;
+    if (_lfortran_set_gpu_fill) {
+        _lfortran_set_gpu_fill(lfortran_gpu_fill_managed);
+    }
     previous_allocator = *a;
     a->alloc = managed_alloc;
     a->realloc_func = managed_realloc;
