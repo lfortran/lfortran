@@ -15,6 +15,9 @@ character(len=32) :: field
 character(len=22) :: e22
 character(len=24) :: e24
 character(len=8) :: f8
+character(len=12) :: es12
+character(len=46) :: es46
+real(k30) :: xeps
 integer :: p
 
 if (dp /= 8) error stop
@@ -71,6 +74,20 @@ write(f8, '(RD,F8.4)') -1.0e-10_k30
 if (f8 /= ' -0.0001') error stop
 write(f8, '(F8.4)') 1.0e-10_k30
 if (f8 /= '  0.0000') error stop
+
+! 1 + epsilon is not a 34-digit terminating decimal. Directed rounding and a
+! 35-digit field must see the remainder past those digits.
+xeps = 1.0_k30 + epsilon(1.0_k30)
+write(f8, '(RU,F8.4)') xeps
+if (f8 /= '  1.0001') error stop
+write(f8, '(RU,F8.2)') xeps
+if (f8 /= '    1.01') error stop
+write(f8, '(RD,F8.4)') -xeps
+if (f8 /= ' -1.0001') error stop
+write(es12, '(RU,ES12.2)') xeps
+if (es12 /= '    1.01E+00') error stop
+write(es46, '(ES46.34E4)') xeps
+if (es46 /= '    1.0000000000000000000000000000000002E+0000') error stop
 contains
     subroutine check_real16_field(field)
         character(len=*), intent(in) :: field

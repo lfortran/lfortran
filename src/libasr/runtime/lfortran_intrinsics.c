@@ -1818,9 +1818,12 @@ static long long round_scaled_digits(const char *digits, int drop_digits,
 /* Fortran E/ES/D/F/G editing of a binary128 value.
  * `fmt_real` is double wherever long double is not x87 (aarch64 included),
  * so these descriptors must not convert through double or long double.
- * The digits come from lf_float128_to_str; this only places the decimal
- * point, rounds to the edit descriptor, and applies the field width. */
+ * Digits come from the binary128 big-integer loop, including one guard
+ * past a 35-digit field and a sticky flag. This only places the decimal
+ * point, rounds to the edit descriptor, and applies the field width.
+ * 35 significant digits plus the following guard digit. */
 #define F128_DIGITS 480
+enum { F128_EDITOR_DIGITS = 36 };
 
 typedef struct {
     int negative;
@@ -1829,62 +1832,88 @@ typedef struct {
     int sci_exp;
     char digits[F128_DIGITS];
     int nd;
+    /* digits[nd..known-1] are exact zeros. A nonzero remainder, if any,
+     * starts at index `known`. */
+    int known;
+    int sticky;
 } f128_dec;
 
 static void f128_load(const lf_float128 *v, f128_dec *o) {
-    char buf[64];
-    const char *p;
+    char digits[F128_EDITOR_DIGITS + 2];
+    int extra = 0;
+    int sticky = 0;
+    int vsign = 0;
+    int32_t dec_exp = 0;
+    int kind;
+    int i;
     memset(o, 0, sizeof(*o));
     o->negative = lf_f128_signbit(*v);
-    if (lf_f128_isnan(*v)) {
-        o->kind = 1;
-        return;
-    }
-    if (lf_f128_isinf(*v)) {
-        o->kind = 2;
-        return;
-    }
-    // 40 digits, so that 36 digits (the most binary128 needs) are exact
-    lf_float128_to_str_digits(buf, v->bytes, 40);
-    p = buf;
-    if (*p == '-') {
+    kind = lf_float128_digits(v->bytes, digits, F128_EDITOR_DIGITS, &extra, &sticky,
+                              &dec_exp, &vsign);
+    if (vsign) {
         o->negative = 1;
-        p++;
-    } else if (*p == '+') {
-        p++;
     }
-    if (*p == 'N' || *p == 'n') {
+    if (kind == 1) {
         o->kind = 1;
         return;
     }
-    if (*p == 'I' || *p == 'i') {
+    if (kind == 2) {
         o->kind = 2;
         return;
     }
-    while (isdigit((unsigned char)*p) && o->nd < 40) {
-        o->digits[o->nd++] = *p++;
+    if (kind == 3) {
+        o->digits[0] = '0';
+        o->digits[1] = '\0';
+        o->nd = 1;
+        o->known = 1;
+        o->zero = 1;
+        return;
     }
-    if (*p == '.') {
-        p++;
+    o->sci_exp = (int)dec_exp;
+    o->known = F128_EDITOR_DIGITS;
+    o->nd = F128_EDITOR_DIGITS;
+    for (i = 0; i < F128_EDITOR_DIGITS; i++) {
+        o->digits[i] = digits[i];
     }
-    while (isdigit((unsigned char)*p) && o->nd < 40) {
-        o->digits[o->nd++] = *p++;
-    }
-    o->digits[o->nd] = '\0';
-    if (*p == 'E' || *p == 'e' || *p == 'D' || *p == 'd') {
-        o->sci_exp = atoi(p + 1);
-    }
+    /* The digit after the stored prefix is not kept; fold it into sticky. */
+    o->sticky = (extra != 0) || sticky;
     while (o->nd > 1 && o->digits[o->nd - 1] == '0') {
         o->nd--;
-        o->digits[o->nd] = '\0';
     }
-    o->zero = (o->nd == 0) || (o->nd == 1 && o->digits[0] == '0');
+    o->digits[o->nd] = '\0';
+    if (!o->sticky) {
+        o->known = o->nd;
+    }
+    o->zero = (o->nd == 1 && o->digits[0] == '0');
     if (o->zero) {
         o->digits[0] = '0';
         o->digits[1] = '\0';
         o->nd = 1;
+        o->known = 1;
+        o->sticky = 0;
         o->sci_exp = 0;
     }
+}
+
+/* True when rounding to `keep` significant digits must increment the prefix.
+ * A remainder past the stored digits still counts, including when those
+ * digits are a short exact prefix that would otherwise be padded with zeros. */
+static bool f128_remainder_rounds(const f128_dec *o, int keep, char rounding_mode) {
+    if (keep < o->nd) {
+        return should_round_up_digits(o->digits, keep, rounding_mode, o->negative);
+    }
+    if (!o->sticky) {
+        return false;
+    }
+    if (rounding_mode == 'u') {
+        return !o->negative;
+    }
+    if (rounding_mode == 'd') {
+        return o->negative;
+    }
+    /* Guard digit at `keep` is an implied zero, or was not generated.
+     * A sticky bit alone is not half an ulp. */
+    return false;
 }
 
 /* Round to `keep` significant digits. A carry past the first digit increments
@@ -1900,14 +1929,12 @@ static void f128_round_sig(f128_dec *o, int keep, char rounding_mode) {
         o->sci_exp = 0;
         return;
     }
-    if (o->nd < keep) {
-        memset(o->digits + o->nd, '0', (size_t)(keep - o->nd));
-        o->nd = keep;
-        o->digits[o->nd] = '\0';
-        return;
-    }
-    if (should_round_up_digits(o->digits, keep, rounding_mode, o->negative)) {
-        int i = keep - 1;
+    if (f128_remainder_rounds(o, keep, rounding_mode)) {
+        int i;
+        if (o->nd < keep) {
+            memset(o->digits + o->nd, '0', (size_t)(keep - o->nd));
+        }
+        i = keep - 1;
         while (i >= 0 && o->digits[i] == '9') {
             o->digits[i] = '0';
             i--;
@@ -1919,9 +1946,13 @@ static void f128_round_sig(f128_dec *o, int keep, char rounding_mode) {
             memset(o->digits + 1, '0', (size_t)(keep - 1));
             o->sci_exp++;
         }
+    } else if (o->nd < keep) {
+        memset(o->digits + o->nd, '0', (size_t)(keep - o->nd));
     }
     o->nd = keep;
     o->digits[o->nd] = '\0';
+    o->sticky = 0;
+    o->known = o->nd;
 }
 
 static int f128_exp_overflow(int expv, int exp_digits) {
@@ -2343,6 +2374,11 @@ static void handle_f128_float(char *format, lf_float128 val, int scale, char **r
             sticky = 1;
         }
     } else if (!o.zero && start > round_pos) {
+        sticky = 1;
+    }
+    /* Remainder past the generated digits, after trailing zeros were stripped. */
+    if (!sticky && o.sticky && !o.zero && start <= round_pos &&
+            start + o.known >= round_pos) {
         sticky = 1;
     }
     if (sticky && round_pos + 1 >= 0 && round_pos + 1 < buf_len &&
