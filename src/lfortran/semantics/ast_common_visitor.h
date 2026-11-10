@@ -20838,7 +20838,12 @@ public:
             ASR::dimension_t* v_Var_dims = nullptr;
             int64_t v_Var_n_dims = ASRUtils::extract_dimensions_from_ttype(
                 ASRUtils::expr_type(v_Var), v_Var_dims);
-            if( const_dim > v_Var_n_dims || const_dim < 1) {
+            // The rank of an assumed-rank array is known only when the
+            // program runs, so DIM is not checked against its declared
+            // rank (0), and its bounds are not known here.
+            bool is_assumed_rank = ASRUtils::is_assumed_rank_array(
+                ASRUtils::expr_type(v_Var));
+            if( (!is_assumed_rank && const_dim > v_Var_n_dims) || const_dim < 1) {
                 diag.add(Diagnostic(
                     "Dimension " + std::to_string(const_dim) +
                     " is invalid. Rank of the array, " +
@@ -20863,7 +20868,8 @@ public:
                 throw SemanticAbort();
             }
             const_dim = const_dim - 1;
-            if( v_Var_dims[const_dim].m_start && v_Var_dims[const_dim].m_length ) {
+            if( !is_assumed_rank && v_Var_dims[const_dim].m_start &&
+                v_Var_dims[const_dim].m_length ) {
                 ASR::expr_t* v_Var_start = ASRUtils::expr_value(v_Var_dims[const_dim].m_start);
                 ASR::expr_t* v_Var_length = ASRUtils::expr_value(v_Var_dims[const_dim].m_length);
                 if( bound == ASR::arrayboundType::LBound &&
