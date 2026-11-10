@@ -2931,7 +2931,7 @@ public:
             a_unit = nullptr;
             formatted = true;
         }
-        bool unit_explicit = false;
+        bool unit_explicit = (a_unit != nullptr);
         bool iostat_explicit = false;
         bool iomsg_explicit = false;
         if (_type == AST::decl_stmtType::Write && a_unit == nullptr) {
@@ -3512,6 +3512,19 @@ public:
                         "`asynchronous` must be of type String",
                         Level::Error, Stage::Semantic, {
                             Label("", {kwarg.m_value->base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+            } else {
+                static const std::set<std::string> ignored_specs = {
+                    "eor", "round", "sign", "delim", "blank"};
+                if (!ignored_specs.count(m_arg_str)) {
+                    diag.add(Diagnostic(
+                        "Unknown specifier `" + m_arg_str + "` in "
+                            + std::string(_type == AST::decl_stmtType::Read
+                                ? "READ" : "WRITE") + " statement",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
                         }));
                     throw SemanticAbort();
                 }
@@ -4281,6 +4294,14 @@ public:
         std::string node_name = "Inquire";
         fill_args_for_rewind_inquire_flush(x, 39, args, 40, argname2idx, node_name);
         ASR::expr_t *unit = args[0], *file = args[1], *iostat = args[2], *err = args[3];
+        if (unit && file) {
+            diag.add(Diagnostic(
+                "INQUIRE cannot contain both UNIT= and FILE= specifiers",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
         ASR::expr_t *exist = args[4], *opened = args[5], *number = args[6], *named = args[7];
         ASR::expr_t *name = args[8], *access = args[9], *sequential = args[10], *direct = args[11];
         ASR::expr_t *form = args[12], *formatted = args[13], *unformatted = args[14], *recl = args[15];
@@ -6127,7 +6148,26 @@ public:
                                             arg_vec.p, arg_vec.size(), stat, errmsg);
     }
 
+    bool is_in_main_program() {
+        SymbolTable *s = current_scope;
+        while (s && s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner)) {
+            ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+            if (ASR::is_a<ASR::Program_t>(*sym)) return true;
+            if (!ASR::is_a<ASR::Block_t>(*sym)) return false;
+            s = s->parent;
+        }
+        return false;
+    }
+
     void visit_Return(const AST::Return_t& x) {
+        if (compiler_options.std_f23_conformance && is_in_main_program()) {
+            diag.add(Diagnostic(
+                "RETURN statement is only allowed in a subprogram",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
         if (x.m_value) {
             // RETURN n — alternate return: assign n to __lfortran_alt_ret, then return
             ASR::symbol_t *alt_ret_sym = current_scope->resolve_symbol("__lfortran_alt_ret");
@@ -7282,7 +7322,15 @@ public:
         tmp = nullptr;
     }
 
-    void visit_Entry(const AST::Entry_t& /*x*/) {
+    void visit_Entry(const AST::Entry_t& x) {
+        if (is_in_main_program()) {
+            diag.add(Diagnostic(
+                "ENTRY statement is only allowed in a subprogram",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
         tmp = nullptr;
     }
 
