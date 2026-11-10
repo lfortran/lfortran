@@ -517,6 +517,25 @@ public:
         return ProcedureDeclaredLater::No;
     }
 
+    // An internal procedure hides the host's entities of its name (F2018
+    // 19.5.1.4), also before it is defined.
+    bool hidden_by_later_internal_procedure(const std::string &name,
+            ASR::symbol_t *sym) {
+        if (is_interface) return false;
+        SymbolTable *sym_scope = ASRUtils::symbol_parent_symtab(sym);
+        for (ContainedProcedureScope *procedures = contained_procedure_scope;
+                procedures && !procedures->is_module;
+                procedures = procedures->enclosing) {
+            ASR::symbol_t *declared = procedures->scope->get_symbol(name);
+            if (declared && !is_pending_proc_placeholder(declared)) return false;
+            if (procedures->find(name)) {
+                return sym_scope != procedures->scope
+                    && is_enclosing_scope(sym_scope, procedures->scope);
+            }
+        }
+        return false;
+    }
+
     bool host_contains_procedure(SymbolTable *scope, const std::string &name) {
         for (ContainedProcedureScope *procedures = contained_procedure_scope;
                 procedures; procedures = procedures->enclosing) {

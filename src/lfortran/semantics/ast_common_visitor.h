@@ -7993,6 +7993,13 @@ public:
         return ProcedureDeclaredLater::No;
     }
 
+    // Whether an internal procedure that is not defined yet hides `sym`,
+    // what `name` resolves to. Only the symbol table visitor overrides this.
+    bool hidden_by_later_internal_procedure(const std::string &/*name*/,
+            ASR::symbol_t */*sym*/) {
+        return false;
+    }
+
     // Whether `scope`, whose main program or procedure is not created yet,
     // is the scope of a host being visited that contains the procedure
     // `name`. Only the symbol table visitor overrides this, as above.
@@ -15457,6 +15464,10 @@ public:
                 type_declaration = existing;
             } else {
                 ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
+                if (v && static_cast<Derived&>(*this)
+                        .hidden_by_later_internal_procedure(func_name, v)) {
+                    v = nullptr;
+                }
                 // A module procedure or an internal procedure may be defined
                 // after it is used as an interface. Then the name is not the
                 // specific intrinsic function, unless it has the INTRINSIC
