@@ -48,7 +48,12 @@ iteration would read 32 at a time: then up to `lanes_column_iterations_max`
 (LaneRewriter::pays_at_any_size), and on a device whose lanes can be the
 whole block (GpuDeviceCapabilities::lanes_column_block) the lanes of such a
 kernel are all the threads of a block, one iteration per block: they
-combine, broadcast and wait for each other through shared memory.
+combine, broadcast and wait for each other through shared memory. A launch
+of at most `lanes_block_iterations_max` iterations, which fills a small part
+of the GPU even with a warp each, gives each iteration the lanes of a whole
+block (`lanes_block`, where the device combines values across its
+SIMD-groups): the warps of the block share the loops out and meet in shared
+memory behind a block barrier.
 
 Every lane of an iteration runs the body of the iteration, with the same
 values in its private scalars, except for these statements:
@@ -3203,6 +3208,11 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
         lanes /= 2;
     }
     k.lanes = add_lanes_parameter(al, kernel);
+    // A kernel that gets fewer lanes than a warp has no use for the lanes of
+    // a whole block.
+    kernel.m_gpu->m_lanes_max = lanes == caps.lanes_per_iteration
+        ? std::max({lanes, caps.lanes_block,
+            any_size ? caps.lanes_column_block : 0}) : lanes;
     rewrite.apply(kernel.m_body, kernel.n_body);
     return true;
 }
@@ -3259,6 +3269,13 @@ public:
         pass_result.push_back(al, b.If(b.LtE(count,
             b.i_t(iterations_max, count_type)),
             {b.Assignment(n, b.i32(kernel_lanes))}, {}));
+        // A launch of few iterations gives each a whole block, unless the
+        // kernel has no use for more lanes than it gets.
+        if (kernel.m_gpu->m_lanes_max > caps.lanes_per_iteration) {
+            pass_result.push_back(al, b.If(b.LtE(count,
+                b.i_t(caps.lanes_block_iterations_max, count_type)),
+                {b.Assignment(n, b.i32(kernel.m_gpu->m_lanes_max))}, {}));
+        }
         // A tiled launch (gpu_offload.cpp) numbers an iteration in its tile
         // from the thread index along the tile's width and height, which
         // lanes narrow to the iterations' (the lanes of one iteration share

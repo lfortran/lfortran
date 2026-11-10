@@ -93,6 +93,15 @@ struct GpuDeviceCapabilities {
     // block), which combine and wait for each other through shared memory.
     // Zero keeps lanes_per_iteration.
     int lanes_column_block = 0;
+    // A launch of at most `lanes_block_iterations_max` iterations gives
+    // each the lanes of a whole block, `lanes_block` of them, where the
+    // device combines their values across SIMD-groups; zero or one means
+    // an iteration never has more lanes than lanes_per_iteration. A
+    // launch of so few iterations leaves most of the GPU idle even with
+    // 32 lanes, and the lanes then sit in different warps whose results
+    // meet in shared memory behind a block barrier.
+    int lanes_block = 1;
+    int64_t lanes_block_iterations_max = 1024;
     // Whether the lanes of an iteration can share a loop that accumulates
     // into private scalars and combine what each lane accumulated
     // (GpuLaneReduce).
