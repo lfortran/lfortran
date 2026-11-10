@@ -719,10 +719,11 @@ namespace {
 template <class Visit>
 void visit_cuda_program(const std::string &source,
         const std::string &filename, const std::string &name, Visit visit,
-        int64_t chunk_limit = 2147483647) {
+        int64_t chunk_limit = 2147483647, bool warps = false) {
     CompilerOptions options;
     options.gpu_backend = "cuda";
     options.po.gpu_offload_cuda = true;
+    options.po.gpu_cuda_warps = warps;
     options.po.gpu_chunk_limit = chunk_limit;
     options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     FortranEvaluator evaluator(options);
@@ -975,6 +976,62 @@ end program
         INFO("launch " << i);
         CHECK(launches[i] == expected[i]);
     }
+}
+
+TEST_CASE("GPU launches with lanes are not tiled") {
+    // The lanes of an iteration share a thread index, which a tiled kernel
+    // reads as the place in its tile: only a fraction of each tile would
+    // run. Where a launch gets lanes, the host passes __tiled = 0.
+    const std::string source = R"(
+program p
+    implicit none
+    integer, parameter :: hv = 48, dv = 128
+    real :: state(dv, dv, hv), v(dv, hv), tot(dv, hv)
+    integer :: h, row
+    do concurrent (integer :: h = 1:hv, row = 1:dv)
+        block
+            state(:, row, h) = state(:, row, h)*2
+            tot(row, h) = sum(state(:, row, h)*v(:, h))
+        end block
+    end do
+    print *, tot(1, 1)
+end program
+)";
+    struct Launches : public ASR::BaseWalkVisitor<Launches> {
+        size_t tiled_with_lanes = 0, resets = 0, seen_resets = 0;
+        void visit_If(const ASR::If_t &x) {
+            // `if (__gpu_lanes > 1) __gpu_tiled = 0`
+            if (x.n_body == 1 && x.n_orelse == 0
+                    && ASR::is_a<ASR::Assignment_t>(*x.m_body[0])) {
+                ASR::expr_t *target =
+                    ASR::down_cast<ASR::Assignment_t>(x.m_body[0])->m_target;
+                if (ASR::is_a<ASR::Var_t>(*target) && std::string(
+                        ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(
+                            target)->m_v)).rfind("__gpu_tiled", 0) == 0) {
+                    seen_resets++;
+                }
+            }
+            ASR::BaseWalkVisitor<Launches>::visit_If(x);
+        }
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            auto *kernel = ASR::down_cast<ASR::Function_t>(x.m_kernel);
+            bool tiled = false;
+            for (size_t i = 0; i < kernel->n_args; i++) {
+                tiled = tiled || std::string(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(kernel->m_args[i])->m_v))
+                    .rfind("__tiled", 0) == 0;
+            }
+            if (tiled && kernel->m_gpu->m_lanes != nullptr) {
+                tiled_with_lanes++;
+                // The reset comes before the launch that uses it.
+                if (seen_resets > resets) resets++;
+            }
+        }
+    } launches;
+    visit_cuda_program(source, "gpu_lanes_tiled.f90", "p",
+        [&](ASR::stmt_t &s) { launches.visit_stmt(s); }, 2147483647, true);
+    CHECK(launches.tiled_with_lanes == 1);
+    CHECK(launches.resets == launches.tiled_with_lanes);
 }
 
 TEST_CASE("GPU tiled launches pad a nest by at most a quarter") {

@@ -3142,6 +3142,25 @@ public:
         pass_result.push_back(al, b.If(b.LtE(count,
             b.i_t(iterations_max, count_type)),
             {b.Assignment(n, b.i32(kernel_lanes))}, {}));
+        // A tiled launch (gpu_offload.cpp) numbers an iteration in its tile
+        // from the thread index along the tile's width and height, which
+        // lanes narrow to the iterations' (the lanes of one iteration share
+        // a thread index): only a fraction of each tile would run. A launch
+        // with lanes runs flat instead, with the threads the launch started
+        // for the tiles, of which the ones past the iterations return.
+        for (size_t i = 0; i < x.n_args && i < kernel.n_args; i++) {
+            ASR::symbol_t *parameter = ASR::down_cast<ASR::Var_t>(
+                kernel.m_args[i])->m_v;
+            if (std::string(ASRUtils::symbol_name(parameter)).rfind(
+                    "__tiled", 0) != 0
+                    || !ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value)) {
+                continue;
+            }
+            ASR::expr_t *tiled = x.m_args[i].m_value;
+            pass_result.push_back(al, b.If(b.Gt(n, b.i32(1)),
+                {b.Assignment(tiled, b.i_t(0, ASRUtils::expr_type(tiled)))},
+                {}));
+        }
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x.n_args + 1);
         for (size_t i = 0; i < x.n_args; i++) args.push_back(al, x.m_args[i]);
