@@ -4268,12 +4268,22 @@ public:
     // `len` asks about a property of its designator rather than reading it,
     // and 10.1.11 p2 (7) permits it, so the designator inquired about is not
     // walked into; anything else in the inquiry still is.
+    //
+    // The ac-do-variable of an array constructor implied-do loop has the
+    // scope of the implied-do (19.4), so reading it in the values is not
+    // reading a local. Such an implied-do loop is not supported yet in a
+    // specification expression, so the first one whose ac-do-variable is a
+    // local of the scoping unit is found separately, for its own diagnostic.
     class SpecificationExprLocalFinder :
             public ASR::BaseWalkVisitor<SpecificationExprLocalFinder> {
         public:
             CommonVisitor &v;
             ASR::symbol_t *local_sym = nullptr;
             Location local_loc = {};
+            const ASR::ImpliedDoLoop_t *implied_do_loop = nullptr;
+            // The ac-do-variables of the implied-do loops whose values are
+            // being walked.
+            std::vector<ASR::symbol_t*> ac_do_variables;
 
             SpecificationExprLocalFinder(CommonVisitor &v_) : v{v_} {}
 
@@ -4281,10 +4291,36 @@ public:
                 if (local_sym != nullptr) {
                     return;
                 }
+                if (std::find(ac_do_variables.begin(), ac_do_variables.end(),
+                        x.m_v) != ac_do_variables.end()) {
+                    return;
+                }
                 if (v.is_local_of_current_scoping_unit(x.m_v)) {
                     local_sym = x.m_v;
                     local_loc = x.base.base.loc;
                 }
+            }
+
+            // The implied-do control is outside the scope of the
+            // ac-do-variable, and is walked like any other primary.
+            void visit_ImpliedDoLoop(const ASR::ImpliedDoLoop_t &x) {
+                this->visit_expr(*x.m_start);
+                this->visit_expr(*x.m_end);
+                if (x.m_increment) {
+                    this->visit_expr(*x.m_increment);
+                }
+                ASR::symbol_t *ac_do_variable = ASR::is_a<ASR::Var_t>(*x.m_var)
+                    ? ASR::down_cast<ASR::Var_t>(x.m_var)->m_v : nullptr;
+                if (implied_do_loop == nullptr &&
+                        v.is_local_of_current_scoping_unit(ac_do_variable)) {
+                    implied_do_loop = &x;
+                }
+                ac_do_variables.push_back(ac_do_variable);
+                for (size_t i = 0; i < x.n_values; i++) {
+                    this->visit_expr(*x.m_values[i]);
+                }
+                this->visit_ttype(*x.m_type);
+                ac_do_variables.pop_back();
             }
 
             void visit_ArraySize(const ASR::ArraySize_t &x) {
@@ -4357,7 +4393,9 @@ public:
     }
 
     // Rejects `e`, the array bound or character length just built for
-    // `context`, when it reads a local of the scoping unit being compiled.
+    // `context`, when it reads a local of the scoping unit being compiled,
+    // or when it has an array constructor implied-do loop whose
+    // ac-do-variable is such a local, which is not supported yet.
     // The context is passed in rather than read from
     // `restricted_expr_context`, because a character length is checked once
     // its `RestrictedExprScope` has already been left.
@@ -4374,12 +4412,23 @@ public:
         }
         SpecificationExprLocalFinder finder(*this);
         finder.visit_expr(*e);
+        std::string what = (context == RestrictedExprContext::CharacterLength)
+            ? "a character length" : "an array bound";
         if (finder.local_sym == nullptr) {
+            // LBOUND and UBOUND without DIM of an assumed-rank array are
+            // also built as one, `[(ubound(c, i), i = 1, rank(c))]`.
+            if (finder.implied_do_loop != nullptr) {
+                diag.add(Diagnostic(
+                    "an array constructor with an implied-do loop in a "
+                    "specification expression is not supported yet",
+                    Level::Error, Stage::Semantic, {
+                        Label("an implied-do loop is evaluated here to give "
+                            + what, {finder.implied_do_loop->base.base.loc})}));
+                throw SemanticAbort();
+            }
             return;
         }
         std::string name = ASRUtils::symbol_name(finder.local_sym);
-        std::string what = (context == RestrictedExprContext::CharacterLength)
-            ? "a character length" : "an array bound";
         diag.add(Diagnostic(
             "the variable '" + name + "' is local to this scoping unit, so it "
             "cannot appear in a specification expression",
@@ -20779,6 +20828,42 @@ public:
         return ASRUtils::make_ArraySize_t_util(al, loc, v, dim, type, nullptr, false);
     }
 
+    // The rank of an assumed-rank array is known only when the program runs,
+    // so the bounds of all its dimensions are the array constructor
+    // `[(lbound(v, i), i = 1, rank(v))]` (or `ubound`).
+    ASR::asr_t* make_assumed_rank_bounds(const Location& loc, ASR::expr_t* v,
+            ASR::ttype_t* type, ASR::arrayboundType bound) {
+        // `rank` and a dimension of an array descriptor are integer(4).
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        ASR::expr_t* dim_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            declare_implicit_variable2(loc,
+                current_scope->get_unique_name("lfortran_implied_do_dim"),
+                ASRUtils::intent_local, int_type)));
+        ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            1, int_type));
+        Vec<ASR::expr_t*> values;
+        values.reserve(al, 1);
+        values.push_back(al, ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, v,
+            dim_var, type, bound, nullptr)));
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 1);
+        args.push_back(al, ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(al, loc,
+            values.p, values.size(), dim_var, one,
+            ASRUtils::EXPR(ASR::make_ArrayRank_t(al, loc, v, int_type, nullptr)),
+            nullptr, type, nullptr)));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = one;
+        dim.m_length = nullptr;
+        dims.push_back(al, dim);
+        ASR::ttype_t* result_type = ASRUtils::duplicate_type(al, type, &dims,
+            ASR::array_physical_typeType::DescriptorArray, true);
+        return ASRUtils::make_ArrayConstructor_t_util(al, loc, args.p,
+            args.size(), result_type, ASR::arraystorageType::ColMajor);
+    }
+
     ASR::asr_t* create_ArrayBound(const AST::FuncCallOrArray_t& x, std::string& bound_name) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
@@ -20796,6 +20881,9 @@ public:
             ASRUtils::is_pointer(ASRUtils::expr_type(v_Var));
         ASR::expr_t* bound_value = nullptr;
         if (dim == nullptr) {
+            if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(v_Var))) {
+                return make_assumed_rank_bounds(x.base.base.loc, v_Var, type, bound);
+            }
             int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(v_Var));
             // For assumed-size arrays (UnboundedPointerArray), ubound requires DIM
             ASR::ttype_t* v_Var_type = ASRUtils::type_get_past_allocatable_pointer(
@@ -20838,7 +20926,24 @@ public:
             ASR::dimension_t* v_Var_dims = nullptr;
             int64_t v_Var_n_dims = ASRUtils::extract_dimensions_from_ttype(
                 ASRUtils::expr_type(v_Var), v_Var_dims);
-            if( const_dim > v_Var_n_dims || const_dim < 1) {
+            // The rank of an assumed-rank array is known only when the
+            // program runs, so DIM is not checked against its declared
+            // rank (0), and its bounds are not known here. The rank of an
+            // array is at most 15, so DIM is checked against that.
+            bool is_assumed_rank = ASRUtils::is_assumed_rank_array(
+                ASRUtils::expr_type(v_Var));
+            constexpr int64_t max_rank = 15;
+            if( is_assumed_rank && (const_dim < 1 || const_dim > max_rank) ) {
+                diag.add(Diagnostic(
+                    "`dim` argument of `" + bound_name + "` must be between 1 "
+                    "and " + std::to_string(max_rank) + " for an assumed-rank "
+                    "array",
+                    Level::Error, Stage::Semantic, {
+                        Label("`dim` is " + std::to_string(const_dim),
+                            {dim->base.loc})}));
+                throw SemanticAbort();
+            }
+            if( !is_assumed_rank && (const_dim > v_Var_n_dims || const_dim < 1) ) {
                 diag.add(Diagnostic(
                     "Dimension " + std::to_string(const_dim) +
                     " is invalid. Rank of the array, " +
@@ -20863,7 +20968,8 @@ public:
                 throw SemanticAbort();
             }
             const_dim = const_dim - 1;
-            if( v_Var_dims[const_dim].m_start && v_Var_dims[const_dim].m_length ) {
+            if( !is_assumed_rank && v_Var_dims[const_dim].m_start &&
+                v_Var_dims[const_dim].m_length ) {
                 ASR::expr_t* v_Var_start = ASRUtils::expr_value(v_Var_dims[const_dim].m_start);
                 ASR::expr_t* v_Var_length = ASRUtils::expr_value(v_Var_dims[const_dim].m_length);
                 if( bound == ASR::arrayboundType::LBound &&
