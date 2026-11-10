@@ -1093,6 +1093,11 @@ bool is_valid_pointer_assignment_target(ASR::expr_t* expr)
         return false;
     }
     if (ASR::is_a<ASR::Var_t>(*expr)) {
+        // A procedure, including a dummy procedure, is a valid target of a
+        // procedure pointer (F2018 C1030).
+        if (get_procedure_type_from_expr(expr) != nullptr) {
+            return true;
+        }
         ASR::Variable_t* var = get_variable_from_symbol(
             ASR::down_cast<ASR::Var_t>(expr)->m_v);
         return var != nullptr && (ASRUtils::is_pointer(var->m_type)
