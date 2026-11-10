@@ -5896,16 +5896,71 @@ namespace Count {
     static inline ASR::expr_t *eval_Count(Allocator &al,
         const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASR::expr_t* mask = args[0];
-        if (mask && ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
-            ASR::ArrayConstant_t *mask_array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
-            size_t size = ASRUtils::get_fixed_size_of_array(mask_array->m_type);
+        if (!mask || !ASR::is_a<ASR::ArrayConstant_t>(*mask)) {
+            return nullptr;
+        }
+        ASR::ArrayConstant_t *mask_array = ASR::down_cast<ASR::ArrayConstant_t>(mask);
+        bool *mask_data = (bool*)(mask_array->m_data);
+        int64_t size = ASRUtils::get_fixed_size_of_array(mask_array->m_type);
+        if (!ASRUtils::is_array(return_type)) {
             int64_t count = 0;
-            for (size_t i = 0; i < size; i++) {
-                count += int(((bool*)(mask_array->m_data))[i]);
+            for (int64_t i = 0; i < size; i++) {
+                count += int(mask_data[i]);
             }
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, count, return_type));
         }
-        return nullptr;
+        // With `dim`, the result holds the count of each rank-1 section of
+        // `mask` along `dim`, in column-major order of the other dimensions.
+        int64_t dim = 0;
+        if (args.size() < 2 || !args[1] || !ASRUtils::extract_value(args[1], dim)) {
+            return nullptr;
+        }
+        ASR::dimension_t *mask_dims = nullptr;
+        int rank = checked_integer_cast<int>(
+            ASRUtils::extract_dimensions_from_ttype(mask_array->m_type, mask_dims));
+        if (dim < 1 || dim > rank
+                || rank != (int) ASRUtils::extract_n_dims_from_ttype(return_type) + 1) {
+            return nullptr;
+        }
+        std::vector<int64_t> result_extents;
+        int64_t stride = 1, extent = 1, mask_size = 1;
+        for (int i = 0; i < rank; i++) {
+            int64_t length = -1;
+            if (!mask_dims[i].m_length || !ASRUtils::extract_value(
+                    ASRUtils::expr_value(mask_dims[i].m_length), length) || length < 0) {
+                return nullptr;
+            }
+            mask_size *= length;
+            if (i + 1 < dim) {
+                stride *= length;
+            }
+            if (i + 1 == dim) {
+                extent = length;
+            } else {
+                result_extents.push_back(length);
+            }
+        }
+        if (mask_size != size) {
+            return nullptr;
+        }
+        int64_t result_size = 1;
+        for (int64_t length: result_extents) {
+            result_size *= length;
+        }
+        std::vector<int64_t> counts(result_size, 0);
+        for (int64_t i = 0; i < size; i++) {
+            if (mask_data[i]) {
+                counts[i % stride + (i / (stride * extent)) * stride]++;
+            }
+        }
+        ASRBuilder b(al, loc);
+        ASR::ttype_t *element_type = ASRUtils::extract_type(return_type);
+        std::vector<ASR::expr_t*> elements;
+        for (int64_t count: counts) {
+            elements.push_back(b.i_t(count, element_type));
+        }
+        return b.ArrayConstant(elements, element_type, false,
+            b.Array(result_extents, element_type));
     }
 
     static inline ASR::asr_t* create_Count(Allocator& al, const Location& loc,
@@ -5951,11 +6006,9 @@ namespace Count {
         }
         ASR::expr_t *value = nullptr;
         Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 2);
-        ASR::expr_t *mask_value = ASRUtils::expr_value(mask);
-        arg_values.push_back(al, mask_value);
-        if( mask ) {
-            ASR::expr_t *mask_value = ASRUtils::expr_value(mask);
-            arg_values.push_back(al, mask_value);
+        arg_values.push_back(al, ASRUtils::expr_value(mask));
+        if( dim_ ) {
+            arg_values.push_back(al, ASRUtils::expr_value(dim_));
         }
 
         ASR::ttype_t* base_type = int32;
@@ -5983,6 +6036,11 @@ namespace Count {
                 false);
         }
         value = eval_Count(al, loc, return_type, arg_values, diag);
+        if (value && ASRUtils::is_array(return_type)) {
+            // The folded value has the extents of the result, which are
+            // deferred in `return_type`
+            return_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(value));
+        }
 
         Vec<ASR::expr_t*> arr_intrinsic_args; arr_intrinsic_args.reserve(al, 2);
         arr_intrinsic_args.push_back(al, mask);
