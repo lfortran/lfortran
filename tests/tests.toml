@@ -5752,6 +5752,13 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_lanes_defer_01.f90"
 gpu_cuda_kernel = true
 
+# On an NVIDIA GPU, the launch whose lanes are as many as the iterations of the
+# loop over the words of a group runs a copy of the loop over the groups in
+# which each lane takes its one word without a loop around it.
+[[test]]
+filename = "../integration_tests/gpu_lanes_exact_01.f90"
+gpu_cuda_kernel = true
+
 # On an NVIDIA GPU, a launch of a few iterations gives each the lanes of a
 # whole block, which combine their values across warps in shared memory.
 [[test]]
