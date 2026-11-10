@@ -1,0 +1,13 @@
+{
+    "basename": "asr-legacy_array_sections_type_mismatch_01-814a894",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/legacy_array_sections_type_mismatch_01.f90",
+    "infile_hash": "fbf2551b87da14770c637d00becdb842bb0fc69c3c0ca853fc610b91",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-legacy_array_sections_type_mismatch_01-814a894.stderr",
+    "stderr_hash": "c2f9c12512de1e583cf50af651549292c87dcaf90e4b1309328869e2",
+    "returncode": 2
+}
