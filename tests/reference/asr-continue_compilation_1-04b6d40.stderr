@@ -5649,6 +5649,18 @@ semantic error: the generic 'cc1_gen_binding' is referenced as a function, but i
 4720 |         y = t%cc1_gen_binding(1.0)
      |             ^^^^^^^^^^^^^^^^^^^^^^ a subroutine must be called with a CALL statement
 
+semantic error: `dim` argument of `lbound` must be between 1 and 15 for an assumed-rank array
+    --> tests/errors/continue_compilation_1.f90:4788:24
+     |
+4788 |     print *, lbound(c, 0)  ! {Error} `dim` argument of `lbound` must be between 1 and 15 for an assumed-rank array
+     |                        ^ `dim` is 0
+
+semantic error: `dim` argument of `ubound` must be between 1 and 15 for an assumed-rank array
+    --> tests/errors/continue_compilation_1.f90:4789:24
+     |
+4789 |     print *, ubound(c, 16)  ! {Error} `dim` argument of `ubound` must be between 1 and 15 for an assumed-rank array
+     |                        ^^ `dim` is 16
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

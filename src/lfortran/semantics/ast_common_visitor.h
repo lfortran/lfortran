@@ -20879,10 +20879,22 @@ public:
                 ASRUtils::expr_type(v_Var), v_Var_dims);
             // The rank of an assumed-rank array is known only when the
             // program runs, so DIM is not checked against its declared
-            // rank (0), and its bounds are not known here.
+            // rank (0), and its bounds are not known here. The rank of an
+            // array is at most 15, so DIM is checked against that.
             bool is_assumed_rank = ASRUtils::is_assumed_rank_array(
                 ASRUtils::expr_type(v_Var));
-            if( (!is_assumed_rank && const_dim > v_Var_n_dims) || const_dim < 1) {
+            constexpr int64_t max_rank = 15;
+            if( is_assumed_rank && (const_dim < 1 || const_dim > max_rank) ) {
+                diag.add(Diagnostic(
+                    "`dim` argument of `" + bound_name + "` must be between 1 "
+                    "and " + std::to_string(max_rank) + " for an assumed-rank "
+                    "array",
+                    Level::Error, Stage::Semantic, {
+                        Label("`dim` is " + std::to_string(const_dim),
+                            {dim->base.loc})}));
+                throw SemanticAbort();
+            }
+            if( !is_assumed_rank && (const_dim > v_Var_n_dims || const_dim < 1) ) {
                 diag.add(Diagnostic(
                     "Dimension " + std::to_string(const_dim) +
                     " is invalid. Rank of the array, " +
