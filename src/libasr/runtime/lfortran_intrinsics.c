@@ -1793,6 +1793,689 @@ static long long round_scaled_digits(const char *digits, int drop_digits,
     return quotient + (remainder * 2 >= divisor);
 }
 
+/* Fortran E/ES/D/F/G editing of a binary128 value.
+ * `fmt_real` is double wherever long double is not x87 (aarch64 included),
+ * so these descriptors must not convert through double or long double.
+ * The digits come from lf_float128_to_str; this only places the decimal
+ * point, rounds to the edit descriptor, and applies the field width. */
+#define F128_DIGITS 480
+
+typedef struct {
+    int negative;
+    int kind; /* 0 finite, 1 NaN, 2 Inf */
+    int zero;
+    int sci_exp;
+    char digits[F128_DIGITS];
+    int nd;
+} f128_dec;
+
+static void f128_load(const lf_float128 *v, f128_dec *o) {
+    char buf[64];
+    const char *p;
+    memset(o, 0, sizeof(*o));
+    o->negative = lf_f128_signbit(*v);
+    if (lf_f128_isnan(*v)) {
+        o->kind = 1;
+        return;
+    }
+    if (lf_f128_isinf(*v)) {
+        o->kind = 2;
+        return;
+    }
+    lf_float128_to_str(buf, v->bytes);
+    p = buf;
+    if (*p == '-') {
+        o->negative = 1;
+        p++;
+    } else if (*p == '+') {
+        p++;
+    }
+    if (*p == 'N' || *p == 'n') {
+        o->kind = 1;
+        return;
+    }
+    if (*p == 'I' || *p == 'i') {
+        o->kind = 2;
+        return;
+    }
+    while (isdigit((unsigned char)*p) && o->nd < 40) {
+        o->digits[o->nd++] = *p++;
+    }
+    if (*p == '.') {
+        p++;
+    }
+    while (isdigit((unsigned char)*p) && o->nd < 40) {
+        o->digits[o->nd++] = *p++;
+    }
+    o->digits[o->nd] = '\0';
+    if (*p == 'E' || *p == 'e' || *p == 'D' || *p == 'd') {
+        o->sci_exp = atoi(p + 1);
+    }
+    while (o->nd > 1 && o->digits[o->nd - 1] == '0') {
+        o->nd--;
+        o->digits[o->nd] = '\0';
+    }
+    o->zero = (o->nd == 0) || (o->nd == 1 && o->digits[0] == '0');
+    if (o->zero) {
+        o->digits[0] = '0';
+        o->digits[1] = '\0';
+        o->nd = 1;
+        o->sci_exp = 0;
+    }
+}
+
+/* Round to `keep` significant digits. A carry past the first digit increments
+ * sci_exp (999 -> 1000 * 10^(exp-1) becomes 100 * 10^exp). */
+static void f128_round_sig(f128_dec *o, int keep, char rounding_mode) {
+    if (o->kind != 0 || keep < 1 || keep >= F128_DIGITS) {
+        return;
+    }
+    if (o->zero) {
+        memset(o->digits, '0', (size_t)keep);
+        o->digits[keep] = '\0';
+        o->nd = keep;
+        o->sci_exp = 0;
+        return;
+    }
+    if (o->nd < keep) {
+        memset(o->digits + o->nd, '0', (size_t)(keep - o->nd));
+        o->nd = keep;
+        o->digits[o->nd] = '\0';
+        return;
+    }
+    if (should_round_up_digits(o->digits, keep, rounding_mode, o->negative)) {
+        int i = keep - 1;
+        while (i >= 0 && o->digits[i] == '9') {
+            o->digits[i] = '0';
+            i--;
+        }
+        if (i >= 0) {
+            o->digits[i]++;
+        } else {
+            o->digits[0] = '1';
+            memset(o->digits + 1, '0', (size_t)(keep - 1));
+            o->sci_exp++;
+        }
+    }
+    o->nd = keep;
+    o->digits[o->nd] = '\0';
+}
+
+static int f128_exp_overflow(int expv, int exp_digits) {
+    int a = expv < 0 ? -expv : expv;
+    int lim = 1;
+    int i;
+    if (exp_digits < 1) {
+        return 0;
+    }
+    for (i = 0; i < exp_digits; i++) {
+        if (lim > 100000000) {
+            return 1;
+        }
+        lim *= 10;
+    }
+    return a >= lim;
+}
+
+static void append_n_chars(char **result, char c, int n) {
+    char *s;
+    if (n <= 0) {
+        return;
+    }
+    s = (char*)internal_malloc((size_t)n + 1);
+    memset(s, c, (size_t)n);
+    s[n] = '\0';
+    *result = append_to_string(*result, s);
+    internal_free(s);
+}
+
+static void emit_special(char **result, int width, int negative, int kind, int plus) {
+    const char *special;
+    const char *short_str = NULL;
+    int sl;
+    if (kind == 1) {
+        special = "NaN";
+    } else if (negative) {
+        special = "-Infinity";
+        short_str = "-Inf";
+    } else if (plus) {
+        special = "+Infinity";
+        short_str = "+Inf";
+    } else {
+        special = "Infinity";
+        short_str = "Inf";
+    }
+    sl = (int)strlen(special);
+    if (width > 0 && sl > width && short_str != NULL) {
+        special = short_str;
+        sl = (int)strlen(special);
+    }
+    if (width <= 0 || sl <= width) {
+        append_n_chars(result, ' ', width > sl ? width - sl : 0);
+        *result = append_to_string(*result, special);
+    } else {
+        append_n_chars(result, '*', width);
+    }
+}
+
+/* Left-justify into `width` (width <= 0 means no padding). Processor-defined
+ * mode drops one leading zero when that is the only character past the width. */
+static void emit_real_field(char **result, int width, char *core, LeadingZeroMode leading_zero) {
+    int len;
+    if (leading_zero == LEADING_ZERO_SUPPRESS) {
+        suppress_leading_zero(core);
+    }
+    len = (int)strlen(core);
+    if (width <= 0) {
+        *result = append_to_string(*result, core);
+        return;
+    }
+    if (leading_zero == LEADING_ZERO_PROCESSOR_DEFINED && len == width + 1) {
+        if (core[0] == '0' && core[1] == '.') {
+            *result = append_to_string(*result, core + 1);
+            return;
+        }
+        if ((core[0] == '-' || core[0] == '+') && core[1] == '0' && core[2] == '.') {
+            char *tmp = (char*)internal_malloc((size_t)len);
+            tmp[0] = core[0];
+            memcpy(tmp + 1, core + 2, (size_t)len - 1);
+            *result = append_to_string(*result, tmp);
+            internal_free(tmp);
+            return;
+        }
+    }
+    if (len > width) {
+        append_n_chars(result, '*', width);
+        return;
+    }
+    append_n_chars(result, ' ', width - len);
+    *result = append_to_string(*result, core);
+}
+
+static void f128_put_sign(char *core, int *n, int negative, int plus) {
+    if (negative) {
+        core[(*n)++] = '-';
+    } else if (plus) {
+        core[(*n)++] = '+';
+    }
+}
+
+/* E/ES/D core, no leading blanks. Returns 0 on success. */
+static int f128_ew_core(f128_dec o, int d, int scale, char rounding_mode,
+                        int exp_digits, int width, const char *letter, int plus,
+                        int is_es, char *core) {
+    int sig;
+    int expv;
+    int expw;
+    int n = 0;
+    int drop_e = 0;
+    char expbuf[24];
+    int explen;
+    int before;
+    int after;
+    int i;
+    (void)is_es;
+    if (d < 0) {
+        d = 0;
+    }
+    if ((d > 0 && (scale <= -d || scale > d + 1)) || (d == 0 && scale != 1)) {
+        return -1;
+    }
+    sig = (scale <= 0) ? (d + scale) : (d + 1);
+    if (sig < 1) {
+        sig = 1;
+    }
+    if (!o.zero) {
+        f128_round_sig(&o, sig, rounding_mode);
+        expv = o.sci_exp + 1 - scale;
+    } else {
+        f128_round_sig(&o, sig, rounding_mode);
+        expv = 0;
+    }
+    if (exp_digits > 0) {
+        expw = exp_digits;
+        if (f128_exp_overflow(expv, expw)) {
+            return -1;
+        }
+    } else {
+        int a = expv < 0 ? -expv : expv;
+        expw = (a >= 100) ? 3 : 2;
+        if (width > 0 && a >= 1000) {
+            return -1;
+        }
+    }
+    if (width == 0 && exp_digits <= 0) {
+        snprintf(expbuf, sizeof(expbuf), "%+02d", expv);
+    } else {
+        int exp_width = expw + 1;
+        if (exp_width > 12) {
+            exp_width = 12;
+        }
+        snprintf(expbuf, sizeof(expbuf), "%+0*d", exp_width, expv);
+    }
+    explen = (int)strlen(expbuf);
+    drop_e = (exp_digits <= 0 && width > 0 &&
+              (expv <= -100 || expv >= 100) && explen >= 4);
+    f128_put_sign(core, &n, o.negative, plus);
+    if (scale <= 0) {
+        core[n++] = '0';
+        core[n++] = '.';
+        for (i = 0; i < -scale; i++) {
+            core[n++] = '0';
+        }
+        for (i = 0; i < sig && i < o.nd; i++) {
+            core[n++] = o.digits[i];
+        }
+        for (; i < sig; i++) {
+            core[n++] = '0';
+        }
+    } else {
+        before = scale;
+        after = d - scale + 1;
+        if (after < 0) {
+            after = 0;
+        }
+        for (i = 0; i < before; i++) {
+            core[n++] = (i < o.nd) ? o.digits[i] : '0';
+        }
+        core[n++] = '.';
+        for (i = 0; i < after; i++) {
+            int idx = before + i;
+            core[n++] = (idx < o.nd) ? o.digits[idx] : '0';
+        }
+    }
+    if (!drop_e && letter != NULL && letter[0] != '\0') {
+        core[n++] = letter[0];
+    }
+    memcpy(core + n, expbuf, (size_t)explen);
+    n += explen;
+    core[n] = '\0';
+    return 0;
+}
+
+static void handle_f128_decimal(char *format, lf_float128 val, int scale, char **result,
+                                const char *letter, int plus, char rounding_mode,
+                                LeadingZeroMode leading_zero) {
+    f128_dec o;
+    int width = 0;
+    int d = 0;
+    int exp_digits = -1;
+    int is_es;
+    char *core;
+    int cap;
+    f128_load(&val, &o);
+    parse_decimal_or_en_format(format, &width, &d, &exp_digits);
+    if (d < 0) {
+        d = 0;
+    }
+    is_es = (tolower((unsigned char)format[1]) == 's');
+    if (is_es) {
+        scale = 1;
+        leading_zero = LEADING_ZERO_PROCESSOR_DEFINED;
+    }
+    if (o.kind != 0) {
+        emit_special(result, width, o.negative, o.kind, plus);
+        return;
+    }
+    cap = d + 64;
+    if (cap < 128) {
+        cap = 128;
+    }
+    core = (char*)internal_malloc((size_t)cap);
+    if (f128_ew_core(o, d, scale, rounding_mode, exp_digits, width, letter, plus,
+                     is_es, core) != 0) {
+        internal_free(core);
+        if (width > 0) {
+            append_n_chars(result, '*', width);
+        } else {
+            *result = append_to_string(*result, "*");
+        }
+        return;
+    }
+    emit_real_field(result, width, core, leading_zero);
+    internal_free(core);
+}
+
+static void handle_f128_en(char *format, lf_float128 val, char **result,
+                           const char *letter, int plus) {
+    f128_dec o;
+    int width = 0;
+    int d = 0;
+    int exp_digits = -1;
+    int expv = 0;
+    int before;
+    int rem;
+    int expw;
+    int n = 0;
+    int i;
+    char expbuf[24];
+    char *core;
+    f128_load(&val, &o);
+    parse_decimal_or_en_format(format, &width, &d, &exp_digits);
+    if (o.kind != 0) {
+        emit_special(result, width, o.negative, o.kind, plus);
+        return;
+    }
+    if (d <= 0) {
+        d = 9;
+    }
+    if (!o.zero) {
+        rem = o.sci_exp % 3;
+        if (rem < 0) {
+            rem += 3;
+        }
+        expv = o.sci_exp - rem;
+        before = o.sci_exp - expv + 1;
+        f128_round_sig(&o, before + d, 'n');
+        if (!o.zero) {
+            rem = o.sci_exp % 3;
+            if (rem < 0) {
+                rem += 3;
+            }
+            expv = o.sci_exp - rem;
+            before = o.sci_exp - expv + 1;
+            if (o.nd < before + d) {
+                f128_round_sig(&o, before + d, 'n');
+            }
+        }
+    } else {
+        before = 1;
+        expv = 0;
+        f128_round_sig(&o, before + d, 'n');
+    }
+    if (exp_digits > 0) {
+        expw = exp_digits;
+        if (f128_exp_overflow(expv, expw)) {
+            if (width > 0) {
+                append_n_chars(result, '*', width);
+            } else {
+                *result = append_to_string(*result, "*");
+            }
+            return;
+        }
+    } else {
+        int a = expv < 0 ? -expv : expv;
+        expw = (a >= 100) ? 3 : 2;
+        if (width > 0 && a >= 1000) {
+            append_n_chars(result, '*', width);
+            return;
+        }
+    }
+    if (width == 0 && exp_digits <= 0) {
+        snprintf(expbuf, sizeof(expbuf), "%+02d", expv);
+    } else {
+        snprintf(expbuf, sizeof(expbuf), "%+0*d", expw + 1, expv);
+    }
+    core = (char*)internal_malloc((size_t)d + (size_t)before + 32);
+    f128_put_sign(core, &n, o.negative, plus);
+    for (i = 0; i < before; i++) {
+        core[n++] = (i < o.nd) ? o.digits[i] : '0';
+    }
+    core[n++] = '.';
+    for (i = 0; i < d; i++) {
+        int idx = before + i;
+        core[n++] = (idx < o.nd) ? o.digits[idx] : '0';
+    }
+    if (letter != NULL && letter[0] != '\0') {
+        core[n++] = letter[0];
+    }
+    memcpy(core + n, expbuf, strlen(expbuf) + 1);
+    emit_real_field(result, width, core, LEADING_ZERO_PROCESSOR_DEFINED);
+    internal_free(core);
+}
+
+static void handle_f128_float(char *format, lf_float128 val, int scale, char **result,
+                              int plus, char rounding_mode, LeadingZeroMode leading_zero) {
+    f128_dec o;
+    int width = 0;
+    int d = 0;
+    int exp_digits = -1;
+    int int_digits;
+    int round_pos;
+    int start;
+    int buf_len;
+    int carry = 0;
+    int n = 0;
+    int i;
+    int min_len;
+    char *buf;
+    char *core;
+    int omit_zero;
+    f128_load(&val, &o);
+    parse_decimal_or_en_format(format, &width, &d, &exp_digits);
+    if (d < 0) {
+        d = 0;
+    }
+    (void)exp_digits;
+    if (o.kind != 0) {
+        emit_special(result, width, o.negative, o.kind, plus);
+        return;
+    }
+    if (!o.zero) {
+        o.sci_exp += scale;
+    }
+    int_digits = (!o.zero && o.sci_exp >= 0) ? o.sci_exp + 1 : 0;
+    min_len = (o.negative || plus ? 1 : 0) + (int_digits > 0 ? int_digits : 1) + 1 + d;
+    if (width > 0 && int_digits > width) {
+        append_n_chars(result, '*', width);
+        return;
+    }
+    if (width > 0 && min_len > width + (int_digits == 0 ? 1 : 0)) {
+        append_n_chars(result, '*', width);
+        return;
+    }
+    round_pos = int_digits + d;
+    start = o.zero ? round_pos + 1 : (int_digits - 1) - o.sci_exp;
+    buf_len = round_pos + 2;
+    if (buf_len < 2) {
+        buf_len = 2;
+    }
+    buf = (char*)internal_malloc((size_t)buf_len + 1);
+    memset(buf, '0', (size_t)buf_len);
+    buf[buf_len] = '\0';
+    if (!o.zero && start < buf_len) {
+        for (i = 0; i < o.nd && start + i < buf_len; i++) {
+            buf[start + i] = o.digits[i];
+        }
+        if (start + o.nd > buf_len && start + i <= round_pos) {
+            /* A nonzero digit fell past the buffer; keep a sticky bit. */
+            if (buf[round_pos] == '0') {
+                buf[round_pos] = '1';
+            }
+        }
+    }
+    if (round_pos >= 0 && round_pos < buf_len &&
+            should_round_up_digits(buf, round_pos, rounding_mode, o.negative)) {
+        i = round_pos - 1;
+        while (i >= 0 && buf[i] == '9') {
+            buf[i] = '0';
+            i--;
+        }
+        if (i >= 0) {
+            buf[i]++;
+        } else {
+            carry = 1;
+        }
+    }
+    if (carry) {
+        int_digits += 1;
+        memset(buf, '0', (size_t)buf_len);
+        buf[0] = '1';
+    }
+    omit_zero = 0;
+    if (int_digits == 0 && d > 0 && width == 0 &&
+            leading_zero != LEADING_ZERO_PRINT) {
+        omit_zero = 1;
+    }
+    core = (char*)internal_malloc((size_t)int_digits + (size_t)d + 8);
+    f128_put_sign(core, &n, o.negative, plus);
+    if (int_digits == 0) {
+        if (!omit_zero) {
+            core[n++] = '0';
+        }
+    } else if (!carry) {
+        for (i = 0; i < int_digits; i++) {
+            core[n++] = buf[i];
+        }
+    } else {
+        core[n++] = '1';
+        for (i = 1; i < int_digits; i++) {
+            core[n++] = '0';
+        }
+    }
+    core[n++] = '.';
+    for (i = 0; i < d; i++) {
+        if (carry) {
+            core[n++] = '0';
+        } else {
+            int idx = int_digits + i;
+            core[n++] = (idx >= 0 && idx < buf_len) ? buf[idx] : '0';
+        }
+    }
+    core[n] = '\0';
+    internal_free(buf);
+    emit_real_field(result, width, core, leading_zero);
+    internal_free(core);
+}
+
+static void handle_f128_g(char *format, lf_float128 val, int scale, char **result,
+                          int plus, char rounding_mode, LeadingZeroMode leading_zero) {
+    f128_dec o;
+    int width = 0;
+    int precision = 0;
+    int exp_digits = -1;
+    int has_dot = 0;
+    int s;
+    int n_blanks;
+    int core_width;
+    char *core;
+    char *field;
+    const char *dot;
+    const char *ep;
+    f128_load(&val, &o);
+    if (strlen(format) > 1) {
+        width = atoi(format + 1);
+    }
+    dot = strchr(format + 1, '.');
+    if (dot != NULL) {
+        has_dot = 1;
+        precision = atoi(dot + 1);
+    }
+    ep = strpbrk(format + 1, "eE");
+    if (ep != NULL) {
+        exp_digits = atoi(ep + 1);
+        if (exp_digits < 1) {
+            exp_digits = 1;
+        }
+        if (exp_digits > 8) {
+            exp_digits = 8;
+        }
+    }
+    if (o.kind != 0) {
+        emit_special(result, width, o.negative, o.kind, plus);
+        return;
+    }
+    if (width == 0 && !has_dot) {
+        char buf[80];
+        format_float128_fortran(buf, val);
+        if (plus && buf[0] != '-') {
+            *result = append_to_string(*result, "+");
+        }
+        if (leading_zero == LEADING_ZERO_SUPPRESS) {
+            suppress_leading_zero(buf);
+        }
+        *result = append_to_string(*result, buf);
+        return;
+    }
+    if (precision < 0) {
+        precision = 0;
+    }
+    if (precision > 0) {
+        f128_round_sig(&o, precision, rounding_mode);
+    }
+    s = o.zero ? 1 : (o.sci_exp + 1);
+    if (precision > 0 && s >= 0 && s <= precision) {
+        int decimals = precision - s;
+        int int_digits = s > 0 ? s : 0;
+        int n = 0;
+        int i;
+        if (decimals < 0) {
+            decimals = 0;
+        }
+        core = (char*)internal_malloc((size_t)precision + 8);
+        f128_put_sign(core, &n, o.negative, plus);
+        if (int_digits == 0) {
+            core[n++] = '0';
+            core[n++] = '.';
+            for (i = 0; i < decimals; i++) {
+                core[n++] = (i < o.nd) ? o.digits[i] : '0';
+            }
+        } else {
+            for (i = 0; i < int_digits; i++) {
+                core[n++] = (i < o.nd) ? o.digits[i] : '0';
+            }
+            core[n++] = '.';
+            for (i = 0; i < decimals; i++) {
+                int idx = int_digits + i;
+                core[n++] = (idx < o.nd) ? o.digits[idx] : '0';
+            }
+        }
+        core[n] = '\0';
+        n_blanks = 0;
+        if (width > 0) {
+            n_blanks = (exp_digits > 0) ? exp_digits + 2 : 4;
+        }
+        core_width = width > 0 ? width - n_blanks : 0;
+        if (width > 0 && (core_width <= 0 || (int)strlen(core) > core_width)) {
+            internal_free(core);
+            append_n_chars(result, '*', width);
+            return;
+        }
+        field = (char*)internal_malloc((size_t)(width > 0 ? width : (int)strlen(core)) + 1);
+        field[0] = '\0';
+        if (leading_zero == LEADING_ZERO_SUPPRESS) {
+            suppress_leading_zero(core);
+        }
+        if (width > 0) {
+            int clen = (int)strlen(core);
+            int pad = core_width - clen;
+            int p = 0;
+            if (pad > 0) {
+                memset(field, ' ', (size_t)pad);
+                p = pad;
+            }
+            memcpy(field + p, core, (size_t)clen);
+            p += clen;
+            memset(field + p, ' ', (size_t)n_blanks);
+            field[p + n_blanks] = '\0';
+        } else {
+            memcpy(field, core, strlen(core) + 1);
+        }
+        *result = append_to_string(*result, field);
+        internal_free(field);
+        internal_free(core);
+        return;
+    }
+    core = (char*)internal_malloc((size_t)(precision > 0 ? precision : 16) + 64);
+    /* Exponential G form follows E editing, including the scale factor. */
+    {
+        f128_dec raw;
+        f128_load(&val, &raw);
+        if (f128_ew_core(raw, precision > 0 ? precision : 0, scale, rounding_mode,
+                         exp_digits, width, "E", plus, 0, core) != 0) {
+            internal_free(core);
+            if (width > 0) {
+                append_n_chars(result, '*', width);
+            } else {
+                *result = append_to_string(*result, "*");
+            }
+            return;
+        }
+    }
+    emit_real_field(result, width, core, leading_zero);
+    internal_free(core);
+}
+
 void handle_decimal(char* format, fmt_real val, bool extended, int scale, char** result, char* c,
                     bool is_signed_plus, char rounding_mode, LeadingZeroMode leading_zero) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
@@ -4747,6 +5430,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 // We have to cast the pointers to int64 or fmt_real to avoid accessing beyond bounds.
                 int64_t integer_val = 0;
                 fmt_real real_val = 0;
+                /* real(16) edit descriptors read these bytes. Do not format
+                 * them through real_val: that conversion is double. */
+                lf_float128 real128_val;
+                memset(&real128_val, 0, sizeof(real128_val));
                 bool extended = fmt_have_extended &&
                     s_info.current_element_type == FLOAT_80_TYPE;
                 char* char_val = NULL;
@@ -4771,9 +5458,8 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         real_val = *(float*)s_info.current_arg_info.current_arg;
                         break;
                     case FLOAT_128_TYPE: {
-                        lf_float128 q128;
-                        memcpy(&q128, s_info.current_arg_info.current_arg, 16);
-                        real_val = lf_f128_to_double(q128);
+                        memcpy(&real128_val, s_info.current_arg_info.current_arg, 16);
+                        real_val = lf_f128_to_double(real128_val);
                         break;
                     }
                     case FLOAT_80_TYPE:
@@ -5045,7 +5731,16 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     }
                     char buffer[100];
                     char formatted[100];
-                    if (s_info.current_element_type == FLOAT_32_TYPE ||
+                    if (s_info.current_element_type == FLOAT_128_TYPE) {
+                        char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
+                        handle_f128_g(value, real128_val, scale, &temp_buf, is_SP_specifier,
+                            rounding_mode, leading_zero);
+                        apply_decimal_edit_mode(temp_buf, decimal_mode);
+                        int64_t temp_len = strlen(temp_buf);
+                        result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
+                        result_len += temp_len;
+                        internal_free(temp_buf);
+                    } else if (s_info.current_element_type == FLOAT_32_TYPE ||
                             s_info.current_element_type == FLOAT_64_TYPE ||
                             s_info.current_element_type == FLOAT_80_TYPE) {
                         // The exponent s of the value rounded to d significant
@@ -5280,7 +5975,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 } else if (tolower(value[0]) == 'd') {
                     // D Editing (D[w[.d]])
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
-                    handle_decimal(value, real_val, extended, scale, &temp_buf, "D", is_SP_specifier, rounding_mode, leading_zero);
+                    if (s_info.current_element_type == FLOAT_128_TYPE) {
+                        handle_f128_decimal(value, real128_val, scale, &temp_buf, "D",
+                            is_SP_specifier, rounding_mode, leading_zero);
+                    } else {
+                        handle_decimal(value, real_val, extended, scale, &temp_buf, "D", is_SP_specifier, rounding_mode, leading_zero);
+                    }
                     apply_decimal_edit_mode(temp_buf, decimal_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
@@ -5297,7 +5997,16 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     // Check if the next character is 'N' for EN format
                     char format_type = tolower(value[1]);
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
-                    if (format_type == 'n') {
+                    if (s_info.current_element_type == FLOAT_128_TYPE) {
+                        if (format_type == 'n') {
+                            handle_f128_en(value, real128_val, &temp_buf, "E", is_SP_specifier);
+                        } else {
+                            handle_f128_decimal(value, real128_val, scale, &temp_buf, "E",
+                                is_SP_specifier, rounding_mode,
+                                (format_type == 's' || format_type == 'x') ?
+                                    LEADING_ZERO_PROCESSOR_DEFINED : leading_zero);
+                        }
+                    } else if (format_type == 'n') {
                         handle_en(value, real_val, extended, scale, &temp_buf, "E", is_SP_specifier);
                     } else {
                         handle_decimal(value, real_val, extended, scale, &temp_buf, "E", is_SP_specifier, rounding_mode,
@@ -5319,7 +6028,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     } else {
                         float_fmt_type = FLOAT_FORMAT_CUSTOM;
                     }
-                    handle_float(float_fmt_type, value, real_val, extended, scale, &temp_buf, is_SP_specifier, rounding_mode, leading_zero);
+                    if (s_info.current_element_type == FLOAT_128_TYPE) {
+                        handle_f128_float(value, real128_val, scale, &temp_buf, is_SP_specifier,
+                            rounding_mode, leading_zero);
+                    } else {
+                        handle_float(float_fmt_type, value, real_val, extended, scale, &temp_buf, is_SP_specifier, rounding_mode, leading_zero);
+                    }
                     apply_decimal_edit_mode(temp_buf, decimal_mode);
                     int64_t temp_len = strlen(temp_buf);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);

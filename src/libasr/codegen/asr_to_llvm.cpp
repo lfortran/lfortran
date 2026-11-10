@@ -19139,7 +19139,18 @@ public:
             if (fsource->getType()->isIntegerTy()) fsource = builder->CreateSIToFP(fsource, type);
             else if (fsource->getType()->isFloatingPointTy()) fsource = builder->CreateFPCast(fsource, type);
         }
-        std::string func_name = a_kind == 4 ? "llvm.copysign.f32" : "llvm.copysign.f64";
+        // The LLVM intrinsic suffix must match the fp type. kind 16 is
+        // binary128; llvm.copysign.f64 is rejected by the verifier.
+        std::string func_name;
+        if (a_kind == 4) {
+            func_name = "llvm.copysign.f32";
+        } else if (a_kind == 8) {
+            func_name = "llvm.copysign.f64";
+        } else if (a_kind == 16) {
+            func_name = "llvm.copysign.f128";
+        } else {
+            throw CodeGenError("sign for real kind " + std::to_string(a_kind) + " is not supported yet.");
+        }
         llvm::Function *fn_copysign = LLVM::get_or_declare_function(*module, func_name,
                 type, { type, type});
         tmp = builder->CreateCall(fn_copysign, {ftarget, fsource});
