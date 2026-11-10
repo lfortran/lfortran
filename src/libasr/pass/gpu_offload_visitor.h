@@ -658,6 +658,9 @@ public:
         // The kernel runs its iterations in a grid-stride loop of at most
         // device_caps.reduction_threads threads (a launch with a reduction).
         bool strided = false;
+        // The threads of a warp combine their accumulators, and the warp
+        // owns one slot (GpuDeviceCapabilities::reduction_warp_slots).
+        bool warp_slots = false;
     };
 
     void decline(const ASR::OMPRegion_t &x);

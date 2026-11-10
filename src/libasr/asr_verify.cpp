@@ -4439,9 +4439,15 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneBroadcast(x);
     }
 
+    // In a kernel with lanes, the lanes of an iteration combine what they
+    // hold; in a kernel without, the 32 threads of a warp do (the threads
+    // of a reduction share a slot per warp, gpu_offload.cpp).
     void visit_GpuLaneReduce(const GpuLaneReduce_t &x) {
-        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
-            "GpuLaneReduce is only allowed in a GPU kernel with lanes");
+        const ASR::Function_t *fn = enclosing_function(current_symtab);
+        require_id(fn != nullptr && ASRUtils::get_exec_space(*fn)
+                == ASR::exec_spaceType::Kernel,
+            "asr.verify.gpu_lanes.kernel",
+            "GpuLaneReduce is only allowed in a GPU kernel");
         ASR::ttype_t *t = ASRUtils::expr_type(x.m_arg);
         require_id(!ASRUtils::is_array(t) && (ASRUtils::is_integer(*t)
                 || ASRUtils::is_real(*t))

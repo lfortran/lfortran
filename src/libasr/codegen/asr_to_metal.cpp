@@ -92,7 +92,8 @@ struct MetalDialect {
     // only reached with more than one lane (gpu_vector_lanes.cpp), and
     // then the lanes are the whole SIMD-group (emit_lane_prologue): 0 adds,
     // 1 multiplies, 2 takes the smallest, 3 the largest.
-    std::string lane_reduce(const std::string &value, int op) const {
+    std::string lane_reduce(const std::string &value, int op,
+            bool /*has_lanes*/) const {
         static const char *names[] = {"simd_sum", "simd_product", "simd_min",
             "simd_max"};
         LCOMPILERS_ASSERT(op >= 0 && op < 4);

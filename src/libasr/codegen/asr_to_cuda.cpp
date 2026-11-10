@@ -147,9 +147,11 @@ struct CudaDialect {
     }
     // What the lanes of the iteration hold, combined, in every lane
     // (__lfortran_lane_reduce in the prologue of the kernel source).
-    std::string lane_reduce(const std::string &value, int op) const {
+    // In a kernel without lanes, the lanes are the 32 threads of the warp.
+    std::string lane_reduce(const std::string &value, int op,
+            bool has_lanes) const {
         return "__lfortran_lane_reduce<" + std::to_string(op) + ">(" + value
-            + ", __gpu_lanes_n)";
+            + ", " + (has_lanes ? "__gpu_lanes_n" : "32") + ")";
     }
     // The definition lane_reduce names, written once ahead of the kernels.
     std::string lane_reduce_helper() const {

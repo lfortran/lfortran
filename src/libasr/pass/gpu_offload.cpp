@@ -2563,6 +2563,21 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         cycles.transform_stmts(body_copy.p, body_copy.n);
         strided = cycles.offloaded_cycles == 0;
     }
+    // On a device whose warps combine values, the threads of a warp fold
+    // their accumulators with shuffles and the warp owns one slot, for the
+    // operations and types the shuffle combines.
+    bool warp_slots = strided && device_caps.reduction_warp_slots;
+    for (auto &r : pending_reductions) {
+        if (!warp_slots || !accumulators_of(r)) continue;
+        warp_slots = (r.op == ASR::reduction_opType::ReduceAdd
+                || r.op == ASR::reduction_opType::ReduceMul
+                || r.op == ASR::reduction_opType::ReduceMIN
+                || r.op == ASR::reduction_opType::ReduceMAX)
+            && (ASRUtils::is_real(*r.scalar_type)
+                || ASRUtils::is_integer(*r.scalar_type))
+            && (ASRUtils::extract_kind_from_ttype_t(r.scalar_type) == 4
+                || ASRUtils::extract_kind_from_ttype_t(r.scalar_type) == 8);
+    }
     // The local accumulator of each reduction of a grid-stride loop, in the
     // order of pending_reductions (nullptr for one the body never uses).
     std::vector<ASR::expr_t*> local_accumulators(pending_reductions.size(),
@@ -3065,9 +3080,14 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)),
             limit, stride_total, ASRUtils::duplicate_type(al, index_type),
             nullptr)));
-        return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-            flat_idx, ASR::cmpopType::GtE, stride_var,
-            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
+        // The threads past the stride are not done: the threads of a warp
+        // combine their accumulators together, so these take part with the
+        // identity, and run no iterations.
+        if (!warp_slots) {
+            return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                flat_idx, ASR::cmpopType::GtE, stride_var,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
+        }
         assign(remain_var, flat_idx);
     } else {
         return_past_iterations();
@@ -3083,9 +3103,31 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // largest, set it: a thread of a later chunk keeps combining into what
     // the thread of the same number left in it, and one past the end of a
     // partial chunk has returned above without touching it.
+    // For a warp that owns a slot: whether this thread is the warp's first,
+    // and in the launch (those past the stride only take part).
+    ASR::expr_t *owns_slot = nullptr;
+    if (warp_slots) {
+        auto bool_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+        auto index_const = [&](int64_t value) {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value,
+                index_type, ASR::integerbozType::Decimal));
+        };
+        owns_slot = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
+            ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                index_mod(flat_idx, index_const(32)), ASR::cmpopType::Eq,
+                index_const(0), bool_type, nullptr)),
+            ASR::logicalbinopType::And,
+            ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, flat_idx,
+                ASR::cmpopType::Lt, stride_var, bool_type, nullptr)),
+            ASRUtils::duplicate_type(al, bool_type), nullptr));
+    }
     if (slot_index != nullptr) {
         assign(ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-            kernel_scope->get_symbol("__gpu_slot"))), remain_var);
+            kernel_scope->get_symbol("__gpu_slot"))), warp_slots
+            ? index_binop(remain_var, ASR::binopType::Div,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 32,
+                    index_type, ASR::integerbozType::Decimal)))
+            : remain_var);
         Vec<ASR::stmt_t*> starts;
         starts.reserve(al, pending_reductions.size());
         for (auto &r : pending_reductions) {
@@ -3096,6 +3138,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     r.scalar_type),
                 gpu_reduction_identity(al, loc, r.op, r.scalar_type),
                 nullptr, false, false, false, false)));
+        }
+        if (warp_slots && starts.n > 0) {
+            // Only the first thread of the warp starts its slot.
+            Vec<ASR::stmt_t*> first_only = starts;
+            starts.reserve(al, 1);
+            starts.n = 0;
+            starts.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
+                nullptr, owns_slot, first_only.p, first_only.n, nullptr,
+                0)));
         }
         if (first_chunk_flag == nullptr) {
             for (size_t i = 0; i < starts.n; i++) {
@@ -3573,6 +3624,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 }
             }
         }
+        // The loops: the threads past the stride run none of them.
+        size_t loops_start = kernel_body.n;
         ASR::expr_t *rest_start = flat_idx;
         if (copied) {
             kernel_body.push_back(al, do_loop(group, it_const(0),
@@ -3585,15 +3638,48 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         kernel_body.push_back(al, do_loop(stride_iteration, rest_start,
             index_binop(stride_total, ASR::binopType::Sub, it_const(1)),
             stride_var, loop_body));
-        // slot = slot op accumulator, as the host folds the slots.
+        if (warp_slots) {
+            Vec<ASR::stmt_t*> loops;
+            loops.reserve(al, kernel_body.n - loops_start);
+            for (size_t i = loops_start; i < kernel_body.n; i++) {
+                loops.push_back(al, kernel_body.p[i]);
+            }
+            kernel_body.n = loops_start;
+            kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
+                nullptr, ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                    flat_idx, ASR::cmpopType::Lt, stride_var,
+                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)),
+                    nullptr)),
+                loops.p, loops.n, nullptr, 0)));
+        }
+        // slot = slot op accumulator, as the host folds the slots. With a
+        // slot per warp, the threads of the warp combine their accumulators
+        // first, and the first of them combines the result into the slot.
+        Vec<ASR::stmt_t*> combines;
+        combines.reserve(al, pending_reductions.size());
         for (size_t ri = 0; ri < pending_reductions.size(); ri++) {
             if (!local_accumulators[ri]) continue;
             auto &r = pending_reductions[ri];
             ASR::expr_t *slot = gpu_reduction_slot(al, loc,
                 accumulators_of(r), slot_index, r.scalar_type);
             ASR::expr_t *acc = local_accumulators[ri];
-            kernel_body.push_back(al, gpu_reduction_combine(al, loc, r.op,
-                slot, acc, r.scalar_type));
+            if (warp_slots) {
+                kernel_body.push_back(al, ASRUtils::STMT(
+                    ASR::make_Assignment_t(al, loc, acc, ASRUtils::EXPR(
+                        ASR::make_GpuLaneReduce_t(al, loc, acc, r.op,
+                            ASRUtils::duplicate_type(al, r.scalar_type),
+                            nullptr)),
+                        nullptr, false, false, false, false)));
+                combines.push_back(al, gpu_reduction_combine(al, loc, r.op,
+                    slot, acc, r.scalar_type));
+            } else {
+                kernel_body.push_back(al, gpu_reduction_combine(al, loc,
+                    r.op, slot, acc, r.scalar_type));
+            }
+        }
+        if (combines.n > 0) {
+            kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
+                nullptr, owns_slot, combines.p, combines.n, nullptr, 0)));
         }
     }
 
@@ -3658,6 +3744,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.chunk_fixed_iterations = chunk_fixed_iterations;
     plan.first_chunk_parameter = first_chunk_parameter;
     plan.strided = strided;
+    plan.warp_slots = warp_slots;
     plan.tile_dims[0] = tiled ? order[0] : 0;
     plan.tile_dims[1] = tiled ? order[1] : 0;
     build_kernel_launch(region, work, loc, plan);
