@@ -3064,6 +3064,21 @@ public:
                             dest_class_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a));
                             dest_asr_type = ASRUtils::get_struct_signature(dest_class_sym);
                             malloc_size = SizeOfTypeUtil(curr_arg.m_a, dest_asr_type, llvm_utils->getIntType(4));
+                            // An unlimited polymorphic target allocated with an
+                            // intrinsic type (e.g. `allocate(u, complex(16) :: u)`,
+                            // or the allocation the allocate-on-assignment pass
+                            // inserts for `u = <complex(16) value>`) holds a value
+                            // of that intrinsic type. The class signature of
+                            // `class(*)` has no members, so sizing the data buffer
+                            // from it would give the size of the class wrapper
+                            // ({vptr, data pointer}) instead of the size of the
+                            // value, and the value would not fit.
+                            if (is_arg_unlimited_poly && curr_arg.m_type != nullptr
+                                    && !ASR::is_a<ASR::StructType_t>(*curr_arg.m_type)
+                                    && !ASRUtils::is_character(*curr_arg.m_type)) {
+                                dest_asr_type = curr_arg.m_type;
+                                malloc_size = SizeOfTypeUtil(curr_arg.m_a, dest_asr_type, llvm_utils->getIntType(4));
+                            }
                         } else {
                             llvm::Type* llvm_type = nullptr;
                             dest_class_sym = ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass);
