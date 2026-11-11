@@ -4160,24 +4160,25 @@ public:
         }
         llvm::Value *c = tmp;
         int64_t kind_value = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
+        llvm::Type *type = llvm_utils->getFPType(checked_integer_cast<int>(kind_value));
+        // The intrinsic suffix must match the fp type. Kind 10 is x87 f80
+        // where that kind exists, and llvm.sqrt.f80 lowers to sqrtl. Do not
+        // use llvm.sqrt.f128 for binary128: where long double is not fp128
+        // (notably Apple ARM64), LLVM lowers that intrinsic to sqrtl, which
+        // reads only 64 bits and returns a wrong result. lf_sqrtq uses the
+        // fp128 SIMD ABI there and the struct-ABI lf_f128_sqrt elsewhere.
         std::string func_name;
-        if (kind_value ==4) {
+        if (type->isFloatTy()) {
             func_name = "llvm.sqrt.f32";
-        } else if (kind_value == 8) {
+        } else if (type->isDoubleTy()) {
             func_name = "llvm.sqrt.f64";
-        } else if (kind_value == 16) {
-            // Don't lower to llvm.sqrt.f128: on platforms where
-            // `long double` != fp128 (notably Apple ARM64), LLVM will lower
-            // that intrinsic to `sqrtl`, which reads only 64 bits of the
-            // 128-bit operand and silently returns a wrong result (often 0).
-            // Call into our portable runtime instead. `lf_sqrtq` uses the
-            // LLVM fp128 SIMD ABI on Apple ARM64 (via a naked shim) and
-            // forwards to the struct-ABI `lf_f128_sqrt` implementation.
+        } else if (type->isX86_FP80Ty()) {
+            func_name = "llvm.sqrt.f80";
+        } else if (type->isFP128Ty()) {
             func_name = "lf_sqrtq";
         } else {
             throw CodeGenError("sqrt for real kind " + std::to_string(kind_value) + " is not supported yet.");
         }
-        llvm::Type *type = llvm_utils->getFPType(checked_integer_cast<int>(kind_value));
         llvm::Function *fn_sqrt = LLVM::get_or_declare_function(*module, func_name,
                 type, {type});
         tmp = builder->CreateCall(fn_sqrt, {c});

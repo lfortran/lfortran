@@ -2245,6 +2245,7 @@ RUN(NAME intrinsics_510 LABELS gfortran llvm) # kind and len of array arguments 
 RUN(NAME intrinsics_511 LABELS gfortran llvm) # any(isnan()) of a component of a rank-2 array of derived types (#11640)
 RUN(NAME intrinsics_512 LABELS gfortran llvm) # maxloc with mask of a component of an array of derived types (#11639)
 RUN(NAME intrinsics_513 LABELS gfortran llvm) # selected_real_kind(16) is x87 kind 10 where that kind exists (#17414)
+RUN(NAME intrinsics_514 LABELS gfortran llvm) # sqrt of x87 kind 10 (#17475)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)
