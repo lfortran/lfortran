@@ -167,7 +167,9 @@ git ls-remote https://github.com/lfortran/lfortran "refs/tags/vX.Y.Z"  # $SHA
 The tag push starts Quick and Exhaustive on `vX.Y.Z`. Exhaustive's
 `Upload Tarball` job runs `ci/create_source_tarball.sh` and attaches
 `lfortran-X.Y.Z.tar.gz` to the release. Wait for that job, and for both tag
-runs to finish:
+runs to finish. The job can already have succeeded while `gh run list`
+still shows the workflow as queued, so read the job, not only the workflow
+status:
 
 ```bash
 gh run list --repo lfortran/lfortran --branch vX.Y.Z --event push \
@@ -263,7 +265,10 @@ Then add the label: `gh pr edit <pr> --repo conda-forge/lfortran-feedstock
 --add-label automerge`. The automerge bot merges once `linter`, `azure`, and
 `github-actions` pass. **It removes the label whenever a commit is pushed
 after the label was added**, so add the label again after every push,
-including bot rerender commits.
+including bot rerender commits. Adding it in the same moment as `git push`
+loses: the bot treats that commit as later than the label and removes it.
+Wait until that comment appears, add the label once, and do not push again
+until the checks finish.
 
 regro-cf-autotick-bot usually opens its own `lfortran vX.Y.Z` PR, sometimes
 only after yours. Whenever it appears, close it with a comment pointing at
@@ -272,11 +277,25 @@ your PR.
 ### Make it pass with patches
 
 Wait for the checks in the background (`gh pr checks <pr> --repo
-conda-forge/lfortran-feedstock --watch`). For each failure, save the log.
-Azure builds expose logs through
-`https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/builds/<buildId>/logs`.
-For GitHub Actions jobs, use `gh run view <id> --repo
-conda-forge/lfortran-feedstock --log-failed`. Then classify it:
+conda-forge/lfortran-feedstock --watch`). For each failure, save the log
+while the rest of the run is still going. `gh run view --log-failed` refuses
+until every job in the workflow has finished, and `gh api` refuses a log
+that contains ANSI escapes. Download the job log directly:
+
+```bash
+curl -fsSL -H "Authorization: Bearer $(gh auth token)" \
+  -H "Accept: application/vnd.github+json" -L \
+  https://api.github.com/repos/conda-forge/lfortran-feedstock/actions/jobs/<job_id>/logs
+```
+
+Azure builds expose logs through the timeline at
+`https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/builds/<buildId>/timeline?api-version=7.1`,
+then `.../builds/<buildId>/logs/<logId>`, while other jobs are still
+running. A network or DNS error with no compiler error (for example
+`validate_recipe_outputs` failing to resolve a host after the package was
+built) is infrastructure. `gh run rerun` does not apply to Azure. Comment
+`@conda-forge-admin, please restart ci` and leave the `automerge` label on.
+Do not push an empty commit. Then classify a real failure:
 
 - **Recipe or environment problem** (solver conflicts, a missing build tool,
   conda-forge toolchain changes, cross-compilation settings): fix the recipe
@@ -293,6 +312,16 @@ conda-forge/lfortran-feedstock --log-failed`. Then classify it:
   Paths are relative to the tarball root. If a fix touches a generator
   input (`parser.yy`, `ASR.asdl`, ...), patch the generated file that ships in
   the tarball as well, because the feedstock never regenerates sources.
+  The Linux build compiles the test suite as part of `make all` against the
+  glibc 2.17 sysroot, even when the runner's glibc is newer. A GNU function
+  added after 2.17 needs a version guard. Do not write
+  `#if defined(FOO) && FOO(2, 18)`: the preprocessor does not short-circuit,
+  and Clang on macOS rejects the undefined function-like macro. Nest
+  `#ifdef __GLIBC__` and then `#if __GLIBC_PREREQ(...)`. The Pixi sysroot is
+  often newer than 2.17, so it will not reproduce the missing declaration;
+  the feedstock log is the evidence. `recipe/patches/*.patch` is marked
+  binary in `.gitattributes`, so `git diff --stat` shows `Bin` and
+  `0 insertions`; read the blob with `git show HEAD:recipe/patches/...`.
 - Reproduce a source-level failure locally when you can: build the patched
   tree with the LFortran Pixi environment, or run `pixi exec rattler-build`
   on the recipe. Otherwise iterate on feedstock CI.
@@ -315,6 +344,9 @@ upstreams the fix carried by lfortran-feedstock (link the feedstock PR and
 patch), so that the patch can be removed after the next release. Run the
 local suites before pushing compiler-source changes, and use pr-review while
 Quick runs, as fix-issue does. The next release removes the patch in Step 5.
+Merging the port does not publish the conda package. Publication is the
+feedstock PR; the package is installable only after Step 7's index check
+passes.
 
 ## Step 7 — lfortran-conda-testing
 
@@ -322,14 +354,19 @@ Start only after the new package can be installed on every platform the
 feedstock builds (`.ci_support/*.yaml`: linux-64, linux-aarch64, osx-64,
 osx-arm64, win-64). Check the channel index that the solvers read, not the
 anaconda.org API. The API lists uploaded files about an hour before the
-index does, and a run started in between fails in every job. Wait in the
-background until this prints all five platforms:
+index does, and a run started in between fails in every job. The API,
+including `api.anaconda.org`, can list or even download a file whose
+`conda.anaconda.org/<subdir>/<file>` URL is still a cached 404. That file is
+not installable. One subdir often lags the others. A platform is ready only
+when the loop below prints `<subdir> <filename> 200`:
 
 ```bash
 for s in linux-64 linux-aarch64 osx-64 osx-arm64 win-64; do
-  curl -sL https://conda.anaconda.org/conda-forge/$s/current_repodata.json | python3 -I -c \
+  f=$(curl -sL "https://conda.anaconda.org/conda-forge/$s/current_repodata.json" | python3 -I -c \
     "import sys,json; d=json.load(sys.stdin); p={**d.get('packages',{}),**d.get('packages.conda',{})}; \
-     print('$s' if any(v['name']=='lfortran' and v['version']=='X.Y.Z' for v in p.values()) else '')"
+     print(next((k for k,v in p.items() if v.get('name')=='lfortran' and v.get('version')=='X.Y.Z'), ''))")
+  code=$(curl -sI -o /dev/null -w '%{http_code}' "https://conda.anaconda.org/conda-forge/$s/$f")
+  echo "$s ${f:-missing} $code"
 done
 ```
 
@@ -360,7 +397,14 @@ git fetch upstream && git switch -c lf<minor> upstream/main
    0.8.4, which LFortran already used). Moving a lagging pin to LFortran's
    commit is an environment fix. Make it when its job fails, in its own
    commit naming the LFortran commit that moved the pin.
-4. Push (see the `workflow` scope note under **State**), then open the PR:
+4. Before the first push, compare every `lfortran` flag and CMake `-D` in
+   `CI.yml` with the same project in `ci/test_third_party_codes.sh` at
+   `vX.Y.Z`, including the Windows copy of a step. Apply a flag the release
+   script added, and delete a flag it dropped, in their own commits. A
+   removed option makes LFortran exit at once (`argument was not expected`,
+   `isn't supported yet`) and fails the job in about a minute. Do this for
+   every copy of the command, not only the one the script shows.
+5. Push (see the `workflow` scope note under **State**), then open the PR:
    `gh pr create --repo lfortran/lfortran-conda-testing --base main --head
    $ME:lf<minor> --title "Add version X.Y.Z" --body ""`.
 
@@ -376,8 +420,12 @@ run as a whole may be red for another job). Then classify:
 - **Too early** (the solver cannot find `lfortran =X.Y.Z`): see above.
 - **Intermittent** (a job that passed earlier in this PR, or on the previous
   attempt, fails with the same commit, package, and pins, often without a
-  diagnostic): rerun the failed jobs once with `gh run rerun <id> --failed`.
-  If the same failure comes back, treat it as real. If the rerun passes,
+  diagnostic; also a `git clone` that cannot connect to `github.com`):
+  rerun the failed jobs once with `gh run rerun <id> --failed`. GitHub
+  refuses `gh run rerun --job` while that workflow is still in progress
+  (`job cannot be rerun`). Wait until the run completes, then rerun. A push
+  cancels the run and throws away the jobs that were still passing. If the
+  same failure comes back, treat it as real. If the rerun passes,
   search for an existing issue. Otherwise file one titled
   `Intermittent: <symptom> (X.Y.Z)`, with the failing job URL, the pinned
   commits and versions, the end of the log, and how to try to reproduce it.
@@ -397,8 +445,9 @@ run as a whole may be red for another job). Then classify:
 - **LFortran bug** (it passed with `$PREV`, and the third-party code and the
   environment did not change; or it is one of LFortran's own tests, run from
   the `vX.Y.Z` checkout, failing against the package, even a test added in
-  this release): reproduce it first with the released package itself, which
-  needs no build:
+  this release). A flag or `-D` that `ci/test_third_party_codes.sh` at
+  `vX.Y.Z` already added or dropped is item 4, not a new bug. Reproduce it
+  first with the released package itself, which needs no build:
   `pixi exec --spec "lfortran==X.Y.Z" --spec clang --channel conda-forge -- bash -c '...'`.
   The feedstock builds with its `llvm_version` (LLVM 21 for 0.68.0), not
   LLVM 11, and a bug can depend on it. #15968 (an undefined `__floatunsitf`
@@ -420,7 +469,11 @@ run as a whole may be red for another job). Then classify:
     affected OS only, before calling `run_tests.py`:
     `sed -i.bak '/^RUN(NAME <name> /d' CMakeLists.txt`.
 
-Commit each workaround separately and push. Merge once every check is
+Commit each workaround separately. When one job fails, let the other jobs
+of that same run finish before pushing: each push cancels the run and
+starts all of the jobs over. Push immediately only when this failure is
+early in a long job and a later step of that same job is what you still
+need to see. Save a log the same way as Step 5. Merge once every check is
 green: `gh pr merge <pr> --repo lfortran/lfortran-conda-testing --merge`. If
 the merge is refused for the token's missing `workflow` scope, ask the user
 to merge it in the browser, then confirm with `gh pr view <pr> --json
@@ -445,15 +498,16 @@ PR as merged.
 
 ## Step 9 — Announcement and report
 
-Print the announcement exactly in this form, ready to paste:
+Print the announcement as this Markdown, and nothing else in that block, so
+it can be pasted into the LFortran Zulip chat:
 
-```text
-X.Y.Z
+~~~markdown
+# X.Y.Z
 
-https://github.com/lfortran/lfortran/releases/tag/vX.Y.Z
-https://github.com/conda-forge/lfortran-feedstock/pull/<n>
-https://github.com/lfortran/lfortran-conda-testing/pull/<m>
-```
+* https://github.com/lfortran/lfortran/releases/tag/vX.Y.Z
+* https://github.com/conda-forge/lfortran-feedstock/pull/<n>
+* https://github.com/lfortran/lfortran-conda-testing/pull/<m>
+~~~
 
 Then report:
 
