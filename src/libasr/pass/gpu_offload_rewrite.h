@@ -209,10 +209,23 @@ public:
         // Replace the member symbol to point to kernel scope's ExternalSymbol
         std::string mem_name = ASRUtils::symbol_name(x->m_m);
         ASR::symbol_t *new_mem = lookup_symbol(mem_name);
-        if (new_mem) {
+        if (new_mem && is_struct_component(new_mem)) {
             x->m_m = new_mem;
         }
         rebind_member_to_base_type(x);
+    }
+
+    // The kernel scope can hold a procedure or variable with the name of a
+    // component (a component `kernel` beside a function `kernel`), which a
+    // component reference must not be retargeted to.
+    static bool is_struct_component(ASR::symbol_t *sym) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
+        if (!s || !ASR::is_a<ASR::Variable_t>(*s)) return false;
+        SymbolTable *parent = ASRUtils::symbol_parent_symtab(s);
+        return parent && parent->asr_owner
+            && parent->asr_owner->type == ASR::asrType::symbol
+            && ASR::is_a<ASR::Struct_t>(
+                *ASR::down_cast<ASR::symbol_t>(parent->asr_owner));
     }
 
     // The component has to belong to the derived type its base now names.
