@@ -84,15 +84,25 @@ It is pumped even without output capture or output from the cell. The worker
 reads only an atomic request; transport and socket ownership stay with the
 caller. Only one cell may execute at a time.
 
-Native JIT lowering receives an explicit `JITCancellation` callback contract
-from `evaluate()`, never from file compilation or inspection. Checkpoints
-follow structured ASR statements and loop tests after local descriptors have
-been initialized. Calls propagate an already observed cancellation before
-consuming a function result. Initialization and user finalizers defer
-cancellation; a cancelled frame leaves enclosing BLOCK/ASSOCIATE constructs,
-reuses procedure cleanup, and copies CFI descriptors back before returning.
-It abandons its result instead of loading an incomplete return variable.
-The callbacks refer to the current cell's thread-local execution context, so
+Native JIT lowering receives an explicit `JITCancellation` contract from
+`evaluate()` and from interactive inspection, never from file compilation:
+`%%showllvm` and `%%showasm` show the code that runs. The generated code polls
+as a safepoint. It loads a request word, which the evaluator defines for its
+JIT, and branches to the cleanup only when the word is set, so the common path
+costs a load and a branch. Safepoints sit at procedure entry, at loop
+back-edges (the counted DO latch, DO, DO WHILE and backward GOTO), after calls
+that may unwind and in READ, after local descriptors have been initialized.
+A procedure that cannot reach a safepoint (it has no loop, backward branch,
+READ, derived type variable or call of a procedure that can) carries no
+cancellation code, and its callers need no check after the call. Calls
+propagate an already observed cancellation before consuming a function
+result. Initialization and user finalizers defer cancellation with inline
+counter updates; a request that arrives meanwhile is observed at the next
+safepoint, at the latest once a CALL statement or a construct whose FINAL
+procedures ran completes. A cancelled frame leaves enclosing BLOCK/ASSOCIATE
+constructs, reuses procedure cleanup, and copies CFI descriptors back before
+returning. It abandons its result instead of loading an incomplete return
+variable. The words belong to the evaluator and are reset for each cell, so
 procedures defined by earlier cells can cancel too.
 
 An uninstrumented foreign call protects its entire dynamic extent, including
@@ -100,8 +110,8 @@ Fortran callbacks it invokes: a callback must return its normal, initialized
 result to C, not a cancellation placeholder. The pending request is observed
 after the foreign call returns and descriptor copyback/result ownership are
 complete. Known JIT-defined procedures (including `BIND(C)` procedures from
-earlier cells) and the cooperative owned-command runtime still participate in
-cancellation. Unknown C procedure pointers are conservatively protected.
+earlier cells) still participate in cancellation. Unknown C procedure pointers
+are conservatively protected.
 An infinite foreign call or callback therefore still needs to return before
 its cell can be interrupted.
 
@@ -138,7 +148,8 @@ Protected READs advertise `lfortran_interruptible: false` in input_request;
 the prompt keeps accepting their input after Ctrl-C so cleanup can finish.
 
 During native execution with a cancellation callback, EXECUTE_COMMAND_LINE
-waits poll that same cell state. POSIX commands run in their own process group;
+and SLEEP waits poll that same cell state, also within a foreign call; SLEEP
+sleeps in short slices and returns early. POSIX commands run in their own process group;
 Windows commands run in an owned job. Cancellation terminates the owned shell
 and descendants and waits for the shell before returning through normal JIT
 cleanup. Captured stdout/stderr and the process stdin are inherited as before.
