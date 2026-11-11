@@ -23038,6 +23038,7 @@ public:
             llvm::Value *str_src_data = nullptr, *str_src_len = nullptr;
             bool is_string_array_unit = false;
             llvm::Value *str_src_elem_len = nullptr;
+            llvm::Function *array_next_record = nullptr;
             if (is_string) {
                 str_offset = llvm_utils->CreateAlloca(
                     llvm::Type::getInt64Ty(context), nullptr, "str_read_offset");
@@ -23055,6 +23056,14 @@ public:
                     llvm::Value* n_elems = contiguous_array_size(x.m_unit);
                     str_src_elem_len = elem_len;
                     str_src_len = builder->CreateMul(elem_len, n_elems);
+                    array_next_record = LLVM::get_or_declare_function(*module,
+                        "_lfortran_string_array_next_record",
+                        llvm_utils->void_type, {
+                            character_type,
+                            llvm_utils->i64,
+                            llvm_utils->i64,
+                            llvm_utils->i64->getPointerTo()
+                        });
                 } else {
                     std::tie(str_src_data, str_src_len) = llvm_utils->get_string_length_data(
                         ASRUtils::get_string_type(x.m_unit), unit_val);
@@ -23367,15 +23376,32 @@ public:
                             var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                         }
                         if (is_string_array_unit) {
-                            llvm::Value* saved_offset = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), str_offset);
-                            llvm::Value* elem_offset = builder->CreateURem(saved_offset, str_src_elem_len);
-                            llvm::Value* record_start = builder->CreateSub(saved_offset, elem_offset);
-                            llvm::Value* record_data = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), str_src_data, record_start);
-                            llvm::Value* record_len = builder->CreateSub(str_src_elem_len, elem_offset);
-                            llvm::Value* record_offset = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "str_record_offset");
-                            builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),record_offset);
-                            builder->CreateCall(fn, { record_data, record_len, fmt,var_to_read_into, iostat, record_offset });
-                            llvm::Value* consumed = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), record_offset);
+                            // One array element is one record. Read from the
+                            // current position through the end of that record
+                            // only, after skipping a record with no value left.
+                            builder->CreateCall(array_next_record, {str_src_data,
+                                str_src_len, str_src_elem_len, str_offset});
+                            llvm::Value* saved_offset = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt64Ty(context), str_offset);
+                            llvm::Value* elem_offset = builder->CreateURem(
+                                saved_offset, str_src_elem_len);
+                            llvm::Value* remain_in_record = builder->CreateSub(
+                                str_src_elem_len, elem_offset);
+                            llvm::Value* remain_total = builder->CreateSub(
+                                str_src_len, saved_offset);
+                            llvm::Value* record_len = builder->CreateSelect(
+                                builder->CreateICmpULT(remain_total, remain_in_record),
+                                remain_total, remain_in_record);
+                            llvm::Value* record_data = llvm_utils->create_ptr_gep2(
+                                llvm::Type::getInt8Ty(context), str_src_data, saved_offset);
+                            llvm::Value* record_offset = llvm_utils->CreateAlloca(
+                                llvm::Type::getInt64Ty(context), nullptr, "str_record_offset");
+                            builder->CreateStore(llvm::ConstantInt::get(
+                                llvm::Type::getInt64Ty(context), 0), record_offset);
+                            builder->CreateCall(fn, {record_data, record_len, fmt,
+                                var_to_read_into, iostat, record_offset});
+                            llvm::Value* consumed = llvm_utils->CreateLoad2(
+                                llvm::Type::getInt64Ty(context), record_offset);
                             builder->CreateStore(builder->CreateAdd(saved_offset, consumed),
                                 str_offset);
                         } else {

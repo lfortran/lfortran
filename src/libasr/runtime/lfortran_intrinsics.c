@@ -17560,6 +17560,69 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
     if(iostat != NULL) *iostat = dtio_iostat;
 }
 
+// Each element of a character-array internal file is one record. Move
+// *offset to the next record when the rest of this one holds no
+// list-directed value: only blanks, or a comma that separates an
+// already-read value from the next record. A comma that is the first
+// non-blank of the first record is a null value and stays where it is.
+LFORTRAN_API void _lfortran_string_array_next_record(
+        char *str, int64_t len, int64_t elem_len, int64_t *offset) {
+    int64_t pos;
+    if (offset == NULL || str == NULL || elem_len <= 0) {
+        return;
+    }
+    pos = *offset;
+    if (pos < 0) {
+        pos = 0;
+    }
+    if (pos > len) {
+        pos = len;
+    }
+    while (pos < len) {
+        int64_t rec_index = pos / elem_len;
+        int64_t rec_start = rec_index * elem_len;
+        int64_t rec_end = rec_start + elem_len;
+        int64_t i;
+        int64_t j;
+        int saw_value;
+        if (rec_end > len) {
+            rec_end = len;
+        }
+        i = pos;
+        while (i < rec_end && (str[i] == ' ' || str[i] == '\t')) {
+            i++;
+        }
+        if (i >= rec_end) {
+            pos = rec_end;
+            continue;
+        }
+        if (str[i] != ',') {
+            break;
+        }
+        j = i + 1;
+        while (j < rec_end && (str[j] == ' ' || str[j] == '\t')) {
+            j++;
+        }
+        if (j < rec_end) {
+            break;
+        }
+        saw_value = 0;
+        for (j = rec_start; j < i; j++) {
+            if (str[j] != ' ' && str[j] != '\t') {
+                saw_value = 1;
+                break;
+            }
+        }
+        // "no characters preceding the first value separator" in the
+        // first record is a null value, not an empty record.
+        if (rec_index == 0 && !saw_value) {
+            break;
+        }
+        pos = rec_end;
+    }
+    *offset = pos;
+}
+
 // Helper function to skip whitespace, and handle commas in list-directed I/O
 static int _lfortran_skip_comma(char *buf, int *skip, int64_t off, int64_t *offset, int32_t *iostat) {
     while (buf[*skip] && (buf[*skip] == ' ' || buf[*skip] == '\t')) {
