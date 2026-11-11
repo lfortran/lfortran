@@ -11990,6 +11990,16 @@ bool set_struct_member_owner_path(Allocator& al,
         owner = ASRUtils::get_asr_owner(owner);
     }
     if (owner == nullptr) {
+        // A struct copied into a device kernel lives in that function, and
+        // the function is not in a module. The external symbol is placed in
+        // the kernel, where the verifier accepts the struct's own name.
+        // The name the caller had (`1_<type>` when another symbol hides the
+        // type) does not resolve to the struct from the kernel.
+        if (struct_t != nullptr) {
+            e->m_module_name = s2c(al, ASRUtils::symbol_name(struct_t));
+            e->n_scope_names = 0;
+            e->m_scope_names = nullptr;
+        }
         return false;
     }
     e->m_module_name = s2c(al, ASRUtils::symbol_name(owner));
