@@ -14980,7 +14980,8 @@ static void parse_boz_from_buffer(char* buffer, int field_len,
     internal_free(processed);
 }
 
-static void parse_real_from_buffer(char* buffer, int field_len,
+// Returns false if a real(16) field is too long to be a numeric token.
+static bool parse_real_from_buffer(char* buffer, int field_len,
         void* real_ptr, int32_t type_code, int scale_factor, int decimal_places)
 {
     // Handle integer types
@@ -14993,7 +14994,7 @@ static void parse_real_from_buffer(char* buffer, int field_len,
                 (int64_t)strtoll(temp, NULL, 10));
             internal_free(temp);
         }
-        return;
+        return true;
     }
     // Replace D/d with E for parsing, check for exponent/decimal point
     bool has_exponent = false;
@@ -15056,13 +15057,16 @@ static void parse_real_from_buffer(char* buffer, int field_len,
     }
     if (type_code == 14) {
         lf_float128 v128 = lf_f128_from_double(0.0);
-        lf_strtof128(buffer, &v128, NULL);
+        if (!lf_strtof128(buffer, &v128, NULL)) {
+            const char *digits = buffer + strspn(buffer, " \t");
+            if (strspn(digits, "+-.0123456789") > LF_F128_TOKEN_MAX) return false;
+        }
         if (total_scale != 0) {
             v128 = lf_f128_div(v128, lf_f128_pow(lf_f128_from_double(10.0),
                 lf_f128_from_double((double)total_scale)));
         }
         *((lf_float128*)real_ptr) = v128;
-        return;
+        return true;
     }
     double v = strtod(buffer, NULL);
     if (total_scale != 0) {
@@ -15073,6 +15077,7 @@ static void parse_real_from_buffer(char* buffer, int field_len,
     } else {
         *((double*)real_ptr) = v;
     }
+    return true;
 }
 
 static void parse_logical_from_buffer(char* buffer, int field_len,
@@ -15983,8 +15988,9 @@ static bool read_and_parse_real_field(InputSource *inputSource, void* elem_ptr,
             if (buffer[ri] == ',') { buffer[ri] = '.'; break; }
         }
     }
-    parse_real_from_buffer(buffer, field_len, elem_ptr, type_code, scale_factor, decimal_places);
+    bool ok = parse_real_from_buffer(buffer, field_len, elem_ptr, type_code, scale_factor, decimal_places);
     internal_free(buffer);
+    if (!ok) { if (iostat) *iostat = 1; return false; }
     return true;
 }
 
