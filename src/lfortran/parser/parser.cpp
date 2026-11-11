@@ -415,7 +415,7 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
 char previous_nonspace_character(const std::string &s, size_t pos) {
     while (pos > 0) {
         --pos;
-        if (s[pos] != ' ' && s[pos] != '\t') {
+        if (s[pos] != ' ' && s[pos] != '\t' && s[pos] != '\r') {
             return s[pos];
         }
     }
@@ -425,7 +425,7 @@ char previous_nonspace_character(const std::string &s, size_t pos) {
 char next_nonspace_character(const std::string &s, size_t pos) {
     pos++;
     while (pos < s.size()) {
-        if (s[pos] != ' ' && s[pos] != '\t') {
+        if (s[pos] != ' ' && s[pos] != '\t' && s[pos] != '\r') {
             return s[pos];
         }
         ++pos;
@@ -473,7 +473,8 @@ void cont1(
             in_comment = true;
         }
         if (!in_comment) {
-            if (s[pos] != ' ' && s[pos] != '\t') {
+            // `\r` is whitespace so `&` + CRLF still continues the line.
+            if (s[pos] != ' ' && s[pos] != '\t' && s[pos] != '\r') {
                 ws_or_comment = false;
                 return;
             }
