@@ -2279,6 +2279,217 @@ lf_float128 lf_f128_erfc(lf_float128 a) {
 }
 
 /* ========================================================================
+ * Gamma, log-gamma, hypot, Bessel J0/J1/Jn/Y0, erfc_scaled.
+ *
+ * log Γ(z) for z >= 40 is the Stirling series. Smaller positive arguments
+ * are shifted up by the recurrence. The coefficients are B2..B32.
+ * ======================================================================== */
+
+static const char *const f128_bernoulli_even[] = {
+    "0.1666666666666666666666666666666666666667",          /* B2  */
+    "-0.03333333333333333333333333333333333333333",        /* B4  */
+    "0.02380952380952380952380952380952380952381",         /* B6  */
+    "-0.03333333333333333333333333333333333333333",        /* B8  */
+    "0.07575757575757575757575757575757575757576",         /* B10 */
+    "-0.2531135531135531135531135531135531135531",         /* B12 */
+    "1.166666666666666666666666666666666666667",           /* B14 */
+    "-7.092156862745098039215686274509803921569",          /* B16 */
+    "54.97117794486215538847117794486215538847",           /* B18 */
+    "-529.1242424242424242424242424242424242424",          /* B20 */
+    "6192.123188405797101449275362318840579710",           /* B22 */
+    "-86580.25311355311355311355311355311355311",          /* B24 */
+    "1425517.166666666666666666666666666666667",           /* B26 */
+    "-27298231.06781609195402298850574712643678",          /* B28 */
+    "601580873.9006423683843038681748359167714",           /* B30 */
+    "-15116315767.09215686274509803921568627451"           /* B32 */
+};
+
+static int f128_is_nonpos_int(lf_float128 x) {
+    f128_parts p = f128_unpack(x);
+    if (p.is_nan || p.is_inf) return 0;
+    if (f128_cmp_internal(x, f128_make_zero(0)) > 0) return 0;
+    return f128_cmp_internal(x, lf_f128_floor(x)) == 0;
+}
+
+/* ln Γ(z) for z >= 40. Truncation after B32 is < 1e-40 there. */
+static lf_float128 f128_stirling_log_gamma(lf_float128 z) {
+    lf_float128 twopi = lf_float128_from_str(
+        "6.283185307179586476925286766559005768");
+    lf_float128 half = f128_half();
+    lf_float128 lg = f_sub(f_mul(f_sub(z, half), lf_f128_log(z)), z);
+    lg = f_add(lg, f_mul(half, lf_f128_log(twopi)));
+    lf_float128 z2 = f_mul(z, z);
+    lf_float128 zpow = z;
+    int nterms = (int)(sizeof(f128_bernoulli_even) / sizeof(f128_bernoulli_even[0]));
+    for (int k = 1; k <= nterms; k++) {
+        lf_float128 B = lf_float128_from_str(f128_bernoulli_even[k - 1]);
+        lf_float128 denom = f_mul(f_mul(f_int(2 * (int64_t)k),
+            f_int(2 * (int64_t)k - 1)), zpow);
+        lf_float128 term = f_div(B, denom);
+        lg = f_add(lg, term);
+        if (f128_cmp_internal(lf_f128_abs(term),
+                lf_float128_from_str("1e-40")) < 0) break;
+        if (f128_cmp_internal(z, lf_float128_from_str("1e100")) > 0) break;
+        zpow = f_mul(zpow, z2);
+    }
+    return lg;
+}
+
+/* ln Γ(x) for x > 0, shifted into the Stirling range. */
+static lf_float128 f128_log_gamma_pos(lf_float128 x) {
+    lf_float128 z = x;
+    int n = 0;
+    lf_float128 limit = f_int(40);
+    while (f128_cmp_internal(z, limit) < 0 && n < 80) {
+        z = f_add(z, f128_one());
+        n++;
+    }
+    lf_float128 lg = f128_stirling_log_gamma(z);
+    lf_float128 t = x;
+    for (int i = 0; i < n; i++) {
+        lg = f_sub(lg, lf_f128_log(t));
+        t = f_add(t, f128_one());
+    }
+    return lg;
+}
+
+lf_float128 lf_f128_lgamma(lf_float128 x) {
+    f128_parts p = f128_unpack(x);
+    if (p.is_nan || (p.is_inf && p.sign)) return f128_make_nan();
+    if (p.is_inf) return f128_make_inf(0);
+    if (f128_is_nonpos_int(x)) return f128_make_nan();
+    if (f128_cmp_internal(x, f128_half()) < 0) {
+        /* ln|Γ(x)| = ln π - ln|sin(πx)| - ln Γ(1-x) */
+        lf_float128 pi = lf_float128_from_str(
+            "3.14159265358979323846264338327950288");
+        lf_float128 s = lf_f128_abs(lf_f128_sin(f_mul(pi, x)));
+        if (f128_is_zero(s)) return f128_make_nan();
+        return f_sub(f_sub(lf_f128_log(pi), lf_f128_log(s)),
+            f128_log_gamma_pos(f_sub(f128_one(), x)));
+    }
+    return f128_log_gamma_pos(x);
+}
+
+lf_float128 lf_f128_tgamma(lf_float128 x) {
+    f128_parts p = f128_unpack(x);
+    if (p.is_nan) return x;
+    if (p.is_inf) return p.sign ? f128_make_nan() : f128_make_inf(0);
+    if (f128_is_nonpos_int(x)) return f128_make_nan();
+    if (f128_cmp_internal(x, f128_half()) < 0) {
+        lf_float128 pi = lf_float128_from_str(
+            "3.14159265358979323846264338327950288");
+        lf_float128 s = lf_f128_sin(f_mul(pi, x));
+        if (f128_is_zero(s)) return f128_make_nan();
+        return f_div(pi, f_mul(s, lf_f128_tgamma(f_sub(f128_one(), x))));
+    }
+    return lf_f128_exp(f128_log_gamma_pos(x));
+}
+
+lf_float128 lf_f128_hypot(lf_float128 x, lf_float128 y) {
+    if (f128_is_nan(x) || f128_is_nan(y)) return f128_make_nan();
+    if (f128_is_inf(x) || f128_is_inf(y)) return f128_make_inf(0);
+    lf_float128 ax = lf_f128_abs(x);
+    lf_float128 ay = lf_f128_abs(y);
+    if (f128_cmp_internal(ax, ay) < 0) {
+        lf_float128 t = ax; ax = ay; ay = t;
+    }
+    if (f128_is_zero(ax)) return f128_make_zero(0);
+    lf_float128 r = f_div(ay, ax);
+    return f_mul(ax, lf_f128_sqrt(f_add(f128_one(), f_mul(r, r))));
+}
+
+/* J_n(|x|) for n >= 0, power series. */
+static lf_float128 f128_bessel_j_series(int n, lf_float128 ax) {
+    lf_float128 half = f128_scale(ax, -1);
+    lf_float128 term = f128_one();
+    for (int i = 1; i <= n; i++) {
+        term = f_div(f_mul(term, half), f_int(i));
+    }
+    lf_float128 sum = term;
+    lf_float128 half2 = f_mul(half, half);
+    lf_float128 eps = lf_float128_from_str("1e-40");
+    for (int k = 1; k < 400; k++) {
+        term = f_neg(f_div(f_mul(term, half2),
+            f_mul(f_int(k), f_int((int64_t)n + k))));
+        sum = f_add(sum, term);
+        if (f128_cmp_internal(lf_f128_abs(term),
+                f_mul(lf_f128_abs(sum), eps)) < 0) break;
+    }
+    return sum;
+}
+
+lf_float128 lf_f128_jn(int n, lf_float128 x) {
+    f128_parts p = f128_unpack(x);
+    if (p.is_nan || p.is_inf) return f128_make_nan();
+    int flip = 0;
+    if (n < 0) {
+        n = -n;
+        if (n & 1) flip ^= 1;
+    }
+    if (p.sign && (n & 1)) flip ^= 1;
+    /* Bound the series; the folded cases use a small order. */
+    if (n > 2048) return f128_make_zero(flip);
+    lf_float128 r = f128_bessel_j_series(n, lf_f128_abs(x));
+    return flip ? f_neg(r) : r;
+}
+
+lf_float128 lf_f128_j0(lf_float128 x) { return lf_f128_jn(0, x); }
+lf_float128 lf_f128_j1(lf_float128 x) { return lf_f128_jn(1, x); }
+
+lf_float128 lf_f128_y0(lf_float128 x) {
+    f128_parts p = f128_unpack(x);
+    if (p.is_nan || p.sign) return f128_make_nan();
+    if (p.is_zero) return f128_make_inf(1);
+    if (p.is_inf) return f128_make_zero(0);
+    /* Y0(x) = (2/π) ln(x/2) J0(x)
+     *       + (2/π) Σ_k (-1)^{k+1} ψ(k+1) / (k!)^2 (x/2)^{2k}
+     * ψ(k+1) = -γ + H_k. */
+    lf_float128 pi = lf_float128_from_str(
+        "3.14159265358979323846264338327950288");
+    lf_float128 gamma_e = lf_float128_from_str(
+        "0.577215664901532860606512090082402431");
+    lf_float128 two_over_pi = f_div(f128_two(), pi);
+    lf_float128 j0 = lf_f128_j0(x);
+    lf_float128 ln = lf_f128_log(f128_scale(x, -1));
+    lf_float128 sum = f128_make_zero(0);
+    lf_float128 term = f128_one();
+    lf_float128 half2 = f_mul(f128_scale(x, -1), f128_scale(x, -1));
+    lf_float128 H = f128_make_zero(0);
+    lf_float128 eps = lf_float128_from_str("1e-40");
+    for (int k = 0; k < 400; k++) {
+        if (k > 0) {
+            H = f_add(H, f_div(f128_one(), f_int(k)));
+            term = f_div(f_mul(term, half2), f_mul(f_int(k), f_int(k)));
+        }
+        lf_float128 contrib = f_mul(f_sub(H, gamma_e), term);
+        if ((k & 1) == 0) contrib = f_neg(contrib);
+        sum = f_add(sum, contrib);
+        if (k > 2 && f128_cmp_internal(lf_f128_abs(contrib),
+                f_mul(lf_f128_abs(sum), eps)) < 0) break;
+    }
+    return f_mul(two_over_pi, f_add(f_mul(ln, j0), sum));
+}
+
+lf_float128 lf_f128_erfc_scaled(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan) return a;
+    if (p.is_inf) return p.sign ? f128_make_inf(0) : f128_make_zero(0);
+    lf_float128 ax = lf_f128_abs(a);
+    if (!p.sign && f128_cmp_internal(ax, f_int(2)) >= 0) {
+        /* erfc(x) = exp(-x^2) / (sqrt(π) t), so the scaled value is 1/(sqrt(π) t). */
+        lf_float128 t = ax;
+        for (int k = 400; k >= 1; k--) {
+            lf_float128 c = f128_scale(f_int(k), -1);
+            t = f_add(ax, f_div(c, t));
+        }
+        lf_float128 sqrt_pi = lf_float128_from_str(
+            "1.77245385090551602729816748334114518");
+        return f_div(f128_one(), f_mul(sqrt_pi, t));
+    }
+    return f_mul(lf_f128_exp(f_mul(a, a)), lf_f128_erfc(a));
+}
+
+/* ========================================================================
  * N. Formatting (Dragon4) — verbatim from lf_float128_to_str.c
  * ======================================================================== */
 

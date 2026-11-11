@@ -591,6 +591,16 @@ namespace X {                                                                   
                 ASRUtils::real_constant_get_r16(                                \
                     ASR::down_cast<ASR::RealConstant_t>(args[0]))), t);         \
         }                                                                       \
+        if (kind == 16 && std::string(#X) == "Gamma") {                         \
+            return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_tgamma(     \
+                ASRUtils::real_constant_get_r16(                                \
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]))), t);         \
+        }                                                                       \
+        if (kind == 16 && std::string(#X) == "LogGamma") {                      \
+            return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_lgamma(     \
+                ASRUtils::real_constant_get_r16(                                \
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]))), t);         \
+        }                                                                       \
         if (kind == 16) {                                                       \
             return nullptr;                                                     \
         }                                                                       \
@@ -1095,9 +1105,9 @@ namespace math_func {                                                           
     - degree = 0, implies no change in input or output ( radians )
 */
 
-create_math_bindc(BesselJ0, HostBessel::j0, HostBessel::j0l, 0, bessel_j0, nullptr)
-create_math_bindc(BesselJ1, HostBessel::j1, HostBessel::j1l, 0, bessel_j1, nullptr)
-create_math_bindc(BesselY0, HostBessel::y0, HostBessel::y0l, 0, bessel_y0, nullptr)
+create_math_bindc(BesselJ0, HostBessel::j0, HostBessel::j0l, 0, bessel_j0, lf_f128_j0)
+create_math_bindc(BesselJ1, HostBessel::j1, HostBessel::j1l, 0, bessel_j1, lf_f128_j1)
+create_math_bindc(BesselY0, HostBessel::y0, HostBessel::y0l, 0, bessel_y0, lf_f128_y0)
 create_math_bindc(BesselY1, HostBessel::y1, HostBessel::y1l, 0, bessel_y1, nullptr)
 create_math_bindc(Asind, asin, asinl, 1, asind, lf_f128_asind)
 create_math_bindc(Acosd, acos, acosl, 1, acosd, lf_f128_acosd)
@@ -5641,7 +5651,11 @@ namespace BesselJN {
     static ASR::expr_t *eval_BesselJN(Allocator& al, const Location& loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
-            return nullptr;
+            int n = checked_integer_cast<int>(
+                ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
+            lf_float128 x = ASRUtils::real_constant_get_r16(
+                ASR::down_cast<ASR::RealConstant_t>(args[1]));
+            return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_jn(n, x), t1);
         }
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 10) {
             // Kind 10 stores a pointer in m_r. Fold Jn in long double.
@@ -6304,7 +6318,11 @@ namespace Hypot {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if (kind == 16) {
-            return nullptr;
+            lf_float128 a = ASRUtils::real_constant_get_r16(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            lf_float128 b = ASRUtils::real_constant_get_r16(
+                ASR::down_cast<ASR::RealConstant_t>(args[1]));
+            return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_hypot(a, b), t1);
         }
         // Kind 10 stores a pointer in m_r, not the numeric value.
         if (kind == 10) {
@@ -8395,7 +8413,9 @@ namespace ErfcScaled {
             ASR::ttype_t *t, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASRUtils::extract_kind_from_ttype_t(t) == 16) {
-            return nullptr;
+            return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_erfc_scaled(
+                ASRUtils::real_constant_get_r16(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]))), t);
         }
         if (ASRUtils::extract_kind_from_ttype_t(t) == 10) {
             // Kind 10 stores a pointer in m_r. Fold exp(x**2)*erfc(x) in long double.
