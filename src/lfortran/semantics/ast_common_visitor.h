@@ -30215,17 +30215,6 @@ public:
                             var->m_value : var->m_symbolic_value;
                         value = get_struct_member_value_from_constant_array(
                             parameter_value, tmp2_m_m_ext, tmp2_mem_type);
-                        ASR::symbol_t* mem_sym =
-                            ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
-
-                        if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
-                            ASR::Variable_t* mem_var =
-                                ASR::down_cast<ASR::Variable_t>(mem_sym);
-
-                            if (mem_var->m_symbolic_value) {
-                                value = mem_var->m_symbolic_value; // ArrayConstant
-                            }
-                        }
                         value = ASRUtils::import_folded_constant_value(
                             al, value, current_scope);
                     }
@@ -30240,17 +30229,6 @@ public:
                     if (base_value) {
                         value = get_struct_member_value_from_constant_array(
                             base_value, tmp2_m_m_ext, tmp2_mem_type);
-                        ASR::symbol_t* mem_sym =
-                            ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
-
-                        if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
-                            ASR::Variable_t* mem_var =
-                                ASR::down_cast<ASR::Variable_t>(mem_sym);
-
-                            if (mem_var->m_symbolic_value) {
-                                value = mem_var->m_symbolic_value; // ArrayConstant
-                            }
-                        }
                         value = ASRUtils::import_folded_constant_value(
                             al, value, current_scope);
                     }
@@ -30311,17 +30289,6 @@ public:
                         var->m_value : var->m_symbolic_value;
                     value = get_struct_member_value_from_constant_array(
                         parameter_value, tmp2_m_m_ext, tmp2_mem_type);
-                    ASR::symbol_t* mem_sym =
-                        ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
-
-                    if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
-                        ASR::Variable_t* mem_var =
-                            ASR::down_cast<ASR::Variable_t>(mem_sym);
-
-                        if (mem_var->m_symbolic_value) {
-                            value = mem_var->m_symbolic_value; // ArrayConstant
-                        }
-                    }
                     value = ASRUtils::import_folded_constant_value(
                         al, value, current_scope);
                 }
@@ -30336,17 +30303,6 @@ public:
                 if (base_value) {
                     value = get_struct_member_value_from_constant_array(
                         base_value, tmp2_m_m_ext, tmp2_mem_type);
-                    ASR::symbol_t* mem_sym =
-                        ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
-
-                    if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
-                        ASR::Variable_t* mem_var =
-                            ASR::down_cast<ASR::Variable_t>(mem_sym);
-
-                        if (mem_var->m_symbolic_value) {
-                            value = mem_var->m_symbolic_value; // ArrayConstant
-                        }
-                    }
                     value = ASRUtils::import_folded_constant_value(
                         al, value, current_scope);
                 }
