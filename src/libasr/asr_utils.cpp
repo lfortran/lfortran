@@ -1011,6 +1011,129 @@ void anchor_cptr_null_constant_to_type_declaration(Allocator& al,
         al, expr->base.loc, var->m_type_declaration));
 }
 
+static ASR::symbol_t* struct_symbol_reachable_from(Allocator& al,
+        ASR::symbol_t* sym, SymbolTable* scope) {
+    if (sym == nullptr || is_visible_from(sym, scope)) {
+        return sym;
+    }
+    // Private, and under a name no user code can spell, when `scope` does not
+    // already import the type. An existing import is reused.
+    return import_symbol(al, sym, scope, ASR::accessType::Private, "1_");
+}
+
+static void anchor_call_args(Allocator& al, ASR::call_arg_t* src, size_t n,
+        SymbolTable* scope, Vec<ASR::call_arg_t>& out, bool& changed) {
+    out.reserve(al, n);
+    for (size_t i = 0; i < n; i++) {
+        ASR::call_arg_t arg = src[i];
+        if (arg.m_value != nullptr) {
+            ASR::expr_t* anchored = anchor_struct_constants(al, arg.m_value, scope);
+            if (anchored != arg.m_value) {
+                changed = true;
+                arg.m_value = anchored;
+            }
+        }
+        out.push_back(al, arg);
+    }
+}
+
+ASR::expr_t* anchor_struct_constants(Allocator& al, ASR::expr_t* expr,
+        SymbolTable* scope) {
+    if (expr == nullptr || scope == nullptr) {
+        return expr;
+    }
+    switch (expr->type) {
+        case ASR::exprType::StructConstant: {
+            ASR::StructConstant_t* x = ASR::down_cast<ASR::StructConstant_t>(expr);
+            bool changed = false;
+            Vec<ASR::call_arg_t> args;
+            anchor_call_args(al, x->m_args, x->n_args, scope, args, changed);
+            ASR::symbol_t* dt = struct_symbol_reachable_from(al, x->m_dt_sym, scope);
+            if (dt != x->m_dt_sym) {
+                changed = true;
+            }
+            if (!changed) {
+                return expr;
+            }
+            return ASRUtils::EXPR(ASR::make_StructConstant_t(
+                al, x->base.base.loc, dt, args.p, args.n, x->m_type));
+        }
+        case ASR::exprType::StructConstructor: {
+            ASR::StructConstructor_t* x = ASR::down_cast<ASR::StructConstructor_t>(expr);
+            bool changed = false;
+            Vec<ASR::call_arg_t> args;
+            anchor_call_args(al, x->m_args, x->n_args, scope, args, changed);
+            ASR::expr_t* value = x->m_value;
+            if (value != nullptr) {
+                ASR::expr_t* anchored = anchor_struct_constants(al, value, scope);
+                if (anchored != value) {
+                    changed = true;
+                    value = anchored;
+                }
+            }
+            ASR::symbol_t* dt = struct_symbol_reachable_from(al, x->m_dt_sym, scope);
+            if (dt != x->m_dt_sym) {
+                changed = true;
+            }
+            if (!changed) {
+                return expr;
+            }
+            return ASRUtils::EXPR(ASR::make_StructConstructor_t(
+                al, x->base.base.loc, dt, args.p, args.n, x->m_type, value));
+        }
+        case ASR::exprType::ArrayConstant: {
+            ASR::ArrayConstant_t* x = ASR::down_cast<ASR::ArrayConstant_t>(expr);
+            if (!ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(x->m_type))
+                    || x->m_data == nullptr || x->m_n_data == 0) {
+                return expr;
+            }
+            int64_t n = x->m_n_data / static_cast<int64_t>(sizeof(ASR::expr_t*));
+            ASR::expr_t** data = static_cast<ASR::expr_t**>(x->m_data);
+            bool changed = false;
+            Vec<ASR::expr_t*> copied;
+            copied.reserve(al, n);
+            for (int64_t i = 0; i < n; i++) {
+                ASR::expr_t* element = data[i];
+                if (element != nullptr) {
+                    ASR::expr_t* anchored = anchor_struct_constants(al, element, scope);
+                    if (anchored != element) {
+                        changed = true;
+                        element = anchored;
+                    }
+                }
+                copied.push_back(al, element);
+            }
+            if (!changed) {
+                return expr;
+            }
+            // The packed elements are shared with the module that defined the
+            // constants. A new buffer leaves that module's value untouched.
+            ASR::expr_t** fresh = new ASR::expr_t*[n];
+            for (int64_t i = 0; i < n; i++) {
+                fresh[i] = copied[i];
+            }
+            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+                al, x->base.base.loc, x->m_n_data, fresh, x->m_type,
+                x->m_storage_format));
+        }
+        case ASR::exprType::ArrayConstructor: {
+            ASR::ArrayConstructor_t* x = ASR::down_cast<ASR::ArrayConstructor_t>(expr);
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (x->m_args[i] != nullptr) {
+                    x->m_args[i] = anchor_struct_constants(al, x->m_args[i], scope);
+                }
+            }
+            if (x->m_value != nullptr) {
+                x->m_value = anchor_struct_constants(al, x->m_value, scope);
+            }
+            return expr;
+        }
+        default:
+            return expr;
+    }
+}
+
 ASR::Variable_t* get_variable_from_symbol(ASR::symbol_t* sym)
 {
     if (sym == nullptr) {

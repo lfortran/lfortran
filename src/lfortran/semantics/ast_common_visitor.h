@@ -13235,6 +13235,14 @@ public:
                     }
                 }
                 if ( variable_added_to_symtab != nullptr ) {
+                    // A derived type's own scope holds its members. An import
+                    // of a type used by an initializer belongs next to the type.
+                    SymbolTable *anchor_scope = current_scope;
+                    if (is_derived_type && current_scope->parent) {
+                        anchor_scope = current_scope->parent;
+                    }
+                    value = ASRUtils::anchor_struct_constants(al, value, anchor_scope);
+                    init_expr = ASRUtils::anchor_struct_constants(al, init_expr, anchor_scope);
                     variable_added_to_symtab->m_value = value;
                     variable_added_to_symtab->m_symbolic_value = init_expr;
                     variable_added_to_symtab->m_storage = storage_type;

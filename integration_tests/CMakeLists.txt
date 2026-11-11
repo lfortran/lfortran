@@ -3350,6 +3350,7 @@ RUN(NAME derived_types_254 LABELS gfortran llvm) # pointer array component of a 
 RUN(NAME derived_types_255 LABELS gfortran llvm EXTRAFILES derived_types_255c.c EXTRA_ARGS --separate-compilation) # default initialization of an array component of a module variable, used from a C main
 RUN(NAME derived_types_256 LABELS gfortran llvm) # deferred-length character components inherited from the parent type (#7210)
 RUN(NAME derived_types_257 LABELS gfortran llvm) # local derived type with the same name as a non-imported module type (#5874)
+RUN(NAME derived_types_258 LABELS gfortran llvm EXTRAFILES derived_types_258_m1.f90 derived_types_258_m2.f90) # parameter array of a use-associated derived type, reloaded from the module file
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
 RUN(NAME derived_types_vector_subscript_01 LABELS gfortran llvm) # vector subscript then component, c(idx)%n and z(idx)%re (#16913)
 RUN(NAME vector_subscript_02 LABELS gfortran llvm) # vector subscript that is an elemental expression, vals(abs(idx)) and v(int(r)) (#17225)

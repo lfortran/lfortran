@@ -127,6 +127,13 @@ ASR::expr_t* make_iso_c_null_constant(Allocator& al, const Location& loc,
         SymbolTable* scope, ASR::symbol_t* null_sym);
 void anchor_cptr_null_constant_to_type_declaration(Allocator& al,
         ASR::expr_t* expr, ASR::Variable_t* var);
+// A parameter array of a use-associated derived type stores each element as a
+// StructConstant whose type symbol lives in the module that defined the type.
+// That symbol table is not part of this module's file. Copy such constants
+// (the originals belong to the defining module) and name the type with a
+// symbol `scope` can reach, so the module file can be loaded again.
+ASR::expr_t* anchor_struct_constants(Allocator& al, ASR::expr_t* expr,
+        SymbolTable* scope);
 ASR::Variable_t* get_variable_from_symbol(ASR::symbol_t* sym);
 ASR::FunctionType_t* get_procedure_type_from_expr(ASR::expr_t* expr);
 ASR::FunctionType_t* get_procedure_pointer_component_type(
