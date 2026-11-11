@@ -44,4 +44,10 @@ if (abs(erfc_scaled(1.0_kp) - 0.427583576155807004406_kp) > spacing(1.0_kp)) err
 if (abs(bessel_j0(1.0_kp) - 0.765197686557966551453_kp) > spacing(1.0_kp)) error stop
 if (abs(bessel_jn(0, 1.0_kp) - 0.765197686557966551453_kp) > spacing(1.0_kp)) error stop
 if (abs(bessel_yn(0, 1.0_kp) - 8.82569642156769579796e-2_kp) > spacing(1.0_kp)) error stop
+! Kind-10 exponent is not the binary32 bit formula. The low 32 bits of
+! 1.0 are 0, so that formula returns -126. fraction and set_exponent
+! call the same exponent.
+if (exponent(1.0_kp) /= 1) error stop
+if (abs(fraction(1.0_kp) - 0.5_kp) > spacing(1.0_kp)) error stop
+if (set_exponent(1.5_kp, 3) /= 6.0_kp) error stop
 end program

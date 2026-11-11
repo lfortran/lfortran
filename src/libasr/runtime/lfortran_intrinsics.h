@@ -147,6 +147,8 @@ LFORTRAN_API float _lfortran_slog(float x);
 LFORTRAN_API double _lfortran_dlog(double x);
 LFORTRAN_API int32_t _lfortran_sis_nan(float x);
 LFORTRAN_API int32_t _lfortran_dis_nan(double x);
+/* Fortran EXPONENT of an in-memory x87 binary80 (kind 10). */
+LFORTRAN_API int32_t _lfortran_exponent_f80(const void *x);
 LFORTRAN_API float_complex_t _lfortran_clog(float_complex_t x);
 LFORTRAN_API double_complex_t _lfortran_zlog(double_complex_t x);
 LFORTRAN_API float _lfortran_serf(float x);
