@@ -23,6 +23,7 @@ class LLVMModule;
 class MLIRModule;
 class LLVMEvaluator;
 struct JITCancellation;
+struct CellCancellation;
 #ifdef __EMSCRIPTEN__
 class WasmLFortranExecutor;
 #endif
@@ -218,6 +219,12 @@ private:
     // by the passes on every evaluation; redefining them would be rejected by
     // the JIT, so later modules only declare them. See drop_redefinitions().
     std::set<std::string> defined_symbols;
+    // Those of them without a cancellation safepoint.
+    std::set<std::string> never_unwinding_symbols;
+#ifndef __EMSCRIPTEN__
+    // The cancellation words its JIT code uses, which live as long as the JIT.
+    std::unique_ptr<CellCancellation> cancellation_words;
+#endif
 #endif
 #ifdef __EMSCRIPTEN__
     std::unique_ptr<WasmLFortranExecutor> wasm_exec;

@@ -994,12 +994,7 @@ LLVMEvaluator::~LLVMEvaluator()
 }
 
 void LLVMEvaluator::define_host_symbol(const std::string &name, void *address) {
-#if LLVM_VERSION_MAJOR >= 8
     jit->defineHostSymbol(name, address);
-#else
-    (void)name;
-    (void)address;
-#endif
 }
 
 void LLVMEvaluator::configure_module(llvm::Module &module) const

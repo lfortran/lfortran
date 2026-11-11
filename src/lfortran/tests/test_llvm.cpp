@@ -6869,6 +6869,11 @@ use cancel_core
         // Completed side effects survive; cancellation is not a rollback.
         CHECK(e.execute("retained").value.text() == "42");
         run("retained = 41");
+        // A counted loop polls on its back-edge, even with an empty body and
+        // a bound it would not reach.
+        run("integer(8) :: i8");
+        interrupt("call clear_output()\ndo i8 = 1, huge(0_8)\nend do\nretained = -1");
+        CHECK(e.execute("retained").value.text() == "41");
         for (int repeat = 0; repeat < 2; repeat++) {
             interrupt("answer = outer(-1)\nretained = -1");
             CHECK(e.execute("answer").value.text() == "100");
@@ -6929,10 +6934,179 @@ use cancel_core
         CHECK(e.execute("2.5d0").value.text() == "2.5");
         CHECK(e.execute("(1.0, 2.0)").value.type ==
             FortranEvaluator::EvalResult::complex4);
+        // %%showllvm shows the code that runs, with its safepoints.
         auto shown = e.execute("%%showllvm\ninteger :: j\ndo j=1,3\nprint *, j\nend do");
         REQUIRE(shown.ok);
-        CHECK(shown.output.find("cancel.cleanup") == std::string::npos);
+        CHECK(shown.output.find("cancel.cleanup") != std::string::npos);
+        CHECK(shown.output.find(LCompilers::JITCancellation::request_symbol)
+            != std::string::npos);
     }
+}
+
+// A safepoint must stay a load and a branch on the request word: an
+// out-of-line call made interactive loops several times slower. Procedures
+// that cannot reach a safepoint carry no cancellation code at all.
+TEST_CASE("FortranEvaluator JIT safepoints are inline") {
+    for (int mode = 0; mode < 2; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        FortranEvaluator e(options);
+        LCompilers::LocationManager lm;
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::diag::Diagnostics d;
+        auto m = e.get_llvm2(R"(
+module safepoint_cost
+implicit none
+integer(8) :: total
+contains
+integer(8) function tiny(k)
+    integer(8), intent(in) :: k
+    tiny = iand(k, 7_8)
+end function
+subroutine sum_direct(n)
+    integer(8), intent(in) :: n
+    integer(8) :: k
+    total = 0
+    do k = 1, n
+        total = total + k
+    end do
+end subroutine
+subroutine sum_calls(n)
+    integer(8), intent(in) :: n
+    integer(8) :: k
+    total = 0
+    do k = 1, n
+        total = total + tiny(k)
+    end do
+end subroutine
+end module
+)", lm, lpm, d);
+        REQUIRE(m.ok);
+        llvm::Module &module = *m.result->m_m;
+        std::set<const llvm::Value *> words;
+        for (const char *name : {LCompilers::JITCancellation::request_symbol,
+                LCompilers::JITCancellation::observed_symbol,
+                LCompilers::JITCancellation::protect_symbol,
+                LCompilers::JITCancellation::defer_symbol}) {
+            if (auto *word = module.getNamedGlobal(name)) words.insert(word);
+        }
+        const llvm::Value *request = module.getNamedGlobal(
+            LCompilers::JITCancellation::request_symbol);
+        REQUIRE(request);
+        auto function = [&](const std::string &suffix) -> llvm::Function & {
+            for (llvm::Function &fn : module) {
+                const std::string name = fn.getName().str();
+                if (!fn.isDeclaration() && name.size() >= suffix.size()
+                        && name.compare(name.size() - suffix.size(),
+                            suffix.size(), suffix) == 0) {
+                    return fn;
+                }
+            }
+            FAIL("no function " << suffix);
+            throw std::logic_error("unreachable");
+        };
+        // The calls in the loops of `fn`. Each loop (optimization may version
+        // one) polls the request word once per iteration.
+        auto loop_calls = [&](llvm::Function &fn) {
+            std::vector<std::string> calls;
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            REQUIRE(!loops.empty());
+            for (llvm::Loop *loop : loops) {
+                int polls = 0;
+                for (llvm::BasicBlock *bb : loop->blocks()) {
+                    for (llvm::Instruction &i : *bb) {
+                        if (auto *call = llvm::dyn_cast<llvm::CallInst>(&i)) {
+                            auto *callee = call->getCalledFunction();
+                            calls.push_back(callee ? callee->getName().str() : "?");
+                        } else if (auto *load = llvm::dyn_cast<llvm::LoadInst>(&i)) {
+                            if (load->getPointerOperand() == request) {
+                                CHECK(load->isVolatile());
+                                polls++;
+                            }
+                        }
+                    }
+                }
+                CHECK(polls == 1);
+            }
+            return calls;
+        };
+        CHECK(loop_calls(function("_sum_direct")).empty());
+        // Optimization may inline the call.
+        auto calls = loop_calls(function("_sum_calls"));
+        CHECK(calls.size() == (mode == 1 ? calls.size() : 1));
+        for (const std::string &callee : calls) {
+            CHECK(callee.find("tiny") != std::string::npos);
+        }
+        for (llvm::BasicBlock &bb : function("_tiny")) {
+            for (llvm::Instruction &i : bb) {
+                for (const llvm::Use &operand : i.operands()) {
+                    CHECK(words.count(operand.get()) == 0);
+                }
+            }
+        }
+    }
+}
+
+// A later cell holds the ASR of an earlier cell's procedures before the
+// passes; whether a call may unwind follows the code that the JIT runs.
+TEST_CASE("FortranEvaluator JIT safepoints after calls into earlier cells") {
+    auto options = execute_options();
+    FortranEvaluator e(options);
+    auto defined = e.execute(R"(
+module earlier_cell
+implicit none
+real :: big(1000)
+contains
+integer(8) function tiny(k)
+    integer(8), intent(in) :: k
+    tiny = iand(k, 7_8)
+end function
+real function fill() result(r)
+    big = 1
+    r = 2
+end function
+end module
+use earlier_cell
+real :: x
+)");
+    REQUIRE_MESSAGE(defined.ok, defined.error_text());
+    LCompilers::LocationManager lm;
+    LCompilers::PassManager lpm;
+    lpm.use_default_passes();
+    LCompilers::diag::Diagnostics d;
+    auto m = e.get_llvm2("x = fill() + tiny(3_8)", lm, lpm, d);
+    REQUIRE(m.ok);
+    const llvm::Value *request = m.result->m_m->getNamedGlobal(
+        LCompilers::JITCancellation::request_symbol);
+    REQUIRE(request);
+    // Whether the block of the call of `callee` polls after the call.
+    auto polled_after = [&](const std::string &callee) {
+        for (llvm::Function &fn : *m.result->m_m) {
+            for (llvm::BasicBlock &bb : fn) {
+                bool called = false, polled = false;
+                for (llvm::Instruction &i : bb) {
+                    if (auto *call = llvm::dyn_cast<llvm::CallInst>(&i)) {
+                        auto *target = call->getCalledFunction();
+                        if (target && target->getName().str().find(callee)
+                                != std::string::npos) {
+                            called = true;
+                        }
+                    } else if (auto *load = llvm::dyn_cast<llvm::LoadInst>(&i)) {
+                        polled = polled || (called && load->getPointerOperand() == request);
+                    }
+                }
+                if (called) return polled;
+            }
+        }
+        FAIL("no call of " << callee);
+        return false;
+    };
+    // The array assignment of `fill` became a loop with a safepoint.
+    CHECK(polled_after("_fill"));
+    CHECK(!polled_after("_tiny"));
 }
 
 // `obj%proc()` is a FunctionPointerCast call. Cancellation has to leave the

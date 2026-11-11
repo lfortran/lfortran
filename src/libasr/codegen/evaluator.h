@@ -109,7 +109,7 @@ public:
     void add_module(std::unique_ptr<llvm::Module> mod);
     void add_module(std::unique_ptr<LLVMModule> m);
     intptr_t get_symbol_address(const std::string &name);
-    // Makes a host function visible to JIT code. Process-wide symbol
+    // Makes a host function or variable visible to JIT code. Process-wide symbol
     // registration is not enough on Windows.
     void define_host_symbol(const std::string &name, void *address);
     std::string get_asm(llvm::Module &m);

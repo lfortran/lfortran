@@ -65,31 +65,37 @@
 #include <libasr/asr_lookup_name.h>
 
 #ifndef __EMSCRIPTEN__
-namespace {
+namespace LCompilers {
+// The words of JITCancellation (asr_to_llvm.h), which the JIT code of the
+// evaluator reads and updates in place.
 struct CellCancellation {
-    std::atomic<bool> requested{false};
-    bool observed = false; // Worker-owned, read by the caller only after join.
-    unsigned protected_depth = 0;
-};
-thread_local CellCancellation *active_cancellation = nullptr;
+    // Stored by the caller while the worker runs the cell.
+    std::atomic<int32_t> requested{0};
+    // Worker-owned; the caller reads `observed` only after the join.
+    int32_t observed = 0;
+    int32_t protect = 0;
+    int32_t defer = 0;
 
-#ifdef HAVE_LFORTRAN_LLVM
-int poll_cell_cancellation(bool propagate_only) {
-    auto *state = active_cancellation;
-    if (!state || state->protected_depth) return 0;
-    if (!propagate_only && state->requested.load(std::memory_order_relaxed)) {
-        state->observed = true;
+    void reset() {
+        requested.store(0, std::memory_order_relaxed);
+        observed = protect = defer = 0;
     }
-    return state->observed;
+};
+static_assert(sizeof(std::atomic<int32_t>) == sizeof(int32_t)
+    && std::atomic<int32_t>::is_always_lock_free,
+    "JIT code accesses the request word as a plain i32");
 }
 
-void protect_cell_cancellation(bool begin) {
-    if (!active_cancellation) return;
-    if (begin) active_cancellation->protected_depth++;
-    else {
-        LCOMPILERS_ASSERT(active_cancellation->protected_depth > 0);
-        active_cancellation->protected_depth--;
-    }
+namespace {
+thread_local LCompilers::CellCancellation *active_cancellation = nullptr;
+
+#ifdef HAVE_LFORTRAN_LLVM
+// The runtime hook (lfortran_cancellation.h). Generated code observes the
+// request itself, after the runtime call returns.
+int runtime_cancellation_requested() {
+    auto *state = active_cancellation;
+    return state && !state->protect && !state->defer
+        && state->requested.load(std::memory_order_relaxed);
 }
 #endif
 }
@@ -389,7 +395,9 @@ static int read_input(void *context, const char **record, size_t *length) {
         c.record.clear();
         bool interruptible = true;
 #ifndef __EMSCRIPTEN__
-        interruptible = !active_cancellation || active_cancellation->protected_depth == 0;
+        // Generated code that cannot unwind needs the input.
+        interruptible = !active_cancellation
+            || (!active_cancellation->protect && !active_cancellation->defer);
 #endif
         int status = c.io.input(c.record, interruptible);
         *record = c.record.data();
@@ -448,9 +456,36 @@ FortranEvaluator::~FortranEvaluator() = default;
 LLVMEvaluator &FortranEvaluator::get_llvm_evaluator() {
     if (!e) {
         e = std::make_unique<LLVMEvaluator>(compiler_options);
+#ifndef __EMSCRIPTEN__
+        cancellation_words = std::make_unique<CellCancellation>();
+        e->define_host_symbol(JITCancellation::request_symbol,
+            &cancellation_words->requested);
+        e->define_host_symbol(JITCancellation::observed_symbol,
+            &cancellation_words->observed);
+        e->define_host_symbol(JITCancellation::protect_symbol,
+            &cancellation_words->protect);
+        e->define_host_symbol(JITCancellation::defer_symbol,
+            &cancellation_words->defer);
+#endif
     }
     return *e;
 }
+
+#ifndef __EMSCRIPTEN__
+// Native JIT code takes part in cancellation, and so do procedures that an
+// earlier module of this session defined.
+static JITCancellation native_cancellation(
+        const std::set<std::string> &defined_symbols,
+        const std::set<std::string> &never_unwinding_symbols) {
+    return {[&defined_symbols](const std::string &name) {
+        // The owned-command runtime returns normally after cancellation,
+        // just like a checkpointed JIT procedure.
+        return defined_symbols.count(name) > 0 || name == "_lfortran_exec_command";
+    }, [&never_unwinding_symbols](const std::string &name) {
+        return never_unwinding_symbols.count(name) > 0;
+    }};
+}
+#endif
 
 #ifdef __EMSCRIPTEN__
 WasmLFortranExecutor &FortranEvaluator::get_wasm_executor() {
@@ -582,14 +617,9 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     // against is the snapshot taken in get_asr3().
     const JITCancellation *cancellation = nullptr;
 #ifndef __EMSCRIPTEN__
-    const JITCancellation native_cancellation{
-        poll_cell_cancellation, protect_cell_cancellation,
-        [&](const std::string &name) {
-            // The owned-command runtime returns normally after cancellation,
-            // just like a checkpointed JIT procedure.
-            return defined_symbols.count(name) || name == "_lfortran_exec_command";
-        }};
-    cancellation = &native_cancellation;
+    const JITCancellation jit_cancellation = native_cancellation(defined_symbols,
+        never_unwinding_symbols);
+    cancellation = &jit_cancellation;
 #endif
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
         pass_manager, diagnostics, lm, lm.files.back().in_filename,
@@ -848,18 +878,25 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     };
 #ifndef __EMSCRIPTEN__
     CellMailbox mailbox;
+    // Native cells always use the evaluator's words; without LLVM, a cell's.
+#ifdef HAVE_LFORTRAN_LLVM
+    get_llvm_evaluator();
+    CellCancellation &cancellation = *cancellation_words;
+#else
     CellCancellation cancellation;
+#endif
+    cancellation.reset();
     const bool threaded = bool(io.output) || bool(io.cancel_requested);
     const auto owner = std::this_thread::get_id();
     bool process_exiting = false; // Only accessed by the caller.
     auto poll_cancellation = [&]() {
         try {
             if (io.cancel_requested && io.cancel_requested()) {
-                cancellation.requested.store(true, std::memory_order_relaxed);
+                cancellation.requested.store(1, std::memory_order_relaxed);
             }
         } catch (...) {
             output_error = std::current_exception();
-            cancellation.requested.store(true, std::memory_order_relaxed);
+            cancellation.requested.store(1, std::memory_order_relaxed);
         }
     };
 #endif
@@ -966,7 +1003,7 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
                 active_cancellation = &state;
 #ifdef HAVE_LFORTRAN_LLVM
                 previous_poll = _lfortran_set_cancel_poll(enabled
-                    ? +[]() { return poll_cell_cancellation(false); } : nullptr);
+                    ? runtime_cancellation_requested : nullptr);
 #endif
             }
             ~ActiveCancellation() {
@@ -1061,6 +1098,8 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
                 if (process_exiting) mailbox.await_process_exit();
             } while (!done);
             worker.join();
+            // Later JIT code, run without a cancellable cell, must not see it.
+            cancellation.requested.store(0, std::memory_order_relaxed);
             drain_output(true);
             if (worker_error) std::rethrow_exception(worker_error);
         } else
@@ -1234,6 +1273,18 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
     // declaration and drop the body. A function with local linkage, such as
     // a finalizer of a type, is private to its module: it does not clash with
     // the one of an earlier cell, and that one cannot be called from here.
+    // A procedure without a safepoint does not use the request word.
+    std::set<const llvm::Function *> polling;
+#ifndef __EMSCRIPTEN__
+    if (llvm::GlobalVariable *request = m.m_m->getNamedGlobal(
+            JITCancellation::request_symbol)) {
+        for (llvm::User *user : request->users()) {
+            if (auto *use = llvm::dyn_cast<llvm::Instruction>(user)) {
+                polling.insert(use->getFunction());
+            }
+        }
+    }
+#endif
     for (llvm::Function &fn : *m.m_m) {
         // Cleanup helpers with local linkage belong to this module; the JIT
         // cannot resolve a declaration of one against a previous cell.
@@ -1241,6 +1292,8 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
         std::string name = fn.getName().str();
         if (!defined_symbols.insert(name).second) {
             fn.deleteBody();
+        } else if (!polling.count(&fn)) {
+            never_unwinding_symbols.insert(name);
         }
     }
 }
@@ -1581,8 +1634,15 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
     if (!asr.ok) {
         return asr.error;
     }
+    // Interactive inspection shows the code that a cell runs.
+    const JITCancellation *cancellation = nullptr;
+#if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
+    const JITCancellation jit_cancellation = native_cancellation(defined_symbols,
+        never_unwinding_symbols);
+    if (compiler_options.interactive) cancellation = &jit_cancellation;
+#endif
     Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager,
-        diagnostics, lm, lm.files.back().in_filename, nullptr);
+        diagnostics, lm, lm.files.back().in_filename, nullptr, cancellation);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::unique_ptr<LLVMModule> m = std::move(res.result);

@@ -37,7 +37,9 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
+#include <map>
 #include <memory>
+#include <string>
 
 #if LLVM_VERSION_MAJOR >= 13
 #include "llvm/ExecutionEngine/Orc/ExecutorProcessControl.h"
@@ -132,6 +134,7 @@ private:
   const DataLayout DL;
   RTDyldObjectLinkingLayer ObjectLayer;
   IRCompileLayer<decltype(ObjectLayer), SimpleCompiler> CompileLayer;
+  std::map<std::string, JITTargetAddress> HostSymbols;
 #endif
 
 public:
@@ -212,6 +215,15 @@ public:
         }),
         CompileLayer(ObjectLayer, SimpleCompiler(*TM)) {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
+  }
+
+  // Resolves `name` in the code it compiles to `address` in the host.
+  void defineHostSymbol(StringRef name, void *address) {
+    std::string MangledName;
+    raw_string_ostream MangledNameStream(MangledName);
+    Mangler::getNameWithPrefix(MangledNameStream, name, DL);
+    HostSymbols[MangledNameStream.str()] =
+        static_cast<JITTargetAddress>(reinterpret_cast<uintptr_t>(address));
   }
 #endif
 
@@ -302,6 +314,9 @@ private:
       return Sym;
     else if (auto Err = Sym.takeError())
       return std::move(Err);
+    auto Host = HostSymbols.find(Name);
+    if (Host != HostSymbols.end())
+      return JITSymbol(Host->second, JITSymbolFlags::Exported);
     if (auto SymAddr = RTDyldMemoryManager::getSymbolAddressInProcess(Name))
       return JITSymbol(SymAddr, JITSymbolFlags::Exported);
     return nullptr;

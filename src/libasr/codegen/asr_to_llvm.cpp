@@ -233,6 +233,82 @@ public:
     }
 };
 
+// Finds what can reach a JIT cancellation safepoint in a procedure: a loop,
+// a backward branch, a READ or a call (an intrinsic may still become one),
+// unless it calls a procedure that cannot reach one, or a derived type
+// variable, whose FINAL procedures may poll. The walk covers the
+// declarations and the BLOCK and ASSOCIATE constructs.
+class SafepointFinder : public ASR::BaseWalkVisitor<SafepointFinder> {
+public:
+    std::function<bool(const ASR::Function_t &)> callee_may_unwind;
+    bool found = false;
+    std::set<int64_t> targets;
+
+    void visit_stmt(const ASR::stmt_t &x) {
+        if (found) return;
+        switch (x.type) {
+            case ASR::stmtType::DoLoop:
+            case ASR::stmtType::DoConcurrentLoop:
+            case ASR::stmtType::ForAllSingle:
+            case ASR::stmtType::WhileLoop:
+            case ASR::stmtType::FileRead:
+            case ASR::stmtType::SubroutineCall:
+            case ASR::stmtType::IntrinsicImpureSubroutine:
+                found = true;
+                return;
+            case ASR::stmtType::GoToTarget:
+                targets.insert(ASR::down_cast<ASR::GoToTarget_t>(&x)->m_id);
+                return;
+            // The construct need not be in the procedure's scope.
+            case ASR::stmtType::BlockCall:
+                visit_symbol(*ASR::down_cast<ASR::BlockCall_t>(&x)->m_m);
+                return;
+            case ASR::stmtType::AssociateBlockCall:
+                visit_symbol(*ASR::down_cast<ASR::AssociateBlockCall_t>(&x)->m_m);
+                return;
+            case ASR::stmtType::GoTo:
+                // A backward branch.
+                found = targets.count(ASR::down_cast<ASR::GoTo_t>(&x)->m_target_id) > 0;
+                return;
+            default:
+                ASR::BaseWalkVisitor<SafepointFinder>::visit_stmt(x);
+        }
+    }
+
+    void visit_expr(const ASR::expr_t &x) {
+        if (found) return;
+        switch (x.type) {
+            case ASR::exprType::IntrinsicElementalFunction:
+            case ASR::exprType::IntrinsicArrayFunction:
+            case ASR::exprType::IntrinsicImpureFunction:
+                found = true;
+                return;
+            default:
+                ASR::BaseWalkVisitor<SafepointFinder>::visit_expr(x);
+        }
+    }
+
+    // The finalization of a derived type may call FINAL procedures.
+    void visit_Variable(const ASR::Variable_t &x) {
+        ASR::ttype_t *type = ASRUtils::extract_type(x.m_type);
+        if (ASR::is_a<ASR::StructType_t>(*type) || ASRUtils::is_class_type(type)) {
+            found = true;
+            return;
+        }
+        ASR::BaseWalkVisitor<SafepointFinder>::visit_Variable(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(x.m_name);
+        if (x.m_dt || !ASR::is_a<ASR::Function_t>(*callee)
+                || callee_may_unwind(*ASR::down_cast<ASR::Function_t>(callee))) {
+            found = true;
+            return;
+        }
+        ASR::BaseWalkVisitor<SafepointFinder>::visit_FunctionCall(x);
+    }
+};
+
 } // anonymous namespace
 
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
@@ -701,6 +777,15 @@ public:
     const JITCancellation *jit_cancellation = nullptr;
     SymbolTable *cancellation_scope = nullptr;
     bool emitting_cancellation_cleanup = false;
+    // Generating a procedure that never reaches a safepoint (see
+    // may_unwind): it has no safepoint, and nothing in it polls, so its
+    // initialization and cleanup need no protection.
+    bool never_unwinds = false;
+    // The GOTO labels emitted so far. Labels of other procedures only make a
+    // forward branch poll as well.
+    std::set<int64_t> emitted_goto_targets;
+    // The statement being generated calls a FINAL procedure.
+    bool emitted_protected_jit_call = false;
     std::string mangle_prefix;
     bool prototype_only;
     llvm::StructType *complex_type_4, *complex_type_8, *complex_type_16;
@@ -12628,16 +12713,22 @@ public:
             if (interactive) return;
 
             if (!prototype_only) {
+                const bool saved_never_unwinds = never_unwinds;
+                never_unwinds = jit_cancellation && !may_unwind(x);
                 define_function_entry(x);
                 predeclare_goto_targets(builder->GetInsertBlock()->getParent(), x.m_body, x.n_body);
 
                 cancellation_scope = jit_cancellation ? x.m_symtab : nullptr;
+                // Recursion needs no loop; also observe a request that arrived
+                // during the protected initialization.
+                if (!never_unwinds) emit_cancellation_check();
                 for (size_t i=0; i<x.n_body; i++) {
                     this->visit_stmt(*x.m_body[i]);
                 }
                 cancellation_scope = nullptr;
                 
                 define_function_exit(x);
+                never_unwinds = saved_never_unwinds;
             }
         } else if( ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic &&
                    ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface ) {
@@ -17534,6 +17625,7 @@ public:
                 llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
                 llvm_goto_targets[x.m_label] = new_target;
             }
+            emitted_goto_targets.insert(x.m_label);
             start_new_block(llvm_goto_targets[x.m_label]);
         }
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Block_t>(*x.m_m));
@@ -18658,6 +18750,8 @@ public:
         pop_loop_targets();
 
         start_new_block(latch);
+        // The back-edge safepoint, also for an empty body.
+        emit_cancellation_check();
         llvm::Value *current = llvm_utils->CreateLoad2(iv_type, v_ptr);
         LLVM::CreateStore(*builder,
             builder->CreateNSWAdd(current, step), v_ptr);
@@ -18667,7 +18761,7 @@ public:
         } else {
             last = builder->CreateICmpEQ(remaining, zero);
             remaining->addIncoming(builder->CreateSub(remaining,
-                llvm::ConstantInt::get(iv_type, 1)), latch);
+                llvm::ConstantInt::get(iv_type, 1)), builder->GetInsertBlock());
         }
         disable_runtime_unrolling(
             builder->CreateCondBr(last, orelse_bb, body_bb));
@@ -18698,6 +18792,7 @@ public:
             // DO without loop control: it ends only by a branch out of it,
             // so it never runs its loop-else.
             create_loop(x.m_name, [&]() {
+                emit_cancellation_check();
                 return llvm::ConstantInt::getTrue(context);
             }, generate_body);
             return;
@@ -18790,52 +18885,96 @@ public:
         }
     }
 
-    llvm::Value *jit_callback_address(uintptr_t address, llvm::FunctionType *type) {
-        return llvm::ConstantExpr::getIntToPtr(
-            llvm::ConstantInt::get(llvm::Type::getIntNTy(context, sizeof(uintptr_t)*8),
-                address), type->getPointerTo());
+    // A word of the JIT cancellation state (see JITCancellation), which the
+    // JIT resolves to the host's storage.
+    llvm::GlobalVariable *cancellation_word(const char *name) {
+        if (llvm::GlobalVariable *word = module->getNamedGlobal(name)) return word;
+        return new llvm::GlobalVariable(*module, llvm_utils->i32, false,
+            llvm::GlobalValue::ExternalLinkage, nullptr, name);
+    }
+
+    // Inline depth counting: with nothing that may poll in between, LLVM
+    // folds a pair away.
+    void count_cancellation_depth(const char *name, bool begin) {
+        if (!jit_cancellation) return;
+        llvm::GlobalVariable *word = cancellation_word(name);
+        llvm::Value *depth = llvm_utils->CreateLoad2(llvm_utils->i32, word);
+        llvm::Value *one = llvm::ConstantInt::get(llvm_utils->i32, 1);
+        builder->CreateStore(begin ? builder->CreateAdd(depth, one)
+            : builder->CreateSub(depth, one), word);
     }
 
     void protect_cancellation(bool begin) {
-        if (!jit_cancellation) return;
-        auto *type = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
-            {llvm::Type::getInt1Ty(context)}, false);
-        builder->CreateCall(type, jit_callback_address(
-            reinterpret_cast<uintptr_t>(jit_cancellation->protect), type),
-            {llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), begin)});
+        if (never_unwinds) return;
+        count_cancellation_depth(JITCancellation::protect_symbol, begin);
     }
 
+    void defer_cancellation(bool begin) {
+        count_cancellation_depth(JITCancellation::defer_symbol, begin);
+    }
+
+    // `calls_jit_code`: the region calls generated code (a FINAL
+    // procedure), which polls, so it is protected in any procedure.
     struct CancellationProtection {
         ASRToLLVMVisitor &visitor;
-        const bool saved;
-        CancellationProtection(ASRToLLVMVisitor &visitor)
-            : visitor(visitor), saved(visitor.emitting_cancellation_cleanup) {
+        const bool saved, saved_never_unwinds;
+        CancellationProtection(ASRToLLVMVisitor &visitor, bool calls_jit_code = false)
+            : visitor(visitor), saved(visitor.emitting_cancellation_cleanup),
+              saved_never_unwinds(visitor.never_unwinds) {
             visitor.emitting_cancellation_cleanup = true;
+            if (calls_jit_code) {
+                visitor.never_unwinds = false;
+                visitor.emitted_protected_jit_call = true;
+            }
             visitor.protect_cancellation(true);
         }
         ~CancellationProtection() {
             visitor.protect_cancellation(false);
+            visitor.never_unwinds = saved_never_unwinds;
             visitor.emitting_cancellation_cleanup = saved;
         }
     };
 
+    // A safepoint. The common path loads the request word and branches; the
+    // cold path unwinds unless initialization, cleanup or a foreign call has
+    // to complete. `propagate_only` follows a call whose successful result
+    // must first acquire its normal temporary owner: it unwinds only when the
+    // callee already did.
+    //
     // Only fully initialized scopes may be left. Reuse normal scope cleanup,
     // but abandon the result rather than loading an incomplete return value.
     void emit_cancellation_check(bool propagate_only = false,
             const std::function<void()> &before_cleanup = {}) {
-        if (!cancellation_scope || emitting_cancellation_cleanup) return;
+        if (!cancellation_scope || emitting_cancellation_cleanup
+                || never_unwinds) {
+            return;
+        }
         auto *saved_tmp = tmp;
         auto *fn = builder->GetInsertBlock()->getParent();
-        auto *type = llvm::FunctionType::get(llvm::Type::getInt32Ty(context),
-            {llvm::Type::getInt1Ty(context)}, false);
-        auto *pending = builder->CreateCall(type, jit_callback_address(
-            reinterpret_cast<uintptr_t>(jit_cancellation->poll), type),
-            {llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), propagate_only)});
+        llvm::Type *i32 = llvm_utils->i32;
+        llvm::Value *zero = llvm::ConstantInt::get(i32, 0);
+        auto load_word = [&](const char *name, bool is_volatile) {
+            return llvm_utils->CreateLoad2(i32, cancellation_word(name), is_volatile);
+        };
+        llvm::Value *requested = builder->CreateICmpNE(
+            load_word(JITCancellation::request_symbol, true), zero);
+        auto *pending = llvm::BasicBlock::Create(context, "cancel.pending", fn);
         auto *cleanup = llvm::BasicBlock::Create(context, "cancel.cleanup", fn);
         auto *resume = llvm::BasicBlock::Create(context, "cancel.resume", fn);
-        builder->CreateCondBr(builder->CreateICmpNE(pending,
-            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0)), cleanup, resume);
+        builder->CreateCondBr(requested, pending, resume,
+            llvm::MDBuilder(context).createBranchWeights(1, 1 << 20));
+        builder->SetInsertPoint(pending);
+        llvm::Value *unwind = builder->CreateICmpEQ(builder->CreateOr(
+            load_word(JITCancellation::protect_symbol, false),
+            load_word(JITCancellation::defer_symbol, false)), zero);
+        if (propagate_only) {
+            unwind = builder->CreateAnd(unwind, builder->CreateICmpNE(
+                load_word(JITCancellation::observed_symbol, false), zero));
+        }
+        builder->CreateCondBr(unwind, cleanup, resume);
         builder->SetInsertPoint(cleanup);
+        builder->CreateStore(llvm::ConstantInt::get(i32, 1),
+            cancellation_word(JITCancellation::observed_symbol));
         emitting_cancellation_cleanup = true;
         protect_cancellation(true);
         if (before_cleanup) before_cleanup();
@@ -18855,8 +18994,52 @@ public:
     }
 
     void visit_stmt(const ASR::stmt_t &x) {
-        emit_cancellation_check();
+        const bool saved_protected_call = emitted_protected_jit_call;
+        emitted_protected_jit_call = false;
         ASR::BaseVisitor<ASRToLLVMVisitor>::visit_stmt(x);
+        // A request that arrives while a called subroutine, or the FINAL
+        // procedures of a construct, run protected is observed once the
+        // statement completes.
+        if (ASR::is_a<ASR::SubroutineCall_t>(x) || (emitted_protected_jit_call
+                && (ASR::is_a<ASR::BlockCall_t>(x)
+                    || ASR::is_a<ASR::AssociateBlockCall_t>(x)))) {
+            emit_cancellation_check();
+        }
+        emitted_protected_jit_call = emitted_protected_jit_call
+            || saved_protected_call;
+    }
+
+    // Whether a call of `fn` may unwind for cancellation. Only then does it
+    // need an entry safepoint and its caller a check after the call. Other
+    // procedures run a bounded time and never reach a safepoint.
+    std::map<const ASR::Function_t *, bool> may_unwind_cache;
+    bool may_unwind(const ASR::Function_t &fn) {
+        if (ASRUtils::get_FunctionType(fn)->m_deftype
+                != ASR::deftypeType::Implementation) {
+            return true;
+        }
+        auto cached = may_unwind_cache.find(&fn);
+        if (cached != may_unwind_cache.end()) return cached->second;
+        // A recursive call may.
+        may_unwind_cache[&fn] = true;
+        SafepointFinder finder;
+        finder.callee_may_unwind = [this](const ASR::Function_t &callee) {
+            return call_may_unwind(callee);
+        };
+        finder.visit_Function(fn);
+        return may_unwind_cache[&fn] = finder.found;
+    }
+
+    // Whether a call of `fn` may unwind. An earlier JIT module's definition
+    // is the one that runs; this cell holds its ASR before the passes.
+    bool call_may_unwind(const ASR::Function_t &fn) {
+        auto declared = llvm_symtab_fn.find(get_hash((ASR::asr_t *)&fn));
+        if (declared == llvm_symtab_fn.end()) return true;
+        const std::string name = declared->second->getName().str();
+        if (jit_cancellation && jit_cancellation->cooperative_call(name)) {
+            return !jit_cancellation->never_unwinds(name);
+        }
+        return may_unwind(fn);
     }
 
     bool foreign_cancellation_boundary(const ASR::Function_t &fn,
@@ -18874,22 +19057,24 @@ public:
                 && type->m_abi != ASR::abiType::Intrinsic;
     }
 
+    // `callee_may_unwind` is false for a callee without safepoints.
     llvm::CallInst *create_jit_call(llvm::Function *fn,
-            llvm::ArrayRef<llvm::Value *> args = {}, bool foreign = false) {
-        if (foreign) protect_cancellation(true);
+            llvm::ArrayRef<llvm::Value *> args = {}, bool foreign = false,
+            bool callee_may_unwind = true) {
+        if (foreign) defer_cancellation(true);
         auto *result = builder->CreateCall(fn, args);
-        if (foreign) protect_cancellation(false);
+        if (foreign) defer_cancellation(false);
         // A successful result must first acquire its normal temporary owner.
         // Here propagate only cancellation already completed in the callee.
-        emit_cancellation_check(true);
+        if (callee_may_unwind) emit_cancellation_check(true);
         return result;
     }
 
     llvm::CallInst *create_jit_call(llvm::FunctionType *type, llvm::Value *fn,
             llvm::ArrayRef<llvm::Value *> args, bool foreign = false) {
-        if (foreign) protect_cancellation(true);
+        if (foreign) defer_cancellation(true);
         auto *result = builder->CreateCall(type, fn, args);
-        if (foreign) protect_cancellation(false);
+        if (foreign) defer_cancellation(false);
         emit_cancellation_check(true);
         return result;
     }
@@ -18965,6 +19150,8 @@ public:
     }
 
     void visit_GoTo(const ASR::GoTo_t &x) {
+        // A backward branch may close a loop.
+        if (emitted_goto_targets.count(x.m_target_id)) emit_cancellation_check();
         if (llvm_goto_targets.find(x.m_target_id) == llvm_goto_targets.end()) {
             // If the target does not exist yet, create it
             llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
@@ -19005,6 +19192,7 @@ public:
     }
 
     void visit_GoToTarget(const ASR::GoToTarget_t &x) {
+        emitted_goto_targets.insert(x.m_id);
         if (llvm_goto_targets.find(x.m_id) == llvm_goto_targets.end()) {
             llvm::BasicBlock *new_target = llvm::BasicBlock::Create(context, "goto_target");
             llvm_goto_targets[x.m_id] = new_target;
@@ -22936,7 +23124,8 @@ public:
         // A cancelled stdin wait must return through the normal READ frame
         // before taking the JIT cleanup path, not exit from a runtime reader
         // receiving a null IOSTAT. File compilation keeps its original path.
-        const bool cancellable = cancellation_scope && !emitting_cancellation_cleanup;
+        const bool cancellable = cancellation_scope && !emitting_cancellation_cleanup
+            && !never_unwinds;
         auto finish_read = [&](llvm::Value *status) {
             if (!cancellable) return;
             emit_cancellation_check(false, [&]() {
@@ -29907,7 +30096,6 @@ public:
             llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
             const bool foreign = foreign_cancellation_boundary(*func, true);
             tmp = create_jit_call(fntype, callee, args, foreign);
-            if (foreign) emit_cancellation_check();
             return;
         }
         if( x.m_dt && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt) &&
@@ -29956,7 +30144,6 @@ public:
             }
             const bool foreign = foreign_cancellation_boundary(*func, true);
             tmp = create_jit_call(fntype, callee, args, foreign);
-            if (foreign) emit_cancellation_check();
             return ;
         }
 
@@ -30078,7 +30265,6 @@ public:
 
             const bool foreign = foreign_cancellation_boundary(*s, true);
             tmp = create_jit_call(fntype, fn, args, foreign);
-            if (foreign) emit_cancellation_check();
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym) &&
                 llvm_symtab.find(h) != llvm_symtab.end()) {
             llvm::Value* fn = llvm_symtab[h];
@@ -30094,7 +30280,6 @@ public:
 
             const bool foreign = foreign_cancellation_boundary(*s, true);
             tmp = create_jit_call(fntype, fn, args, foreign);
-            if (foreign) emit_cancellation_check();
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
@@ -30131,9 +30316,9 @@ public:
                 }
             }
             const bool foreign = foreign_cancellation_boundary(*s, false, fn);
-            if (foreign) protect_cancellation(true);
+            if (foreign) defer_cancellation(true);
             builder->CreateCall(fn, args);
-            if (foreign) protect_cancellation(false);
+            if (foreign) defer_cancellation(false);
             fixup_descriptor_after_cchar_bind_c_call(x, s, args);
             fixup_scalar_alloc_after_bind_c_call(x, s, args);
             for (auto& fc : pending_flat_copybacks) {
@@ -30142,7 +30327,6 @@ public:
             }
             pending_flat_copybacks.clear();
             apply_cfi_array_writebacks();
-            emit_cancellation_check(!foreign);
         }
     }
 
@@ -30383,7 +30567,8 @@ public:
 
     llvm::Value* CreateCallUtil(llvm::FunctionType* fnty, llvm::Function* fn,
                                 std::vector<llvm::Value*>& args,
-                                ASR::ttype_t* asr_return_type, bool foreign) {
+                                ASR::ttype_t* asr_return_type, bool foreign,
+                                bool callee_may_unwind) {
         if (fnty->getReturnType()->isVoidTy()) {
             // Windows complex(kind=8) uses a hidden first argument (sret-style):
             // the function returns `void` and writes the result into the first
@@ -30394,18 +30579,21 @@ public:
                 compiler_options.platform == Platform::Windows) {
                 llvm::Value* sret_tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                 args.insert(args.begin(), sret_tmp);
-                create_jit_call(fn, args, foreign);
+                create_jit_call(fn, args, foreign, callee_may_unwind);
                 return llvm_utils->CreateLoad2(complex_type_8, sret_tmp);
             }
         }
-        llvm::Value* return_value = create_jit_call(fn, args, foreign);
+        llvm::Value* return_value = create_jit_call(fn, args, foreign,
+            callee_may_unwind);
         return CreatePointerToStructTypeReturnValue(fnty, return_value,
                                                 asr_return_type);
     }
 
     llvm::Value* CreateCallUtil(llvm::Function* fn, std::vector<llvm::Value*>& args,
-                                ASR::ttype_t* asr_return_type, bool foreign) {
-        return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type, foreign);
+                                ASR::ttype_t* asr_return_type, bool foreign,
+                                bool callee_may_unwind) {
+        return CreateCallUtil(fn->getFunctionType(), fn, args, asr_return_type,
+            foreign, callee_may_unwind);
     }
 
     void visit_RuntimePolymorphicSubroutineCall(const ASR::SubroutineCall_t& x) {
@@ -30752,14 +30940,17 @@ public:
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
             if (ASRUtils::get_FunctionType(s)->m_abi == ASR::abiType::BindC) {
                 auto call_bindc = [&]() {
-                    if (foreign) protect_cancellation(true);
+                    if (foreign) defer_cancellation(true);
                     auto *result = builder->CreateCall(fn, args);
-                    if (foreign) protect_cancellation(false);
+                    if (foreign) defer_cancellation(false);
                     // Copy descriptor ownership back even when the callee
                     // cancelled, before abandoning this frame.
                     if (cancellation_scope && !emitting_cancellation_cleanup) {
                         apply_cfi_array_writebacks();
-                        emit_cancellation_check(true);
+                        // A foreign call is checked once its result is wrapped.
+                        if (!foreign && call_may_unwind(*s)) {
+                            emit_cancellation_check(true);
+                        }
                     }
                     return result;
                 };
@@ -30783,7 +30974,8 @@ public:
                 }
                 apply_cfi_array_writebacks();
             } else {
-                tmp = CreateCallUtil(fn, args, return_var_type0, foreign);
+                tmp = CreateCallUtil(fn, args, return_var_type0, foreign,
+                    !foreign && call_may_unwind(*s));
             }
         }
         wrap_string_function_result(x.m_type);
@@ -31572,7 +31764,7 @@ llvm::Value* LLVMUtils::get_array_size(llvm::Value* array_ptr, llvm::Type* array
 
 /// Defined here to use the array descriptor API.
 void LLVMFinalize::call_final(llvm::Function *fn, llvm::Value *arg) {
-    ASRToLLVMVisitor::CancellationProtection protection(asr_to_llvm_visitor_);
+    ASRToLLVMVisitor::CancellationProtection protection(asr_to_llvm_visitor_, true);
     builder_->CreateCall(fn, {arg});
 }
 
@@ -31607,7 +31799,7 @@ llvm::Value* LLVMFinalize::get_array_element(llvm::Value* const ptr, ASR::ttype_
 void LLVMFinalize::call_array_final(llvm::Function* const final_fn, ASR::Function_t* const final_proc,
         llvm::Value* const ptr, ASR::ttype_t* const arr_type, ASR::Struct_t* const struct_sym,
         ASR::Struct_t* const final_struct) {
-    ASRToLLVMVisitor::CancellationProtection protection(asr_to_llvm_visitor_);
+    ASRToLLVMVisitor::CancellationProtection protection(asr_to_llvm_visitor_, true);
     ASR::Array_t* const arr_t = ASR::down_cast<ASR::Array_t>(arr_type);
     ASR::ttype_t* const dummy_type = ASRUtils::type_get_past_allocatable_pointer(
         ASRUtils::expr_type(final_proc->m_args[0]));
