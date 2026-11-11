@@ -530,6 +530,9 @@ public:
     // another procedure can reach through a pointer, rather than what a
     // pointer of this procedure may point to.
     SymbolTable *routine = nullptr;
+    // Count everything the contained procedures name, whether or not they can
+    // run elsewhere (what a call of one of them reaches).
+    bool all_host = false;
     std::map<ASR::symbol_t*, std::vector<ASR::expr_t*>> local_targets;
     explicit PointerReach(std::set<ASR::symbol_t*> &vars_) : vars(vars_) {}
 
@@ -551,11 +554,37 @@ public:
     // names, which a call of that procedure may reach.
     void finish() {
         if (routine == nullptr) return;
+        // A contained procedure that is only called by name is run by this
+        // procedure alone: no call of another procedure reaches the
+        // variables it names, nor the frame they are bound in. Once its name
+        // is used as a value -- an actual argument, a procedure pointer
+        // target -- anything may call it.
+        for (auto &item : routine->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            ProcedureValues inner(procedure_values);
+            inner.visit_symbol(*item.second);
+        }
+        bool escapes = false;
+        for (auto &item : routine->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)
+                    && procedure_values.count(item.second) > 0) {
+                escapes = true;
+            }
+        }
+        if (all_host) escapes = true;
+        if (!escapes) return finish_targets();
+        // The one that escapes may call its siblings.
+        for (ASR::expr_t *e : bound) reached(e);
+        bound.clear();
         for (auto &item : routine->get_scope()) {
             if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
             HostNames names(routine, vars);
             names.visit_symbol(*item.second);
         }
+        finish_targets();
+    }
+
+    void finish_targets() {
         std::set<ASR::symbol_t*> done;
         bool changed = true;
         while (changed) {
@@ -570,6 +599,20 @@ public:
             }
         }
     }
+
+    // The procedures whose name is used as a value, and the variables the
+    // frames of the contained procedures are bound to.
+    std::set<ASR::symbol_t*> procedure_values;
+    std::vector<ASR::expr_t*> bound;
+    class ProcedureValues : public ASR::BaseWalkVisitor<ProcedureValues> {
+    public:
+        std::set<ASR::symbol_t*> &values;
+        explicit ProcedureValues(std::set<ASR::symbol_t*> &v) : values(v) {}
+        void visit_Var(const ASR::Var_t &x) {
+            ASR::symbol_t *v = ASRUtils::symbol_get_past_external(x.m_v);
+            if (ASR::is_a<ASR::Function_t>(*v)) values.insert(v);
+        }
+    };
 
     // The variables of `routine` a procedure contained in it names.
     class HostNames : public ASR::BaseWalkVisitor<HostNames> {
@@ -589,8 +632,10 @@ public:
     };
 
     void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *v = ASRUtils::symbol_get_past_external(x.m_v);
+        if (ASR::is_a<ASR::Function_t>(*v)) procedure_values.insert(v);
         if (inside > 0) {
-            vars.insert(ASRUtils::symbol_get_past_external(x.m_v));
+            vars.insert(v);
         }
     }
     void reached(const ASR::expr_t *e) {
@@ -614,7 +659,12 @@ public:
     // reach it.
     void visit_BindReference(const ASR::BindReference_t &x) {
         visit_expr(*x.m_reference);
-        reached(x.m_variable);
+        if (routine != nullptr && !all_host) {
+            // Counted by `finish`, if a contained procedure can run elsewhere.
+            bound.push_back(x.m_variable);
+        } else {
+            reached(x.m_variable);
+        }
     }
     void visit_SelectType(const ASR::SelectType_t &x) {
         reached(x.m_selector);
@@ -708,10 +758,12 @@ public:
     RoutineSync(Allocator &al_, SymbolTable *routine_,
             const PointerTargets &pointers_,
             const std::set<ASR::symbol_t*> &reached_,
-            const std::set<ASR::symbol_t*> &escaped_, Deferral &deferral_,
+            const std::set<ASR::symbol_t*> &escaped_,
+            const std::set<ASR::symbol_t*> &escaped_host_, Deferral &deferral_,
             ASR::Function_t *self_)
         : al(al_), routine(routine_), pointers(pointers_),
-          reached(reached_), escaped(escaped_), deferral(deferral_),
+          reached(reached_), escaped(escaped_), escaped_host(escaped_host_),
+          deferral(deferral_),
           self(self_),
           twin(self_ != nullptr && deferral_.twins.count(self_) > 0) {}
 
@@ -756,6 +808,9 @@ private:
     // Of those, what other procedures can reach through a pointer: not
     // what only pointers that no other procedure can name point to.
     const std::set<ASR::symbol_t*> &escaped;
+    // The same, with every variable a contained procedure names: what a
+    // call of a contained procedure of this one may access.
+    const std::set<ASR::symbol_t*> &escaped_host;
     Deferral &deferral;
     // The procedure, nullptr for a program.
     ASR::Function_t *self;
@@ -1146,9 +1201,11 @@ private:
     bool conflicts(const Accesses &acc, const std::vector<Path> &paths) {
         if (paths.empty()) return false;
         if (acc.everything) return true;
+        const std::set<ASR::symbol_t*> &esc = acc.contained_call
+            ? escaped_host : escaped;
         for (const Path &w : paths) {
             if (acc.globals && (reachable_elsewhere(w.root, routine)
-                        || escaped.count(w.root) > 0)
+                        || esc.count(w.root) > 0)
                     && !out_of_reach(w.root)) {
                 return true;
             }
@@ -2654,7 +2711,14 @@ void place_syncs(Allocator &al, SymbolTable *scope, ASR::stmt_t **&body,
     escape.routine = scope;
     for (size_t i = 0; i < n_body; i++) escape.visit_stmt(*body[i]);
     escape.finish();
-    RoutineSync sync(al, scope, targets, reached, escaped, deferral, self);
+    std::set<ASR::symbol_t*> escaped_host;
+    PointerReach escape_host(escaped_host);
+    escape_host.routine = scope;
+    escape_host.all_host = true;
+    for (size_t i = 0; i < n_body; i++) escape_host.visit_stmt(*body[i]);
+    escape_host.finish();
+    RoutineSync sync(al, scope, targets, reached, escaped, escaped_host,
+        deferral, self);
     Vec<ASR::stmt_t*> result = sync.run(body, n_body, loc);
     body = result.p;
     n_body = result.n;

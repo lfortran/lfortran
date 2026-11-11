@@ -78,6 +78,9 @@ struct Accesses {
     bool observable = false;
     // May access what a pointer or another procedure can reach.
     bool globals = false;
+    // `globals` is from a call of a procedure contained in the one being
+    // analysed, which names the variables of its host by host association.
+    bool contained_call = false;
     // May access anything.
     bool everything = false;
 };
@@ -816,6 +819,7 @@ public:
             if (contained != nullptr) {
                 contained->push_back(fn);
                 acc.globals = true;
+                acc.contained_call = true;
             } else {
                 acc.everything = true;
             }

@@ -2153,6 +2153,68 @@ end module
     CHECK(gpu_sync_trace(source, "sync_loaded", "chain", true) == "CC");
 }
 
+TEST_CASE("GPU calls reach the locals a contained procedure names only when it can run elsewhere") {
+    // `show` reads the local w. While it is only called by name nothing but
+    // `by_name` runs it, so the call of the unrelated twin `bump` does not wait
+    // for the launch that writes w; once its name is handed to another
+    // procedure (`by_value`) that may call it, and the call of `bump` waits.
+    const std::string source = R"(
+module sync_frames
+implicit none
+contains
+subroutine bump(y)
+    real, intent(inout) :: y(:)
+    integer :: i
+    do concurrent (i = 1:size(y))
+        y(i) = y(i) + 1
+    end do
+end subroutine
+subroutine run(f)
+    interface
+        subroutine f()
+        end subroutine
+    end interface
+    call f()
+end subroutine
+subroutine by_name(b, r)
+    real, intent(inout) :: b(:)
+    real, intent(out) :: r
+    real :: w(64)
+    integer :: i
+    do concurrent (i = 1:64)
+        w(i) = i
+    end do
+    call bump(b)
+    call show()
+    r = w(2)
+contains
+    subroutine show()
+        if (w(1) /= 1.0) error stop "stale"
+    end subroutine
+end subroutine
+subroutine by_value(b, r)
+    real, intent(inout) :: b(:)
+    real, intent(out) :: r
+    real :: w(64)
+    integer :: i
+    do concurrent (i = 1:64)
+        w(i) = i
+    end do
+    call bump(b)
+    call run(show)
+    r = w(2)
+contains
+    subroutine show()
+        if (w(1) /= 1.0) error stop "stale"
+    end subroutine
+end subroutine
+end module
+)";
+    CHECK(gpu_sync_trace(source, "sync_frames", "by_name") == "[L|]CSC");
+    CHECK(gpu_sync_trace(source, "sync_frames", "by_value").substr(0, 5)
+        == "[L|]S");
+}
+
 TEST_CASE("GPU allocatable actuals of contiguous optional dummies are not synced") {
     // The allocatable actual reaches the CONTIGUOUS optional dummy through a
     // pointer to it or to an explicit-shape placeholder, which is contiguous:
