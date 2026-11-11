@@ -8391,6 +8391,11 @@ namespace MinExponent {
         int result;
         if (m_kind == 4) {
             result = std::numeric_limits<float>::min_exponent;
+        } else if (m_kind == 8) {
+            result = std::numeric_limits<double>::min_exponent;
+        } else if (m_kind == 10) {
+            // x87 extended: 15-bit exponent, emin = -16381. Not the real(8) model.
+            result = -16381;
         } else if (m_kind == 16) {
             result = -16381;
         } else {
@@ -8409,6 +8414,11 @@ namespace MaxExponent {
         int result;
         if (m_kind == 4) {
             result = std::numeric_limits<float>::max_exponent;
+        } else if (m_kind == 8) {
+            result = std::numeric_limits<double>::max_exponent;
+        } else if (m_kind == 10) {
+            // x87 extended: 15-bit exponent, emax = 16384. Not the real(8) model.
+            result = 16384;
         } else if (m_kind == 16) {
             result = 16384;
         } else {
