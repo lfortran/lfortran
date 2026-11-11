@@ -2075,6 +2075,9 @@ public:
         {"cpu_time", IntrinsicSignature({"time"}, 1, 1)},
         {"date_and_time", IntrinsicSignature({"date", "time", "zone", "values"}, 0, 4)},
         {"get_environment_variable", IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)},
+        // Legacy GNU/F77 extension: `call getenv(name, value)` is equivalent
+        // to `call get_environment_variable(name, value)`.
+        {"getenv", IntrinsicSignature({"name", "value"}, 2, 2)},
         {"execute_command_line", IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)},
         {"system", IntrinsicSignature({"command"}, 1, 1)},
         {"sleep", IntrinsicSignature({"seconds"}, 1, 1)},
