@@ -32,13 +32,14 @@ computed for several vectors at once, is what `vhaddpd` computes, given the
 squares r*r: two horizontal adds and one vertical add give the sums of four
 vectors. SLP vectorizes such sums across the vectors instead, gathering one
 component of each vector into a lane. How it places the vectors in lanes
-depends on the LLVM version: a transpose of four vectors, two lanes,
-partial sums of two lanes concatenated, or differences taken before or
-after the gather.
+depends on the LLVM version: a transpose of four vectors, partial sums of
+two lanes concatenated, or differences taken before or after the gather.
 
 So the rewrite does not match the shuffles. A root is a fast addition of
-two to four double lanes where every lane, followed through the additions
-and the shuffles, is a sum of three squares. Each squared element is
+four double lanes where every lane, followed through the additions and the
+shuffles, is a sum of three squares. A sum of two or three lanes is left
+alone: it needs the same two horizontal adds, which then cost more than the
+gather they replace. Each squared element is
 followed through shuffles and fast elementwise operations to the vector
 elements it is computed from. The three squares of a lane must be the same
 expression, one element further on for each component; that expression on
@@ -217,15 +218,6 @@ bool same_expression(const SmallVectorImpl<Node> *components[3]) {
     return true;
 }
 
-// The second operand of a shuffle that reads only its first.
-Value *unused(Value *v) {
-#if LLVM_VERSION_MAJOR >= 12
-    return PoisonValue::get(v->getType());
-#else
-    return UndefValue::get(v->getType());
-#endif
-}
-
 // Build the four element vector whose components 0, 1 and 2 are the
 // expression `nodes` (starting at `next`), on the whole leaf vectors.
 Value *emit(IRBuilder<> &builder, const SmallVectorImpl<Node> &nodes,
@@ -292,18 +284,18 @@ bool collect_squares(Value *v, unsigned lane, Squares &squares,
     return squares.size() <= 3;
 }
 
-// A root is a fast addition of double vectors (two to four lanes) where
-// every lane is a sum of exactly three squares. The shuffles that feed it
-// are part of the sum, so the additions below a root are not roots.
+// A root is a fast addition of four double lanes where every lane is a sum
+// of exactly three squares. The shuffles that feed it are part of the sum,
+// so the additions below a root are not roots.
 bool is_root(Instruction &i, SmallVectorImpl<Squares> &lanes) {
     auto *vector = dyn_cast<FixedVectorType>(i.getType());
     if (i.getOpcode() != Instruction::FAdd || !is_fast(&i) || !vector
             || !vector->getElementType()->isDoubleTy()
-            || vector->getNumElements() < 2 || vector->getNumElements() > 4) {
+            || vector->getNumElements() != 4) {
         return false;
     }
     lanes.clear();
-    for (unsigned lane = 0; lane < vector->getNumElements(); lane++) {
+    for (unsigned lane = 0; lane < 4; lane++) {
         Squares squares;
         DenseSet<std::pair<Value *, unsigned>> seen;
         if (!collect_squares(&i, lane, squares, seen) || squares.size() != 3) {
@@ -667,26 +659,15 @@ bool recombine_horizontal_reductions(llvm::Function &f,
             }
             squares.push_back(square);
         }
-        // Two horizontal adds and one vertical add give the sums of four
-        // lanes. With fewer lanes, the missing ones repeat the first.
-        llvm::Value *x[4];
-        for (size_t j = 0; j < 4; j++) {
-            x[j] = squares[j < squares.size() ? j : 0];
-        }
-        llvm::Value *t0 = builder.CreateCall(hadd, {x[0], x[1]});
-        llvm::Value *t1 = builder.CreateCall(hadd, {x[2], x[3]});
+        // Two horizontal adds and one vertical add give the sums of the
+        // four lanes.
+        llvm::Value *t0 = builder.CreateCall(hadd, {squares[0], squares[1]});
+        llvm::Value *t1 = builder.CreateCall(hadd, {squares[2], squares[3]});
         llvm::Value *y0 = builder.CreateShuffleVector(t0, t1,
             llvm::ArrayRef<int>{2, 3, 4, 5});
         llvm::Value *y1 = builder.CreateShuffleVector(t0, t1,
             llvm::ArrayRef<int>{0, 1, 6, 7});
         llvm::Value *sum = builder.CreateFAdd(y0, y1);
-        if (squares.size() != 4) {
-            llvm::SmallVector<int, 4> mask;
-            for (size_t j = 0; j < squares.size(); j++) {
-                mask.push_back((int)j);
-            }
-            sum = builder.CreateShuffleVector(sum, unused(sum), mask);
-        }
         root->replaceAllUsesWith(sum);
         changed = true;
     }
