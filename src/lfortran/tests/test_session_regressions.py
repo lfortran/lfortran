@@ -442,6 +442,42 @@ def read_disconnect(exe, cwd):
         check(process.returncode != 0, "the kernel exited with 0 after a failed READ")
 
 
+def read_errors(exe, cwd):
+    """A READ without iostat= that fails stops the kernel with the runtime's
+    own message, as it stops a compiled program: an internal READ and a
+    READ of a file, which never wait for stdin."""
+    data = cwd / "empty.txt"
+    data.write_text("")
+    cells = [
+        ("character(len=10) :: rb = 'abc'\ninteger :: rn = 5\nread(rb, *) rn",
+            "Error: Bad integer for item in list input"),
+        ("module read_eof\ncontains\nsubroutine rd()\ninteger :: v\n"
+            "open(31, file='%s')\nread(31, *) v\nend subroutine\nend module\n"
+            "use read_eof\ncall rd()" % data,
+            "Error: Invalid int32_t input from file (EOF)."),
+    ]
+    for code, message in cells:
+        with kernel(exe, cwd) as (process, join, ports):
+            client = join()
+            msg_id = client.execute(code)
+            text = ""
+            deadline = time.monotonic() + 20
+            while process.poll() is None and time.monotonic() < deadline:
+                try:
+                    msg = client.get_iopub_msg(timeout=0.1)
+                except queue.Empty:
+                    continue
+                if parent_id(msg) == msg_id and msg["msg_type"] == "stream":
+                    text += msg["content"]["text"]
+            try:
+                process.wait(timeout=20)
+            except subprocess.TimeoutExpired:
+                raise AssertionError("the kernel went on after a failed READ")
+            check(process.returncode != 0, "the kernel exited with 0 after a failed READ")
+            text += Path(ports["path"]).with_suffix(".log").read_text(errors="replace")
+            check(message in text, "no %r in the output of %r:\n%s" % (message, code, text))
+
+
 def late_stdin(exe, cwd):
     """A READ waits a little for the stdin connection of the client that ran
     the cell, which may come after the cell."""
@@ -1437,7 +1473,7 @@ CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
     test_fragmented_updates, test_unicode_updates, test_idle_disconnect,
     test_output_error_cleanup,
     large_output, slow_subscriber_output, oversized_message_output,
-    stalled_connections, read_disconnect,
+    stalled_connections, read_disconnect, read_errors,
     late_stdin, prompt_departure, prompt_killed_in_cell, test_interrupt_prompt,
     terminal_command,
     kernel_parent, stop_ends_session,

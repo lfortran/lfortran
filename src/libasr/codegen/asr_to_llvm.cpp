@@ -23435,17 +23435,39 @@ public:
 
         // A cancelled stdin wait must return through the normal READ frame
         // before taking the JIT cleanup path, not exit from a runtime reader
-        // receiving a null IOSTAT. File compilation keeps its original path.
+        // receiving a null IOSTAT. So a READ without IOSTAT= that may wait
+        // for stdin gets a status of its own, `read_status`. Every other READ
+        // passes a null IOSTAT, so the runtime reports its errors itself.
+        // File compilation keeps its original path.
         const bool cancellable = cancellation_scope && !emitting_cancellation_cleanup
             && !never_unwinds;
-        auto finish_read = [&](llvm::Value *status) {
+        llvm::Value *read_status = nullptr;
+        // The IOSTAT argument of a READ of `unit` (an i32) without IOSTAT=.
+        auto own_iostat = [&](llvm::Value *unit) -> llvm::Value * {
+            llvm::Type *ptr = llvm_utils->i32->getPointerTo();
+            if (!cancellable) return llvm::ConstantPointerNull::get(
+                llvm::cast<llvm::PointerType>(ptr));
+            read_status = llvm_utils->CreateAlloca(*builder, llvm_utils->i32);
+            builder->CreateStore(llvm::ConstantInt::get(llvm_utils->i32, 0),
+                read_status);
+            llvm::Function *may_wait = LLVM::get_or_declare_function(*module,
+                "_lfortran_read_may_wait", llvm_utils->i32, {llvm_utils->i32});
+            return builder->CreateSelect(builder->CreateICmpNE(
+                    builder->CreateCall(may_wait, {unit}),
+                    llvm::ConstantInt::get(llvm_utils->i32, 0)),
+                read_status, llvm::ConstantPointerNull::get(
+                    llvm::cast<llvm::PointerType>(ptr)));
+        };
+        auto finish_read = [&]() {
             if (!cancellable) return;
             emit_cancellation_check(false, [&]() {
                 if (x.m_decimal) emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
                     llvm_utils->i32, llvm::APInt(32, -1, true)));
             });
-            if (!x.m_iostat) {
-                llvm::Value *value = llvm_utils->CreateLoad2(llvm_utils->i32, status);
+            if (read_status) {
+                // A stdin READ without IOSTAT= failed without cancellation.
+                llvm::Value *value = llvm_utils->CreateLoad2(llvm_utils->i32,
+                    read_status);
                 llvm_utils->create_if_else(builder->CreateICmpNE(value,
                         llvm::ConstantInt::get(llvm_utils->i32, 0)), [&]() {
                     print_error(context, *module, *builder, {
@@ -23494,9 +23516,9 @@ public:
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                     iostat);
-            } else if (cancellable) {
-                iostat = llvm_utils->CreateAlloca(*builder, llvm_utils->i32);
-                builder->CreateStore(llvm::ConstantInt::get(llvm_utils->i32, 0), iostat);
+            } else if (!is_string) {
+                iostat = own_iostat(x.m_unit ? unit_val : llvm::ConstantInt::get(
+                    llvm_utils->i32, llvm::APInt(32, -1, true)));
             } else {
                 iostat = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
             }
@@ -23615,7 +23637,7 @@ public:
                 builder->CreateCall(fn, {unit_val, iostat, iomsg_data, iomsg_len,
                     nml_group});
             }
-            finish_read(iostat);
+            finish_read();
             return;
         }
 
@@ -23687,12 +23709,12 @@ public:
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                 iostat_for_empty_read);
-            if (cancellable) iostat = iostat_for_empty_read;
+            if (!is_string) iostat = own_iostat(unit_val);
         }
 
         if (x.m_unit && !is_string && !x.m_rec && !x.m_pos) {
             emit_connect_unit_for_read(unit_val, !x.m_is_formatted, iostat);
-            finish_read(iostat);
+            finish_read();
         }
 
         if (x.m_decimal) {
@@ -23801,7 +23823,7 @@ public:
                 }
             }
             for (size_t i=0; i<x.n_values; i++) {
-                if (i) finish_read(iostat);
+                if (i) finish_read();
                 // Handle ImpliedDoLoop: read(10,*) (vals(j), j=1,n)
                 // Transform to reading n elements into vals starting at start index
                 if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_values[i])) {
@@ -23990,7 +24012,7 @@ public:
                         if (can_handle) {
                             generate_read_implied_do_loop(idl, unit_val, iostat,
                                 is_string, str_src_data, str_src_len, str_offset,
-                                [&]() { finish_read(iostat); });
+                                [&]() { finish_read(); });
                             continue;
                         }
                     }
@@ -24196,7 +24218,7 @@ public:
                                 llvm::Type::getInt1Ty(context));
                             builder->CreateStore(cur_bool, tmp_bool);
                             builder->CreateCall(fn, {tmp_bool, unit_val, iostat});
-                            finish_read(iostat);
+                            finish_read();
                             llvm::Value* loaded = llvm_utils->CreateLoad2(
                                 llvm::Type::getInt1Ty(context), tmp_bool);
                             llvm::Value* widened = builder->CreateZExt(loaded,
@@ -24209,7 +24231,7 @@ public:
                 }
             }
 
-            finish_read(iostat);
+            finish_read();
             // In Fortran, read(u, *) is used to read the entire line. The
             // next read(u, *) function is intended to read the next entire
             // line. Let's take an example: `read(u, *) n`, where n is an
@@ -24297,7 +24319,7 @@ public:
             emit_set_transfer_decimal_mode(llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true)));
         }
-        finish_read(iostat);
+        finish_read();
     }
 
     // One scalar target of a formatted READ in the runtime protocol (see

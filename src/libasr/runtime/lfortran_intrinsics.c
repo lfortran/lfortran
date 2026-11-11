@@ -9204,6 +9204,22 @@ FILE* get_file_pointer_from_unit(int32_t unit_num, bool *unit_file_bin, int *acc
     return NULL;
 }
 
+// Whether a READ of `unit_num` (-1 or -2 for `*`) may wait for the stdin
+// provider of a cancellable cell (lfortran_cancellation.h). Only such a
+// wait can be cancelled, so generated code gives only such a READ an IOSTAT
+// of its own; every other READ reports its errors here, as compiled code
+// does.
+LFORTRAN_API int32_t _lfortran_read_may_wait(int32_t unit_num)
+{
+    if (!cancel_poll || !stdin_provider) return 0;
+    if (unit_num == -1 || unit_num == -2) return 1;
+    _lfortran_init_standard_units();
+    for (int i = 0; i <= last_index_used; i++) {
+        if (unit_to_file[i].unit == unit_num) return unit_to_file[i].filep == stdin;
+    }
+    return 0;
+}
+
 char* get_file_name_from_unit(int32_t unit_num, bool *unit_file_bin) {
     _lfortran_init_standard_units();
     *unit_file_bin = false;
