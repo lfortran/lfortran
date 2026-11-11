@@ -12082,6 +12082,9 @@ ASR::symbol_t* import_struct_instance_member(Allocator& al,
     // The derived type is loaded before that procedure, so the member
     // symbol has to live in the module: that symbol table already exists
     // while the type is read back. A symbol in the procedure does not.
+    // It stays private. A public module symbol is imported by `use`, and
+    // that import does not keep the component scope, so the next module
+    // file cannot resolve the member.
     SymbolTable* member_scope = scope;
     for (SymbolTable* candidate = scope; candidate != nullptr;
             candidate = candidate->parent) {
@@ -12100,7 +12103,7 @@ ASR::symbol_t* import_struct_instance_member(Allocator& al,
     if (member_scope->get_symbol(struct_member_external_symbol_name) == nullptr) {
         ASR::symbol_t* struct_member_external_symbol = make_struct_member_external_symbol(
             al, struct_member->base.loc, member_scope, struct_member_external_symbol_name,
-            struct_member, struct_external_symbol_name, ASR::accessType::Public);
+            struct_member, struct_external_symbol_name, ASR::accessType::Private);
         member_scope->add_symbol(struct_member_external_symbol_name, struct_member_external_symbol);
     }
 

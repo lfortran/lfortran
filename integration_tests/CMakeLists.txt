@@ -2435,6 +2435,7 @@ RUN(NAME modules_90 LABELS gfortran llvm)
 RUN(NAME modules_91 LABELS gfortran llvm)
 RUN(NAME modules_92 LABELS gfortran llvm EXTRAFILES modules_92_mod.f90) # derived-type bounds of external procedure interfaces in .mod (#17148)
 RUN(NAME modules_93 LABELS gfortran llvm)
+RUN(NAME modules_94 LABELS gfortran llvm llvm_submodule EXTRAFILES modules_94_m1.f90 modules_94_m2.f90) # component symbol re-exported by use, reloaded from the module file
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 
