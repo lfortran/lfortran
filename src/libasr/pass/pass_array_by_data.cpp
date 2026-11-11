@@ -2191,6 +2191,69 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                 || !ASRUtils::is_compiler_generated_name(fn->m_name);
         }
 
+        // `sym` as reached by walking from a component up to `old_proc`,
+        // looked up along the same names in `new_proc`.
+        static ASR::symbol_t* corresponding_symbol(ASR::symbol_t* sym,
+                ASR::symbol_t* old_proc, ASR::symbol_t* new_proc) {
+            std::vector<std::string> path;
+            ASR::symbol_t* s = sym;
+            while (s != nullptr && s != old_proc) {
+                path.push_back(ASRUtils::symbol_name(s));
+                s = ASRUtils::get_asr_owner(s);
+            }
+            if (s != old_proc) {
+                return nullptr;
+            }
+            SymbolTable* scope = ASRUtils::symbol_symtab(new_proc);
+            for (size_t i = path.size(); i > 0; i--) {
+                if (scope == nullptr) {
+                    return nullptr;
+                }
+                ASR::symbol_t* resolved = scope->get_symbol(path[i - 1]);
+                if (resolved == nullptr) {
+                    return nullptr;
+                }
+                if (i == 1) {
+                    return resolved;
+                }
+                scope = ASRUtils::symbol_symtab(resolved);
+            }
+            return nullptr;
+        }
+
+        // A component of a procedure-local derived type is named from the
+        // enclosing module, with a scope path through the procedure. The
+        // specialised procedure has its own copy of the type. Once the
+        // original procedure is removed, that module symbol has to name
+        // the copy.
+        void retarget_local_type_members(SymbolTable* scope,
+                ASR::symbol_t* old_proc, ASR::symbol_t* new_proc) {
+            for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+                for (auto& item : s->get_scope()) {
+                    if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                        continue;
+                    }
+                    ASR::ExternalSymbol_t* e = ASR::down_cast<ASR::ExternalSymbol_t>(
+                        item.second);
+                    if (e->m_external == nullptr) {
+                        continue;
+                    }
+                    ASR::symbol_t* target = ASRUtils::symbol_get_past_external(
+                        e->m_external);
+                    ASR::symbol_t* owner = ASRUtils::get_asr_owner(target);
+                    if (owner == nullptr || !ASR::is_a<ASR::Struct_t>(*owner)) {
+                        continue;
+                    }
+                    ASR::symbol_t* repl = corresponding_symbol(target, old_proc, new_proc);
+                    if (repl == nullptr) {
+                        continue;
+                    }
+                    e->m_external = repl;
+                    ASRUtils::set_struct_member_owner_path(al, e);
+                }
+            }
+        }
+
     public:
 
         RemoveArrayByDescriptorProceduresVisitor(Allocator& al_, PassArrayByDataProcedureVisitor& v_,
@@ -2296,6 +2359,11 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                         }
                     }
                     if (!protect) {
+                        auto it = v.proc2newproc.find(item.second);
+                        if (it != v.proc2newproc.end()) {
+                            retarget_local_type_members(current_scope,
+                                item.second, it->second.first);
+                        }
                         current_scope->erase_symbol(item.first);
                     }
                 }
