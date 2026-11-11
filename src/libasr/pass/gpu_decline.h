@@ -102,6 +102,14 @@ struct GpuDeviceCapabilities {
     // meet in shared memory behind a block barrier.
     int lanes_block = 1;
     int64_t lanes_block_iterations_max = 1024;
+    // A kernel whose lanes share out a sum that reads across the columns of
+    // an array, each lane its own column, while one lane per iteration
+    // would read along them with consecutive threads (gpu_vector_lanes.cpp,
+    // give_lanes), gets lanes only for a launch of at most this many
+    // iterations: so few that one thread per iteration leaves the GPU
+    // nearly idle, each waiting on one load after another. Zero gives such
+    // a kernel no lanes.
+    int64_t lanes_scattered_iterations_max = 0;
     // Whether the lanes of an iteration can share a loop that accumulates
     // into private scalars and combine what each lane accumulated
     // (GpuLaneReduce).

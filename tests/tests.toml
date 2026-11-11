@@ -5778,6 +5778,12 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_wide_loads_01.f90"
 gpu_cuda_kernel = true
 
+# A sum read across the columns of an array, shared out between the lanes
+# of an iteration only for a launch of few iterations.
+[[test]]
+filename = "../integration_tests/gpu_lanes_scattered_01.f90"
+gpu_cuda_kernel = true
+
 # A loop in one branch of an `if` inside a loop, shared out between the
 # lanes.
 [[test]]
