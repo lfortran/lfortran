@@ -2381,6 +2381,28 @@ private:
         return trips >= k.lanes_count / 2;
     }
 
+    // Whether the number of iterations of `d` is the same in every run of
+    // it, and what it is.
+    bool constant_trip_count(ASR::DoLoop_t *d, int64_t &trips) {
+        int64_t step = 1;
+        if (d->m_head.m_increment && !ASRUtils::extract_value(
+                ASRUtils::expr_value(d->m_head.m_increment), step)) {
+            return false;
+        }
+        if (step <= 0) return false;
+        GpuAffineBuilder affine;
+        affine.invariant_variable = [](ASR::symbol_t *) { return true; };
+        GpuAffine start, end;
+        if (!affine.affine(d->m_head.m_start, start)
+                || !affine.affine(d->m_head.m_end, end)) {
+            return false;
+        }
+        GpuAffine span = end.plus(start, -1);
+        if (!span.is_constant() || span.constant < 0) return false;
+        trips = span.constant / step + 1;
+        return true;
+    }
+
     // The number of iterations of the loop inner_reduction found last.
     int64_t fixed_trips = 0;
 
@@ -2946,6 +2968,76 @@ private:
         }
     }
 
+    // Whether `x` is the test `lanes == n`, as distribute_reduction makes it.
+    bool lanes_test(ASR::expr_t *x, int64_t &n) {
+        if (!ASR::is_a<ASR::IntegerCompare_t>(*x)) return false;
+        auto *c = ASR::down_cast<ASR::IntegerCompare_t>(x);
+        return c->m_op == ASR::cmpopType::Eq
+            && ASR::is_a<ASR::Var_t>(*c->m_left)
+            && root_of(c->m_left) == k.lanes
+            && ASRUtils::extract_value(ASRUtils::expr_value(c->m_right), n);
+    }
+
+    // The number of lanes the tests of distribute_reduction in a statement
+    // name.
+    class ExactLanes : public ASR::BaseWalkVisitor<ExactLanes> {
+    public:
+        LaneRewriter &owner;
+        int64_t lanes = 0;
+        explicit ExactLanes(LaneRewriter &o) : owner(o) {}
+        void visit_If(const ASR::If_t &x) {
+            int64_t n = 0;
+            if (x.m_test && owner.lanes_test(x.m_test, n)) lanes = n;
+            BaseWalkVisitor::visit_If(x);
+        }
+        void visit_BlockCall(const ASR::BlockCall_t &x) {
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                ASRUtils::symbol_get_past_external(x.m_m));
+            for (size_t i = 0; i < block->n_body; i++) {
+                visit_stmt(*block->m_body[i]);
+            }
+        }
+    };
+
+    // Replaces each `if (lanes == n) once else loop` of a list, and of the
+    // lists inside it, by `once` or by `loop`.
+    void choose_exact(ASR::stmt_t **&body, size_t &n_body, int64_t n,
+            bool once) {
+        Vec<ASR::stmt_t*> out;
+        out.reserve(al, n_body);
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *s = body[i];
+            if (ASR::is_a<ASR::If_t>(*s)) {
+                auto *x = ASR::down_cast<ASR::If_t>(s);
+                int64_t m = 0;
+                if (x->m_test && lanes_test(x->m_test, m) && m == n) {
+                    ASR::stmt_t **list = once ? x->m_body : x->m_orelse;
+                    size_t count = once ? x->n_body : x->n_orelse;
+                    for (size_t j = 0; j < count; j++) {
+                        out.push_back(al, list[j]);
+                    }
+                    continue;
+                }
+                choose_exact(x->m_body, x->n_body, n, once);
+                choose_exact(x->m_orelse, x->n_orelse, n, once);
+            } else if (ASR::is_a<ASR::DoLoop_t>(*s)) {
+                auto *x = ASR::down_cast<ASR::DoLoop_t>(s);
+                choose_exact(x->m_body, x->n_body, n, once);
+            } else if (ASR::is_a<ASR::WhileLoop_t>(*s)) {
+                auto *x = ASR::down_cast<ASR::WhileLoop_t>(s);
+                choose_exact(x->m_body, x->n_body, n, once);
+            } else if (ASR::is_a<ASR::BlockCall_t>(*s)) {
+                ASR::Block_t *x = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::BlockCall_t>(s)->m_m));
+                choose_exact(x->m_body, x->n_body, n, once);
+            }
+            out.push_back(al, s);
+        }
+        body = out.p;
+        n_body = out.n;
+    }
+
     void emit_deferred(ASR::stmt_t *g, const Deferral &d,
             Vec<ASR::stmt_t*> &out) {
         const Location &loc = g->base.loc;
@@ -2968,7 +3060,48 @@ private:
                 identity(ASR::reduction_opType::ReduceAdd, t, loc))}, {}));
         out.push_back(al, b.If(b.Gt(lanes_var(loc), b.i32(1)), start, {}));
         nested_apply(g);
-        out.push_back(al, g);
+        // The launch with as many lanes as an inner loop has iterations
+        // gets a copy of the loop over the groups in which each lane takes
+        // its one iteration without the loop around it, ahead of the loop
+        // over the groups, so that the compiler of the device code knows
+        // the lanes and can issue the loads of several groups together.
+        int64_t exact = 0;
+        {
+            ExactLanes found(*this);
+            found.visit_stmt(*g);
+            exact = found.lanes;
+        }
+        if (exact > 1) {
+            bool copyable = true;
+            auto *loop = ASR::down_cast<ASR::DoLoop_t>(g);
+            SymbolTable *scope = block_scope(loop->m_body, loop->n_body,
+                copyable);
+            ASR::stmt_t *copy = nullptr;
+            if (copyable) {
+                if (scope) {
+                    GpuDuplicator dup(al, scope);
+                    copy = dup.duplicate_stmt(g);
+                    if (!dup.ok) copy = nullptr;
+                } else {
+                    ASRUtils::ExprStmtDuplicator dup(al);
+                    dup.success = true;
+                    copy = dup.duplicate_stmt(g);
+                    if (!dup.success) copy = nullptr;
+                }
+            }
+            if (copy) {
+                auto *c = ASR::down_cast<ASR::DoLoop_t>(copy);
+                choose_exact(c->m_body, c->n_body, exact, true);
+                choose_exact(loop->m_body, loop->n_body, exact, false);
+                out.push_back(al, b.If(b.Eq(lanes_var(loc),
+                    b.i32((int)exact)), {copy}, {g}));
+            } else {
+                choose_exact(loop->m_body, loop->n_body, exact, false);
+                out.push_back(al, g);
+            }
+        } else {
+            out.push_back(al, g);
+        }
         finish.push_back(b.Assignment(b.Var(d.total),
             ASRUtils::EXPR(ASR::make_GpuLaneReduce_t(al, loc,
                 b.Var(d.total), ASR::reduction_opType::ReduceAdd,
@@ -3038,6 +3171,14 @@ private:
                 type, dup.duplicate_expr(step));
             finals.push_back({dup.duplicate_expr(d->m_head.m_v), x});
         }
+        // A loop of as many iterations as there are lanes (the 16 words of
+        // a group of a quantized matrix-vector product, on 16 lanes) takes
+        // one iteration on each lane. Compiled as a loop the iteration waits
+        // on the test of its end, where the loop of the next group could
+        // issue its loads: the launch with that many lanes gets the body
+        // without the loop.
+        int64_t exact_lanes = 0;
+        constant_trip_count(d, exact_lanes);
         Vec<ASR::stmt_t*> body;
         body.reserve(al, d->n_body + ind.size());
         for (size_t i = 0; i < d->n_body; i++) body.push_back(al, d->m_body[i]);
@@ -3058,7 +3199,36 @@ private:
         ASR::expr_t *lanes = b.i2i_t(lanes_var(loc), type);
         d->m_head.m_start = b.Add(d->m_head.m_start, b.Mul(lane, step));
         d->m_head.m_increment = b.Mul(step, lanes);
-        shared.push_back(al, &d->base);
+        if (deferred_inner.count(&d->base) && exact_lanes > 1
+                && exact_lanes <= k.lanes_count
+                && (exact_lanes & (exact_lanes - 1)) == 0) {
+            ASR::stmt_t *copy = nullptr;
+            if (scope) {
+                GpuDuplicator dup(al, scope);
+                copy = dup.duplicate_stmt(&d->base);
+                if (!dup.ok) copy = nullptr;
+            } else {
+                ASRUtils::ExprStmtDuplicator dup(al);
+                dup.success = true;
+                copy = dup.duplicate_stmt(&d->base);
+                if (!dup.success) copy = nullptr;
+            }
+            if (copy) {
+                auto *c = ASR::down_cast<ASR::DoLoop_t>(copy);
+                std::vector<ASR::stmt_t*> once;
+                once.push_back(b.Assignment(c->m_head.m_v, c->m_head.m_start));
+                for (size_t i = 0; i < c->n_body; i++) {
+                    once.push_back(c->m_body[i]);
+                }
+                shared.push_back(al, b.If(
+                    b.Eq(lanes_var(loc), b.i32((int)exact_lanes)), once,
+                    {&d->base}));
+            } else {
+                shared.push_back(al, &d->base);
+            }
+        } else {
+            shared.push_back(al, &d->base);
+        }
         for (const Accumulator &a : accumulators) {
             if (deferred_inner.count(&d->base)) break;
             ASR::ttype_t *t = ASRUtils::symbol_type(a.variable);
