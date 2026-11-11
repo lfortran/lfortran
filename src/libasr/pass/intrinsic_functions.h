@@ -3728,6 +3728,17 @@ namespace Sqrt {
                 return nullptr;
             }
             return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_sqrt(val), arg_type);
+        } else if (is_real(*arg_type) &&
+                ASRUtils::extract_kind_from_ttype_t(arg_type) == 10) {
+            // Kind 10 stores a pointer in m_r. Reading it as a double folds
+            // sqrt(2.0_10) to a denormal that prints as zero.
+            long double val = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            if (val < 0.0L) {
+                append_error(diag, "Argument of `sqrt` has a negative argument", loc);
+                return nullptr;
+            }
+            return ASRUtils::make_RealConstant_r10(al, loc, std::sqrt(val), arg_type);
         } else if (is_real(*arg_type)) {
             double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             if (val < 0.0) {
