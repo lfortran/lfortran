@@ -1071,6 +1071,53 @@ public:
     }
 };
 
+// A procedure signature can name a bound of one of its arguments. That
+// symbol lives in the procedure. A null() in another scope cannot take
+// that signature: the reference would point outside its symbol table.
+class ProcedureTypeScopeCheck : public ASR::BaseWalkVisitor<ProcedureTypeScopeCheck> {
+public:
+    SymbolTable* scope = nullptr;
+    bool in_scope = true;
+
+    void note(ASR::symbol_t* sym) {
+        if (!in_scope || sym == nullptr) {
+            return;
+        }
+        if (scope == nullptr) {
+            in_scope = false;
+            return;
+        }
+        SymbolTable* parent = ASRUtils::symbol_parent_symtab(sym);
+        for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+            if (s == parent) {
+                return;
+            }
+        }
+        in_scope = false;
+    }
+
+    void visit_Var(const ASR::Var_t& x) {
+        note(x.m_v);
+        if (in_scope) {
+            ASR::BaseWalkVisitor<ProcedureTypeScopeCheck>::visit_Var(x);
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        note(x.m_name);
+        if (in_scope) {
+            ASR::BaseWalkVisitor<ProcedureTypeScopeCheck>::visit_FunctionCall(x);
+        }
+    }
+};
+
+static bool procedure_type_symbols_in_scope(ASR::ttype_t* type, SymbolTable* scope) {
+    ProcedureTypeScopeCheck check;
+    check.scope = scope;
+    check.visit_ttype(*type);
+    return check.in_scope;
+}
+
 /*
     The following visitor replaces procedure calls with arrays as arguments
     to procedure calls having dimensional information passed as arguments. See example below,
@@ -2070,7 +2117,10 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
         }
 
         // null() keeps its own copy of the procedure type. The pointer it
-        // names is specialised above, so the constant has to follow.
+        // names is specialised above, so the constant has to follow. The
+        // procedure's signature also names the symbols of its bounds. Those
+        // symbols belong to the procedure, so a constant in another scope
+        // keeps the copy it already has.
         void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x) {
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_PointerNullConstant(x);
             if( x.m_var_expr == nullptr ) {
@@ -2079,6 +2129,9 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             ASR::ttype_t* var_type = ASRUtils::expr_type(x.m_var_expr);
             if( var_type == nullptr || !ASR::is_a<ASR::FunctionType_t>(
                     *ASRUtils::type_get_past_pointer(var_type)) ) {
+                return;
+            }
+            if( !procedure_type_symbols_in_scope(var_type, current_scope) ) {
                 return;
             }
             const_cast<ASR::PointerNullConstant_t&>(x).m_type = var_type;

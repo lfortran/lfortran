@@ -1128,11 +1128,26 @@ class UpdateProcedureEntityTypes:
         }
 
         // `null()` stores the procedure type it is disassociated from. The
-        // reference it names is updated first, and the constant has to follow.
+        // reference it names is updated first, and the constant has to follow
+        // when that procedure's argument list changed. Copying the procedure's
+        // own signature otherwise plants its bound expressions, which name
+        // symbols of the procedure, into the scope that contains the constant.
         void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x) {
             ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_PointerNullConstant(x);
             if( x.m_var_expr == nullptr ) {
                 return;
+            }
+            // A null that names the interface procedure itself carries a copy
+            // of that procedure's type. Leave the copy alone unless this pass
+            // changed the procedure: the procedure's signature names symbols
+            // of its own scope, and the constant may live in another one.
+            if( ASR::is_a<ASR::Var_t>(*x.m_var_expr) ) {
+                ASR::symbol_t* target = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_var_expr)->m_v);
+                if( target != nullptr && ASR::is_a<ASR::Function_t>(*target) &&
+                        transformed.find(target) == transformed.end() ) {
+                    return;
+                }
             }
             ASR::ttype_t* var_type = ASRUtils::expr_type(x.m_var_expr);
             if( var_type == nullptr || !ASR::is_a<ASR::FunctionType_t>(
