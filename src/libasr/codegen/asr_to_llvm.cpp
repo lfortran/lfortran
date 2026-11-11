@@ -309,6 +309,209 @@ public:
     }
 };
 
+// Whether the body of a counted DO loop runs a short, bounded time per
+// iteration without polling: its statements are assignments of scalar
+// numeric or logical values, IF, CYCLE, EXIT and counted DO loops of the
+// same kind (which poll on their own), and its expressions are operators,
+// numeric conversions, elemental intrinsics and element or component
+// references on such values, and calls of functions of the same kind
+// without loops. Only such a loop may poll once per chunk of iterations (see
+// generate_counted_do_loop). Anything else, such as I/O, a subroutine or
+// runtime call, a string or an allocation, may take long, so its loop polls
+// on every iteration.
+class BoundedLoopBody {
+public:
+    std::function<bool(const ASR::Function_t &)> callee_may_unwind;
+    std::map<const ASR::Function_t *, bool> &functions;
+
+    explicit BoundedLoopBody(std::map<const ASR::Function_t *, bool> &cache)
+        : functions(cache) {}
+
+    bool body(ASR::stmt_t **stmts, size_t n, bool in_function = false) {
+        for (size_t i = 0; i < n; i++) {
+            if (!stmt(*stmts[i], in_function)) return false;
+        }
+        return true;
+    }
+
+    // The control of a counted DO loop.
+    bool head(const ASR::do_loop_head_t &h) {
+        return h.m_v && value(*h.m_v) && value(*h.m_start) && value(*h.m_end)
+            && (!h.m_increment || value(*h.m_increment));
+    }
+
+private:
+    static bool scalar(ASR::ttype_t *type) {
+        switch (type->type) {
+            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::UnsignedInteger:
+            case ASR::ttypeType::Real:
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::Logical:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool stmt(const ASR::stmt_t &x, bool in_function) {
+        switch (x.type) {
+            case ASR::stmtType::Assignment: {
+                const auto &a = *ASR::down_cast<ASR::Assignment_t>(&x);
+                return !a.m_overloaded && value(*a.m_target) && value(*a.m_value);
+            }
+            case ASR::stmtType::If: {
+                const auto &s = *ASR::down_cast<ASR::If_t>(&x);
+                return value(*s.m_test) && body(s.m_body, s.n_body, in_function)
+                    && body(s.m_orelse, s.n_orelse, in_function);
+            }
+            case ASR::stmtType::Cycle:
+            case ASR::stmtType::Exit:
+                return true;
+            case ASR::stmtType::Return:
+                return in_function;
+            case ASR::stmtType::BlockCall: {
+                // For example, an inlined function.
+                ASR::symbol_t *m = ASR::down_cast<ASR::BlockCall_t>(&x)->m_m;
+                if (!ASR::is_a<ASR::Block_t>(*m)) return false;
+                const auto &block = *ASR::down_cast<ASR::Block_t>(m);
+                return scalar_locals(*block.m_symtab)
+                    && body(block.m_body, block.n_body, in_function);
+            }
+            case ASR::stmtType::DoLoop: {
+                const auto &l = *ASR::down_cast<ASR::DoLoop_t>(&x);
+                return !in_function && head(l.m_head)
+                    && body(l.m_body, l.n_body) && body(l.m_orelse, l.n_orelse);
+            }
+            default:
+                return false;
+        }
+    }
+
+    // A variable, or an element or component of one.
+    bool designator(const ASR::expr_t &x) {
+        switch (x.type) {
+            case ASR::exprType::Var:
+                return true;
+            case ASR::exprType::ArrayItem: {
+                const auto &item = *ASR::down_cast<ASR::ArrayItem_t>(&x);
+                for (size_t i = 0; i < item.n_args; i++) {
+                    const ASR::array_index_t &index = item.m_args[i];
+                    if (!index.m_right || index.m_left || index.m_step
+                            || !value(*index.m_right)) {
+                        return false;
+                    }
+                }
+                return designator(*item.m_v);
+            }
+            case ASR::exprType::StructInstanceMember:
+                return designator(*ASR::down_cast<ASR::StructInstanceMember_t>(&x)->m_v);
+            default:
+                return false;
+        }
+    }
+
+    // Whether the variables of `scope` are scalar numeric or logical.
+    static bool scalar_locals(const SymbolTable &scope) {
+        for (auto &item : scope.get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second) && !scalar(
+                    ASR::down_cast<ASR::Variable_t>(item.second)->m_type)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // A scalar numeric or logical value that takes a bounded time.
+    bool value(const ASR::expr_t &x) {
+        if (!scalar(ASRUtils::expr_type(const_cast<ASR::expr_t *>(&x)))) {
+            return false;
+        }
+        if (ASRUtils::expr_value(const_cast<ASR::expr_t *>(&x))) return true;
+        switch (x.type) {
+            case ASR::exprType::Var:
+            case ASR::exprType::ArrayItem:
+            case ASR::exprType::StructInstanceMember:
+                return designator(x);
+            case ASR::exprType::IntegerConstant:
+            case ASR::exprType::UnsignedIntegerConstant:
+            case ASR::exprType::RealConstant:
+            case ASR::exprType::ComplexConstant:
+            case ASR::exprType::LogicalConstant:
+                return true;
+            case ASR::exprType::IntegerBinOp:
+            case ASR::exprType::RealBinOp:
+            case ASR::exprType::ComplexBinOp:
+            case ASR::exprType::LogicalBinOp:
+            case ASR::exprType::IntegerCompare:
+            case ASR::exprType::RealCompare:
+            case ASR::exprType::LogicalCompare:
+            case ASR::exprType::LogicalNot:
+            case ASR::exprType::IntegerUnaryMinus:
+            case ASR::exprType::RealUnaryMinus:
+            case ASR::exprType::IntegerBitNot:
+            case ASR::exprType::RealCopySign:
+            case ASR::exprType::ComplexConstructor:
+            case ASR::exprType::ComplexRe:
+            case ASR::exprType::ComplexIm:
+            case ASR::exprType::IfExp:
+            case ASR::exprType::Cast:
+            case ASR::exprType::IntrinsicElementalFunction: {
+                // The operands, all scalar numeric or logical values.
+                Operands operands(*this);
+                operands.visit_expr(x);
+                return operands.ok;
+            }
+            case ASR::exprType::FunctionCall: {
+                const auto &call = *ASR::down_cast<ASR::FunctionCall_t>(&x);
+                ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(call.m_name);
+                if (call.m_dt || !ASR::is_a<ASR::Function_t>(*callee)) return false;
+                for (size_t i = 0; i < call.n_args; i++) {
+                    if (!call.m_args[i].m_value || !value(*call.m_args[i].m_value)) {
+                        return false;
+                    }
+                }
+                return function(*ASR::down_cast<ASR::Function_t>(callee));
+            }
+            default:
+                return false;
+        }
+    }
+
+    // Checks the direct operands of an expression.
+    struct Operands : ASR::BaseWalkVisitor<Operands> {
+        BoundedLoopBody &check;
+        bool ok = true;
+        bool top = true;
+        explicit Operands(BoundedLoopBody &check) : check(check) {}
+        void visit_expr(const ASR::expr_t &x) {
+            if (top) {
+                top = false;
+                ASR::BaseWalkVisitor<Operands>::visit_expr(x);
+            } else if (ok) {
+                ok = check.value(x);
+            }
+        }
+        // The types and compile-time values of the node are not operands.
+        void visit_ttype(const ASR::ttype_t &) {}
+    };
+
+    // A function without loops whose locals and result are scalar numeric
+    // or logical, and which never polls.
+    bool function(const ASR::Function_t &fn) {
+        auto cached = functions.find(&fn);
+        if (cached != functions.end()) return cached->second;
+        // A recursive call is not bounded.
+        functions[&fn] = false;
+        const auto *type = ASRUtils::get_FunctionType(fn);
+        bool bounded = type->m_deftype == ASR::deftypeType::Implementation
+            && type->m_abi == ASR::abiType::Source && !callee_may_unwind(fn);
+        bounded = bounded && scalar_locals(*fn.m_symtab)
+            && body(fn.m_body, fn.n_body, true);
+        return functions[&fn] = bounded;
+    }
+};
+
 } // anonymous namespace
 
 class ASRToLLVMVisitor : public ASR::BaseVisitor<ASRToLLVMVisitor>
@@ -18607,9 +18810,27 @@ public:
     }
 
     // The number of iterations of a counted DO loop between two safepoints
-    // (see generate_counted_do_loop). A loop in its body polls on its own,
-    // so a chunk runs a bounded time.
+    // (see generate_counted_do_loop) when each iteration takes a short,
+    // bounded time (see BoundedLoopBody): a loop in its body polls on its
+    // own, so a chunk does too.
     static constexpr uint64_t safepoint_chunk = 1 << 14;
+
+    // Whether the body `stmts` of a counted DO loop takes a short, bounded
+    // time per iteration, so that the loop may poll once per chunk.
+    std::map<const ASR::Function_t *, bool> bounded_function_cache;
+    // The heads `inner` of nested loops run in the body too.
+    bool bounded_loop_body(ASR::stmt_t **stmts, size_t n,
+            ASR::do_loop_head_t *inner = nullptr, size_t n_inner = 0) {
+        if (!emits_safepoints()) return false;
+        BoundedLoopBody check(bounded_function_cache);
+        check.callee_may_unwind = [this](const ASR::Function_t &callee) {
+            return call_may_unwind(callee);
+        };
+        for (size_t i = 0; i < n_inner; i++) {
+            if (!check.head(inner[i])) return false;
+        }
+        return check.body(stmts, n);
+    }
 
     // The value of the integer control expression `e` of a DO loop head.
     llvm::Value* do_loop_control_value(ASR::expr_t *e) {
@@ -18653,9 +18874,12 @@ public:
     // neither is |c| for the most negative c, so they are computed unsigned,
     // in the width of i, which holds them and the iteration count minus one.
     //
-    // With safepoints (an interactive cell), the iterations run in chunks of
-    // at most `safepoint_chunk`, and the safepoint polls once per chunk, so
-    // the loop of a chunk stays free of it and LLVM can vectorize it:
+    // With safepoints (an interactive cell), the latch polls on every
+    // iteration, before it steps i. When `chunked` (the body takes a short,
+    // bounded time, see BoundedLoopBody), the iterations instead run in
+    // chunks of at most `safepoint_chunk`, and the safepoint polls once per
+    // chunk, so the loop of a chunk stays free of it and LLVM can vectorize
+    // it:
     //
     //         remaining = |b - a| / |c|, unsigned
     //     chunk:  in_chunk = min(remaining, safepoint_chunk - 1)
@@ -18672,7 +18896,7 @@ public:
     template <typename Body>
     void generate_counted_do_loop(const ASR::do_loop_head_t &head,
             const char *name, Body generate_body,
-            ASR::stmt_t **orelse, size_t n_orelse) {
+            ASR::stmt_t **orelse, size_t n_orelse, bool chunked) {
         [[maybe_unused]] std::string reason;
         LCOMPILERS_ASSERT(head.m_v != nullptr &&
             ASRUtils::is_normalized_do_loop_head(head, reason));
@@ -18749,7 +18973,7 @@ public:
         llvm::Value *enter = by_step_sign(
             [&]() { return builder->CreateICmpSLE(start, end); },
             [&]() { return builder->CreateICmpSGE(start, end); });
-        const bool chunked = emits_safepoints();
+        chunked = chunked && emits_safepoints();
         llvm::PHINode *remaining = nullptr;
         llvm::PHINode *chunk_remaining = nullptr;
         llvm::Value *in_chunk = nullptr, *chunk_last = nullptr;
@@ -18802,6 +19026,8 @@ public:
         pop_loop_targets();
 
         start_new_block(latch);
+        // The back-edge safepoint, also for an empty body.
+        if (!chunked) emit_cancellation_check();
         llvm::Value *current = llvm_utils->CreateLoad2(iv_type, v_ptr);
         LLVM::CreateStore(*builder,
             builder->CreateNSWAdd(current, step), v_ptr);
@@ -18867,7 +19093,7 @@ public:
             return;
         }
         generate_counted_do_loop(x.m_head, x.m_name, generate_body,
-            x.m_orelse, x.n_orelse);
+            x.m_orelse, x.n_orelse, bounded_loop_body(x.m_body, x.n_body));
     }
 
     // A DO CONCURRENT runs its iterations in no particular order. It is
@@ -18875,14 +19101,15 @@ public:
     // innermost of which a CYCLE continues.
     void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
-        generate_do_concurrent_heads(x, 0);
+        generate_do_concurrent_heads(x, 0, x.n_head > 0 && bounded_loop_body(
+            x.m_body, x.n_body, x.m_head + 1, x.n_head - 1));
     }
 
     void generate_do_concurrent_heads(const ASR::DoConcurrentLoop_t &x,
-            size_t i) {
+            size_t i, bool chunked) {
         generate_counted_do_loop(x.m_head[i], nullptr, [&]() {
             if (i + 1 < x.n_head) {
-                generate_do_concurrent_heads(x, i + 1);
+                generate_do_concurrent_heads(x, i + 1, chunked);
                 return;
             }
             enclosing_constructs.push_back(&x.base);
@@ -18890,7 +19117,7 @@ public:
                 this->visit_stmt(*x.m_body[j]);
             }
             enclosing_constructs.pop_back();
-        }, nullptr, 0);
+        }, nullptr, 0, chunked);
     }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {

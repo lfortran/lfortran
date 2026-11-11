@@ -6874,6 +6874,28 @@ use cancel_core
         run("integer(8) :: i8");
         interrupt("call clear_output()\ndo i8 = 1, huge(0_8)\nend do\nretained = -1");
         CHECK(e.execute("retained").value.text() == "41");
+        {
+            // A loop whose body does I/O polls on every iteration, so it
+            // stops long before a chunk of iterations (16384) would end:
+            // each iteration writes 512 values.
+            std::string items = "wx";
+            for (int i = 1; i < 512; i++) items += ", wx";
+            run("integer :: wm = 0\nreal(8) :: wx = 1\ncharacter(len=20000) :: wbuf");
+            FortranEvaluator::CellIO timed;
+            auto timed_start = std::chrono::steady_clock::now();
+            timed.cancel_requested = [&]() {
+                return std::chrono::steady_clock::now() - timed_start >
+                    std::chrono::milliseconds(100);
+            };
+            auto written = e.execute("do wm = 1, 100000000\nwrite(wbuf, *) "
+                + items + "\nend do\nretained = -1", false, timed);
+            CHECK(!written.ok);
+            CHECK(written.error_name == "KeyboardInterrupt");
+            int64_t wm = std::stoll(e.execute("wm").value.text());
+            CHECK(wm > 1);
+            CHECK(wm < 16384);
+            CHECK(e.execute("retained").value.text() == "41");
+        }
         for (int repeat = 0; repeat < 2; repeat++) {
             interrupt("answer = outer(-1)\nretained = -1");
             CHECK(e.execute("answer").value.text() == "100");
@@ -6994,6 +7016,14 @@ subroutine sum_calls(n)
         total = total + tiny(k)
     end do
 end subroutine
+subroutine write_each(n)
+    integer(8), intent(in) :: n
+    integer(8) :: k
+    character(len=32) :: buf
+    do k = 1, n
+        write(buf, '(i0)') k
+    end do
+end subroutine
 end module
 )", lm, lpm, d);
         REQUIRE(m.ok);
@@ -7078,6 +7108,17 @@ end module
                 }
             }
             CHECK(vectorized);
+        }
+        // A body that does I/O may take long: its loop polls on every
+        // iteration, not once per chunk.
+        {
+            llvm::Function &fn = function("_write_each");
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            REQUIRE(!loops.empty());
+            for (llvm::Loop *loop : loops.getLoopsInPreorder()) {
+                CHECK(polls_in(loop) == 1);
+            }
         }
         for (llvm::BasicBlock &bb : function("_tiny")) {
             for (llvm::Instruction &i : bb) {
