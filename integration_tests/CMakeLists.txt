@@ -7762,6 +7762,7 @@ RUN(NAME complex128_array_01 LABELS gfortran llvm)
 RUN(NAME complex128_intrinsic_math_01 LABELS gfortran llvm)
 RUN(NAME complex128_io_01 LABELS gfortran llvm)
 RUN(NAME complex128_module_01 LABELS gfortran llvm EXTRAFILES complex128_module_01_mod.f90)
+RUN(NAME complex128_bindc_01 LABELS gfortran llvm)
 # real(10) tests run only where the runtime is known to read the kind 10
 # storage type of the generated code (x86-64 Linux, Apple arm64); on Windows and
 # aarch64 Linux the two disagree: https://github.com/lfortran/lfortran/issues/13935
