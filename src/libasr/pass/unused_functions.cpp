@@ -78,7 +78,20 @@ public:
     }
 
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
-        if (ASR::is_a<ASR::Function_t>(*x.m_external)) {
+        if (x.m_external != nullptr) {
+            // A component of a procedure-local type is named from the module,
+            // with a scope path through that procedure. Removing the procedure
+            // leaves the external symbol with nowhere to resolve.
+            ASR::symbol_t *owner = ASRUtils::symbol_get_past_external(x.m_external);
+            while (owner != nullptr) {
+                owner = ASRUtils::get_asr_owner(owner);
+                if (owner != nullptr && ASR::is_a<ASR::Function_t>(*owner)) {
+                    fn_used[get_hash((ASR::asr_t*)owner)] =
+                        ASRUtils::symbol_name(owner);
+                }
+            }
+        }
+        if (x.m_external != nullptr && ASR::is_a<ASR::Function_t>(*x.m_external)) {
             uint64_t h = get_hash((ASR::asr_t*)&x);
             fn_declarations[h] = x.m_name;
             h = get_hash((ASR::asr_t*)x.m_external);
