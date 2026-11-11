@@ -13392,12 +13392,15 @@ ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
         return nullptr;
     }
     ASR::expr_t* element = constructor->m_args[flat_index];
+    // The element's own value, not the element. A deferred parameter is a
+    // named constant with no value yet, and is_value_constant is true for
+    // every parameter, so the element itself must not be returned: a bound
+    // such as arr(1) + 1 would then name that parameter in a compile-time
+    // value the dependency check does not walk.
     ASR::expr_t* element_value = ASRUtils::expr_value(element);
-    if (element_value != nullptr && ASRUtils::is_value_constant(element_value)) {
+    if (element_value != nullptr && !ASR::is_a<ASR::Var_t>(*element_value)
+            && ASRUtils::is_value_constant(element_value)) {
         return element_value;
-    }
-    if (ASRUtils::is_value_constant(element)) {
-        return element;
     }
     return nullptr;
 }
