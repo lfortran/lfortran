@@ -228,11 +228,10 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
                 target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
             endif()
             if (shared_library_files)
-                # CMake does not know LFortran and links shared libraries with
-                # the GCC spelling `-shared`; LFortran spells it `--shared`.
-                # This variable applies to every shared library in this
-                # directory, and with the llvm label all of them use LFortran.
-                set(CMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS "--shared")
+                # Fortran compiler detection is forced off for LFortran, so
+                # CMake does not fill this in. Both LFortran and GFortran
+                # create a shared library with `-shared`.
+                set(CMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS "-shared")
                 add_library(${name}_lib SHARED ${shared_library_files})
                 target_compile_options(${name}_lib PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
                 target_link_libraries(${name} PRIVATE ${name}_lib)
@@ -497,9 +496,9 @@ RUN(NAME stack_array_polymorphic_results LABELS gfortran llvm
     EXTRA_ARGS --stack-arrays GFORTRAN_ARGS -fstack-arrays)
 RUN(NAME stack_array_automatic_elements LABELS gfortran llvm
     EXTRA_ARGS --stack-arrays GFORTRAN_ARGS -fstack-arrays)
-# CMake links the shared library through the compiler driver with `--shared`
-# for LFortran and `-shared` for GFortran (see SHARED_LIBRARY_FILES above).
-# On macOS CMake uses `-dynamiclib` instead, and Windows needs an import library.
+# CMake links the shared library through the compiler driver with `-shared`
+# (see SHARED_LIBRARY_FILES above). On macOS CMake uses `-dynamiclib`
+# instead, and Windows needs an import library.
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     RUN(NAME shared_library_01 LABELS gfortran llvm SHARED_LIBRARY_FILES shared_library_01_lib.f90)
 endif()

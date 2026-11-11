@@ -353,7 +353,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output")->group(group_backend_codegen_options);
         app.add_flag("--separate-compilation", compiler_options.separate_compilation, "Generate object code into .o files")->group(group_backend_codegen_options);
         app.add_flag("--static", opts.static_link, "Create a static executable")->group(group_backend_codegen_options);
-        app.add_flag("--shared", opts.shared_link, "Create a shared executable")->group(group_backend_codegen_options);
+        app.add_flag("--shared", opts.shared_link, "Create a shared library (-shared or --shared)")->group(group_backend_codegen_options);
         app.add_flag("--linker", opts.linker, "Linker for the LLVM backend. The default on Linux is the built-in LLD. clang and gcc select an external compiler driver")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--linker-path", opts.linker_path, "Use the linker from this path")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str()->group(group_backend_codegen_options);
@@ -428,9 +428,40 @@ namespace LCompilers::CommandLineInterface {
             handle_help_category(app, help_arg);
         }
 
+        // CLI11 reads a single-dash token as one short option plus an attached
+        // value, so `-shared` becomes `-s hared` and is rejected as an
+        // Emscripten setting. GFortran's `-shared` is a shared library.
+        // `--shared` is the long form CLI11 already accepts. Leave arguments
+        // after `--` alone, and leave a real `-s SETTING` / `-sSETTING` alone.
+        auto accept_shared = [](std::string &argument, bool &after_double_dash) {
+            if (after_double_dash) {
+                return;
+            }
+            if (argument == "--") {
+                after_double_dash = true;
+                return;
+            }
+            if (argument == "-shared") {
+                argument = "--shared";
+            }
+        };
         if (argv != nullptr) {
-            app.parse(argc, argv);
+            std::vector<std::string> owned;
+            std::vector<const char *> rewritten;
+            owned.reserve(static_cast<size_t>(argc));
+            rewritten.reserve(static_cast<size_t>(argc));
+            bool after_double_dash = false;
+            for (int i = 0; i < argc; ++i) {
+                owned.emplace_back(argv[i] != nullptr ? argv[i] : "");
+                accept_shared(owned.back(), after_double_dash);
+                rewritten.push_back(owned.back().c_str());
+            }
+            app.parse(static_cast<int>(rewritten.size()), rewritten.data());
         } else {
+            bool after_double_dash = false;
+            for (std::string &argument : args) {
+                accept_shared(argument, after_double_dash);
+            }
             app.parse(args);
         }
 

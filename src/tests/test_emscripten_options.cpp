@@ -54,6 +54,42 @@ TEST_CASE("Emscripten settings require an Emscripten LLVM target")
     CHECK_NOTHROW(parser.parse());
 }
 
+TEST_CASE("-shared requests a shared library and is not an Emscripten setting")
+{
+    std::vector<const char *> argv = {"lfortran", "-shared", "p.f90", "-o", "p.so"};
+    SUBCASE("normal") {}
+    SUBCASE("fast") { argv.push_back("--fast"); }
+    SUBCASE("Fortran 2023") { argv.push_back("--std=f23"); }
+    LFortranCommandLineParser parser(argv.size(), argv.data());
+    REQUIRE_NOTHROW(parser.parse());
+    CHECK(parser.opts.shared_link);
+    CHECK(parser.opts.emscripten_settings.empty());
+    CHECK(parser.opts.arg_files == std::vector<std::string>{"p.f90"});
+    CHECK(parser.opts.compiler_options.arg_o == "p.so");
+
+    const char *long_form[] = {"lfortran", "--shared", "p.f90"};
+    LFortranCommandLineParser long_parser(3, long_form);
+    REQUIRE_NOTHROW(long_parser.parse());
+    CHECK(long_parser.opts.shared_link);
+    CHECK(long_parser.opts.emscripten_settings.empty());
+
+    const char *with_setting[] = {"lfortran", "--target=wasm32-unknown-emscripten",
+        "-s", "MODULARIZE", "-sSTACK_SIZE=64mb", "-shared", "input.f90"};
+    LFortranCommandLineParser setting_parser(7, with_setting);
+    REQUIRE_NOTHROW(setting_parser.parse());
+    CHECK(setting_parser.opts.shared_link);
+    CHECK(setting_parser.opts.emscripten_settings ==
+        std::vector<std::string>{"MODULARIZE", "STACK_SIZE=64mb"});
+
+    const char *attached_shared_name[] = {"lfortran",
+        "--target=wasm32-unknown-emscripten", "-sshared", "input.f90"};
+    LFortranCommandLineParser attached_parser(4, attached_shared_name);
+    REQUIRE_NOTHROW(attached_parser.parse());
+    CHECK_FALSE(attached_parser.opts.shared_link);
+    CHECK(attached_parser.opts.emscripten_settings ==
+        std::vector<std::string>{"shared"});
+}
+
 TEST_CASE("Emscripten settings keep generic linker flags separate")
 {
     const char *argv[] = {"lfortran", "--target=wasm32-unknown-emscripten",
