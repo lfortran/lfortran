@@ -645,14 +645,44 @@ ASR::expr_t* at(Vec<ASR::expr_t*>& vec, int64_t index) {
 }
 
 // Collect the array expressions which should be of the same size
+// The arrays passed to the optional dummies of an elemental function, each
+// with the expression that tells if it is present: an absent one has no shape
+struct MaybeAbsentComponent {
+    ASR::expr_t* array;
+    ASR::expr_t* is_present;
+};
+
+// Whether `expr` is the presence flag that
+// transform_optional_argument_functions adds after an optional dummy
+static bool is_presence_flag_argument(ASR::expr_t* expr) {
+    if (expr == nullptr || !ASR::is_a<ASR::Var_t>(*expr)) {
+        return false;
+    }
+    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(expr)->m_v);
+    if (!ASR::is_a<ASR::Variable_t>(*sym) ||
+            !ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_pointer(
+                ASR::down_cast<ASR::Variable_t>(sym)->m_type))) {
+        return false;
+    }
+    const std::string prefix = "__libasr_is_present_";
+    std::string name = ASR::down_cast<ASR::Variable_t>(sym)->m_name;
+    return name.compare(0, prefix.size(), prefix) == 0;
+}
+
 class CollectComponentsFromElementalExpr: public ASR::BaseWalkVisitor<CollectComponentsFromElementalExpr> {
 private:
         Allocator& al;
         Vec<ASR::expr_t*>& vars;
+        std::vector<MaybeAbsentComponent>* maybe_absent;
 public:
 
-        CollectComponentsFromElementalExpr(Allocator& al_, Vec<ASR::expr_t*>& vars_) :
-        al(al_), vars(vars_) {}
+        // The arrays of the optional dummies of an elemental function are
+        // not in `vars_`: they are put in `maybe_absent_` if it is given,
+        // and left out otherwise.
+        CollectComponentsFromElementalExpr(Allocator& al_, Vec<ASR::expr_t*>& vars_,
+                std::vector<MaybeAbsentComponent>* maybe_absent_ = nullptr) :
+        al(al_), vars(vars_), maybe_absent(maybe_absent_) {}
 
         void push_expr_if_array(ASR::expr_t *v) {
             if (ASRUtils::is_array(ASRUtils::expr_type(v))) {
@@ -708,8 +738,26 @@ public:
 
         // Only go inside the FunctionCall if the Function is elemental
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-            if (ASRUtils::is_elemental(x.m_name)) {
-                ASR::BaseWalkVisitor<CollectComponentsFromElementalExpr>::visit_FunctionCall(x);
+            if (!ASRUtils::is_elemental(x.m_name)) {
+                return;
+            }
+            for (size_t i = 0; i < x.n_args; i++) {
+                ASR::expr_t* arg = x.m_args[i].m_value;
+                if (arg == nullptr) {
+                    continue;
+                }
+                if (i + 1 < x.n_args && is_presence_flag_argument(x.m_args[i + 1].m_value)) {
+                    Vec<ASR::expr_t*> optional_arrays;
+                    optional_arrays.reserve(al, 1);
+                    CollectComponentsFromElementalExpr collector(al, optional_arrays);
+                    collector.visit_expr(*arg);
+                    for (size_t j = 0; j < optional_arrays.size() && maybe_absent; j++) {
+                        maybe_absent->push_back({optional_arrays[j],
+                            x.m_args[i + 1].m_value});
+                    }
+                } else {
+                    visit_expr(*arg);
+                }
             }
         }
 };
@@ -3563,7 +3611,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASRUtils::get_expr_size_expr(x.m_target) != nullptr) {
             Vec<ASR::expr_t*> components;
             components.reserve(al, 1);
-            CollectComponentsFromElementalExpr collect_components(al, components);
+            std::vector<MaybeAbsentComponent> maybe_absent_components;
+            CollectComponentsFromElementalExpr collect_components(al, components,
+                &maybe_absent_components);
             collect_components.visit_expr(*x.m_value);
             for (size_t i = 0; i < vars.size(); i++) {
                 if (*vars[i] != x.m_target && ASR::is_a<ASR::ArraySection_t>(**vars[i])) {
@@ -3603,10 +3653,36 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 vars.push_back(al, expr_duplicator.duplicate_expr(component));
             }
 
-            if (!conforms_at_compile_time &&
-                    debug_inserted.find(&x) == debug_inserted.end()) {
-                pass_result.push_back(al, PassUtils::make_DebugCheckArrayBounds(al,
-                    x.base.base.loc, d_target, vars, x.m_move_allocation));
+            if (debug_inserted.find(&x) == debug_inserted.end()) {
+                if (!conforms_at_compile_time && vars.size() > 0) {
+                    pass_result.push_back(al, PassUtils::make_DebugCheckArrayBounds(al,
+                        x.base.base.loc, d_target, vars, x.m_move_allocation));
+                }
+                // An array passed to an optional dummy has a shape only if
+                // it is present, and then it must conform too
+                for (const MaybeAbsentComponent& optional: maybe_absent_components) {
+                    if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(optional.array)) !=
+                            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x.m_target))) {
+                        continue;
+                    }
+                    // Its elements are read only if it is present, and are
+                    // in bounds once the check below has passed
+                    conforming_operands.insert(optional.array);
+                    conforming_operands.insert(
+                        ASRUtils::get_past_array_physical_cast(optional.array));
+                    Vec<ASR::expr_t*> optional_vars;
+                    optional_vars.reserve(al, 1);
+                    optional_vars.push_back(al, expr_duplicator.duplicate_expr(optional.array));
+                    Vec<ASR::stmt_t*> check_body;
+                    check_body.reserve(al, 1);
+                    check_body.push_back(al, PassUtils::make_DebugCheckArrayBounds(al,
+                        x.base.base.loc, expr_duplicator.duplicate_expr(x.m_target),
+                        optional_vars, x.m_move_allocation));
+                    pass_result.push_back(al, ASRUtils::STMT(ASR::make_If_t(al,
+                        x.base.base.loc, nullptr,
+                        expr_duplicator.duplicate_expr(optional.is_present),
+                        check_body.p, check_body.size(), nullptr, 0)));
+                }
                 if (!x.m_move_allocation) {
                     debug_inserted.insert(&x);
                 }
