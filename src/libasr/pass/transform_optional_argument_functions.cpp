@@ -1074,6 +1074,14 @@ class UpdateProcedureEntityTypes:
             std::map<ASR::symbol_t*, std::vector<int32_t>>& transformed_) :
             al{al_}, transformed{transformed_} {}
 
+        void adopt_null_type(ASR::expr_t* expr, ASR::ttype_t* type) {
+            if( expr == nullptr || type == nullptr ||
+                !ASR::is_a<ASR::PointerNullConstant_t>(*expr) ) {
+                return;
+            }
+            ASR::down_cast<ASR::PointerNullConstant_t>(expr)->m_type = type;
+        }
+
         void visit_Variable(const ASR::Variable_t& x) {
             ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
             if( xx.m_type_declaration == nullptr ) {
@@ -1097,6 +1105,9 @@ class UpdateProcedureEntityTypes:
             } else {
                 xx.m_type = signature;
             }
+            // `=> null()` on the declaration stores its own copy of the type.
+            adopt_null_type(xx.m_value, xx.m_type);
+            adopt_null_type(xx.m_symbolic_value, xx.m_type);
             retyped.insert((ASR::symbol_t*) &xx);
         }
 
@@ -1114,6 +1125,21 @@ class UpdateProcedureEntityTypes:
             }
             const_cast<ASR::FunctionPointerCast_t&>(x).m_type =
                 ASR::down_cast<ASR::Function_t>(to)->m_function_signature;
+        }
+
+        // `null()` stores the procedure type it is disassociated from. The
+        // reference it names is updated first, and the constant has to follow.
+        void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x) {
+            ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_PointerNullConstant(x);
+            if( x.m_var_expr == nullptr ) {
+                return;
+            }
+            ASR::ttype_t* var_type = ASRUtils::expr_type(x.m_var_expr);
+            if( var_type == nullptr || !ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(var_type)) ) {
+                return;
+            }
+            const_cast<ASR::PointerNullConstant_t&>(x).m_type = var_type;
         }
 
         // A component reference stores its own copy of the procedure type.

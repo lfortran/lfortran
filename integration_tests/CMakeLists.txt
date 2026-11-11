@@ -1711,6 +1711,7 @@ RUN(NAME procedure_pointer_49 LABELS gfortran llvm EXTRA_ARGS --implicit-interfa
 RUN(NAME procedure_pointer_50 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type in an internal procedure of a program (#16414)
 RUN(NAME procedure_pointer_51 LABELS gfortran llvm EXTRAFILES procedure_pointer_51_mod.f90)
 RUN(NAME procedure_pointer_52 LABELS gfortran llvm llvm_submodule EXTRAFILES procedure_pointer_52_mod.f90) # optional argument on a procedure pointer component, reloaded from the module file
+RUN(NAME procedure_pointer_53 LABELS gfortran llvm llvm_submodule EXTRAFILES procedure_pointer_53_mod.f90) # nullifying that component through an optional procedure dummy
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
