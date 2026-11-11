@@ -1395,6 +1395,23 @@ index then numbers the iterations, the host starts `lanes` threads per
 iteration, and a workspace slice belongs to an iteration, shared by its
 lanes.
 
+The `gpu_wide_loads` pass runs after `gpu_vector_lanes`, on an NVIDIA GPU. A
+statement of device code that reads, for certain, the elements `a(c, ...)`,
+`a(c + 1, ...)`, ... of an array the kernel is given, enough of them to fill
+16 bytes (4 of a 4-byte type, 8 of a 2-byte one), and whose first subscript
+otherwise moves by multiples of that number, reads them from new variables,
+which a `GpuWideLoad` before the statement assigns: from the 16 bytes at the
+first element when they start at a multiple of 16, one by one when they do
+not (the test depends on the address of the array and on its lower bound and
+extents only, and the device code tests it once per kernel). A warp then reads
+512 contiguous bytes per instruction, with a quarter or an eighth of the
+instructions of the loads of single elements: the codes and activations of
+a lane of a quantized matrix-vector product read at 1.2 to 1.8 times the
+speed. Such a kernel needs no more lanes than a warp to keep the memory busy,
+so it does not get the lanes of a block (`gpu_reads_wide` in
+`gpu_wide_loads.cpp`), and its loops are unrolled eight times, where a loop
+of single elements is unrolled sixteen times.
+
 ### Deliberate relaxations
 
 Two relaxations are deliberate. A pure procedure the host calls while a

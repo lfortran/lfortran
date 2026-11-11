@@ -120,6 +120,10 @@ struct GpuDeviceCapabilities {
     // inner loop's consecutive elements, not a group's length apart.
     bool lane_inner_reductions_first = false;
 
+    // Whether adjacent elements an iteration reads together may be read as
+    // one vector (gpu_wide_loads.cpp).
+    bool wide_loads = false;
+
     int threads_per_block = 256;
 
     // The number of iterations the threads of one block of a loop nest

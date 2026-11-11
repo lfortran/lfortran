@@ -165,6 +165,11 @@ stmt
     -- back: the host may then change what the kernels only read.
     | GpuWait()
     | GpuLaneBarrier()
+    -- targets(j) = source(j) for the consecutive elements of one array that
+    -- start at `source`: read as one vector when `array` starts at a
+    -- multiple of 16 bytes and `aligned`, which says that the elements start
+    -- at one too (nil: they always do), holds.
+    | GpuWideLoad(expr* targets, expr source, expr array, expr? aligned)
     | GpuDiscard(expr* vars)
     -- Goes right before a GpuSync or GpuWait: the host does not change the
     -- arrays `vars` from there until a launch reads them or the next GpuSync

@@ -126,6 +126,7 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
         // while the other 31 wait.
         caps.lane_independent_loops = true;
         caps.lane_inner_reductions_first = true;
+        caps.wide_loads = true;
         caps.lanes_block = caps.threads_per_block;
     }
     if (pass_options.descriptor_index_64

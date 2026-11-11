@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_wide_loads_01-39e4c52",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_wide_loads_01.f90",
+    "infile_hash": "5718a0f97cc8b1435003c09ed5c85bf8a96427bc1a2f2a46b8b4a122",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_wide_loads_01-39e4c52.stdout",
+    "stdout_hash": "ecbf814dff7d734005a58ee2d3b8e789e7cca317684321d68452cd5a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
