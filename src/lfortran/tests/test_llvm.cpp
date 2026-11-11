@@ -6934,6 +6934,19 @@ use cancel_core
         CHECK(e.execute("2.5d0").value.text() == "2.5");
         CHECK(e.execute("(1.0, 2.0)").value.type ==
             FortranEvaluator::EvalResult::complex4);
+        // The runtime's sleep polls the request too and stops early.
+        FortranEvaluator::CellIO sleeper;
+        auto sleep_start = std::chrono::steady_clock::now();
+        sleeper.cancel_requested = [&]() {
+            return std::chrono::steady_clock::now() - sleep_start >
+                std::chrono::seconds(1);
+        };
+        auto slept = e.execute("call sleep(30)\nretained = -1", false, sleeper);
+        CHECK(std::chrono::steady_clock::now() - sleep_start <
+            std::chrono::seconds(10));
+        CHECK(!slept.ok);
+        CHECK(slept.error_name == "KeyboardInterrupt");
+        CHECK(e.execute("retained").value.text() == "41");
         // %%showllvm shows the code that runs, with its safepoints.
         auto shown = e.execute("%%showllvm\ninteger :: j\ndo j=1,3\nprint *, j\nend do");
         REQUIRE(shown.ok);

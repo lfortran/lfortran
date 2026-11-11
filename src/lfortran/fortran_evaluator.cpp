@@ -90,11 +90,13 @@ namespace {
 thread_local LCompilers::CellCancellation *active_cancellation = nullptr;
 
 #ifdef HAVE_LFORTRAN_LLVM
-// The runtime hook (lfortran_cancellation.h). Generated code observes the
-// request itself, after the runtime call returns.
+// The runtime hook (lfortran_cancellation.h). A runtime wait returns
+// normally, so it may stop within a foreign call too; generated code
+// observes the request itself once the call returns. Every runtime entry
+// point that waits polls it, so no call needs to be special-cased.
 int runtime_cancellation_requested() {
     auto *state = active_cancellation;
-    return state && !state->protect && !state->defer
+    return state && !state->protect
         && state->requested.load(std::memory_order_relaxed);
 }
 #endif
@@ -478,9 +480,7 @@ static JITCancellation native_cancellation(
         const std::set<std::string> &defined_symbols,
         const std::set<std::string> &never_unwinding_symbols) {
     return {[&defined_symbols](const std::string &name) {
-        // The owned-command runtime returns normally after cancellation,
-        // just like a checkpointed JIT procedure.
-        return defined_symbols.count(name) > 0 || name == "_lfortran_exec_command";
+        return defined_symbols.count(name) > 0;
     }, [&never_unwinding_symbols](const std::string &name) {
         return never_unwinding_symbols.count(name) > 0;
     }};

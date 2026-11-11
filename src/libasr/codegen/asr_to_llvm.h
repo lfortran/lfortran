@@ -21,11 +21,12 @@ namespace LCompilers {
         static constexpr const char *request_symbol = "__lcompilers_cancel_request";
         // Set once generated code starts to unwind for the request.
         static constexpr const char *observed_symbol = "__lcompilers_cancel_observed";
-        // Depth of initialization and cleanup that has to complete.
+        // Depth of initialization and cleanup that has to complete. The
+        // runtime must not abandon waits (commands, sleep) while it is set.
         static constexpr const char *protect_symbol = "__lcompilers_cancel_protect";
         // Depth of calls into foreign code, which does not expect generated
         // code it calls back to return early. Cancellation is observed once
-        // the foreign call returns.
+        // the foreign call returns; runtime waits may still stop early.
         static constexpr const char *defer_symbol = "__lcompilers_cancel_defer";
         // Whether a call target, by its symbol, is generated code of an
         // earlier JIT module, which takes part in cancellation.

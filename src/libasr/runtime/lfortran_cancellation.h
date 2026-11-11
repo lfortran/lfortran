@@ -7,7 +7,10 @@ extern "C" {
 
 /*
  * Native interactive execution only. The worker installs a nonthrowing poll
- * of its cell's existing cancellation state, including protected cleanup.
+ * of its cell's existing cancellation state. It returns nonzero once the cell
+ * is cancelled, unless initialization or cleanup has to complete; a runtime
+ * wait (a command, sleep) then stops early and returns, and generated code
+ * observes the cancellation after the call.
  * The runtime calls it on that same thread; no frontend callback runs here.
  * Return the previous hook so scoped users can restore it on every exit.
  */

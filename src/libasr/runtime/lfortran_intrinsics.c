@@ -10479,8 +10479,39 @@ LFORTRAN_API void _lfortran_exit(int32_t status)
     exit(status);
 }
 
+#if !defined(COMPILE_TO_WASM)
+static int64_t monotonic_milliseconds(void)
+{
+#if defined(_WIN32)
+    return (int64_t)GetTickCount64();
+#else
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return (int64_t)now.tv_sec * 1000 + now.tv_nsec / 1000000;
+#endif
+}
+#endif
+
 LFORTRAN_API void _lfortran_sleep(int32_t seconds)
 {
+#if !defined(COMPILE_TO_WASM)
+    // A cancellable cell sleeps in short slices and stops once cancelled.
+    if (cancel_poll) {
+        const int64_t deadline = monotonic_milliseconds() + (int64_t)seconds * 1000;
+        for (;;) {
+            if (cancel_poll()) return;
+            int64_t remaining = deadline - monotonic_milliseconds();
+            if (remaining <= 0) return;
+            if (remaining > 10) remaining = 10;
+#if defined(_WIN32)
+            Sleep((DWORD)remaining);
+#else
+            const struct timespec delay = {0, (long)remaining * 1000000L};
+            nanosleep(&delay, NULL);
+#endif
+        }
+    }
+#endif
 #if defined(_WIN32)
     Sleep((DWORD)seconds * 1000);
 #else
