@@ -12099,7 +12099,37 @@ ASR::symbol_t* import_struct_instance_member(Allocator& al,
         }
     }
 
-    std::string struct_member_external_symbol_name = "1_" + struct_t_name + "_" + struct_member_name;
+    // The type and the component are not a unique name. Several procedures
+    // of one module, including the procedures of a template, may each
+    // declare a type of that name. The procedure is part of the name then,
+    // so each component keeps its own symbol. A type of the template itself
+    // keeps the short name. A specialised procedure finds the symbol in the
+    // module and retargets it at its own copy of the type.
+    std::string owner_prefix;
+    bool declared_in_procedure = false;
+    {
+        std::vector<std::string> owners;
+        for (ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_t);
+                owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)
+                && !ASRUtils::is_device_kernel(owner);
+                owner = ASRUtils::get_asr_owner(owner)) {
+            if (ASR::is_a<ASR::Function_t>(*owner) || ASR::is_a<ASR::Program_t>(*owner)
+                    || ASR::is_a<ASR::Block_t>(*owner)
+                    || ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                declared_in_procedure = true;
+                owners.push_back(ASRUtils::symbol_name(owner));
+            } else if (ASR::is_a<ASR::Template_t>(*owner)) {
+                owners.push_back(ASRUtils::symbol_name(owner));
+            }
+        }
+        if (declared_in_procedure) {
+            for (size_t i = owners.size(); i > 0; i--) {
+                owner_prefix += owners[i - 1] + "_";
+            }
+        }
+    }
+    std::string struct_member_external_symbol_name =
+        "1_" + owner_prefix + struct_t_name + "_" + struct_member_name;
     if (member_scope->get_symbol(struct_member_external_symbol_name) == nullptr) {
         ASR::symbol_t* struct_member_external_symbol = make_struct_member_external_symbol(
             al, struct_member->base.loc, member_scope, struct_member_external_symbol_name,

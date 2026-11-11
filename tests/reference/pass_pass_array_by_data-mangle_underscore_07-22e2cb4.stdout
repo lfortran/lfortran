@@ -12,10 +12,10 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_v_k:
+                                            1_mangle_underscore_07_show_v_k:
                                                 (ExternalSymbol
                                                     5
-                                                    1_v_k
+                                                    1_mangle_underscore_07_show_v_k
                                                     6 k
                                                     v
                                                     []
@@ -239,7 +239,7 @@
                                         (IntegerCompare
                                             (StructInstanceMember
                                                 (Var 5 d)
-                                                5 1_v_k
+                                                5 1_mangle_underscore_07_show_v_k
                                                 (Integer 4)
                                                 ()
                                             )

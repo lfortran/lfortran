@@ -7,10 +7,10 @@
                     (SymbolTable
                         2
                         {
-                            1_circle_radius:
+                            1_main_circle_radius:
                                 (ExternalSymbol
                                     2
-                                    1_circle_radius
+                                    1_main_circle_radius
                                     3 radius
                                     circle
                                     []
@@ -80,10 +80,10 @@
                                     (SymbolTable
                                         4
                                         {
-                                            1_circle_radius:
+                                            1_main_circle_radius:
                                                 (ExternalSymbol
                                                     4
-                                                    1_circle_radius
+                                                    1_main_circle_radius
                                                     3 radius
                                                     circle
                                                     []
@@ -188,13 +188,13 @@
                                             ()
                                             [(StructInstanceMember
                                                 (Var 4 m)
-                                                4 1_circle_radius
+                                                4 1_main_circle_radius
                                                 (Real 4)
                                                 ()
                                             )
                                             (StructInstanceMember
                                                 (Var 4 n)
-                                                4 1_circle_radius
+                                                4 1_main_circle_radius
                                                 (Real 4)
                                                 ()
                                             )]
@@ -325,7 +325,7 @@
                     [(Assignment
                         (StructInstanceMember
                             (Var 2 temp_struct_var__)
-                            2 1_circle_radius
+                            2 1_main_circle_radius
                             (Real 4)
                             ()
                         )
@@ -342,7 +342,7 @@
                     (Assignment
                         (StructInstanceMember
                             (Var 2 temp_struct_var__1)
-                            2 1_circle_radius
+                            2 1_main_circle_radius
                             (Real 4)
                             ()
                         )

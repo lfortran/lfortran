@@ -7,30 +7,30 @@
                     (SymbolTable
                         2
                         {
-                            1_base_t_x:
+                            1_structure_constructor_parent_01_base_t_x:
                                 (ExternalSymbol
                                     2
-                                    1_base_t_x
+                                    1_structure_constructor_parent_01_base_t_x
                                     3 x
                                     base_t
                                     []
                                     x
                                     Private
                                 ),
-                            1_e2_t_w:
+                            1_structure_constructor_parent_01_e2_t_w:
                                 (ExternalSymbol
                                     2
-                                    1_e2_t_w
+                                    1_structure_constructor_parent_01_e2_t_w
                                     5 w
                                     e2_t
                                     []
                                     w
                                     Private
                                 ),
-                            1_e_t_z:
+                            1_structure_constructor_parent_01_e_t_z:
                                 (ExternalSymbol
                                     2
-                                    1_e_t_z
+                                    1_structure_constructor_parent_01_e_t_z
                                     4 z
                                     e_t
                                     []
@@ -283,13 +283,13 @@
                             ()
                             [(StructInstanceMember
                                 (Var 2 e)
-                                2 1_base_t_x
+                                2 1_structure_constructor_parent_01_base_t_x
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
                                 (Var 2 e)
-                                2 1_e_t_z
+                                2 1_structure_constructor_parent_01_e_t_z
                                 (Integer 4)
                                 ()
                             )]
@@ -328,19 +328,19 @@
                             ()
                             [(StructInstanceMember
                                 (Var 2 e2)
-                                2 1_base_t_x
+                                2 1_structure_constructor_parent_01_base_t_x
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
                                 (Var 2 e2)
-                                2 1_e_t_z
+                                2 1_structure_constructor_parent_01_e_t_z
                                 (Integer 4)
                                 ()
                             )
                             (StructInstanceMember
                                 (Var 2 e2)
-                                2 1_e2_t_w
+                                2 1_structure_constructor_parent_01_e2_t_w
                                 (Integer 4)
                                 ()
                             )]

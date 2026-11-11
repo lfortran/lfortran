@@ -7,20 +7,20 @@
                     (SymbolTable
                         2
                         {
-                            1_t_u:
+                            1_array_item_in_bounds_02_t_u:
                                 (ExternalSymbol
                                     2
-                                    1_t_u
+                                    1_array_item_in_bounds_02_t_u
                                     3 u
                                     t
                                     []
                                     u
                                     Private
                                 ),
-                            1_v_s:
+                            1_array_item_in_bounds_02_v_s:
                                 (ExternalSymbol
                                     2
-                                    1_v_s
+                                    1_array_item_in_bounds_02_v_s
                                     4 s
                                     v
                                     []
@@ -302,7 +302,7 @@
                                             ()
                                             .true.
                                         )
-                                        2 1_v_s
+                                        2 1_array_item_in_bounds_02_v_s
                                         (Array
                                             (StructType
                                                 [(Array
@@ -342,7 +342,7 @@
                                     ()
                                     .false.
                                 )
-                                2 1_t_u
+                                2 1_array_item_in_bounds_02_t_u
                                 (Array
                                     (Real 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -423,7 +423,7 @@
                                             ()
                                             .true.
                                         )
-                                        2 1_v_s
+                                        2 1_array_item_in_bounds_02_v_s
                                         (Array
                                             (StructType
                                                 [(Array
@@ -463,7 +463,7 @@
                                     ()
                                     .false.
                                 )
-                                2 1_t_u
+                                2 1_array_item_in_bounds_02_t_u
                                 (Array
                                     (Real 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -531,7 +531,7 @@
                                                         (ArrayItem
                                                             (StructInstanceMember
                                                                 (Var 2 zz)
-                                                                2 1_v_s
+                                                                2 1_array_item_in_bounds_02_v_s
                                                                 (Array
                                                                     (StructType
                                                                         [(Array
@@ -577,7 +577,7 @@
                                                             ()
                                                             .false.
                                                         )
-                                                        2 1_t_u
+                                                        2 1_array_item_in_bounds_02_t_u
                                                         (Array
                                                             (Real 4)
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
@@ -692,7 +692,7 @@
                                     (ArrayItem
                                         (StructInstanceMember
                                             (Var 2 zz)
-                                            2 1_v_s
+                                            2 1_array_item_in_bounds_02_v_s
                                             (Array
                                                 (StructType
                                                     [(Array
@@ -738,7 +738,7 @@
                                         ()
                                         .false.
                                     )
-                                    2 1_t_u
+                                    2 1_array_item_in_bounds_02_t_u
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)

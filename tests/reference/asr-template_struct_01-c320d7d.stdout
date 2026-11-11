@@ -54,10 +54,10 @@
                     (SymbolTable
                         2
                         {
-                            1_int_tuple_fst:
+                            1_test_template_int_tuple_fst:
                                 (ExternalSymbol
                                     2
-                                    1_int_tuple_fst
+                                    1_test_template_int_tuple_fst
                                     9 fst
                                     template_struct_01_m
                                     [test_template
@@ -65,10 +65,10 @@
                                     fst
                                     Private
                                 ),
-                            1_int_tuple_snd:
+                            1_test_template_int_tuple_snd:
                                 (ExternalSymbol
                                     2
-                                    1_int_tuple_snd
+                                    1_test_template_int_tuple_snd
                                     9 snd
                                     template_struct_01_m
                                     [test_template
@@ -76,10 +76,10 @@
                                     snd
                                     Private
                                 ),
-                            1_real_tuple_fst:
+                            1_test_template_real_tuple_fst:
                                 (ExternalSymbol
                                     2
-                                    1_real_tuple_fst
+                                    1_test_template_real_tuple_fst
                                     12 fst
                                     template_struct_01_m
                                     [test_template
@@ -87,10 +87,10 @@
                                     fst
                                     Private
                                 ),
-                            1_real_tuple_snd:
+                            1_test_template_real_tuple_snd:
                                 (ExternalSymbol
                                     2
-                                    1_real_tuple_snd
+                                    1_test_template_real_tuple_snd
                                     12 snd
                                     template_struct_01_m
                                     [test_template
@@ -1286,7 +1286,7 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 8 ti)
-                                            2 1_int_tuple_fst
+                                            2 1_test_template_int_tuple_fst
                                             (Integer 4)
                                             ()
                                         )
@@ -1324,7 +1324,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 8 ti)
-                                            2 1_int_tuple_snd
+                                            2 1_test_template_int_tuple_snd
                                             (Integer 4)
                                             ()
                                         )
@@ -1362,7 +1362,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 8 tr)
-                                            2 1_real_tuple_fst
+                                            2 1_test_template_real_tuple_fst
                                             (Real 4)
                                             ()
                                         )
@@ -1403,7 +1403,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 8 tr)
-                                            2 1_real_tuple_snd
+                                            2 1_test_template_real_tuple_snd
                                             (Real 4)
                                             ()
                                         )

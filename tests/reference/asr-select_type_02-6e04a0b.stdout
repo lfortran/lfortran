@@ -102,26 +102,6 @@
                     (SymbolTable
                         4
                         {
-                            1_color_point_color:
-                                (ExternalSymbol
-                                    4
-                                    1_color_point_color
-                                    6 color
-                                    color_point
-                                    []
-                                    color
-                                    Private
-                                ),
-                            1_point_3d_z:
-                                (ExternalSymbol
-                                    4
-                                    1_point_3d_z
-                                    5 z
-                                    point_3d
-                                    []
-                                    z
-                                    Private
-                                ),
                             1_point_x:
                                 (ExternalSymbol
                                     4
@@ -140,6 +120,26 @@
                                     derived_type_collection
                                     [point]
                                     y
+                                    Private
+                                ),
+                            1_select_type_02_color_point_color:
+                                (ExternalSymbol
+                                    4
+                                    1_select_type_02_color_point_color
+                                    6 color
+                                    color_point
+                                    []
+                                    color
+                                    Private
+                                ),
+                            1_select_type_02_point_3d_z:
+                                (ExternalSymbol
+                                    4
+                                    1_select_type_02_point_3d_z
+                                    5 z
+                                    point_3d
+                                    []
+                                    z
                                     Private
                                 ),
                             color_point:
@@ -498,16 +498,6 @@
                                     (SymbolTable
                                         8
                                         {
-                                            1_color_point_color:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_color_point_color
-                                                    6 color
-                                                    color_point
-                                                    []
-                                                    color
-                                                    Private
-                                                ),
                                             1_point_x:
                                                 (ExternalSymbol
                                                     8
@@ -526,6 +516,16 @@
                                                     derived_type_collection
                                                     [point]
                                                     y
+                                                    Private
+                                                ),
+                                            1_select_type_02_color_point_color:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_select_type_02_color_point_color
+                                                    6 color
+                                                    color_point
+                                                    []
+                                                    color
                                                     Private
                                                 ),
                                             an:
@@ -602,7 +602,7 @@
                                             )
                                             (StructInstanceMember
                                                 (Var 8 an)
-                                                8 1_color_point_color
+                                                8 1_select_type_02_color_point_color
                                                 (Integer 4)
                                                 ()
                                             )]
@@ -690,7 +690,7 @@
                     (Assignment
                         (StructInstanceMember
                             (Var 4 p3d)
-                            4 1_point_3d_z
+                            4 1_select_type_02_point_3d_z
                             (Real 4)
                             ()
                         )
@@ -741,7 +741,7 @@
                     (Assignment
                         (StructInstanceMember
                             (Var 4 cp)
-                            4 1_color_point_color
+                            4 1_select_type_02_color_point_color
                             (Integer 4)
                             ()
                         )
