@@ -7031,7 +7031,11 @@ retained = -1)");
         // %%showllvm shows the code that runs, with its safepoints.
         auto shown = e.execute("%%showllvm\ninteger :: j\ndo j=1,3\nprint *, j\nend do");
         REQUIRE(shown.ok);
-        CHECK(shown.output.find("cancel.cleanup") != std::string::npos);
+        CHECK(shown.output.find("cancel.pending") != std::string::npos);
+        // Optimization may merge the cleanup into the function's return.
+        if (mode != 1) {
+            CHECK(shown.output.find("cancel.cleanup") != std::string::npos);
+        }
         CHECK(shown.output.find(LCompilers::JITCancellation::request_symbol)
             != std::string::npos);
     }
@@ -7123,9 +7127,10 @@ end module
             }
             return polls;
         };
-        // The calls in the loops of `fn`. Each DO loop (optimization may
-        // version one) polls the request word once per chunk of iterations,
-        // outside the loop that runs a chunk.
+        // The calls in the loops of `fn`, other than intrinsics (LLVM 19
+        // computes the end of a chunk with llvm.umin). Each DO loop
+        // (optimization may version one) polls the request word once per
+        // chunk of iterations, outside the loop that runs a chunk.
         auto loop_calls = [&](llvm::Function &fn) {
             std::vector<std::string> calls;
             llvm::DominatorTree dominators(fn);
@@ -7137,6 +7142,7 @@ end module
                     for (llvm::Instruction &i : *bb) {
                         if (auto *call = llvm::dyn_cast<llvm::CallInst>(&i)) {
                             auto *callee = call->getCalledFunction();
+                            if (callee && callee->isIntrinsic()) continue;
                             calls.push_back(callee ? callee->getName().str() : "?");
                         }
                     }
@@ -7156,8 +7162,7 @@ end module
         auto calls = loop_calls(function("_sum_calls"));
         CHECK(calls.size() == (mode == 1 ? calls.size() : 1));
         for (const std::string &callee : calls) {
-            CHECK((callee.find("tiny") != std::string::npos
-                || callee.rfind("llvm.", 0) == 0));
+            CHECK(callee.find("tiny") != std::string::npos);
         }
         if (mode == 1) {
             // Then the loop of a chunk is vectorized.
