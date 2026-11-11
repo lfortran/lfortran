@@ -6567,6 +6567,8 @@ namespace SelectedRealKind {
         return -3;
     }
 
+    // p and r are int64, not the source integer kind. Range thresholds 307
+    // and 4931 do not fit in integer(1); narrowing either side is wrong.
     static inline int64_t selected_real_kind_value(int64_t p, int64_t r,
             int64_t radix) {
         if (radix != 2) {
@@ -6577,8 +6579,10 @@ namespace SelectedRealKind {
         bool precision_available = false;
         bool range_available = false;
         for (int i = 0; i < n; i++) {
-            bool precision_ok = p <= kinds[i].precision;
-            bool range_ok = r <= kinds[i].range;
+            int64_t precision_threshold = kinds[i].precision;
+            int64_t range_threshold = kinds[i].range;
+            bool precision_ok = p <= precision_threshold;
+            bool range_ok = r <= range_threshold;
             if (precision_ok && range_ok) {
                 return kinds[i].kind;
             }
@@ -6612,6 +6616,13 @@ namespace SelectedRealKind {
         body.push_back(al, b.Assignment(p, args[0]));
         body.push_back(al, b.Assignment(r, args[1]));
         body.push_back(al, b.Assignment(radix, args[2]));
+        // 307 and 4931 do not fit in integer(1). Widen before every threshold
+        // compare so the constants stay 307 and 4931, matching
+        // selected_real_kind_value. Radix stays in its own kind.
+        auto p_wide = declare("p_wide", int64, Local);
+        auto r_wide = declare("r_wide", int64, Local);
+        body.push_back(al, b.Assignment(p_wide, b.i2i_t(p, int64)));
+        body.push_back(al, b.Assignment(r_wide, b.i2i_t(r, int64)));
 
         // Same kinds, thresholds, and failure codes as selected_real_kind_value.
         RealKindSpec kinds[4];
@@ -6624,10 +6635,10 @@ namespace SelectedRealKind {
         };
         for (int i = 0; i < n; i++) {
             choice.push_back(b.If(
-                b.LtE(p, b.i_t(kinds[i].precision, arg_types[0])),
+                b.LtE(p_wide, b.i64(kinds[i].precision)),
                 {b.Assignment(found_precision, b.logical_true())}, {}));
             choice.push_back(b.If(
-                b.LtE(r, b.i_t(kinds[i].range, arg_types[1])),
+                b.LtE(r_wide, b.i64(kinds[i].range)),
                 {b.Assignment(found_range, b.logical_true())}, {}));
         }
         choice.push_back(b.If(b.And(found_precision, found_range), {
@@ -6645,8 +6656,8 @@ namespace SelectedRealKind {
         }));
         for (int i = n - 1; i >= 0; i--) {
             choice = {b.If(b.And(
-                    b.LtE(p, b.i_t(kinds[i].precision, arg_types[0])),
-                    b.LtE(r, b.i_t(kinds[i].range, arg_types[1]))),
+                    b.LtE(p_wide, b.i64(kinds[i].precision)),
+                    b.LtE(r_wide, b.i64(kinds[i].range))),
                 {b.Assignment(result, b.i32(kinds[i].kind))}, choice)};
         }
         body.push_back(al, b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
