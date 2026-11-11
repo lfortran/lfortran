@@ -20,6 +20,10 @@
 #include <sys/resource.h>
 #endif
 #include <libasr/codegen/KaleidoscopeJIT.h>
+#if defined(__linux__)
+#include <sys/mman.h>
+#include <unistd.h>
+#endif
 #endif
 #include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
@@ -98,6 +102,55 @@ TEST_CASE("JIT code sections share one reservation") {
     INFO(error);
     CHECK_FALSE(memory.finalizeMemory(&error));
 }
+
+#if defined(__linux__)
+// A COMDAT function gets its own ELF code section, as do the procedures of an
+// intrinsic module. The GNU unwinder registers the whole min/max PC range of
+// an object's .eh_frame, so the object's code sections must stay together:
+// another object's code placed between them corrupts libgcc's frame registry.
+TEST_CASE("JIT object code stays in one reservation") {
+    auto stores = [](int count) {
+        std::string body;
+        for (int i = 0; i < count; i++) {
+            body += "    store volatile i64 " + std::to_string(i)
+                + ", i64* @sink\n";
+        }
+        return body;
+    };
+    // The first code section takes several pages; the second does not fit
+    // in what is left of them.
+    const std::string main_body = stores(4096), side_body = stores(1024);
+    const size_t page = sysconf(_SC_PAGESIZE);
+    const size_t hole = 8 * page, spacer = 1 << 20;
+    for (int i = 0; i < 8; i++) {
+        CAPTURE(i);
+        // Leave a free hole above a 1 MiB spacer. A code section that is
+        // mapped on its own may land in the hole, far from the first one.
+        char *region = static_cast<char *>(mmap(nullptr, spacer + hole + page,
+            PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+        REQUIRE(region != MAP_FAILED);
+        REQUIRE(munmap(region + spacer, hole) == 0);
+        {
+            const std::string n = std::to_string(i);
+            LCompilers::LLVMEvaluator e;
+            e.add_module("@sink = global i64 0\n"
+                "$side" + n + " = comdat any\n"
+                "define void @main" + n + "() {\n" + main_body
+                + "    ret void\n}\n"
+                "define i64 @side" + n + "() comdat {\n" + side_body
+                + "    ret i64 " + n + "\n}\n");
+            const intptr_t main_code = e.get_symbol_address("main" + n);
+            const intptr_t side_code = e.get_symbol_address("side" + n);
+            const intptr_t distance = side_code > main_code
+                ? side_code - main_code : main_code - side_code;
+            CHECK(distance < 256 * 1024);
+            CHECK(e.execfn<int64_t>("side" + n) == i);
+        }
+        munmap(region, spacer);
+        munmap(region + spacer + hole, page);
+    }
+}
+#endif
 
 TEST_CASE("LLVM target configuration") {
     CompilerOptions default_options;
