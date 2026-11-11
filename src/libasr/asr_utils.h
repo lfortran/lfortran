@@ -1013,9 +1013,32 @@ static inline std::string logicalbinop_to_str_python(const ASR::logicalbinopType
     }
 }
 
+// The kinds of real and complex whose constants hold more than a double: a
+// real constant of these kinds stores its bytes behind a pointer. A constant
+// complex(16) value is a ComplexConstant holding binary128 parts, and a
+// constant complex(10) value is a ComplexConstructor from two real(10)
+// constants (see `expr_value`).
+static inline bool is_wide_float_kind(int kind) {
+    return kind == 10 || kind == 16;
+}
+
 static inline ASR::expr_t* expr_value(ASR::expr_t *f)
 {
-    return ASR::expr_value0(f);
+    ASR::expr_t* value = ASR::expr_value0(f);
+    if (value == nullptr && f->type == ASR::exprType::ComplexConstructor) {
+        // A constant complex(10) value is a constructor from two real(10)
+        // constants (a ComplexConstant holds no x87 parts), which is its own
+        // value.
+        ASR::ComplexConstructor_t* c = (ASR::ComplexConstructor_t*)f;
+        ASR::expr_t* re = ASR::expr_value0(c->m_re);
+        ASR::expr_t* im = ASR::expr_value0(c->m_im);
+        if (re && im && re->type == ASR::exprType::RealConstant &&
+                im->type == ASR::exprType::RealConstant &&
+                extract_kind_from_ttype_t(c->m_type) == 10) {
+            return f;
+        }
+    }
+    return value;
 }
 
 std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t *f);
@@ -1489,6 +1512,11 @@ static inline bool all_args_evaluated(const Vec<ASR::expr_t*> &args, bool ignore
         if( !is_value_constant(a_value) ) {
             return false;
         }
+        // A complex(10) constant is a ComplexConstructor, whose value is
+        // never folded: it would lose precision.
+        if( a_value && ASR::is_a<ASR::ComplexConstructor_t>(*a_value) ) {
+            return false;
+        }
         // Intrinsic folding evaluates complex values as doubles, which would
         // lose precision for complex(16).
         if( !allow_complex16 && a_value && ASR::is_a<ASR::ComplexConstant_t>(*a_value) &&
@@ -1731,6 +1759,24 @@ ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_
 ASR::expr_t* fold_complex_cast(Allocator& al, const Location& loc,
     const ASR::ComplexConstant_t* c, ASR::cast_kindType cast_kind,
     ASR::ttype_t* dest_type);
+
+// The cast `cast_kind` (ComplexToComplex or ComplexToReal) of a complex
+// constant `value` from or to complex(10): a ComplexConstant, or a
+// ComplexConstructor from two real(10) constants (a complex(10) constant is
+// not a ComplexConstant). Returns nullptr if `value` is not such a constant,
+// or the conversion is left to run time.
+ASR::expr_t* fold_wide_complex_cast(Allocator& al, const Location& loc,
+    ASR::expr_t* value, ASR::cast_kindType cast_kind, ASR::ttype_t* dest_type);
+
+// The complex(10) constant `dest_type` with the real part `value`, an
+// integer.
+ASR::expr_t* make_wide_complex_from_integer(Allocator& al, const Location& loc,
+    int64_t value, ASR::ttype_t* dest_type);
+
+// The cast of the real constant `value` to the complex(10) type `dest_type`;
+// nullptr if the conversion is left to run time.
+ASR::expr_t* make_wide_complex_from_real(Allocator& al, const Location& loc,
+    ASR::expr_t* value, ASR::ttype_t* dest_type);
 
 const ASR::intentType intent_local=ASR::intentType::Local; // local variable (not a dummy argument)
 const ASR::intentType intent_in   =ASR::intentType::In; // dummy argument, intent(in)

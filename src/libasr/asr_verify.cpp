@@ -4595,7 +4595,11 @@ public:
 
     void visit_ComplexConstructor(const ComplexConstructor_t& x) {
         if (x.m_value != nullptr) {
-            require(ASR::is_a<ASR::ComplexConstant_t>(*x.m_value),
+            // A complex(10) constant is a ComplexConstructor from two
+            // real(10) constants, as a ComplexConstant holds no x87 parts.
+            require(ASR::is_a<ASR::ComplexConstant_t>(*x.m_value) ||
+                    (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 10 &&
+                     ASR::is_a<ASR::ComplexConstructor_t>(*x.m_value)),
                 "ComplexConstructor::m_value must be a ComplexConstant");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_ComplexConstructor(x);
@@ -5165,8 +5169,8 @@ public:
     void visit_Complex(const Complex_t &x) {
         if (diagnostics.has_error()) return;
         require_id(
-            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
-                x.m_kind >= 1000,
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 10 ||
+                x.m_kind == 16 || x.m_kind >= 1000,
             "asr.verify.type.complex_kind_supported",
             "Complex kind " + std::to_string(x.m_kind) +
                 " is not supported");

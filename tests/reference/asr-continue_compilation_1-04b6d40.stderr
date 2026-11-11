@@ -1466,10 +1466,10 @@ semantic error: Kind 32 is not supported for Complex
 3387 |     complex*64 :: cc1_cs_z64  ! {Error} Kind 32 is not supported for Complex
      |     ^^^^^^^^^^ 
 
-semantic error: Kind 10 is not supported for Complex
+semantic error: Kind 12 is not supported for Complex
     --> tests/errors/continue_compilation_1.f90:3388:5
      |
-3388 |     complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+3388 |     complex*24 :: cc1_cs_z24  ! {Error} Kind 12 is not supported for Complex
      |     ^^^^^^^^^^ 
 
 semantic error: Kind 3 is not supported for Complex
@@ -3538,7 +3538,7 @@ semantic error: `dim` argument of `norm2` intrinsic is not a valid dimension ind
 905 |         x = norm2([1.0, 2.0], dim=2)
     |                                   ^ 
 
-semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 16
+semantic error: Unsupported Real kind '666' in `real()`, must be one of: 4, 8, 10, 16
    --> tests/errors/continue_compilation_1.f90:918:27
     |
 918 |         print *, real(1., 666)
