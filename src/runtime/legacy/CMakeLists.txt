@@ -39,7 +39,10 @@ if (HAVE_INTERNAL_ALLOC_CHECK)
     target_compile_definitions(lfortran_runtime_static PRIVATE LFORTRAN_INTERNAL_ALLOC_CHECK)
 endif()
 set_target_properties(lfortran_runtime_static PROPERTIES
-    LIBRARY_OUTPUT_DIRECTORY ..)
+    LIBRARY_OUTPUT_DIRECTORY ..
+    # The driver looks for liblfortran_runtime_static.a next to the shared
+    # runtime. LIBRARY_OUTPUT_DIRECTORY does not move a static archive.
+    ARCHIVE_OUTPUT_DIRECTORY ..)
 if (WIN32)
     # Static and import libraries (ARCHIVE) and DLLs (RUNTIME) go next to the
     # runtime modules too, where the driver looks for them.

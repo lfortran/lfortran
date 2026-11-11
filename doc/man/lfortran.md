@@ -74,7 +74,8 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--separate-compilation`: Generate object code into .o files
 - `--rtlib`: Include the full runtime library in the LLVM output
 - `--fast`: Optimize for best performance on the host CPU (disable strict standard compliance)
-- `--link-with-gcc`: Calls GCC for linking instead of clang
+- `--linker TEXT`: Linker for the LLVM backend. The default on Linux is the built-in LLD. An MLIR build keeps the external driver. `clang` and `gcc` select an external compiler driver
+- `--linker-path TEXT`: Directory of an external linker
 - `--target TEXT`: Generate code for the given target
 - `--march TEXT`: Generate code for the selected instruction-set architecture (`native` for the host)
 - `--mcpu TEXT`: Generate and tune code for the selected CPU (`native` for the host)

@@ -387,9 +387,15 @@ The C and C++ backends also use this selection when compiling empty C objects
 for module-only source files, retaining `cc` as the default when neither
 variable is set. This does not change the C++ compiler used for generated C++.
 
-The LLVM backend's native linker selection is separate: it defaults to `clang`
-and can be changed with `--linker` / `--linker-path` or the
-`LFORTRAN_LINKER` / `LFORTRAN_LINKER_PATH` environment variables.
+The LLVM backend links Linux executables itself, with LLD built into the
+`lfortran` binary. It locates the C runtime (startup objects, dynamic linker,
+libc and libgcc) and does not invoke clang or gcc for that link. `--linker`
+selects a different linker: `lld` is the built-in one, and `clang` or `gcc`
+is an external compiler driver. `--linker-path` and `LFORTRAN_LINKER` /
+`LFORTRAN_LINKER_PATH` apply to an external driver. macOS keeps Apple's
+linker and Windows keeps `link.exe`. A build with MLIR (`-DWITH_MLIR=yes`)
+also keeps the external linker: the MLIR libraries load `libLLVM.so`, and a
+second static copy of LLVM in that process corrupts the heap.
 
 Native LLVM OpenMP programs use Clang with LLVM's `libomp`. Pass `--openmp`
 during both compilation and linking, and `--openmp-lib-dir=/path/to/lib`
