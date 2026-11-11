@@ -592,6 +592,21 @@ namespace Erfc {
                 ASRUtils::real_constant_get_r16(
                     ASR::down_cast<ASR::RealConstant_t>(args[0]))), t);
         }
+        if (kind == 10) {
+            // Kind 10 stores a pointer in m_r. Fold erfc in long double.
+            long double rv = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            long double val = erfcl(rv);
+            if (fabsl(val) < std::numeric_limits<long double>::min()) {
+                diag.add(diag::Diagnostic(
+                    "Result of `erfc` underflows its kind",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})
+                    }));
+                return nullptr;
+            }
+            return ASRUtils::make_RealConstant_r10(al, loc, val, t);
+        }
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double val = std::erfc(rv);
         double tiny = (kind == 4) ? std::numeric_limits<float>::min() : std::numeric_limits<double>::min();
@@ -699,6 +714,12 @@ namespace Fix {
             lf_float128 v = ASRUtils::real_expr_get_r16(args[0]);
             bool positive = lf_f128_cmp(v, lf_f128_from_double(0.0)) > 0;
             return ASRUtils::make_RealConstant_r16(al, loc, positive ? lf_f128_floor(v) : lf_f128_ceiling(v), t);
+        }
+        if (ASRUtils::extract_kind_from_ttype_t(t) == 10) {
+            // Kind 10 stores a pointer in m_r. Truncate toward zero in long double.
+            long double rv = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            return ASRUtils::make_RealConstant_r10(al, loc, truncl(rv), t);
         }
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double val;
@@ -908,6 +929,28 @@ namespace HostBessel {
         return ::yn(n, x);
 #endif
     }
+    // MSVC has no long-double Bessel entry points. real(10) is not that target.
+    inline long double j0l(long double x) {
+#ifdef _MSC_VER
+        return static_cast<long double>(::_j0(static_cast<double>(x)));
+#else
+        return ::j0l(x);
+#endif
+    }
+    inline long double jnl(int n, long double x) {
+#ifdef _MSC_VER
+        return static_cast<long double>(::_jn(n, static_cast<double>(x)));
+#else
+        return ::jnl(n, x);
+#endif
+    }
+    inline long double ynl(int n, long double x) {
+#ifdef _MSC_VER
+        return static_cast<long double>(::_yn(n, static_cast<double>(x)));
+#else
+        return ::ynl(n, x);
+#endif
+    }
 } // namespace HostBessel
 
 #define create_math_bindc(math_func, stdeval, degree, lcompilers_name, quad_eval)                       \
@@ -923,6 +966,13 @@ namespace math_func {                                                           
             }                                                                                           \
             return ASRUtils::make_RealConstant_r16(al, loc,                                             \
                 quad_fn(ASRUtils::real_expr_get_r16(args[0])), t);                                      \
+        }                                                                                               \
+        if (ASRUtils::extract_kind_from_ttype_t(t) == 10                                                \
+                && std::string(#math_func) == "BesselJ0") {                                             \
+            /* Kind 10 stores a pointer in m_r. Fold j0 in long double. */            \
+            long double rv = ASRUtils::real_constant_get_r10(                                           \
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));                                          \
+            return ASRUtils::make_RealConstant_r10(al, loc, HostBessel::j0l(rv), t);                    \
         }                                                                                               \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;                                  \
         double result = stdeval(rv);                                                                    \
@@ -5444,6 +5494,14 @@ namespace BesselJN {
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
             return nullptr;
         }
+        if (ASRUtils::extract_kind_from_ttype_t(t1) == 10) {
+            // Kind 10 stores a pointer in m_r. Fold Jn in long double.
+            long double x = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[1]));
+            int n = checked_integer_cast<int>(
+                ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
+            return ASRUtils::make_RealConstant_r10(al, loc, HostBessel::jnl(n, x), t1);
+        }
         return ASRUtils::make_RealConstant_util(al, loc, HostBessel::jn(
             checked_integer_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n),
             ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r), t1);
@@ -5490,6 +5548,14 @@ namespace BesselYN {
             ASR::ttype_t* t1, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
             return nullptr;
+        }
+        if (ASRUtils::extract_kind_from_ttype_t(t1) == 10) {
+            // Kind 10 stores a pointer in m_r. Fold Yn in long double.
+            long double x = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[1]));
+            int n = checked_integer_cast<int>(
+                ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
+            return ASRUtils::make_RealConstant_r10(al, loc, HostBessel::ynl(n, x), t1);
         }
         return ASRUtils::make_RealConstant_util(al, loc, HostBessel::yn(
             checked_integer_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n),
@@ -8165,6 +8231,13 @@ namespace ErfcScaled {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASRUtils::extract_kind_from_ttype_t(t) == 16) {
             return nullptr;
+        }
+        if (ASRUtils::extract_kind_from_ttype_t(t) == 10) {
+            // Kind 10 stores a pointer in m_r. Fold exp(x**2)*erfc(x) in long double.
+            long double val = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            long double result = expl(val * val) * erfcl(val);
+            return ASRUtils::make_RealConstant_r10(al, loc, result, t);
         }
         double val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double result = std::exp(std::pow(val, 2)) * std::erfc(val);

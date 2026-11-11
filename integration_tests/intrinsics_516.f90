@@ -37,4 +37,11 @@ if (nearest(1.0_kp, 1.0_kp) /= 1.0_kp + 2.0_kp**(-63)) error stop
 ! erfl and gfortran's real(10) erf differ by one ulp. spacing(1) is two
 ! ulps there, so this accepts that and still rejects the denormal fold.
 if (abs(erf(1.0_kp) - 0.842700792949714869368_kp) > spacing(1.0_kp)) error stop
+! Same pointer-as-double fold. The unfixed results are 1, or an address
+! for bessel_yn. spacing(1) still rejects those.
+if (abs(erfc(1.0_kp) - 0.157299207050285130659_kp) > spacing(1.0_kp)) error stop
+if (abs(erfc_scaled(1.0_kp) - 0.427583576155807004406_kp) > spacing(1.0_kp)) error stop
+if (abs(bessel_j0(1.0_kp) - 0.765197686557966551453_kp) > spacing(1.0_kp)) error stop
+if (abs(bessel_jn(0, 1.0_kp) - 0.765197686557966551453_kp) > spacing(1.0_kp)) error stop
+if (abs(bessel_yn(0, 1.0_kp) - 8.82569642156769579796e-2_kp) > spacing(1.0_kp)) error stop
 end program
