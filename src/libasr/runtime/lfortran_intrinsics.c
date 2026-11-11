@@ -13756,7 +13756,21 @@ static const char *lf_scan_f128_special(const char *q)
 {
     if (lf_ci_prefix(q, "infinity")) return q + 8;
     if (lf_ci_prefix(q, "inf")) return q + 3;
-    if (lf_ci_prefix(q, "nan")) return q + 3;
+    if (lf_ci_prefix(q, "nan")) {
+        q += 3;
+        /* NaN may be followed by a parenthesized payload, as in NaN(1).
+           The payload is not interpreted. A separator before ')' leaves
+           the '(' unconsumed so the field is rejected. */
+        if (*q == '(') {
+            const char *p = q + 1;
+            while (*p != '\0' && *p != ')' && *p != ',' && *p != '/'
+                    && !isspace((unsigned char)*p)) {
+                p++;
+            }
+            if (*p == ')') q = p + 1;
+        }
+        return q;
+    }
     return NULL;
 }
 
