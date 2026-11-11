@@ -129,6 +129,14 @@ cudaError_t cudaMemAdvise(const void *ptr, size_t count,
 cudaError_t cudaMemAdvise(const void *ptr, size_t count,
     enum cudaMemoryAdvise advice, int device);
 #endif
+// Page-locked host memory is host memory.
+cudaError_t cudaMallocHost(void **ptr, size_t size);
+cudaError_t cudaFreeHost(void *ptr);
+// Only the default stream exists, so an event is complete when it is recorded.
+typedef struct lfortran_cuda_cpu_event *cudaEvent_t;
+cudaError_t cudaEventCreate(cudaEvent_t *event);
+cudaError_t cudaEventRecord(cudaEvent_t event, cudaStream_t stream);
+cudaError_t cudaEventSynchronize(cudaEvent_t event);
 cudaError_t cudaMemcpy(void *dst, const void *src, size_t count,
     cudaMemcpyKind kind);
 cudaError_t cudaMemcpyAsync(void *dst, const void *src, size_t count,

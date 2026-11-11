@@ -9285,6 +9285,29 @@ static ssize_t par_pread(int fd, char *buffer, int64_t length, int64_t offset)
 }
 
 
+typedef struct par_fill_context {
+    int fd;
+    int64_t offset;
+} par_fill_context;
+
+// The reader the GPU runtime fills an array with (lfortran_gpu_cuda.c).
+static int64_t par_fill(void *context, char *buffer, int64_t n, int64_t offset)
+{
+    par_fill_context *c = (par_fill_context*)context;
+    return par_pread(c->fd, buffer, n, c->offset + offset);
+}
+
+typedef int64_t (*gpu_fill_function)(void *dst, int64_t length,
+    int64_t (*fill)(void *context, char *buffer, int64_t n, int64_t offset),
+    void *context);
+// Set by the GPU runtime of a program that has one, when it starts.
+static gpu_fill_function gpu_fill_managed = NULL;
+
+LFORTRAN_API void _lfortran_set_gpu_fill(gpu_fill_function function)
+{
+    gpu_fill_managed = function;
+}
+
 // Every stream file opened through a window, by its FILE: a big read finds
 // the file it reads from here.
 static ra_file *ra_open_files[RA_MAX_FILES];
@@ -9334,7 +9357,14 @@ static int64_t ra_big_read(FILE *file, void *buffer, size_t bytes)
     int64_t want = (int64_t)bytes;
     if (want > f->size - at) want = f->size - at;
     if (want <= 0) return 0;
-    ssize_t n = par_pread(f->fd, (char*)buffer, want, at);
+    ssize_t n = -1;
+    // An array in GPU memory that the GPU has not used yet is filled through
+    // page-locked buffers by the GPU runtime.
+    if (gpu_fill_managed) {
+        par_fill_context context = {f->fd, at};
+        n = (ssize_t)gpu_fill_managed(buffer, want, par_fill, &context);
+    }
+    if (n < 0) n = par_pread(f->fd, (char*)buffer, want, at);
     if (n < 0) return -1;
     // Drop what the stream holds and continue after the bytes read.
     if (fseek(file, at + n, SEEK_SET) != 0) return -1;

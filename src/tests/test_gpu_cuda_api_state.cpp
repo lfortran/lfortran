@@ -586,6 +586,15 @@ static void host_dealloc(void *, void *ptr)
     free(ptr);
 }
 
+// Fills with the bytes (offset mod 251), `*calls` counts the chunks.
+static int64_t pattern_fill(void *context, char *buffer, int64_t n,
+    int64_t offset)
+{
+    ++*(int *)context;
+    for (int64_t i = 0; i < n; i++) buffer[i] = (char)((offset + i) % 251);
+    return n;
+}
+
 static void managed_entry(void **args)
 {
     unit_launch();
@@ -668,6 +677,31 @@ static int managed_memory_model()
     require(stats().device_prefetches == 1,
         "the launch that uses a small allocation does not prefetch it");
     managed_dealloc(nullptr, small);
+    // An array no launch has used yet is filled through page-locked buffers
+    // and put on the device, once.
+    size_t bytes = 2*STAGE_BYTES + 12345;
+    auto *array = (char *)managed_alloc(nullptr, bytes);
+    require(array != nullptr && managed_contains(array, bytes),
+        "the array to fill is managed memory");
+    unsigned long long prefetches = stats().device_prefetches;
+    unsigned long long copies = stats().async_copies[cudaMemcpyHostToDevice];
+    int chunks = 0;
+    require(lfortran_gpu_fill_managed(array + 100, (int64_t)bytes - 100,
+        pattern_fill, &chunks) == (int64_t)bytes - 100, "the fill is complete");
+    require(chunks == 3, "the fill reads in chunks of the buffer size");
+    for (size_t i = 100; i < bytes; i += 997) {
+        require(array[i] == (char)((i - 100) % 251), "the filled bytes");
+    }
+    require(stats().device_prefetches == prefetches + 1,
+        "the array is placed on the device first");
+    require(stats().async_copies[cudaMemcpyHostToDevice] == copies + 3,
+        "one copy for each chunk");
+    require(lfortran_gpu_fill_managed(array, 10, pattern_fill, &chunks) == -1,
+        "an array already on the device is not filled again");
+    char stack_array[16];
+    require(lfortran_gpu_fill_managed(stack_array, 16, pattern_fill, &chunks) == -1,
+        "memory that is not managed is not filled");
+    managed_dealloc(nullptr, array);
     lfortran_gpu_shutdown(ctx);
     check_api_use();
     // Only once every check passed, since CTest matches this line.
