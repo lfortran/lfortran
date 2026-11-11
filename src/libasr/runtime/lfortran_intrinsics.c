@@ -13739,6 +13739,27 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
 }
 
 
+static int lf_ci_prefix(const char *s, const char *word)
+{
+    while (*word) {
+        unsigned char c = (unsigned char)*s;
+        if (c >= 'A' && c <= 'Z') c = (unsigned char)(c - 'A' + 'a');
+        if (c != (unsigned char)*word) return 0;
+        s++;
+        word++;
+    }
+    return 1;
+}
+
+/* List-directed real input accepts nan, inf, and infinity (any case). */
+static const char *lf_scan_f128_special(const char *q)
+{
+    if (lf_ci_prefix(q, "infinity")) return q + 8;
+    if (lf_ci_prefix(q, "inf")) return q + 3;
+    if (lf_ci_prefix(q, "nan")) return q + 3;
+    return NULL;
+}
+
 // Reading binary128 values: the token is parsed with lf_float128_from_str.
 // A numeric token has at most LF_F128_TOKEN_MAX characters (binary128 has 36
 // significant digits, so this leaves room for leading zeros and an exponent).
@@ -13754,14 +13775,19 @@ static bool lf_strtof128(const char *s, lf_float128 *val, char **endptr)
     while (isspace((unsigned char)*q)) q++;
     const char *start = q;
     if (*q == '+' || *q == '-') q++;
-    while (isdigit((unsigned char)*q) || *q == '.') q++;
-    if (q > start && (*q == 'e' || *q == 'E' || *q == 'd' || *q == 'D' ||
-            *q == 'q' || *q == 'Q')) {
-        const char *e = q + 1;
-        if (*e == '+' || *e == '-') e++;
-        if (isdigit((unsigned char)*e)) {
-            while (isdigit((unsigned char)*e)) e++;
-            q = e;
+    const char *special = lf_scan_f128_special(q);
+    if (special) {
+        q = special;
+    } else {
+        while (isdigit((unsigned char)*q) || *q == '.') q++;
+        if (q > start && (*q == 'e' || *q == 'E' || *q == 'd' || *q == 'D' ||
+                *q == 'q' || *q == 'Q')) {
+            const char *e = q + 1;
+            if (*e == '+' || *e == '-') e++;
+            if (isdigit((unsigned char)*e)) {
+                while (isdigit((unsigned char)*e)) e++;
+                q = e;
+            }
         }
     }
     if (q == start) {
