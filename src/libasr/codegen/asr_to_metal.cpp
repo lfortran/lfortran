@@ -100,6 +100,20 @@ struct MetalDialect {
         return std::string(names[op]) + "(" + value + ")";
     }
     std::string lane_reduce_helper() const { return ""; }
+    std::string unroll_wide_pragma() const { return unroll_pragma(); }
+    // Reached only on a device that has wide loads (gpu_wide_loads.cpp).
+    std::string wide_load(const std::string &indent,
+            const std::vector<std::string> &targets,
+            const std::string &source, const std::string &/*array*/,
+            const std::string &/*aligned*/) const {
+        std::string out;
+        for (size_t i = 0; i < targets.size(); i++) {
+            out += indent + targets[i] + " = (&(" + source + "))["
+                + std::to_string(i) + "];\n";
+        }
+        return out;
+    }
+    std::string wide_load_helper() const { return ""; }
 
     // The value in the first lane of the iteration. With one lane per
     // iteration, that is the thread's own.

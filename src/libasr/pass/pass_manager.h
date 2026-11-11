@@ -81,6 +81,7 @@
 #include <libasr/pass/gpu_call_guards.h>
 #include <libasr/pass/dead_array_store.h>
 #include <libasr/pass/gpu_vector_lanes.h>
+#include <libasr/pass/gpu_wide_loads.h>
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/gpu_device_workspace.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
@@ -179,6 +180,7 @@ namespace LCompilers {
             {"gpu_kernel_finalize", &pass_gpu_kernel_finalize},
             {"gpu_kernel_storage", &pass_gpu_kernel_storage},
             {"gpu_vector_lanes", &pass_gpu_vector_lanes},
+            {"gpu_wide_loads", &pass_gpu_wide_loads},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
@@ -481,6 +483,9 @@ namespace LCompilers {
                 // An iteration of a kernel with few runs on the lanes of a
                 // SIMD-group, which share the loops inside it.
                 "gpu_vector_lanes",
+                // Elements an iteration reads next to each other are read
+                // as one vector, once every loop is in its final form.
+                "gpu_wide_loads",
                 // A launch does not wait for its kernel: the host waits
                 // where it next needs what a kernel wrote.
                 "gpu_launch_sync",

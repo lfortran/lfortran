@@ -7,6 +7,7 @@
 #include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/gpu_offload_stop.h>
 #include <libasr/pass/gpu_vector_lanes.h>
+#include <libasr/pass/gpu_wide_loads.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -3617,7 +3618,8 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
         rewrite.restore();
         return false;
     }
-    any_size = rewrite.pays_at_any_size(kernel.m_body, kernel.n_body);
+    any_size = rewrite.pays_at_any_size(kernel.m_body, kernel.n_body)
+        && !gpu_reads_wide(kernel, caps);
     lanes = caps.lanes_per_iteration;
     while (rewrite.lane_limit > 0 && lanes > rewrite.lane_limit && lanes > 2) {
         lanes /= 2;

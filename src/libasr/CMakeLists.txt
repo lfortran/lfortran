@@ -141,6 +141,7 @@ set(SRC
     pass/gpu_call_guards.cpp
     pass/dead_array_store.cpp
     pass/gpu_vector_lanes.cpp
+    pass/gpu_wide_loads.cpp
     pass/gpu_memory_space.cpp
     pass/gpu_device_workspace.cpp
     pass/gpu_struct_component_args.cpp

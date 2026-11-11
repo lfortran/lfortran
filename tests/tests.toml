@@ -5771,6 +5771,13 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_lanes_block_02.f90"
 gpu_cuda_kernel = true
 
+# On an NVIDIA GPU, the elements a statement reads side by side (the four packed
+# words of a quantized weight, the sixteen activations they multiply) are read
+# as vectors of 16 bytes when the arrays start at a multiple of 16 bytes.
+[[test]]
+filename = "../integration_tests/gpu_wide_loads_01.f90"
+gpu_cuda_kernel = true
+
 # A loop in one branch of an `if` inside a loop, shared out between the
 # lanes.
 [[test]]
