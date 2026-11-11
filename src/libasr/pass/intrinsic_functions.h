@@ -1308,8 +1308,16 @@ namespace Abs {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         ASR::expr_t* arg = args[0];
         if (ASRUtils::is_real(*expr_type(arg))) {
-            if (ASRUtils::extract_kind_from_ttype_t(expr_type(arg)) == 16) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(arg));
+            if (kind == 16) {
                 return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_abs(ASRUtils::real_expr_get_r16(arg)), t);
+            }
+            // Kind 10 stores a pointer in m_r. Reading it as a double folds
+            // abs(-1.5_10) to a denormal.
+            if (kind == 10) {
+                long double rv = ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(arg));
+                return ASRUtils::make_RealConstant_r10(al, loc, fabsl(rv), t);
             }
             double rv = ASR::down_cast<ASR::RealConstant_t>(arg)->m_r;
             double val = std::abs(rv);
@@ -2251,10 +2259,19 @@ namespace Sign {
     static ASR::expr_t *eval_Sign(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (ASRUtils::is_real(*t1)) {
-            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+            if (kind == 16) {
                 lf_float128 mag = lf_f128_abs(ASRUtils::real_expr_get_r16(args[0]));
                 lf_float128 sgn = ASRUtils::real_expr_get_r16(args[1]);
                 return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_signbit(sgn) ? lf_f128_neg(mag) : mag, t1);
+            }
+            // Kind 10 stores a pointer in m_r, not the numeric value.
+            if (kind == 10) {
+                long double mag = fabsl(ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0])));
+                long double sgn = ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[1]));
+                return ASRUtils::make_RealConstant_r10(al, loc, copysignl(mag, sgn), t1);
             }
             double rv1 = std::abs(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             double rv2 = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
@@ -4447,7 +4464,8 @@ namespace Mod {
             int64_t b = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
             return make_ConstantWithType(make_IntegerConstant_t, a % b, t1, loc);
         } else if (is_real1 && is_real2) {
-            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+            if (kind == 16) {
                 lf_float128 a16 = ASRUtils::real_expr_get_r16(args[0]);
                 lf_float128 b16 = ASRUtils::real_expr_get_r16(args[1]);
                 if (!ASRUtils::real16_is_finite(a16) || !ASRUtils::real16_is_finite(b16)
@@ -4456,6 +4474,14 @@ namespace Mod {
                 }
                 return ASRUtils::make_RealConstant_r16(al, loc,
                     ASRUtils::real16_fmod(a16, b16), t1);
+            }
+            // Kind 10 stores a pointer in m_r, not the numeric value.
+            if (kind == 10) {
+                long double a = ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]));
+                long double b = ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[1]));
+                return ASRUtils::make_RealConstant_r10(al, loc, fmodl(a, b), t1);
             }
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
@@ -8501,7 +8527,8 @@ namespace Max {
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 16) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+            if (kind == 16) {
                 lf_float128 max_val16 = ASRUtils::real_expr_get_r16(args[0]);
                 for (size_t i = 1; i < args.size(); i++) {
                     lf_float128 val = ASRUtils::real_expr_get_r16(args[i]);
@@ -8510,6 +8537,17 @@ namespace Max {
                     }
                 }
                 return ASRUtils::make_RealConstant_r16(al, loc, max_val16, arg_type);
+            }
+            // Kind 10 stores a pointer in m_r. Comparing those bits swaps max.
+            if (kind == 10) {
+                long double max_val = ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]));
+                for (size_t i = 1; i < args.size(); i++) {
+                    long double val = ASRUtils::real_constant_get_r10(
+                        ASR::down_cast<ASR::RealConstant_t>(args[i]));
+                    max_val = fmaxl(max_val, val);
+                }
+                return ASRUtils::make_RealConstant_r10(al, loc, max_val, arg_type);
             }
             double max_val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             for (size_t i = 1; i < args.size(); i++) {
@@ -8770,7 +8808,8 @@ namespace Min {
             ASR::ttype_t *arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (ASR::is_a<ASR::Real_t>(*arg_type)) {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 16) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+            if (kind == 16) {
                 lf_float128 min_val16 = ASRUtils::real_expr_get_r16(args[0]);
                 for (size_t i = 1; i < args.size(); i++) {
                     lf_float128 val = ASRUtils::real_expr_get_r16(args[i]);
@@ -8779,6 +8818,17 @@ namespace Min {
                     }
                 }
                 return ASRUtils::make_RealConstant_r16(al, loc, min_val16, arg_type);
+            }
+            // Kind 10 stores a pointer in m_r. Comparing those bits swaps min.
+            if (kind == 10) {
+                long double min_val = ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]));
+                for (size_t i = 1; i < args.size(); i++) {
+                    long double val = ASRUtils::real_constant_get_r10(
+                        ASR::down_cast<ASR::RealConstant_t>(args[i]));
+                    min_val = fminl(min_val, val);
+                }
+                return ASRUtils::make_RealConstant_r10(al, loc, min_val, arg_type);
             }
             double min_val = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             for (size_t i = 1; i < args.size(); i++) {
