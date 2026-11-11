@@ -142,7 +142,12 @@ do m = 1, nm
     end do
 end do
 
-! Powers of two as scales divide exactly.
+! Powers of two as scales divide exactly, but --fast lets LLVM divide with a
+! reciprocal estimate (vrcpps on AMD Zen 4 and later), which is off by up to
+! an ulp of a quotient (about 6e-5 for quotients near 820), in the kernel and
+! in the reference alike. The data are integers and halves, so a group
+! combined wrongly is off by at least 0.5; compare with an absolute tolerance
+! between the two.
 do j = 1, nrows
     do g = 1, groups
         scales(g, j) = 2.0**mod(g + j, 2)
@@ -159,7 +164,7 @@ do m = 1, nm
             end do
             ref = ref + (real(c) - offsets(g, j))/scales(g, j)
         end do
-        if (y(j, m) /= ref) error stop "quotient"
+        if (abs(y(j, m) - ref) > 1e-2) error stop "quotient"
     end do
 end do
 
