@@ -2977,3 +2977,45 @@ TEST_CASE("GPU private maps that only a sum reads need no workspace") {
     CHECK(launches["reread"].workspaces == 1);
 }
 #endif
+
+TEST_CASE("The default pipeline runs GPU passes only with --gpu") {
+    auto passes = [](bool gpu, bool fast) {
+        PassOptions options;
+        options.gpu_offload_cuda = gpu;
+        options.fast = fast;
+        return PassManager().default_passes(options);
+    };
+    auto has = [](const std::vector<std::string> &list,
+            const std::string &name) {
+        return std::find(list.begin(), list.end(), name) != list.end();
+    };
+    auto is_gpu_pass = [](const std::string &name) {
+        return startswith(name, "gpu_") || startswith(name, "device_");
+    };
+    // Some of the passes the offload needs.
+    const std::vector<std::string> gpu_required = {"gpu_offload",
+        "device_partition", "gpu_integer_powers", "gpu_kernel_finalize",
+        "gpu_launch_sync", "device_launch_expand"};
+
+    for (bool fast : {false, true}) {
+        INFO("fast: " << fast);
+        std::vector<std::string> cpu = passes(false, fast);
+        for (const std::string &name : cpu) {
+            INFO(name);
+            CHECK_FALSE(is_gpu_pass(name));
+        }
+        CHECK(has(cpu, "nested_vars"));
+
+        std::vector<std::string> gpu = passes(true, fast);
+        for (const std::string &name : gpu_required) {
+            INFO(name);
+            CHECK(has(gpu, name));
+        }
+        // Without a device, the pipeline is the same less its GPU passes.
+        std::vector<std::string> host;
+        for (const std::string &name : gpu) {
+            if (!is_gpu_pass(name)) host.push_back(name);
+        }
+        CHECK(host == cpu);
+    }
+}
