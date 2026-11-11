@@ -17,7 +17,6 @@
 namespace LCompilers {
 
 /*
-/*
 Vector loads of the elements a statement reads side by side.
 
 A thread of a kernel that reads `w(4*c-3, n)`, `w(4*c-2, n)`, `w(4*c-1, n)`
