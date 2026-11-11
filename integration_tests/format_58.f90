@@ -1,7 +1,7 @@
 program format_58 
     implicit none 
     integer,parameter:: sp = kind(1e0), dp = kind(1d0),&
-        sep = selected_real_kind(precision(1.0_dp)+1),&
+        sep = selected_real_kind(33),&
         ep = (sep+dp+sign(1,sep)*(sep-dp))/2 
     character(11) values(3)
     real(sp),parameter:: xsp = 1

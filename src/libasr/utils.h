@@ -24,6 +24,10 @@ Platform get_platform();
 // its triple, or on the host when the triple is empty or not recognized
 int get_c_long_double_kind(const std::string &target_triple);
 int get_c_pointer_kind(const std::string &target_triple);
+// The C long double kind of the compilation in progress. Kind 10 is a
+// distinct real kind only when this is 10 (x87 extended precision).
+void set_active_c_long_double_kind(int kind);
+int get_active_c_long_double_kind();
 
 std::string get_unique_ID();
 int visualize_json(std::string &astr_data_json, LCompilers::Platform os);

@@ -2,8 +2,8 @@ program intrinsics_509
 implicit none
 ! selected_real_kind must return a kind whose precision is at least p.
 ! kind 8 has precision 15. kind 16 (binary128) has precision 33.
-! On x86, GFortran also has kind 10 (precision 18), so p=16 selects 10
-! there and 16 here. p=30 and p=33 are past kind 10, so both select 16.
+! Where x87 kind 10 exists (precision 18), p=16 selects 10; otherwise 16.
+! p=30 and p=33 are past kind 10, so both select 16.
 integer, parameter :: dp = selected_real_kind(15)
 integer, parameter :: k16 = selected_real_kind(16)
 integer, parameter :: k30 = selected_real_kind(30)

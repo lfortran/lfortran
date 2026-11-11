@@ -76,6 +76,9 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     std::map<uint32_t, std::vector<ASR::stmt_t*>> data_structure;
     std::set<ASR::symbol_t*> getter_functions;
     ASR::asr_t *unit;
+    // selected_real_kind folds constants here and instantiates the runtime
+    // call later; both must see this compilation's long double kind.
+    set_active_c_long_double_kind(compiler_options.po.c_long_double_kind);
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
         compiler_options, implicit_mapping,
         external_procedures_mapping, procedure_references, explicit_intrinsic_procedures_mapping, instantiate_types,

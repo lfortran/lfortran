@@ -2,7 +2,7 @@
     "basename": "run-format_58-475e064",
     "cmd": "lfortran --no-color {infile}",
     "infile": "tests/../integration_tests/format_58.f90",
-    "infile_hash": "f2170db3134d59fbefa690522bab88fc5f052e8a29518b7ef3814a2c",
+    "infile_hash": "9e12bab2f008e1ad350e9cf366cc0b9526f9394b2e18f9599af44fbd",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "run-format_58-475e064.stdout",

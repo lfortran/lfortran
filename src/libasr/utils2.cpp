@@ -323,6 +323,23 @@ int get_c_long_double_kind(const std::string &target_triple)
     }
 }
 
+// -1 until a compilation sets it from its PassOptions. The host kind is
+// the same value those options start with.
+static int active_c_long_double_kind = -1;
+
+void set_active_c_long_double_kind(int kind)
+{
+    active_c_long_double_kind = kind;
+}
+
+int get_active_c_long_double_kind()
+{
+    if (active_c_long_double_kind < 0) {
+        return get_c_long_double_kind("");
+    }
+    return active_c_long_double_kind;
+}
+
 // Platform-specific initialization
 // On Windows, enable colors in terminal. On other systems, do nothing.
 // Return value: 0 on success, negative number on failure.
