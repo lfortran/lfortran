@@ -1559,6 +1559,165 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
+    // The array whose bounds are the index space of `at` in
+    // `vector_subscript_element`. For `A(B(V))` that is `V`, not `B(V)`:
+    // the bounds of `B(V)` are an array reference indexed by the whole of `V`.
+    ASR::expr_t* vector_subscript_bound_source(ASR::expr_t* vector) {
+        while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector)) {
+            vector = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*vector)) {
+            ASR::ArrayItem_t* inner = ASR::down_cast<ASR::ArrayItem_t>(vector);
+            if (ASRUtils::is_array_indexed_with_array_indices(
+                    inner->m_args, inner->n_args)) {
+                for (size_t i = 0; i < inner->n_args; i++) {
+                    ASR::array_index_t arg = inner->m_args[i];
+                    if (arg.m_left == nullptr && arg.m_right != nullptr &&
+                            arg.m_step == nullptr &&
+                            ASRUtils::is_array(ASRUtils::expr_type(arg.m_right))) {
+                        return vector_subscript_bound_source(arg.m_right);
+                    }
+                }
+            }
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*vector)) {
+            ASR::ArraySection_t* inner = ASR::down_cast<ASR::ArraySection_t>(vector);
+            int triplets = 0;
+            ASR::expr_t* vector_index = nullptr;
+            for (size_t i = 0; i < inner->n_args; i++) {
+                ASR::array_index_t arg = inner->m_args[i];
+                bool indexed = arg.m_left == nullptr && arg.m_right != nullptr &&
+                    arg.m_step == nullptr;
+                if (indexed && ASRUtils::is_array(ASRUtils::expr_type(arg.m_right))) {
+                    vector_index = arg.m_right;
+                } else if (!indexed) {
+                    triplets++;
+                }
+            }
+            if (vector_index != nullptr && triplets == 0) {
+                return vector_subscript_bound_source(vector_index);
+            }
+        }
+        return vector;
+    }
+
+    // Element `at` of a vector subscript. The element of `A(V)` is `A(V(at))`.
+    // Indexing the whole vector expression, `(A(V))(at)`, leaves `V` as the
+    // index, and code generation then sign-extends that array.
+    ASR::expr_t* vector_subscript_element(ASR::expr_t* vector, ASR::expr_t* at,
+            const Location& loc) {
+        while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector)) {
+            vector = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*vector)) {
+            ASR::ArrayItem_t* inner = ASR::down_cast<ASR::ArrayItem_t>(vector);
+            if (ASRUtils::is_array_indexed_with_array_indices(
+                    inner->m_args, inner->n_args)) {
+                Vec<ASR::array_index_t> args;
+                args.reserve(al, inner->n_args);
+                for (size_t i = 0; i < inner->n_args; i++) {
+                    ASR::array_index_t arg = inner->m_args[i];
+                    if (arg.m_left == nullptr && arg.m_right != nullptr &&
+                            arg.m_step == nullptr &&
+                            ASRUtils::is_array(ASRUtils::expr_type(arg.m_right))) {
+                        arg.m_right = vector_subscript_element(
+                            arg.m_right, at, loc);
+                    }
+                    args.push_back(al, arg);
+                }
+                ASR::ttype_t* elem_type = ASRUtils::extract_type(
+                    ASRUtils::expr_type(vector));
+                return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+                    inner->m_v, args.p, args.size(), elem_type,
+                    ASR::arraystorageType::ColMajor, nullptr));
+            }
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*vector)) {
+            ASR::ArraySection_t* inner = ASR::down_cast<ASR::ArraySection_t>(vector);
+            int triplets = 0;
+            int triplet_pos = -1;
+            bool has_vector = false;
+            for (size_t i = 0; i < inner->n_args; i++) {
+                ASR::array_index_t arg = inner->m_args[i];
+                bool indexed = arg.m_left == nullptr && arg.m_right != nullptr &&
+                    arg.m_step == nullptr;
+                if (indexed && ASRUtils::is_array(ASRUtils::expr_type(arg.m_right))) {
+                    has_vector = true;
+                } else if (!indexed) {
+                    triplets++;
+                    triplet_pos = static_cast<int>(i);
+                }
+            }
+            if (has_vector) {
+                Vec<ASR::array_index_t> args;
+                args.reserve(al, inner->n_args);
+                for (size_t i = 0; i < inner->n_args; i++) {
+                    ASR::array_index_t arg = inner->m_args[i];
+                    if (arg.m_left == nullptr && arg.m_right != nullptr &&
+                            arg.m_step == nullptr &&
+                            ASRUtils::is_array(ASRUtils::expr_type(arg.m_right))) {
+                        arg.m_right = vector_subscript_element(
+                            arg.m_right, at, loc);
+                    }
+                    args.push_back(al, arg);
+                }
+                if (triplets == 0) {
+                    ASR::ttype_t* elem_type = ASRUtils::extract_type(
+                        ASRUtils::expr_type(vector));
+                    return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+                        inner->m_v, args.p, args.size(), elem_type,
+                        ASR::arraystorageType::ColMajor, nullptr));
+                }
+            } else if (triplets == 1) {
+                ASR::ttype_t* int_type = get_index_type(loc);
+                int ikind = get_index_kind();
+                ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, 1, int_type));
+                ASR::array_index_t triplet = inner->m_args[triplet_pos];
+                ASR::expr_t* start = triplet.m_left != nullptr ? triplet.m_left :
+                    PassUtils::get_bound(inner->m_v, triplet_pos + 1, "lbound",
+                        al, ikind);
+                ASR::expr_t* step = triplet.m_step != nullptr ? triplet.m_step : one;
+                ASR::expr_t* lb = PassUtils::get_bound(vector, 1, "lbound", al, ikind);
+                ASR::expr_t* offset = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                    al, loc, at, ASR::binopType::Sub, lb, int_type, nullptr));
+                ASR::expr_t* scaled = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                    al, loc, offset, ASR::binopType::Mul, step, int_type, nullptr));
+                ASR::expr_t* subscript = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(
+                    al, loc, start, ASR::binopType::Add, scaled, int_type, nullptr));
+                Vec<ASR::array_index_t> args;
+                args.reserve(al, inner->n_args);
+                for (size_t i = 0; i < inner->n_args; i++) {
+                    ASR::array_index_t arg = inner->m_args[i];
+                    if (static_cast<int>(i) == triplet_pos) {
+                        arg.m_left = nullptr;
+                        arg.m_right = subscript;
+                        arg.m_step = nullptr;
+                    }
+                    args.push_back(al, arg);
+                }
+                ASR::ttype_t* elem_type = ASRUtils::extract_type(
+                    ASRUtils::expr_type(vector));
+                return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+                    inner->m_v, args.p, args.size(), elem_type,
+                    ASR::arraystorageType::ColMajor, nullptr));
+            }
+        }
+        Vec<ASR::array_index_t> indices;
+        indices.reserve(al, 1);
+        ASR::array_index_t index;
+        index.loc = loc;
+        index.m_left = nullptr;
+        index.m_right = at;
+        index.m_step = nullptr;
+        indices.push_back(al, index);
+        ASR::ttype_t* nested_index_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(vector));
+        return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+            vector, indices.p, 1, nested_index_type,
+            ASR::arraystorageType::ColMajor, nullptr));
+    }
+
     inline void create_array_item_array_indexed_expr(
             ASR::expr_t* expr, ASR::expr_t** expr_address,
             bool is_expr_array, int var2indices_key,
@@ -1582,16 +1741,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                         ASR::array_index_t array_index;
                         array_index.loc = loc;
                         array_index.m_left = nullptr;
-                        Vec<ASR::array_index_t> indices1; indices1.reserve(al, 1);
-                        ASR::array_index_t index1; index1.loc = loc; index1.m_left = nullptr;
-                        index1.m_right = var2indices[j][0]; index1.m_step = nullptr;
-                        new_indices.push_back(al, index1.m_right);
-                        indices1.push_back(al, index1);
-                        ASR::ttype_t* nested_index_type = ASRUtils::extract_type(
-                            ASRUtils::expr_type(m_args[i].m_right));
-                        array_index.m_right = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
-                            m_args[i].m_right, indices1.p, 1, nested_index_type,
-                            ASR::arraystorageType::ColMajor, nullptr));
+                        ASR::expr_t* at = var2indices[j][0];
+                        new_indices.push_back(al, at);
+                        array_index.m_right = vector_subscript_element(
+                            m_args[i].m_right, at, loc);
                         array_index.m_step = nullptr;
                         array_item_args.push_back(al, array_index);
                         j++;
@@ -1673,7 +1826,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                         index2step[index_expr] = rhs_array_indices_args[j].m_step;
                     }
                 } else {
-                    index2var[index_expr] = std::make_pair(vars_expr[i],
+                    ASR::expr_t* bound_expr = vars_expr[i];
+                    if (i >= offset_for_array_indices) {
+                        bound_expr = vector_subscript_bound_source(vars_expr[i]);
+                    }
+                    index2var[index_expr] = std::make_pair(bound_expr,
                         i >= offset_for_array_indices ? IndexType::ArrayIndex : IndexType::ScalarIndex);
                 }
                 indices.push_back(al, index_expr);
