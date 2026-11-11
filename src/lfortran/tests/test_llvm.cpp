@@ -8339,10 +8339,10 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
 }
 
 #if LLVM_VERSION_MAJOR >= 11
-// Sums of the squares of components 0 to 2 of a-b, a-c, b-c, b-d, c-a and
-// d-b, in the lane layouts of newer SLP vectorizers. Each function returns
-// the lanes of its sum weighted by 1, 2, 4, ... The squared lengths are
-// |a-b|^2 = 6, |a-c|^2 = |c-a|^2 = 11, |b-c|^2 = 17, |b-d|^2 = |d-b|^2 = 24.
+// Sums of the squares of components 0 to 2 of a-b, a-c, b-c and b-d, in
+// the lane layouts of newer SLP vectorizers. Each function returns the
+// lanes of its sum weighted by 1, 2, 4, ... The squared lengths are
+// |a-b|^2 = 6, |a-c|^2 = 11, |b-c|^2 = 17 and |b-d|^2 = 24.
 const std::string reductions_layouts_ir = R"""(
 ; Two lanes: component 1 is gathered first and subtracted after, the others
 ; are gathered from the differences. 6 + 2*11 = 28.
@@ -8409,41 +8409,11 @@ entry:
   ret double %r
 }
 
-; Eight lanes over vectors that hold two four element vectors each: a, b in
-; %ab and c, d in %cd. Lanes 4 to 7 repeat lanes 0 to 3, which are a-c, b-d,
-; c-a and d-b. 11*(1+4+16+64) + 24*(2+8+32+128) = 5015.
-define double @reductions_eight() #0 {
-entry:
-  %ab = freeze <8 x double> <double 1.0, double 2.0, double 3.0, double 0.0, double 2.0, double 3.0, double 5.0, double 0.0>
-  %cd = freeze <8 x double> <double 4.0, double 1.0, double 2.0, double 0.0, double 0.0, double -1.0, double 7.0, double 0.0>
-  %x = fsub fast <8 x double> %ab, %cd
-  %y = fsub fast <8 x double> %cd, %ab
-  %g0 = shufflevector <8 x double> %x, <8 x double> %y, <8 x i32> <i32 0, i32 4, i32 8, i32 12, i32 0, i32 4, i32 8, i32 12>
-  %s0 = fmul fast <8 x double> %g0, %g0
-  %g1 = shufflevector <8 x double> %x, <8 x double> %y, <8 x i32> <i32 1, i32 5, i32 9, i32 13, i32 1, i32 5, i32 9, i32 13>
-  %s1 = fmul fast <8 x double> %g1, %g1
-  %g2 = shufflevector <8 x double> %x, <8 x double> %y, <8 x i32> <i32 2, i32 6, i32 10, i32 14, i32 2, i32 6, i32 10, i32 14>
-  %s2 = fmul fast <8 x double> %g2, %g2
-  %t = fadd fast <8 x double> %s0, %s1
-  %sum = fadd fast <8 x double> %t, %s2
-  %w = fmul <8 x double> %sum, <double 1.0, double 2.0, double 4.0, double 8.0, double 16.0, double 32.0, double 64.0, double 128.0>
-  %lo = shufflevector <8 x double> %w, <8 x double> %w, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
-  %hi = shufflevector <8 x double> %w, <8 x double> %w, <4 x i32> <i32 4, i32 5, i32 6, i32 7>
-  %v = fadd <4 x double> %lo, %hi
-  %l0 = extractelement <4 x double> %v, i32 0
-  %l1 = extractelement <4 x double> %v, i32 1
-  %l2 = extractelement <4 x double> %v, i32 2
-  %l3 = extractelement <4 x double> %v, i32 3
-  %h0 = fadd double %l0, %l1
-  %h1 = fadd double %l2, %l3
-  %r = fadd double %h0, %h1
-  ret double %r
-}
 attributes #0 = { "target-features"="+avx" }
 )""";
 
 TEST_CASE("LLVM horizontal reductions in the lane layouts of newer SLP") {
-    // SLP of LLVM 23 sums squares in two, four and eight lanes, concatenates
+    // SLP of LLVM 23 sums squares in two and four lanes, concatenates
     // partial sums, and subtracts before or after gathering a component.
     // The pass follows every lane to the same vector expression.
     std::unique_ptr<llvm::TargetMachine> x86
@@ -8454,7 +8424,6 @@ TEST_CASE("LLVM horizontal reductions in the lane layouts of newer SLP") {
     const std::pair<const char *, double> functions[] = {
         {"reductions_two", 28.0},
         {"reductions_four", 288.0},
-        {"reductions_eight", 5015.0},
     };
     for (const auto &function : functions) {
         INFO(function.first);
@@ -8845,6 +8814,92 @@ end module
     };
     requires_hadd("distances");
     requires_hadd("products");
+#endif
+}
+
+TEST_CASE("Fortran norms of arrays of points keep their vectorized loops") {
+#if !defined(__x86_64__) && !defined(__i386__)
+    return;
+#else
+    // A vectorized loop over r(3,n) or r(4,n) loads several points into one
+    // wide vector. Shuffling each point out of it into a four element
+    // vector for vhaddpd is slower than the loop, so the horizontal
+    // reduction pass must leave these loops alone.
+    const std::string source = R"(module reductions_norms
+implicit none
+contains
+subroutine norms3(n, r, s)
+integer, intent(in) :: n
+real(8), intent(in) :: r(3, n)
+real(8), intent(out) :: s(n)
+integer :: i
+do i = 1, n
+    s(i) = r(1, i)**2 + r(2, i)**2 + r(3, i)**2
+end do
+end subroutine
+subroutine norms4(n, r, s)
+integer, intent(in) :: n
+real(8), intent(in) :: r(4, n)
+real(8), intent(out) :: s(n)
+integer :: i
+do i = 1, n
+    s(i) = r(1, i)**2 + r(2, i)**2 + r(3, i)**2
+end do
+end subroutine
+subroutine dist3(n, a, b, s)
+integer, intent(in) :: n
+real(8), intent(in) :: a(3, n), b(3, n)
+real(8), intent(out) :: s(n)
+integer :: i
+do i = 1, n
+    s(i) = (a(1, i) - b(1, i))**2 + (a(2, i) - b(2, i))**2 &
+        + (a(3, i) - b(3, i))**2
+end do
+end subroutine
+end module
+)";
+    for (const char *mcpu : {"haswell", "skylake-avx512", "sandybridge", "znver1"}) {
+        INFO(mcpu);
+        Allocator al(64*1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        CompilerOptions co;
+        co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        co.platform = LCompilers::get_platform();
+        co.po.fast = true;
+        co.po.bounds_checking = false;
+        co.po.strict_bounds_checking = false;
+        co.mcpu = mcpu;
+        LCompilers::LLVMEvaluator e(co);
+        LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(
+            LCompilers::LFortran::parse(al, source, diagnostics, co));
+        LCompilers::LocationManager lm;
+        LCompilers::LocationManager::FileLocations file;
+        file.in_filename = "reductions_norms.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(
+            LCompilers::LFortran::source_offset(source.size()));
+        LCompilers::ASR::TranslationUnit_t* asr = TRY(
+            LCompilers::LFortran::ast_to_asr(al, *tu, diagnostics, nullptr,
+                false, co, lm));
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>> res
+            = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+                e.get_target_config(), al, lpm, co, "", "", "", lm);
+        INFO(diagnostics.render2());
+        REQUIRE(res.ok);
+        e.opt(*res.result->m_m);
+        int functions = 0;
+        for (llvm::Function &f : *res.result->m_m) {
+            if (f.isDeclaration()) {
+                continue;
+            }
+            INFO(f.getName().str());
+            CHECK(!calls_intrinsic_like(f, "hadd"));
+            functions++;
+        }
+        CHECK(functions >= 3);
+    }
 #endif
 }
 
