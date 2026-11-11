@@ -12557,7 +12557,30 @@ public:
                         throw; // Re-throw to continue error reporting
                     }
                     current_variable_type_ = temp_current_variable_type_;
-                    bool type_inferred_from_initializer = false;
+                    // `x(*)`, `x(lb:*)`, `x(*,lb:*)`: the extents come from the
+                    // evaluated initializer, the declared lower bounds are kept.
+                    auto implied_shape_type = [&](ASR::ttype_t *init_type) -> ASR::ttype_t* {
+                        ASR::dimension_t *init_dims = nullptr;
+                        size_t init_rank = ASRUtils::extract_dimensions_from_ttype(init_type, init_dims);
+                        bool has_lower_bound = false;
+                        for (size_t k = 0; k < dims.size(); k++) {
+                            has_lower_bound = has_lower_bound || dims[k].m_start != nullptr;
+                        }
+                        if (!has_lower_bound || dims.size() != 1 || init_rank != dims.size()) {
+                            return init_type;
+                        }
+                        Vec<ASR::dimension_t> new_dims;
+                        new_dims.reserve(al, init_rank);
+                        for (size_t k = 0; k < init_rank; k++) {
+                            ASR::dimension_t nd = init_dims[k];
+                            if (dims[k].m_start != nullptr) {
+                                nd.m_start = dims[k].m_start;
+                            }
+                            new_dims.push_back(al, nd);
+                        }
+                        return ASRUtils::duplicate_type(al, init_type, &new_dims,
+                            ASR::array_physical_typeType::FixedSizeArray, true);
+                    };
                     if (is_compile_time && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
                         AST::ArrayInitializer_t *temp_array =
                             AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
@@ -12574,7 +12597,6 @@ public:
                         temp_dims.push_back(al, temp_dim);
                         type = ASRUtils::duplicate_type(al, type, &temp_dims,
                             ASR::array_physical_typeType::FixedSizeArray, true);
-                        type_inferred_from_initializer = (dims.size() > 0 && dims[0].m_start != nullptr);
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
@@ -13190,8 +13212,8 @@ public:
                                     // }
                                     body.push_back(al, a_m_args);
                                 }
-                                if (ASRUtils::is_dimension_empty(dims.p, dims.n) && !type_inferred_from_initializer) {
-                                    type = a->m_type;
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                    type = implied_shape_type(a->m_type);
                                 }
                             }
                             if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
@@ -13210,8 +13232,8 @@ public:
                                 value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
                                     a->base.base.loc, body.p, body.size(),
                                     a->m_type, a->m_storage_format));
-                                if (ASRUtils::is_dimension_empty(dims.p, dims.n) && !type_inferred_from_initializer) {
-                                    type = a->m_type;
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                    type = implied_shape_type(a->m_type);
                                 }
                             }
                             if (ASR::is_a<ASR::StringLen_t>(*value)) {
