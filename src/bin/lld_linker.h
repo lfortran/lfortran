@@ -6,14 +6,16 @@
 
 #ifdef HAVE_LFORTRAN_LLD
 
-// The built-in ELF linker is LLD, linked into the lfortran binary. `triple`
-// is the code-generation target. An empty `requested_linker` selects it;
-// `lld` selects it explicitly; `clang` and `gcc` keep the external driver.
-bool elf_lld_selected(const std::string &triple, const std::string &host_triple,
+// The built-in linker is LLD, linked into the lfortran binary: its ELF port
+// on Linux and its Mach-O port on macOS. `triple` is the code-generation
+// target, which must be the host's platform and architecture. An empty
+// `requested_linker` selects it; `lld` selects it explicitly; `clang` and
+// `gcc` keep the external driver.
+bool lld_selected(const std::string &triple, const std::string &host_triple,
         const std::string &requested_linker);
 
 // Link `object_files` into `outfile`. Returns 0 on success.
-int link_elf_with_lld(
+int link_with_lld(
         const std::vector<std::string> &object_files,
         const std::vector<std::string> &extra_objects,
         const std::string &outfile,
@@ -29,7 +31,7 @@ int link_elf_with_lld(
 
 #else
 
-inline bool elf_lld_selected(const std::string &/*triple*/,
+inline bool lld_selected(const std::string &/*triple*/,
         const std::string &/*host_triple*/,
         const std::string &/*requested_linker*/) {
     return false;

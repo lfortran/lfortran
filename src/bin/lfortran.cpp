@@ -2040,7 +2040,9 @@ int link_executable(const std::vector<std::string> &infiles,
     compiler driver does, so the driver locates the startup objects, the
     dynamic linker, libc and libgcc and passes them to LLD. `--linker=clang`
     or `--linker=gcc` (or `LFORTRAN_LINKER`) still selects the external
-    driver. macOS and Windows keep their platform linkers.
+    driver. On macOS (LLVM 15 and newer) LLD's Mach-O port links against
+    the SDK that xcrun selects, like Apple's clang; `--linker=clang` selects
+    Apple's driver and linker. Windows keeps `link.exe`.
     * If we ship our own libc (such as musl), then we know how to find it
       and link it, which mitigates the issue 1.
     * If we link `musl` statically, then issue 2. does not apply.
@@ -2160,8 +2162,9 @@ int link_executable(const std::vector<std::string> &infiles,
             } else if (char *env_linker = std::getenv("LFORTRAN_LINKER")) {
                 CC += env_linker;
             } else {
-                // Linux uses the built-in LLD linker. This command is the
-                // external driver, used on macOS and when --linker selects one.
+                // Linux and macOS use the built-in LLD linker. This command
+                // is the external driver, used when --linker selects one or
+                // the build has no LLD.
                 CC += "clang";
             }
 
@@ -2453,11 +2456,11 @@ int link_executable(const std::vector<std::string> &infiles,
         bool use_lld = only_linker_inputs
             && !device_driver_links
             && compiler_options.gpu_backend != "metal"
-            && elf_lld_selected(t, host_triple, requested_linker);
+            && lld_selected(t, host_triple, requested_linker);
         int err = 0;
         if (use_lld) {
 #ifdef HAVE_LFORTRAN_LLD
-            err = link_elf_with_lld(infiles, lld_extra_objects, outfile,
+            err = link_with_lld(infiles, lld_extra_objects, outfile,
                 runtime_library_dir, lld_runtime_lib, static_executable,
                 shared_executable, verbose, lib_dirs, libraries, linker_flags,
                 lld_extra_libs, compiler_options.openmp_lib_dir,
