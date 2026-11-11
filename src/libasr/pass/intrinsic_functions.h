@@ -7681,6 +7681,10 @@ namespace Digits {
                 return make_ConstantWithType(make_IntegerConstant_t, 24, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 53, int32, loc);
+            } else if (kind == 10) {
+                // x87 extended precision: 64 binary mantissa digits, not
+                // decimal precision (18).
+                return make_ConstantWithType(make_IntegerConstant_t, 64, int32, loc);
             } else if (kind == 16) {
                 return make_ConstantWithType(make_IntegerConstant_t, 113, int32, loc);
             } else {
@@ -7710,6 +7714,8 @@ namespace Digits {
                 body.push_back(al, b.Assignment(result, b.i32(24)));
             } else if (kind == 8) {
                 body.push_back(al, b.Assignment(result, b.i32(53)));
+            } else if (kind == 10) {
+                body.push_back(al, b.Assignment(result, b.i32(64)));
             } else if (kind == 16) {
                 body.push_back(al, b.Assignment(result, b.i32(113)));
             }
