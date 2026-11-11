@@ -6929,7 +6929,10 @@ use cancel_core
             // Inner loops that leave through EXIT before a chunk of
             // iterations (16384) ends do not delay the safepoints of the
             // loops that contain them: the outermost loop stops long before
-            // a chunk of its own iterations would end.
+            // a chunk of its own iterations would end. The call makes the
+            // outer body unbounded by itself; "JIT safepoints are inline"
+            // checks that an outer loop without one polls on every
+            // iteration too.
             run("integer(8) :: ni = 0, nj, nk, ns = 0");
             progressed(R"(do ni = 1, huge(0_8)
 if (ni == 2) call cancellation_progress()
@@ -7079,6 +7082,17 @@ subroutine sum_calls(n)
         total = total + tiny(k)
     end do
 end subroutine
+subroutine nested_exit(n, m)
+    integer(8), intent(in) :: n, m
+    integer(8) :: k, j
+    total = 0
+    do k = 1, n
+        do j = 1, n
+            if (j == m) exit
+            total = ieor(total*3 + j, total/7)
+        end do
+    end do
+end subroutine
 subroutine write_each(n)
     integer(8), intent(in) :: n
     integer(8) :: k
@@ -7173,6 +7187,32 @@ end module
                 }
             }
             CHECK(vectorized);
+        }
+        // Each iteration of a loop that contains a loop polls: an inner
+        // loop that leaves through EXIT before its chunk ends never polls,
+        // so only innermost loops may be chunked. Every loop with a subloop
+        // (the outer DO loop, or the loop of the inner one's chunks) polls
+        // in its own blocks, outside its subloops.
+        {
+            llvm::Function &fn = function("_nested_exit");
+            llvm::DominatorTree dominators(fn);
+            llvm::LoopInfo loops(dominators);
+            REQUIRE(!loops.empty());
+            for (llvm::Loop *loop : loops.getLoopsInPreorder()) {
+                if (loop->getSubLoops().empty()) continue;
+                int polls = 0;
+                for (llvm::BasicBlock *bb : loop->blocks()) {
+                    if (loops.getLoopFor(bb) != loop) continue;
+                    for (llvm::Instruction &i : *bb) {
+                        auto *load = llvm::dyn_cast<llvm::LoadInst>(&i);
+                        if (load && load->getPointerOperand() == request) {
+                            polls++;
+                        }
+                    }
+                }
+                CAPTURE(loop->getLoopDepth());
+                CHECK(polls == 1);
+            }
         }
         // A body that does I/O may take long: its loop polls on every
         // iteration, not once per chunk.
