@@ -1468,6 +1468,7 @@ RUN(NAME read_list_directed_no_newline_01 LABELS gfortran llvm)
 RUN(NAME read_real16_long_token_01 LABELS gfortran llvm)
 RUN(NAME real16_module_var_01 LABELS gfortran llvm)
 RUN(NAME real16_host_assoc_01 LABELS gfortran llvm)
+RUN(NAME read_real16_internal_01 LABELS gfortran llvm COPY_TO_BIN read_real16_internal_01_data.txt)
 
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
