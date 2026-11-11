@@ -2010,6 +2010,21 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_Variable(x);
         }
 
+        // null() keeps its own copy of the procedure type. The pointer it
+        // names is specialised above, so the constant has to follow.
+        void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x) {
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_PointerNullConstant(x);
+            if( x.m_var_expr == nullptr ) {
+                return;
+            }
+            ASR::ttype_t* var_type = ASRUtils::expr_type(x.m_var_expr);
+            if( var_type == nullptr || !ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(var_type)) ) {
+                return;
+            }
+            const_cast<ASR::PointerNullConstant_t&>(x).m_type = var_type;
+        }
+
         void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
             //Case: prob % calfun => temp_calfun (where calfun is procedure variable)
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_StructInstanceMember(x);

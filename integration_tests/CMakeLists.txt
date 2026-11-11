@@ -1712,6 +1712,7 @@ RUN(NAME procedure_pointer_50 LABELS gfortran llvm EXTRA_ARGS --implicit-interfa
 RUN(NAME procedure_pointer_51 LABELS gfortran llvm EXTRAFILES procedure_pointer_51_mod.f90)
 RUN(NAME procedure_pointer_52 LABELS gfortran llvm llvm_submodule EXTRAFILES procedure_pointer_52_mod.f90) # optional argument on a procedure pointer component, reloaded from the module file
 RUN(NAME procedure_pointer_53 LABELS gfortran llvm llvm_submodule EXTRAFILES procedure_pointer_53_mod.f90) # nullifying that component through an optional procedure dummy
+RUN(NAME procedure_pointer_54 LABELS gfortran llvm llvm_submodule EXTRAFILES procedure_pointer_54_mod.f90) # array arguments on a procedure pointer component
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
