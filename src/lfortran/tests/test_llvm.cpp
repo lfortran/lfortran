@@ -8707,6 +8707,42 @@ attributes #0 = { "target-features"="+avx" }
             *x86, false);
         // x86 with AVX, but nothing to rewrite.
         check(no_gather_ir, *x86, false);
+        // Sums of squares of points that are not four element vectors
+        // with components 0, 1 and 2 in lanes 0, 1 and 2: four points of
+        // three elements in one wide load, as a vectorized loop over
+        // r(3,n) reads them, and points in lanes 1 to 3.
+        check(R"""(
+define double @reductions_sum(<12 x double> %w) #0 {
+entry:
+  %x = shufflevector <12 x double> %w, <12 x double> undef, <4 x i32> <i32 0, i32 3, i32 6, i32 9>
+  %y = shufflevector <12 x double> %w, <12 x double> undef, <4 x i32> <i32 1, i32 4, i32 7, i32 10>
+  %z = shufflevector <12 x double> %w, <12 x double> undef, <4 x i32> <i32 2, i32 5, i32 8, i32 11>
+  %sx = fmul fast <4 x double> %x, %x
+  %sy = fmul fast <4 x double> %y, %y
+  %sz = fmul fast <4 x double> %z, %z
+  %t0 = fadd fast <4 x double> %sx, %sy
+  %t1 = fadd fast <4 x double> %t0, %sz
+  %r = extractelement <4 x double> %t1, i32 0
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""", *x86, false);
+        check(R"""(
+define double @reductions_sum(<4 x double> %a, <4 x double> %b) #0 {
+entry:
+  %x = shufflevector <4 x double> %a, <4 x double> %b, <2 x i32> <i32 1, i32 5>
+  %y = shufflevector <4 x double> %a, <4 x double> %b, <2 x i32> <i32 2, i32 6>
+  %z = shufflevector <4 x double> %a, <4 x double> %b, <2 x i32> <i32 3, i32 7>
+  %sx = fmul fast <2 x double> %x, %x
+  %sy = fmul fast <2 x double> %y, %y
+  %sz = fmul fast <2 x double> %z, %z
+  %t0 = fadd fast <2 x double> %sx, %sy
+  %t1 = fadd fast <2 x double> %t0, %sz
+  %r = extractelement <2 x double> %t1, i32 0
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""", *x86, false);
         // A repeated term is not rewritten, and the late cleanup must not
         // run for it either.
         check(reductions_diamond_ir, *x86, false);
