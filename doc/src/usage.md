@@ -391,7 +391,10 @@ The LLVM backend links Linux and macOS executables itself, with LLD built
 into the `lfortran` binary. On Linux it locates the C runtime (startup
 objects, dynamic linker, libc and libgcc); on macOS it links against
 `libSystem` from the SDK in `SDKROOT` or the one `xcrun` selects, for the
-release in `MACOSX_DEPLOYMENT_TARGET` (default: the running macOS). It does
+release in `MACOSX_DEPLOYMENT_TARGET`. When that variable is unset, the
+minimum is the macOS version implied by the target triple, which is the
+version Apple clang uses by default. Object files record the same release,
+so the link does not mix a newer object with an older executable. It does
 not invoke clang or gcc for that link. `--linker` selects a different
 linker: `lld` is the built-in one, and `clang` or `gcc` is an external
 compiler driver (on macOS, `--linker=clang` uses Apple's clang and linker).

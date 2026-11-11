@@ -2059,7 +2059,10 @@ int link_executable(const std::vector<std::string> &infiles,
 
     auto t1 = std::chrono::high_resolution_clock::now();
 #ifdef HAVE_LFORTRAN_LLVM
-    std::string t = (compiler_options.target == "") ? LCompilers::LLVMEvaluator::get_default_target_triple() : compiler_options.target;
+    std::string t = (compiler_options.target == "")
+        ? LCompilers::apply_macos_deployment_target(
+            LCompilers::LLVMEvaluator::get_default_target_triple())
+        : compiler_options.target;
 #else
     std::string t = (compiler_options.platform == LCompilers::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif

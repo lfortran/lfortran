@@ -32,9 +32,9 @@ LLD_HAS_DRIVER(elf)
 
 #ifdef __APPLE__
 #include <cstdio>
-#include <sys/sysctl.h>
 #include <llvm/Support/JSON.h>
 #include <llvm/Support/MemoryBuffer.h>
+#include <libasr/codegen/evaluator.h>
 #endif
 
 namespace {
@@ -704,23 +704,6 @@ std::string macos_sdk_version(const std::string &sdk) {
     return "";
 }
 
-// MACOSX_DEPLOYMENT_TARGET, as for Apple's driver, or else the running
-// macOS release. Objects and libraries built on this machine do not
-// require a newer release than that.
-std::string macos_deployment_target() {
-    if (const char *target = std::getenv("MACOSX_DEPLOYMENT_TARGET")) {
-        if (*target != '\0') {
-            return target;
-        }
-    }
-    char version[64];
-    size_t size = sizeof(version);
-    if (sysctlbyname("kern.osproductversion", version, &size, nullptr, 0) == 0) {
-        return version;
-    }
-    return "11.0";
-}
-
 int invoke_macho_link(const std::vector<const char *> &arguments) {
 #if LLVM_VERSION_MAJOR >= 17
     const ::lld::DriverDef drivers[] = {
@@ -756,7 +739,15 @@ int link_macho(
             "the Xcode Command Line Tools" << std::endl;
         return 10;
     }
-    std::string min_version = macos_deployment_target();
+    // The same release recorded in the object files. An explicit
+    // MACOSX_DEPLOYMENT_TARGET is already part of `triple`; otherwise this
+    // is the version the triple implies, which is Apple clang's default.
+    std::string min_version = LCompilers::macos_platform_version(triple);
+    if (min_version.empty()) {
+        std::cerr << "could not determine the macOS deployment target from '"
+            << triple << "'" << std::endl;
+        return 10;
+    }
     std::string sdk_version = macos_sdk_version(sdk);
     if (sdk_version.empty()) {
         sdk_version = min_version;
