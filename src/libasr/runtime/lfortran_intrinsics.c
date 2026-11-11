@@ -7716,6 +7716,11 @@ LFORTRAN_API double_complex_t _lfortran_zacosh(double_complex_t x)
 
 // fmod -----------------------------------------------------------------------
 
+LFORTRAN_API float _lfortran_sfmod(float x, float y)
+{
+    return fmodf(x, y);
+}
+
 LFORTRAN_API double _lfortran_dfmod(double x, double y)
 {
     return fmod(x, y);

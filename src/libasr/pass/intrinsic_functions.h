@@ -4487,10 +4487,24 @@ namespace Mod {
             ASR::expr_t* arg0 = b.r2r_t(args[0], new_type);
             ASR::expr_t* arg1 = b.r2r_t(args[1], new_type);
 
-            if (upper_kind == 4) {
-                body.push_back(al, b.Assignment(result, b.Sub(arg0, b.Mul(arg1, b.i2r_t(b.r2i_t(b.Div(arg0, arg1), real32), real32)))));
-            } else if (upper_kind == 8) {
-                body.push_back(al, b.Assignment(result, b.Sub(arg0, b.Mul(arg1, b.i2r_t(b.r2i_t(b.Div(arg0, arg1), real64), real64)))));
+            if (upper_kind != 16) {
+                // The remainder of two floating-point numbers is exactly
+                // representable, so the C library `fmod` is exact, while
+                // `a - p*int(a/p)` rounds twice and overflows for large quotients.
+                std::string c_func_name = real_c_func_name("fmod", new_type);
+                Vec<ASR::ttype_t*> c_arg_types;
+                c_arg_types.reserve(al, 2);
+                c_arg_types.push_back(al, new_type);
+                c_arg_types.push_back(al, new_type);
+                ASR::symbol_t *c_sym = b.create_c_func(c_func_name, fn_symtab, new_type, 2, c_arg_types);
+                fn_symtab->add_symbol(c_func_name, c_sym);
+                dep.push_back(al, s2c(al, c_func_name));
+                Vec<ASR::expr_t*> c_args;
+                c_args.reserve(al, 2);
+                c_args.push_back(al, arg0);
+                c_args.push_back(al, arg1);
+                body.push_back(al, b.Assignment(result,
+                    b.r2r_t(b.Call(c_sym, c_args, new_type), return_type)));
             } else {
                 // real(16): cast through int64 (int128 not available in ASR yet)
                 body.push_back(al, b.Assignment(result,
@@ -5266,7 +5280,11 @@ namespace Modulo {
                 append_error(diag, "Second argument of modulo cannot be 0", loc);
                 return nullptr;
             }
-            return ASRUtils::make_RealConstant_util(al, loc, a - b * std::floor(a/b), t1);
+            double r = std::fmod(a, b);
+            if (r != 0 && ((r < 0) != (b < 0))) {
+                r += b;
+            }
+            return ASRUtils::make_RealConstant_util(al, loc, r, t1);
         }
         return nullptr;
     }
@@ -5284,9 +5302,21 @@ namespace Modulo {
         end function
         */
         if (is_real(*arg_types[0])) {
-            body.push_back(al, b.Assignment(result, b.Sub(args[0], b.Mul(
-                b.r2r_t(args[1], arg_types[0]),
-                b.i2r_t(Floor::FLOOR(b, b.Div(args[0], b.r2r_t(args[1], arg_types[0])), int32, scope), arg_types[0])))));
+            ASR::expr_t* p = b.r2r_t(args[1], arg_types[0]);
+            ASR::expr_t* zero = b.f_t(0.0, arg_types[0]);
+            body.push_back(al, b.Assignment(result, Mod::MOD(b, args[0], p, scope)));
+            body.push_back(al, b.If(
+                b.And(
+                    b.NotEq(result, zero),
+                    b.Or(
+                        b.And(b.Lt(result, zero), b.Gt(p, zero)),
+                        b.And(b.Gt(result, zero), b.Lt(p, zero))
+                    )
+                ),
+                {
+                    b.Assignment(result, b.Add(result, p))
+                }, {}
+            ));
         } else {
             ASR::expr_t* p = b.i2i_t(args[1], arg_types[0]);
             body.push_back(al, b.Assignment(result, Mod::MOD(b, args[0], p, scope)));
