@@ -1879,6 +1879,12 @@ public:
         return result;
     }
 
+    // Name of the runtime function for a complex operation ("add", "sub",
+    // "mul", "div", "pow", "pow_int") on complex(kind), kind in {4, 8, 16}.
+    static std::string complex_runtime_name(const std::string &op, int kind) {
+        return "_lfortran_complex_" + op + "_" + std::to_string(kind * 8);
+    }
+
     llvm::Value* lfortran_complex_bin_op(llvm::Value* left_arg, llvm::Value* right_arg,
                                          std::string runtime_func_name,
                                          llvm::Type* complex_type=nullptr)
@@ -1909,13 +1915,13 @@ public:
             result_imag = builder->CreateFAdd(left_imag, right_imag);
         } else if (runtime_func_name == "_lfortran_complex_sub_32" ||
                    runtime_func_name == "_lfortran_complex_sub_64" ||
-            runtime_func_name == "_lfortran_complex_sub_128") {
+                   runtime_func_name == "_lfortran_complex_sub_128") {
             // (a+bi) - (c+di) = (a-c) + (b-d)i
             result_real = builder->CreateFSub(left_real, right_real);
             result_imag = builder->CreateFSub(left_imag, right_imag);
         } else if (runtime_func_name == "_lfortran_complex_mul_32" ||
                    runtime_func_name == "_lfortran_complex_mul_64" ||
-            runtime_func_name == "_lfortran_complex_mul_128") {
+                   runtime_func_name == "_lfortran_complex_mul_128") {
             // (a+bi) * (c+di) = (ac-bd) + (ad+bc)i
             llvm::Value* ac = builder->CreateFMul(left_real, right_real);
             llvm::Value* bd = builder->CreateFMul(left_imag, right_imag);
@@ -1925,7 +1931,7 @@ public:
             result_imag = builder->CreateFAdd(ad, bc);
         } else if (runtime_func_name == "_lfortran_complex_div_32" ||
                    runtime_func_name == "_lfortran_complex_div_64" ||
-            runtime_func_name == "_lfortran_complex_div_128") {
+                   runtime_func_name == "_lfortran_complex_div_128") {
             auto create_fabs = [&](llvm::Value* value) -> llvm::Value* {
 #if LLVM_VERSION_MAJOR >= 12
                 return builder->CreateUnaryIntrinsic(llvm::Intrinsic::fabs, value);
@@ -19532,9 +19538,7 @@ public:
         int64_t n = 0;
         if (exponent_value == nullptr ||
                 !ASRUtils::extract_value(exponent_value, n)) {
-            std::string fn_name = (a_kind == 4) ? "_lfortran_complex_pow_int_32"
-                : (a_kind == 16) ? "_lfortran_complex_pow_int_128"
-                : "_lfortran_complex_pow_int_64";
+            std::string fn_name = complex_runtime_name("pow_int", a_kind);
             llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
             llvm::Function *fn = LLVM::get_or_declare_function(*module, fn_name,
                     llvm_utils->void_type, {
@@ -19559,9 +19563,7 @@ public:
         if (n == 0) {
             return make_complex(1.0, 0.0);
         }
-        std::string mul_name = (a_kind == 4) ? "_lfortran_complex_mul_32"
-            : (a_kind == 16) ? "_lfortran_complex_mul_128"
-            : "_lfortran_complex_mul_64";
+        std::string mul_name = complex_runtime_name("mul", a_kind);
         uint64_t u = n < 0 ? uint64_t{0} - static_cast<uint64_t>(n) : static_cast<uint64_t>(n);
         while ((u & 1) == 0) {
             base = lfortran_complex_bin_op(base, base, mul_name, complex_type);
@@ -19579,9 +19581,7 @@ public:
         }
         if (n < 0) {
             result = lfortran_complex_bin_op(make_complex(1.0, 0.0), result,
-                (a_kind == 4) ? "_lfortran_complex_div_32"
-                : (a_kind == 16) ? "_lfortran_complex_div_128"
-                : "_lfortran_complex_div_64", complex_type);
+                complex_runtime_name("div", a_kind), complex_type);
         }
         return result;
     }
@@ -19617,53 +19617,23 @@ public:
         std::string fn_name;
         switch (x.m_op) {
             case ASR::binopType::Add: {
-                if (a_kind == 4) {
-                    fn_name = "_lfortran_complex_add_32";
-                } else if (a_kind == 16) {
-                    fn_name = "_lfortran_complex_add_128";
-                } else {
-                    fn_name = "_lfortran_complex_add_64";
-                }
+                fn_name = complex_runtime_name("add", a_kind);
                 break;
             };
             case ASR::binopType::Sub: {
-                if (a_kind == 4) {
-                    fn_name = "_lfortran_complex_sub_32";
-                } else if (a_kind == 16) {
-                    fn_name = "_lfortran_complex_sub_128";
-                } else {
-                    fn_name = "_lfortran_complex_sub_64";
-                }
+                fn_name = complex_runtime_name("sub", a_kind);
                 break;
             };
             case ASR::binopType::Mul: {
-                if (a_kind == 4) {
-                    fn_name = "_lfortran_complex_mul_32";
-                } else if (a_kind == 16) {
-                    fn_name = "_lfortran_complex_mul_128";
-                } else {
-                    fn_name = "_lfortran_complex_mul_64";
-                }
+                fn_name = complex_runtime_name("mul", a_kind);
                 break;
             };
             case ASR::binopType::Div: {
-                if (a_kind == 4) {
-                    fn_name = "_lfortran_complex_div_32";
-                } else if (a_kind == 16) {
-                    fn_name = "_lfortran_complex_div_128";
-                } else {
-                    fn_name = "_lfortran_complex_div_64";
-                }
+                fn_name = complex_runtime_name("div", a_kind);
                 break;
             };
             case ASR::binopType::Pow: {
-                if (a_kind == 4) {
-                    fn_name = "_lfortran_complex_pow_32";
-                } else if (a_kind == 16) {
-                    fn_name = "_lfortran_complex_pow_128";
-                } else {
-                    fn_name = "_lfortran_complex_pow_64";
-                }
+                fn_name = complex_runtime_name("pow", a_kind);
                 break;
             };
             default: {
