@@ -139,9 +139,17 @@ static int memory_model = MEMORY_UNCHOSEN;
 static int unified_memory = 0;
 
 // The smallest allocation the managed memory model makes managed memory:
-// making managed memory costs much more than malloc, and copying a smaller
-// range at a launch costs little.
-enum { MANAGED_MIN_BYTES = 1 << 20 };
+// making managed memory costs much more than malloc (the cache of freed blocks
+// below spares a procedure that allocates at every call most of it), and
+// copying a smaller range at a launch costs little. A range of at least
+// KEEP_READ_MIN_BYTES a launch only reads is copied at every launch that
+// follows a wait, and a loop that reads it at every iteration waits at every
+// iteration: 512 KB of boundary data copied 3000 times costs more than the
+// kernels that read it. So such a range is managed too, from 256 KB on. A
+// smaller one stays out: the slots a reduction fills (64 KB for a dot product)
+// are read by the host right after every launch, which a managed range
+// migrates a page at a time, slower than a copy.
+enum { MANAGED_MIN_BYTES = 256 * 1024 };
 
 // The managed allocations, sorted by address.
 typedef struct managed_range {
@@ -830,13 +838,64 @@ typedef struct host_allocator {
 // is not managed.
 static host_allocator previous_allocator;
 
+// Managed memory comes from a cache of freed blocks too: cudaMallocManaged
+// and cudaFree cost tens of microseconds, and a procedure with an automatic
+// array (or one that allocates a temporary) pays them at every call, with the
+// device heap rebuilt each time. A block is rounded up to a size class (the
+// classes of the device memory cache) and returned to its class when it is
+// freed. It goes back to the driver only when its class is full, when the
+// cache holds too much, when it is too large to cache, or when the driver is
+// out of memory. The recorded size of a block is the size of the whole block.
+static device_block managed_free_blocks[POOL_CLASSES][8];
+static int n_managed_free_blocks[POOL_CLASSES];
+static size_t managed_cached_bytes = 0;
+static const size_t MANAGED_MAX_BLOCK_BYTES = (size_t)256 << 20;
+static const size_t MANAGED_MAX_CACHED_BYTES = (size_t)1024 << 20;
+
+// Gives every cached block back to the driver.
+static void managed_cache_flush(void) {
+    managed_lock();
+    for (int c = 0; c < POOL_CLASSES; c++) {
+        for (int i = 0; i < n_managed_free_blocks[c]; i++) {
+            (void)cudaFree(managed_free_blocks[c][i].ptr);
+        }
+        n_managed_free_blocks[c] = 0;
+    }
+    managed_cached_bytes = 0;
+    managed_unlock();
+}
+
 static void* managed_alloc(void *context, int64_t size) {
     if (size >= MANAGED_MIN_BYTES
             && current_memory_model() == MEMORY_MANAGED) {
+        size_t block_size = (size_t)size;
+        int c = -1;
+        if (block_size <= MANAGED_MAX_BLOCK_BYTES) {
+            c = pool_class(block_size, &block_size);
+            if (c >= POOL_CLASSES) { c = -1; block_size = (size_t)size; }
+        }
         void *p = NULL;
-        if (cudaMallocManaged(&p, (size_t)size, cudaMemAttachGlobal)
-                == cudaSuccess && p) {
-            if (managed_record(p, (size_t)size)) return p;
+        if (c >= 0) {
+            managed_lock();
+            if (n_managed_free_blocks[c] > 0) {
+                p = managed_free_blocks[c][--n_managed_free_blocks[c]].ptr;
+                managed_cached_bytes -= block_size;
+            }
+            managed_unlock();
+            if (p) {
+                if (managed_record(p, block_size)) return p;
+                (void)cudaFree(p);
+                p = NULL;
+            }
+        }
+        cudaError_t err = cudaMallocManaged(&p, block_size,
+            cudaMemAttachGlobal);
+        if (err != cudaSuccess && managed_cached_bytes > 0) {
+            managed_cache_flush();
+            err = cudaMallocManaged(&p, block_size, cudaMemAttachGlobal);
+        }
+        if (err == cudaSuccess && p) {
+            if (managed_record(p, block_size)) return p;
             (void)cudaFree(p);
         }
     }
@@ -844,10 +903,29 @@ static void* managed_alloc(void *context, int64_t size) {
 }
 
 static void managed_dealloc(void *context, void *ptr) {
-    if (managed_forget(ptr)) {
+    size_t block_size = managed_forget(ptr);
+    if (block_size) {
         // A pending launch may still use the memory.
         device_synchronize();
-        (void)cudaFree(ptr);
+        size_t unused = 0;
+        int c = block_size <= MANAGED_MAX_BLOCK_BYTES
+            ? pool_class(block_size, &unused) : -1;
+        int cached = 0;
+        if (c >= 0 && c < POOL_CLASSES && unused == block_size) {
+            managed_lock();
+            if (n_managed_free_blocks[c] < 8
+                    && managed_cached_bytes + block_size
+                        <= MANAGED_MAX_CACHED_BYTES) {
+                managed_free_blocks[c][n_managed_free_blocks[c]].ptr = ptr;
+                managed_free_blocks[c][n_managed_free_blocks[c]].size
+                    = block_size;
+                n_managed_free_blocks[c]++;
+                managed_cached_bytes += block_size;
+                cached = 1;
+            }
+            managed_unlock();
+        }
+        if (!cached) (void)cudaFree(ptr);
         return;
     }
     previous_allocator.dealloc(context, ptr);
