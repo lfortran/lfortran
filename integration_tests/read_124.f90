@@ -1,13 +1,20 @@
 program read_124
     ! List-directed internal read of real(10): scalar and a length-1 array.
-    ! Kind 10 exists only where the C long double kind is 10.
+    ! LFortran accepts an explicit real(10) on every host and lowers it to
+    ! the kind-10 reader, even where c_long_double is not 10. GFortran
+    ! rejects a kind it does not have, so that path never spells kind 10.
     use iso_c_binding, only: c_long_double
     implicit none
-    integer, parameter :: kp = c_long_double
+#ifdef __LFORTRAN__
+    integer, parameter :: kp = 10
+#else
+    integer, parameter :: kp = merge(10, 8, c_long_double == 10)
+#endif
     real(kp) :: x, y(1)
     character(len=4) :: s
     integer :: ios
 
+    if (c_long_double < 0) stop 0
     if (kp /= 10) stop 0
 
     s = "1.25"
