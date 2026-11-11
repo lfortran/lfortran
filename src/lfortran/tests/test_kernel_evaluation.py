@@ -61,15 +61,15 @@ def check(client, code, expected):
     return messages
 
 
-def check_interruption(client, directory):
+def check_interruption(client, directory, builtin):
     check(client, "integer :: saved_interrupt = 41", [])
     check(client, "integer function interrupt_plus(i)\ninteger, intent(in) :: i\n"
           "interrupt_plus=i+1\nend function", [])
-    check_command_interruption(client, directory)
+    check_command_interruption(client, directory, builtin)
     for _ in range(2 if os.name == "posix" else 0):
         started = time.monotonic()
         messages = interrupt_cell(client,
-            "call execute_command_line('sleep 4')\nprint *, 'command-done'")
+            "call execute_command_line('sleep 4')\nprint *, 'command-done'", builtin)
         assert time.monotonic() - started < 2.5, "command cancellation waited for sleep"
         assert not any(m["msg_type"] == "stream" and "command-done" in m["content"]["text"]
                        for m in messages), messages
@@ -123,13 +123,46 @@ def check_interruption(client, directory):
     assert reply["parent_header"].get("msg_id") == request["header"]["msg_id"], reply
     assert reply["msg_type"] == "interrupt_reply", reply
     check(client, "interrupt_plus(saved_interrupt)", ["42"])
+    # With the default stop_on_error, the interrupted cell aborts the queued one.
+    msg_id = client.execute("do\nend do")
+    deadline = time.monotonic() + 10
+    while True:
+        msg = client.get_iopub_msg(timeout=max(0.1, deadline - time.monotonic()))
+        if (msg["parent_header"].get("msg_id") == msg_id and
+                msg["msg_type"] == "execute_input"):
+            break
+        assert time.monotonic() < deadline, "loop did not start"
+    queued = client.execute("saved_interrupt = 0")
+    time.sleep(0.2)
+    request = client.session.msg("interrupt_request")
+    client.control_channel.send(request)
+    replies = {}
+    deadline = time.monotonic() + 4
+    while len(replies) != 2 and time.monotonic() < deadline:
+        try:
+            msg = client.get_shell_msg(timeout=0.1)
+        except queue.Empty:
+            continue
+        parent = msg["parent_header"].get("msg_id")
+        if parent in (msg_id, queued):
+            replies[parent] = msg["content"]
+    assert replies.get(msg_id, {}).get("ename") == "KeyboardInterrupt", replies
+    # Xeus replies to an aborted request with a bare "error" status. The
+    # queued cell does not run: saved_interrupt stays 41 below.
+    assert queued in replies and replies[queued]["status"] in ("aborted", "error"), replies
+    assert "ename" not in replies[queued], replies
+    reply = client.get_control_msg(timeout=4)
+    assert reply["parent_header"].get("msg_id") == request["header"]["msg_id"], reply
+    # Xeus also aborts requests that arrive while it drains the queue.
+    time.sleep(0.5)
+    check(client, "interrupt_plus(saved_interrupt)", ["42"])
     for silent in (False, True):
-        interrupt_cell(client, "saved_interrupt=43\ndo\nend do", silent=silent)
+        interrupt_cell(client, "saved_interrupt=43\ndo\nend do", builtin, silent=silent)
         check(client, "saved_interrupt", ["43"])
     check(client, "subroutine interrupt_spin()\ndo\nend do\nend subroutine", [])
-    interrupt_cell(client, "call interrupt_spin()")
+    interrupt_cell(client, "call interrupt_spin()", builtin)
     messages = interrupt_cell(client, "print '(a)', 'before-interrupt'\ndo\nend do",
-                              started_text="before-interrupt\n")
+                              builtin, started_text="before-interrupt\n")
     assert "".join(m["content"]["text"] for m in messages if m["msg_type"] == "stream"
                    and m["content"]["name"] == "stdout") == "before-interrupt\n", messages
     # Idle and repeated requests must not poison the next cell.
@@ -145,7 +178,7 @@ def check_interruption(client, directory):
                  "block\ncharacter(20) :: text\nread(*,'(a)') text\nend block",
                  "block\nreal :: r\nread(*,*,decimal='comma') r\nend block",
                  "read(*,*)"):
-        old_prompt = interrupt_cell(client, code, reading=True)
+        old_prompt = interrupt_cell(client, code, builtin, reading=True)
         check(client, "interrupt_read", ["17"])
         printed = check(client, "print '(f3.1)', 1.5", [])
         assert "".join(m["content"]["text"] for m in printed
@@ -210,7 +243,7 @@ def finish_cell(client, msg_id):
     return reply["content"], messages
 
 
-def interrupt_cell(client, code, *, silent=False, reading=False, started_text=None):
+def interrupt_cell(client, code, builtin, *, silent=False, reading=False, started_text=None):
     msg_id = client.execute(code, silent=silent, allow_stdin=reading, stop_on_error=False)
     preceding = []
     if reading:
@@ -240,8 +273,15 @@ def interrupt_cell(client, code, *, silent=False, reading=False, started_text=No
         time.sleep(0.2)
     deferred = client.session.msg("kernel_info_request")
     client.control_channel.send(deferred)
-    with_control = client.control_channel.socket.poll(100)
-    assert not with_control, "non-interrupt control request ran during execution"
+    if builtin:
+        # The built-in kernel answers only interrupts while a cell runs.
+        with_control = client.control_channel.socket.poll(100)
+        assert not with_control, "non-interrupt control request ran during execution"
+    else:
+        # Xeus reads control on its own thread and answers during the cell.
+        reply = client.get_control_msg(timeout=4)
+        assert reply["parent_header"]["msg_id"] == deferred["header"]["msg_id"], reply
+        assert not client.shell_channel.msg_ready(), "cell ended before interruption"
     interrupts = [client.session.msg("interrupt_request") for _ in range(2)]
     for request in interrupts:
         client.control_channel.send(request)
@@ -251,9 +291,11 @@ def interrupt_cell(client, code, *, silent=False, reading=False, started_text=No
     assert not any(m["msg_type"] == "execute_result" for m in messages), messages
     if not silent:
         assert [m["msg_type"] for m in messages][-2:] == ["error", "status"], messages
-    replies = [client.get_control_msg(timeout=4) for _ in range(3)]
-    assert {m["parent_header"]["msg_id"] for m in replies} == {
-        deferred["header"]["msg_id"], *(m["header"]["msg_id"] for m in interrupts)}, replies
+    replies = [client.get_control_msg(timeout=4) for _ in range(3 if builtin else 2)]
+    expected = {m["header"]["msg_id"] for m in interrupts}
+    if builtin:
+        expected.add(deferred["header"]["msg_id"])
+    assert {m["parent_header"]["msg_id"] for m in replies} == expected, replies
     return prompt if reading else messages
 
 
@@ -295,7 +337,7 @@ def process_running(pid):
     return True
 
 
-def check_command_interruption(client, directory):
+def check_command_interruption(client, directory, builtin):
     # Quoted paths and a shell -> Python -> Python tree, not just shell exec
     # replacing itself with a single sleep process.
     command_dir = directory / "owned command"
@@ -318,7 +360,7 @@ def check_command_interruption(client, directory):
             started = time.monotonic()
             messages = interrupt_cell(client,
                 "call execute_command_line('" + command + "')\nprint *, 'command-done'",
-                started_text="owned-command-started\n")
+                builtin, started_text="owned-command-started\n")
             assert time.monotonic() - started < 2.5, "owned command ignored interrupt"
             owned = json.loads(pids.read_text())
             deadline = time.monotonic() + 2
@@ -529,7 +571,9 @@ def run_kernel(lfortran, managed, streaming_only=False, mode="normal", interrupt
             client.start_channels()
             client.wait_for_ready(timeout=30)
             if not streaming_only:
-                check_interruption(client, directory)
+                # In a WITH_XEUS build the default adapter is the Xeus kernel.
+                builtin = managed or b"xeus-fortran" not in log.read_bytes()
+                check_interruption(client, directory, builtin)
             if interrupt_only:
                 client.shutdown()
                 process.wait(timeout=15)

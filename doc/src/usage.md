@@ -231,10 +231,11 @@ The client is LFortran's own. The kernel is LFortran's own implementation of
 the Jupyter messaging protocol (ZeroMQ over TCP with HMAC-SHA256 signatures),
 which needs no third-party library. In a build with `WITH_XEUS=yes`,
 `lfortran` and `lfortran kernel` both run the Xeus kernel, and the prompt
-still ends that kernel when it exits. For TCP/IPv4 connections, its native
-server pumps Xeus control messages on the execution caller and uses LFortran's
-stdin channel for cancellable READs. Other Xeus configurations retain the
-legacy server and blocking stdin behavior. A cell that fails aborts the requests
+still ends that kernel when it exits. It uses Xeus's split server, which reads
+control messages on their own thread, so an interrupt reaches a running cell.
+For TCP/IPv4 connections, it uses LFortran's stdin channel for cancellable
+READs; with other transports, a READ waits for its input before an interrupt
+takes effect. A cell that fails aborts the requests
 already waiting with an error reply and no idle status, so a client that
 waits for the aborted cell to become idle waits with it. See
 `src/lfortran/jupyter.cpp` and `src/lfortran/fortran_kernel.cpp`.

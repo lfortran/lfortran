@@ -127,14 +127,20 @@ the interrupted request's default `true` may abort already queued cells;
 An idle request, or one arriving after the last checkpoint, need not turn a
 completed cell into a failure.
 
-The built-in kernel and the native Xeus TCP/IPv4 server (including hostnames)
-connect control-channel `interrupt_request` to this pump, including silent
-loops. Other requests are deferred until execution returns. Interrupt replies
+The built-in kernel connects control-channel `interrupt_request` to this pump,
+including silent loops; it defers other control requests until execution
+returns. The native Xeus kernel uses Xeus's split server
+(`make_xserver_shell_main`): shell requests run on the main thread and control
+requests on their own thread, where `interrupt_request` sets an atomic flag that
+the cell's cancellation callback reads; other control requests are answered
+while the cell runs. Queued cells after an interrupt are aborted by Xeus itself
+when the interrupted request has `stop_on_error=true`. Interrupt replies
 have the interrupt as parent; the execution error/reply and final idle retain
 the cell's parent. Idle interrupts do not latch into subsequent cells.
 
-Both adapters use `InputChannel` for cancellable stdin waits, pumping control
-and output on the caller. A native JIT READ without user IOSTAT uses an internal
+The built-in kernel and the Xeus kernel over TCP/IPv4 (including hostnames) use
+`InputChannel` for cancellable stdin waits; the Xeus kernel wraps the split
+server only to replace its stdin transport. A native JIT READ without user IOSTAT uses an internal
 status and checks cancellation before reporting an ordinary input error.
 This lets READ return through its runtime frame and normal JIT cleanup, even
 as the last statement of a cell. Ordinary EOF/error without IOSTAT remains
@@ -165,6 +171,8 @@ descendants that deliberately leave the process group are not tracked.
 Compilation, arbitrary foreign calls without safepoints, and WASM execution
 are not interrupted. Foreign calls may defer cancellation until they return.
 Initialization and cleanup, including their input waits, must finish before
-cancellation can proceed. Xeus registration configurations, IPv6 and non-TCP
-transports retain their legacy server and blocking input behavior.
+cancellation can proceed. With Xeus registration configurations, IPv6 and
+non-TCP transports, a READ uses Xeus's blocking stdin transport: an interrupt
+takes effect after the READ receives its input. Registration configurations
+also keep Xeus's single-threaded server, which reads control only between cells.
 No exception, signal unwind, or nonlocal jump crosses a generated/C frame.
