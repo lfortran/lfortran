@@ -52,6 +52,12 @@ cmake -E copy integration_tests/noalias_dummy_06.f90 \
 # Copy Files:
 cmake -E copy CMakeLists.txt README.md LICENSE version $dest
 
+# Python byte-code caches (__pycache__/*.pyc) are written into src/ when
+# build0.sh runs the code generators. They are not sources and depend on the
+# Python version, so leave them out of the tarball. (Python, not `find`: on
+# Windows `find` is FIND.EXE.)
+"${PYTHON:-python}" -c 'import pathlib, shutil, sys; [shutil.rmtree(p) for p in list(pathlib.Path(sys.argv[1]).rglob("__pycache__"))]' "$dest"
+
 # Create the tarball
 cmake -E make_directory dist
 cmake -E tar cfz dist/$dest.tar.gz $dest
