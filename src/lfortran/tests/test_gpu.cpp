@@ -2044,7 +2044,8 @@ public:
 // `name` when `module` is empty), or of its deferring twin, after the Metal
 // pipeline up to gpu_launch_sync.
 std::string gpu_sync_trace(const std::string &source,
-        const std::string &module, const std::string &name) {
+        const std::string &module, const std::string &name,
+        bool loaded_from_mod = false) {
     CompilerOptions options;
     options.gpu_backend = "metal";
     options.po.gpu_offload_metal = true;
@@ -2060,6 +2061,16 @@ std::string gpu_sync_trace(const std::string &source,
     INFO(diagnostics.render2());
     REQUIRE(parsed.ok);
     ASR::TranslationUnit_t &unit = *parsed.result;
+    if (loaded_from_mod) {
+        // As if the modules came from their module files, whose procedures
+        // this unit compiles (the default multi-file mode).
+        for (auto &item : unit.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                ASR::down_cast<ASR::Module_t>(item.second)
+                    ->m_loaded_from_mod = true;
+            }
+        }
+    }
     Allocator allocator(32 * 1024 * 1024);
     PassManager passes;
     std::string pass = "gpu_vector_lanes", skip;
@@ -2104,6 +2115,42 @@ std::string gpu_sync_trace(const std::string &source,
     return trace.trace;
 }
 
+}
+
+TEST_CASE("GPU twins of modules loaded from module files leave only their launches pending") {
+    // `project` launches on y and counts the call on the host: a caller that
+    // chains projections does not wait between them, whether the module is
+    // compiled in this unit or came from its module file.
+    const std::string source = R"(
+module sync_loaded
+implicit none
+type :: tally
+    integer :: calls = 0
+end type
+contains
+subroutine step(y)
+    real, intent(inout) :: y(:)
+    integer :: i
+    do concurrent (i = 1:size(y))
+        y(i) = y(i) + 1
+    end do
+end subroutine
+subroutine project(y, t)
+    real, intent(inout) :: y(:)
+    type(tally), intent(inout) :: t
+    call step(y)
+    t%calls = t%calls + 1
+end subroutine
+subroutine chain(a, b, t)
+    real, intent(inout) :: a(:), b(:)
+    type(tally), intent(inout) :: t
+    call project(a, t)
+    call project(b, t)
+end subroutine
+end module
+)";
+    CHECK(gpu_sync_trace(source, "sync_loaded", "chain") == "CC");
+    CHECK(gpu_sync_trace(source, "sync_loaded", "chain", true) == "CC");
 }
 
 TEST_CASE("GPU allocatable actuals of contiguous optional dummies are not synced") {
