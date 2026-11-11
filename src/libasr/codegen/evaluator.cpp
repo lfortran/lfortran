@@ -1146,27 +1146,11 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     mpm.add(llvm::createVerifierPass());
     mpm.run(m);
 #endif
-    // expand_reciprocal_sqrt edits the IR outside the pass managers. On
-    // LLVM 17 and later the function analyses filled by MPM are then stale,
-    // and the late SROA round below would read them. The legacy pipeline
-    // has no analysis cache.
-#if LLVM_VERSION_MAJOR >= 17
-    std::vector<llvm::Function *> rsqrt_changed;
-    for (llvm::Function &f : m) {
-        if (expand_reciprocal_sqrt(f, TM->getTargetTriple())) {
-            rsqrt_changed.push_back(&f);
-        }
-    }
-#else
-    for (llvm::Function &f : m) {
-        expand_reciprocal_sqrt(f, TM->getTargetTriple());
-    }
-#endif
-
     // The late cleanup and the horizontal reduction rewrite only run on
     // functions that the rewrite may apply to: definitions for x86 with AVX
-    // that contain a fast sum of three vector squares. Other functions and
-    // targets (such as AArch64) keep the code of the pipeline above.
+    // that contain a vector whose lanes are sums of three squares. Other
+    // functions and targets (such as AArch64) keep the code of the pipeline
+    // above.
     std::vector<llvm::Function *> late_functions;
     for (llvm::Function &f : m) {
         if (may_recombine_horizontal_reductions(f, *TM)) {
@@ -1189,9 +1173,6 @@ void LLVMEvaluator::opt(llvm::Module &m) {
         LateFPM.addPass(llvm::GVNPass());
         LateFPM.addPass(llvm::InstCombinePass());
         LateFPM.addPass(llvm::SimplifyCFGPass());
-        for (llvm::Function *f : rsqrt_changed) {
-            FAM.invalidate(*f, llvm::PreservedAnalyses::none());
-        }
         for (llvm::Function *f : late_functions) {
             LateFPM.run(*f, FAM);
         }
@@ -1214,10 +1195,11 @@ void LLVMEvaluator::opt(llvm::Module &m) {
 #endif
     }
 
-    // The horizontal reduction pass matches the lane transpose the SLP
-    // vectorizer builds for a four-way sum of squares and rewrites it as
-    // pairwise horizontal additions. It only matches fast math instructions,
-    // so ordinary compilations keep their existing output.
+    // The horizontal reduction pass finds the sums of squares of three
+    // vector components that the SLP vectorizer builds, in whatever lane
+    // layout, and rewrites them as pairwise horizontal additions. It only
+    // matches fast math instructions, so ordinary compilations keep their
+    // existing output.
     bool reduced = false;
     for (llvm::Function *f : late_functions) {
         reduced |= recombine_horizontal_reductions(*f, *TM);
@@ -1252,6 +1234,14 @@ void LLVMEvaluator::opt(llvm::Module &m) {
         final_fpm.doFinalization();
         final_mpm.run(m);
 #endif
+    }
+
+    // The Newton step of a reciprocal square root is written in IR, and IR
+    // optimizations (InstCombine in recent LLVM) fold it back into a bare
+    // 1/sqrt(x), which the code generator is then told to estimate without
+    // refinement. So the expansion runs after every IR optimization.
+    for (llvm::Function &f : m) {
+        expand_reciprocal_sqrt(f, TM->getTargetTriple());
     }
 }
 

@@ -8292,14 +8292,16 @@ attributes #0 = { "target-features"="+avx" }
 
 // Same gathers, with a nonzero lane 3. The result is
 // 1*v0 + 2*v1 + 4*v2 + 8*v3 of the three-component sums: 888.
-// Counting lane 3 as well would be 1581.
+// Counting lane 3 as well would be 1581. The freeze keeps the rewritten
+// vectors from folding to constants, so the clear of lane 3 stays visible.
 const std::string reductions_lanes_ir = R"""(
 define double @reductions_lanes() #0 {
 entry:
-  %v0 = fsub fast <4 x double> <double 1.0, double 2.0, double 3.0, double 9.0>, zeroinitializer
-  %v1 = fsub fast <4 x double> <double 2.0, double 3.0, double 4.0, double 8.0>, zeroinitializer
-  %v2 = fsub fast <4 x double> <double 3.0, double 4.0, double 5.0, double 7.0>, zeroinitializer
-  %v3 = fsub fast <4 x double> <double 4.0, double 5.0, double 6.0, double 6.0>, zeroinitializer
+  %z = freeze <4 x double> zeroinitializer
+  %v0 = fsub fast <4 x double> <double 1.0, double 2.0, double 3.0, double 9.0>, %z
+  %v1 = fsub fast <4 x double> <double 2.0, double 3.0, double 4.0, double 8.0>, %z
+  %v2 = fsub fast <4 x double> <double 3.0, double 4.0, double 5.0, double 7.0>, %z
+  %v3 = fsub fast <4 x double> <double 4.0, double 5.0, double 6.0, double 6.0>, %z
   %g0a = shufflevector <4 x double> %v0, <4 x double> %v1, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
   %g0b = shufflevector <4 x double> %g0a, <4 x double> %v2, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
   %g0c = shufflevector <4 x double> %g0b, <4 x double> %v3, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
@@ -8414,8 +8416,9 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         // drop the repeated factor.
         CHECK(!reductions_rewrite(reductions_diamond_ir, *x86));
         // A fourth component that is zero on entry stays zero when the
-        // update multiplies it by a loaded value: fast math treats that
-        // product as zero. A constant infinity does not.
+        // update multiplies it by itself or by a finite constant. A loaded
+        // value may be an infinity there, as may a constant one, and 0*Inf
+        // is NaN.
         const std::string differences =
             "  %v0 = fsub fast <4 x double> %x, <double 1.0, double 1.0, double 1.0, double 0.0>\n"
             "  %v1 = fsub fast <4 x double> %x, <double 2.0, double 1.0, double 1.0, double 0.0>\n"
@@ -8424,8 +8427,14 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         CHECK(!reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> %v0, %v0\n"
             "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
-        CHECK(!reductions_loop_masks(differences,
+        CHECK(reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> %la, %v0\n"
+            "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
+        CHECK(!reductions_loop_masks(differences,
+            "  %d = fmul fast <4 x double> %v0, <double 1.0, double 1.0, double 1.0, double 2.0>\n"
+            "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
+        CHECK(reductions_loop_masks(differences,
+            "  %d = fmul fast <4 x double> <double 1.0, double 1.0, double 1.0, double 0.0>, %la\n"
             "  %x.next = fadd fast <4 x double> %x, %d\n", *x86));
         CHECK(reductions_loop_masks(differences,
             "  %d = fmul fast <4 x double> <double 0.0, double 0.0, double 0.0, double 0x7FF0000000000000>, %v0\n"
@@ -8442,7 +8451,9 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
             "  %v3 = fmul fast <4 x double> %lb, %lb\n",
             "  %x.next = fadd fast <4 x double> %x, %x\n", *x86));
         // A shuffle that moves a nonzero component into the fourth one.
-        CHECK(reductions_loop_masks(
+        // The rewrite reads components 0 to 2 through it, so it rebuilds
+        // the vectors from %x, whose fourth component stays zero.
+        CHECK(!reductions_loop_masks(
             "  %v0 = shufflevector <4 x double> %x, <4 x double> <double 1.0, double 1.0, double 1.0, double 0.0>, <4 x i32> <i32 0, i32 1, i32 2, i32 4>\n"
             "  %v1 = fsub fast <4 x double> %x, %v0\n"
             "  %v2 = fsub fast <4 x double> %v0, %x\n"
@@ -8512,6 +8523,361 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
 }
 
 #if LLVM_VERSION_MAJOR >= 11
+// Sums of the squares of components 0 to 2 of a-b, a-c, b-c, b-d, c-a and
+// d-b, in the lane layouts of newer SLP vectorizers. Each function returns
+// the lanes of its sum weighted by 1, 2, 4, ... The squared lengths are
+// |a-b|^2 = 6, |a-c|^2 = |c-a|^2 = 11, |b-c|^2 = 17, |b-d|^2 = |d-b|^2 = 24.
+const std::string reductions_layouts_ir = R"""(
+; Two lanes: component 1 is gathered first and subtracted after, the others
+; are gathered from the differences. 6 + 2*11 = 28.
+define double @reductions_two() #0 {
+entry:
+  %a = freeze <4 x double> <double 1.0, double 2.0, double 3.0, double 0.0>
+  %b = freeze <4 x double> <double 2.0, double 3.0, double 5.0, double 0.0>
+  %c = freeze <4 x double> <double 4.0, double 1.0, double 2.0, double 0.0>
+  %a1 = shufflevector <4 x double> %a, <4 x double> %a, <2 x i32> <i32 1, i32 1>
+  %bc1 = shufflevector <4 x double> %b, <4 x double> %c, <2 x i32> <i32 1, i32 5>
+  %e1 = fsub fast <2 x double> %a1, %bc1
+  %s1 = fmul fast <2 x double> %e1, %e1
+  %ab = fsub fast <4 x double> %a, %b
+  %ac = fsub fast <4 x double> %a, %c
+  %e0 = shufflevector <4 x double> %ab, <4 x double> %ac, <2 x i32> <i32 0, i32 4>
+  %s0 = fmul fast <2 x double> %e0, %e0
+  %p = fadd fast <2 x double> %s1, %s0
+  %e2 = shufflevector <4 x double> %ab, <4 x double> %ac, <2 x i32> <i32 2, i32 6>
+  %s2 = fmul fast <2 x double> %e2, %e2
+  %sum = fadd fast <2 x double> %p, %s2
+  %l0 = extractelement <2 x double> %sum, i32 0
+  %l1 = extractelement <2 x double> %sum, i32 1
+  %w1 = fmul double %l1, 2.0
+  %r = fadd double %l0, %w1
+  ret double %r
+}
+
+; Four lanes: two-lane partial sums of components 0 and 1, concatenated, plus
+; the squares of component 2. 6 + 2*11 + 4*17 + 8*24 = 288.
+define double @reductions_four() #0 {
+entry:
+  %a = freeze <4 x double> <double 1.0, double 2.0, double 3.0, double 0.0>
+  %b = freeze <4 x double> <double 2.0, double 3.0, double 5.0, double 0.0>
+  %c = freeze <4 x double> <double 4.0, double 1.0, double 2.0, double 0.0>
+  %d = freeze <4 x double> <double 0.0, double -1.0, double 7.0, double 0.0>
+  %ab = fsub fast <4 x double> %a, %b
+  %ac = fsub fast <4 x double> %a, %c
+  %bc = fsub fast <4 x double> %b, %c
+  %bd = fsub fast <4 x double> %b, %d
+  %e0 = shufflevector <4 x double> %ab, <4 x double> %ac, <2 x i32> <i32 0, i32 4>
+  %s0 = fmul fast <2 x double> %e0, %e0
+  %e1 = shufflevector <4 x double> %ab, <4 x double> %ac, <2 x i32> <i32 1, i32 5>
+  %s1 = fmul fast <2 x double> %e1, %e1
+  %p = fadd fast <2 x double> %s0, %s1
+  %f0 = shufflevector <4 x double> %bc, <4 x double> %bd, <2 x i32> <i32 0, i32 4>
+  %t0 = fmul fast <2 x double> %f0, %f0
+  %f1 = shufflevector <4 x double> %bc, <4 x double> %bd, <2 x i32> <i32 1, i32 5>
+  %t1 = fmul fast <2 x double> %f1, %f1
+  %q = fadd fast <2 x double> %t0, %t1
+  %pq = shufflevector <2 x double> %p, <2 x double> %q, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
+  %e2 = shufflevector <4 x double> %ab, <4 x double> %ac, <2 x i32> <i32 2, i32 6>
+  %f2 = shufflevector <4 x double> %bc, <4 x double> %bd, <2 x i32> <i32 2, i32 6>
+  %g2 = shufflevector <2 x double> %e2, <2 x double> %f2, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
+  %u2 = fmul fast <4 x double> %g2, %g2
+  %sum = fadd fast <4 x double> %pq, %u2
+  %w = fmul <4 x double> %sum, <double 1.0, double 2.0, double 4.0, double 8.0>
+  %l0 = extractelement <4 x double> %w, i32 0
+  %l1 = extractelement <4 x double> %w, i32 1
+  %l2 = extractelement <4 x double> %w, i32 2
+  %l3 = extractelement <4 x double> %w, i32 3
+  %h0 = fadd double %l0, %l1
+  %h1 = fadd double %l2, %l3
+  %r = fadd double %h0, %h1
+  ret double %r
+}
+
+; Eight lanes over vectors that hold two four element vectors each: a, b in
+; %ab and c, d in %cd. Lanes 4 to 7 repeat lanes 0 to 3, which are a-c, b-d,
+; c-a and d-b. 11*(1+4+16+64) + 24*(2+8+32+128) = 5015.
+define double @reductions_eight() #0 {
+entry:
+  %ab = freeze <8 x double> <double 1.0, double 2.0, double 3.0, double 0.0, double 2.0, double 3.0, double 5.0, double 0.0>
+  %cd = freeze <8 x double> <double 4.0, double 1.0, double 2.0, double 0.0, double 0.0, double -1.0, double 7.0, double 0.0>
+  %x = fsub fast <8 x double> %ab, %cd
+  %y = fsub fast <8 x double> %cd, %ab
+  %g0 = shufflevector <8 x double> %x, <8 x double> %y, <8 x i32> <i32 0, i32 4, i32 8, i32 12, i32 0, i32 4, i32 8, i32 12>
+  %s0 = fmul fast <8 x double> %g0, %g0
+  %g1 = shufflevector <8 x double> %x, <8 x double> %y, <8 x i32> <i32 1, i32 5, i32 9, i32 13, i32 1, i32 5, i32 9, i32 13>
+  %s1 = fmul fast <8 x double> %g1, %g1
+  %g2 = shufflevector <8 x double> %x, <8 x double> %y, <8 x i32> <i32 2, i32 6, i32 10, i32 14, i32 2, i32 6, i32 10, i32 14>
+  %s2 = fmul fast <8 x double> %g2, %g2
+  %t = fadd fast <8 x double> %s0, %s1
+  %sum = fadd fast <8 x double> %t, %s2
+  %w = fmul <8 x double> %sum, <double 1.0, double 2.0, double 4.0, double 8.0, double 16.0, double 32.0, double 64.0, double 128.0>
+  %lo = shufflevector <8 x double> %w, <8 x double> %w, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
+  %hi = shufflevector <8 x double> %w, <8 x double> %w, <4 x i32> <i32 4, i32 5, i32 6, i32 7>
+  %v = fadd <4 x double> %lo, %hi
+  %l0 = extractelement <4 x double> %v, i32 0
+  %l1 = extractelement <4 x double> %v, i32 1
+  %l2 = extractelement <4 x double> %v, i32 2
+  %l3 = extractelement <4 x double> %v, i32 3
+  %h0 = fadd double %l0, %l1
+  %h1 = fadd double %l2, %l3
+  %r = fadd double %h0, %h1
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
+TEST_CASE("LLVM horizontal reductions in the lane layouts of newer SLP") {
+    // SLP of LLVM 23 sums squares in two, four and eight lanes, concatenates
+    // partial sums, and subtracts before or after gathering a component.
+    // The pass follows every lane to the same vector expression.
+    std::unique_ptr<llvm::TargetMachine> x86
+        = reductions_target_machine("x86_64-unknown-linux-gnu", "x86-64");
+    if (!x86) {
+        return;
+    }
+    const std::pair<const char *, double> functions[] = {
+        {"reductions_two", 28.0},
+        {"reductions_four", 288.0},
+        {"reductions_eight", 5015.0},
+    };
+    for (const auto &function : functions) {
+        INFO(function.first);
+        LCompilers::LLVMEvaluator e;
+        std::unique_ptr<llvm::Module> m
+            = e.parse_module(reductions_layouts_ir, "");
+        llvm::Function &f = *m->getFunction(function.first);
+        CHECK(LCompilers::may_recombine_horizontal_reductions(f, *x86));
+        CHECK(LCompilers::recombine_horizontal_reductions(f, *x86));
+        std::string err;
+        llvm::raw_string_ostream os(err);
+        CHECK(!llvm::verifyFunction(f, &os));
+        CHECK(calls_intrinsic_like(f, "hadd"));
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
+        if (__builtin_cpu_supports("avx")) {
+            e.add_module(std::move(m));
+            CHECK(e.execfn<double>(function.first) == function.second);
+        }
+#endif
+    }
+}
+#endif
+
+#if LLVM_VERSION_MAJOR >= 11
+// Lanes 0 and 1 of the sum are |(a-b)*c|^2 = 6 and |(a-d)*c|^2 = 11 over
+// components 0 to 2; the function returns 6 + 2*11 = 28. The original code
+// never computes component 3 of a-b, which is Inf - Inf. Component 3 of c is
+// zero, but the rewrite rebuilds (a-b)*c on whole vectors, where it is NaN,
+// so it must clear lane 3 of the square.
+const std::string reductions_rebuilt_ir = R"""(
+define double @reductions_rebuilt() #0 {
+entry:
+  %a = freeze <4 x double> <double 1.0, double 2.0, double 3.0, double 0x7FF0000000000000>
+  %b = freeze <4 x double> <double 2.0, double 3.0, double 5.0, double 0x7FF0000000000000>
+  %d = freeze <4 x double> <double 4.0, double 1.0, double 2.0, double 0.0>
+  %w = freeze <4 x double> <double 1.0, double 1.0, double 1.0, double 1.0>
+  %c = fmul fast <4 x double> %w, <double 1.0, double 1.0, double 1.0, double 0.0>
+  %a0 = shufflevector <4 x double> %a, <4 x double> undef, <2 x i32> <i32 0, i32 0>
+  %bd0 = shufflevector <4 x double> %b, <4 x double> %d, <2 x i32> <i32 0, i32 4>
+  %c0 = shufflevector <4 x double> %c, <4 x double> undef, <2 x i32> <i32 0, i32 0>
+  %e0 = fsub fast <2 x double> %a0, %bd0
+  %f0 = fmul fast <2 x double> %e0, %c0
+  %s0 = fmul fast <2 x double> %f0, %f0
+  %a1 = shufflevector <4 x double> %a, <4 x double> undef, <2 x i32> <i32 1, i32 1>
+  %bd1 = shufflevector <4 x double> %b, <4 x double> %d, <2 x i32> <i32 1, i32 5>
+  %c1 = shufflevector <4 x double> %c, <4 x double> undef, <2 x i32> <i32 1, i32 1>
+  %e1 = fsub fast <2 x double> %a1, %bd1
+  %f1 = fmul fast <2 x double> %e1, %c1
+  %s1 = fmul fast <2 x double> %f1, %f1
+  %a2 = shufflevector <4 x double> %a, <4 x double> undef, <2 x i32> <i32 2, i32 2>
+  %bd2 = shufflevector <4 x double> %b, <4 x double> %d, <2 x i32> <i32 2, i32 6>
+  %c2 = shufflevector <4 x double> %c, <4 x double> undef, <2 x i32> <i32 2, i32 2>
+  %e2 = fsub fast <2 x double> %a2, %bd2
+  %f2 = fmul fast <2 x double> %e2, %c2
+  %s2 = fmul fast <2 x double> %f2, %f2
+  %p = fadd fast <2 x double> %s0, %s1
+  %sum = fadd fast <2 x double> %p, %s2
+  %l0 = extractelement <2 x double> %sum, i32 0
+  %l1 = extractelement <2 x double> %sum, i32 1
+  %w1 = fmul double %l1, 2.0
+  %r = fadd double %l0, %w1
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
+TEST_CASE("LLVM horizontal reductions clear lane 3 of rebuilt products") {
+    // A zero factor makes a fast product zero only where the original code
+    // computes the product. The rewrite computes component 3 of every
+    // vector it rebuilds, so it clears that lane.
+    std::unique_ptr<llvm::TargetMachine> x86
+        = reductions_target_machine("x86_64-unknown-linux-gnu", "x86-64");
+    if (!x86) {
+        return;
+    }
+    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<llvm::Module> m = e.parse_module(reductions_rebuilt_ir, "");
+    llvm::Function &f = *m->getFunction("reductions_rebuilt");
+    CHECK(LCompilers::recombine_horizontal_reductions(f, *x86));
+    std::string err;
+    llvm::raw_string_ostream os(err);
+    CHECK(!llvm::verifyFunction(f, &os));
+    CHECK(calls_intrinsic_like(f, "hadd"));
+    bool masked = false;
+    for (llvm::BasicBlock &bb : f) {
+        for (llvm::Instruction &i : bb) {
+            masked = masked || clears_lane3(i);
+        }
+    }
+    CHECK(masked);
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
+    if (__builtin_cpu_supports("avx")) {
+        e.add_module(std::move(m));
+        CHECK(e.execfn<double>("reductions_rebuilt") == 28.0);
+    }
+#endif
+}
+#endif
+
+#if LLVM_VERSION_MAJOR >= 11
+// The squared vector is a select of a fast product a*w and of w, where
+// component 3 of w is zero. Lane 0 of the sum is 1^2+2^2+3^2 = 14 for
+// a = (1, 2, 3, Inf) and w = 1. The original code never reads component 3 of
+// a*w, which is Inf*0 = NaN, so the rewrite must clear lane 3 of the square.
+const std::string reductions_anyleaf_ir = R"""(
+define double @reductions_anyleaf(<4 x double> %a, <4 x double> %w0, i1 %c) #0 {
+entry:
+  %w = insertelement <4 x double> %w0, double 0.0, i32 3
+  %m = fmul fast <4 x double> %a, %w
+  %v = select i1 %c, <4 x double> %m, <4 x double> %w
+  %g0a = shufflevector <4 x double> %v, <4 x double> %v, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
+  %g0b = shufflevector <4 x double> %g0a, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
+  %g0c = shufflevector <4 x double> %g0b, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
+  %s0 = fmul fast <4 x double> %g0c, %g0c
+  %g1a = shufflevector <4 x double> %v, <4 x double> %v, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
+  %g1b = shufflevector <4 x double> %g1a, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 5, i32 undef>
+  %g1c = shufflevector <4 x double> %g1b, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
+  %s1 = fmul fast <4 x double> %g1c, %g1c
+  %g2a = shufflevector <4 x double> %v, <4 x double> %v, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
+  %g2b = shufflevector <4 x double> %g2a, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 6, i32 undef>
+  %g2c = shufflevector <4 x double> %g2b, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
+  %s2 = fmul fast <4 x double> %g2c, %g2c
+  %t0 = fadd fast <4 x double> %s0, %s1
+  %t1 = fadd fast <4 x double> %t0, %s2
+  %l0 = extractelement <4 x double> %t1, i32 0
+  ret double %l0
+}
+
+define double @reductions_anyleaf_main() #0 {
+  %r = call double @reductions_anyleaf(<4 x double> <double 1.0, double 2.0, double 3.0, double 0x7FF0000000000000>, <4 x double> <double 1.0, double 1.0, double 1.0, double 1.0>, i1 true)
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
+TEST_CASE("LLVM horizontal reductions clear lane 3 of products of the original code") {
+    // A zero factor does not make a product zero where the other factor
+    // may be an infinity, even if the original code computes the product:
+    // it never reads that lane, and vhaddpd does.
+    std::unique_ptr<llvm::TargetMachine> x86
+        = reductions_target_machine("x86_64-unknown-linux-gnu", "x86-64");
+    if (!x86) {
+        return;
+    }
+    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<llvm::Module> m = e.parse_module(reductions_anyleaf_ir, "");
+    llvm::Function &f = *m->getFunction("reductions_anyleaf");
+    CHECK(LCompilers::recombine_horizontal_reductions(f, *x86));
+    std::string err;
+    llvm::raw_string_ostream os(err);
+    CHECK(!llvm::verifyFunction(f, &os));
+    bool masked = false;
+    for (llvm::BasicBlock &bb : f) {
+        for (llvm::Instruction &i : bb) {
+            masked = masked || clears_lane3(i);
+        }
+    }
+    CHECK(masked);
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
+    if (__builtin_cpu_supports("avx")) {
+        e.add_module(std::move(m));
+        CHECK(e.execfn<double>("reductions_anyleaf_main") == 14.0);
+    }
+#endif
+}
+#endif
+
+#if LLVM_VERSION_MAJOR >= 11
+// Constant element indices past the end of a vector, whose result is
+// poison. In @reductions_oob a squared element is read through one, and in
+// @reductions_oob_zero the lane 3 proof follows one.
+const std::string reductions_oob_ir = R"""(
+define <4 x double> @reductions_oob(<4 x double> %a, <4 x double> %b) #0 {
+entry:
+  %s = shufflevector <4 x double> %a, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
+  %e = extractelement <4 x double> %s, i32 7
+  %v = insertelement <4 x double> %a, double %e, i32 0
+  %q = fmul fast <4 x double> %v, %v
+  %q1 = fmul fast <4 x double> %b, %b
+  %q2 = fmul fast <4 x double> %a, %a
+  %t = fadd fast <4 x double> %q, %q1
+  %r = fadd fast <4 x double> %t, %q2
+  ret <4 x double> %r
+}
+
+define <4 x double> @reductions_oob_zero(<4 x double> %a, <4 x double> %b, i1 %c) #0 {
+entry:
+  %s = shufflevector <4 x double> %a, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
+  %e = extractelement <4 x double> %s, i32 7
+  %v = insertelement <4 x double> %a, double %e, i32 3
+  %v0 = select i1 %c, <4 x double> %v, <4 x double> %a
+  %g0a = shufflevector <4 x double> %v0, <4 x double> %b, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
+  %g0b = shufflevector <4 x double> %g0a, <4 x double> %a, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
+  %g0c = shufflevector <4 x double> %g0b, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
+  %s0 = fmul fast <4 x double> %g0c, %g0c
+  %g1a = shufflevector <4 x double> %v0, <4 x double> %b, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
+  %g1b = shufflevector <4 x double> %g1a, <4 x double> %a, <4 x i32> <i32 0, i32 1, i32 5, i32 undef>
+  %g1c = shufflevector <4 x double> %g1b, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
+  %s1 = fmul fast <4 x double> %g1c, %g1c
+  %g2a = shufflevector <4 x double> %v0, <4 x double> %b, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
+  %g2b = shufflevector <4 x double> %g2a, <4 x double> %a, <4 x i32> <i32 0, i32 1, i32 6, i32 undef>
+  %g2c = shufflevector <4 x double> %g2b, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
+  %s2 = fmul fast <4 x double> %g2c, %g2c
+  %t0 = fadd fast <4 x double> %s0, %s1
+  %t1 = fadd fast <4 x double> %t0, %s2
+  ret <4 x double> %t1
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
+TEST_CASE("LLVM horizontal reductions through out of range element indices") {
+    // An element read through an index past the end is not a component,
+    // and it is not known to be zero.
+    std::unique_ptr<llvm::TargetMachine> x86
+        = reductions_target_machine("x86_64-unknown-linux-gnu", "x86-64");
+    if (!x86) {
+        return;
+    }
+    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<llvm::Module> m = e.parse_module(reductions_oob_ir, "");
+    llvm::Function &oob = *m->getFunction("reductions_oob");
+    CHECK(!LCompilers::recombine_horizontal_reductions(oob, *x86));
+    CHECK(!calls_intrinsic_like(oob, "hadd"));
+    llvm::Function &zero = *m->getFunction("reductions_oob_zero");
+    CHECK(LCompilers::recombine_horizontal_reductions(zero, *x86));
+    bool masked = false;
+    for (llvm::BasicBlock &bb : zero) {
+        for (llvm::Instruction &i : bb) {
+            masked = masked || clears_lane3(i);
+        }
+    }
+    CHECK(masked);
+    std::string err;
+    llvm::raw_string_ostream os(err);
+    CHECK(!llvm::verifyModule(*m, &os));
+}
+#endif
+
+#if LLVM_VERSION_MAJOR >= 11
 TEST_CASE("LLVM horizontal reductions only where they may apply") {
     // The --fast pipeline runs its late cleanup and the rewrite only on the
     // functions `may_recombine_horizontal_reductions` accepts. Everywhere
@@ -8569,12 +8935,13 @@ attributes #0 = { "target-features"="+avx" }
 }
 
 // The integration tests check the numeric result on every LLVM version.
-// They stay green when SLP never emits the four-wide chain, so they do
-// not notice a rewrite that stopped firing. LLVM 11's SLP does emit that
-// chain for Haswell, and this test requires the horizontal add there.
-// A later SLP may use another width, or a shuffle whose mask text looks
-// like the gather without being the tree the pass matches, so the
-// intrinsic is not required on those versions.
+// They stay green when the rewrite does not fire, so they do not notice a
+// rewrite that stopped firing. LLVM 11's SLP loads each point of these
+// routines as one four-wide vector, and this test requires the horizontal
+// add there. LLVM 23 loads the points in two-element pieces, so no
+// four-wide vector of a point exists to square, and the pass leaves the
+// routines alone. "LLVM horizontal reductions in the lane layouts of newer
+// SLP" covers the layouts of newer versions.
 #ifdef HAVE_TARGET_X86
 TEST_CASE("Fortran sum of squares becomes a horizontal add on Haswell") {
 #if !defined(__x86_64__) && !defined(__i386__)
@@ -8664,6 +9031,194 @@ end module
     requires_hadd("products");
 #endif
 }
+
+// The tests below compile for the host, which must be x86.
+#if defined(__x86_64__) || defined(__i386__)
+namespace {
+
+// The points of reductions_hadd_03 and reductions_hadd_04: five points that
+// start from constants with a zero fourth component, held as contiguous four
+// element vectors, and move under pairwise forces for a number of steps only
+// known at run time. `force` sets w(k) from the squared distance d2.
+std::string reductions_orbit_source(const std::string &force) {
+    return R"(program reductions_orbit
+implicit none
+integer, parameter :: nb = 5, npair = 10
+integer, parameter :: pair_i(npair) = [2,3,3,4,4,4,5,5,5,5]
+integer, parameter :: pair_j(npair) = [1,1,2,1,2,3,1,2,3,4]
+real(8) :: x(4,nb), v(4,nb)
+call init(x, v)
+call orbit(x, v, 100 + command_argument_count())
+print *, x
+contains
+subroutine init(x, v)
+    real(8), intent(out) :: x(4,nb), v(4,nb)
+    real(8) :: p(4,nb)
+    p(:,1) = [0d0, 0d0, 0d0, 0d0]
+    p(:,2) = [1d0, 2d0, 3d0, 0d0]
+    p(:,3) = [-2d0, 1d0, 4d0, 0d0]
+    p(:,4) = [3d0, -1d0, 2d0, 0d0]
+    p(:,5) = [5d0, 3d0, -2d0, 0d0]
+    x = p
+    v = 0
+end subroutine
+subroutine orbit(x, v, n)
+    real(8), intent(inout) :: x(4,nb), v(4,nb)
+    integer, intent(in) :: n
+    real(8) :: r(4,npair), w(npair), d2
+    real :: s
+    integer :: step, i, k, d
+    do step = 1, n
+        do k = 1, npair
+            do d = 1, 4
+                r(d,k) = x(d,pair_i(k)) - x(d,pair_j(k))
+            end do
+        end do
+        do k = 1, npair
+            d2 = r(1,k)*r(1,k) + r(2,k)*r(2,k) + r(3,k)*r(3,k)
+            )" + force + R"(
+        end do
+        do k = 1, npair
+            do d = 1, 4
+                v(d,pair_i(k)) = v(d,pair_i(k)) - r(d,k) * w(k)
+                v(d,pair_j(k)) = v(d,pair_j(k)) + r(d,k) * w(k)
+            end do
+        end do
+        do i = 1, nb
+            do d = 1, 4
+                x(d,i) = x(d,i) + 0.01d0 * v(d,i)
+            end do
+        end do
+    end do
+end subroutine
+end program
+)";
+}
+
+// Compiles `source` like `lfortran --fast --mcpu=haswell` and passes the
+// optimized module to `check`.
+void check_fast_haswell(const std::string &source,
+        const std::function<void(llvm::Module &)> &check) {
+    CompilerOptions co;
+    co.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    co.platform = LCompilers::get_platform();
+    co.po.fast = true;
+    co.po.bounds_checking = false;
+    co.po.strict_bounds_checking = false;
+    co.mcpu = "haswell";
+    LCompilers::FortranEvaluator e(co);
+    LCompilers::LocationManager lm;
+    LCompilers::LocationManager::FileLocations file;
+    file.in_filename = "reductions_orbit.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::PassManager lpm;
+    lpm.skip_llvm_backend_passes();
+    lpm.use_default_passes();
+    LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>> res
+        = e.get_llvm2(source, lm, lpm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(res.ok);
+    check(*res.result->m_m);
+}
+
+// A floating point constant or a splat of one, equal to `value`.
+bool is_fp_constant(llvm::Value *v, double value) {
+    auto *c = llvm::dyn_cast<llvm::Constant>(v);
+    if (c && c->getType()->isVectorTy()) {
+        c = c->getSplatValue();
+    }
+    auto *fp = llvm::dyn_cast_or_null<llvm::ConstantFP>(c);
+    return fp && fp->isExactlyValue(value);
+}
+
+// The Newton step `e * (x*e*e - 3)` of the estimate `e = 1/sqrt(x)`: a sum
+// with -3 among the first users of `e`.
+bool has_newton_step(llvm::Instruction *estimate) {
+    std::vector<llvm::Instruction *> level{estimate};
+    for (int depth = 0; depth < 3; depth++) {
+        std::vector<llvm::Instruction *> next;
+        for (llvm::Instruction *i : level) {
+            for (llvm::User *u : i->users()) {
+                auto *ui = llvm::dyn_cast<llvm::Instruction>(u);
+                if (!ui) {
+                    continue;
+                }
+                if (ui->getOpcode() == llvm::Instruction::FAdd
+                        && is_fp_constant(ui->getOperand(1), -3)) {
+                    return true;
+                }
+                next.push_back(ui);
+            }
+        }
+        level = next;
+    }
+    return false;
+}
+
+} // namespace
+
+TEST_CASE("Fortran single precision 1/sqrt keeps its Newton step on Haswell") {
+    // The code generator emits the bare 12 bit estimate for every single
+    // precision 1/sqrt of a function with the attribute
+    // `reciprocal-estimates`, so each must be refined by the Newton step that
+    // expand_reciprocal_sqrt writes in IR. The step must survive the IR
+    // optimizations that follow the horizontal reduction rewrite.
+    check_fast_haswell(reductions_orbit_source(
+            "s = 1 / sqrt(real(d2)); w(k) = 0.01d0 * s**3"),
+            [](llvm::Module &m) {
+        int estimates = 0;
+        for (llvm::Function &f : m) {
+            if (f.isDeclaration()
+                    || !f.hasFnAttribute("reciprocal-estimates")) {
+                continue;
+            }
+            INFO(f.getName().str());
+            for (llvm::BasicBlock &bb : f) {
+                for (llvm::Instruction &i : bb) {
+                    auto *call = llvm::dyn_cast<llvm::CallInst>(&i);
+                    llvm::Function *callee
+                        = call ? call->getCalledFunction() : nullptr;
+                    if (!callee
+                            || callee->getName().str().rfind("llvm.sqrt", 0)
+                                != 0
+                            || !call->getType()->getScalarType()->isFloatTy()) {
+                        continue;
+                    }
+                    for (llvm::User *u : call->users()) {
+                        auto *div = llvm::dyn_cast<llvm::Instruction>(u);
+                        if (div && div->getOpcode() == llvm::Instruction::FDiv
+                                && div->getOperand(1) == call) {
+                            estimates++;
+                            CHECK(is_fp_constant(div->getOperand(0), 1));
+                            CHECK(has_newton_step(div));
+                        }
+                    }
+                }
+            }
+        }
+        // The pass expands the 1/sqrt of the force loop.
+        CHECK(estimates > 0);
+    });
+}
+
+TEST_CASE("Fortran pairwise distances become horizontal adds on Haswell") {
+    // reductions_hadd_03. After inlining, the SLP vectorizer of LLVM 23
+    // builds the squared pair distances in a lane layout of newer SLP, which
+    // the horizontal reduction pass must still recognize. LLVM 11 vectorizes
+    // this program differently and the pass leaves it alone.
+    check_fast_haswell(reductions_orbit_source(
+            "w(k) = 0.01d0 / (d2 * sqrt(d2))"),
+            [](llvm::Module &m) {
+        llvm::Function *main_fn = m.getFunction("main");
+        REQUIRE(main_fn != nullptr);
+#if LLVM_VERSION_MAJOR >= 23
+        CHECK(calls_intrinsic_like(*main_fn, "hadd"));
+#endif
+    });
+}
+#endif
 #endif // HAVE_TARGET_X86
 #endif
 
