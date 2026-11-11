@@ -25,4 +25,16 @@ n = nint(2.75_kp)
 i = int(2.75_kp)
 if (n /= 3) error stop
 if (i /= 2) error stop
+! Same pointer-as-double fold for the other kind-10 constant evaluators.
+if (aint(2.75_kp) /= 2.0_kp) error stop
+if (anint(2.75_kp) /= 3.0_kp) error stop
+if (modulo(7.5_kp, 2.0_kp) /= 1.5_kp) error stop
+if (dim(5.0_kp, 2.0_kp) /= 3.0_kp) error stop
+if (hypot(3.0_kp, 4.0_kp) /= 5.0_kp) error stop
+if (spacing(1.0_kp) /= 2.0_kp**(-63)) error stop
+if (scale(1.5_kp, 2) /= 6.0_kp) error stop
+if (nearest(1.0_kp, 1.0_kp) /= 1.0_kp + 2.0_kp**(-63)) error stop
+! erfl and gfortran's real(10) erf differ by one ulp. spacing(1) is two
+! ulps there, so this accepts that and still rejects the denormal fold.
+if (abs(erf(1.0_kp) - 0.842700792949714869368_kp) > spacing(1.0_kp)) error stop
 end program

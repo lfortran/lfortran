@@ -555,6 +555,12 @@ namespace X {                                                                   
         if (kind == 16) {                                                       \
             return nullptr;                                                     \
         }                                                                       \
+        if (kind == 10 && std::string(#X) == "Erf") {                           \
+            /* Kind 10 stores a pointer in m_r. Fold erf in long double. */    \
+            long double rv = ASRUtils::real_constant_get_r10(                   \
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));                  \
+            return ASRUtils::make_RealConstant_r10(al, loc, erfl(rv), t);       \
+        }                                                                       \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          \
         ASRUtils::ASRBuilder b(al, loc);                                        \
         return b.f_t(std::eval_X(rv), t);                                       \
@@ -1533,7 +1539,8 @@ namespace Scale {
     static ASR::expr_t *eval_Scale(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t value_I = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_type) == 16) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+        if (kind == 16) {
             if (value_I < -32766 || value_I > 32766) {
                 return nullptr;
             }
@@ -1542,6 +1549,17 @@ namespace Scale {
             return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_mul(lf_f128_mul(
                 ASRUtils::real_expr_get_r16(args[0]), ASRUtils::real16_pow2(first_step)),
                 ASRUtils::real16_pow2(second_step)), arg_type);
+        }
+        // Kind 10 stores a pointer in m_r, not the numeric value.
+        if (kind == 10) {
+            if (value_I < std::numeric_limits<int>::min()
+                    || value_I > std::numeric_limits<int>::max()) {
+                return nullptr;
+            }
+            long double value_X = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            return ASRUtils::make_RealConstant_r10(al, loc,
+                ldexpl(value_X, static_cast<int>(value_I)), arg_type);
         }
         double value_X = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double result = value_X * std::pow(2, value_I);
@@ -3428,9 +3446,16 @@ namespace Aint {
 
     static ASR::expr_t *eval_Aint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 16) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+        if (kind == 16) {
             lf_float128 v = ASRUtils::real_expr_get_r16(args[0]);
             return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_signbit(v) ? lf_f128_ceiling(v) : lf_f128_floor(v), arg_type);
+        }
+        // Kind 10 stores a pointer in m_r, not the numeric value.
+        if (kind == 10) {
+            long double rv = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            return ASRUtils::make_RealConstant_r10(al, loc, truncl(rv), arg_type);
         }
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         ASRUtils::ASRBuilder b(al, loc);
@@ -3464,8 +3489,15 @@ namespace Anint {
 
     static ASR::expr_t *eval_Anint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0])) == 16) {
+        int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+        if (kind == 16) {
             return ASRUtils::make_RealConstant_r16(al, loc, ASRUtils::real16_round_half_away(ASRUtils::real_expr_get_r16(args[0])), arg_type);
+        }
+        // Kind 10 stores a pointer in m_r, not the numeric value.
+        if (kind == 10) {
+            long double rv = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            return ASRUtils::make_RealConstant_r10(al, loc, roundl(rv), arg_type);
         }
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         ASRUtils::ASRBuilder b(al, loc);
@@ -3748,11 +3780,21 @@ namespace Dim {
     static ASR::expr_t *eval_Dim(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         if (is_real(*t1)) {
-            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+            if (kind == 16) {
                 lf_float128 a = ASRUtils::real_expr_get_r16(args[0]);
                 lf_float128 b = ASRUtils::real_expr_get_r16(args[1]);
                 return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_cmp(a, b) > 0 ? lf_f128_sub(a, b)
                     : lf_f128_from_double(0.0), t1);
+            }
+            // Kind 10 stores a pointer in m_r, not the numeric value.
+            if (kind == 10) {
+                long double a = ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]));
+                long double b = ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[1]));
+                long double result = (a > b) ? (a - b) : 0.0L;
+                return ASRUtils::make_RealConstant_r10(al, loc, result, t1);
             }
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
@@ -5102,6 +5144,28 @@ namespace Nearest {
             }
             return ASRUtils::make_RealConstant_r16(al, loc, next, t1);
         }
+        // Kind 10 stores a pointer in m_r, not the numeric value.
+        if (kind == 10) {
+            long double s = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[1]));
+            if (s == 0.0L) {
+                append_error(diag, "`S` argument of nearest() must be non-zero", loc);
+                return nullptr;
+            }
+            long double x = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            if (!(fabsl(x) <= std::numeric_limits<long double>::max())) {
+                return nullptr;
+            }
+            long double direction = (s > 0.0L)
+                ? std::numeric_limits<long double>::infinity()
+                : -std::numeric_limits<long double>::infinity();
+            long double next = nextafterl(x, direction);
+            if (!(fabsl(next) <= std::numeric_limits<long double>::max())) {
+                return nullptr;
+            }
+            return ASRUtils::make_RealConstant_r10(al, loc, next, t1);
+        }
         double s = ASRUtils::real_constant_get_double(
             ASR::down_cast<ASR::RealConstant_t>(args[1]));
         if (s == 0.0) {
@@ -5218,6 +5282,27 @@ namespace Spacing {
             // tiny(x) = 2**(-16382) is the result when 2**(e - p) is not normal
             return ASRUtils::make_RealConstant_r16(al, loc, ASRUtils::real16_pow2(std::max(exponent - 113, -16382)), t1);
         }
+        // Kind 10 stores a pointer in m_r. spacing(1.0_10) is 2**(-63),
+        // not the double subnormal gap.
+        if (kind == 10) {
+            long double x = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            if (!(fabsl(x) <= std::numeric_limits<long double>::max())) {
+                return nullptr;
+            }
+            int digits = std::numeric_limits<long double>::digits;
+            int min_pow = std::numeric_limits<long double>::min_exponent - 1;
+            // A zero yields tiny(x) = 2**(emin).
+            int exponent = min_pow + digits;
+            if (x != 0.0L) {
+                frexpl(x, &exponent);
+            }
+            int power = exponent - digits;
+            if (power < min_pow) {
+                power = min_pow;
+            }
+            return ASRUtils::make_RealConstant_r10(al, loc, ldexpl(1.0L, power), t1);
+        }
         if (kind == 4) {
             float x = static_cast<float>(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
             float result = std::fabs(std::nextafterf(x, std::numeric_limits<float>::infinity()) - x);
@@ -5269,7 +5354,8 @@ namespace Modulo {
             }
             return make_ConstantWithType(make_IntegerConstant_t, r, t1, loc);
         } else if (is_real(*ASRUtils::expr_type(args[0])) && is_real(*ASRUtils::expr_type(args[1]))) {
-            if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            int kind = ASRUtils::extract_kind_from_ttype_t(t1);
+            if (kind == 16) {
                 lf_float128 a16 = ASRUtils::real_expr_get_r16(args[0]);
                 lf_float128 b16 = ASRUtils::real_expr_get_r16(args[1]);
                 if (lf_f128_cmp(b16, lf_f128_from_double(0.0)) == 0) {
@@ -5285,6 +5371,19 @@ namespace Modulo {
                     r16 = lf_f128_add(r16, b16);
                 }
                 return ASRUtils::make_RealConstant_r16(al, loc, r16, t1);
+            }
+            // Kind 10 stores a pointer in m_r, not the numeric value.
+            if (kind == 10) {
+                long double a = ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[0]));
+                long double b = ASRUtils::real_constant_get_r10(
+                    ASR::down_cast<ASR::RealConstant_t>(args[1]));
+                if (b == 0.0L) {
+                    append_error(diag, "Second argument of modulo cannot be 0", loc);
+                    return nullptr;
+                }
+                long double r = a - b * floorl(a / b);
+                return ASRUtils::make_RealConstant_r10(al, loc, r, t1);
             }
             double a = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
             double b = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
@@ -5991,6 +6090,14 @@ namespace Hypot {
         int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         if (kind == 16) {
             return nullptr;
+        }
+        // Kind 10 stores a pointer in m_r, not the numeric value.
+        if (kind == 10) {
+            long double a = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            long double b = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[1]));
+            return ASRUtils::make_RealConstant_r10(al, loc, hypotl(a, b), t1);
         }
         if (kind == 4) {
             float a = static_cast<float>(ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r);
