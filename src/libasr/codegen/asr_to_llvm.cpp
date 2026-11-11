@@ -786,6 +786,9 @@ public:
     std::set<int64_t> emitted_goto_targets;
     // The statement being generated calls a FINAL procedure.
     bool emitted_protected_jit_call = false;
+    // The cold code of safepoints, moved to the end of its function once
+    // generated, so that the common path falls through.
+    std::vector<llvm::BasicBlock *> cancellation_cleanup_blocks;
     std::string mangle_prefix;
     bool prototype_only;
     llvm::StructType *complex_type_4, *complex_type_8, *complex_type_16;
@@ -9030,6 +9033,7 @@ public:
             builder->CreateCall(fn, {});
         }
         protect_cancellation(false);
+        sink_cancellation_cleanups(builder->GetInsertBlock()->getParent());
         if (interactive_program) {
             builder->CreateRetVoid();
         } else {
@@ -12716,7 +12720,8 @@ public:
                 const bool saved_never_unwinds = never_unwinds;
                 never_unwinds = jit_cancellation && !may_unwind(x);
                 define_function_entry(x);
-                predeclare_goto_targets(builder->GetInsertBlock()->getParent(), x.m_body, x.n_body);
+                llvm::Function *F = builder->GetInsertBlock()->getParent();
+                predeclare_goto_targets(F, x.m_body, x.n_body);
 
                 cancellation_scope = jit_cancellation ? x.m_symtab : nullptr;
                 // Recursion needs no loop; also observe a request that arrived
@@ -12728,6 +12733,7 @@ public:
                 cancellation_scope = nullptr;
                 
                 define_function_exit(x);
+                sink_cancellation_cleanups(F);
                 never_unwinds = saved_never_unwinds;
             }
         } else if( ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::Intrinsic &&
@@ -18904,6 +18910,15 @@ public:
             : builder->CreateSub(depth, one), word);
     }
 
+    void sink_cancellation_cleanups(llvm::Function *fn) {
+        std::vector<llvm::BasicBlock *> others;
+        for (llvm::BasicBlock *bb : cancellation_cleanup_blocks) {
+            if (bb->getParent() == fn) bb->moveAfter(&fn->back());
+            else others.push_back(bb);
+        }
+        cancellation_cleanup_blocks = std::move(others);
+    }
+
     void protect_cancellation(bool begin) {
         if (never_unwinds) return;
         count_cancellation_depth(JITCancellation::protect_symbol, begin);
@@ -18960,7 +18975,7 @@ public:
             load_word(JITCancellation::request_symbol, true), zero);
         auto *pending = llvm::BasicBlock::Create(context, "cancel.pending", fn);
         auto *cleanup = llvm::BasicBlock::Create(context, "cancel.cleanup", fn);
-        auto *resume = llvm::BasicBlock::Create(context, "cancel.resume", fn);
+        auto *resume = llvm::BasicBlock::Create(context, "cancel.resume");
         builder->CreateCondBr(requested, pending, resume,
             llvm::MDBuilder(context).createBranchWeights(1, 1 << 20));
         builder->SetInsertPoint(pending);
@@ -18989,6 +19004,10 @@ public:
         if (fn->getReturnType()->isVoidTy()) builder->CreateRetVoid();
         else builder->CreateRet(llvm::Constant::getNullValue(fn->getReturnType()));
         emitting_cancellation_cleanup = false;
+        for (llvm::BasicBlock *bb = pending; bb; bb = bb->getNextNode()) {
+            cancellation_cleanup_blocks.push_back(bb);
+        }
+        llvm_fn_insert_bb(fn, resume);
         builder->SetInsertPoint(resume);
         tmp = saved_tmp;
     }
