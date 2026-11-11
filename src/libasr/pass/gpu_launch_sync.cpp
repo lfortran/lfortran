@@ -1025,8 +1025,9 @@ private:
             for (ASR::expr_t *sub : subscripts) c.visit_expr(*sub);
             for (const Path &p : paths) {
                 if (is_pointer_variable(p.root)) acc.globals = true;
-                if (!reachable_elsewhere(p.root, routine)
-                        && escaped.count(p.root) == 0) {
+                if ((!reachable_elsewhere(p.root, routine)
+                            && escaped.count(p.root) == 0)
+                        || unnamed_by_others(p.root)) {
                     continue;
                 }
                 acc.paths.push_back(p);
@@ -1170,6 +1171,23 @@ private:
             && reached.count(root) == 0;
     }
 
+    // Whether `root` is a local of this procedure that no pointer another
+    // procedure can reach points to, and no procedure other than this one
+    // (and its contained procedures that only it calls) names. The
+    // procedures this one calls cannot access it, though a local pointer of
+    // this procedure that points to it can (`may_overlap`).
+    bool unnamed_by_others(ASR::symbol_t *root) const {
+        if (root == nullptr || !ASR::is_a<ASR::Variable_t>(*root)) {
+            return false;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(root);
+        return v->m_intent == ASR::intentType::Local
+            && !is_pointer_variable(root)
+            && v->m_storage != ASR::storage_typeType::Save
+            && enclosing_routine(v->m_parent_symtab) == routine
+            && escaped.count(root) == 0;
+    }
+
     bool may_overlap(const Path &a, const Path &b) const {
         if (a.root != b.root
                 && (out_of_reach(a.root) || out_of_reach(b.root))) {
@@ -1195,7 +1213,7 @@ private:
         for (const Path &w : paths) {
             if (acc.globals && (reachable_elsewhere(w.root, routine)
                         || escaped.count(w.root) > 0)
-                    && !out_of_reach(w.root)) {
+                    && !out_of_reach(w.root) && !unnamed_by_others(w.root)) {
                 return true;
             }
             for (const Path &a : acc.paths) {
