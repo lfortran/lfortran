@@ -1175,9 +1175,9 @@ Client::Client(const std::string &connection_file)
 namespace {
 
 // The kernel this prompt started. The destructor ends it on the way out.
-// Ctrl-C ends it too, and that handler does not run destructors, so it can
-// use only a sig_atomic_t and this fixed buffer. A client that only joined
-// leaves both empty.
+// A Ctrl-C that ends the prompt ends it too, and that handler does not run
+// destructors, so it can use only a sig_atomic_t and this fixed buffer. A
+// client that only joined leaves both empty.
 #ifdef _WIN32
 volatile PVOID owned_process = nullptr;
 #else
@@ -1185,11 +1185,16 @@ volatile std::sig_atomic_t owned_pid = 0;
 #endif
 char owned_connection[4096] = {};
 volatile std::sig_atomic_t interrupt_installed = 0;
+// A cell runs; Ctrl-C asks the kernel to interrupt it. Once the cell has
+// ignored that request for a while, the prompt says that another Ctrl-C ends
+// the session (prompt_escape), the last resort for a cell that cannot stop.
 #ifdef _WIN32
-std::atomic<bool> executing_prompt{false}, prompt_interrupt{false};
+std::atomic<bool> executing_prompt{false}, prompt_interrupt{false},
+    prompt_escape{false};
 #else
 volatile std::sig_atomic_t executing_prompt = 0;
 volatile std::sig_atomic_t prompt_interrupt = 0;
+volatile std::sig_atomic_t prompt_escape = 0;
 #endif
 // The terminal as it was when the prompt started, which the Ctrl-C handler
 // restores: Ctrl-C at `>>>` arrives while the line editor has it in raw mode.
@@ -1223,9 +1228,18 @@ HANDLE take_owned_process()
 BOOL WINAPI interrupt_prompt(DWORD event)
 {
     if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
-    if (executing_prompt) {
+    if (executing_prompt && !prompt_escape) {
         prompt_interrupt = 1;
         return TRUE;
+    }
+    // The line editor reads Ctrl-C as a key, which clears the line. Between
+    // a cell and the next `>>>`, a Ctrl-C of the console is dropped.
+    if (!executing_prompt && terminal_saved) return TRUE;
+    if (executing_prompt) {
+        static const char message[] = "\nending the session\n";
+        DWORD written = 0;
+        WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, sizeof(message) - 1,
+            &written, nullptr);
     }
     release_owned_connection();
     HANDLE handle = take_owned_process();
@@ -1241,9 +1255,17 @@ BOOL WINAPI interrupt_prompt(DWORD event)
 #else
 extern "C" void interrupt_prompt(int)
 {
-    if (executing_prompt) {
+    if (executing_prompt && !prompt_escape) {
         prompt_interrupt = 1;
         return;
+    }
+    // The line editor reads Ctrl-C as a key, which clears the line. Between
+    // a cell and the next `>>>`, a Ctrl-C of the terminal is dropped.
+    if (!executing_prompt && terminal_saved) return;
+    if (executing_prompt) {
+        static const char message[] = "\nending the session\n";
+        ssize_t written = write(STDERR_FILENO, message, sizeof(message) - 1);
+        (void)written;
     }
     release_owned_connection();
     const pid_t pid = static_cast<pid_t>(owned_pid);
@@ -1452,9 +1474,15 @@ int Client::stdin_character()
 bool Client::execute(const std::string &code, bool verbose, const InputSource &input_source)
 {
     struct Executing {
-        Executing() { prompt_interrupt = 0; executing_prompt = 1; }
-        ~Executing() { executing_prompt = 0; prompt_interrupt = 0; }
+        Executing() { prompt_interrupt = 0; prompt_escape = 0; executing_prompt = 1; }
+        ~Executing() { executing_prompt = 0; prompt_escape = 0; prompt_interrupt = 0; }
     } executing;
+    // A cell stops at its next safepoint, in milliseconds, but not inside a
+    // foreign call. Until this long after the first Ctrl-C, more presses
+    // only repeat the interrupt, so that impatient presses cannot end the
+    // session; after it, the prompt offers to end the session.
+    const auto escape_after = std::chrono::seconds(2);
+    std::optional<std::chrono::steady_clock::time_point> interrupted;
     Object content{{"code", kernel::utf8(code)}, {"silent", false},
         {"store_history", true}, {"user_expressions", Object{}},
         {"allow_stdin", true}, {"stop_on_error", true}};
@@ -1477,11 +1505,20 @@ bool Client::execute(const std::string &code, bool verbose, const InputSource &i
         }
         record.clear();
         clearerr(stdin);
+        if (!interrupted) interrupted = std::chrono::steady_clock::now();
         return send_message(*control, new_message("interrupt_request", Object{},
             Object{}, session), key);
     };
     while (!replied || !idle) {
         if (!interrupt()) return false;
+        if (interrupted && !prompt_escape && !replied
+                && std::chrono::steady_clock::now() - *interrupted >= escape_after) {
+            std::cerr << std::endl << "The cell has not stopped. Press Ctrl-C again to "
+                << (owned_connection[0] ? "end this prompt and its kernel, losing the "
+                    "session's state." : "end this prompt; the kernel keeps running.")
+                << std::endl;
+            prompt_escape = 1;
+        }
         if (reading) {
             const int c = input_source ? input_source() : stdin_character();
             if (prompt_interrupt) continue;

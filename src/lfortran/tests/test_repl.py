@@ -334,8 +334,9 @@ def check_read_from_terminal(lfortran):
 
 def check_interrupt_at_prompt(lfortran):
     # Ctrl-C at `>>>`, while the line editor has the terminal in raw mode,
-    # ends the prompt by SIGINT, as a shell expects, and its kernel. The
-    # terminal is left as it was, in line mode with echo.
+    # discards the line being edited and shows a new prompt, as in IPython.
+    # Repeated presses keep the prompt, its kernel and the session's state;
+    # Ctrl-D still exits and leaves the terminal in line mode with echo.
     try:
         import pty
         import termios
@@ -344,10 +345,75 @@ def check_interrupt_at_prompt(lfortran):
         return
     with working_directory() as cwd:
         repl = PtyRepl(pty, termios, lfortran, cwd, timeout=60)
+        code = None
+        try:
+            repl.cell("integer :: n = 41")
+            repl.wait(lambda: repl.prompts > repl.cells, "the prompt")
+            os.write(repl.fd, b"print *, 'discarded'")
+            for _ in range(3):
+                # Each Ctrl-C starts a new prompt, which queries the cursor.
+                prompts = repl.prompts
+                os.write(repl.fd, b"\x03")
+                if not repl.wait(lambda: repl.prompts > prompts,
+                        "a new prompt after Ctrl-C"):
+                    sys.exit("Ctrl-C at the prompt ended it:\n%s" % repl.text())
+                repl.cells += 1
+            repl.cell("print *, n + 1")
+            code = repl.exit()
+            lflag = termios.tcgetattr(repl.fd)[3]
+        finally:
+            if code is None:
+                os.kill(repl.pid, 9)
+                os.waitpid(repl.pid, 0)
+            os.close(repl.fd)
+    out = repl.text()
+    if code != 0 or "Exiting." not in out:
+        sys.exit("the prompt did not exit cleanly (code %d):\n%s" % (code, out))
+    if not re.search(r"^\s*42\r?$", out, re.M):
+        sys.exit("Ctrl-C at the prompt lost the session's state:\n%s" % out)
+    if re.search(r"^\s*discarded\r?$", out, re.M):
+        sys.exit("Ctrl-C at the prompt submitted the line:\n%s" % out)
+    if lflag & (termios.ICANON | termios.ECHO) != termios.ICANON | termios.ECHO:
+        sys.exit("the prompt left the terminal in raw mode:\n%s" % out)
+
+
+# A foreign call, which has no safepoint, so that the kernel cannot stop it
+# before it returns.
+FOREIGN_SLEEP = NEW_LINE.join([
+    "module foreign_sleep",
+    "use iso_c_binding, only: c_int",
+    "interface",
+    "integer(c_int) function c_sleep(s) bind(c, name='sleep')",
+    "import :: c_int",
+    "integer(c_int), value :: s",
+    "end function",
+    "end interface",
+    "end module"])
+
+
+def check_interrupt_escape(lfortran):
+    # Ctrl-C during a cell that ignores the interrupt: after a while, the
+    # prompt offers to end the session, and the next Ctrl-C ends the prompt
+    # by SIGINT, with its kernel and connection file.
+    try:
+        import pty
+        import termios
+    except ImportError:
+        print("skipped: no pseudo-terminals")
+        return
+    with working_directory() as cwd:
+        repl = PtyRepl(pty, termios, lfortran, cwd, timeout=120)
         status = None
         try:
-            repl.cell("integer :: n")
-            repl.wait(lambda: repl.prompts > repl.cells, "the prompt")
+            repl.cell(FOREIGN_SLEEP)
+            repl.cell("use foreign_sleep")
+            repl.cell("print '(a)', 'sleeping'; print *, c_sleep(600_c_int)")
+            if not repl.wait(lambda: b"sleeping\r\n" in repl.out, "the cell to start"):
+                sys.exit("the prompt exited:\n%s" % repl.text())
+            os.write(repl.fd, b"\x03")
+            if not repl.wait(lambda: b"Press Ctrl-C again" in repl.out,
+                    "the offer to end the session"):
+                sys.exit("the prompt exited:\n%s" % repl.text())
             os.write(repl.fd, b"\x03")
             repl.wait(lambda: False, "the prompt to exit")
             _, status = os.waitpid(repl.pid, 0)
@@ -458,6 +524,7 @@ def main():
     check_cell_output(os.path.abspath(args.lfortran))
     check_read_from_terminal(os.path.abspath(args.lfortran))
     check_interrupt_at_prompt(os.path.abspath(args.lfortran))
+    check_interrupt_escape(os.path.abspath(args.lfortran))
     check_compiled_read_from_terminal(os.path.abspath(args.lfortran))
     print("ok")
 

@@ -910,6 +910,15 @@ def test_interrupt_prompt(exe, cwd):
                         client.control_channel.send(request)
                         reply = client.get_control_msg(timeout=5)
                         check(parent_id(reply) == request["header"]["msg_id"], reply)
+                    elif code.startswith("do while"):
+                        # Impatient repeated Ctrl-C: whichever presses land
+                        # after the cell has stopped reach the idle prompt,
+                        # which must survive them with the session's state.
+                        for _ in range(5):
+                            os.write(repl.fd, b"\x03")
+                            # Keep answering the terminal while pausing.
+                            pause = time.monotonic() + 0.1
+                            repl.wait(lambda: time.monotonic() > pause, "a pause")
                     else:
                         os.write(repl.fd, b"\x03")
                     finished(queries)
@@ -924,7 +933,11 @@ def test_interrupt_prompt(exe, cwd):
                             except ProcessLookupError:
                                 continue
                             raise AssertionError("owned command child was not reaped: %d" % pid)
-                    check(b"cell execution interrupted" in repl.out[before:], repl.text())
+                    if not code.startswith("do while"):
+                        # A later Ctrl-C during the cell may discard its
+                        # unread terminal output, as the line discipline does.
+                        check(b"cell execution interrupted" in repl.out[before:],
+                            repl.text())
                     check(connection.exists(), "Ctrl-C removed the connection file")
                     finished(submit("kept_interrupt+1"))
                     check(re.search(r"^42\r?$", repl.text(), re.M), repl.text())

@@ -200,8 +200,16 @@ the kernel's exit status, as it did when it ran its cells itself.
 The prompt that starts a kernel ends that kernel when the prompt exits, and
 removes the connection file. Exiting ends the kernel while another client is
 still connected, and during a cell that does not return. At the idle prompt,
-Ctrl-C ends the prompt and the kernel. During execution, it sends a Jupyter
-interrupt instead, preserving the prompt and session state. The kernel also
+as in IPython, Ctrl-C discards the line being edited and shows a new prompt;
+Ctrl-D on an empty line exits. During execution, Ctrl-C sends a Jupyter
+interrupt instead, preserving the prompt and session state; pressing it again
+soon after only repeats the interrupt. A cell that cannot be interrupted,
+such as one inside a long foreign call, keeps running. After two seconds the
+prompt then says so, and one more Ctrl-C ends the prompt and the kernel it
+started, losing the session's state. This is the way to stop a cell that
+does not return; a prompt that only joined ends but leaves the kernel
+running. When the prompt does not read a terminal, Ctrl-C at the idle prompt
+ends the prompt and the kernel. The kernel also
 stops, removing the connection file,
 when that prompt cannot end it, such as when its terminal closes or it is
 killed with `kill -9`. A prompt that only joins, with
