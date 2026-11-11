@@ -1438,29 +1438,52 @@ int Client::stdin_character()
     } else {
         DWORD mode = 0;
         if (GetConsoleMode(input, &mode)) {
+            // The console is in the mode the prompt started with (normally
+            // line input with echo and Ctrl-C processed): the line editor
+            // restores it before a cell runs. The console edits and echoes
+            // a line only during a read, so wait without blocking until a
+            // key is pressed, then read the whole line, blocking.
             static std::string line;
             static size_t position = 0;
-            if (position == line.size()) {
+            if (position < line.size())
+                return static_cast<unsigned char>(line[position++]);
+            for (;;) {
+                INPUT_RECORD event;
                 DWORD count = 0;
-                if (!GetNumberOfConsoleInputEvents(input, &count) || !count) return -2;
-                std::vector<INPUT_RECORD> events(count);
-                if (!PeekConsoleInput(input, events.data(), count, &count)) return EOF;
-                bool complete = false;
-                for (DWORD i = 0; i < count; i++) {
-                    if (events[i].EventType == KEY_EVENT &&
-                            events[i].Event.KeyEvent.bKeyDown &&
-                            events[i].Event.KeyEvent.wVirtualKeyCode == VK_RETURN)
-                        complete = true;
-                }
-                if (!complete) return -2;
-                char buffer[4096];
-                DWORD size = 0;
-                if (!ReadFile(input, buffer, sizeof(buffer), &size, nullptr))
-                    return prompt_interrupt ? -2 : EOF;
-                line.assign(buffer, size);
-                position = 0;
-                if (line.empty()) return -2;
+                if (!PeekConsoleInputW(input, &event, 1, &count)) return EOF;
+                if (!count) return -2;
+                if (event.EventType == KEY_EVENT && event.Event.KeyEvent.bKeyDown) break;
+                // Not a key press (a key release, focus, mouse or resize)
+                if (!ReadConsoleInputW(input, &event, 1, &count)) return EOF;
             }
+            // Enter gives CR LF in line mode with processed input, else CR
+            const wchar_t end = (mode & ENABLE_LINE_INPUT)
+                && (mode & ENABLE_PROCESSED_INPUT) ? L'\n' : L'\r';
+            std::wstring text;
+            while (text.empty() || text.back() != end) {
+                wchar_t buffer[1024];
+                DWORD size = 0;
+                SetLastError(0);
+                if (!ReadConsoleW(input, buffer, 1024, &size, nullptr) || size == 0) {
+                    if (GetLastError() != ERROR_OPERATION_ABORTED) return EOF;
+                    // Ctrl-C ended the read. Its handler runs on another
+                    // thread and may not have set prompt_interrupt yet.
+                    for (int i = 0; i < 100 && !prompt_interrupt; i++) Sleep(1);
+                    return -2;
+                }
+                text.append(buffer, size);
+            }
+            // Ctrl-Z at the start of a line is end of file
+            if (text[0] == L'\x1a') return EOF;
+            while (!text.empty() && (text.back() == L'\r' || text.back() == L'\n'))
+                text.pop_back();
+            text += L'\n';
+            const int n = static_cast<int>(text.size());
+            line.assign(WideCharToMultiByte(CP_UTF8, 0, text.data(), n,
+                nullptr, 0, nullptr, nullptr), '\0');
+            WideCharToMultiByte(CP_UTF8, 0, text.data(), n, &line[0],
+                static_cast<int>(line.size()), nullptr, nullptr);
+            position = 0;
             return static_cast<unsigned char>(line[position++]);
         }
     }
