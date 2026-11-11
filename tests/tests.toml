@@ -5745,6 +5745,13 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_lanes_groups_01.f90"
 gpu_cuda_kernel = true
 
+# On an NVIDIA GPU, a sum over groups of a factor times the sum of a group's
+# codes, plus a term that does not depend on it, is combined across the lanes
+# once, after the loop over the groups.
+[[test]]
+filename = "../integration_tests/gpu_lanes_defer_01.f90"
+gpu_cuda_kernel = true
+
 # On an NVIDIA GPU, a launch of a few iterations gives each the lanes of a
 # whole block, which combine their values across warps in shared memory.
 [[test]]

@@ -1391,6 +1391,11 @@ public:
                 distribute(ASR::down_cast<ASR::DoLoop_t>(body[i]), out);
                 continue;
             }
+            auto deferral = deferrals.find(body[i]);
+            if (r == Role::Recurse && deferral != deferrals.end()) {
+                emit_deferred(body[i], deferral->second, out);
+                continue;
+            }
             if (r == Role::Recurse) nested_apply(body[i]);
             out.push_back(al, body[i]);
         }
@@ -2231,6 +2236,8 @@ private:
                         lane_limit = lane_limit == 0 ? fixed_trips
                             : std::min(lane_limit, fixed_trips);
                         if (nested_decide(s, frames) && !failed) {
+                            plan_deferral(ASR::down_cast<ASR::DoLoop_t>(s),
+                                accumulators, frames);
                             return Role::Recurse;
                         }
                         lane_limit = was_limit;
@@ -2813,6 +2820,162 @@ private:
     // A launch with one lane per iteration runs the loop as it was instead,
     // whose start and step the device compiler then knows (it unrolls the
     // loop), in the other branch of a test of the lanes.
+    // The sum a loop over groups takes of a lane-shared inner sum scaled by
+    // a per-group factor (`total = total + a(g)*inner_sum + b(g)`, the
+    // groups of a quantized matrix-vector product) is linear in the inner
+    // sum, so the lanes need not combine each group's sum: each lane adds
+    // the factor times what it holds of it to a sum of its own, the term
+    // that does not depend on the inner sum is added by the first lane
+    // alone, and the lanes combine their sums once after the outer loop.
+    struct Deferral {
+        // The inner reduction loop that is left without its combination.
+        ASR::stmt_t *inner;
+        // The assignments after it that work out the term from its sum.
+        std::vector<ASR::Assignment_t*> chain;
+        // The update of the outer accumulator, `total = total + term`.
+        ASR::Assignment_t *update;
+        ASR::symbol_t *total;
+        // The inner sum and the scalars worked out from it.
+        std::set<ASR::symbol_t*> derived;
+    };
+    std::map<ASR::stmt_t*, Deferral> deferrals;
+    std::set<ASR::stmt_t*> deferred_inner;
+
+    // Whether `e` is linear in the scalars of `derived`, each named once
+    // on one side: the other side of a sum is a term the first lane adds
+    // alone (when `commit`, it is rewritten so).
+    bool linear_in(ASR::expr_t *e, const std::set<ASR::symbol_t*> &derived,
+            bool commit) {
+        if (ASR::is_a<ASR::Var_t>(*e)) return derived.count(root_of(e)) > 0;
+        if (!ASR::is_a<ASR::RealBinOp_t>(*e)) return false;
+        auto *x = ASR::down_cast<ASR::RealBinOp_t>(e);
+        bool l = mentions_any(x->m_left, derived);
+        bool r = mentions_any(x->m_right, derived);
+        if (l == r) return false;
+        switch (x->m_op) {
+            case ASR::binopType::Add:
+            case ASR::binopType::Sub:
+            case ASR::binopType::Mul:
+                break;
+            case ASR::binopType::Div:
+                if (!l) return false;
+                break;
+            default:
+                return false;
+        }
+        if (!linear_in(l ? x->m_left : x->m_right, derived, commit)) {
+            return false;
+        }
+        if (commit && (x->m_op == ASR::binopType::Add
+                || x->m_op == ASR::binopType::Sub)) {
+            ASR::expr_t *&other = l ? x->m_right : x->m_left;
+            const Location &loc = other->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::ttype_t *t = ASRUtils::expr_type(other);
+            other = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                b.Eq(lane_index(loc), b.i32(0)), other, b.f_t(0.0, t), t,
+                nullptr));
+        }
+        return true;
+    }
+
+    void plan_deferral(ASR::DoLoop_t *g,
+            const std::vector<Accumulator> &outer,
+            std::vector<Frame> &frames) {
+        if (outer.size() != 1 || outer[0].op != ASR::reduction_opType::ReduceAdd) {
+            return;
+        }
+        ASR::symbol_t *total = outer[0].variable;
+        for (size_t i = 0; i < g->n_body; i++) {
+            auto r = reductions.find(g->m_body[i]);
+            if (r == reductions.end()) continue;
+            if (r->second.size() != 1
+                    || r->second[0].op != ASR::reduction_opType::ReduceAdd) {
+                return;
+            }
+            ASR::symbol_t *inner_sum = r->second[0].variable;
+            if (inner_sum == total || !dead_after(frames, inner_sum)) return;
+            Deferral d;
+            d.inner = g->m_body[i];
+            d.total = total;
+            d.update = nullptr;
+            d.derived.insert(inner_sum);
+            for (size_t j = i + 1; j < g->n_body; j++) {
+                if (!ASR::is_a<ASR::Assignment_t>(*g->m_body[j])) return;
+                auto *a = ASR::down_cast<ASR::Assignment_t>(g->m_body[j]);
+                if (!ASR::is_a<ASR::Var_t>(*a->m_target)) return;
+                ASR::symbol_t *v = root_of(a->m_target);
+                if (v == total) {
+                    if (j + 1 != g->n_body
+                            || !ASR::is_a<ASR::RealBinOp_t>(*a->m_value)) {
+                        return;
+                    }
+                    auto *u = ASR::down_cast<ASR::RealBinOp_t>(a->m_value);
+                    if (u->m_op != ASR::binopType::Add) return;
+                    auto is_total = [&](ASR::expr_t *e) {
+                        return ASR::is_a<ASR::Var_t>(*e)
+                            && root_of(e) == total;
+                    };
+                    ASR::expr_t *term = is_total(u->m_left) ? u->m_right
+                        : is_total(u->m_right) ? u->m_left : nullptr;
+                    if (term == nullptr || mentions(term, total)
+                            || !linear_in(term, d.derived, false)) {
+                        return;
+                    }
+                    d.update = a;
+                    continue;
+                }
+                if (!k.private_scalar(v) || !dead_after(frames, v)
+                        || !linear_in(a->m_value, d.derived, false)) {
+                    return;
+                }
+                d.derived.insert(v);
+                d.chain.push_back(a);
+            }
+            if (d.update == nullptr) return;
+            // Nothing else of the loop names what is worked out from the
+            // inner sum.
+            for (size_t q = 0; q < i; q++) {
+                for (ASR::symbol_t *v : d.derived) {
+                    if (v != inner_sum && mentions(*g->m_body[q], v)) return;
+                }
+            }
+            deferrals[&g->base] = d;
+            deferred_inner.insert(d.inner);
+            return;
+        }
+    }
+
+    void emit_deferred(ASR::stmt_t *g, const Deferral &d,
+            Vec<ASR::stmt_t*> &out) {
+        const Location &loc = g->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        for (ASR::Assignment_t *a : d.chain) {
+            linear_in(a->m_value, d.derived, true);
+        }
+        {
+            auto *u = ASR::down_cast<ASR::RealBinOp_t>(d.update->m_value);
+            auto is_total = [&](ASR::expr_t *e) {
+                return ASR::is_a<ASR::Var_t>(*e) && root_of(e) == d.total;
+            };
+            linear_in(is_total(u->m_left) ? u->m_right : u->m_left,
+                d.derived, true);
+        }
+        ASR::ttype_t *t = ASRUtils::symbol_type(d.total);
+        std::vector<ASR::stmt_t*> start, finish;
+        start.push_back(b.If(b.NotEq(lane_index(loc), b.i32(0)),
+            {b.Assignment(b.Var(d.total),
+                identity(ASR::reduction_opType::ReduceAdd, t, loc))}, {}));
+        out.push_back(al, b.If(b.Gt(lanes_var(loc), b.i32(1)), start, {}));
+        nested_apply(g);
+        out.push_back(al, g);
+        finish.push_back(b.Assignment(b.Var(d.total),
+            ASRUtils::EXPR(ASR::make_GpuLaneReduce_t(al, loc,
+                b.Var(d.total), ASR::reduction_opType::ReduceAdd,
+                ASRUtils::duplicate_type(al, t), nullptr))));
+        out.push_back(al, b.If(b.Gt(lanes_var(loc), b.i32(1)), finish, {}));
+    }
+
     void distribute_reduction(ASR::DoLoop_t *d,
             const std::vector<Accumulator> &accumulators,
             Vec<ASR::stmt_t*> &out) {
@@ -2897,6 +3060,7 @@ private:
         d->m_head.m_increment = b.Mul(step, lanes);
         shared.push_back(al, &d->base);
         for (const Accumulator &a : accumulators) {
+            if (deferred_inner.count(&d->base)) break;
             ASR::ttype_t *t = ASRUtils::symbol_type(a.variable);
             shared.push_back(al, b.Assignment(b.Var(a.variable),
                 ASRUtils::EXPR(ASR::make_GpuLaneReduce_t(al, loc,
