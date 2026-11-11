@@ -11,10 +11,10 @@ module complex128_bindc_01_m
 end module
 
 program complex128_bindc_01
-    use iso_c_binding, only: c_loc, c_intptr_t
+    use iso_c_binding, only: c_loc, c_intptr_t, c_sizeof
     use complex128_bindc_01_m, only: t
     implicit none
-    type(t), target :: x
+    type(t), target :: x, y(2)
     complex(16) :: w
     integer(c_intptr_t) :: a, b
     x%i = 7
@@ -26,5 +26,11 @@ program complex128_bindc_01
     if (real(w, 16) /= -4.0_16) error stop 2
     if (aimag(w) /= -7.5_16) error stop 3
     if (x%i /= 7) error stop 4
+    ! The size the compiler reports matches the layout it generates.
+    a = transfer(c_loc(y(1)), a)
+    b = transfer(c_loc(y(2)), b)
+    if (b - a /= 32 + 16) error stop 5
+    if (c_sizeof(x) /= 32 + 16) error stop 6
+    if (storage_size(x) /= 8 * (32 + 16)) error stop 7
     print *, "ok"
 end program

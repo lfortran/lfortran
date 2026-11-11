@@ -9749,6 +9749,9 @@ std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* type) {
         int64_t kind = extract_kind_from_ttype_t(type);
         if (kind <= 0) return {-1, -1};
         if (kind == 10) return {32, 16};
+        // complex(16) is the unpacked LLVM struct {fp128,fp128}, aligned
+        // like its parts.
+        if (kind == 16) return {32, 16};
         // LFortran maps complex to a packed LLVM struct {float,float}
         // or {double,double}, so alignment is 1 (packed).
         return {2 * kind, 1};
