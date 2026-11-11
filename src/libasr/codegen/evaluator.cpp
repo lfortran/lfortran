@@ -179,8 +179,18 @@ bool is_host_target(const llvm::Triple &target)
 {
     llvm::Triple host(llvm::Triple::normalize(
         llvm::sys::getDefaultTargetTriple()));
-    return target.getArch() == host.getArch()
-        && target.getOS() == host.getOS()
+    if (target.getArch() != host.getArch()) {
+        return false;
+    }
+    if (target.getOS() == host.getOS()
+            && target.getEnvironment() == host.getEnvironment()) {
+        return true;
+    }
+    // Darwin and MacOSX name one Apple platform. MACOSX_DEPLOYMENT_TARGET
+    // rewrites the default darwin triple to macosxMAJOR.MINOR.MICRO, and
+    // that host is still the machine we are compiling on.
+    return target.isMacOSX() && host.isMacOSX()
+        && target.getVendor() == host.getVendor()
         && target.getEnvironment() == host.getEnvironment();
 }
 
