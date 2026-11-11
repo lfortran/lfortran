@@ -3959,6 +3959,7 @@ RUN(NAME host_assoc_23 FAIL LABELS llvm NO_FAST EXTRA_ARGS --internal-procedure-
 RUN(NAME host_assoc_26 LABELS gfortran llvm)
 RUN(NAME host_assoc_27 LABELS gfortran llvm)
 RUN(NAME host_assoc_28 LABELS gfortran llvm)
+RUN(NAME host_assoc_29 LABELS gfortran llvm)
 RUN(NAME procedure_argument_specialization_01 LABELS gfortran llvm)
 # Passes only with the copies that --fast makes: without them the recursive
 # host needs more than 2 thunks.
