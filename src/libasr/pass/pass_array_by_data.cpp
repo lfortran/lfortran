@@ -1593,6 +1593,63 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             current_scope = nullptr;
         }
 
+        // A host-associated explicit-shape array is a descriptor view. The
+        // dummy it is passed to is still a data pointer. Extract that pointer
+        // here: the callee was not rewritten, so the call would otherwise
+        // hand over the descriptor.
+        template <typename T>
+        void cast_descriptor_actual_to_data_pointer(T& x) {
+            if( x.m_name == nullptr ) {
+                return;
+            }
+            ASR::symbol_t* resolved = ASRUtils::symbol_get_past_external(x.m_name);
+            if( !(ASR::is_a<ASR::Function_t>(*resolved) ||
+                    ASR::is_a<ASR::StructMethodDeclaration_t>(*resolved) ||
+                    ASR::is_a<ASR::Variable_t>(*resolved)) ) {
+                return;
+            }
+            if( ASR::is_a<ASR::Variable_t>(*resolved) ) {
+                ASR::ttype_t* var_type = ASR::down_cast<ASR::Variable_t>(resolved)->m_type;
+                if( ASR::is_a<ASR::Pointer_t>(*var_type) ) {
+                    var_type = ASR::down_cast<ASR::Pointer_t>(var_type)->m_type;
+                }
+                if( !ASR::is_a<ASR::FunctionType_t>(*var_type) ) {
+                    return;
+                }
+            }
+            ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(x.m_name);
+            for( size_t i = 0; i < x.n_args && i < ft->n_arg_types; i++ ) {
+                if( x.m_args[i].m_value == nullptr ) {
+                    continue;
+                }
+                ASR::ttype_t* formal = ft->m_arg_types[i];
+                if( formal == nullptr || ASRUtils::is_pointer(formal) ||
+                        ASRUtils::is_allocatable(formal) ||
+                        !ASRUtils::is_array(formal) ||
+                        ASRUtils::extract_physical_type(formal) !=
+                            ASR::array_physical_typeType::PointerArray ) {
+                    continue;
+                }
+                ASR::ttype_t* actual = ASRUtils::expr_type(x.m_args[i].m_value);
+                if( actual == nullptr || !ASRUtils::is_array(actual) ) {
+                    continue;
+                }
+                ASR::ttype_t* actual_array = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(actual));
+                if( !ASR::is_a<ASR::Array_t>(*actual_array) ||
+                        ASR::down_cast<ASR::Array_t>(actual_array)->m_physical_type !=
+                            ASR::array_physical_typeType::DescriptorArray ) {
+                    continue;
+                }
+                ASR::ttype_t* cast_type = ASRUtils::duplicate_type(al, actual_array,
+                    nullptr, ASR::array_physical_typeType::PointerArray, true);
+                x.m_args[i].m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, x.m_args[i].m_value->base.loc, x.m_args[i].m_value,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASR::array_physical_typeType::PointerArray, cast_type, nullptr));
+            }
+        }
+
         bool can_edit_call(ASR::call_arg_t* args, size_t n_args) {
             for ( size_t i = 0; i < n_args; i++ ) {
                 if( args[i].m_value &&
@@ -1730,11 +1787,13 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             if( !can_edit_call(x.m_args, x.n_args)
                     && !is_struct_method_declaration(x.m_name)
                     && !replaces_dummy_procedure(subrout_sym) ) {
+                cast_descriptor_actual_to_data_pointer(xx);
                 not_to_be_erased.insert(subrout_sym);
                 return ;
             }
             if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
                 update_args_for_pass_arr_by_data_funcs_passed_as_callback(x);
+                cast_descriptor_actual_to_data_pointer(xx);
                 return;
             }
 
