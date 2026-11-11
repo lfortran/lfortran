@@ -1167,7 +1167,7 @@ namespace LCompilers {
                                 type = type_fx2;
                             }
                         } else {
-                            LCOMPILERS_ASSERT(a_kind == 8)
+                            LCOMPILERS_ASSERT(a_kind == 8 || a_kind == 16)
                             if (compiler_options.platform == Platform::Windows) {
                                 // 128 bit aggregate type is passed by reference
                                 type = getComplexType(a_kind, true);
