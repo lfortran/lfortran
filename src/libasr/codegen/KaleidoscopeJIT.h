@@ -92,13 +92,20 @@ public:
   }
 
   uint8_t *allocateCodeSection(uintptr_t Size, unsigned Alignment,
-                               unsigned, StringRef) override {
-    if (!CodeBase)
-      return nullptr;
-    uintptr_t Offset = alignTo(CodeOffset, Alignment ? Alignment : 16);
-    assert(Offset <= CodeSize && Size <= CodeSize - Offset);
-    CodeOffset = Offset + Size;
-    return CodeBase + Offset;
+                               unsigned SectionID,
+                               StringRef SectionName) override {
+    if (CodeBase) {
+      uintptr_t Offset = alignTo(CodeOffset, Alignment ? Alignment : 16);
+      if (Offset <= CodeSize && Size <= CodeSize - Offset) {
+        CodeOffset = Offset + Size;
+        return CodeBase + Offset;
+      }
+    }
+    // RuntimeDyld reserves room for every code section, so this is not
+    // expected. Never hand out memory past the reservation; a separate
+    // mapping only loses the contiguity.
+    return SectionMemoryManager::allocateCodeSection(Size, Alignment,
+                                                     SectionID, SectionName);
   }
 };
 

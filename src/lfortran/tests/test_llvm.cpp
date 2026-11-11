@@ -103,6 +103,28 @@ TEST_CASE("JIT code sections share one reservation") {
     CHECK_FALSE(memory.finalizeMemory(&error));
 }
 
+TEST_CASE("JIT code that overflows its reservation is mapped separately") {
+    llvm::orc::ContiguousSectionMemoryManager memory;
+#if LLVM_VERSION_MAJOR >= 16
+    const llvm::Align alignment(16);
+#else
+    const uint32_t alignment = 16;
+#endif
+    memory.reserveAllocationSpace(64, alignment, 0, alignment, 0, alignment);
+    uint8_t *first = memory.allocateCodeSection(40, 16, 0, ".text.first");
+    REQUIRE(first != nullptr);
+    // Aligned to 48, 32 more bytes would end 16 bytes past the reservation.
+    uint8_t *second = memory.allocateCodeSection(32, 16, 1, ".text.second");
+    REQUIRE(second != nullptr);
+    CHECK((second + 32 <= first || second >= first + 64));
+    // The reservation keeps its offset, so a section that fits still uses it.
+    uint8_t *third = memory.allocateCodeSection(16, 16, 2, ".text.third");
+    CHECK(third == first + 48);
+    std::string error;
+    INFO(error);
+    CHECK_FALSE(memory.finalizeMemory(&error));
+}
+
 #if defined(__linux__)
 // A COMDAT function gets its own ELF code section, as do the procedures of an
 // intrinsic module. The GNU unwinder registers the whole min/max PC range of
