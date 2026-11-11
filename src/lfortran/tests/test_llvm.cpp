@@ -6641,6 +6641,21 @@ extern "C" int cancellation_foreign_invoke(void *(*callback)()) {
 extern "C" void cancellation_foreign_invoke_sub(void *(*callback)()) {
     cancellation_foreign_invoke(callback);
 }
+
+// A cell calls this once its loop has made progress. It returns only after
+// the caller's pump has requested cancellation, so the loop's own safepoints
+// must stop it, independent of how fast the machine compiles or runs.
+std::atomic<bool> cancellation_progress_reached{false},
+    cancellation_progress_observed{false};
+
+extern "C" void cancellation_progress() {
+    cancellation_progress_reached.store(true);
+    auto start = std::chrono::steady_clock::now();
+    while (!cancellation_progress_observed.load() &&
+            std::chrono::steady_clock::now() - start < std::chrono::seconds(60)) {
+        std::this_thread::yield();
+    }
+}
 }
 
 TEST_CASE("FortranEvaluator execute: defer cancellation across foreign callbacks") {
@@ -6718,6 +6733,8 @@ TEST_CASE("FortranEvaluator execute: cooperative native JIT cancellation") {
         cu.po.fast = mode == 1;
         cu.std_f23_conformance = mode == 2;
         FortranEvaluator e(cu);
+        e.get_llvm_evaluator().define_host_symbol("cancellation_progress",
+            reinterpret_cast<void *>(&cancellation_progress));
         auto run = [&](const std::string &code) {
             auto result = e.execute(code);
             REQUIRE_MESSAGE(result.ok, result.error_text());
@@ -6729,6 +6746,10 @@ module cancel_core
 use lfortran_display, only: clear_output
 use iso_c_binding, only: c_int
 implicit none
+interface
+    subroutine cancellation_progress() bind(c)
+    end subroutine
+end interface
 integer :: cleaned = 0, initialized = 0
 logical :: arm_final = .false.
 integer(c_int), allocatable :: c_data(:)
@@ -6874,6 +6895,22 @@ use cancel_core
         run("integer(8) :: i8");
         interrupt("call clear_output()\ndo i8 = 1, huge(0_8)\nend do\nretained = -1");
         CHECK(e.execute("retained").value.text() == "41");
+        // Cancels a cell once it calls cancellation_progress().
+        FortranEvaluator::CellIO timed;
+        timed.cancel_requested = [&]() {
+            if (!cancellation_progress_reached.load()) return false;
+            cancellation_progress_observed = true;
+            return true;
+        };
+        auto progressed = [&](const std::string &code) {
+            CAPTURE(code);
+            cancellation_progress_reached = false;
+            cancellation_progress_observed = false;
+            auto result = e.execute(code, false, timed);
+            CHECK(cancellation_progress_observed.load());
+            CHECK(!result.ok);
+            CHECK(result.error_name == "KeyboardInterrupt");
+        };
         {
             // A loop whose body does I/O polls on every iteration, so it
             // stops long before a chunk of iterations (16384) would end:
@@ -6881,16 +6918,8 @@ use cancel_core
             std::string items = "wx";
             for (int i = 1; i < 512; i++) items += ", wx";
             run("integer :: wm = 0\nreal(8) :: wx = 1\ncharacter(len=20000) :: wbuf");
-            FortranEvaluator::CellIO timed;
-            auto timed_start = std::chrono::steady_clock::now();
-            timed.cancel_requested = [&]() {
-                return std::chrono::steady_clock::now() - timed_start >
-                    std::chrono::milliseconds(100);
-            };
-            auto written = e.execute("do wm = 1, 100000000\nwrite(wbuf, *) "
-                + items + "\nend do\nretained = -1", false, timed);
-            CHECK(!written.ok);
-            CHECK(written.error_name == "KeyboardInterrupt");
+            progressed("do wm = 1, 100000000\nwrite(wbuf, *) " + items
+                + "\nif (wm == 2) call cancellation_progress()\nend do\nretained = -1");
             int64_t wm = std::stoll(e.execute("wm").value.text());
             CHECK(wm > 1);
             CHECK(wm < 16384);
@@ -6902,13 +6931,8 @@ use cancel_core
             // loops that contain them: the outermost loop stops long before
             // a chunk of its own iterations would end.
             run("integer(8) :: ni = 0, nj, nk, ns = 0");
-            FortranEvaluator::CellIO timed;
-            auto timed_start = std::chrono::steady_clock::now();
-            timed.cancel_requested = [&]() {
-                return std::chrono::steady_clock::now() - timed_start >
-                    std::chrono::milliseconds(100);
-            };
-            auto nested = e.execute(R"(do ni = 1, huge(0_8)
+            progressed(R"(do ni = 1, huge(0_8)
+if (ni == 2) call cancellation_progress()
 do nj = 1, 20000
 if (nj == 300) exit
 do nk = 1, 20000
@@ -6917,9 +6941,7 @@ ns = ieor(ns*3 + nk, ns/7)
 end do
 end do
 end do
-retained = -1)", false, timed);
-            CHECK(!nested.ok);
-            CHECK(nested.error_name == "KeyboardInterrupt");
+retained = -1)");
             int64_t ni = std::stoll(e.execute("ni").value.text());
             CHECK(ni > 1);
             CHECK(ni < 16384);
@@ -6985,14 +7007,22 @@ retained = -1)", false, timed);
         CHECK(e.execute("2.5d0").value.text() == "2.5");
         CHECK(e.execute("(1.0, 2.0)").value.type ==
             FortranEvaluator::EvalResult::complex4);
-        // The runtime's sleep polls the request too and stops early.
+        // The runtime's sleep polls the request too and stops early. The
+        // time counts from when the cell runs, not from its compilation.
         FortranEvaluator::CellIO sleeper;
+        bool sleeping = false;
         auto sleep_start = std::chrono::steady_clock::now();
+        sleeper.clear_output = [&]() {
+            sleeping = true;
+            sleep_start = std::chrono::steady_clock::now();
+        };
         sleeper.cancel_requested = [&]() {
-            return std::chrono::steady_clock::now() - sleep_start >
+            return sleeping && std::chrono::steady_clock::now() - sleep_start >
                 std::chrono::seconds(1);
         };
-        auto slept = e.execute("call sleep(30)\nretained = -1", false, sleeper);
+        auto slept = e.execute("call clear_output()\ncall sleep(30)\nretained = -1",
+            false, sleeper);
+        CHECK(sleeping);
         CHECK(std::chrono::steady_clock::now() - sleep_start <
             std::chrono::seconds(10));
         CHECK(!slept.ok);
