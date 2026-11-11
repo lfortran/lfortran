@@ -551,11 +551,36 @@ public:
     // names, which a call of that procedure may reach.
     void finish() {
         if (routine == nullptr) return;
+        // A contained procedure that is only called by name is run by this
+        // procedure alone: no call of another procedure reaches the
+        // variables it names, nor the frame they are bound in. Once its name
+        // is used as a value -- an actual argument, a procedure pointer
+        // target -- anything may call it.
+        for (auto &item : routine->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            ProcedureValues inner(procedure_values);
+            inner.visit_symbol(*item.second);
+        }
+        bool escapes = false;
+        for (auto &item : routine->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second)
+                    && procedure_values.count(item.second) > 0) {
+                escapes = true;
+            }
+        }
+        if (!escapes) return finish_targets();
+        // The one that escapes may call its siblings.
+        for (ASR::expr_t *e : bound) reached(e);
+        bound.clear();
         for (auto &item : routine->get_scope()) {
             if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
             HostNames names(routine, vars);
             names.visit_symbol(*item.second);
         }
+        finish_targets();
+    }
+
+    void finish_targets() {
         std::set<ASR::symbol_t*> done;
         bool changed = true;
         while (changed) {
@@ -570,6 +595,20 @@ public:
             }
         }
     }
+
+    // The procedures whose name is used as a value, and the variables the
+    // frames of the contained procedures are bound to.
+    std::set<ASR::symbol_t*> procedure_values;
+    std::vector<ASR::expr_t*> bound;
+    class ProcedureValues : public ASR::BaseWalkVisitor<ProcedureValues> {
+    public:
+        std::set<ASR::symbol_t*> &values;
+        explicit ProcedureValues(std::set<ASR::symbol_t*> &v) : values(v) {}
+        void visit_Var(const ASR::Var_t &x) {
+            ASR::symbol_t *v = ASRUtils::symbol_get_past_external(x.m_v);
+            if (ASR::is_a<ASR::Function_t>(*v)) values.insert(v);
+        }
+    };
 
     // The variables of `routine` a procedure contained in it names.
     class HostNames : public ASR::BaseWalkVisitor<HostNames> {
@@ -589,8 +628,10 @@ public:
     };
 
     void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *v = ASRUtils::symbol_get_past_external(x.m_v);
+        if (ASR::is_a<ASR::Function_t>(*v)) procedure_values.insert(v);
         if (inside > 0) {
-            vars.insert(ASRUtils::symbol_get_past_external(x.m_v));
+            vars.insert(v);
         }
     }
     void reached(const ASR::expr_t *e) {
@@ -614,7 +655,12 @@ public:
     // reach it.
     void visit_BindReference(const ASR::BindReference_t &x) {
         visit_expr(*x.m_reference);
-        reached(x.m_variable);
+        if (routine != nullptr) {
+            // Counted by `finish`, if a contained procedure can run elsewhere.
+            bound.push_back(x.m_variable);
+        } else {
+            reached(x.m_variable);
+        }
     }
     void visit_SelectType(const ASR::SelectType_t &x) {
         reached(x.m_selector);
