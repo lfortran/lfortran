@@ -6787,10 +6787,15 @@ public:
     }
 
     llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
-        ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value)
+            || is_constant_real_array_constructor(value));
+        ASR::ArrayConstant_t* arr_const = ASR::is_a<ASR::ArrayConstant_t>(*value) ?
+            ASR::down_cast<ASR::ArrayConstant_t>(value) : nullptr;
+        ASR::ArrayConstructor_t* arr_ctor = arr_const ? nullptr :
+            ASR::down_cast<ASR::ArrayConstructor_t>(value);
+        ASR::ttype_t* arr_ttype = arr_const ? arr_const->m_type : arr_ctor->m_type;
         std::vector<llvm::Constant*> arr_elements;
-        size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_const->m_type);
+        size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_ttype);
         arr_elements.reserve(arr_const_size);
         llvm::ArrayType* arr_type = nullptr;
         llvm::Type* elem_type = type;
@@ -6800,7 +6805,8 @@ public:
         }
         int a_kind;
         for (size_t i = 0; i < arr_const_size; i++) {
-            ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, arr_const, i);
+            ASR::expr_t* elem = arr_const ?
+                ASRUtils::fetch_ArrayConstant_value(al, arr_const, i) : arr_ctor->m_args[i];
             a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(elem));
             if (ASR::is_a<ASR::IntegerConstant_t>(*elem)) {
                 ASR::IntegerConstant_t* int_const = ASR::down_cast<ASR::IntegerConstant_t>(elem);
@@ -6808,12 +6814,8 @@ public:
                     context, llvm::APInt(8 * a_kind, int_const->m_n, true)));
             } else if (ASR::is_a<ASR::RealConstant_t>(*elem)) {
                 ASR::RealConstant_t* real_const = ASR::down_cast<ASR::RealConstant_t>(elem);
-                if (a_kind == 4) {
-                    arr_elements.push_back(llvm::ConstantFP::get(
-                        context, llvm::APFloat((float) real_const->m_r)));
-                } else if (a_kind == 8) {
-                    arr_elements.push_back(llvm::ConstantFP::get(
-                        context, llvm::APFloat((double) real_const->m_r)));
+                if (llvm::Constant* real_init = real_constant_to_llvm(*real_const)) {
+                    arr_elements.push_back(real_init);
                 }
             } else if (ASR::is_a<ASR::LogicalConstant_t>(*elem)) {
                 ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
@@ -6822,7 +6824,7 @@ public:
                     context, llvm::APInt(kind * 8, logical_const->m_value)));
             } else if (ASR::is_a<ASR::StructConstant_t>(*elem)) {
                 llvm::Constant* elem_constant = create_llvm_constant_from_asr_expr(
-                    elem, ASRUtils::type_get_past_array(arr_const->m_type));
+                    elem, ASRUtils::type_get_past_array(arr_ttype));
                 if (elem_constant == nullptr) {
                     throw CodeGenError("Non-constant value found in struct array initializer");
                 }
@@ -9998,10 +10000,32 @@ public:
         }
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
+    // A fixed-size array constructor whose elements are all real constants.
+    // The constant data of an ArrayConstant holds doubles, so such an array of
+    // a wider kind stays an ArrayConstructor.
+    static bool is_constant_real_array_constructor(ASR::expr_t* e) {
+        if (e == nullptr || !ASR::is_a<ASR::ArrayConstructor_t>(*e)) return false;
+        ASR::ArrayConstructor_t* ctor = ASR::down_cast<ASR::ArrayConstructor_t>(e);
+        if (!ASRUtils::is_fixed_size_array(ctor->m_type)
+                || ASRUtils::get_fixed_size_of_array(ctor->m_type) != (int64_t) ctor->n_args) {
+            return false;
+        }
+        for (size_t i = 0; i < ctor->n_args; i++) {
+            if (!ASR::is_a<ASR::RealConstant_t>(*ctor->m_args[i])) return false;
+        }
+        return true;
+    }
+
     // Whether the initial value of the SAVE variable `v` is a constant that
     // becomes the static initializer of its global.
     static bool is_static_save_initial_value(ASR::Variable_t* v) {
-        if (!v->m_value) return false;
+        if (!v->m_value && !v->m_symbolic_value) return false;
+        if (!v->m_value) {
+            return ASRUtils::is_array(v->m_type)
+                && ASRUtils::extract_physical_type(v->m_type)
+                    == ASR::array_physical_typeType::FixedSizeArray
+                && is_constant_real_array_constructor(v->m_symbolic_value);
+        }
         if (ASR::is_a<ASR::Integer_t>(*v->m_type)
                 || ASR::is_a<ASR::Real_t>(*v->m_type)
                 || ASR::is_a<ASR::Logical_t>(*v->m_type)) {
@@ -10396,7 +10420,8 @@ public:
                         init_value = llvm::dyn_cast<llvm::Constant>(tmp);
                     } else if (is_static_save_initial_value(v)) {
                         llvm::Type* el_type = type->getArrayElementType();
-                        init_value = get_const_array(v->m_value, el_type);
+                        init_value = get_const_array(
+                            v->m_value ? v->m_value : v->m_symbolic_value, el_type);
                     } else if (v->m_symbolic_value
                             && ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type))
                             && ASR::is_a<ASR::Var_t>(*v->m_symbolic_value)) {
@@ -19772,20 +19797,17 @@ public:
         handle_SU_IntegerConstant(x);
     }
 
-    void visit_RealConstant(const ASR::RealConstant_t &x) {
+    llvm::Constant* real_constant_to_llvm(const ASR::RealConstant_t &x) {
         int a_kind = checked_integer_cast<int>(((ASR::Real_t*)(&(x.m_type->base)))->m_kind);
         // For kind 4/8, x.m_r is the IEEE-754 double approximation/value.
         // For kind 16, x.m_r is a pointer-encoded payload; we MUST go through
         // real_constant_get_r16_bytes() rather than reading it as a double.
         switch( a_kind ) {
-
             case 4 : {
-                tmp = llvm::ConstantFP::get(context, llvm::APFloat((float)x.m_r));
-                break;
+                return llvm::ConstantFP::get(context, llvm::APFloat((float)x.m_r));
             }
             case 8 : {
-                tmp = llvm::ConstantFP::get(context, llvm::APFloat(x.m_r));
-                break;
+                return llvm::ConstantFP::get(context, llvm::APFloat(x.m_r));
             }
             case 10 : {
                 // The payload is a host `long double`, whose format can
@@ -19796,8 +19818,7 @@ public:
                 bool loses_info;
                 apf.convert(llvm_utils->getFPType(a_kind)->getFltSemantics(),
                     llvm::APFloat::rmNearestTiesToEven, &loses_info);
-                tmp = llvm::ConstantFP::get(context, apf);
-                break;
+                return llvm::ConstantFP::get(context, apf);
             }
             case 16 : {
                 const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);
@@ -19808,15 +19829,18 @@ public:
                 uint64_t words[2] = { lo, hi };
                 llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
                 llvm::APFloat apf(llvm::APFloat::IEEEquad(), bits);
-                tmp = llvm::ConstantFP::get(context, apf);
-                break;
+                return llvm::ConstantFP::get(context, apf);
             }
             default : {
-                break;
+                return nullptr;
             }
-
         }
+    }
 
+    void visit_RealConstant(const ASR::RealConstant_t &x) {
+        if (llvm::Constant* c = real_constant_to_llvm(x)) {
+            tmp = c;
+        }
     }
 
     template <typename T>
