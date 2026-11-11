@@ -89,7 +89,7 @@ Native JIT lowering receives an explicit `JITCancellation` contract from
 `%%showllvm` and `%%showasm` show the code that runs. The generated code polls
 as a safepoint. It loads a request word, which the evaluator defines for its
 JIT, and branches to the cleanup only when the word is set, so the common path
-costs a load and a branch. Safepoints sit at procedure entry, at loop
+costs an atomic load and a branch. Safepoints sit at procedure entry, at loop
 back-edges (DO, DO WHILE and backward GOTO), after calls that may unwind and
 in READ, after local descriptors have been initialized. A counted DO loop
 whose body takes a short, bounded time per iteration (scalar numeric and

@@ -19261,11 +19261,21 @@ public:
         auto *fn = builder->GetInsertBlock()->getParent();
         llvm::Type *i32 = llvm_utils->i32;
         llvm::Value *zero = llvm::ConstantInt::get(i32, 0);
-        auto load_word = [&](const char *name, bool is_volatile) {
-            return llvm_utils->CreateLoad2(i32, cancellation_word(name), is_volatile);
+        auto load_word = [&](const char *name) {
+            return llvm_utils->CreateLoad2(i32, cancellation_word(name));
         };
-        llvm::Value *requested = builder->CreateICmpNE(
-            load_word(JITCancellation::request_symbol, true), zero);
+        // The host thread stores the request word (a relaxed std::atomic).
+        llvm::LoadInst *request = builder->CreateLoad(i32,
+            cancellation_word(JITCancellation::request_symbol));
+#if LLVM_VERSION_MAJOR >= 11
+        request->setAlignment(llvm::Align(4));
+#elif LLVM_VERSION_MAJOR >= 10
+        request->setAlignment(llvm::MaybeAlign(4));
+#else
+        request->setAlignment(4);
+#endif
+        request->setAtomic(llvm::AtomicOrdering::Monotonic);
+        llvm::Value *requested = builder->CreateICmpNE(request, zero);
         auto *pending = llvm::BasicBlock::Create(context, "cancel.pending", fn);
         auto *cleanup = llvm::BasicBlock::Create(context, "cancel.cleanup", fn);
         auto *resume = llvm::BasicBlock::Create(context, "cancel.resume");
@@ -19273,11 +19283,11 @@ public:
             llvm::MDBuilder(context).createBranchWeights(1, 1 << 20));
         builder->SetInsertPoint(pending);
         llvm::Value *unwind = builder->CreateICmpEQ(builder->CreateOr(
-            load_word(JITCancellation::protect_symbol, false),
-            load_word(JITCancellation::defer_symbol, false)), zero);
+            load_word(JITCancellation::protect_symbol),
+            load_word(JITCancellation::defer_symbol)), zero);
         if (propagate_only) {
             unwind = builder->CreateAnd(unwind, builder->CreateICmpNE(
-                load_word(JITCancellation::observed_symbol, false), zero));
+                load_word(JITCancellation::observed_symbol), zero));
         }
         builder->CreateCondBr(unwind, cleanup, resume);
         builder->SetInsertPoint(cleanup);

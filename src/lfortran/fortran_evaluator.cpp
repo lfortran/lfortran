@@ -83,7 +83,7 @@ struct CellCancellation {
 };
 static_assert(sizeof(std::atomic<int32_t>) == sizeof(int32_t)
     && std::atomic<int32_t>::is_always_lock_free,
-    "JIT code accesses the request word as a plain i32");
+    "JIT code loads the request word as an atomic i32");
 }
 
 namespace {

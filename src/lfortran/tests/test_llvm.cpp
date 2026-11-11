@@ -7056,7 +7056,8 @@ end module
                 for (llvm::Instruction &i : *bb) {
                     auto *load = llvm::dyn_cast<llvm::LoadInst>(&i);
                     if (load && load->getPointerOperand() == request) {
-                        CHECK(load->isVolatile());
+                        CHECK(load->isAtomic());
+                        CHECK(load->getOrdering() == llvm::AtomicOrdering::Monotonic);
                         polls++;
                     }
                 }
