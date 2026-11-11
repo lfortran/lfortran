@@ -5200,7 +5200,10 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 value[value_len - 1] = '\0';
                 int64_t new_fmt_val_count = 0;
                 value += 1;
-                char** new_fmt_val = parse_fortran_format((const fchar*)value, value_len - 2, &new_fmt_val_count, &item_start_idx);
+                // The reversion point of the nested group is relative to the
+                // nested list and must not overwrite the outer one.
+                int64_t nested_item_start = 0;
+                char** new_fmt_val = parse_fortran_format((const fchar*)value, value_len - 2, &new_fmt_val_count, &nested_item_start);
                 char** ptr = (char**)internal_realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
                 if (ptr == NULL) {
                     perror("Memory allocation failed.\n");
