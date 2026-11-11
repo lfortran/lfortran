@@ -357,13 +357,25 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         xx.m_type = ASRUtils::extract_type(x.m_type);
     }
 
+    // Once the operand has been reduced to one element, the operation is a
+    // scalar. A compile-time value of the whole array (the negated parameter
+    // array, for example) no longer describes that element.
+    template <typename T>
+    void clear_array_value_of_scalar(T& xx) {
+        xx.m_type = ASRUtils::extract_type(xx.m_type);
+        if( xx.m_value != nullptr &&
+                ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
+                !ASRUtils::is_array(xx.m_type) ) {
+            xx.m_value = nullptr;
+        }
+    }
+
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t& x){
         if( !ASRUtils::is_array(x.m_type) ) {
             return ;
         }
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_RealUnaryMinus(x);
-        ASR::RealUnaryMinus_t& xx = const_cast<ASR::RealUnaryMinus_t&>(x);
-        xx.m_type = ASRUtils::extract_type(x.m_type);
+        clear_array_value_of_scalar(const_cast<ASR::RealUnaryMinus_t&>(x));
     }
 
     void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t& x){
@@ -371,8 +383,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
             return ;
         }
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_IntegerUnaryMinus(x);
-        ASR::IntegerUnaryMinus_t& xx = const_cast<ASR::IntegerUnaryMinus_t&>(x);
-        xx.m_type = ASRUtils::extract_type(x.m_type);
+        clear_array_value_of_scalar(const_cast<ASR::IntegerUnaryMinus_t&>(x));
     }
 
     void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t& x){
@@ -380,8 +391,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
             return ;
         }
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_ComplexUnaryMinus(x);
-        ASR::ComplexUnaryMinus_t& xx = const_cast<ASR::ComplexUnaryMinus_t&>(x);
-        xx.m_type = ASRUtils::extract_type(x.m_type);
+        clear_array_value_of_scalar(const_cast<ASR::ComplexUnaryMinus_t&>(x));
     }
 
     void visit_LogicalNot(const ASR::LogicalNot_t& x){
@@ -389,8 +399,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
             return ;
         }
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_LogicalNot(x);
-        ASR::LogicalNot_t& xx = const_cast<ASR::LogicalNot_t&>(x);
-        xx.m_type = ASRUtils::extract_type(x.m_type);
+        clear_array_value_of_scalar(const_cast<ASR::LogicalNot_t&>(x));
     }
 };
 
