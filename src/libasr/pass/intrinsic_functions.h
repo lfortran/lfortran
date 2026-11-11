@@ -5059,7 +5059,11 @@ namespace Nearest {
                 return nullptr;
             }
             bool up = lf_f128_cmp(ASRUtils::real_expr_get_r16(args[1]), lf_f128_from_double(0.0)) > 0;
-            return ASRUtils::make_RealConstant_r16(al, loc, ASRUtils::real16_next(x, up), t1);
+            lf_float128 next = ASRUtils::real16_next(x, up);
+            if (!ASRUtils::real16_is_finite(next)) {
+                return nullptr;
+            }
+            return ASRUtils::make_RealConstant_r16(al, loc, next, t1);
         }
         double s = ASRUtils::real_constant_get_double(
             ASR::down_cast<ASR::RealConstant_t>(args[1]));
@@ -5561,6 +5565,9 @@ namespace Cmplx {
 
     static ASR::expr_t *eval_Cmplx(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        if (ASRUtils::extract_kind_from_ttype_t(t1) == 16) {
+            return nullptr;
+        }
         ASRUtils::ASRBuilder b(al, loc);
         double arg1_val = 0.0;
         double arg2_val = 0.0;

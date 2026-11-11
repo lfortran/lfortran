@@ -43,6 +43,7 @@ program real128_intrinsic_eval_01
     integer(8), parameter :: nint_neg_half = nint(-2.5_qp, 8)
     real(qp), parameter :: sign_negzero = sign(2.0_qp, -0.0_qp)
     real(qp), parameter :: scale_far = scale(tiny(1.0_qp), 16400)
+    complex(qp), parameter :: cmplx_r = cmplx(big, below2, qp)
     real(qp), parameter :: atand_r = atand(1.0_qp)
     real(qp), parameter :: eps_r = spacing(1.0_qp)
     real(qp), parameter :: spacing_3 = spacing(3.0_qp)
@@ -98,10 +99,12 @@ program real128_intrinsic_eval_01
     if (mod_far /= 1.0_qp) error stop 40
     if (abs(modulo_long - 2.099999999999999999999999999999999692_qp) > 1.0e-33_qp) error stop 41
     if (modulo_far /= 2.0_qp) error stop 42
-    if (floor_edge /= 9000000000000000000_8) error stop 44
-    if (ceiling_neg /= -9000000000000000000_8) error stop 45
-    if (nint_neg_half /= -3_8) error stop 46
-    if (sign_negzero /= -2.0_qp) error stop 47
-    if (scale_far /= 262144.0_qp) error stop 48
+    if (floor_edge /= 9000000000000000000_8) error stop 43
+    if (ceiling_neg /= -9000000000000000000_8) error stop 44
+    if (nint_neg_half /= -3_8) error stop 45
+    if (sign_negzero /= -2.0_qp) error stop 46
+    if (scale_far /= 262144.0_qp) error stop 47
+    if (real(cmplx_r) /= big) error stop 48
+    if (aimag(cmplx_r) /= below2) error stop 49
     print *, "ok"
 end program
