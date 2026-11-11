@@ -23171,7 +23171,11 @@ public:
      * [min(-1, 2, 5, 4, 5), min(2, 2, 5, 4, -8), min(3, 2, 5, 5, 7)]
      *
     */
-    void compiletime_broadcast_elemental_intrinsic(
+    // Fold an elemental intrinsic over compile-time array arguments.
+    // nullptr means an element did not fold; the caller builds a runtime
+    // intrinsic. real(16)/complex(16) results stay ArrayConstructors because
+    // ArrayConstant cannot pack a pointer-encoded m_r payload.
+    ASR::expr_t* compiletime_broadcast_elemental_intrinsic(
         Vec<ASR::expr_t*> args,
         ASR::ArrayConstant_t** result_array,
         std::vector<size_t> array_indices_in_args,
@@ -23212,7 +23216,7 @@ public:
                     (*result_array)->m_type = correct_type;
                 }
             }
-            return;
+            return (ASR::expr_t*)(*result_array);
         }
         ASR::ttype_t* array_type = ASRUtils::expr_type(first_arg_);
         Vec<ASR::expr_t*> new_expr; new_expr.reserve(al, max_array_size);
@@ -23239,11 +23243,14 @@ public:
                 }
             }
             // Call the intrinsic function for the current combination of arguments
-            // result_array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
-            if (create_func(al, loc, intrinsic_args, diag) == nullptr) {
+            ASR::asr_t* element_asr = create_func(al, loc, intrinsic_args, diag);
+            if (element_asr == nullptr) {
                 throw SemanticAbort();
             }
-            ASR::expr_t* result = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
+            ASR::expr_t* result = ASRUtils::expr_value(ASRUtils::EXPR(element_asr));
+            if (result == nullptr) {
+                return nullptr;
+            }
             array_type = ASRUtils::expr_type(result);
             new_expr.push_back(al, result);
             // ASRUtils::set_ArrayConstant_value(result_array, result, i);
@@ -23256,14 +23263,22 @@ public:
         (*result_array)->m_type = correct_type;
         ASR::expr_t* new_expr_ = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, (*result_array)->base.base.loc,
                                     new_expr.p, new_expr.n, (*result_array)->m_type, (*result_array)->m_storage_format));
-        if (ASR::is_a<ASR::ArrayConstant_t>(*new_expr_)) {
-            (*result_array) = ASR::down_cast<ASR::ArrayConstant_t>(new_expr_);
-        } else {
-            (*result_array) = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(new_expr_));
+        // ArrayConstant when the element kind packs; otherwise the
+        // constructor itself. Its value is null for real(16), and
+        // down_cast of that null asserted `f != nullptr`.
+        ASR::expr_t* folded = new_expr_;
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*folded)) {
+            ASR::expr_t* value = ASRUtils::expr_value(folded);
+            if (value && ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                folded = value;
+            }
         }
-        // Restore the correct multi-dimensional type; make_ArrayConstructor_t_util
-        // flattens it to 1D internally.
-        (*result_array)->m_type = correct_type;
+        if (ASR::is_a<ASR::ArrayConstant_t>(*folded)) {
+            ASR::down_cast<ASR::ArrayConstant_t>(folded)->m_type = correct_type;
+        } else if (ASR::is_a<ASR::ArrayConstructor_t>(*folded)) {
+            ASR::down_cast<ASR::ArrayConstructor_t>(folded)->m_type = correct_type;
+        }
+        return folded;
     }
 
     std::vector<size_t> find_array_indices_in_args(const Vec<ASR::expr_t*>& args) {
@@ -23396,8 +23411,13 @@ public:
                         ASR::expr_t* arg_ = expr_duplicator.duplicate_expr(arg);
                         ASR::ArrayConstant_t* result_array = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
 
-                        compiletime_broadcast_elemental_intrinsic(args, &result_array, array_indices_in_args, create_func, x.base.base.loc, al);;
-                        tmp = (ASR::asr_t*) result_array;
+                        ASR::expr_t* broadcast = compiletime_broadcast_elemental_intrinsic(
+                            args, &result_array, array_indices_in_args, create_func, x.base.base.loc, al);
+                        if (broadcast) {
+                            tmp = (ASR::asr_t*) broadcast;
+                        } else {
+                            tmp = create_func(al, x.base.base.loc, args, diag);
+                        }
                     } else {
                         tmp = create_func(al, x.base.base.loc, args, diag);
                     }
