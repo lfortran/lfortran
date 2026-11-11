@@ -31282,7 +31282,7 @@ public:
 
     void import_use_symbols(ASR::Module_t *m, const AST::Use_t &x) {
         std::string msym = to_lower(x.m_module);
-        if (msym == "ieee_arithmetic") {
+        if (msym == "ieee_arithmetic" || msym == "ieee_exceptions") {
             msym = "lfortran_intrinsic_" + msym;
         }
         if (x.n_symbols == 0) {

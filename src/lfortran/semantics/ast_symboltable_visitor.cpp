@@ -6589,7 +6589,7 @@ public:
 
     void visit_Use(const AST::Use_t &x) {
         std::string msym = to_lower(x.m_module);
-        if (msym == "ieee_arithmetic") {
+        if (msym == "ieee_arithmetic" || msym == "ieee_exceptions") {
             msym = "lfortran_intrinsic_" + msym;
         }
         Str msym_c; msym_c.from_str_view(msym);

@@ -47,6 +47,8 @@ lfortran_compile_runtime(lfortran_intrinsic_custom custom)
 lfortran_compile_runtime(lfortran_intrinsic_ieee_arithmetic pure)
 add_dependencies(lfortran_intrinsic_ieee_arithmetic lfortran_intrinsic_iso_fortran_env)
 
+lfortran_compile_runtime(lfortran_intrinsic_ieee_exceptions pure)
+
 lfortran_compile_runtime(lfortran_intrinsic_iso_c_binding pure)
 
 lfortran_compile_runtime(omp_lib openmp)
@@ -64,6 +66,7 @@ set(LFORTRAN_RUNTIME_MOD_FILES
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_custom.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_fortran_env.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
+  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_exceptions.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_display.mod
