@@ -4635,9 +4635,13 @@ void default_formatting(lfortran_allocator_t* al, char** result, int64_t *result
                                  + default_spacing_len + 1) * sizeof(char);
         } else if (s_info->current_element_type == FLOAT_128_TYPE &&
                 s_info->current_arg_info.is_complex) {
-            // Two binary128 numbers, with the parentheses and the comma.
+            // Two binary128 values, each at most 45 characters (sign, 36
+            // significant digits, decimal point, exponent such as E-4932),
+            // plus the parentheses, the comma and a space, all within 2 * 60 + 8.
             size_to_allocate = (2 * 60 + 8 + default_spacing_len) * sizeof(char);
         } else {
+            // The widest numeric item is a binary128 value of at most 45
+            // characters, so 60 always suffices.
             size_to_allocate = (60 + default_spacing_len) * sizeof(char);
         }
         int64_t old_capacity = result_capacity;
@@ -13736,7 +13740,15 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
 
 
 // Reading binary128 values: the token is parsed with lf_float128_from_str.
-static lf_float128 lf_strtof128(const char *s, char **endptr)
+// A numeric token has at most LF_F128_TOKEN_MAX characters (binary128 has 36
+// significant digits, so this leaves room for leading zeros and an exponent).
+// Longer tokens are rejected instead of being truncated. The buffers that
+// collect a token hold one more character, so that a longer token is seen.
+enum { LF_F128_TOKEN_MAX = 99, LF_F128_TOKEN_BUF = LF_F128_TOKEN_MAX + 2 };
+
+// Parse the number at the start of s into *val and set *endptr past it.
+// Returns false (with *endptr == s) if there is no number or it is too long.
+static bool lf_strtof128(const char *s, lf_float128 *val, char **endptr)
 {
     const char *q = s;
     while (isspace((unsigned char)*q)) q++;
@@ -13754,22 +13766,26 @@ static lf_float128 lf_strtof128(const char *s, char **endptr)
     }
     if (q == start) {
         if (endptr) *endptr = (char*)s;
-        return lf_f128_from_double(0.0);
+        return false;
     }
-    char token[128];
     size_t n = (size_t)(q - start);
-    if (n >= sizeof(token)) n = sizeof(token) - 1;
+    if (n > LF_F128_TOKEN_MAX) {
+        if (endptr) *endptr = (char*)s;
+        return false;
+    }
+    char token[LF_F128_TOKEN_BUF];
     memcpy(token, start, n);
     token[n] = '\0';
     if (endptr) *endptr = (char*)q;
-    return lf_float128_from_str(token);
+    *val = lf_float128_from_str(token);
+    return true;
 }
 
 static bool parse_fortran_f128(const char *buffer, lf_float128 *val)
 {
     char *end;
-    lf_float128 v = lf_strtof128(buffer, &end);
-    if (end == buffer) return false;
+    lf_float128 v;
+    if (!lf_strtof128(buffer, &v, &end)) return false;
     while (isspace((unsigned char)*end)) end++;
     if (*end != '\0') return false;
     *val = v;
@@ -13778,11 +13794,10 @@ static bool parse_fortran_f128(const char *buffer, lf_float128 *val)
 
 static int lf_scan_f128(FILE *filep, lf_float128 *val)
 {
-    char token[100];
-    if (input_scan(filep, "%99s", token) != 1) return 0;
+    char token[LF_F128_TOKEN_BUF];
+    if (input_scan(filep, "%100s", token) != 1) return 0;
     char *end;
-    *val = lf_strtof128(token, &end);
-    return end != token;
+    return lf_strtof128(token, val, &end);
 }
 
 LFORTRAN_API void _lfortran_read_float128(lf_float128 *p, int32_t unit_num, int32_t *iostat)
@@ -13793,7 +13808,7 @@ LFORTRAN_API void _lfortran_read_float128(lf_float128 *p, int32_t unit_num, int3
 
     if (unit_num == -1) {
         // Read as string to handle Fortran D exponent notation
-        char buffer[100];
+        char buffer[LF_F128_TOKEN_BUF];
         if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
             if (iostat) return;
             fprintf(stderr, "Error: Failed to read double from stdin.\n");
@@ -13873,10 +13888,10 @@ LFORTRAN_API void _lfortran_read_float128(lf_float128 *p, int32_t unit_num, int3
             input_ungetc(c, filep);
             return;
         }
-        char buffer[100];
+        char buffer[LF_F128_TOKEN_BUF];
         int len = 0;
         do {
-            if (len < 99) buffer[len++] = (char)c;
+            if (len < LF_F128_TOKEN_BUF - 1) buffer[len++] = (char)c;
             c = input_getc(filep);
         } while (c != EOF && !isspace(c) && c != lsep && c != '/');
         buffer[len] = '\0';
@@ -13916,12 +13931,12 @@ LFORTRAN_API void _lfortran_read_array_float128(lf_float128 *p, int array_size, 
         exit(1);
     }
 
-    char buffer[100];
+    char buffer[LF_F128_TOKEN_BUF];
 
     if (unit_num == -1) {
         use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(stdin, "%99s", buffer) != 1) {
+            if (input_scan(stdin, "%100s", buffer) != 1) {
                 if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read double from stdin.\n");
                 exit(1);
@@ -14011,7 +14026,7 @@ LFORTRAN_API void _lfortran_read_array_float128(lf_float128 *p, int array_size, 
         }
     } else {
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(filep, "%99s", buffer) != 1) {
+            if (input_scan(filep, "%100s", buffer) != 1) {
                 if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read double from file.\n");
                 exit(1);
@@ -14036,8 +14051,8 @@ LFORTRAN_API void _lfortran_read_complex_float128(struct _lfortran_complex_128 *
 
     if (unit_num == -1) {
         use_stdin_char_mode();
-        char buf_re[100], buf_im[100];
-        if (input_scan(stdin, "%99s %99s", buf_re, buf_im) != 2) {
+        char buf_re[LF_F128_TOKEN_BUF], buf_im[LF_F128_TOKEN_BUF];
+        if (input_scan(stdin, "%100s %100s", buf_re, buf_im) != 2) {
             if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
             fprintf(stderr, "Error: Failed to read complex double from stdin.\n");
             exit(1);
@@ -14046,8 +14061,11 @@ LFORTRAN_API void _lfortran_read_complex_float128(struct _lfortran_complex_128 *
         normalize_numeric_input(buf_re, dmode);
         convert_fortran_d_exponent(buf_im);
         normalize_numeric_input(buf_im, dmode);
-        p->re = lf_strtof128(buf_re, NULL);
-        p->im = lf_strtof128(buf_im, NULL);
+        if (!lf_strtof128(buf_re, &p->re, NULL) || !lf_strtof128(buf_im, &p->im, NULL)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input from stdin.\n");
+            exit(1);
+        }
         return;
     }
 
@@ -14101,7 +14119,7 @@ LFORTRAN_API void _lfortran_read_complex_float128(struct _lfortran_complex_128 *
         if (list_directed_check_null_repeat(unit_num)) {
             return;
         }
-        char buffer[200];
+        char buffer[256];
         int rc = read_complex_expr(filep, buffer, sizeof(buffer));
         if (rc == -1) {
             return;
@@ -14130,20 +14148,24 @@ LFORTRAN_API void _lfortran_read_complex_float128(struct _lfortran_complex_128 *
             if (comma) {
                 *comma = '\0';
                 while (isspace((unsigned char)*start)) start++;
-                char *endptr_re;
-                p->re = lf_strtof128(start, &endptr_re);
-                while (isspace((unsigned char)*endptr_re)) endptr_re++;
                 char *im_start = comma + 1;
                 while (isspace((unsigned char)*im_start)) im_start++;
-                char *endptr_im;
-                p->im = lf_strtof128(im_start, &endptr_im);
+                if (!lf_strtof128(start, &p->re, NULL) || !lf_strtof128(im_start, &p->im, NULL)) {
+                    if (iostat) { *iostat = 1; return; }
+                    fprintf(stderr, "Error: Invalid input from file.\n");
+                    exit(1);
+                }
             } else {
                 if (iostat) { *iostat = 1; return; }
                 fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
                 exit(1);
             }
         } else {
-            p->re = lf_strtof128(buffer, NULL);
+            if (!lf_strtof128(buffer, &p->re, NULL)) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid input from file.\n");
+                exit(1);
+            }
             if (lf_scan_f128(filep, &p->im) != 1) {
                 if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read imaginary part of complex double.\n");
@@ -14164,12 +14186,12 @@ LFORTRAN_API void _lfortran_read_array_complex_float128(struct _lfortran_complex
         exit(1);
     }
 
-    char buf_re[100], buf_im[100];
+    char buf_re[LF_F128_TOKEN_BUF], buf_im[LF_F128_TOKEN_BUF];
 
     if (unit_num == -1) {
         use_stdin_char_mode();
         for (int i = 0; i < array_size; i++) {
-            if (input_scan(stdin, "%99s %99s", buf_re, buf_im) != 2) {
+            if (input_scan(stdin, "%100s %100s", buf_re, buf_im) != 2) {
                 if (iostat) { *iostat = input_eof(stdin) ? -1 : 1; return; }
                 fprintf(stderr, "Error: Failed to read complex double from stdin.\n");
                 exit(1);
@@ -14178,8 +14200,13 @@ LFORTRAN_API void _lfortran_read_array_complex_float128(struct _lfortran_complex
             normalize_numeric_input(buf_re, dmode);
             convert_fortran_d_exponent(buf_im);
             normalize_numeric_input(buf_im, dmode);
-            p[(int64_t)i * (int64_t)stride].re = lf_strtof128(buf_re, NULL);
-            p[(int64_t)i * (int64_t)stride].im = lf_strtof128(buf_im, NULL);
+            struct _lfortran_complex_128 val;
+            if (!lf_strtof128(buf_re, &val.re, NULL) || !lf_strtof128(buf_im, &val.im, NULL)) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid input from stdin.\n");
+                exit(1);
+            }
+            p[(int64_t)i * (int64_t)stride] = val;
         }
         return;
     }
@@ -14257,7 +14284,7 @@ LFORTRAN_API void _lfortran_read_array_complex_float128(struct _lfortran_complex
         }
     } else {
         for (int i = 0; i < array_size;) {
-            char buffer[200];
+            char buffer[256];
             int rc = read_complex_expr(filep, buffer, sizeof(buffer));
             if (rc == -1) {
                 i++;
@@ -14292,13 +14319,13 @@ LFORTRAN_API void _lfortran_read_array_complex_float128(struct _lfortran_complex
                 if (comma) {
                     *comma = '\0';
                     while (isspace((unsigned char)*start)) start++;
-                    char *endptr_re;
-                    value.re = lf_strtof128(start, &endptr_re);
-                    while (isspace((unsigned char)*endptr_re)) endptr_re++;
                     char *im_start = comma + 1;
                     while (isspace((unsigned char)*im_start)) im_start++;
-                    char *endptr_im;
-                    value.im = lf_strtof128(im_start, &endptr_im);
+                    if (!lf_strtof128(start, &value.re, NULL) || !lf_strtof128(im_start, &value.im, NULL)) {
+                        if (iostat) { *iostat = 1; return; }
+                        fprintf(stderr, "Error: Invalid input from file.\n");
+                        exit(1);
+                    }
                 } else {
                     if (iostat) { *iostat = 1; return; }
                     fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
@@ -14306,7 +14333,11 @@ LFORTRAN_API void _lfortran_read_array_complex_float128(struct _lfortran_complex
                 }
             } else {
                 // No parentheses: treat as two whitespace-separated numbers
-                value.re = lf_strtof128(buffer, NULL);
+                if (!lf_strtof128(buffer, &value.re, NULL)) {
+                    if (iostat) { *iostat = 1; return; }
+                    fprintf(stderr, "Error: Invalid input from file.\n");
+                    exit(1);
+                }
                 if (input_scan(filep, "%lf", &value.im) != 1) {
                     if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
                     fprintf(stderr, "Error: Failed to read complex double from file.\n");
@@ -14949,7 +14980,8 @@ static void parse_boz_from_buffer(char* buffer, int field_len,
     internal_free(processed);
 }
 
-static void parse_real_from_buffer(char* buffer, int field_len,
+// Returns false if a real(16) field is too long to be a numeric token.
+static bool parse_real_from_buffer(char* buffer, int field_len,
         void* real_ptr, int32_t type_code, int scale_factor, int decimal_places)
 {
     // Handle integer types
@@ -14962,7 +14994,7 @@ static void parse_real_from_buffer(char* buffer, int field_len,
                 (int64_t)strtoll(temp, NULL, 10));
             internal_free(temp);
         }
-        return;
+        return true;
     }
     // Replace D/d with E for parsing, check for exponent/decimal point
     bool has_exponent = false;
@@ -15024,13 +15056,17 @@ static void parse_real_from_buffer(char* buffer, int field_len,
         total_scale += scale_factor;
     }
     if (type_code == 14) {
-        lf_float128 v128 = lf_strtof128(buffer, NULL);
+        lf_float128 v128 = lf_f128_from_double(0.0);
+        if (!lf_strtof128(buffer, &v128, NULL)) {
+            const char *digits = buffer + strspn(buffer, " \t");
+            if (strspn(digits, "+-.0123456789EeQq") > LF_F128_TOKEN_MAX) return false;
+        }
         if (total_scale != 0) {
             v128 = lf_f128_div(v128, lf_f128_pow(lf_f128_from_double(10.0),
                 lf_f128_from_double((double)total_scale)));
         }
         *((lf_float128*)real_ptr) = v128;
-        return;
+        return true;
     }
     double v = strtod(buffer, NULL);
     if (total_scale != 0) {
@@ -15041,6 +15077,7 @@ static void parse_real_from_buffer(char* buffer, int field_len,
     } else {
         *((double*)real_ptr) = v;
     }
+    return true;
 }
 
 static void parse_logical_from_buffer(char* buffer, int field_len,
@@ -15951,8 +15988,9 @@ static bool read_and_parse_real_field(InputSource *inputSource, void* elem_ptr,
             if (buffer[ri] == ',') { buffer[ri] = '.'; break; }
         }
     }
-    parse_real_from_buffer(buffer, field_len, elem_ptr, type_code, scale_factor, decimal_places);
+    bool ok = parse_real_from_buffer(buffer, field_len, elem_ptr, type_code, scale_factor, decimal_places);
     internal_free(buffer);
+    if (!ok) { if (iostat) *iostat = 1; return false; }
     return true;
 }
 
@@ -18214,8 +18252,8 @@ LFORTRAN_API void _lfortran_string_read_c64_array(char *str, int64_t len, char *
 static int string_read_f128_token(const char *s, lf_float128 *value, int *consumed)
 {
     char *end;
-    lf_float128 v = lf_strtof128(s, &end);
-    if (end == s) {
+    lf_float128 v;
+    if (!lf_strtof128(s, &v, &end)) {
         *consumed = 0;
         return 0;
     }
