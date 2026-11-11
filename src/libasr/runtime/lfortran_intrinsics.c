@@ -17560,14 +17560,31 @@ LFORTRAN_API void _lfortran_string_write(lfortran_allocator_t* al, char **str_ho
     if(iostat != NULL) *iostat = dtio_iostat;
 }
 
-// Each element of a character-array internal file is one record. Move
-// *offset to the next record when the rest of this one holds no
-// list-directed value: only blanks, or a comma that separates an
-// already-read value from the next record. A comma that is the first
-// non-blank of the first record is a null value and stays where it is.
+// A separator was already consumed before the position the per-record
+// reader is about to see. The next separator is a null, including when
+// a value follows it in that record. Cleared once the reader accepts it.
+static int lf_cross_record_null = 0;
+// Set after the separator that follows a value, so a later separator is
+// a null. Stays clear while comma-only records are still the one
+// separator between two values (blanks around a single comma).
+static int lf_comma_flag = 0;
+
+static int string_is_list_blank(char c) {
+    return c == ' ' || c == '\t';
+}
+
+// Each element of a character-array internal file is one record. End of
+// record is a blank. The list-directed separator is a comma, or a
+// semicolon when this transfer's decimal mode is comma. Consume one
+// separator that ends a record. If the next record opens with another
+// separator, leave that separator so the per-record reader takes a null
+// instead of skipping on to a value. A comma-only record that is the
+// only separator between values is skipped, not a null. A separator with
+// nothing before it in the first record is a null and stays where it is.
 LFORTRAN_API void _lfortran_string_array_next_record(
         char *str, int64_t len, int64_t elem_len, int64_t *offset) {
     int64_t pos;
+    char lsep;
     if (offset == NULL || str == NULL || elem_len <= 0) {
         return;
     }
@@ -17578,48 +17595,75 @@ LFORTRAN_API void _lfortran_string_array_next_record(
     if (pos > len) {
         pos = len;
     }
+    // A new transfer starts at offset 0. Do not keep separator state
+    // from the previous read statement.
+    if (pos == 0) {
+        lf_comma_flag = 0;
+        lf_cross_record_null = 0;
+    }
+    lsep = list_directed_separator(-1);
     while (pos < len) {
         int64_t rec_index = pos / elem_len;
         int64_t rec_start = rec_index * elem_len;
         int64_t rec_end = rec_start + elem_len;
         int64_t i;
         int64_t j;
-        int saw_value;
+        int value_before;
         if (rec_end > len) {
             rec_end = len;
         }
         i = pos;
-        while (i < rec_end && (str[i] == ' ' || str[i] == '\t')) {
+        while (i < rec_end && string_is_list_blank(str[i])) {
             i++;
         }
         if (i >= rec_end) {
             pos = rec_end;
             continue;
         }
-        if (str[i] != ',') {
-            break;
+        if (str[i] != lsep) {
+            lf_comma_flag = 0;
+            lf_cross_record_null = 0;
+            *offset = i;
+            return;
         }
-        j = i + 1;
-        while (j < rec_end && (str[j] == ' ' || str[j] == '\t')) {
-            j++;
-        }
-        if (j < rec_end) {
-            break;
-        }
-        saw_value = 0;
+        value_before = 0;
         for (j = rec_start; j < i; j++) {
-            if (str[j] != ' ' && str[j] != '\t') {
-                saw_value = 1;
+            if (!string_is_list_blank(str[j])) {
+                value_before = 1;
                 break;
             }
         }
-        // "no characters preceding the first value separator" in the
-        // first record is a null value, not an empty record.
-        if (rec_index == 0 && !saw_value) {
-            break;
+        j = i + 1;
+        while (j < rec_end && string_is_list_blank(str[j])) {
+            j++;
+        }
+        if (j < rec_end) {
+            // Separator, then more of this record. The reader skips one
+            // separator and parses a value, unless a separator is already
+            // pending: then this one is a null and the value stays.
+            if (lf_comma_flag) {
+                lf_cross_record_null = 1;
+            } else {
+                lf_cross_record_null = 0;
+            }
+            *offset = i;
+            return;
+        }
+        // The separator is the last non-blank of this record.
+        if (lf_comma_flag || (rec_index == 0 && !value_before)) {
+            lf_comma_flag = 1;
+            lf_cross_record_null = 1;
+            *offset = i;
+            return;
+        }
+        // One separator after a value. A following comma-only record is
+        // still that separator, so do not mark it pending.
+        if (value_before) {
+            lf_comma_flag = 1;
         }
         pos = rec_end;
     }
+    lf_cross_record_null = 0;
     *offset = pos;
 }
 
@@ -17627,6 +17671,20 @@ LFORTRAN_API void _lfortran_string_array_next_record(
 static int _lfortran_skip_comma(char *buf, int *skip, int64_t off, int64_t *offset, int32_t *iostat) {
     while (buf[*skip] && (buf[*skip] == ' ' || buf[*skip] == '\t')) {
         (*skip)++;
+    }
+    if (lf_cross_record_null) {
+        // Consume this one separator and leave whatever follows it.
+        // Numeric input in comma decimal mode has already turned ';' into ','.
+        lf_cross_record_null = 0;
+        if (buf[*skip] == ',') {
+            (*skip)++;
+            while (buf[*skip] == ' ' || buf[*skip] == '\t') {
+                (*skip)++;
+            }
+            *offset = off + *skip;
+            if (iostat) *iostat = 0;
+            return 1;
+        }
     }
     if (buf[*skip] == ',') {
         int look = *skip + 1;

@@ -12,6 +12,8 @@ program read_123
     character(len=4) :: blanked(3)
     character(len=6) :: comma_pad(2)
     character(len=5) :: comma_one(1)
+    character(len=3) :: buf_null(2)
+    character(len=6) :: buf_comma(2)
     character(len=10) :: scalar
     integer :: a, b, c, d, e, f
     real :: x, y
@@ -83,4 +85,22 @@ program read_123
     b = -1
     read(scalar, *) a, b
     if (a /= 10 .or. b /= 20) error stop 10
+
+    ! A comma that ends one record and another that opens the next are
+    ! two separators, so the value between them is null.
+    buf_null(1) = '10,'
+    buf_null(2) = ',20'
+    a = 7
+    b = 8
+    c = 9
+    read(buf_null, *) a, b, c
+    if (a /= 10 .or. b /= 8 .or. c /= 20) error stop 11
+
+    ! DECIMAL='comma' uses ';' as the separator. '1,5' is 1.5.
+    buf_comma(1) = '1,5;'
+    buf_comma(2) = '2,5'
+    x = -1.0
+    y = -1.0
+    read(buf_comma, *, decimal='comma') x, y
+    if (abs(x - 1.5) > 1.0e-6 .or. abs(y - 2.5) > 1.0e-6) error stop 12
 end program
