@@ -443,7 +443,7 @@ typedef struct device_block {
 static device_block *live_blocks = NULL;
 static size_t live_capacity = 0;
 static size_t n_live = 0;
-static device_block free_blocks[POOL_CLASSES][64];
+static device_block free_blocks[POOL_CLASSES][1024];
 static int n_free_blocks[POOL_CLASSES];
 static size_t cached_bytes = 0;
 
@@ -567,7 +567,7 @@ static void device_release(void *d_ptr) {
     size_t unused;
     int c = block_size <= POOL_MAX_BLOCK_BYTES
         ? pool_class(block_size, &unused) : -1;
-    if (c < 0 || c >= POOL_CLASSES || n_free_blocks[c] == 64
+    if (c < 0 || c >= POOL_CLASSES || n_free_blocks[c] == 1024
             || cached_bytes + block_size > POOL_MAX_CACHED_BYTES) {
         check(cudaFree(d_ptr), "cudaFree");
         return;
@@ -891,7 +891,7 @@ typedef struct managed_free_block {
     size_t size;
     uint64_t epoch;
 } managed_free_block;
-enum { MANAGED_POOL_PER_CLASS = 64 };
+enum { MANAGED_POOL_PER_CLASS = 1024 };
 static managed_free_block managed_free_blocks[POOL_CLASSES][MANAGED_POOL_PER_CLASS];
 static int n_managed_free_blocks[POOL_CLASSES];
 static size_t managed_cached_bytes = 0;

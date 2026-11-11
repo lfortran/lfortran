@@ -676,6 +676,37 @@ static int managed_memory_model()
     return 0;
 }
 
+// CTest runs this case with LFORTRAN_GPU_MEMORY=managed. A procedure that
+// allocates many temporaries of one size (one for each layer of a model)
+// frees them all without a cudaFree, which would wait for the device: the
+// blocks are kept for the next call.
+static int managed_pool_capacity()
+{
+    previous_allocator = {host_alloc, host_realloc, host_dealloc, nullptr};
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    require(memory_model == MEMORY_MANAGED,
+        "LFORTRAN_GPU_MEMORY=managed selects the model");
+    enum { TEMPORARIES = 300 };
+    static void *temporaries[TEMPORARIES];
+    for (int i = 0; i < TEMPORARIES; i++) {
+        temporaries[i] = managed_alloc(nullptr, MANAGED_MIN_BYTES);
+        require(temporaries[i] != nullptr, "temporary allocation");
+    }
+    unsigned long long frees = stats().frees;
+    for (int i = 0; i < TEMPORARIES; i++) {
+        managed_dealloc(nullptr, temporaries[i]);
+    }
+    require(stats().frees == frees, "freed temporaries are kept, not freed");
+    require(stats().implicit_synchronizations == 0,
+        "freeing temporaries does not wait for the device");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    printf("managed pool capacity passed on the CUDA runtime API %d\n",
+        CUDART_VERSION);
+    return 0;
+}
+
 // Without a device the runtime stops at initialization: it must not skip
 // the launch and leave the program with the values never computed.
 static int no_device()
@@ -743,6 +774,9 @@ int main(int argc, char **argv)
     if (argc == 2 && strcmp(argv[1], "unified") == 0) {
         return unified_memory_model();
     }
+    if (argc == 2 && strcmp(argv[1], "managed-pool") == 0) {
+        return managed_pool_capacity();
+    }
     if (argc == 2 && strcmp(argv[1], "managed") == 0) {
         return managed_memory_model();
     }
@@ -761,7 +795,7 @@ int main(int argc, char **argv)
     // `output`, which no launch has used in the two wait periods before, is
     // forgotten there and its memory freed.
     require(s.launches == 201 && s.mallocs == 6017
-        && s.frees == (scratch ? 4033u : 4032u),
+        && s.frees == (scratch ? 3073u : 3072u),
         "per-slot reuse and deferred replacement counts");
     // The syncs of the read-back and of the shutdown find the device idle.
     require(sync_launches.size() == 2
