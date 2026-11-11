@@ -50,6 +50,43 @@ contains
             end block
         end do
     end subroutine
+    ! The same sum with the 16 terms in the loop itself: the loop is written
+    ! twice, for arrays that start at a multiple of 16 bytes and for the others.
+    pure subroutine qmv_inline(w, x, y)
+        integer, contiguous, intent(in) :: w(:, :)
+        integer(2), contiguous, intent(in) :: x(:)
+        real, contiguous, intent(out) :: y(:)
+        integer :: n
+
+        do concurrent (n = 1:size(w, 2))
+            block
+                integer :: c
+                real :: total
+
+                total = 0
+                do c = 1, size(x)/16
+                    total = total + ( &
+                        real(ibits(w(4*c - 3, n), 0, 8))*real(x(16*c - 15)) &
+                        + real(ibits(w(4*c - 3, n), 8, 8))*real(x(16*c - 14)) &
+                        + real(ibits(w(4*c - 3, n), 16, 8))*real(x(16*c - 13)) &
+                        + real(ibits(w(4*c - 3, n), 24, 8))*real(x(16*c - 12)) &
+                        + real(ibits(w(4*c - 2, n), 0, 8))*real(x(16*c - 11)) &
+                        + real(ibits(w(4*c - 2, n), 8, 8))*real(x(16*c - 10)) &
+                        + real(ibits(w(4*c - 2, n), 16, 8))*real(x(16*c - 9)) &
+                        + real(ibits(w(4*c - 2, n), 24, 8))*real(x(16*c - 8)) &
+                        + real(ibits(w(4*c - 1, n), 0, 8))*real(x(16*c - 7)) &
+                        + real(ibits(w(4*c - 1, n), 8, 8))*real(x(16*c - 6)) &
+                        + real(ibits(w(4*c - 1, n), 16, 8))*real(x(16*c - 5)) &
+                        + real(ibits(w(4*c - 1, n), 24, 8))*real(x(16*c - 4)) &
+                        + real(ibits(w(4*c - 0, n), 0, 8))*real(x(16*c - 3)) &
+                        + real(ibits(w(4*c - 0, n), 8, 8))*real(x(16*c - 2)) &
+                        + real(ibits(w(4*c - 0, n), 16, 8))*real(x(16*c - 1)) &
+                        + real(ibits(w(4*c - 0, n), 24, 8))*real(x(16*c - 0)))
+                end do
+                y(n) = total
+            end block
+        end do
+    end subroutine
 end module
 
 program gpu_wide_loads_01
@@ -60,7 +97,7 @@ integer, parameter :: sizes(3) = [5, 37, 70001]
 integer, allocatable :: w(:, :)
 integer(2), allocatable :: xs(:)
 integer(2) :: x(k + 1)
-real, allocatable :: y(:)
+real, allocatable :: y(:), y2(:)
 real :: ref
 integer :: s, nrows, i, j, shift, c
 
@@ -74,7 +111,7 @@ do shift = 0, 1
     xs = x
     do s = 1, size(sizes)
         nrows = sizes(s)
-        allocate(w(k/4, nrows), y(nrows))
+        allocate(w(k/4, nrows), y(nrows), y2(nrows))
         do j = 1, nrows
             do i = 1, k/4
                 w(i, j) = ior(ior(mod(i + j, 251), ishft(mod(3*i + j, 253), 8)), &
@@ -82,6 +119,7 @@ do shift = 0, 1
             end do
         end do
         call qmv(w, xs(1 + shift:k + shift), y)
+        call qmv_inline(w, xs(1 + shift:k + shift), y2)
         do j = 1, nrows
             ref = 0
             do i = 1, k
@@ -89,8 +127,9 @@ do shift = 0, 1
                 ref = ref + ibits(w(c, j), 8*modulo(i - 1, 4), 8)*int(xs(i + shift))
             end do
             if (y(j) /= ref) error stop "quantized matrix-vector product"
+            if (y2(j) /= ref) error stop "quantized matrix-vector product, inline"
         end do
-        deallocate(w, y)
+        deallocate(w, y, y2)
     end do
     deallocate(xs)
 end do

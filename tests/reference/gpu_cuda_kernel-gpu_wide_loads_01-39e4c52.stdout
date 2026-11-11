@@ -133,103 +133,103 @@ __device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a0,
     a0 = e[0]; a1 = e[1]; a2 = e[2]; a3 = e[3]; a4 = e[4]; a5 = e[5]; a6 = e[6]; a7 = e[7];
 }
 
-__device__ inline int _lcompilers_ibits_i32_gpu_48(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i32_gpu_57(int x, int y, int z) {
     int _lcompilers_ibits_i32{};
     _lcompilers_ibits_i32 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i32;
 }
 
-__device__ inline int _lcompilers_ibits_i321_gpu_49(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i321_gpu_58(int x, int y, int z) {
     int _lcompilers_ibits_i321{};
     _lcompilers_ibits_i321 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i321;
 }
 
-__device__ inline int _lcompilers_ibits_i322_gpu_50(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i322_gpu_59(int x, int y, int z) {
     int _lcompilers_ibits_i322{};
     _lcompilers_ibits_i322 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i322;
 }
 
-__device__ inline int _lcompilers_ibits_i323_gpu_51(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i323_gpu_60(int x, int y, int z) {
     int _lcompilers_ibits_i323{};
     _lcompilers_ibits_i323 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i323;
 }
 
-__device__ inline int _lcompilers_ibits_i324_gpu_52(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i324_gpu_61(int x, int y, int z) {
     int _lcompilers_ibits_i324{};
     _lcompilers_ibits_i324 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i324;
 }
 
-__device__ inline int _lcompilers_ibits_i325_gpu_53(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i325_gpu_62(int x, int y, int z) {
     int _lcompilers_ibits_i325{};
     _lcompilers_ibits_i325 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i325;
 }
 
-__device__ inline int _lcompilers_ibits_i326_gpu_54(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i326_gpu_63(int x, int y, int z) {
     int _lcompilers_ibits_i326{};
     _lcompilers_ibits_i326 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i326;
 }
 
-__device__ inline int _lcompilers_ibits_i327_gpu_55(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i327_gpu_64(int x, int y, int z) {
     int _lcompilers_ibits_i327{};
     _lcompilers_ibits_i327 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i327;
 }
 
-__device__ inline int _lcompilers_ibits_i328_gpu_56(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i328_gpu_65(int x, int y, int z) {
     int _lcompilers_ibits_i328{};
     _lcompilers_ibits_i328 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i328;
 }
 
-__device__ inline int _lcompilers_ibits_i329_gpu_57(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i329_gpu_66(int x, int y, int z) {
     int _lcompilers_ibits_i329{};
     _lcompilers_ibits_i329 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i329;
 }
 
-__device__ inline int _lcompilers_ibits_i3210_gpu_58(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i3210_gpu_67(int x, int y, int z) {
     int _lcompilers_ibits_i3210{};
     _lcompilers_ibits_i3210 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i3210;
 }
 
-__device__ inline int _lcompilers_ibits_i3211_gpu_59(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i3211_gpu_68(int x, int y, int z) {
     int _lcompilers_ibits_i3211{};
     _lcompilers_ibits_i3211 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i3211;
 }
 
-__device__ inline int _lcompilers_ibits_i3212_gpu_60(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i3212_gpu_69(int x, int y, int z) {
     int _lcompilers_ibits_i3212{};
     _lcompilers_ibits_i3212 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i3212;
 }
 
-__device__ inline int _lcompilers_ibits_i3213_gpu_61(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i3213_gpu_70(int x, int y, int z) {
     int _lcompilers_ibits_i3213{};
     _lcompilers_ibits_i3213 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i3213;
 }
 
-__device__ inline int _lcompilers_ibits_i3214_gpu_62(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i3214_gpu_71(int x, int y, int z) {
     int _lcompilers_ibits_i3214{};
     _lcompilers_ibits_i3214 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i3214;
 }
 
-__device__ inline int _lcompilers_ibits_i3215_gpu_63(int x, int y, int z) {
+__device__ inline int _lcompilers_ibits_i3215_gpu_72(int x, int y, int z) {
     int _lcompilers_ibits_i3215{};
     _lcompilers_ibits_i3215 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
     return _lcompilers_ibits_i3215;
 }
 
-__device__ inline float chunk_dot_gpu_14(int* w, int __1w, int __2w, int16_t* x, int __1x, int n, int c) {
+__device__ inline float chunk_dot_gpu_16(int* w, int __1w, int __2w, int16_t* x, int __1x, int n, int c) {
     float r{};
     int __gpu_wide;
     int __gpu_wide1;
@@ -251,10 +251,10 @@ __device__ inline float chunk_dot_gpu_14(int* w, int __1w, int __2w, int16_t* x,
     int16_t __gpu_wide7;
     int16_t __gpu_wide8;
     int16_t __gpu_wide9;
-    __lfortran_wide_load(((((__1w) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0, &(w[((int)(((4 * c) - 3)) - (1)) + (__1w * ((int)(n) - (1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
-    __lfortran_wide_load((true) && (reinterpret_cast<size_t>(x) & 15u) == 0, &(x[((int)(((16 * c) - 15)) - (1))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7, __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
-    __lfortran_wide_load((true) && (reinterpret_cast<size_t>(x) & 15u) == 0, &(x[((int)(((16 * c) - 7)) - (1))]), __gpu_wide12, __gpu_wide13, __gpu_wide14, __gpu_wide15, __gpu_wide16, __gpu_wide17, __gpu_wide18, __gpu_wide19);
-    r = ((((((((((((((((((float)_lcompilers_ibits_i32_gpu_48(__gpu_wide, 0, 8)) * ((float)__gpu_wide4)) + (((float)_lcompilers_ibits_i321_gpu_49(__gpu_wide, 8, 8)) * ((float)__gpu_wide5))) + (((float)_lcompilers_ibits_i322_gpu_50(__gpu_wide, 16, 8)) * ((float)__gpu_wide6))) + (((float)_lcompilers_ibits_i323_gpu_51(__gpu_wide, 24, 8)) * ((float)__gpu_wide7))) + (((float)_lcompilers_ibits_i324_gpu_52(__gpu_wide1, 0, 8)) * ((float)__gpu_wide8))) + (((float)_lcompilers_ibits_i325_gpu_53(__gpu_wide1, 8, 8)) * ((float)__gpu_wide9))) + (((float)_lcompilers_ibits_i326_gpu_54(__gpu_wide1, 16, 8)) * ((float)__gpu_wide10))) + (((float)_lcompilers_ibits_i327_gpu_55(__gpu_wide1, 24, 8)) * ((float)__gpu_wide11))) + (((float)_lcompilers_ibits_i328_gpu_56(__gpu_wide2, 0, 8)) * ((float)__gpu_wide12))) + (((float)_lcompilers_ibits_i329_gpu_57(__gpu_wide2, 8, 8)) * ((float)__gpu_wide13))) + (((float)_lcompilers_ibits_i3210_gpu_58(__gpu_wide2, 16, 8)) * ((float)__gpu_wide14))) + (((float)_lcompilers_ibits_i3211_gpu_59(__gpu_wide2, 24, 8)) * ((float)__gpu_wide15))) + (((float)_lcompilers_ibits_i3212_gpu_60(__gpu_wide3, 0, 8)) * ((float)__gpu_wide16))) + (((float)_lcompilers_ibits_i3213_gpu_61(__gpu_wide3, 8, 8)) * ((float)__gpu_wide17))) + (((float)_lcompilers_ibits_i3214_gpu_62(__gpu_wide3, 16, 8)) * ((float)__gpu_wide18))) + (((float)_lcompilers_ibits_i3215_gpu_63(__gpu_wide3, 24, 8)) * ((float)__gpu_wide19)));
+    __lfortran_wide_load((((((__1w) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)(((4 * c) - 3)) - (1)) + (__1w * ((int)(n) - (1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
+    __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)(((16 * c) - 15)) - (1))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7, __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
+    __lfortran_wide_load(((true) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)(((16 * c) - 7)) - (1))]), __gpu_wide12, __gpu_wide13, __gpu_wide14, __gpu_wide15, __gpu_wide16, __gpu_wide17, __gpu_wide18, __gpu_wide19);
+    r = ((((((((((((((((((float)_lcompilers_ibits_i32_gpu_57(__gpu_wide, 0, 8)) * ((float)__gpu_wide4)) + (((float)_lcompilers_ibits_i321_gpu_58(__gpu_wide, 8, 8)) * ((float)__gpu_wide5))) + (((float)_lcompilers_ibits_i322_gpu_59(__gpu_wide, 16, 8)) * ((float)__gpu_wide6))) + (((float)_lcompilers_ibits_i323_gpu_60(__gpu_wide, 24, 8)) * ((float)__gpu_wide7))) + (((float)_lcompilers_ibits_i324_gpu_61(__gpu_wide1, 0, 8)) * ((float)__gpu_wide8))) + (((float)_lcompilers_ibits_i325_gpu_62(__gpu_wide1, 8, 8)) * ((float)__gpu_wide9))) + (((float)_lcompilers_ibits_i326_gpu_63(__gpu_wide1, 16, 8)) * ((float)__gpu_wide10))) + (((float)_lcompilers_ibits_i327_gpu_64(__gpu_wide1, 24, 8)) * ((float)__gpu_wide11))) + (((float)_lcompilers_ibits_i328_gpu_65(__gpu_wide2, 0, 8)) * ((float)__gpu_wide12))) + (((float)_lcompilers_ibits_i329_gpu_66(__gpu_wide2, 8, 8)) * ((float)__gpu_wide13))) + (((float)_lcompilers_ibits_i3210_gpu_67(__gpu_wide2, 16, 8)) * ((float)__gpu_wide14))) + (((float)_lcompilers_ibits_i3211_gpu_68(__gpu_wide2, 24, 8)) * ((float)__gpu_wide15))) + (((float)_lcompilers_ibits_i3212_gpu_69(__gpu_wide3, 0, 8)) * ((float)__gpu_wide16))) + (((float)_lcompilers_ibits_i3213_gpu_70(__gpu_wide3, 8, 8)) * ((float)__gpu_wide17))) + (((float)_lcompilers_ibits_i3214_gpu_71(__gpu_wide3, 16, 8)) * ((float)__gpu_wide18))) + (((float)_lcompilers_ibits_i3215_gpu_72(__gpu_wide3, 24, 8)) * ((float)__gpu_wide19)));
     return r;
 }
 
@@ -305,15 +305,246 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_19gpu_
             }
             c = (1 + (((int)__gpu_lane) * 1));
             const int __lfortran_trips_0 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
-            #pragma unroll 8
+            #pragma unroll 2
             for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, c += (1 * ((int)__gpu_lanes))) {
-                total = (total + chunk_dot_gpu_14(w, __dim_w_0, __dim_w_1, x, __dim_x_0, n__dc, c));
+                total = (total + chunk_dot_gpu_16(w, __dim_w_0, __dim_w_1, x, __dim_x_0, n__dc, c));
             }
             total = __lfortran_lane_reduce_block<0>(total, __gpu_lanes_n, __gpu_lane_mask);
         } else {
-            #pragma unroll 8
+            #pragma unroll 2
             for (c = 1; c <= ((1 * ((int)__dim_x_0)) / 16); c++) {
-                total = (total + chunk_dot_gpu_14(w, __dim_w_0, __dim_w_1, x, __dim_x_0, n__dc, c));
+                total = (total + chunk_dot_gpu_16(w, __dim_w_0, __dim_w_1, x, __dim_x_0, n__dc, c));
+            }
+        }
+        if ((__gpu_lane == 0)) {
+            y[((int)(n__dc) - (__lb_y_0))] = total;
+        }
+        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+    }
+}
+
+__device__ inline int _lcompilers_ibits_i3216_gpu_105(int x, int y, int z) {
+    int _lcompilers_ibits_i3216{};
+    _lcompilers_ibits_i3216 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3216;
+}
+
+__device__ inline int _lcompilers_ibits_i3217_gpu_106(int x, int y, int z) {
+    int _lcompilers_ibits_i3217{};
+    _lcompilers_ibits_i3217 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3217;
+}
+
+__device__ inline int _lcompilers_ibits_i3218_gpu_107(int x, int y, int z) {
+    int _lcompilers_ibits_i3218{};
+    _lcompilers_ibits_i3218 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3218;
+}
+
+__device__ inline int _lcompilers_ibits_i3219_gpu_108(int x, int y, int z) {
+    int _lcompilers_ibits_i3219{};
+    _lcompilers_ibits_i3219 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3219;
+}
+
+__device__ inline int _lcompilers_ibits_i3220_gpu_109(int x, int y, int z) {
+    int _lcompilers_ibits_i3220{};
+    _lcompilers_ibits_i3220 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3220;
+}
+
+__device__ inline int _lcompilers_ibits_i3221_gpu_110(int x, int y, int z) {
+    int _lcompilers_ibits_i3221{};
+    _lcompilers_ibits_i3221 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3221;
+}
+
+__device__ inline int _lcompilers_ibits_i3222_gpu_111(int x, int y, int z) {
+    int _lcompilers_ibits_i3222{};
+    _lcompilers_ibits_i3222 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3222;
+}
+
+__device__ inline int _lcompilers_ibits_i3223_gpu_112(int x, int y, int z) {
+    int _lcompilers_ibits_i3223{};
+    _lcompilers_ibits_i3223 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3223;
+}
+
+__device__ inline int _lcompilers_ibits_i3224_gpu_113(int x, int y, int z) {
+    int _lcompilers_ibits_i3224{};
+    _lcompilers_ibits_i3224 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3224;
+}
+
+__device__ inline int _lcompilers_ibits_i3225_gpu_114(int x, int y, int z) {
+    int _lcompilers_ibits_i3225{};
+    _lcompilers_ibits_i3225 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3225;
+}
+
+__device__ inline int _lcompilers_ibits_i3226_gpu_115(int x, int y, int z) {
+    int _lcompilers_ibits_i3226{};
+    _lcompilers_ibits_i3226 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3226;
+}
+
+__device__ inline int _lcompilers_ibits_i3227_gpu_116(int x, int y, int z) {
+    int _lcompilers_ibits_i3227{};
+    _lcompilers_ibits_i3227 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3227;
+}
+
+__device__ inline int _lcompilers_ibits_i3228_gpu_117(int x, int y, int z) {
+    int _lcompilers_ibits_i3228{};
+    _lcompilers_ibits_i3228 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3228;
+}
+
+__device__ inline int _lcompilers_ibits_i3229_gpu_118(int x, int y, int z) {
+    int _lcompilers_ibits_i3229{};
+    _lcompilers_ibits_i3229 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3229;
+}
+
+__device__ inline int _lcompilers_ibits_i3230_gpu_119(int x, int y, int z) {
+    int _lcompilers_ibits_i3230{};
+    _lcompilers_ibits_i3230 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3230;
+}
+
+__device__ inline int _lcompilers_ibits_i3231_gpu_120(int x, int y, int z) {
+    int _lcompilers_ibits_i3231{};
+    _lcompilers_ibits_i3231 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3231;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1_19gpu_wide_loads_01_m10qmv_inline {
+    int __dim_w_0;
+    int __lb_w_0;
+    int __dim_w_1;
+    int __lb_w_1;
+    int __dim_x_0;
+    int __lb_x_0;
+    int __dim_y_0;
+    int __lb_y_0;
+    int __loop_end_0;
+    int __gpu_lanes;
+};
+
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_19gpu_wide_loads_01_m10qmv_inline(
+    int* __restrict__ w,
+    int16_t* __restrict__ x,
+    float* __restrict__ y,
+    __ScalarArgs___lfortran_gpu_kernel_1_19gpu_wide_loads_01_m10qmv_inline __scalar_args)
+{
+    int __dim_w_0 = __scalar_args.__dim_w_0;
+    int __lb_w_0 = __scalar_args.__lb_w_0;
+    int __lb_w_1 = __scalar_args.__lb_w_1;
+    int __dim_x_0 = __scalar_args.__dim_x_0;
+    int __lb_x_0 = __scalar_args.__lb_x_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+    int __flat_idx;
+    int n__dc;
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+    n__dc = (__flat_idx + 1);
+    {
+        int __gpu_wide;
+        int __gpu_wide1;
+        int16_t __gpu_wide10;
+        int16_t __gpu_wide11;
+        int16_t __gpu_wide12;
+        int16_t __gpu_wide13;
+        int16_t __gpu_wide14;
+        int16_t __gpu_wide15;
+        int16_t __gpu_wide16;
+        int16_t __gpu_wide17;
+        int16_t __gpu_wide18;
+        int16_t __gpu_wide19;
+        int __gpu_wide2;
+        int __gpu_wide20;
+        int __gpu_wide21;
+        int __gpu_wide22;
+        int __gpu_wide23;
+        int16_t __gpu_wide24;
+        int16_t __gpu_wide25;
+        int16_t __gpu_wide26;
+        int16_t __gpu_wide27;
+        int16_t __gpu_wide28;
+        int16_t __gpu_wide29;
+        int __gpu_wide3;
+        int16_t __gpu_wide30;
+        int16_t __gpu_wide31;
+        int16_t __gpu_wide32;
+        int16_t __gpu_wide33;
+        int16_t __gpu_wide34;
+        int16_t __gpu_wide35;
+        int16_t __gpu_wide36;
+        int16_t __gpu_wide37;
+        int16_t __gpu_wide38;
+        int16_t __gpu_wide39;
+        int16_t __gpu_wide4;
+        int16_t __gpu_wide5;
+        int16_t __gpu_wide6;
+        int16_t __gpu_wide7;
+        int16_t __gpu_wide8;
+        int16_t __gpu_wide9;
+        int c;
+        float total;
+        total = ((float)0);
+        if ((__gpu_lanes > 1)) {
+            if ((__gpu_lane != 0)) {
+                total =   0.00000000000000000e+00f;
+            }
+            if (((((int)((((-3 - __lb_w_0) & 3) == 0) && (((__dim_w_0) & 3) == 0)))) && (reinterpret_cast<size_t>(w) & 15u) == 0) && (((((-15 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0) && (((((-7 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0)) {
+                c = (1 + (((int)__gpu_lane) * 1));
+                const int __lfortran_trips_1 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+                #pragma unroll 2
+                for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, c += (1 * ((int)__gpu_lanes))) {
+                    __lfortran_wide_load(true, &(w[((int)(((4 * c) - 3)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
+                    __lfortran_wide_load(true, &(x[((int)(((16 * c) - 15)) - (__lb_x_0))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7, __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
+                    __lfortran_wide_load(true, &(x[((int)(((16 * c) - 7)) - (__lb_x_0))]), __gpu_wide12, __gpu_wide13, __gpu_wide14, __gpu_wide15, __gpu_wide16, __gpu_wide17, __gpu_wide18, __gpu_wide19);
+                    total = (total + ((((((((((((((((((float)_lcompilers_ibits_i3216_gpu_105(__gpu_wide, 0, 8)) * ((float)__gpu_wide4)) + (((float)_lcompilers_ibits_i3217_gpu_106(__gpu_wide, 8, 8)) * ((float)__gpu_wide5))) + (((float)_lcompilers_ibits_i3218_gpu_107(__gpu_wide, 16, 8)) * ((float)__gpu_wide6))) + (((float)_lcompilers_ibits_i3219_gpu_108(__gpu_wide, 24, 8)) * ((float)__gpu_wide7))) + (((float)_lcompilers_ibits_i3220_gpu_109(__gpu_wide1, 0, 8)) * ((float)__gpu_wide8))) + (((float)_lcompilers_ibits_i3221_gpu_110(__gpu_wide1, 8, 8)) * ((float)__gpu_wide9))) + (((float)_lcompilers_ibits_i3222_gpu_111(__gpu_wide1, 16, 8)) * ((float)__gpu_wide10))) + (((float)_lcompilers_ibits_i3223_gpu_112(__gpu_wide1, 24, 8)) * ((float)__gpu_wide11))) + (((float)_lcompilers_ibits_i3224_gpu_113(__gpu_wide2, 0, 8)) * ((float)__gpu_wide12))) + (((float)_lcompilers_ibits_i3225_gpu_114(__gpu_wide2, 8, 8)) * ((float)__gpu_wide13))) + (((float)_lcompilers_ibits_i3226_gpu_115(__gpu_wide2, 16, 8)) * ((float)__gpu_wide14))) + (((float)_lcompilers_ibits_i3227_gpu_116(__gpu_wide2, 24, 8)) * ((float)__gpu_wide15))) + (((float)_lcompilers_ibits_i3228_gpu_117(__gpu_wide3, 0, 8)) * ((float)__gpu_wide16))) + (((float)_lcompilers_ibits_i3229_gpu_118(__gpu_wide3, 8, 8)) * ((float)__gpu_wide17))) + (((float)_lcompilers_ibits_i3230_gpu_119(__gpu_wide3, 16, 8)) * ((float)__gpu_wide18))) + (((float)_lcompilers_ibits_i3231_gpu_120(__gpu_wide3, 24, 8)) * ((float)__gpu_wide19))));
+                }
+            } else {
+                c = (1 + (((int)__gpu_lane) * 1));
+                const int __lfortran_trips_2 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+                #pragma unroll 2
+                for (int __lfortran_count_2 = 0; __lfortran_count_2 < __lfortran_trips_2; __lfortran_count_2++, c += (1 * ((int)__gpu_lanes))) {
+                    __lfortran_wide_load(((((int)((((-3 - __lb_w_0) & 3) == 0) && (((__dim_w_0) & 3) == 0)))) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)(((4 * c) - 3)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
+                    __lfortran_wide_load((((((-15 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)(((16 * c) - 15)) - (__lb_x_0))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7, __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
+                    __lfortran_wide_load((((((-7 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)(((16 * c) - 7)) - (__lb_x_0))]), __gpu_wide12, __gpu_wide13, __gpu_wide14, __gpu_wide15, __gpu_wide16, __gpu_wide17, __gpu_wide18, __gpu_wide19);
+                    total = (total + ((((((((((((((((((float)_lcompilers_ibits_i3216_gpu_105(__gpu_wide, 0, 8)) * ((float)__gpu_wide4)) + (((float)_lcompilers_ibits_i3217_gpu_106(__gpu_wide, 8, 8)) * ((float)__gpu_wide5))) + (((float)_lcompilers_ibits_i3218_gpu_107(__gpu_wide, 16, 8)) * ((float)__gpu_wide6))) + (((float)_lcompilers_ibits_i3219_gpu_108(__gpu_wide, 24, 8)) * ((float)__gpu_wide7))) + (((float)_lcompilers_ibits_i3220_gpu_109(__gpu_wide1, 0, 8)) * ((float)__gpu_wide8))) + (((float)_lcompilers_ibits_i3221_gpu_110(__gpu_wide1, 8, 8)) * ((float)__gpu_wide9))) + (((float)_lcompilers_ibits_i3222_gpu_111(__gpu_wide1, 16, 8)) * ((float)__gpu_wide10))) + (((float)_lcompilers_ibits_i3223_gpu_112(__gpu_wide1, 24, 8)) * ((float)__gpu_wide11))) + (((float)_lcompilers_ibits_i3224_gpu_113(__gpu_wide2, 0, 8)) * ((float)__gpu_wide12))) + (((float)_lcompilers_ibits_i3225_gpu_114(__gpu_wide2, 8, 8)) * ((float)__gpu_wide13))) + (((float)_lcompilers_ibits_i3226_gpu_115(__gpu_wide2, 16, 8)) * ((float)__gpu_wide14))) + (((float)_lcompilers_ibits_i3227_gpu_116(__gpu_wide2, 24, 8)) * ((float)__gpu_wide15))) + (((float)_lcompilers_ibits_i3228_gpu_117(__gpu_wide3, 0, 8)) * ((float)__gpu_wide16))) + (((float)_lcompilers_ibits_i3229_gpu_118(__gpu_wide3, 8, 8)) * ((float)__gpu_wide17))) + (((float)_lcompilers_ibits_i3230_gpu_119(__gpu_wide3, 16, 8)) * ((float)__gpu_wide18))) + (((float)_lcompilers_ibits_i3231_gpu_120(__gpu_wide3, 24, 8)) * ((float)__gpu_wide19))));
+                }
+            }
+            total = __lfortran_lane_reduce_block<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+        } else {
+            if (((((int)((((-3 - __lb_w_0) & 3) == 0) && (((__dim_w_0) & 3) == 0)))) && (reinterpret_cast<size_t>(w) & 15u) == 0) && (((((-15 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0) && (((((-7 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0)) {
+                #pragma unroll 2
+                for (c = 1; c <= ((1 * ((int)__dim_x_0)) / 16); c++) {
+                    __lfortran_wide_load(true, &(w[((int)(((4 * c) - 3)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))]), __gpu_wide20, __gpu_wide21, __gpu_wide22, __gpu_wide23);
+                    __lfortran_wide_load(true, &(x[((int)(((16 * c) - 15)) - (__lb_x_0))]), __gpu_wide24, __gpu_wide25, __gpu_wide26, __gpu_wide27, __gpu_wide28, __gpu_wide29, __gpu_wide30, __gpu_wide31);
+                    __lfortran_wide_load(true, &(x[((int)(((16 * c) - 7)) - (__lb_x_0))]), __gpu_wide32, __gpu_wide33, __gpu_wide34, __gpu_wide35, __gpu_wide36, __gpu_wide37, __gpu_wide38, __gpu_wide39);
+                    total = (total + ((((((((((((((((((float)_lcompilers_ibits_i3216_gpu_105(__gpu_wide20, 0, 8)) * ((float)__gpu_wide24)) + (((float)_lcompilers_ibits_i3217_gpu_106(__gpu_wide20, 8, 8)) * ((float)__gpu_wide25))) + (((float)_lcompilers_ibits_i3218_gpu_107(__gpu_wide20, 16, 8)) * ((float)__gpu_wide26))) + (((float)_lcompilers_ibits_i3219_gpu_108(__gpu_wide20, 24, 8)) * ((float)__gpu_wide27))) + (((float)_lcompilers_ibits_i3220_gpu_109(__gpu_wide21, 0, 8)) * ((float)__gpu_wide28))) + (((float)_lcompilers_ibits_i3221_gpu_110(__gpu_wide21, 8, 8)) * ((float)__gpu_wide29))) + (((float)_lcompilers_ibits_i3222_gpu_111(__gpu_wide21, 16, 8)) * ((float)__gpu_wide30))) + (((float)_lcompilers_ibits_i3223_gpu_112(__gpu_wide21, 24, 8)) * ((float)__gpu_wide31))) + (((float)_lcompilers_ibits_i3224_gpu_113(__gpu_wide22, 0, 8)) * ((float)__gpu_wide32))) + (((float)_lcompilers_ibits_i3225_gpu_114(__gpu_wide22, 8, 8)) * ((float)__gpu_wide33))) + (((float)_lcompilers_ibits_i3226_gpu_115(__gpu_wide22, 16, 8)) * ((float)__gpu_wide34))) + (((float)_lcompilers_ibits_i3227_gpu_116(__gpu_wide22, 24, 8)) * ((float)__gpu_wide35))) + (((float)_lcompilers_ibits_i3228_gpu_117(__gpu_wide23, 0, 8)) * ((float)__gpu_wide36))) + (((float)_lcompilers_ibits_i3229_gpu_118(__gpu_wide23, 8, 8)) * ((float)__gpu_wide37))) + (((float)_lcompilers_ibits_i3230_gpu_119(__gpu_wide23, 16, 8)) * ((float)__gpu_wide38))) + (((float)_lcompilers_ibits_i3231_gpu_120(__gpu_wide23, 24, 8)) * ((float)__gpu_wide39))));
+                }
+            } else {
+                #pragma unroll 2
+                for (c = 1; c <= ((1 * ((int)__dim_x_0)) / 16); c++) {
+                    __lfortran_wide_load(((((int)((((-3 - __lb_w_0) & 3) == 0) && (((__dim_w_0) & 3) == 0)))) && (reinterpret_cast<size_t>(w) & 15u) == 0), &(w[((int)(((4 * c) - 3)) - (__lb_w_0)) + (__dim_w_0 * ((int)(n__dc) - (__lb_w_1)))]), __gpu_wide20, __gpu_wide21, __gpu_wide22, __gpu_wide23);
+                    __lfortran_wide_load((((((-15 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)(((16 * c) - 15)) - (__lb_x_0))]), __gpu_wide24, __gpu_wide25, __gpu_wide26, __gpu_wide27, __gpu_wide28, __gpu_wide29, __gpu_wide30, __gpu_wide31);
+                    __lfortran_wide_load((((((-7 - __lb_x_0) & 7) == 0)) && (reinterpret_cast<size_t>(x) & 15u) == 0), &(x[((int)(((16 * c) - 7)) - (__lb_x_0))]), __gpu_wide32, __gpu_wide33, __gpu_wide34, __gpu_wide35, __gpu_wide36, __gpu_wide37, __gpu_wide38, __gpu_wide39);
+                    total = (total + ((((((((((((((((((float)_lcompilers_ibits_i3216_gpu_105(__gpu_wide20, 0, 8)) * ((float)__gpu_wide24)) + (((float)_lcompilers_ibits_i3217_gpu_106(__gpu_wide20, 8, 8)) * ((float)__gpu_wide25))) + (((float)_lcompilers_ibits_i3218_gpu_107(__gpu_wide20, 16, 8)) * ((float)__gpu_wide26))) + (((float)_lcompilers_ibits_i3219_gpu_108(__gpu_wide20, 24, 8)) * ((float)__gpu_wide27))) + (((float)_lcompilers_ibits_i3220_gpu_109(__gpu_wide21, 0, 8)) * ((float)__gpu_wide28))) + (((float)_lcompilers_ibits_i3221_gpu_110(__gpu_wide21, 8, 8)) * ((float)__gpu_wide29))) + (((float)_lcompilers_ibits_i3222_gpu_111(__gpu_wide21, 16, 8)) * ((float)__gpu_wide30))) + (((float)_lcompilers_ibits_i3223_gpu_112(__gpu_wide21, 24, 8)) * ((float)__gpu_wide31))) + (((float)_lcompilers_ibits_i3224_gpu_113(__gpu_wide22, 0, 8)) * ((float)__gpu_wide32))) + (((float)_lcompilers_ibits_i3225_gpu_114(__gpu_wide22, 8, 8)) * ((float)__gpu_wide33))) + (((float)_lcompilers_ibits_i3226_gpu_115(__gpu_wide22, 16, 8)) * ((float)__gpu_wide34))) + (((float)_lcompilers_ibits_i3227_gpu_116(__gpu_wide22, 24, 8)) * ((float)__gpu_wide35))) + (((float)_lcompilers_ibits_i3228_gpu_117(__gpu_wide23, 0, 8)) * ((float)__gpu_wide36))) + (((float)_lcompilers_ibits_i3229_gpu_118(__gpu_wide23, 8, 8)) * ((float)__gpu_wide37))) + (((float)_lcompilers_ibits_i3230_gpu_119(__gpu_wide23, 16, 8)) * ((float)__gpu_wide38))) + (((float)_lcompilers_ibits_i3231_gpu_120(__gpu_wide23, 24, 8)) * ((float)__gpu_wide39))));
+                }
             }
         }
         if ((__gpu_lane == 0)) {

@@ -171,12 +171,18 @@ struct CudaDialect {
     std::string wide_load(const std::string &indent,
             const std::vector<std::string> &targets,
             const std::string &source, const std::string &array,
-            const std::string &aligned) const {
-        std::string out = indent + "__lfortran_wide_load((" + aligned
-            + ") && (reinterpret_cast<size_t>(" + array
-            + ") & 15u) == 0, &(" + source + ")";
+            const std::string &aligned, bool assume) const {
+        std::string out = indent + "__lfortran_wide_load("
+            + (assume ? std::string("true") : wide_aligned(array, aligned))
+            + ", &(" + source + ")";
         for (const std::string &t : targets) out += ", " + t;
         return out + ");\n";
+    }
+    // Whether `array` starts at a multiple of 16 bytes and `aligned` holds.
+    std::string wide_aligned(const std::string &array,
+            const std::string &aligned) const {
+        return "((" + aligned + ") && (reinterpret_cast<size_t>(" + array
+            + ") & 15u) == 0)";
     }
     std::string wide_load_helper() const {
         return
@@ -318,13 +324,13 @@ struct CudaDialect {
             : std::string(deep ? "#pragma unroll 64" : "#pragma unroll 16");
     }
     // A loop whose iterations read vectors of 16 bytes (gpu_wide_loads.cpp)
-    // has the loads of 16 elements in each already: unrolled by 8, a loop
+    // has the loads of 16 elements in each already: unrolled by 2, a loop
     // of a quantized matrix-vector product keeps its loads in flight with
-    // 48 registers, where by 16 it takes 128 and the SM runs a quarter of
-    // the warps.
+    // few registers; by 4 it takes 64 and the SM runs a third fewer warps
+    // (the product of 17408 rows takes 15% longer).
     std::string unroll_wide_pragma() const {
         return emulate_cpu || hip ? std::string()
-            : std::string("#pragma unroll 8");
+            : std::string("#pragma unroll 2");
     }
     // A loop that combines the values of the lanes of an iteration in each
     // of its iterations is unrolled by four: the shuffles of one iteration

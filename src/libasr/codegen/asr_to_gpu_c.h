@@ -4091,6 +4091,65 @@ public:
         dialect.emit_kernel_epilogue(src, name, kernel_params);
     }
 
+    // Whether the vectors the GpuWideLoad statements in `body` read all
+    // start at a multiple of 16 bytes, as a C condition; empty when the
+    // body has none.
+    std::string wide_loads_aligned(ASR::stmt_t **body, size_t n_body) {
+        class Found : public ASR::BaseWalkVisitor<Found> {
+        public:
+            std::vector<const ASR::GpuWideLoad_t*> loads;
+            void visit_GpuWideLoad(const ASR::GpuWideLoad_t &x) {
+                loads.push_back(&x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(x.m_m));
+                for (size_t i = 0; i < block->n_body; i++) {
+                    this->visit_stmt(*block->m_body[i]);
+                }
+            }
+        } found;
+        for (size_t i = 0; i < n_body; i++) found.visit_stmt(*body[i]);
+        std::set<std::string> seen;
+        std::string out;
+        for (const ASR::GpuWideLoad_t *w : found.loads) {
+            std::string c = dialect.wide_aligned(expr_str(w->m_array),
+                w->m_aligned ? expr_str(w->m_aligned) : "true");
+            if (!seen.insert(c).second) continue;
+            out += (out.empty() ? "" : " && ") + c;
+        }
+        return out;
+    }
+
+    // Writes a counted loop, a `do` statement.
+    void emit_do_loop(ASR::stmt_t *stmt) {
+        ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
+        if (dl->n_orelse > 0) {
+            // Only internal lowerings create a loop-else, and none
+            // of them runs on device code.
+            throw CodeGenError("gpu offload: a DO loop with an "
+                "else block reached the device code generator",
+                stmt->base.loc);
+        }
+        GpuLoopFrame frame = begin_loop(dl->m_name, dl->m_body,
+            dl->n_body);
+        std::set<ASR::symbol_t*> written = loop_written(
+            dl->m_body, dl->n_body);
+        if (dl->m_head.m_v != nullptr) {
+            written.insert(gpu_designator_base(dl->m_head.m_v).root);
+        }
+        bool wide = holds_wide_load(dl->m_body, dl->n_body);
+        // The loop over the chunks of a row is unrolled whatever the size
+        // of its body: it reads vectors, and each iteration is long.
+        emit_counted_for(dl->m_head, written, stmt->base.loc,
+            small_innermost_loop(dl->m_body, dl->n_body) || wide,
+            holds_lane_reduce(dl->m_body, dl->n_body), wide);
+        emit_loop_body(frame, dl->m_body, dl->n_body);
+    }
+
+    bool wide_versioned = false;
+    bool wide_assume_aligned = false;
+
     // Opens a loop: one that an exit or a cycle of its own leaves from a
     // loop inside it gets the variable that says which one did.
     GpuLoopFrame begin_loop(const char *name, ASR::stmt_t **body,
@@ -5176,7 +5235,8 @@ public:
                 }
                 src << dialect.wide_load(get_indent(), targets,
                     expr_str(w->m_source), expr_str(w->m_array),
-                    w->m_aligned ? expr_str(w->m_aligned) : "true");
+                    w->m_aligned ? expr_str(w->m_aligned) : "true",
+                    wide_assume_aligned);
                 break;
             }
             case ASR::stmtType::GpuLaneBarrier: {
@@ -5210,25 +5270,29 @@ public:
             }
             case ASR::stmtType::DoLoop: {
                 ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
-                if (dl->n_orelse > 0) {
-                    // Only internal lowerings create a loop-else, and none
-                    // of them runs on device code.
-                    throw CodeGenError("gpu offload: a DO loop with an "
-                        "else block reached the device code generator",
-                        stmt->base.loc);
+                std::string aligned = wide_versioned ? std::string()
+                    : wide_loads_aligned(dl->m_body, dl->n_body);
+                if (aligned.empty()) {
+                    emit_do_loop(stmt);
+                    break;
                 }
-                GpuLoopFrame frame = begin_loop(dl->m_name, dl->m_body,
-                    dl->n_body);
-                std::set<ASR::symbol_t*> written = loop_written(
-                    dl->m_body, dl->n_body);
-                if (dl->m_head.m_v != nullptr) {
-                    written.insert(gpu_designator_base(dl->m_head.m_v).root);
-                }
-                emit_counted_for(dl->m_head, written, stmt->base.loc,
-                    small_innermost_loop(dl->m_body, dl->n_body),
-                    holds_lane_reduce(dl->m_body, dl->n_body),
-                    holds_wide_load(dl->m_body, dl->n_body));
-                emit_loop_body(frame, dl->m_body, dl->n_body);
+                // The loop twice: where every vector it reads starts at a
+                // multiple of 16 bytes (a test of values that no iteration
+                // changes), the vectors are read without testing each, and
+                // where one does not, as the statement says.
+                wide_versioned = true;
+                src << get_indent() << "if (" << aligned << ") {\n";
+                indent_level++;
+                wide_assume_aligned = true;
+                emit_do_loop(stmt);
+                wide_assume_aligned = false;
+                indent_level--;
+                src << get_indent() << "} else {\n";
+                indent_level++;
+                emit_do_loop(stmt);
+                indent_level--;
+                src << get_indent() << "}\n";
+                wide_versioned = false;
                 break;
             }
             case ASR::stmtType::DoConcurrentLoop: {
