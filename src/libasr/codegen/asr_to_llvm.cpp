@@ -18606,6 +18606,11 @@ public:
         tmp = res;
     }
 
+    // The number of iterations of a counted DO loop between two safepoints
+    // (see generate_counted_do_loop). A loop in its body polls on its own,
+    // so a chunk runs a bounded time.
+    static constexpr uint64_t safepoint_chunk = 1 << 14;
+
     // The value of the integer control expression `e` of a DO loop head.
     llvm::Value* do_loop_control_value(ASR::expr_t *e) {
         ASR::ttype_t *type = ASRUtils::expr_type(e);
@@ -18647,6 +18652,23 @@ public:
     // update of i does not overflow (nsw). The distance |b - a| is not, and
     // neither is |c| for the most negative c, so they are computed unsigned,
     // in the width of i, which holds them and the iteration count minus one.
+    //
+    // With safepoints (an interactive cell), the iterations run in chunks of
+    // at most `safepoint_chunk`, and the safepoint polls once per chunk, so
+    // the loop of a chunk stays free of it and LLVM can vectorize it:
+    //
+    //         remaining = |b - a| / |c|, unsigned
+    //     chunk:  in_chunk = min(remaining, safepoint_chunk - 1)
+    //             chunk_last = i + in_chunk*c
+    //     body:   ...
+    //     latch:  last = i == chunk_last; i = i + c
+    //             if not last goto body
+    //     next:   safepoint
+    //             if remaining == in_chunk goto orelse
+    //             remaining = remaining - in_chunk - 1; goto chunk
+    //
+    // i takes the value chunk_last, so it is representable; the product and
+    // sum that compute it may wrap.
     template <typename Body>
     void generate_counted_do_loop(const ASR::do_loop_head_t &head,
             const char *name, Body generate_body,
@@ -18727,8 +18749,11 @@ public:
         llvm::Value *enter = by_step_sign(
             [&]() { return builder->CreateICmpSLE(start, end); },
             [&]() { return builder->CreateICmpSGE(start, end); });
+        const bool chunked = emits_safepoints();
         llvm::PHINode *remaining = nullptr;
-        if (unit_step) {
+        llvm::PHINode *chunk_remaining = nullptr;
+        llvm::Value *in_chunk = nullptr, *chunk_last = nullptr;
+        if (unit_step && !chunked) {
             builder->CreateCondBr(enter, body_bb, orelse_bb);
             start_new_block(body_bb);
         } else {
@@ -18742,13 +18767,34 @@ public:
             llvm::Value *step_magnitude = by_step_sign(
                 [&]() { return step; },
                 [&]() { return builder->CreateSub(zero, step); });
-            llvm::Value *count_minus_one = builder->CreateUDiv(distance,
-                step_magnitude);
-            builder->CreateBr(body_bb);
-            start_new_block(body_bb);
-            remaining = builder->CreatePHI(iv_type, 2,
-                loop_name + ".remaining");
-            remaining->addIncoming(count_minus_one, prep);
+            llvm::Value *count_minus_one = unit_step ? distance
+                : builder->CreateUDiv(distance, step_magnitude);
+            if (chunked) {
+                llvm::BasicBlock *chunk = llvm::BasicBlock::Create(context,
+                    loop_name + ".chunk");
+                builder->CreateBr(chunk);
+                start_new_block(chunk);
+                chunk_remaining = builder->CreatePHI(iv_type, 2,
+                    loop_name + ".chunk_remaining");
+                chunk_remaining->addIncoming(count_minus_one, prep);
+                llvm::Value *chunk_max = llvm::ConstantInt::get(iv_type,
+                    std::min(safepoint_chunk - 1, llvm::APInt::getMaxValue(
+                        iv_type->getIntegerBitWidth()).getZExtValue()));
+                in_chunk = builder->CreateSelect(
+                    builder->CreateICmpULT(chunk_remaining, chunk_max),
+                    chunk_remaining, chunk_max);
+                chunk_last = builder->CreateAdd(
+                    llvm_utils->CreateLoad2(iv_type, v_ptr),
+                    builder->CreateMul(in_chunk, step));
+                builder->CreateBr(body_bb);
+                start_new_block(body_bb);
+            } else {
+                builder->CreateBr(body_bb);
+                start_new_block(body_bb);
+                remaining = builder->CreatePHI(iv_type, 2,
+                    loop_name + ".remaining");
+                remaining->addIncoming(count_minus_one, prep);
+            }
         }
 
         push_loop_targets(latch, latch_name, end_bb, end_name);
@@ -18756,21 +18802,38 @@ public:
         pop_loop_targets();
 
         start_new_block(latch);
-        // The back-edge safepoint, also for an empty body.
-        emit_cancellation_check();
         llvm::Value *current = llvm_utils->CreateLoad2(iv_type, v_ptr);
         LLVM::CreateStore(*builder,
             builder->CreateNSWAdd(current, step), v_ptr);
         llvm::Value *last;
-        if (unit_step) {
+        if (chunked) {
+            last = builder->CreateICmpEQ(current, chunk_last);
+        } else if (unit_step) {
             last = builder->CreateICmpEQ(current, end);
         } else {
             last = builder->CreateICmpEQ(remaining, zero);
             remaining->addIncoming(builder->CreateSub(remaining,
                 llvm::ConstantInt::get(iv_type, 1)), builder->GetInsertBlock());
         }
-        disable_runtime_unrolling(
-            builder->CreateCondBr(last, orelse_bb, body_bb));
+        if (chunked) {
+            // The safepoint of a chunk, also for an empty body.
+            llvm::BasicBlock *next = llvm::BasicBlock::Create(context,
+                loop_name + ".next");
+            disable_runtime_unrolling(
+                builder->CreateCondBr(last, next, body_bb));
+            start_new_block(next);
+            emit_cancellation_check();
+            llvm::Value *done = builder->CreateICmpEQ(chunk_remaining,
+                in_chunk);
+            chunk_remaining->addIncoming(builder->CreateSub(
+                builder->CreateSub(chunk_remaining, in_chunk),
+                llvm::ConstantInt::get(iv_type, 1)),
+                builder->GetInsertBlock());
+            builder->CreateCondBr(done, orelse_bb, chunk_remaining->getParent());
+        } else {
+            disable_runtime_unrolling(
+                builder->CreateCondBr(last, orelse_bb, body_bb));
+        }
 
         if (n_orelse > 0) {
             start_new_block(orelse_bb);
@@ -18950,6 +19013,12 @@ public:
         }
     };
 
+    // Whether emit_cancellation_check emits a safepoint here.
+    bool emits_safepoints() const {
+        return cancellation_scope && !emitting_cancellation_cleanup
+            && !never_unwinds;
+    }
+
     // A safepoint. The common path loads the request word and branches; the
     // cold path unwinds unless initialization, cleanup or a foreign call has
     // to complete. `propagate_only` follows a call whose successful result
@@ -18960,10 +19029,7 @@ public:
     // but abandon the result rather than loading an incomplete return value.
     void emit_cancellation_check(bool propagate_only = false,
             const std::function<void()> &before_cleanup = {}) {
-        if (!cancellation_scope || emitting_cancellation_cleanup
-                || never_unwinds) {
-            return;
-        }
+        if (!emits_safepoints()) return;
         auto *saved_tmp = tmp;
         auto *fn = builder->GetInsertBlock()->getParent();
         llvm::Type *i32 = llvm_utils->i32;

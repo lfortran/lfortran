@@ -90,8 +90,10 @@ Native JIT lowering receives an explicit `JITCancellation` contract from
 as a safepoint. It loads a request word, which the evaluator defines for its
 JIT, and branches to the cleanup only when the word is set, so the common path
 costs a load and a branch. Safepoints sit at procedure entry, at loop
-back-edges (the counted DO latch, DO, DO WHILE and backward GOTO), after calls
-that may unwind and in READ, after local descriptors have been initialized.
+back-edges (DO, DO WHILE and backward GOTO), after calls that may unwind and
+in READ, after local descriptors have been initialized. A counted DO loop runs
+its iterations in chunks of at most 16384 and polls once per chunk, so the
+loop of a chunk has no safepoint and can be vectorized.
 A procedure that cannot reach a safepoint (it has no loop, backward branch,
 READ, derived type variable or call of a procedure that can) carries no
 cancellation code, and its callers need no check after the call. Calls

@@ -7020,29 +7020,44 @@ end module
             FAIL("no function " << suffix);
             throw std::logic_error("unreachable");
         };
-        // The calls in the loops of `fn`. Each loop (optimization may version
-        // one) polls the request word once per iteration.
+        auto polls_in = [&](llvm::Loop *loop) {
+            int polls = 0;
+            for (llvm::BasicBlock *bb : loop->blocks()) {
+                for (llvm::Instruction &i : *bb) {
+                    auto *load = llvm::dyn_cast<llvm::LoadInst>(&i);
+                    if (load && load->getPointerOperand() == request) {
+                        CHECK(load->isVolatile());
+                        polls++;
+                    }
+                }
+            }
+            return polls;
+        };
+        // The calls in the loops of `fn`. Each DO loop (optimization may
+        // version one) polls the request word once per chunk of iterations,
+        // outside the loop that runs a chunk.
         auto loop_calls = [&](llvm::Function &fn) {
             std::vector<std::string> calls;
             llvm::DominatorTree dominators(fn);
             llvm::LoopInfo loops(dominators);
             REQUIRE(!loops.empty());
             for (llvm::Loop *loop : loops) {
-                int polls = 0;
+                CHECK(polls_in(loop) == 1);
                 for (llvm::BasicBlock *bb : loop->blocks()) {
                     for (llvm::Instruction &i : *bb) {
                         if (auto *call = llvm::dyn_cast<llvm::CallInst>(&i)) {
                             auto *callee = call->getCalledFunction();
                             calls.push_back(callee ? callee->getName().str() : "?");
-                        } else if (auto *load = llvm::dyn_cast<llvm::LoadInst>(&i)) {
-                            if (load->getPointerOperand() == request) {
-                                CHECK(load->isVolatile());
-                                polls++;
-                            }
                         }
                     }
                 }
-                CHECK(polls == 1);
+            }
+            // Optimization may replace the loop of a chunk by its result.
+            for (llvm::Loop *loop : loops.getLoopsInPreorder()) {
+                if (loop->getSubLoops().empty()
+                        && (mode == 0 || loop->getParentLoop())) {
+                    CHECK(polls_in(loop) == 0);
+                }
             }
             return calls;
         };
@@ -7051,7 +7066,18 @@ end module
         auto calls = loop_calls(function("_sum_calls"));
         CHECK(calls.size() == (mode == 1 ? calls.size() : 1));
         for (const std::string &callee : calls) {
-            CHECK(callee.find("tiny") != std::string::npos);
+            CHECK((callee.find("tiny") != std::string::npos
+                || callee.rfind("llvm.", 0) == 0));
+        }
+        if (mode == 1) {
+            // Then the loop of a chunk is vectorized.
+            bool vectorized = false;
+            for (llvm::BasicBlock &bb : function("_sum_calls")) {
+                for (llvm::Instruction &i : bb) {
+                    vectorized = vectorized || i.getType()->isVectorTy();
+                }
+            }
+            CHECK(vectorized);
         }
         for (llvm::BasicBlock &bb : function("_tiny")) {
             for (llvm::Instruction &i : bb) {
@@ -7060,6 +7086,65 @@ end module
                 }
             }
         }
+    }
+}
+
+// With safepoints, a counted DO loop runs its iterations in chunks (see
+// generate_counted_do_loop). The iteration count and the final value of the
+// DO variable do not change, also across chunks and near the bounds of its
+// kind.
+TEST_CASE("FortranEvaluator chunked DO loops") {
+    for (int mode = 0; mode < 2; mode++) {
+        CAPTURE(mode);
+        auto options = execute_options();
+        options.po.fast = mode == 1;
+        FortranEvaluator e(options);
+        auto ok = [&](const std::string &code) {
+            CAPTURE(code);
+            auto r = e.evaluate2(code);
+            REQUIRE(r.ok);
+        };
+        auto i64 = [&](const std::string &expr) {
+            CAPTURE(expr);
+            auto r = e.evaluate2("int(" + expr + ", 8)");
+            REQUIRE(r.ok);
+            REQUIRE(r.result.type == FortranEvaluator::EvalResult::integer8);
+            return r.result.i64;
+        };
+        ok("integer :: i, j, n, cnt\ninteger(1) :: b\ninteger(2) :: h\n"
+            "integer(8) :: k, s8");
+        struct Case { const char *loop; int64_t count, last; const char *v; };
+        const Case cases[] = {
+            {"do i = 1, 0", 0, 1, "i"},
+            {"do i = 100000, 1, -3", 33334, -2, "i"},
+            {"do i = huge(0) - 20000, huge(0) - 1", 20000, 2147483647, "i"},
+            {"do i = -huge(0) - 1, -huge(0) + 40000, 2", 20001,
+                -2147443646, "i"},
+            {"do h = -32768_2, 32766_2", 65535, 32767, "h"},
+            {"do h = 32767_2, -32767_2, -1_2", 65535, -32768, "h"},
+            {"do b = -128_1, 126_1", 255, 127, "b"},
+            {"do i = 1, 16384", 16384, 16385, "i"},
+            {"do i = 1, 16385", 16385, 16386, "i"},
+            {"do k = 1_8, 3000000000_8, 7_8", 428571429, 3000000004LL, "k"},
+        };
+        for (const Case &c : cases) {
+            CAPTURE(c.loop);
+            ok(std::string("cnt = 0\n") + c.loop + "\ncnt = cnt + 1\nend do");
+            CHECK(i64("cnt") == c.count);
+            CHECK(i64(c.v) == c.last);
+        }
+        ok("cnt = 0\ndo i = 1, 50000\nif (mod(i, 7) == 0) cycle\n"
+            "if (i == 40000) exit\ncnt = cnt + 1\nend do");
+        CHECK(i64("cnt") == 34285);
+        CHECK(i64("i") == 40000);
+        ok("cnt = 0\nn = 20000\ndo i = 1, 3\ndo j = 1, n\ncnt = cnt + 1\n"
+            "end do\nend do");
+        CHECK(i64("cnt") == 60000);
+        CHECK(i64("j") == 20001);
+        ok("s8 = 0\ndo k = huge(0_8) - 40000, huge(0_8) - 3, 3\n"
+            "s8 = s8 + 1\nend do");
+        CHECK(i64("s8") == 13333);
+        CHECK(i64("k") == INT64_MAX - 1);
     }
 }
 
