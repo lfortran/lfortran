@@ -81,13 +81,21 @@ public:
         if (x.m_external != nullptr) {
             // A component of a procedure-local type is named from the module,
             // with a scope path through that procedure. Removing the procedure
-            // leaves the external symbol with nowhere to resolve.
+            // leaves the external symbol with nowhere to resolve. A symbol of
+            // the procedure itself, such as the frame a nested variable pass
+            // builds, is not such a use: keeping every procedure that owns
+            // one would emit two module procedures of the same name.
             ASR::symbol_t *owner = ASRUtils::symbol_get_past_external(x.m_external);
+            SymbolTable *fn_scope = nullptr;
             while (owner != nullptr) {
                 owner = ASRUtils::get_asr_owner(owner);
                 if (owner != nullptr && ASR::is_a<ASR::Function_t>(*owner)) {
-                    fn_used[get_hash((ASR::asr_t*)owner)] =
-                        ASRUtils::symbol_name(owner);
+                    fn_scope = ASR::down_cast<ASR::Function_t>(owner)->m_symtab;
+                    if (!ASRUtils::is_scope_between(fn_scope, x.m_parent_symtab,
+                            nullptr)) {
+                        fn_used[get_hash((ASR::asr_t*)owner)] =
+                            ASRUtils::symbol_name(owner);
+                    }
                 }
             }
         }
