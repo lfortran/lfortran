@@ -99,6 +99,43 @@ private:
   };
 
 public:
+  // Folds a constant integer (src_real_kind == 0) or real(4)/real(8) array
+  // to real(16). The result is an ArrayConstructor of real(16) constants,
+  // since ArrayConstant cannot pack kind-16 elements.
+  static ASR::expr_t* make_real16_array_value(Allocator &al,
+          ASR::ArrayConstant_t* array, ASR::Array_t* array_type,
+          ASR::ttype_t* dest_type, int src_real_kind) {
+      size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
+      int kind = ASRUtils::extract_kind_from_ttype_t(array->m_type);
+      Vec<ASR::expr_t*> elements; elements.reserve(al, array_size);
+      for (size_t i = 0; i < array_size; i++) {
+          lf_float128 v;
+          if (src_real_kind == 0) {
+              int64_t n;
+              if (kind == 4) n = ((int32_t*) array->m_data)[i];
+              else if (kind == 8) n = ((int64_t*) array->m_data)[i];
+              else if (kind == 2) n = ((int16_t*) array->m_data)[i];
+              else n = ((int8_t*) array->m_data)[i];
+              v = lf_f128_from_int64(n);
+          } else {
+              double d = src_real_kind == 4
+                  ? (double) ((float*) array->m_data)[i]
+                  : ((double*) array->m_data)[i];
+              v = lf_f128_from_double(d);
+          }
+          elements.push_back(al, ASRUtils::make_RealConstant_r16(al,
+              array->base.base.loc, v, dest_type));
+      }
+      ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al,
+          dest_type->base.loc, dest_type, array_type->m_dims,
+          array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray,
+          ASR::memory_spaceType::Global));
+      ASR::expr_t* result = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
+          al, array->base.base.loc, elements.p, elements.n, new_array_type,
+          array->m_storage_format));
+      return result;
+  }
+
   /*
    * Adds ImplicitCast node if necessary.
    *
@@ -295,8 +332,8 @@ public:
                         value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
                     } else if (dest_kind == 16) {
-                        // the data of a constant array has no real(16) or complex(16) element: not folded
-                        value = nullptr;
+                        // ArrayConstant cannot pack real(16) elements: fold to an ArrayConstructor
+                        value = make_real16_array_value(al, array, array_type, dest_type2, 0);
                     }
                 }
             }
@@ -337,6 +374,7 @@ public:
                   void *data = array->m_data;
                   size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
                   int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                  int kind_src_real = ASRUtils::extract_kind_from_ttype_t(array->m_type);
                   void *new_data = nullptr;
                   if (dest_kind == 4) {
                       float *new_array = al.allocate<float>(array_size);
@@ -357,8 +395,8 @@ public:
                       value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
                   } else if (dest_kind == 16) {
-                      // the data of a constant array has no real(16) or complex(16) element: not folded
-                      value = nullptr;
+                      // ArrayConstant cannot pack real(16) elements: fold to an ArrayConstructor
+                      value = make_real16_array_value(al, array, array_type, dest_type2, kind_src_real);
                   }
               }
             }
