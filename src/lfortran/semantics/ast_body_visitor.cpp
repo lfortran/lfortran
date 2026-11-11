@@ -9073,16 +9073,16 @@ public:
                         // ArrayConstant (real(16), complex(16)).
                         value = constructor;
                     } else {
-                    ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(constructor));
-                    value = ASRUtils::EXPR((ASR::asr_t*) ac);
-                    LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
-                    if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(ac->m_type))) ) {
-                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
-                            ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_allocatable(ac->m_type)));
-                        array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
-                    }
+                        ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(constructor));
+                        value = ASRUtils::EXPR((ASR::asr_t*) ac);
+                        LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
+                        if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(ac->m_type))) ) {
+                            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
+                                ASRUtils::type_get_past_pointer(
+                                    ASRUtils::type_get_past_allocatable(ac->m_type)));
+                            array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
+                        }
                     }
                 } else {
                     if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) &&
