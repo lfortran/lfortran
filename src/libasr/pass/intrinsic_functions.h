@@ -937,6 +937,27 @@ namespace HostBessel {
         return ::j0l(x);
 #endif
     }
+    inline long double j1l(long double x) {
+#ifdef _MSC_VER
+        return static_cast<long double>(::_j1(static_cast<double>(x)));
+#else
+        return ::j1l(x);
+#endif
+    }
+    inline long double y0l(long double x) {
+#ifdef _MSC_VER
+        return static_cast<long double>(::_y0(static_cast<double>(x)));
+#else
+        return ::y0l(x);
+#endif
+    }
+    inline long double y1l(long double x) {
+#ifdef _MSC_VER
+        return static_cast<long double>(::_y1(static_cast<double>(x)));
+#else
+        return ::y1l(x);
+#endif
+    }
     inline long double jnl(int n, long double x) {
 #ifdef _MSC_VER
         return static_cast<long double>(::_jn(n, static_cast<double>(x)));
@@ -953,7 +974,7 @@ namespace HostBessel {
     }
 } // namespace HostBessel
 
-#define create_math_bindc(math_func, stdeval, degree, lcompilers_name, quad_eval)                       \
+#define create_math_bindc(math_func, stdeval, stdeval_ld, degree, lcompilers_name, quad_eval)           \
 namespace math_func {                                                                                   \
     static inline ASR::expr_t *eval_##math_func(Allocator &al, const Location &loc,                     \
             ASR::ttype_t *t, Vec<ASR::expr_t*>& args,                                                   \
@@ -967,12 +988,18 @@ namespace math_func {                                                           
             return ASRUtils::make_RealConstant_r16(al, loc,                                             \
                 quad_fn(ASRUtils::real_expr_get_r16(args[0])), t);                                      \
         }                                                                                               \
-        if (ASRUtils::extract_kind_from_ttype_t(t) == 10                                                \
-                && std::string(#math_func) == "BesselJ0") {                                             \
-            /* Kind 10 stores a pointer in m_r. Fold j0 in long double. */            \
+        if (ASRUtils::extract_kind_from_ttype_t(t) == 10) {                                             \
+            /* Kind 10 stores a pointer in m_r. Fold in long double. */                                 \
             long double rv = ASRUtils::real_constant_get_r10(                                           \
                 ASR::down_cast<ASR::RealConstant_t>(args[0]));                                          \
-            return ASRUtils::make_RealConstant_r10(al, loc, HostBessel::j0l(rv), t);                    \
+            long double PI = 3.141592653589793238462643383279502884L;                                   \
+            long double result = stdeval_ld(rv);                                                        \
+            if ( degree == 1 ) {                                                                        \
+                result = result * 180.0L / PI;                                                          \
+            } else if ( degree == 2 ) {                                                                 \
+                result = stdeval_ld( ( rv * PI ) / 180.0L );                                            \
+            }                                                                                           \
+            return ASRUtils::make_RealConstant_r10(al, loc, result, t);                                 \
         }                                                                                               \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;                                  \
         double result = stdeval(rv);                                                                    \
@@ -1001,16 +1028,16 @@ namespace math_func {                                                           
     - degree = 0, implies no change in input or output ( radians )
 */
 
-create_math_bindc(BesselJ0, HostBessel::j0, 0, bessel_j0, nullptr)
-create_math_bindc(BesselJ1, HostBessel::j1, 0, bessel_j1, nullptr)
-create_math_bindc(BesselY0, HostBessel::y0, 0, bessel_y0, nullptr)
-create_math_bindc(BesselY1, HostBessel::y1, 0, bessel_y1, nullptr)
-create_math_bindc(Asind, asin, 1, asind, lf_f128_asind)
-create_math_bindc(Acosd, acos, 1, acosd, lf_f128_acosd)
-create_math_bindc(Atand, atan, 1, atand, lf_f128_atand)
-create_math_bindc(Sind, sin, 2, sind, lf_f128_sind)
-create_math_bindc(Cosd, cos, 2, cosd, lf_f128_cosd)
-create_math_bindc(Tand, tan, 2, tand, lf_f128_tand)
+create_math_bindc(BesselJ0, HostBessel::j0, HostBessel::j0l, 0, bessel_j0, nullptr)
+create_math_bindc(BesselJ1, HostBessel::j1, HostBessel::j1l, 0, bessel_j1, nullptr)
+create_math_bindc(BesselY0, HostBessel::y0, HostBessel::y0l, 0, bessel_y0, nullptr)
+create_math_bindc(BesselY1, HostBessel::y1, HostBessel::y1l, 0, bessel_y1, nullptr)
+create_math_bindc(Asind, asin, asinl, 1, asind, lf_f128_asind)
+create_math_bindc(Acosd, acos, acosl, 1, acosd, lf_f128_acosd)
+create_math_bindc(Atand, atan, atanl, 1, atand, lf_f128_atand)
+create_math_bindc(Sind, sin, sinl, 2, sind, lf_f128_sind)
+create_math_bindc(Cosd, cos, cosl, 2, cosd, lf_f128_cosd)
+create_math_bindc(Tand, tan, tanl, 2, tand, lf_f128_tand)
 
 #define create_math_pi_input(math_func, stdeval, c_name, lcompilers_name)                               \
 namespace math_func {                                                                                   \

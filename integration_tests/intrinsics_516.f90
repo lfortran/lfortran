@@ -53,4 +53,25 @@ if (set_exponent(1.5_kp, 3) /= 6.0_kp) error stop
 ! Kind 10 has 64 binary digits. rrspacing(1) is 2**63, not the zero
 ! left when the compile-time fraction is never filled in.
 if (rrspacing(1.0_kp) /= 2.0_kp**63) error stop
+! The math_func macro still folded these kind-10 constants from the
+! pointer bits (a denormal, 90, 1, or a huge Bessel value). A few ulps
+! is the long-double libm difference; those wrong folds are not.
+if (abs(bessel_j1(1.0_kp) - 0.440050585744933515957_kp) &
+        > 16*spacing(0.440050585744933515957_kp)) error stop
+if (abs(bessel_y0(1.0_kp) - 8.82569642156769579796e-2_kp) &
+        > 16*spacing(8.82569642156769579796e-2_kp)) error stop
+if (abs(bessel_y1(1.0_kp) - (-0.781212821300288716550_kp)) &
+        > 16*spacing(0.781212821300288716550_kp)) error stop
+if (abs(asind(0.5_kp) - 29.9999999999999999983_kp) &
+        > 16*spacing(29.9999999999999999983_kp)) error stop
+if (abs(acosd(0.5_kp) - 59.9999999999999999965_kp) &
+        > 16*spacing(59.9999999999999999965_kp)) error stop
+if (abs(atand(1.0_kp) - 45.0_kp) &
+        > 16*spacing(45.0_kp)) error stop
+if (abs(sind(30.0_kp) - 0.5_kp) &
+        > 16*spacing(0.5_kp)) error stop
+if (abs(cosd(60.0_kp) - 0.5_kp) &
+        > 16*spacing(0.5_kp)) error stop
+if (abs(tand(45.0_kp) - 1.0_kp) &
+        > 16*spacing(1.0_kp)) error stop
 end program
