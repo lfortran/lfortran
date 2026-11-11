@@ -6550,6 +6550,23 @@ namespace SelectedRealKind {
         return n;
     }
 
+    // Fortran failure codes when no kind satisfies both requests:
+    // -1 precision unavailable, -2 range unavailable,
+    // -3 neither, -4 each available but not in one kind.
+    static inline int64_t selected_real_kind_failure(bool precision_available,
+            bool range_available) {
+        if (precision_available && range_available) {
+            return -4;
+        }
+        if (precision_available) {
+            return -2;
+        }
+        if (range_available) {
+            return -1;
+        }
+        return -3;
+    }
+
     static inline int64_t selected_real_kind_value(int64_t p, int64_t r,
             int64_t radix) {
         if (radix != 2) {
@@ -6557,14 +6574,18 @@ namespace SelectedRealKind {
         }
         RealKindSpec kinds[4];
         int n = supported_real_kinds(kinds);
+        bool precision_available = false;
+        bool range_available = false;
         for (int i = 0; i < n; i++) {
-            if (p <= kinds[i].precision && r <= kinds[i].range) {
+            bool precision_ok = p <= kinds[i].precision;
+            bool range_ok = r <= kinds[i].range;
+            if (precision_ok && range_ok) {
                 return kinds[i].kind;
             }
+            precision_available = precision_available || precision_ok;
+            range_available = range_available || range_ok;
         }
-        // No kind meets the request. -2/-3/-4 (issue 15147) are not
-        // distinguished from -1 here.
-        return -1;
+        return selected_real_kind_failure(precision_available, range_available);
     }
 
     static inline ASR::expr_t *eval_SelectedRealKind(Allocator &al, const Location &loc,
@@ -6592,12 +6613,36 @@ namespace SelectedRealKind {
         body.push_back(al, b.Assignment(r, args[1]));
         body.push_back(al, b.Assignment(radix, args[2]));
 
-        // Same kinds and thresholds as selected_real_kind_value.
+        // Same kinds, thresholds, and failure codes as selected_real_kind_value.
         RealKindSpec kinds[4];
         int n = supported_real_kinds(kinds);
+        auto found_precision = declare("found_precision", logical, Local);
+        auto found_range = declare("found_range", logical, Local);
         std::vector<ASR::stmt_t*> choice = {
-            b.Assignment(result, b.i32(-1))
+            b.Assignment(found_precision, b.logical_false()),
+            b.Assignment(found_range, b.logical_false())
         };
+        for (int i = 0; i < n; i++) {
+            choice.push_back(b.If(
+                b.LtE(p, b.i_t(kinds[i].precision, arg_types[0])),
+                {b.Assignment(found_precision, b.logical_true())}, {}));
+            choice.push_back(b.If(
+                b.LtE(r, b.i_t(kinds[i].range, arg_types[1])),
+                {b.Assignment(found_range, b.logical_true())}, {}));
+        }
+        choice.push_back(b.If(b.And(found_precision, found_range), {
+            b.Assignment(result, b.i32(-4))
+        }, {
+            b.If(found_precision, {
+                b.Assignment(result, b.i32(-2))
+            }, {
+                b.If(found_range, {
+                    b.Assignment(result, b.i32(-1))
+                }, {
+                    b.Assignment(result, b.i32(-3))
+                })
+            })
+        }));
         for (int i = n - 1; i >= 0; i--) {
             choice = {b.If(b.And(
                     b.LtE(p, b.i_t(kinds[i].precision, arg_types[0])),
