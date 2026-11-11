@@ -19700,6 +19700,16 @@ static int execute_cancellable_command(char *command)
 #elif !defined(COMPILE_TO_WASM)
 extern char **environ;
 
+// Waits for the child's termination. ECHILD means that it has already been
+// reaped (for example, with SIGCHLD ignored), so its status is unknown.
+static int reap_command(pid_t child, int *status)
+{
+    while (waitpid(child, status, 0) < 0) {
+        if (errno != EINTR) return -1;
+    }
+    return 0;
+}
+
 static int execute_cancellable_command(char *command)
 {
     if (cancel_poll()) return -1;
@@ -19719,18 +19729,17 @@ static int execute_cancellable_command(char *command)
     }
     int status;
     for (;;) {
-        if (cancel_poll()) {
+        bool cancelled = cancel_poll();
+        pid_t waited = cancelled ? 0 : waitpid(child, &status, WNOHANG);
+        if (waited == child) return status;
+        // Already reaped, so the group may be gone and its id reused
+        if (waited < 0 && errno == ECHILD) return -1;
+        if (cancelled || (waited < 0 && errno != EINTR)) {
             // The unreaped group leader pins this exact owned process group.
             // Kill descendants too, even if they ignore SIGTERM.
             kill(-child, SIGKILL);
-            while (waitpid(child, &status, 0) < 0) {
-                if (errno != EINTR) return -1;
-            }
-            return status;
+            return reap_command(child, &status) == 0 && cancelled ? status : -1;
         }
-        pid_t waited = waitpid(child, &status, WNOHANG);
-        if (waited == child) return status;
-        if (waited < 0 && errno != EINTR) return -1;
         const struct timespec delay = {0, 10000000};
         nanosleep(&delay, NULL);
     }
