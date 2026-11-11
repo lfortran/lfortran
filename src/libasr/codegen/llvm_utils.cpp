@@ -10437,6 +10437,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::Function* allocate_array_members_function = define_allocate_struct_function(struct_sym, module);
         llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t, true);
         llvm::Function* free_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t, false);
+        llvm::Function* reset_function = finalizer_instnace.get_UPoly_reset_fn(struct_t);
         struct_vtab_function_offset[struct_sym]["_lfortran_struct_copy"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
         struct_vtab_function_offset[struct_sym]["_lfortran_allocate_struct_array_members"] = slots.size() - 2;
@@ -10445,6 +10446,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
         LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_reset_slot)
+        slots.push_back(llvm::ConstantExpr::getBitCast(reset_function, llvm_utils->i8_ptr));
         collect_vtable_function_impls(struct_sym, slots, module);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());

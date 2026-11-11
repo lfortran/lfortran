@@ -12264,7 +12264,58 @@ public:
             // in the prologue above. No additional stride conversion needed.
         }
         finalize_intent_out_array_args(x);
+        reset_intent_out_polymorphic_args(x);
         declare_local_vars(x);
+    }
+
+    /**
+     * Deallocates the allocatable components of the actual argument of
+     * every scalar polymorphic INTENT(OUT) dummy argument of `x` that is
+     * neither allocatable nor a pointer (F2018 8.5.10). Those of the dynamic
+     * type decide, extensions of the declared type adding some, so the
+     * intent_out_deallocate pass, which only sees the declared type,
+     * cannot do it and this goes through the vtable. A dummy whose type has
+     * final subroutines is left to the pass: they are called before the
+     * components are deallocated, which this would precede.
+     */
+    void reset_intent_out_polymorphic_args(const ASR::Function_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*x.m_args[i])) continue;
+            ASR::symbol_t* const sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t* const v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (v->m_intent != ASR::intentType::Out || ASRUtils::is_array(v->m_type)
+                    || ASRUtils::is_allocatable_or_pointer(v->m_type)
+                    || !ASR::is_a<ASR::StructType_t>(*v->m_type)
+                    || !ASRUtils::is_class_type(v->m_type)
+                    || ASRUtils::is_unlimited_polymorphic_type(v->m_type)) continue;
+            ASR::symbol_t* const decl = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+            if (decl == nullptr || !ASR::is_a<ASR::Struct_t>(*decl)) continue;
+            ASR::Struct_t* const struct_sym = ASR::down_cast<ASR::Struct_t>(decl);
+            if (LLVMFinalize::chain_has_final_procedure(struct_sym)) continue;
+            uint64_t const h = get_hash((ASR::asr_t*)v);
+            LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+            llvm::Value* is_present = nullptr;
+            if (v->m_presence == ASR::presenceType::Optional) {
+                // The transform_optional_argument_functions pass follows an
+                // optional dummy argument with a flag that says whether it
+                // is present.
+                if (i + 1 >= x.n_args || !ASR::is_a<ASR::Var_t>(*x.m_args[i + 1])) continue;
+                ASR::symbol_t* const flag_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_args[i + 1])->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*flag_sym) ||
+                        std::string(ASR::down_cast<ASR::Variable_t>(flag_sym)->m_name)
+                            != "__libasr_is_present_" + std::string(v->m_name)) continue;
+                uint64_t const flag_h = get_hash((ASR::asr_t*)flag_sym);
+                LCOMPILERS_ASSERT(llvm_symtab.find(flag_h) != llvm_symtab.end());
+                llvm::Type* const flag_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_args[i + 1], ASR::down_cast<ASR::Variable_t>(flag_sym)->m_type, module.get());
+                is_present = llvm_utils->to_i1(llvm_utils->CreateLoad2(flag_type, llvm_symtab[flag_h]));
+            }
+            if (compiler_options.emit_debug_info) debug_emit_loc(*v);
+            llvm_symtab_finalizer.reset_dynamic_allocatable_components(llvm_symtab[h], struct_sym, is_present);
+        }
     }
 
     /**
