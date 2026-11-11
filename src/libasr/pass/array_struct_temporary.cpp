@@ -527,7 +527,10 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     if (ASR::is_a<ASR::ArrayConstructor_t>(*value) &&
            !PassUtils::is_args_contains_allocatable(value)) {
         ASR::ArrayConstructor_t* arr_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(value);
-        value_m_dims->m_length = ASRUtils::get_ArrayConstructor_size(al, arr_constructor);
+        ASR::expr_t* constructor_size = ASRUtils::get_ArrayConstructor_size(al, arr_constructor);
+        if( constructor_size != nullptr ) {
+            value_m_dims->m_length = constructor_size;
+        }
     }
     bool is_fixed_sized_array = ASRUtils::is_fixed_size_array(value_type);
     bool is_size_only_dependent_on_arguments = ASRUtils::is_dimension_dependent_only_on_arguments(
@@ -730,7 +733,8 @@ bool set_allocation_size(
     ASR::expr_t* temporary_var,
     Vec<ASR::dimension_t>& allocate_dims,
     size_t target_n_dims, bool& add_allocated_check,
-    ASR::expr_t* &len_allocte_expr /*Strings Allocation*/
+    ASR::expr_t* &len_allocte_expr /*Strings Allocation*/,
+    ASRUtils::ArraySizeStatements* size_stmts = nullptr
 ) {
     if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
         return false;
@@ -1027,7 +1031,7 @@ bool set_allocation_size(
         }
         case ASR::exprType::CoarrayRef: {
             ASR::CoarrayRef_t* coarray_ref = ASR::down_cast<ASR::CoarrayRef_t>(value);
-            return set_allocation_size(al, coarray_ref->m_var, temporary_var, allocate_dims, target_n_dims, add_allocated_check, len_allocte_expr);
+            return set_allocation_size(al, coarray_ref->m_var, temporary_var, allocate_dims, target_n_dims, add_allocated_check, len_allocte_expr, size_stmts);
         }
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
@@ -1376,7 +1380,10 @@ bool set_allocation_size(
             allocate_dim.loc = loc;
             allocate_dim.m_start = int32_one;
             allocate_dim.m_length = ASRUtils::get_ArrayConstructor_size(al,
-                ASR::down_cast<ASR::ArrayConstructor_t>(value));
+                ASR::down_cast<ASR::ArrayConstructor_t>(value), size_stmts);
+            if( allocate_dim.m_length == nullptr ) {
+                return false;
+            }
             allocate_dims.push_back(al, allocate_dim);
             break;
         }
@@ -1441,7 +1448,7 @@ bool set_allocation_size(
                 ASR::down_cast<ASR::OverloadedCompare_t>(value);
             set_allocation_size(al, overloaded_compare->m_overloaded, temporary_var,
                                 allocate_dims, target_n_dims,
-                                add_allocated_check, len_allocte_expr);
+                                add_allocated_check, len_allocte_expr, size_stmts);
             break;
         }
         case ASR::exprType::ComplexRe:
@@ -1478,7 +1485,11 @@ bool set_allocation_size(
             ASR::dimension_t allocate_dim;
             allocate_dim.loc = loc;
             allocate_dim.m_start = int32_one;
-            allocate_dim.m_length = ASRUtils::get_ImpliedDoLoop_size(al, implied_do_loop);
+            allocate_dim.m_length = ASRUtils::get_ImpliedDoLoop_size(al,
+                implied_do_loop, size_stmts);
+            if( allocate_dim.m_length == nullptr ) {
+                return false;
+            }
             allocate_dims.push_back(al, allocate_dim);
             break;
         }
@@ -1504,8 +1515,17 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(dim_source));
     bool add_allocated_check = false;
     ASR::expr_t* len_allocate_expr {};
+    // The statements that count the elements of an array constructor go
+    // before the allocation, with their variables in the scope of the
+    // temporary.
+    ASRUtils::ArraySizeStatements size_stmts{current_body, nullptr};
+    if( ASR::is_a<ASR::Var_t>(*temporary_var) ) {
+        size_stmts.scope = ASRUtils::symbol_parent_symtab(
+            ASR::down_cast<ASR::Var_t>(temporary_var)->m_v);
+    }
     if( !set_allocation_size(al, value, temporary_var, allocate_dims,
-                             target_n_dims, add_allocated_check, len_allocate_expr) ) {
+                             target_n_dims, add_allocated_check, len_allocate_expr,
+                             size_stmts.scope ? &size_stmts : nullptr) ) {
         return ;
     }
     LCOMPILERS_ASSERT(target_n_dims == allocate_dims.size());

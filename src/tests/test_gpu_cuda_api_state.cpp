@@ -626,8 +626,21 @@ static int managed_memory_model()
         && stats().copies[cudaMemcpyDeviceToHost] == 0,
         "managed memory is not copied");
     unsigned long long frees = stats().frees;
+    unsigned long long mallocs = stats().mallocs;
     managed_dealloc(nullptr, data);
-    require(stats().frees == frees + 1, "managed memory is freed");
+    require(stats().frees == frees,
+        "a freed managed block goes to the cache, not to the driver");
+    auto *again = (int32_t *)managed_alloc(nullptr, MANAGED_MIN_BYTES);
+    require(again == data && stats().mallocs == mallocs,
+        "an allocation of the size of a cached block reuses it");
+    managed_dealloc(nullptr, again);
+    auto *larger = (int32_t *)managed_alloc(nullptr, 2 * MANAGED_MIN_BYTES);
+    require(larger != nullptr && larger != data
+        && managed_contains(larger, 2 * MANAGED_MIN_BYTES),
+        "a larger allocation does not reuse a smaller cached block");
+    managed_dealloc(nullptr, larger);
+    managed_cache_flush();
+    require(stats().frees == frees + 2, "flushing the cache frees the blocks");
     lfortran_gpu_shutdown(ctx);
     check_api_use();
     // Only once every check passed, since CTest matches this line.

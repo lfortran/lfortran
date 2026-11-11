@@ -14,6 +14,9 @@
 #cmakedefine HAVE_LFORTRAN_LLVM
 #cmakedefine HAVE_LFORTRAN_MLIR
 
+/* Define if the LLD libraries are linked into the driver */
+#cmakedefine HAVE_LFORTRAN_LLD
+
 /* Define if RAPIDJSON is found */
 #cmakedefine HAVE_LFORTRAN_RAPIDJSON
 

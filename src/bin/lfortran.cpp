@@ -13,6 +13,8 @@
 #include <bin/CLI11.hpp>
 #include "cuda_link_helpers.h"
 #include "emscripten_link_options.h"
+#include <libasr/config.h>
+#include "lld_linker.h"
 
 #include <libasr/stacktrace.h>
 #include <lfortran/parser/parser.h>
@@ -2033,8 +2035,12 @@ int link_executable(const std::vector<std::string> &infiles,
 
     Notes:
 
-    * We can use `lld` to do the linking via the `ld` approach, so `ld` is
-      preferable if we can mitigate the issues 1. and 2.
+    On Linux the LLVM backend does this link itself, with LLD linked into
+    the lfortran binary. LLD does not search the C runtime the way a
+    compiler driver does, so the driver locates the startup objects, the
+    dynamic linker, libc and libgcc and passes them to LLD. `--linker=clang`
+    or `--linker=gcc` (or `LFORTRAN_LINKER`) still selects the external
+    driver. macOS and Windows keep their platform linkers.
     * If we ship our own libc (such as musl), then we know how to find it
       and link it, which mitigates the issue 1.
     * If we link `musl` statically, then issue 2. does not apply.
@@ -2085,6 +2091,10 @@ int link_executable(const std::vector<std::string> &infiles,
         && compiler_options.platform != LCompilers::Platform::macOS_PowerPC;
     if (backend == Backend::llvm || backend == Backend::mlir) {
         std::string run_cmd = "", compile_cmd = "";
+        bool device_driver_links = false;
+        std::vector<std::string> lld_extra_objects;
+        std::vector<std::string> lld_extra_libs;
+        std::string lld_runtime_lib = "lfortran_runtime";
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
             for (auto &s : infiles) {
@@ -2150,9 +2160,8 @@ int link_executable(const std::vector<std::string> &infiles,
             } else if (char *env_linker = std::getenv("LFORTRAN_LINKER")) {
                 CC += env_linker;
             } else {
-                // TODO: Add support for msvc linker for Windows
-                // TODO: Add support for lld linker
-                // Default linker to be used
+                // Linux uses the built-in LLD linker. This command is the
+                // external driver, used on macOS and when --linker selects one.
                 CC += "clang";
             }
 
@@ -2185,6 +2194,7 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += extra_linker_flags;
             }
             compile_cmd += " -l" + runtime_lib + " -lm";
+            lld_runtime_lib = runtime_lib;
             if (compiler_options.openmp && CC.find("clang" ) != std::string::npos) {
                 std::string openmp_shared_library = compiler_options.openmp_lib_dir;
                 std::string omp_cmd =  " -L" + openmp_shared_library + " -Wl,-rpath," + openmp_shared_library + " -lomp";
@@ -2378,7 +2388,13 @@ int link_executable(const std::vector<std::string> &infiles,
                     }
                     compile_cmd += std::string(is_macos ? " -lc++" : " -lstdc++")
                         + " -lm";
+                    lld_extra_objects.insert(lld_extra_objects.end(),
+                        cuda_kernel_objs.begin(), cuda_kernel_objs.end());
+                    lld_extra_objects.insert(lld_extra_objects.end(),
+                        cuda_runtime_objs.begin(), cuda_runtime_objs.end());
+                    lld_extra_libs.push_back(is_macos ? "-lc++" : "-lstdc++");
                 } else {
+                    device_driver_links = true;
                     // The device compiler also drives the link, since it knows
                     // where its own device runtime lives.
                     compile_cmd = device_cc
@@ -2406,17 +2422,64 @@ int link_executable(const std::vector<std::string> &infiles,
             }
             run_cmd = "./" + outfile;
         }
-        if (verbose) {
-            compile_cmd += " -v";
-            std::cout << compile_cmd << std::endl;
+        std::string requested_linker = linker;
+        if (requested_linker.empty()) {
+            if (const char *env_linker = std::getenv("LFORTRAN_LINKER")) {
+                requested_linker = env_linker;
+            }
         }
-        int err = system(compile_cmd.c_str());
+#ifdef HAVE_LFORTRAN_LLVM
+        std::string host_triple = LCompilers::LLVMEvaluator::get_default_target_triple();
+#else
+        std::string host_triple = t;
+#endif
+        // LLD links objects. A C, C++ or assembly source still has to be
+        // compiled, which the external compiler driver does as part of its
+        // link. Fortran and LLVM IR are already objects by the time they
+        // reach this function.
+        bool only_linker_inputs = true;
+        for (const auto &infile : infiles) {
+            if (!(LCompilers::endswith(infile, ".o")
+                    || LCompilers::endswith(infile, ".obj")
+                    || LCompilers::endswith(infile, ".a")
+                    || LCompilers::endswith(infile, ".lib")
+                    || LCompilers::endswith(infile, ".so")
+                    || LCompilers::endswith(infile, ".dylib")
+                    || LCompilers::endswith(infile, ".bc"))) {
+                only_linker_inputs = false;
+                break;
+            }
+        }
+        bool use_lld = only_linker_inputs
+            && !device_driver_links
+            && compiler_options.gpu_backend != "metal"
+            && elf_lld_selected(t, host_triple, requested_linker);
+        int err = 0;
+        if (use_lld) {
+#ifdef HAVE_LFORTRAN_LLD
+            err = link_elf_with_lld(infiles, lld_extra_objects, outfile,
+                runtime_library_dir, lld_runtime_lib, static_executable,
+                shared_executable, verbose, lib_dirs, libraries, linker_flags,
+                lld_extra_libs, compiler_options.openmp_lib_dir,
+                compiler_options.openmp, t);
+#else
+            err = 1;
+#endif
+        } else {
+            if (verbose) {
+                compile_cmd += " -v";
+                std::cout << compile_cmd << std::endl;
+            }
+            err = system(compile_cmd.c_str());
+        }
         if (err) {
-            std::cerr << "The command '" + compile_cmd + "' failed." << std::endl;
+            if (!use_lld) {
+                std::cerr << "The command '" + compile_cmd + "' failed." << std::endl;
+            }
             std::cerr << "Tip: If there is a linker issue, switch the linker "
                 "using --linker=<CC> option or create an environment "
                 "variable `export LFORTRAN_LINKER=<CC>`, where CC is "
-                "clang or gcc" << std::endl;
+                "lld, clang or gcc" << std::endl;
             std::cerr << "Also, if required use --linker-path=<PATH>, "
                 "where PATH has location to look for the linker "
                 "executable" << std::endl;

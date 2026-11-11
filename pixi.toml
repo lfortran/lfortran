@@ -50,7 +50,8 @@ clangdev = "==7.0.1"
 llvmdev = "==7.0.1"
 [feature.llvm7.target.linux-64.activation.env]
 # Clang 7 and 8 find no GCC installation for the C runtime startup files
-# (crtbegin.o), so LFortran links with the environment's GCC instead.
+# (crtbegin.o). LLD from those releases also cannot read the current C
+# runtime, so LFortran links with the environment's GCC instead.
 LFORTRAN_LINKER = "gcc"
 [feature.llvm8]
 platforms = ["win-64", "linux-64"]
@@ -69,8 +70,10 @@ llvmdev = "==9.0.1"
 platforms = ["win-64", "linux-64"]
 [feature.llvm10.dependencies]
 llvmdev = "==10.0.1"
+lld = "==10.0.1"
 [feature.llvm11.dependencies]
 llvmdev = "==11.1.0"
+lld = "==11.1.0"
 kokkos = "==4.4.01"
 [feature.llvm11.activation.env]
 LFORTRAN_KOKKOS_DIR = "$CONDA_PREFIX"
@@ -82,28 +85,40 @@ LFORTRAN_KOKKOS_DIR = "%CONDA_PREFIX%"
 FC = "gfortran -B/usr/bin/"
 [feature.llvm12.dependencies]
 llvmdev = "==12.0.1"
+lld = "==12.0.1"
 [feature.llvm13.dependencies]
 llvmdev = "==13.0.1"
+lld = "==13.0.1"
 [feature.llvm14.dependencies]
 llvmdev = "==14.0.6"
+lld = "==14.0.6"
 [feature.llvm15.dependencies]
 llvmdev = "==15.0.7"
+lld = "==15.0.7"
 [feature.llvm16.dependencies]
 llvmdev = "==16.0.6"
+lld = "==16.0.6"
 [feature.llvm17.dependencies]
 llvmdev = "==17.0.6"
+lld = "==17.0.6"
 [feature.llvm18.dependencies]
 llvmdev = "==18.1.8"
+lld = "==18.1.8"
 [feature.llvm19.dependencies]
 llvmdev = "==19.1.7"
+lld = "==19.1.7"
 [feature.llvm20.dependencies]
 llvmdev = "==20.1.8"
+lld = "==20.1.8"
 [feature.llvm21.dependencies]
 llvmdev = "==21.1.8"
+lld = "==21.1.8"
 [feature.llvm22.dependencies]
 llvmdev = "==22.1.8"
+lld = "==22.1.8"
 [feature.llvm23.dependencies]
 llvmdev = "==23.1.4"
+lld = "==23.1.4"
 [feature.llvm9.target.linux.dependencies]
 clangdev = "==9.0.1"
 [feature.llvm10.target.linux.dependencies]
@@ -165,6 +180,8 @@ wasm-tools = {cmd = "bash ci/wasm_tools.sh"}
 
 # The MLIR backend, with the MLIR release of Quick's MLIR job. Build it with
 # `pixi run -e mlir build -DWITH_MLIR=yes` (see doc/src/installation.md).
+# This build does not link LLD: MLIR loads libLLVM.so, and a static second
+# copy of LLVM corrupts the compiler. clangdev still provides the link driver.
 [feature.mlir]
 platforms = ["linux-64"]
 [feature.mlir.dependencies]
@@ -248,8 +265,10 @@ gxx = "==15.3.0"
 # bring only x86_64-conda-linux-gnu-ar etc. (the same version).
 binutils = "==2.46.1"
 # Each LLVM feature pins clangdev, which also supplies the Clang executable for
-# LLVM 7 (it predates the separate Linux clang package). Native LLVM OpenMP
-# uses LLVM's runtime.
+# LLVM 7 (it predates the separate Linux clang package). From LLVM 10 the
+# backend links with the matching `lld` package, in-process. clangdev remains
+# for C compilation (CC=clang) and for an explicit `--linker=clang`. Native
+# LLVM OpenMP uses LLVM's runtime.
 llvm-openmp = "==23.1.4"
 
 [feature.build.activation.env]

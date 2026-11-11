@@ -5,6 +5,8 @@
 #include <libasr/casting_utils.h>
 #include <math.h>
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 #include <limits>
 
 namespace LCompilers::ASRUtils {
@@ -283,6 +285,10 @@ static inline std::string real_c_func_name(const std::string &name,
     int kind = ASRUtils::extract_kind_from_ttype_t(type);
     if (kind == 4) {
         return "_lfortran_s" + name;
+    }
+    // x87 extended precision uses the C long double libm entry (log10l, ...).
+    if (kind == 10) {
+        return name + "l";
     }
     if (kind == 16) {
         static const char *const quad_functions[] = {
@@ -1663,6 +1669,8 @@ namespace Range {
                     range_val = 37; break;
                 } case 8: {
                     range_val = 307; break;
+                } case 10: {
+                    range_val = 4931; break;
                 } case 16: {
                     range_val = 4931; break;
                 } default: {
@@ -5212,6 +5220,58 @@ namespace Poppar {
 
 namespace Real {
 
+    // Exact widening of a kind-10 payload (host long double) to binary128.
+    // x87 extended and binary128 share exponent bias 16383, so the 63
+    // fraction bits move to binary128 fraction bits [111:49]. Rounding
+    // through double turns 1 + 2^-63 into 1.
+    static lf_float128 widen_long_double_to_f128(long double value) {
+        constexpr int digits = std::numeric_limits<long double>::digits;
+        static_assert(digits == 53 || digits == 64 || digits == 113,
+            "unsupported long double format");
+        if constexpr (digits == 53) {
+            return lf_f128_from_double(static_cast<double>(value));
+        } else if constexpr (digits == 113) {
+            lf_float128 out;
+            std::memcpy(out.bytes, &value, 16);
+            return out;
+        } else {
+            // Kind-10 payloads are a little-endian 80-bit image. binary128
+            // bytes in lf_float128 are little-endian as well.
+            unsigned char raw[10] = {};
+            std::memcpy(raw, &value, 10);
+            uint64_t significand = 0;
+            uint16_t exponent_and_sign = 0;
+            std::memcpy(&significand, raw, 8);
+            std::memcpy(&exponent_and_sign, raw + 8, 2);
+            const int sign = (exponent_and_sign >> 15) & 1;
+            const uint32_t exponent = exponent_and_sign & 0x7FFFu;
+            const uint64_t fraction63 = significand & 0x7FFFFFFFFFFFFFFFULL;
+            uint64_t lo = 0;
+            uint64_t hi = static_cast<uint64_t>(sign) << 63;
+            if (exponent == 0x7FFFu) {
+                hi |= 0x7FFFULL << 48;
+                if (significand != 0x8000000000000000ULL) {
+                    hi |= 1ULL << 47;
+                }
+            } else if (exponent == 0 && significand == 0) {
+                // signed zero
+            } else if ((significand & 0x8000000000000000ULL) != 0) {
+                // Normal, or a pseudo-denormal (exponent 0 with the integer
+                // bit set), which is the minimum binary128 normal.
+                const uint32_t biased = exponent == 0 ? 1u : exponent;
+                lo = fraction63 << 49;
+                hi |= (static_cast<uint64_t>(biased) << 48) | (fraction63 >> 15);
+            } else {
+                lo = significand << 49;
+                hi |= significand >> 15;
+            }
+            lf_float128 out;
+            std::memcpy(out.bytes, &lo, 8);
+            std::memcpy(out.bytes + 8, &hi, 8);
+            return out;
+        }
+    }
+
     static ASR::expr_t *eval_Real(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
         if (ASR::is_a<ASR::IntegerConstant_t>(*args[0])) {
@@ -5230,6 +5290,19 @@ namespace Real {
                     return ASRUtils::make_RealConstant_r16(al, loc, v, t1);
                 }
                 return ASRUtils::make_RealConstant_util(al, loc, lf_f128_to_double(v), t1);
+            }
+            // kind 10 stores a pointer in m_r, not the numeric value.
+            if (src_kind == 10) {
+                long double v = ASRUtils::real_constant_get_r10(r);
+                if (dest_kind == 10) {
+                    return ASRUtils::make_RealConstant_r10(al, loc, v, t1);
+                }
+                if (dest_kind == 16) {
+                    return ASRUtils::make_RealConstant_r16(al, loc,
+                        widen_long_double_to_f128(v), t1);
+                }
+                return ASRUtils::make_RealConstant_util(al, loc,
+                    static_cast<double>(v), t1);
             }
             return ASRUtils::make_RealConstant_util(al, loc, r->m_r, t1);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
@@ -5876,27 +5949,51 @@ namespace SelectedIntKind {
 
 namespace SelectedRealKind {
 
+    // Decimal precision and range of each real kind, in the order
+    // selected_real_kind searches: increasing precision, then range, then
+    // kind. Kind 10 is x87 80-bit extended precision (precision 18, range
+    // 4931) and is present only when the target's C long double is that type.
+    struct RealKindSpec {
+        int kind;
+        int64_t precision;
+        int64_t range;
+    };
+
+    static inline int supported_real_kinds(RealKindSpec kinds[4]) {
+        int n = 0;
+        kinds[n++] = {4, 6, 37};
+        kinds[n++] = {8, 15, 307};
+        if (get_active_c_long_double_kind() == 10) {
+            kinds[n++] = {10, 18, 4931};
+        }
+        kinds[n++] = {16, 33, 4931};
+        return n;
+    }
+
+    static inline int64_t selected_real_kind_value(int64_t p, int64_t r,
+            int64_t radix) {
+        if (radix != 2) {
+            return -5;
+        }
+        RealKindSpec kinds[4];
+        int n = supported_real_kinds(kinds);
+        for (int i = 0; i < n; i++) {
+            if (p <= kinds[i].precision && r <= kinds[i].range) {
+                return kinds[i].kind;
+            }
+        }
+        // No kind meets the request. -2/-3/-4 (issue 15147) are not
+        // distinguished from -1 here.
+        return -1;
+    }
+
     static inline ASR::expr_t *eval_SelectedRealKind(Allocator &al, const Location &loc,
             ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t kind;
         ASRUtils::ASRBuilder b(al, loc);
         int64_t p = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t r = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
         int64_t radix = ASR::down_cast<ASR::IntegerConstant_t>(args[2])->m_n;
-
-        if (p < 7 && r < 38 && radix == 2) {
-            kind = 4;
-        } else if (p < 16 && r < 308 && radix == 2) {
-            kind = 8;
-        } else if (p < 34 && r < 4932 && radix == 2) {
-            // binary128: precision 33, range 4931
-            kind = 16;
-        } else if (radix != 2) {
-            kind = -5;
-        } else {
-            kind = -1;
-        }
-        return b.i32(kind);
+        return b.i32(selected_real_kind_value(p, r, radix));
     }
 
     static inline ASR::expr_t* instantiate_SelectedRealKind(Allocator &al, const Location &loc,
@@ -5914,23 +6011,22 @@ namespace SelectedRealKind {
         body.push_back(al, b.Assignment(p, args[0]));
         body.push_back(al, b.Assignment(r, args[1]));
         body.push_back(al, b.Assignment(radix, args[2]));
-        body.push_back(al, b.If(b.And(b.And(b.Lt(p, b.i_t(7, arg_types[0])), b.Lt(r, b.i_t(38, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
-            b.Assignment(result, b.i32(4))
-        }, {
-            b.If( b.And(b.And(b.Lt(p, b.i_t(16, arg_types[0])), b.Lt(r, b.i_t(308, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
-                b.Assignment(result, b.i32(8))
-            }, {
-                b.If( b.And(b.And(b.Lt(p, b.i_t(34, arg_types[0])), b.Lt(r, b.i_t(4932, arg_types[1]))), b.Eq(radix, b.i_t(2, arg_types[2]))), {
-                    b.Assignment(result, b.i32(16))
-                }, {
-                    b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
-                        b.Assignment(result, b.i32(-5))
-                    }, {
-                        b.Assignment(result, b.i32(-1))
-                    })
-                })
-            })
-        }));
+
+        // Same kinds and thresholds as selected_real_kind_value.
+        RealKindSpec kinds[4];
+        int n = supported_real_kinds(kinds);
+        std::vector<ASR::stmt_t*> choice = {
+            b.Assignment(result, b.i32(-1))
+        };
+        for (int i = n - 1; i >= 0; i--) {
+            choice = {b.If(b.And(
+                    b.LtE(p, b.i_t(kinds[i].precision, arg_types[0])),
+                    b.LtE(r, b.i_t(kinds[i].range, arg_types[1]))),
+                {b.Assignment(result, b.i32(kinds[i].kind))}, choice)};
+        }
+        body.push_back(al, b.If(b.NotEq(radix, b.i_t(2, arg_types[2])), {
+            b.Assignment(result, b.i32(-5))
+        }, choice));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

@@ -244,7 +244,10 @@ namespace LCompilers {
                 llvm::Type::getInt64Ty(context)  /*length*/ };
             complex_type_4 = llvm::StructType::create(context, els_4, "complex_4", true);
             complex_type_8 = llvm::StructType::create(context, els_8, "complex_8", true);
-            complex_type_16 = llvm::StructType::create(context, els_16, "complex_16", true);
+            // Not packed: complex(16) has the 16-byte alignment of its fp128
+            // parts, as in C, so it is laid out like C in a derived type and
+            // its parts can be moved with aligned SSE instructions.
+            complex_type_16 = llvm::StructType::create(context, els_16, "complex_16");
             complex_type_4_ptr = llvm::StructType::create(context, els_4_ptr, "complex_4_ptr");
             complex_type_8_ptr = llvm::StructType::create(context, els_8_ptr, "complex_8_ptr");
             character_type = llvm::Type::getInt8Ty(context)->getPointerTo();

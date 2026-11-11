@@ -1452,6 +1452,7 @@ RUN(NAME format_quotes_01 LABELS gfortran llvm)
 
 RUN(NAME list_directed_stdin_eof_01 LABELS gfortran llvm COPY_TO_BIN list_directed_stdin_eof_01_data.txt)
 RUN(NAME read_list_directed_no_newline_01 LABELS gfortran llvm)
+RUN(NAME read_real16_long_token_01 LABELS gfortran llvm)
 
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
@@ -2244,6 +2245,7 @@ RUN(NAME intrinsics_509 LABELS gfortran llvm) # selected_real_kind returns kind 
 RUN(NAME intrinsics_510 LABELS gfortran llvm) # kind and len of array arguments are scalars (#3688)
 RUN(NAME intrinsics_511 LABELS gfortran llvm) # any(isnan()) of a component of a rank-2 array of derived types (#11640)
 RUN(NAME intrinsics_512 LABELS gfortran llvm) # maxloc with mask of a component of an array of derived types (#11639)
+RUN(NAME intrinsics_513 LABELS gfortran llvm) # selected_real_kind(16) is x87 kind 10 where that kind exists (#17414)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME intrinsics_len_02 LABELS gfortran llvm)
@@ -4734,6 +4736,7 @@ RUN(NAME implied_do_loops60 LABELS gfortran llvm)
 RUN(NAME implied_do_loops61 LABELS gfortran llvm)
 RUN(NAME implied_do_loops62 LABELS gfortran llvm)
 RUN(NAME implied_do_loops63 LABELS gfortran llvm)
+RUN(NAME implied_do_loops64 LABELS gfortran llvm)
 RUN(NAME internal_write_trim_idl_01 LABELS gfortran llvm)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
@@ -6203,6 +6206,7 @@ RUN(NAME openmp_109 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_110 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_111 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_112 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_113 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
@@ -7767,6 +7771,7 @@ RUN(NAME complex128_io_01 LABELS gfortran llvm)
 RUN(NAME complex128_io_array_01 LABELS gfortran llvm)
 RUN(NAME complex128_module_01 LABELS gfortran llvm EXTRAFILES complex128_module_01_mod.f90)
 RUN(NAME complex128_parameter_array_01 LABELS gfortran llvm)
+RUN(NAME complex128_bindc_01 LABELS gfortran llvm)
 # real(10) tests run only where the runtime is known to read the kind 10
 # storage type of the generated code (x86-64 Linux, Apple arm64); on Windows and
 # aarch64 Linux the two disagree: https://github.com/lfortran/lfortran/issues/13935

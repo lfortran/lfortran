@@ -264,7 +264,10 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return get_index_kind_size(expr, false);
     }
 
-    ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop) {
+    // The number of elements of `implied_doloop`; `stmts` and `clamp` as for
+    // ASRUtils::get_ImpliedDoLoop_size.
+    ASR::expr_t* get_ImpliedDoLoop_size(ASR::ImpliedDoLoop_t* implied_doloop,
+            ASRUtils::ArraySizeStatements* stmts, bool clamp) {
         const Location& loc = implied_doloop->base.base.loc;
         ASRUtils::ASRBuilder builder(al, loc);
         ASR::expr_t* start = implied_doloop->m_start;
@@ -288,111 +291,152 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         start = builder.i2i_t(start, trip_type);
         if( d == nullptr ) {
             implied_doloop_size = ASRUtils::compute_length_from_start_end(al, start, end);
+        } else if( clamp ) {
+            // max(0, (end - start + step) / step), as in
+            // ASRUtils::get_ImpliedDoLoop_size.
+            d = builder.i2i_t(d, trip_type);
+            implied_doloop_size = ASRUtils::compute_length_from_start_end_step(
+                al, start, end, d);
         } else {
             d = builder.i2i_t(d, trip_type);
             implied_doloop_size = builder.Add(builder.Div(
                 builder.Sub(end, start), d),
                 make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
         }
+        if( clamp ) {
+            implied_doloop_size = ASRUtils::Max::create_extent(al, implied_doloop_size);
+        }
         int64_t const_elements = 0;
         ASR::expr_t* implied_doloop_size_ = nullptr;
         // Track whether size came from a runtime expression (e.g. FunctionCall
         // returning allocatable array) vs a nested ImpliedDoLoop/ArrayConstructor.
-        // The arithmetic sum formula only applies to the latter.
+        // The size of the latter may be counted with a loop.
         bool has_runtime_array_size = false;
-        for( size_t i = 0; i < implied_doloop->n_values; i++ ) {
-            if( ASR::is_a<ASR::ImpliedDoLoop_t>(*implied_doloop->m_values[i]) ) {
-                if( implied_doloop_size_ == nullptr ) {
-                    implied_doloop_size_ = get_ImpliedDoLoop_size(
-                        ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i]));
-                } else {
-                    implied_doloop_size_ = builder.Add(get_ImpliedDoLoop_size(
-                        ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i])),
-                        implied_doloop_size_);
-                }
-            } else if( ASR::is_a<ASR::ArrayConstructor_t>(*implied_doloop->m_values[i]) ) {
-                bool is_alloc_inner = false;
-                ASR::expr_t* ac_size = get_ArrayConstructor_size(
-                    ASR::down_cast<ASR::ArrayConstructor_t>(implied_doloop->m_values[i]),
-                    is_alloc_inner);
-                if( implied_doloop_size_ == nullptr ) {
-                    implied_doloop_size_ = ac_size;
-                } else {
-                    implied_doloop_size_ = builder.Add(ac_size, implied_doloop_size_);
-                }
-            } else {
-                ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
-                    ASRUtils::type_get_past_pointer(
-                        ASRUtils::expr_type(implied_doloop->m_values[i])));
-                if( ASRUtils::is_array(element_type) ) {
-                    if( ASRUtils::is_fixed_size_array(element_type) ) {
-                        const_elements += ASRUtils::get_fixed_size_of_array(element_type);
+        // The number of elements of one iteration, `const_elements` and
+        // `implied_doloop_size_` (nullptr if there are none). False if the
+        // size of a nested loop or constructor can only be computed with
+        // statements and `iteration_stmts` is nullptr.
+        auto iteration_size = [&](ASRUtils::ArraySizeStatements* iteration_stmts,
+                bool clamp_sizes) -> bool {
+            const_elements = 0;
+            implied_doloop_size_ = nullptr;
+            has_runtime_array_size = false;
+            for( size_t i = 0; i < implied_doloop->n_values; i++ ) {
+                if( ASR::is_a<ASR::ImpliedDoLoop_t>(*implied_doloop->m_values[i]) ) {
+                    ASR::expr_t* idl_size = get_ImpliedDoLoop_size(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_doloop->m_values[i]),
+                        iteration_stmts, clamp_sizes);
+                    if( idl_size == nullptr ) {
+                        return false;
+                    }
+                    if( implied_doloop_size_ == nullptr ) {
+                        implied_doloop_size_ = idl_size;
                     } else {
-                        has_runtime_array_size = true;
-                        ASR::expr_t* element_array_size = to_index_kind(
-                            get_array_expr_size(implied_doloop->m_values[i]));
-                        // The size expression may reference the loop variable
-                        // (e.g. size(a(i)%values())). Since this expression is
-                        // evaluated before the loop starts, replace the loop
-                        // variable with its start value so the index is valid.
-                        if (ASR::is_a<ASR::Var_t>(*implied_doloop->m_var)) {
-                            ASR::symbol_t* lv_sym = ASR::down_cast<ASR::Var_t>(
-                                implied_doloop->m_var)->m_v;
-                            ASRUtils::ExprStmtDuplicator dup(al);
-                            element_array_size = dup.duplicate_expr(element_array_size);
-                            class ReplaceLoopVar : public ASR::BaseExprReplacer<ReplaceLoopVar> {
-                            public:
-                                Allocator& al;
-                                ASR::symbol_t* sym;
-                                ASR::expr_t* replacement;
-                                ReplaceLoopVar(Allocator& a, ASR::symbol_t* s, ASR::expr_t* r)
-                                    : al(a), sym(s), replacement(r) {}
-                                void replace_Var(ASR::Var_t* x) {
-                                    if (x->m_v == sym) *current_expr = replacement;
-                                }
-                            };
-                            ReplaceLoopVar replacer(al, lv_sym, implied_doloop->m_start);
-                            replacer.current_expr = &element_array_size;
-                            replacer.replace_expr(element_array_size);
-                        }
-                        if( implied_doloop_size_ == nullptr ) {
-                            implied_doloop_size_ = element_array_size;
-                        } else {
-                            implied_doloop_size_ = builder.Add(element_array_size,
-                                implied_doloop_size_);
-                        }
+                        implied_doloop_size_ = builder.Add(idl_size,
+                            implied_doloop_size_);
+                    }
+                } else if( ASR::is_a<ASR::ArrayConstructor_t>(*implied_doloop->m_values[i]) ) {
+                    bool is_alloc_inner = false;
+                    ASR::expr_t* ac_size = get_ArrayConstructor_size(
+                        ASR::down_cast<ASR::ArrayConstructor_t>(implied_doloop->m_values[i]),
+                        is_alloc_inner, iteration_stmts, clamp_sizes);
+                    if( ac_size == nullptr ) {
+                        return false;
+                    }
+                    if( implied_doloop_size_ == nullptr ) {
+                        implied_doloop_size_ = ac_size;
+                    } else {
+                        implied_doloop_size_ = builder.Add(ac_size, implied_doloop_size_);
                     }
                 } else {
-                    const_elements += 1;
+                    ASR::ttype_t* element_type = ASRUtils::type_get_past_allocatable(
+                        ASRUtils::type_get_past_pointer(
+                            ASRUtils::expr_type(implied_doloop->m_values[i])));
+                    if( ASRUtils::is_array(element_type) ) {
+                        if( ASRUtils::is_fixed_size_array(element_type) ) {
+                            const_elements += ASRUtils::get_fixed_size_of_array(element_type);
+                        } else {
+                            has_runtime_array_size = true;
+                            ASR::expr_t* element_array_size = to_index_kind(
+                                get_array_expr_size(implied_doloop->m_values[i]));
+                            // The size expression may reference the loop variable
+                            // (e.g. size(a(i)%values())). Since this expression is
+                            // evaluated before the loop starts, replace the loop
+                            // variable with its start value so the index is valid.
+                            if (ASR::is_a<ASR::Var_t>(*implied_doloop->m_var)) {
+                                ASR::symbol_t* lv_sym = ASR::down_cast<ASR::Var_t>(
+                                    implied_doloop->m_var)->m_v;
+                                ASRUtils::ExprStmtDuplicator dup(al);
+                                element_array_size = dup.duplicate_expr(element_array_size);
+                                class ReplaceLoopVar : public ASR::BaseExprReplacer<ReplaceLoopVar> {
+                                public:
+                                    Allocator& al;
+                                    ASR::symbol_t* sym;
+                                    ASR::expr_t* replacement;
+                                    ReplaceLoopVar(Allocator& a, ASR::symbol_t* s, ASR::expr_t* r)
+                                        : al(a), sym(s), replacement(r) {}
+                                    void replace_Var(ASR::Var_t* x) {
+                                        if (x->m_v == sym) *current_expr = replacement;
+                                    }
+                                };
+                                ReplaceLoopVar replacer(al, lv_sym, implied_doloop->m_start);
+                                replacer.current_expr = &element_array_size;
+                                replacer.replace_expr(element_array_size);
+                            }
+                            if( implied_doloop_size_ == nullptr ) {
+                                implied_doloop_size_ = element_array_size;
+                            } else {
+                                implied_doloop_size_ = builder.Add(element_array_size,
+                                    implied_doloop_size_);
+                            }
+                        }
+                    } else {
+                        const_elements += 1;
+                    }
                 }
             }
-        }
+            return true;
+        };
+        bool sized = iteration_size(nullptr, clamp);
 
         ASR::symbol_t* loop_var_sym = nullptr;
         if (ASR::is_a<ASR::Var_t>(*implied_doloop->m_var)) {
             loop_var_sym = ASR::down_cast<ASR::Var_t>(implied_doloop->m_var)->m_v;
         }
-        bool inner_depends_on_var = (loop_var_sym != nullptr &&
-            implied_doloop_size_ != nullptr && d == nullptr &&
-            !has_runtime_array_size &&
-            ASRUtils::expr_references_symbol(implied_doloop_size_, loop_var_sym));
+        // A nested size that needs statements is taken to depend on the
+        // variable: its statements are put in the loop that counts the
+        // elements.
+        bool inner_depends_on_var = (loop_var_sym != nullptr && (!sized ||
+            (implied_doloop_size_ != nullptr &&
+             !has_runtime_array_size &&
+             ASRUtils::expr_references_symbol(implied_doloop_size_, loop_var_sym))));
 
         if (inner_depends_on_var) {
-            ASR::expr_t* two = make_ConstantWithKind(
-                make_IntegerConstant_t, make_Integer_t, 2, kind, loc);
-            ASR::expr_t* arith_sum = builder.Div(
-                builder.Mul(implied_doloop_size, builder.Add(start, end)), two);
-            if (const_elements > 0) {
-                ASR::expr_t* const_total = builder.Mul(
-                    make_ConstantWithKind(make_IntegerConstant_t,
-                        make_Integer_t, const_elements, kind, loc),
-                    implied_doloop_size);
-                implied_doloop_size = builder.Add(arith_sum, const_total);
-            } else {
-                implied_doloop_size = arith_sum;
+            if (stmts == nullptr) {
+                return nullptr;
             }
-            implied_doloop_size = to_index_kind(implied_doloop_size);
+            ASR::ttype_t* index_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                loc, get_index_kind()));
+            return ASRUtils::count_ImpliedDoLoop_elements(al, implied_doloop,
+                index_type, *stmts, [&](ASRUtils::ArraySizeStatements& body) {
+                    [[maybe_unused]] bool iteration_sized = iteration_size(&body, true);
+                    LCOMPILERS_ASSERT(iteration_sized);
+                    ASR::expr_t* scalars = make_ConstantWithKind(
+                        make_IntegerConstant_t, make_Integer_t, const_elements,
+                        get_index_kind(), loc);
+                    if( implied_doloop_size_ == nullptr ) {
+                        return scalars;
+                    }
+                    return const_elements > 0 ? builder.Add(scalars,
+                        implied_doloop_size_) : implied_doloop_size_;
+                });
         } else {
+            if( !sized ) {
+                if( stmts == nullptr ) {
+                    return nullptr;
+                }
+                iteration_size(stmts, clamp);
+            }
             implied_doloop_size = to_index_kind(implied_doloop_size);
             int index_kind = get_index_kind();
             if( const_elements > 0 ) {
@@ -417,7 +461,10 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         return ASRUtils::get_fixed_size_of_array(x->m_type);
     }
 
-    ASR::expr_t* get_ArrayConstructor_size(ASR::ArrayConstructor_t* x, bool& is_allocatable) {
+    // The number of elements of `x`; `stmts` and `clamp` as for
+    // ASRUtils::get_ImpliedDoLoop_size.
+    ASR::expr_t* get_ArrayConstructor_size(ASR::ArrayConstructor_t* x, bool& is_allocatable,
+            ASRUtils::ArraySizeStatements* stmts, bool clamp) {
         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, get_index_kind()));
         ASR::expr_t* array_size = nullptr;
         int64_t constant_size = 0;
@@ -441,7 +488,11 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 }
             } else if( ASR::is_a<ASR::ArrayConstructor_t>(*element) ) {
                 ASR::expr_t* element_array_size = get_ArrayConstructor_size(
-                    ASR::down_cast<ASR::ArrayConstructor_t>(element), is_allocatable);
+                    ASR::down_cast<ASR::ArrayConstructor_t>(element), is_allocatable,
+                    stmts, clamp);
+                if( element_array_size == nullptr ) {
+                    return nullptr;
+                }
                 if( array_size == nullptr ) {
                     array_size = element_array_size;
                 } else {
@@ -488,7 +539,10 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 }
             } else if( ASR::is_a<ASR::ImpliedDoLoop_t>(*element) ) {
                 ASR::expr_t* implied_doloop_size = get_ImpliedDoLoop_size(
-                    ASR::down_cast<ASR::ImpliedDoLoop_t>(element));
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(element), stmts, clamp);
+                if( implied_doloop_size == nullptr ) {
+                    return nullptr;
+                }
                 if( array_size ) {
                     array_size = builder.Add(implied_doloop_size, array_size);
                 } else {
@@ -505,7 +559,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                         continue;
                     }
                     ASR::expr_t* dim_size = ASRUtils::get_triplet_extent(al,
-                        loc, start, end, d, int_type);
+                        loc, start, end, d, int_type, clamp);
                     if( array_section_size == nullptr ) {
                         array_section_size = dim_size;
                     } else {
@@ -685,7 +739,12 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         }
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
-        ASR::expr_t* array_constructor = get_ArrayConstructor_size(x, is_allocatable);
+        // The statements that count the elements of a nested implied-do loop
+        // whose values have sizes that depend on its variable go before the
+        // allocation.
+        ASRUtils::ArraySizeStatements size_stmts{&pass_result, current_scope};
+        ASR::expr_t* array_constructor = get_ArrayConstructor_size(x, is_allocatable,
+            &size_stmts, false);
 
         // Case: `keywords = [character(len=ii) :: value]`
         // For runtime-dependent string lengths, defer evaluation and use allocatable results with per-element runtime allocation.

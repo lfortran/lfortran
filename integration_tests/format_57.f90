@@ -2,7 +2,7 @@
 program format_57
     implicit none
     integer,parameter:: sp = kind(1e0), dp = kind(1d0),&
-        sep = selected_real_kind(precision(1.0_dp)+1),&
+        sep = selected_real_kind(33),&
         ep = merge(sep,dp,sep>0)
     real(sp),parameter:: xsp = 1
     real(dp),parameter:: xdp = 1 
