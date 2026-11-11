@@ -6896,6 +6896,35 @@ use cancel_core
             CHECK(wm < 16384);
             CHECK(e.execute("retained").value.text() == "41");
         }
+        {
+            // Inner loops that leave through EXIT before a chunk of
+            // iterations (16384) ends do not delay the safepoints of the
+            // loops that contain them: the outermost loop stops long before
+            // a chunk of its own iterations would end.
+            run("integer(8) :: ni = 0, nj, nk, ns = 0");
+            FortranEvaluator::CellIO timed;
+            auto timed_start = std::chrono::steady_clock::now();
+            timed.cancel_requested = [&]() {
+                return std::chrono::steady_clock::now() - timed_start >
+                    std::chrono::milliseconds(100);
+            };
+            auto nested = e.execute(R"(do ni = 1, huge(0_8)
+do nj = 1, 20000
+if (nj == 300) exit
+do nk = 1, 20000
+if (nk == 300) exit
+ns = ieor(ns*3 + nk, ns/7)
+end do
+end do
+end do
+retained = -1)", false, timed);
+            CHECK(!nested.ok);
+            CHECK(nested.error_name == "KeyboardInterrupt");
+            int64_t ni = std::stoll(e.execute("ni").value.text());
+            CHECK(ni > 1);
+            CHECK(ni < 16384);
+            CHECK(e.execute("retained").value.text() == "41");
+        }
         for (int repeat = 0; repeat < 2; repeat++) {
             interrupt("answer = outer(-1)\nretained = -1");
             CHECK(e.execute("answer").value.text() == "100");

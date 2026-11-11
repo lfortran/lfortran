@@ -311,14 +311,17 @@ public:
 
 // Whether the body of a counted DO loop runs a short, bounded time per
 // iteration without polling: its statements are assignments of scalar
-// numeric or logical values, IF, CYCLE, EXIT and counted DO loops of the
-// same kind (which poll on their own), and its expressions are operators,
-// numeric conversions, elemental intrinsics and element or component
-// references on such values, and calls of functions of the same kind
-// without loops. Only such a loop may poll once per chunk of iterations (see
-// generate_counted_do_loop). Anything else, such as I/O, a subroutine or
+// numeric or logical values, IF, CYCLE and EXIT, and its expressions are
+// operators, numeric conversions, elemental intrinsics and element or
+// component references on such values, and calls of functions of the same
+// kind without loops. Only such a loop may poll once per chunk of iterations
+// (see generate_counted_do_loop). Anything else, such as I/O, a subroutine or
 // runtime call, a string or an allocation, may take long, so its loop polls
-// on every iteration.
+// on every iteration. So does a loop whose body contains a loop: a chunked
+// loop polls only when a chunk ends, which an EXIT or a CYCLE of an outer
+// loop skips, so only innermost loops are chunked. Each iteration of an
+// outer loop then runs at most one chunk of its inner loop between two
+// safepoints, however deep the nest and however it is left.
 class BoundedLoopBody {
 public:
     std::function<bool(const ASR::Function_t &)> callee_may_unwind;
@@ -377,11 +380,6 @@ private:
                 const auto &block = *ASR::down_cast<ASR::Block_t>(m);
                 return scalar_locals(*block.m_symtab)
                     && body(block.m_body, block.n_body, in_function);
-            }
-            case ASR::stmtType::DoLoop: {
-                const auto &l = *ASR::down_cast<ASR::DoLoop_t>(&x);
-                return !in_function && head(l.m_head)
-                    && body(l.m_body, l.n_body) && body(l.m_orelse, l.n_orelse);
             }
             default:
                 return false;
@@ -18811,8 +18809,7 @@ public:
 
     // The number of iterations of a counted DO loop between two safepoints
     // (see generate_counted_do_loop) when each iteration takes a short,
-    // bounded time (see BoundedLoopBody): a loop in its body polls on its
-    // own, so a chunk does too.
+    // bounded time and runs no loop (see BoundedLoopBody).
     static constexpr uint64_t safepoint_chunk = 1 << 14;
 
     // Whether the body `stmts` of a counted DO loop takes a short, bounded

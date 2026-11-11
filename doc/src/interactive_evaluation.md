@@ -91,14 +91,16 @@ as a safepoint. It loads a request word, which the evaluator defines for its
 JIT, and branches to the cleanup only when the word is set, so the common path
 costs an atomic load and a branch. Safepoints sit at procedure entry, at loop
 back-edges (DO, DO WHILE and backward GOTO), after calls that may unwind and
-in READ, after local descriptors have been initialized. A counted DO loop
-whose body takes a short, bounded time per iteration (scalar numeric and
-logical assignments, IF, CYCLE, EXIT, nested such loops, operators,
-elemental intrinsics and calls of loop-free functions of the same kind) runs
-its iterations in chunks of at most 16384 and polls once per chunk, so the
-loop of a chunk has no safepoint and can be vectorized. Any other counted DO
-loop, for example one that does I/O or calls a subroutine, polls on every
-iteration.
+in READ, after local descriptors have been initialized. An innermost
+counted DO loop whose body takes a short, bounded time per iteration (scalar
+numeric and logical assignments, IF, CYCLE, EXIT, operators, elemental
+intrinsics and calls of loop-free functions of the same kind) runs its
+iterations in chunks of at most 16384 and polls once per chunk, so the loop
+of a chunk has no safepoint and can be vectorized. Any other counted DO loop,
+for example one that does I/O, calls a subroutine or contains another loop,
+polls on every iteration. So however a nested loop is left (EXIT, CYCLE of an
+outer loop), at most one chunk of cheap iterations runs between two
+safepoints.
 A procedure that cannot reach a safepoint (it has no loop, backward branch,
 READ, derived type variable or call of a procedure that can) carries no
 cancellation code, and its callers need no check after the call. Calls
