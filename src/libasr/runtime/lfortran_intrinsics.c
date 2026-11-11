@@ -18763,6 +18763,96 @@ LFORTRAN_API void _lfortran_string_read_f128_array(char *str, int64_t len, char 
     if (iostat) *iostat = (count < array_size) ? -1 : 0;
 }
 
+// Internal reads of real(10), parsed as a C long double.
+static int string_read_f80_token(const char *s, long double *value, int *consumed)
+{
+    size_t token_len = fortran_real_token_length(s);
+    char *temp;
+    char *endptr;
+    long double v;
+    if (token_len == 0) {
+        *consumed = 0;
+        return 0;
+    }
+    temp = (char*)internal_malloc(token_len + 2);
+    if (!temp) {
+        *consumed = 0;
+        return 0;
+    }
+    memcpy(temp, s, token_len);
+    temp[token_len] = '\0';
+    normalize_fortran_real_token(temp, token_len + 2);
+    v = strtold(temp, &endptr);
+    if (endptr == temp || *endptr != '\0') {
+        internal_free(temp);
+        *consumed = 0;
+        return 0;
+    }
+    internal_free(temp);
+    *value = v;
+    *consumed = (int)token_len;
+    return 1;
+}
+
+LFORTRAN_API void _lfortran_string_read_f80(char *str, int64_t len, char *format, long double *f, int32_t *iostat, int64_t *offset) {
+    (void)format;
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    normalize_numeric_input(buf, _lfortran_get_decimal_mode(-1));
+    int rc = 0;
+    int skip = 0;
+    if (offset) {
+        /* Handle empty fields like: 1.5, , 2.5 */
+        if (_lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+            internal_free(buf);
+            return;
+        }
+    } else {
+        while (buf[skip] == ' ' || buf[skip] == '\t') skip++;
+    }
+    int consumed = 0;
+    long double tmp;
+    if (string_read_f80_token(buf + skip, &tmp, &consumed) &&
+            string_read_f128_separator(buf[skip + consumed])) {
+        *f = tmp;
+        if (offset) *offset = off + skip + consumed;
+        rc = 1;
+    }
+    internal_free(buf);
+    if (rc != 1) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad real for item in list input\n");
+        exit(1);
+    }
+    if (iostat) *iostat = 0;
+}
+
+LFORTRAN_API void _lfortran_string_read_f80_array(char *str, int64_t len, char *format,
+        long double *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset) {
+    (void)format;
+    int64_t off = string_read_array_start(len, offset);
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    normalize_numeric_input(buf, _lfortran_get_decimal_mode(-1));
+    const char *pos = buf;
+    const char *end = buf + (len - off);
+    int64_t count = 0;
+    while (pos < end && count < array_size) {
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+        int consumed = 0;
+        long double value;
+        if (!string_read_f80_token(pos, &value, &consumed)) break;
+        arr[count * stride] = value;
+        count++;
+        pos += consumed;
+    }
+    if (offset) *offset = off + (pos - buf);
+    internal_free(buf);
+    if (iostat) *iostat = (count < array_size) ? -1 : 0;
+}
+
 // Parses " (re,im)" at the start of `s`; returns the number of characters
 // used, or 0 if `s` does not start with a complex number.
 static int string_read_c128_value(const char *s, struct _lfortran_complex_128 *c)
