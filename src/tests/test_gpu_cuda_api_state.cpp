@@ -603,9 +603,13 @@ static int managed_memory_model()
     require(ctx != nullptr, "runtime initialization");
     require(memory_model == MEMORY_MANAGED,
         "LFORTRAN_GPU_MEMORY=managed selects the model");
-    auto *data = (int32_t *)managed_alloc(nullptr, MANAGED_MIN_BYTES);
-    require(data != nullptr && managed_contains(data, MANAGED_MIN_BYTES),
+    auto *data = (int32_t *)managed_alloc(nullptr,
+        MANAGED_PREFETCH_MIN_BYTES);
+    require(data != nullptr
+        && managed_contains(data, MANAGED_PREFETCH_MIN_BYTES),
         "a large allocation is managed memory");
+    require(stats().memory_advice == 0,
+        "a large allocation is prefetched, not advised");
     data[0] = 10;
     lfortran_gpu_register_kernel("managed", entry(managed_entry));
     int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
@@ -625,27 +629,81 @@ static int managed_memory_model()
     require(stats().async_copies[cudaMemcpyHostToDevice] == 0
         && stats().copies[cudaMemcpyDeviceToHost] == 0,
         "managed memory is not copied");
+    // A freed block goes to a cache, and is handed out again once the host
+    // has waited for the device since.
     unsigned long long frees = stats().frees;
     unsigned long long mallocs = stats().mallocs;
     managed_dealloc(nullptr, data);
     require(stats().frees == frees,
         "a freed managed block goes to the cache, not to the driver");
-    auto *again = (int32_t *)managed_alloc(nullptr, MANAGED_MIN_BYTES);
+    // The device has no work pending, so the block is handed out again.
+    auto *again = (int32_t *)managed_alloc(nullptr, MANAGED_PREFETCH_MIN_BYTES);
     require(again == data && stats().mallocs == mallocs,
         "an allocation of the size of a cached block reuses it");
     managed_dealloc(nullptr, again);
-    auto *larger = (int32_t *)managed_alloc(nullptr, 2 * MANAGED_MIN_BYTES);
+    auto *larger = (int32_t *)managed_alloc(nullptr, 2 * MANAGED_PREFETCH_MIN_BYTES);
     require(larger != nullptr && larger != data
-        && managed_contains(larger, 2 * MANAGED_MIN_BYTES),
+        && managed_contains(larger, 2 * MANAGED_PREFETCH_MIN_BYTES),
         "a larger allocation does not reuse a smaller cached block");
     managed_dealloc(nullptr, larger);
     managed_cache_flush();
     require(stats().frees == frees + 2, "flushing the cache frees the blocks");
+    // A small allocation is managed memory too, with the device as its
+    // preferred location and mapped for the host, and no prefetch.
+    auto *small = (int32_t *)managed_alloc(nullptr, MANAGED_MIN_BYTES);
+    require(small != nullptr && managed_contains(small, MANAGED_MIN_BYTES),
+        "a small allocation is managed memory");
+    require(stats().memory_advice == 2,
+        "a small allocation is advised: preferred on the device, mapped for the host");
+    small[0] = 5;
+    auto *k = lfortran_gpu_load_kernel(ctx, "managed", 7);
+    int32_t one = 1;
+    lfortran_gpu_set_buffer_arg(k, 0, small, sizeof(int32_t),
+        LFORTRAN_GPU_WRITE);
+    lfortran_gpu_set_scalar_arg(k, 1, &one, sizeof(one));
+    lfortran_gpu_launch(ctx, k, grid, block);
+    lfortran_gpu_release_kernel(k);
+    lfortran_gpu_sync(ctx);
+    require(small[0] == 6, "the kernel wrote the small memory in place");
+    require(stats().device_prefetches == 1,
+        "the launch that uses a small allocation does not prefetch it");
+    managed_dealloc(nullptr, small);
     lfortran_gpu_shutdown(ctx);
     check_api_use();
     // Only once every check passed, since CTest matches this line.
     printf("managed memory passed on the CUDA runtime API %d: device "
         "prefetches=%llu\n", CUDART_VERSION, stats().device_prefetches);
+    return 0;
+}
+
+// CTest runs this case with LFORTRAN_GPU_MEMORY=managed. A procedure that
+// allocates many temporaries of one size (one for each layer of a model)
+// frees them all without a cudaFree, which would wait for the device: the
+// blocks are kept for the next call.
+static int managed_pool_capacity()
+{
+    previous_allocator = {host_alloc, host_realloc, host_dealloc, nullptr};
+    auto *ctx = lfortran_gpu_init();
+    require(ctx != nullptr, "runtime initialization");
+    require(memory_model == MEMORY_MANAGED,
+        "LFORTRAN_GPU_MEMORY=managed selects the model");
+    enum { TEMPORARIES = 300 };
+    static void *temporaries[TEMPORARIES];
+    for (int i = 0; i < TEMPORARIES; i++) {
+        temporaries[i] = managed_alloc(nullptr, MANAGED_MIN_BYTES);
+        require(temporaries[i] != nullptr, "temporary allocation");
+    }
+    unsigned long long frees = stats().frees;
+    for (int i = 0; i < TEMPORARIES; i++) {
+        managed_dealloc(nullptr, temporaries[i]);
+    }
+    require(stats().frees == frees, "freed temporaries are kept, not freed");
+    require(stats().implicit_synchronizations == 0,
+        "freeing temporaries does not wait for the device");
+    lfortran_gpu_shutdown(ctx);
+    check_api_use();
+    printf("managed pool capacity passed on the CUDA runtime API %d\n",
+        CUDART_VERSION);
     return 0;
 }
 
@@ -716,6 +774,9 @@ int main(int argc, char **argv)
     if (argc == 2 && strcmp(argv[1], "unified") == 0) {
         return unified_memory_model();
     }
+    if (argc == 2 && strcmp(argv[1], "managed-pool") == 0) {
+        return managed_pool_capacity();
+    }
     if (argc == 2 && strcmp(argv[1], "managed") == 0) {
         return managed_memory_model();
     }
@@ -734,7 +795,7 @@ int main(int argc, char **argv)
     // `output`, which no launch has used in the two wait periods before, is
     // forgotten there and its memory freed.
     require(s.launches == 201 && s.mallocs == 6017
-        && s.frees == (scratch ? 4033u : 4032u),
+        && s.frees == (scratch ? 3073u : 3072u),
         "per-slot reuse and deferred replacement counts");
     // The syncs of the read-back and of the shutdown find the device idle.
     require(sync_launches.size() == 2

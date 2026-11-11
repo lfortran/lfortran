@@ -141,15 +141,13 @@ static int unified_memory = 0;
 // The smallest allocation the managed memory model makes managed memory:
 // making managed memory costs much more than malloc (the cache of freed blocks
 // below spares a procedure that allocates at every call most of it), and
-// copying a smaller range at a launch costs little. A range of at least
-// KEEP_READ_MIN_BYTES a launch only reads is copied at every launch that
-// follows a wait, and a loop that reads it at every iteration waits at every
-// iteration: 512 KB of boundary data copied 3000 times costs more than the
-// kernels that read it. So such a range is managed too, from 256 KB on. A
-// smaller one stays out: the slots a reduction fills (64 KB for a dot product)
-// are read by the host right after every launch, which a managed range
-// migrates a page at a time, slower than a copy.
-enum { MANAGED_MIN_BYTES = 256 * 1024 };
+// copying a smaller range at a launch costs little. But a smaller array that
+// the host looks at between kernels (a call of a procedure of the program,
+// which the compiler cannot look into) is copied back and forth around every
+// kernel, and a decode step full of such arrays was idle on the device for a
+// third of its time. So an array of 4 KB and more is managed memory; the
+// allocations of less than 1 MiB prefer the device (see managed_alloc).
+enum { MANAGED_MIN_BYTES = 4096 };
 
 // The managed allocations, sorted by address.
 typedef struct managed_range {
@@ -197,7 +195,7 @@ static int managed_contains(const void *p, size_t size) {
     return inside;
 }
 
-static int managed_record(void *p, size_t size) {
+static int managed_record(void *p, size_t size, int fresh) {
     managed_lock();
     if (n_managed == managed_capacity) {
         size_t capacity = managed_capacity ? 2*managed_capacity : 64;
@@ -214,7 +212,7 @@ static int managed_record(void *p, size_t size) {
     memmove(&managed[i + 1], &managed[i], (n_managed - i)*sizeof(managed_range));
     managed[i].base = (char *)p;
     managed[i].size = size;
-    managed[i].fresh = 1;
+    managed[i].fresh = fresh;
     n_managed++;
     managed_unlock();
     return 1;
@@ -254,6 +252,38 @@ static cudaError_t prefetch_to_device(const void *p, size_t size, int device) {
     return cudaMemPrefetchAsync(p, size, location, 0, 0);
 #else
     return cudaMemPrefetchAsync(p, size, device, 0);
+#endif
+}
+
+// The allocations of less than this many bytes are not prefetched but have
+// their pages given a home on the device.
+enum { MANAGED_PREFETCH_MIN_BYTES = 1 << 20 };
+
+// Makes the `size` bytes of managed memory at `p` live on `device`, and maps
+// them for the host: the pages a kernel writes stay on the device while the
+// host reads a few of them (the arrays it checks or samples), which are then
+// read in place across the bus instead of moved to the memory of the host
+// and faulted back by the next kernel. Without this, the small arrays of a
+// program that the host looks at between kernels were migrated back and forth,
+// and now and then a step of a program took 100 to 600 milliseconds instead of
+// 44.
+static void prefer_device(const void *p, size_t size, int device) {
+#if defined(LFORTRAN_GPU_HIP)
+    (void)p; (void)size; (void)device;
+#elif defined(CUDART_VERSION) && CUDART_VERSION >= 13000
+    struct cudaMemLocation on_device, on_host;
+    memset(&on_device, 0, sizeof(on_device));
+    memset(&on_host, 0, sizeof(on_host));
+    on_device.type = cudaMemLocationTypeDevice;
+    on_device.id = device;
+    on_host.type = cudaMemLocationTypeHost;
+    (void)cudaMemAdvise(p, size, cudaMemAdviseSetPreferredLocation, on_device);
+    (void)cudaMemAdvise(p, size, cudaMemAdviseSetAccessedBy, on_host);
+#elif defined(CUDART_VERSION)
+    (void)cudaMemAdvise(p, size, cudaMemAdviseSetPreferredLocation, device);
+    (void)cudaMemAdvise(p, size, cudaMemAdviseSetAccessedBy, cudaCpuDeviceId);
+#else
+    (void)p; (void)size; (void)device;
 #endif
 }
 
@@ -381,10 +411,15 @@ static void check(cudaError_t err, const char *what) {
     }
 }
 
+// How many times the host waited for the device: a freed block is reused once
+// the host has waited since it was freed.
+static uint64_t sync_epoch = 0;
+
 static void device_synchronize(void) {
     if (!device_busy) return;
     device_busy = 0;
     check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
+    sync_epoch++;
 }
 
 // Device memory comes from a cache of freed blocks, since cudaMalloc and
@@ -408,7 +443,7 @@ typedef struct device_block {
 static device_block *live_blocks = NULL;
 static size_t live_capacity = 0;
 static size_t n_live = 0;
-static device_block free_blocks[POOL_CLASSES][64];
+static device_block free_blocks[POOL_CLASSES][1024];
 static int n_free_blocks[POOL_CLASSES];
 static size_t cached_bytes = 0;
 
@@ -532,7 +567,7 @@ static void device_release(void *d_ptr) {
     size_t unused;
     int c = block_size <= POOL_MAX_BLOCK_BYTES
         ? pool_class(block_size, &unused) : -1;
-    if (c < 0 || c >= POOL_CLASSES || n_free_blocks[c] == 64
+    if (c < 0 || c >= POOL_CLASSES || n_free_blocks[c] == 1024
             || cached_bytes + block_size > POOL_MAX_CACHED_BYTES) {
         check(cudaFree(d_ptr), "cudaFree");
         return;
@@ -846,7 +881,18 @@ static host_allocator previous_allocator;
 // freed. It goes back to the driver only when its class is full, when the
 // cache holds too much, when it is too large to cache, or when the driver is
 // out of memory. The recorded size of a block is the size of the whole block.
-static device_block managed_free_blocks[POOL_CLASSES][8];
+// A launch that is still pending may use a block when it is freed, so a block
+// is handed out again only after the host has waited for the device since (or
+// when the device has no work pending): the free does not wait for the device,
+// and the host runs ahead of the device through the launches of a procedure
+// that allocates temporaries.
+typedef struct managed_free_block {
+    void *ptr;
+    size_t size;
+    uint64_t epoch;
+} managed_free_block;
+enum { MANAGED_POOL_PER_CLASS = 1024 };
+static managed_free_block managed_free_blocks[POOL_CLASSES][MANAGED_POOL_PER_CLASS];
 static int n_managed_free_blocks[POOL_CLASSES];
 static size_t managed_cached_bytes = 0;
 static const size_t MANAGED_MAX_BLOCK_BYTES = (size_t)256 << 20;
@@ -854,6 +900,7 @@ static const size_t MANAGED_MAX_CACHED_BYTES = (size_t)1024 << 20;
 
 // Gives every cached block back to the driver.
 static void managed_cache_flush(void) {
+    device_synchronize();
     managed_lock();
     for (int c = 0; c < POOL_CLASSES; c++) {
         for (int i = 0; i < n_managed_free_blocks[c]; i++) {
@@ -877,13 +924,19 @@ static void* managed_alloc(void *context, int64_t size) {
         void *p = NULL;
         if (c >= 0) {
             managed_lock();
-            if (n_managed_free_blocks[c] > 0) {
-                p = managed_free_blocks[c][--n_managed_free_blocks[c]].ptr;
-                managed_cached_bytes -= block_size;
+            for (int i = n_managed_free_blocks[c]; i-- > 0;) {
+                managed_free_block *b = &managed_free_blocks[c][i];
+                if (b->epoch < sync_epoch || !device_busy) {
+                    p = b->ptr;
+                    *b = managed_free_blocks[c][--n_managed_free_blocks[c]];
+                    managed_cached_bytes -= block_size;
+                    break;
+                }
             }
             managed_unlock();
             if (p) {
-                if (managed_record(p, block_size)) return p;
+                if (managed_record(p, block_size,
+                        block_size >= MANAGED_PREFETCH_MIN_BYTES)) return p;
                 (void)cudaFree(p);
                 p = NULL;
             }
@@ -895,7 +948,9 @@ static void* managed_alloc(void *context, int64_t size) {
             err = cudaMallocManaged(&p, block_size, cudaMemAttachGlobal);
         }
         if (err == cudaSuccess && p) {
-            if (managed_record(p, block_size)) return p;
+            int large = block_size >= MANAGED_PREFETCH_MIN_BYTES;
+            if (!large) prefer_device(p, block_size, 0);
+            if (managed_record(p, block_size, large)) return p;
             (void)cudaFree(p);
         }
     }
@@ -905,27 +960,29 @@ static void* managed_alloc(void *context, int64_t size) {
 static void managed_dealloc(void *context, void *ptr) {
     size_t block_size = managed_forget(ptr);
     if (block_size) {
-        // A pending launch may still use the memory.
-        device_synchronize();
         size_t unused = 0;
         int c = block_size <= MANAGED_MAX_BLOCK_BYTES
             ? pool_class(block_size, &unused) : -1;
-        int cached = 0;
         if (c >= 0 && c < POOL_CLASSES && unused == block_size) {
+            int cached = 0;
             managed_lock();
-            if (n_managed_free_blocks[c] < 8
+            if (n_managed_free_blocks[c] < MANAGED_POOL_PER_CLASS
                     && managed_cached_bytes + block_size
                         <= MANAGED_MAX_CACHED_BYTES) {
-                managed_free_blocks[c][n_managed_free_blocks[c]].ptr = ptr;
-                managed_free_blocks[c][n_managed_free_blocks[c]].size
-                    = block_size;
-                n_managed_free_blocks[c]++;
+                managed_free_block *b
+                    = &managed_free_blocks[c][n_managed_free_blocks[c]++];
+                b->ptr = ptr;
+                b->size = block_size;
+                b->epoch = sync_epoch;
                 managed_cached_bytes += block_size;
                 cached = 1;
             }
             managed_unlock();
+            if (cached) return;
         }
-        if (!cached) (void)cudaFree(ptr);
+        // A pending launch may still use the memory.
+        device_synchronize();
+        (void)cudaFree(ptr);
         return;
     }
     previous_allocator.dealloc(context, ptr);
@@ -1293,7 +1350,7 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
         }
     }
     // A pending launch may read the memory in place too.
-    int read_in_place = pending_in_place_reads && managed_contains(ptr, size);
+    int read_in_place = 0;
     for (int i = 0; i < n_entries && pending_in_place_reads; i++) {
         if (entries[i].used && entries[i].in_place
                 && overlaps(entries[i].host, entries[i].size, ptr, size)) {

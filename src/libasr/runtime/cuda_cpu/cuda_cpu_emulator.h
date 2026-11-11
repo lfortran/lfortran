@@ -34,6 +34,8 @@ typedef struct lfortran_cuda_cpu_stats {
     // host.
     unsigned long long device_prefetches;
     unsigned long long host_prefetches;
+    // Successful calls of cudaMemAdvise.
+    unsigned long long memory_advice;
     // Calls that returned an error.
     unsigned long long errors;
     // Device allocations that are live now.

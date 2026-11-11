@@ -300,6 +300,32 @@ cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count, int device,
 }
 #endif
 
+#if CUDART_VERSION >= 13000
+cudaError_t cudaMemAdvise(const void *ptr, size_t count,
+    enum cudaMemoryAdvise advice, struct cudaMemLocation location)
+{
+    (void)count; (void)location;
+    if (ptr == NULL || advice < cudaMemAdviseSetReadMostly
+            || advice > cudaMemAdviseUnsetAccessedBy) {
+        return fail(cudaErrorInvalidValue);
+    }
+    stats.memory_advice++;
+    return cudaSuccess;
+}
+#else
+cudaError_t cudaMemAdvise(const void *ptr, size_t count,
+    enum cudaMemoryAdvise advice, int device)
+{
+    (void)count; (void)device;
+    if (ptr == NULL || advice < cudaMemAdviseSetReadMostly
+            || advice > cudaMemAdviseUnsetAccessedBy) {
+        return fail(cudaErrorInvalidValue);
+    }
+    stats.memory_advice++;
+    return cudaSuccess;
+}
+#endif
+
 // Checks the two ranges of a copy against its direction, and copies.
 static cudaError_t copy(void *dst, const void *src, size_t count,
     cudaMemcpyKind kind)
