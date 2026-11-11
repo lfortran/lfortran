@@ -4,6 +4,7 @@
 #include <functional>
 #include <map>
 #include <set>
+#include <algorithm>
 #include <limits>
 #include <optional>
 #include <vector>
@@ -589,6 +590,229 @@ static inline ASR::expr_t* make_RealConstant_util(Allocator& al,
         return make_RealConstant_r10(al, loc, (long double)value, type);
     }
     return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, value, type));
+}
+
+// Value of a RealConstant as a host double, whatever its kind. Lossy for
+// kinds 10 and 16, whose `m_r` is a pointer-encoded payload and must never be
+// read as a double directly. Use only where a double result is acceptable.
+static inline double real_constant_get_double(const ASR::RealConstant_t* c) {
+    int k = extract_kind_from_ttype_t(c->m_type);
+    if (k == 16) {
+        return lf_f128_to_double(real_constant_get_r16(c));
+    } else if (k == 10) {
+        return static_cast<double>(real_constant_get_r10(c));
+    }
+    return c->m_r;
+}
+
+// Binary128 value of a kind=16 real constant expression.
+static inline lf_float128 real_expr_get_r16(const ASR::expr_t* e) {
+    return real_constant_get_r16(ASR::down_cast<ASR::RealConstant_t>(e));
+}
+
+// --- binary128 bit-level helpers (little-endian IEEE-754 binary128) ---------
+static inline int real16_biased_exponent(const lf_float128& v) {
+    return ((v.bytes[15] & 0x7f) << 8) | v.bytes[14];
+}
+
+static inline bool real16_is_finite(const lf_float128& v) {
+    return real16_biased_exponent(v) != 0x7fff;
+}
+
+static inline bool real16_is_zero(const lf_float128& v) {
+    if (real16_biased_exponent(v) != 0) {
+        return false;
+    }
+    for (int i = 0; i < 14; i++) {
+        if (v.bytes[i] != 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// 2**n as a binary128 value for n in [-16494, 16383] (down to the smallest
+// subnormal).
+static inline lf_float128 real16_pow2(int n) {
+    lf_float128 r;
+    std::memset(r.bytes, 0, sizeof(r.bytes));
+    if (n >= -16382) {
+        int biased = n + 16383;
+        r.bytes[15] = static_cast<uint8_t>(biased >> 8);
+        r.bytes[14] = static_cast<uint8_t>(biased & 0xff);
+    } else {
+        int bit = n + 16494;
+        r.bytes[bit / 8] = static_cast<uint8_t>(1u << (bit % 8));
+    }
+    return r;
+}
+
+// Split a finite, non-zero binary128 value as `v = f * 2**e` with
+// 0.5 <= |f| < 1 (the Fortran model used by EXPONENT and FRACTION).
+static inline void real16_frexp(lf_float128 v, lf_float128& f, int& e) {
+    int biased = real16_biased_exponent(v);
+    int extra = 0;
+    if (biased == 0) {
+        v = lf_f128_mul(v, real16_pow2(112));
+        biased = real16_biased_exponent(v);
+        extra = 112;
+    }
+    e = biased - 16382 - extra;
+    f = lf_f128_mul(v, real16_pow2(-(e + extra)));
+}
+
+// The adjacent representable binary128 value of a finite `v` in the direction
+// of +infinity (`up`) or -infinity.
+static inline lf_float128 real16_next(lf_float128 v, bool up) {
+    bool negative = (v.bytes[15] & 0x80) != 0;
+    bool decrease_magnitude = !real16_is_zero(v) && (up == negative);
+    lf_float128 r = v;
+    if (real16_is_zero(v)) {
+        std::memset(r.bytes, 0, sizeof(r.bytes));
+        r.bytes[0] = 1;
+        r.bytes[15] = up ? 0 : 0x80;
+        return r;
+    }
+    for (int i = 0; i < 16; i++) {
+        if (decrease_magnitude) {
+            if (r.bytes[i]-- != 0) break;
+        } else {
+            if (++r.bytes[i] != 0) break;
+        }
+    }
+    return r;
+}
+
+// Round a binary128 value to the nearest integral value, halfway cases away
+// from zero (Fortran NINT/ANINT). `a - floor(a)` is exact, so there is no
+// double rounding as with `floor(a + 0.5)`.
+static inline lf_float128 real16_round_half_away(lf_float128 v) {
+    if (!real16_is_finite(v)) {
+        return v;
+    }
+    lf_float128 a = lf_f128_abs(v);
+    lf_float128 f = lf_f128_floor(a);
+    if (lf_f128_cmp(lf_f128_sub(a, f), lf_f128_from_double(0.5)) >= 0) {
+        f = lf_f128_add(f, lf_f128_from_int64(1));
+    }
+    return lf_f128_signbit(v) ? lf_f128_neg(f) : f;
+}
+
+// Exact conversion of an integral binary128 value to int64_t. Returns false if
+// the value is NaN or outside the int64_t range.
+static inline bool real16_integral_to_int64(lf_float128 v, int64_t& out) {
+    if (!real16_is_finite(v)) {
+        return false;
+    }
+    lf_float128 a = lf_f128_abs(v);
+    if (lf_f128_cmp(a, real16_pow2(63)) >= 0) {
+        if (lf_f128_cmp(v, lf_f128_neg(real16_pow2(63))) == 0) {
+            out = std::numeric_limits<int64_t>::min();
+            return true;
+        }
+        return false;
+    }
+    lf_float128 two32 = real16_pow2(32);
+    lf_float128 hi = lf_f128_floor(lf_f128_div(a, two32));
+    lf_float128 lo = lf_f128_sub(a, lf_f128_mul(hi, two32));
+    uint64_t magnitude = (static_cast<uint64_t>(lf_f128_to_double(hi)) << 32)
+        | static_cast<uint64_t>(lf_f128_to_double(lo));
+    out = lf_f128_signbit(v) ? -static_cast<int64_t>(magnitude)
+                             : static_cast<int64_t>(magnitude);
+    return true;
+}
+
+// Exact remainder `a - trunc(a / b) * b` (C `fmodq`) of two finite binary128
+// values with `b` non-zero, computed by binary long division on the
+// significands. The result has the sign of `a`.
+static inline lf_float128 real16_fmod(const lf_float128& a, const lf_float128& b) {
+    struct Wide {
+        uint64_t hi, lo;
+    };
+    auto significand = [](const lf_float128& v, int& exponent) {
+        Wide w{0, 0};
+        for (int i = 7; i >= 0; i--) {
+            w.lo = (w.lo << 8) | v.bytes[i];
+            w.hi = (w.hi << 8) | v.bytes[8 + i];
+        }
+        w.hi &= 0x0000ffffffffffffULL;
+        int biased = real16_biased_exponent(v);
+        if (biased != 0) {
+            w.hi |= 1ULL << 48;
+        }
+        exponent = (biased == 0 ? 1 : biased) - 16383 - 112;
+        return w;
+    };
+    auto less = [](const Wide& x, const Wide& y) {
+        return x.hi < y.hi || (x.hi == y.hi && x.lo < y.lo);
+    };
+    auto shift_left = [](const Wide& x, int n) {
+        Wide r{x.hi, x.lo};
+        for (int i = 0; i < n; i++) {
+            r.hi = (r.hi << 1) | (r.lo >> 63);
+            r.lo <<= 1;
+        }
+        return r;
+    };
+    auto bit_length = [](const Wide& x) {
+        int n = 0;
+        for (uint64_t t = x.hi ? x.hi : x.lo; t; t >>= 1) n++;
+        return x.hi ? n + 64 : n;
+    };
+    int ea, eb;
+    Wide ma = significand(a, ea);
+    Wide divisor = significand(b, eb);
+    int result_exponent = std::min(ea, eb);
+    int trailing_zero_bits = 0;
+    if (ea >= eb) {
+        trailing_zero_bits = ea - eb;
+    } else if (bit_length(divisor) + (eb - ea) > 127) {
+        divisor = Wide{~0ULL, ~0ULL};
+    } else {
+        divisor = shift_left(divisor, eb - ea);
+    }
+    Wide r{0, 0};
+    auto step = [&](int bit) {
+        r = shift_left(r, 1);
+        r.lo |= static_cast<uint64_t>(bit);
+        if (!less(r, divisor)) {
+            uint64_t borrow = r.lo < divisor.lo;
+            r.lo -= divisor.lo;
+            r.hi -= divisor.hi + borrow;
+        }
+    };
+    for (int i = 112; i >= 0; i--) {
+        int bit = i >= 64 ? static_cast<int>((ma.hi >> (i - 64)) & 1)
+                          : static_cast<int>((ma.lo >> i) & 1);
+        step(bit);
+    }
+    for (int i = 0; i < trailing_zero_bits; i++) {
+        step(0);
+    }
+    lf_float128 result;
+    std::memset(result.bytes, 0, sizeof(result.bytes));
+    if (r.hi != 0 || r.lo != 0) {
+        int top = bit_length(r) - 1;
+        int biased = top + result_exponent + 16383;
+        Wide m = r;
+        if (biased >= 1) {
+            m = shift_left(m, 112 - top);
+            m.hi &= 0x0000ffffffffffffULL;
+        } else {
+            m = shift_left(m, result_exponent + 16494);
+            biased = 0;
+        }
+        for (int i = 0; i < 8; i++) {
+            result.bytes[i] = static_cast<uint8_t>(m.lo >> (8 * i));
+            result.bytes[8 + i] = static_cast<uint8_t>(m.hi >> (8 * i));
+        }
+        result.bytes[14] = static_cast<uint8_t>(biased & 0xff);
+        result.bytes[15] = static_cast<uint8_t>(biased >> 8);
+    }
+    if (lf_f128_signbit(a)) {
+        result = lf_f128_neg(result);
+    }
+    return result;
 }
 
 void set_kind_to_ttype_t(ASR::ttype_t* type, int kind);
