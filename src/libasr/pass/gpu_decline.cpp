@@ -90,6 +90,7 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // `float` array, and a block of 256 threads covers 8 of them.
             caps.tile_width = 32;
             caps.chunked_launches = true;
+            caps.reduction_slots_in_host_memory = true;
             break;
         case GpuDevice::None:
             break;

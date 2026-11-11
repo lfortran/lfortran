@@ -18,6 +18,28 @@ namespace LCompilers {
 
 namespace {
 
+// A call of the runtime subroutine `name`, which takes no arguments, declared
+// as an interface in the global scope of `tu` if it is not yet.
+ASR::stmt_t *gpu_runtime_call(Allocator &al, ASR::TranslationUnit_t &tu,
+        const Location &loc, const std::string &name) {
+    SymbolTable *global = tu.m_symtab;
+    ASR::symbol_t *sym = global->get_symbol(name);
+    if (sym == nullptr) {
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(global);
+        ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc, fn_symtab,
+            s2c(al, name), nullptr, 0, nullptr, 0, nullptr, 0, nullptr,
+            ASR::abiType::BindC, ASR::accessType::Public,
+            ASR::deftypeType::Interface, s2c(al, name), false, false, false,
+            false, false, nullptr, 0, false, false, false, nullptr);
+        sym = ASR::down_cast<ASR::symbol_t>(fn);
+        global->add_symbol(name, sym);
+    }
+    ASRUtils::ASRBuilder b(al, loc);
+    Vec<ASR::call_arg_t> args;
+    args.reserve(al, 1);
+    return b.SubroutineCall(sym, args);
+}
+
 // `stmt`, or `if (present(sym)) stmt` for an optional dummy argument `sym`.
 ASR::stmt_t *gpu_if_present(Allocator &al, const Location &loc,
         ASR::symbol_t *sym, ASR::stmt_t *stmt) {
@@ -609,8 +631,19 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             b.i_t(31, count_type)), b.i_t(32, count_type))));
         slots = warps;
     }
+    // The host reads every slot right after the launch, so they are memory
+    // of the host that the launch copies back, never managed memory, whose
+    // pages the host would fault over from the device one at a time, and the
+    // next launch fault back: a dot product of POT3D took 400 microseconds
+    // instead of 40.
+    bool host_allocations = false;
     for (auto &r : plan.reductions) {
         if (!r.host_buf_sym) continue;
+        if (device_caps.reduction_slots_in_host_memory && !host_allocations) {
+            launch_stmts.push_back(al, gpu_runtime_call(al, tu, loc,
+                "lfortran_gpu_begin_host_allocations"));
+            host_allocations = true;
+        }
         Vec<ASR::alloc_arg_t> alloc_args;
         alloc_args.reserve(al, 1);
         ASR::alloc_arg_t arg;
@@ -639,6 +672,10 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         overwritten.push_back(al,
             ASRUtils::EXPR(ASR::make_Var_t(al, loc, r.host_buf_sym)));
         overwritten_if.push_back(al, b.logical_true());
+    }
+    if (host_allocations) {
+        launch_stmts.push_back(al, gpu_runtime_call(al, tu, loc,
+            "lfortran_gpu_end_host_allocations"));
     }
 
     Vec<ASR::gpu_launch_dimension_t> chunk_dimensions;
