@@ -2215,6 +2215,61 @@ end module
         == "[L|]S");
 }
 
+TEST_CASE("GPU calls do not access the local targets nothing else names") {
+    // `a` is a target of a local pointer, which makes it aliasable, but the
+    // pointer is local: the call of the unrelated twin `bump` cannot reach
+    // `a`, so it does not wait for the launch that writes `a`. When the
+    // pointer is handed to a procedure that stores it (`publish`), a later
+    // call may access `a`, and the host waits.
+    const std::string source = R"(
+module sync_targets
+implicit none
+real, pointer :: shared(:) => null()
+contains
+subroutine bump(y)
+    real, intent(inout) :: y(:)
+    integer :: i
+    do concurrent (i = 1:size(y))
+        y(i) = y(i) + 1
+    end do
+end subroutine
+subroutine publish(x)
+    real, target, intent(in) :: x(:)
+    shared => x
+end subroutine
+subroutine local_only(b, r)
+    real, intent(inout) :: b(:)
+    real, intent(out) :: r
+    real, target :: a(64)
+    real, pointer :: p(:)
+    integer :: i
+    p => a(1:32)
+    do concurrent (i = 1:64)
+        a(i) = i
+    end do
+    call bump(b)
+    r = p(2)
+end subroutine
+subroutine published(b, r)
+    real, intent(inout) :: b(:)
+    real, intent(out) :: r
+    real, target :: a(64)
+    integer :: i
+    call publish(a)
+    do concurrent (i = 1:64)
+        a(i) = i
+    end do
+    call bump(b)
+    r = a(2)
+end subroutine
+end module
+)";
+    CHECK(gpu_sync_trace(source, "sync_targets", "local_only")
+        == "[L|]CS");
+    CHECK(gpu_sync_trace(source, "sync_targets", "published")
+        == "C[L|]SC");
+}
+
 TEST_CASE("GPU allocatable actuals of contiguous optional dummies are not synced") {
     // The allocatable actual reaches the CONTIGUOUS optional dummy through a
     // pointer to it or to an explicit-shape placeholder, which is contiguous:
