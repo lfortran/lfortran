@@ -11407,7 +11407,7 @@ public:
                     // void* itself, not as a pointer to it.
                     LCOMPILERS_ASSERT(!LLVM::is_struct_value_dummy_copied(*arg) ||
                         llvm_arg.getType()->isPointerTy());
-                    if (LLVM::is_value_dummy_passed_by_value(*arg)) {
+                    if (LLVM::is_scalar_value_dummy_held_in_local(*arg)) {
                         llvm::Value* local_copy = builder->CreateAlloca(
                             llvm_arg.getType(), nullptr,
                             std::string(arg->m_name) + "_value");
@@ -20208,7 +20208,8 @@ public:
         llvm::Value* x_v;
         LCOMPILERS_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());
         x_v = llvm_symtab[x_h];
-        if (x->m_abi == ASR::abiType::BindC && x->m_value_attr) {
+        if (x->m_abi == ASR::abiType::BindC && x->m_value_attr &&
+                !LLVM::is_scalar_value_dummy_held_in_local(*x)) {
             // Already a value, such as value argument to bind(c)
             tmp = x_v;
             return;
@@ -20338,7 +20339,8 @@ public:
                 } else {
                     throw CodeGenError("Function type not supported yet");
                 }
-                if (x->m_abi == ASR::abiType::BindC && x->m_value_attr) {
+                if (x->m_abi == ASR::abiType::BindC && x->m_value_attr &&
+                        !LLVM::is_scalar_value_dummy_held_in_local(*x)) {
                     // Already a value, such as value argument to bind(c)
                     break;
                 }
@@ -26864,7 +26866,9 @@ public:
                                             tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                         }
                                     } else {
-                                        if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)
+                                        if ((!arg->m_value_attr ||
+                                                LLVM::is_scalar_value_dummy_held_in_local(*arg))
+                                                && !ASR::is_a<ASR::String_t>(*arg_type)
                                                 && !ASR::is_a<ASR::StructType_t>(*arg_type)) {
                                             // Dereference the pointer argument (unless it is a CPtr)
                                             // to pass by value
@@ -26879,7 +26883,8 @@ public:
                                     }
                                 }
                                 if (!orig_arg->m_value_attr && arg->m_value_attr
-                                        && arg->m_abi == ASR::abiType::BindC) {
+                                        && arg->m_abi == ASR::abiType::BindC
+                                        && !LLVM::is_scalar_value_dummy_held_in_local(*arg)) {
                                     pass_bindc_value_arg(orig_arg, arg->m_type);
                                 }
                             } else {
@@ -26944,7 +26949,8 @@ public:
                                     tmp = convert_class_to_type(x.m_args[i].m_value, nullptr, orig_arg->m_type_declaration, orig_arg->m_type, tmp);
                                 }
                                 if (orig_arg && !orig_arg->m_value_attr && arg->m_value_attr
-                                        && arg->m_abi == ASR::abiType::BindC) {
+                                        && arg->m_abi == ASR::abiType::BindC
+                                        && !LLVM::is_scalar_value_dummy_held_in_local(*arg)) {
                                     pass_bindc_value_arg(orig_arg, arg->m_type);
                                 }
                             }
