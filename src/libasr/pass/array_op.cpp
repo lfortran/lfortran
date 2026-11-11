@@ -647,9 +647,13 @@ ASR::expr_t* at(Vec<ASR::expr_t*>& vec, int64_t index) {
 // Collect the array expressions which should be of the same size
 // The arrays passed to the optional dummies of an elemental function, each
 // with the expression that tells if it is present: an absent one has no shape
+// `unmatched` tells that no array of the same rank is passed to a nonoptional
+// dummy of the procedure, so the array must be present (F2018 15.5.2.12)
 struct MaybeAbsentComponent {
     ASR::expr_t* array;
     ASR::expr_t* is_present;
+    bool unmatched;
+    std::string proc_name;
 };
 
 // Whether `expr` is the presence flag that
@@ -668,6 +672,62 @@ static bool is_presence_flag_argument(ASR::expr_t* expr) {
     const std::string prefix = "__libasr_is_present_";
     std::string name = ASR::down_cast<ASR::Variable_t>(sym)->m_name;
     return name.compare(0, prefix.size(), prefix) == 0;
+}
+
+// The function that a call of an elemental procedure resolves to
+static ASR::Function_t* get_elemental_callee(ASR::symbol_t* name) {
+    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(name);
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+        sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
+    }
+    return ASR::is_a<ASR::Function_t>(*sym) ? ASR::down_cast<ASR::Function_t>(sym) : nullptr;
+}
+
+// Whether an array of the rank `rank` is passed to a nonoptional dummy of
+// `callee`. A dummy is optional if a presence flag follows it.
+static bool has_array_for_nonoptional_dummy(ASR::Function_t* callee,
+        ASR::call_arg_t* args, size_t n_args, size_t rank) {
+    for (size_t i = 0; i < n_args; i++) {
+        ASR::expr_t* arg = args[i].m_value;
+        if (arg == nullptr || is_presence_flag_argument(callee->m_args[i]) ||
+                (i + 1 < n_args && is_presence_flag_argument(callee->m_args[i + 1]))) {
+            continue;
+        }
+        ASR::ttype_t* type = ASRUtils::expr_type(arg);
+        if (ASRUtils::is_array(type) &&
+                static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(type)) == rank) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The name of the optional dummy of the caller that `array` is
+static std::string optional_argument_name(ASR::expr_t* array, ASR::expr_t* is_present) {
+    ASR::expr_t* past_cast = ASRUtils::get_past_array_physical_cast(array);
+    if (ASR::is_a<ASR::Var_t>(*past_cast)) {
+        return ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(past_cast)->m_v);
+    }
+    std::string flag = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(is_present)->m_v);
+    return flag.substr(std::string("__libasr_is_present_").size());
+}
+
+// if (.not. is_present) error stop: F2018 15.5.2.12 forbids an absent
+// optional array as an actual argument of an elemental procedure unless an
+// array of the same rank goes to a nonoptional dummy
+static ASR::stmt_t* make_absent_optional_array_error(Allocator& al, const Location& loc,
+        ASR::expr_t* is_present, const std::string& arg_name, const std::string& proc_name) {
+    std::string msg = "runtime error: optional argument '" + arg_name +
+        "' is absent but is passed to elemental procedure '" + proc_name +
+        "' without an array argument for a non-optional dummy argument";
+    ASRUtils::ASRBuilder b(al, loc);
+    ASR::stmt_t* error_stop = ASRUtils::STMT(ASR::make_ErrorStop_t(al, loc,
+        b.StringConstant(msg, b.String(b.i32(msg.size()), ASR::ExpressionLength))));
+    ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+    ASR::expr_t* is_absent = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc,
+        is_present, logical_type, nullptr));
+    return b.If(is_absent, {error_stop}, {});
 }
 
 class CollectComponentsFromElementalExpr: public ASR::BaseWalkVisitor<CollectComponentsFromElementalExpr> {
@@ -741,6 +801,10 @@ public:
             if (!ASRUtils::is_elemental(x.m_name)) {
                 return;
             }
+            ASR::Function_t* callee = get_elemental_callee(x.m_name);
+            if (callee != nullptr && callee->n_args != x.n_args) {
+                callee = nullptr;
+            }
             for (size_t i = 0; i < x.n_args; i++) {
                 ASR::expr_t* arg = x.m_args[i].m_value;
                 if (arg == nullptr) {
@@ -752,8 +816,13 @@ public:
                     CollectComponentsFromElementalExpr collector(al, optional_arrays);
                     collector.visit_expr(*arg);
                     for (size_t j = 0; j < optional_arrays.size() && maybe_absent; j++) {
+                        size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                            ASRUtils::expr_type(optional_arrays[j]));
                         maybe_absent->push_back({optional_arrays[j],
-                            x.m_args[i + 1].m_value});
+                            x.m_args[i + 1].m_value,
+                            callee != nullptr && !has_array_for_nonoptional_dummy(
+                                callee, x.m_args, x.n_args, rank),
+                            ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name))});
                     }
                 } else {
                     visit_expr(*arg);
@@ -3661,6 +3730,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 // An array passed to an optional dummy has a shape only if
                 // it is present, and then it must conform too
                 for (const MaybeAbsentComponent& optional: maybe_absent_components) {
+                    if (optional.unmatched) {
+                        pass_result.push_back(al, make_absent_optional_array_error(al,
+                            x.base.base.loc, expr_duplicator.duplicate_expr(optional.is_present),
+                            optional_argument_name(optional.array, optional.is_present),
+                            optional.proc_name));
+                    }
                     if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(optional.array)) !=
                             ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x.m_target))) {
                         continue;
@@ -3805,6 +3880,24 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
         if( vars.size() == 0 ) {
             return ;
+        }
+
+        ASR::Function_t* callee = get_elemental_callee(x.m_name);
+        if (bounds_checking && callee != nullptr && callee->n_args == x.n_args) {
+            for (size_t i = 0; i + 1 < x.n_args; i++) {
+                ASR::expr_t* arg = x.m_args[i].m_value;
+                if (arg == nullptr || !is_presence_flag_argument(x.m_args[i + 1].m_value) ||
+                        !ASRUtils::is_array(ASRUtils::expr_type(arg)) ||
+                        !is_presence_flag_argument(callee->m_args[i + 1])) {
+                    continue;
+                }
+                size_t rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(arg));
+                if (!has_array_for_nonoptional_dummy(callee, x.m_args, x.n_args, rank)) {
+                    pass_result.push_back(al, make_absent_optional_array_error(al, loc,
+                        x.m_args[i + 1].m_value, optional_argument_name(arg, x.m_args[i + 1].m_value),
+                        ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name))));
+                }
+            }
         }
 
         Vec<ASR::expr_t**> fix_type_args;
