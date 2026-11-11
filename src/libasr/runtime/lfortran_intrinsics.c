@@ -15059,7 +15059,7 @@ static bool parse_real_from_buffer(char* buffer, int field_len,
         lf_float128 v128 = lf_f128_from_double(0.0);
         if (!lf_strtof128(buffer, &v128, NULL)) {
             const char *digits = buffer + strspn(buffer, " \t");
-            if (strspn(digits, "+-.0123456789") > LF_F128_TOKEN_MAX) return false;
+            if (strspn(digits, "+-.0123456789EeQq") > LF_F128_TOKEN_MAX) return false;
         }
         if (total_scale != 0) {
             v128 = lf_f128_div(v128, lf_f128_pow(lf_f128_from_double(10.0),
