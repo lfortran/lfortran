@@ -30942,7 +30942,7 @@ public:
                     /* a_symtab */ current_scope,
                     /* a_name */ s2c(al, item.first),
                     es0->m_external,
-                    es0->m_module_name, nullptr, 0,
+                    es0->m_module_name, es0->m_scope_names, es0->n_scope_names,
                     es0->m_original_name,
                     dflt_access
                     );
@@ -31258,7 +31258,8 @@ public:
                 s2c(al, local_sym),
                 ext_sym->m_external,
                 ext_sym->m_module_name,
-                nullptr, 0, ext_sym->m_original_name,
+                ext_sym->m_scope_names, ext_sym->n_scope_names,
+                ext_sym->m_original_name,
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
             // If the symbol originates from a different module than the one
