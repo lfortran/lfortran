@@ -23,18 +23,18 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_20gpu_
     {
         long __gpu_frame;
         int __gpu_frame_i__dc;
-        if ((((long)i__dc) < (((long)1) + ((long)1)))) {
-            __gpu_frame = ((((long)i__dc) - ((((long)1) + ((long)1)) - ((((long)2) + (((long)1) - ((long)1))) / ((long)1)))) * ((long)1));
+        if ((((long)i__dc) < ((long)2))) {
+            __gpu_frame = ((((long)i__dc) - (((long)2) - (((long)2) / ((long)1)))) * ((long)1));
             if ((__gpu_frame < ((long)2))) {
                 if ((__gpu_frame < ((long)1))) {
                     __gpu_frame_i__dc = ((int)(((long)1) + __gpu_frame));
                 } else {
-                    __gpu_frame_i__dc = ((int)(((((long)n) + ((long)1)) - ((long)1)) + (__gpu_frame - ((long)1))));
+                    __gpu_frame_i__dc = ((int)(((long)10) + (__gpu_frame - ((long)1))));
                 }
                 if ((__gpu_frame_i__dc == 1)) {
                     d[((int)(__gpu_frame_i__dc) - (1))] = (a[((int)(2) - (1))] - a[((int)(1) - (1))]);
                 } else {
-                    if ((__gpu_frame_i__dc == n)) {
+                    if ((__gpu_frame_i__dc == 10)) {
                         d[((int)(__gpu_frame_i__dc) - (1))] = (a[((int)(n) - (1))] - a[((int)((n - 1)) - (1))]);
                     } else {
                         d[((int)(__gpu_frame_i__dc) - (1))] = (  5.00000000000000000e-01f * (a[((int)((__gpu_frame_i__dc + 1)) - (1))] - a[((int)((__gpu_frame_i__dc - 1)) - (1))]));
@@ -62,7 +62,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_20gpu_
     if ((i__dc == 1)) {
         d[((int)(i__dc) - (1))] = (a[((int)(2) - (1))] - a[((int)(1) - (1))]);
     } else {
-        if ((i__dc == n)) {
+        if ((i__dc == 10)) {
             d[((int)(i__dc) - (1))] = (a[((int)(n) - (1))] - a[((int)((n - 1)) - (1))]);
         } else {
             d[((int)(i__dc) - (1))] = (  5.00000000000000000e-01f * (a[((int)((i__dc + 1)) - (1))] - a[((int)((i__dc - 1)) - (1))]));

@@ -9,32 +9,13 @@ struct field_t {
 };
 
 struct __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_13 {
-    int __loop_end_0;
-};
-
-extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_24gpu_derived_component_13(
-    work_t& w,
-    __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_13 __scalar_args)
-{
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __flat_idx;
-    int __gpu_array_i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    __gpu_array_i = (__flat_idx + 1);
-    w.t[((int)(((1 + __gpu_array_i) - 1)) - (1))] = ((float)0);
-}
-
-struct __ScalarArgs___lfortran_gpu_kernel_1_24gpu_derived_component_13 {
     int step;
 };
 
-extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_24gpu_derived_component_13(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_24gpu_derived_component_13(
     float* __restrict__ c,
     work_t& w,
-    __ScalarArgs___lfortran_gpu_kernel_1_24gpu_derived_component_13 __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_0_24gpu_derived_component_13 __scalar_args)
 {
     int step = __scalar_args.step;
     int __flat_idx;
@@ -69,48 +50,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_24gpu_
     c[((int)(i__dc) - (1))] = (__gpu_private_w_t[((int)(1) - (1))] + ((float)step));
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_2_26gpu_derived_component_13_m8boundary {
-    int __loop_start_0;
-    int __loop_end_0;
-};
-
-extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_26gpu_derived_component_13_m8boundary(
-    field_t& f,
-    __ScalarArgs___lfortran_gpu_kernel_2_26gpu_derived_component_13_m8boundary __scalar_args)
-{
-    int __loop_start_0 = __scalar_args.__loop_start_0;
-    int __loop_end_0 = __scalar_args.__loop_end_0;
-    int __flat_idx;
-    int i__dc;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= __loop_start_0)) ? (((__loop_end_0 - __loop_start_0) + 1)) : (0)))) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    i__dc = (__flat_idx + __loop_start_0);
-    {
-        long __gpu_frame;
-        int __gpu_frame_i__dc;
-        if ((((long)i__dc) < (((long)1) + ((long)1)))) {
-            __gpu_frame = ((((long)i__dc) - ((((long)1) + ((long)1)) - ((((long)1) + (((long)1) - ((long)1))) / ((long)1)))) * ((long)1));
-            if ((__gpu_frame < ((long)1))) {
-                if ((__gpu_frame < ((long)1))) {
-                    __gpu_frame_i__dc = ((int)(((long)1) + __gpu_frame));
-                } else {
-                    __gpu_frame_i__dc = ((int)(((((long)100000) + ((long)1)) - ((long)0)) + (__gpu_frame - ((long)1))));
-                }
-                if ((__gpu_frame_i__dc == 1)) {
-                    f.u[((int)(1) - (1))] = ((float)(-(1)));
-                } else {
-                    f.u[((int)(__gpu_frame_i__dc) - (1))] = ((float)__gpu_frame_i__dc);
-                }
-            }
-        } else {
-            f.u[((int)(i__dc) - (1))] = ((float)i__dc);
-        }
-    }
-}
-
-extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_26gpu_derived_component_13_m8boundary(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_26gpu_derived_component_13_m8boundary(
     field_t& f)
 {
     int __flat_idx;
@@ -127,7 +67,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_26gpu_
     }
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_4_26gpu_derived_component_13_m8elements {
+struct __ScalarArgs___lfortran_gpu_kernel_2_26gpu_derived_component_13_m8elements {
     int __dim_b_0;
     int __lb_b_0;
     int __dim_x_0;
@@ -135,11 +75,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_4_26gpu_derived_component_13_m8element
     int __loop_end_0;
 };
 
-extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_26gpu_derived_component_13_m8elements(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_26gpu_derived_component_13_m8elements(
     float* __restrict__ b,
     work_t& w,
     float* __restrict__ x,
-    __ScalarArgs___lfortran_gpu_kernel_4_26gpu_derived_component_13_m8elements __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_2_26gpu_derived_component_13_m8elements __scalar_args)
 {
     int __lb_b_0 = __scalar_args.__lb_b_0;
     int __lb_x_0 = __scalar_args.__lb_x_0;
@@ -167,7 +107,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_4_26gpu_
     b[((int)(i__dc) - (__lb_b_0))] = (__gpu_private_w_t[((int)(1) - (1))] + __gpu_private_w_t[((int)(2) - (1))]);
 }
 
-struct __ScalarArgs___lfortran_gpu_kernel_5_26gpu_derived_component_13_m5whole {
+struct __ScalarArgs___lfortran_gpu_kernel_3_26gpu_derived_component_13_m5whole {
     int __dim_b_0;
     int __lb_b_0;
     int __dim_x_0;
@@ -175,11 +115,11 @@ struct __ScalarArgs___lfortran_gpu_kernel_5_26gpu_derived_component_13_m5whole {
     int __loop_end_0;
 };
 
-extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_5_26gpu_derived_component_13_m5whole(
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_26gpu_derived_component_13_m5whole(
     float* __restrict__ b,
     work_t& w,
     float* __restrict__ x,
-    __ScalarArgs___lfortran_gpu_kernel_5_26gpu_derived_component_13_m5whole __scalar_args)
+    __ScalarArgs___lfortran_gpu_kernel_3_26gpu_derived_component_13_m5whole __scalar_args)
 {
     int __lb_b_0 = __scalar_args.__lb_b_0;
     int __lb_x_0 = __scalar_args.__lb_x_0;

@@ -80,9 +80,18 @@ set(LFORTRAN_SMOKE_TESTS
     # Small option-specific backends, legacy interfaces and runtime library.
     # GPU capability check for the Metal and CUDA-on-CPU smoke jobs. The full
     # suites stay on Linux LLVM 21 (CUDA-on-CPU) and Exhaustive's macOS job.
+    # The smoke jobs also run without --fast, so the selection includes a
+    # program for each GPU optimization: without --fast, the passes the
+    # offload needs get the code the optimization would have rewritten.
     minpack_01 simd_01 simd_02 do_concurrent_01
     gpu_metal_01 gpu_metal_02 gpu_metal_03
-    gpu_scalar_reduction_actual_01
+    gpu_scalar_reduction_actual_01 gpu_integer_powers_01
+    gpu_metal_523 gpu_metal_530                     # loop transformations
+    gpu_metal_692                                   # array statements
+    gpu_private_map_forwarding_01 gpu_private_reduction_01
+    gpu_residue_unroll_01 gpu_guard_fold_01 gpu_inline_loop_calls_01
+    gpu_lanes_reduce_02 gpu_lanes_nested_01 gpu_lanes_unroll_01
+    gpu_deferred_sync_02                            # call guards
     implicit_interface_01 implicit_interface_02 implicit_interface_03
     implicit_interface_04 implicit_interface_05 implicit_interface_06
     implicit_interface_07 implicit_interface_08 implicit_interface_09

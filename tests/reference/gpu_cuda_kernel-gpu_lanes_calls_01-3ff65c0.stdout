@@ -128,20 +128,66 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_18gpu_
     int __flat_idx;
     int __gpu_residue_element;
     int __gpu_residue_group;
-    const int k = 512;
+    int _lcompilers_ibits_i321_result;
+    int _lcompilers_ibits_i322_result;
+    int _lcompilers_ibits_i323_result;
+    int _lcompilers_ibits_i32_result;
     int r__dc;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 40)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     r__dc = (__flat_idx + 1);
-    #pragma unroll 16
-    for (__gpu_residue_group = 1; __gpu_residue_group <= (k - 3); __gpu_residue_group += 4) {
+    for (__gpu_residue_group = 1; __gpu_residue_group <= (512 - 3); __gpu_residue_group += 4) {
         __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc) - (1)))];
-        codes[((int)(__gpu_residue_group) - (1)) + (512 * ((int)(r__dc) - (1)))] = _lcompilers_ibits_i32_gpu_29(__gpu_residue_element, (8 * 0), 8);
-        codes[((int)((__gpu_residue_group + 1)) - (1)) + (512 * ((int)(r__dc) - (1)))] = _lcompilers_ibits_i321_gpu_30(__gpu_residue_element, (8 * 1), 8);
-        codes[((int)((__gpu_residue_group + 2)) - (1)) + (512 * ((int)(r__dc) - (1)))] = _lcompilers_ibits_i322_gpu_31(__gpu_residue_element, (8 * 2), 8);
-        codes[((int)((__gpu_residue_group + 3)) - (1)) + (512 * ((int)(r__dc) - (1)))] = _lcompilers_ibits_i323_gpu_32(__gpu_residue_element, (8 * 3), 8);
+        {
+            int _lcompilers_ibits_i32_1;
+            int x;
+            int y;
+            int z;
+            x = __gpu_residue_element;
+            y = (8 * 0);
+            z = 8;
+            _lcompilers_ibits_i32_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+            _lcompilers_ibits_i32_result = _lcompilers_ibits_i32_1;
+        }
+        codes[((int)(__gpu_residue_group) - (1)) + (512 * ((int)(r__dc) - (1)))] = _lcompilers_ibits_i32_result;
+        {
+            int _lcompilers_ibits_i321_1;
+            int x;
+            int y;
+            int z;
+            x = __gpu_residue_element;
+            y = (8 * 1);
+            z = 8;
+            _lcompilers_ibits_i321_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+            _lcompilers_ibits_i321_result = _lcompilers_ibits_i321_1;
+        }
+        codes[((int)((__gpu_residue_group + 1)) - (1)) + (512 * ((int)(r__dc) - (1)))] = _lcompilers_ibits_i321_result;
+        {
+            int _lcompilers_ibits_i322_1;
+            int x;
+            int y;
+            int z;
+            x = __gpu_residue_element;
+            y = (8 * 2);
+            z = 8;
+            _lcompilers_ibits_i322_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+            _lcompilers_ibits_i322_result = _lcompilers_ibits_i322_1;
+        }
+        codes[((int)((__gpu_residue_group + 2)) - (1)) + (512 * ((int)(r__dc) - (1)))] = _lcompilers_ibits_i322_result;
+        {
+            int _lcompilers_ibits_i323_1;
+            int x;
+            int y;
+            int z;
+            x = __gpu_residue_element;
+            y = (8 * 3);
+            z = 8;
+            _lcompilers_ibits_i323_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+            _lcompilers_ibits_i323_result = _lcompilers_ibits_i323_1;
+        }
+        codes[((int)((__gpu_residue_group + 3)) - (1)) + (512 * ((int)(r__dc) - (1)))] = _lcompilers_ibits_i323_result;
     }
 }
 
@@ -185,7 +231,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_18gpu_
     unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
     unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
-    const int k = 512;
     int r__dc1;
     if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 40)) {
         return;
@@ -196,31 +241,123 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_18gpu_
         int __gpu_residue_element;
         int __gpu_residue_group;
         {
+            int _lcompilers_ibits_i324_result;
+            int _lcompilers_ibits_i324_result1;
+            int _lcompilers_ibits_i325_result;
+            int _lcompilers_ibits_i325_result1;
+            int _lcompilers_ibits_i326_result;
+            int _lcompilers_ibits_i326_result1;
+            int _lcompilers_ibits_i327_result;
+            int _lcompilers_ibits_i327_result1;
             int s;
             s = 0;
             if ((__gpu_lanes > 1)) {
                 if ((__gpu_lane != 0)) {
                     s = 0;
                 }
-                __gpu_residue_group = (1 + (((int)__gpu_lane) * 4));
-                const int __lfortran_trips_0 = (k - 3) >= __gpu_residue_group ? ((k - 3) - __gpu_residue_group) / (4 * ((int)__gpu_lanes)) + 1 : 0;
-                #pragma unroll 16
-                for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
+                for (__gpu_residue_group = (1 + (((int)__gpu_lane) * 4)); __gpu_residue_group <= (512 - 3); __gpu_residue_group += (4 * ((int)__gpu_lanes))) {
                     __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1) - (1)))];
-                    s = (s + _lcompilers_ibits_i324_gpu_33(__gpu_residue_element, (8 * 0), 8));
-                    s = (s + _lcompilers_ibits_i325_gpu_34(__gpu_residue_element, (8 * 1), 8));
-                    s = (s + _lcompilers_ibits_i326_gpu_35(__gpu_residue_element, (8 * 2), 8));
-                    s = (s + _lcompilers_ibits_i327_gpu_36(__gpu_residue_element, (8 * 3), 8));
+                    {
+                        int _lcompilers_ibits_i324_1;
+                        int x;
+                        int y;
+                        int z;
+                        x = __gpu_residue_element;
+                        y = (8 * 0);
+                        z = 8;
+                        _lcompilers_ibits_i324_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+                        _lcompilers_ibits_i324_result = _lcompilers_ibits_i324_1;
+                    }
+                    s = (s + _lcompilers_ibits_i324_result);
+                    {
+                        int _lcompilers_ibits_i325_1;
+                        int x;
+                        int y;
+                        int z;
+                        x = __gpu_residue_element;
+                        y = (8 * 1);
+                        z = 8;
+                        _lcompilers_ibits_i325_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+                        _lcompilers_ibits_i325_result = _lcompilers_ibits_i325_1;
+                    }
+                    s = (s + _lcompilers_ibits_i325_result);
+                    {
+                        int _lcompilers_ibits_i326_1;
+                        int x;
+                        int y;
+                        int z;
+                        x = __gpu_residue_element;
+                        y = (8 * 2);
+                        z = 8;
+                        _lcompilers_ibits_i326_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+                        _lcompilers_ibits_i326_result = _lcompilers_ibits_i326_1;
+                    }
+                    s = (s + _lcompilers_ibits_i326_result);
+                    {
+                        int _lcompilers_ibits_i327_1;
+                        int x;
+                        int y;
+                        int z;
+                        x = __gpu_residue_element;
+                        y = (8 * 3);
+                        z = 8;
+                        _lcompilers_ibits_i327_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+                        _lcompilers_ibits_i327_result = _lcompilers_ibits_i327_1;
+                    }
+                    s = (s + _lcompilers_ibits_i327_result);
                 }
                 s = __lfortran_lane_reduce_block<0>(s, __gpu_lanes_n, __gpu_lane_mask);
             } else {
-                #pragma unroll 16
-                for (__gpu_residue_group = 1; __gpu_residue_group <= (k - 3); __gpu_residue_group += 4) {
+                for (__gpu_residue_group = 1; __gpu_residue_group <= (512 - 3); __gpu_residue_group += 4) {
                     __gpu_residue_element = w[((int)((((__gpu_residue_group - 1) / 4) + 1)) - (1)) + (128 * ((int)(r__dc1) - (1)))];
-                    s = (s + _lcompilers_ibits_i324_gpu_33(__gpu_residue_element, (8 * 0), 8));
-                    s = (s + _lcompilers_ibits_i325_gpu_34(__gpu_residue_element, (8 * 1), 8));
-                    s = (s + _lcompilers_ibits_i326_gpu_35(__gpu_residue_element, (8 * 2), 8));
-                    s = (s + _lcompilers_ibits_i327_gpu_36(__gpu_residue_element, (8 * 3), 8));
+                    {
+                        int _lcompilers_ibits_i324_1;
+                        int x;
+                        int y;
+                        int z;
+                        x = __gpu_residue_element;
+                        y = (8 * 0);
+                        z = 8;
+                        _lcompilers_ibits_i324_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+                        _lcompilers_ibits_i324_result1 = _lcompilers_ibits_i324_1;
+                    }
+                    s = (s + _lcompilers_ibits_i324_result1);
+                    {
+                        int _lcompilers_ibits_i325_1;
+                        int x;
+                        int y;
+                        int z;
+                        x = __gpu_residue_element;
+                        y = (8 * 1);
+                        z = 8;
+                        _lcompilers_ibits_i325_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+                        _lcompilers_ibits_i325_result1 = _lcompilers_ibits_i325_1;
+                    }
+                    s = (s + _lcompilers_ibits_i325_result1);
+                    {
+                        int _lcompilers_ibits_i326_1;
+                        int x;
+                        int y;
+                        int z;
+                        x = __gpu_residue_element;
+                        y = (8 * 2);
+                        z = 8;
+                        _lcompilers_ibits_i326_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+                        _lcompilers_ibits_i326_result1 = _lcompilers_ibits_i326_1;
+                    }
+                    s = (s + _lcompilers_ibits_i326_result1);
+                    {
+                        int _lcompilers_ibits_i327_1;
+                        int x;
+                        int y;
+                        int z;
+                        x = __gpu_residue_element;
+                        y = (8 * 3);
+                        z = 8;
+                        _lcompilers_ibits_i327_1 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+                        _lcompilers_ibits_i327_result1 = _lcompilers_ibits_i327_1;
+                    }
+                    s = (s + _lcompilers_ibits_i327_result1);
                 }
             }
             if ((__gpu_lane == 0)) {
@@ -250,7 +387,6 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_18gpu_
     unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
     int __flat_idx;
     int d;
-    const int k = 512;
     int r__dc2;
     if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= 40)) {
         return;
@@ -258,13 +394,21 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_18gpu_
     __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
     r__dc2 = (__flat_idx + 1);
     {
+        long _lcompilers_int_i32_result;
         long position;
-        position = (offset + ((long)(r__dc2 - 1)));
+        {
+            long _lcompilers_int_i32_1;
+            int a;
+            a = (r__dc2 - 1);
+            _lcompilers_int_i32_1 = ((long)a);
+            _lcompilers_int_i32_result = _lcompilers_int_i32_1;
+        }
+        position = (offset + _lcompilers_int_i32_result);
         d = (1 + (((int)__gpu_lane) * 1));
-        const int __lfortran_trips_1 = k >= d ? (k - d) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+        const int __lfortran_trips_0 = 512 >= d ? (512 - d) / (1 * ((int)__gpu_lanes)) + 1 : 0;
         #pragma unroll 16
-        for (int __lfortran_count_1 = 0; __lfortran_count_1 < __lfortran_trips_1; __lfortran_count_1++, d += (1 * ((int)__gpu_lanes))) {
-            o[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))] = ((((float)2) * q[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))]) + ((float)position));
+        for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, d += (1 * ((int)__gpu_lanes))) {
+            o[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))] = ((  2.00000000000000000e+00f * q[((int)(d) - (1)) + (512 * ((int)(r__dc2) - (1)))]) + ((float)position));
         }
         __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }

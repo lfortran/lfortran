@@ -4680,6 +4680,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_08.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_metal_213.f90"
@@ -5242,14 +5243,17 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_480.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_residue_unroll_01.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_residue_unroll_03.f90"
 gpu_metal_kernel = true
+options = "--fast"
 # Real powers with small constant integer exponents in device code are the
 # products the host computes them with, not calls of `pow`.
 [[test]]
@@ -5365,14 +5369,17 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_17.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_18.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_23.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 # With --descriptor-index-64 element offsets, extents and lower bounds are
 # 64-bit, so arrays of more than huge(0) elements are addressed unwrapped.
@@ -5432,7 +5439,7 @@ gpu_cuda_kernel = true
 # same flag: the loop indices and the subscripts are `long`.
 [[test]]
 filename = "../integration_tests/gpu_metal_692.f90"
-options = "--descriptor-index-64"
+options = "--descriptor-index-64 --fast"
 gpu_cuda_kernel = true
 
 # matmul lowered inside the kernel, of operands with lower bounds that do
@@ -5461,14 +5468,17 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_24.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_25.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_metal_526.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 # The kernel numbers the 2**31 + 1 iterations in integer(8).
 [[test]]
@@ -5497,7 +5507,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_19.f90"
 gpu_cuda_kernel = true
-options = "--gpu-cache-bytes=32768"
+options = "--gpu-cache-bytes=32768 --fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_16.f90"
@@ -5514,15 +5524,17 @@ gpu_metal_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_20.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_21.f90"
 gpu_cuda_kernel = true
-options = "--gpu-loop-transforms=fuse"
+options = "--gpu-loop-transforms=fuse --fast"
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_22.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "../integration_tests/gpu_metal_522.f90"
@@ -5687,6 +5699,7 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_lanes_blocks_01.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 # The lanes share loops out that call functions the compiler implements
 # intrinsics with (`modulo`, `ibits`, `int`), which are not declared pure
@@ -5695,29 +5708,34 @@ gpu_metal_kernel = true
 filename = "../integration_tests/gpu_lanes_calls_01.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
+options = "--fast"
 
 # Reductions shared out between the lanes of a SIMD-group on Metal and
 # combined with simd_sum, simd_product, simd_min and simd_max.
 [[test]]
 filename = "../integration_tests/gpu_lanes_reduce_02.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 # A loop whose body is a block with locals, shared out between the lanes.
 [[test]]
 filename = "../integration_tests/gpu_lanes_blocks_02.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 # A loop whose variable a later loop reuses inside a loop of its own,
 # shared out between the lanes.
 [[test]]
 filename = "../integration_tests/gpu_lanes_reuse_01.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 # The loops shared out between the lanes, which step by the lanes, are
 # unrolled on Metal like the sequential loops of device code.
 [[test]]
 filename = "../integration_tests/gpu_lanes_unroll_01.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 # A kernel's calls of small pure functions that run a loop are inlined, so
 # that the lanes of an iteration share the loop and combine its sum.
@@ -5725,11 +5743,13 @@ gpu_metal_kernel = true
 filename = "../integration_tests/gpu_inline_loop_calls_01.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
+options = "--fast"
 
 # Nested `do concurrent` loops shared out between the lanes.
 [[test]]
 filename = "../integration_tests/gpu_lanes_nested_01.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 # On an NVIDIA GPU, the loops of an iteration whose iterations are
 # independent are shared out between the lanes too, after a reduction
@@ -5737,6 +5757,7 @@ gpu_metal_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_lanes_independent_01.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 # On an NVIDIA GPU, the sum over the codes of a group of a quantized
 # matrix-vector product is shared out between 16 lanes, and a warp runs two
@@ -5744,18 +5765,21 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_lanes_groups_01.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 # On an NVIDIA GPU, a launch of a few iterations gives each the lanes of a
 # whole block, which combine their values across warps in shared memory.
 [[test]]
 filename = "../integration_tests/gpu_lanes_block_02.f90"
 gpu_cuda_kernel = true
+options = "--fast"
 
 # A loop in one branch of an `if` inside a loop, shared out between the
 # lanes.
 [[test]]
 filename = "../integration_tests/gpu_lanes_branches_01.f90"
 gpu_metal_kernel = true
+options = "--fast"
 
 [[test]]
 filename = "errors/array_bounds_check_01.f90"

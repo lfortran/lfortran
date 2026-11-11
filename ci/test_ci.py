@@ -554,18 +554,34 @@ class WorkflowPolicyTests(unittest.TestCase):
         metal = quick.split("      - name: Test Metal GPU backend (macOS)\n", 1)[1]
         metal = metal.split("\n      - ", 1)[0]
         self.assertIn("if: contains(matrix.os, 'macos')", metal)
+        # Quick runs the GPU suites with --fast, and the smoke selection
+        # once without it on each device.
+        self.assertIn("integration_tests -b metal --smoke -f -j3", metal)
         self.assertIn("integration_tests -b metal --smoke -j3", metal)
         self.assertNotIn("integration_tests -b metal -j3\n", metal)
+        self.assertNotIn("integration_tests -b metal -f -j3\n", metal)
         cuda = quick.split("      - name: Test CUDA GPU backend on the CPU (Linux / macOS)\n", 1)[1]
         cuda = cuda.split("\n      - ", 1)[0]
-        self.assertIn("integration_tests -b cuda_cpu -j3", cuda)
+        self.assertIn("integration_tests -b cuda_cpu -f -j3", cuda)
         self.assertIn("integration_tests -b cuda_cpu --smoke -j3", cuda)
+        self.assertIn("integration_tests -b cuda_cpu --smoke -f -j3", cuda)
+        self.assertNotIn("integration_tests -b cuda_cpu -j3", cuda)
         exhaustive = (workflows / "Exhaustive-Checks-CI.yml").read_text()
         full_metal = exhaustive.split("      - name: Test full Metal GPU backend (macOS)\n", 1)[1]
-        full_metal = re.split(r"\n  [A-Za-z0-9_-]+:\n", full_metal, maxsplit=1)[0]
+        full_metal = full_metal.split("\n      - ", 1)[0]
         self.assertIn("if: contains(matrix.os, 'macos')", full_metal)
         self.assertIn("integration_tests -b metal -j3", full_metal)
+        self.assertIn("integration_tests -b metal -f -j3", full_metal)
         self.assertNotIn("--smoke", full_metal)
+        # Exhaustive runs the full CUDA-on-CPU suite without --fast, which
+        # Quick runs only with it.
+        full_cuda = exhaustive.split(
+            "      - name: Test full CUDA GPU backend on the CPU without --fast (Linux LLVM 21)\n", 1)[1]
+        full_cuda = full_cuda.split("\n\n", 1)[0]
+        self.assertIn("if: matrix.os == 'ubuntu-latest' && matrix.llvm-version == '21'", full_cuda)
+        self.assertIn("integration_tests -b cuda_cpu -j3", full_cuda)
+        self.assertNotIn("-f", full_cuda.split("run: |", 1)[1])
+        self.assertNotIn("--smoke", full_cuda)
         self.assertIn("scope: quick", quick)
         caffeine = shared.split("      - name: Test coarray runtime with Caffeine\n", 1)[1]
         caffeine = caffeine.split("\n  test_llvm_wasm:", 1)[0]
@@ -1495,12 +1511,16 @@ class QuickScriptTests(unittest.TestCase):
                     env=self.env, capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 calls = [json.loads(line)[1] for line in self.calls.read_text().splitlines()]
-                expected = ["run", "-e", f"llvm{llvm}", "integration_tests",
-                            "-b", "cuda_cpu", "-j3"]
-                if not full:
-                    expected = ["run", "-e", f"llvm{llvm}", "integration_tests",
-                                "-b", "cuda_cpu", "--smoke", "-j3"]
-                self.assertEqual(calls, [expected])
+                # The suite runs with --fast; the smoke selection runs once
+                # without it, on the job that runs the full suite.
+                prefix = ["run", "-e", f"llvm{llvm}", "integration_tests",
+                          "-b", "cuda_cpu"]
+                if full:
+                    expected = [prefix + ["-f", "-j3"],
+                                prefix + ["--smoke", "-j3"]]
+                else:
+                    expected = [prefix + ["--smoke", "-f", "-j3"]]
+                self.assertEqual(calls, expected)
 
     def test_build_types_preserve_existing_platform_configuration(self):
         # LLVM is a Release build on Windows: mixing build modes fails to link.

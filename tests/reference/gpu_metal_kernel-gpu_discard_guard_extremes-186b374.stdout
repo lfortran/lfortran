@@ -94,14 +94,19 @@ kernel void __lfortran_gpu_kernel_2_28gpu_discard_guard_extremes_m14constant_emp
     constant __ScalarArgs___lfortran_gpu_kernel_2_28gpu_discard_guard_extremes_m14constant_empty& __scalar_args [[buffer(1)]],
     uint __thread_id [[thread_position_in_grid]])
 {
+    int __lb_a_0_gpu = __scalar_args.__lb_a_0_gpu;
     int __loop_end_0_gpu = __scalar_args.__loop_end_0_gpu;
     int __flat_idx_gpu;
+    const long high_gpu = ((long)9223372036854775807);
     int i__dc_gpu;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0_gpu >= 1)) ? (((__loop_end_0_gpu - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx_gpu = ((0 * 0) + __thread_id);
     i__dc_gpu = (__flat_idx_gpu + 1);
+    if ((((long)i__dc_gpu) > high_gpu)) {
+        a_gpu[((int)(i__dc_gpu) - (__lb_a_0_gpu))] = ((float)1);
+    }
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_3_28gpu_discard_guard_extremes_m11interval_i8 {

@@ -714,16 +714,19 @@ end program
 namespace {
 
 // Runs the CUDA pipeline on the program `name` in `source`, with launches
-// of more than `chunk_limit` iterations run in chunks, and hands `visit`
-// each statement of its body.
+// of more than `chunk_limit` iterations run in chunks, and with the
+// optimizations of --fast if `fast`, and hands `visit` each statement of
+// its body.
 template <class Visit>
 void visit_cuda_program(const std::string &source,
         const std::string &filename, const std::string &name, Visit visit,
-        int64_t chunk_limit = 2147483647, bool warps = false) {
+        int64_t chunk_limit = 2147483647, bool warps = false,
+        bool fast = false) {
     CompilerOptions options;
     options.gpu_backend = "cuda";
     options.po.gpu_offload_cuda = true;
     options.po.gpu_cuda_warps = warps;
+    options.po.fast = fast;
     options.po.gpu_chunk_limit = chunk_limit;
     options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     FortranEvaluator evaluator(options);
@@ -753,20 +756,24 @@ void visit_cuda_program(const std::string &source,
 }
 
 // The (tiled, thread count) pair of every CUDA launch of the program
-// `name` in `source`, from the host's launch prelude.
+// `name` in `source`, from the host's launch prelude, compiled with the
+// optimizations of --fast if `fast`.
 std::vector<std::pair<int64_t, int64_t>> cuda_launch_geometry(
         const std::string &source, const std::string &filename,
-        const std::string &name) {
+        const std::string &name, bool fast = false) {
     GpuLaunchGeometry geometry;
     visit_cuda_program(source, filename, name,
-        [&](ASR::stmt_t &s) { geometry.visit_stmt(s); });
+        [&](ASR::stmt_t &s) { geometry.visit_stmt(s); }, 2147483647, false,
+        fast);
     return geometry.launches;
 }
 
 // How many arrays every CUDA launch of the program `name` in `source` says
-// the kernel overwrites (write-discard).
+// the kernel overwrites (write-discard), compiled with the optimizations of
+// --fast if `fast`.
 std::vector<size_t> cuda_launch_overwrites(const std::string &source,
-        const std::string &filename, const std::string &name) {
+        const std::string &filename, const std::string &name,
+        bool fast = false) {
     struct Overwrites : public ASR::BaseWalkVisitor<Overwrites> {
         std::vector<size_t> launches;
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
@@ -774,7 +781,8 @@ std::vector<size_t> cuda_launch_overwrites(const std::string &source,
         }
     } overwrites;
     visit_cuda_program(source, filename, name,
-        [&](ASR::stmt_t &s) { overwrites.visit_stmt(s); });
+        [&](ASR::stmt_t &s) { overwrites.visit_stmt(s); }, 2147483647, false,
+        fast);
     return overwrites.launches;
 }
 
@@ -1211,6 +1219,8 @@ TEST_CASE("A private map feeds an ordered reduction without a workspace") {
         CompilerOptions options;
         options.gpu_backend = "metal";
         options.po.gpu_offload_metal = true;
+        // The fusion is an optimization, which runs with --fast.
+        options.po.fast = true;
         options.po.gpu_loop_transforms = transforms;
         options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
         FortranEvaluator evaluator(options);
@@ -1266,6 +1276,7 @@ end subroutine
         CompilerOptions options;
         options.gpu_backend = "metal";
         options.po.gpu_offload_metal = true;
+        options.po.fast = true;
         options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
         FortranEvaluator evaluator(options);
         LocationManager lm;
@@ -1311,6 +1322,7 @@ TEST_CASE("Scalar call actual reductions do not reserve a product heap") {
     CompilerOptions options;
     options.gpu_backend = "metal";
     options.po.gpu_offload_metal = true;
+    options.po.fast = true;
     options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     FortranEvaluator evaluator(options);
     LocationManager lm;
@@ -1340,8 +1352,8 @@ TEST_CASE("Scalar call actual reductions do not reserve a product heap") {
         if (!ASRUtils::is_device_kernel(entry.second)) continue;
         auto* kernel = ASR::down_cast<ASR::Function_t>(entry.second);
         REQUIRE(kernel->m_gpu != nullptr);
-        // Codes and weights remain distinct workspaces; terms and
-        // partial_values, which only a sum reads, need none.
+        // Codes and weights remain distinct workspaces; with --fast,
+        // terms and partial_values, which only a sum reads, need none.
         CHECK(kernel->m_gpu->n_workspaces == 2);
         kernels++;
     }
@@ -1532,10 +1544,10 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
     check_launch_geometry(cuda_launch_geometry(
         read_project_file("integration_tests/gpu_metal_490.f90"),
         "gpu_metal_490.f90", "gpu_metal_490"), expected);
-    // Index-set splitting splits the first two nests, whose bodies test
-    // a loop index against its lower bound: each becomes the split nest
-    // and the original nest, which runs when the domain has no interior.
-    // Both must tile.
+    // With --fast, index-set splitting splits the first two nests, whose
+    // bodies test a loop index against its lower bound: each becomes the
+    // split nest and the original nest, which runs when the domain has no
+    // interior. Both must tile.
     expected = {
         {1, 64 * 64},           // high lower bound along the tile width
         {1, 64 * 64},           // the same nest, unsplit
@@ -1548,7 +1560,7 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
         std::string name = "gpu_tile_high_bounds_" + kind;
         check_launch_geometry(cuda_launch_geometry(
             read_project_file("integration_tests/" + name + ".f90"),
-            name + ".f90", name), expected);
+            name + ".f90", name, true), expected);
     }
 }
 
@@ -1659,14 +1671,14 @@ TEST_CASE("GPU reduction accumulators are overwritten, not copied in") {
 }
 
 TEST_CASE("GPU split nests keep the write-discard of the loops they split") {
-    // gpu_metal_527 splits a 1-D stencil (the split nest, then the original
+    // With --fast, gpu_metal_527 splits a 1-D stencil (the split nest, then the original
     // nest for a domain without an interior) and a 2-D one (the jammed
     // nest, the plain split nest, the original nest). Each overwrites one
     // array, which every launch must say.
     std::vector<size_t> expected = {1, 1, 1, 1, 1};
     std::vector<size_t> launches = cuda_launch_overwrites(
         read_project_file("integration_tests/gpu_metal_527.f90"),
-        "gpu_metal_527.f90", "gpu_metal_527");
+        "gpu_metal_527.f90", "gpu_metal_527", true);
     REQUIRE(launches.size() == expected.size());
     for (size_t i = 0; i < launches.size(); i++) {
         INFO("launch " << i);
@@ -2042,12 +2054,14 @@ public:
 
 // The SyncTrace of procedure `name` of module `module` (or of the program
 // `name` when `module` is empty), or of its deferring twin, after the Metal
-// pipeline up to gpu_launch_sync.
+// pipeline up to gpu_launch_sync, with the optimizations of --fast if `fast`.
 std::string gpu_sync_trace(const std::string &source,
-        const std::string &module, const std::string &name) {
+        const std::string &module, const std::string &name,
+        bool fast = false) {
     CompilerOptions options;
     options.gpu_backend = "metal";
     options.po.gpu_offload_metal = true;
+    options.po.fast = fast;
     options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     FortranEvaluator evaluator(options);
     LocationManager lm;
@@ -2170,9 +2184,10 @@ end module
 }
 
 TEST_CASE("GPU calls test the early return of their subroutine") {
-    // `dm` returns at once unless a directory is given: its call tests
-    // that first, so the wait for the launch before the call, which hands
-    // `dm` the array the launch writes, is in the branch that dumps.
+    // `dm` returns at once unless a directory is given: with --fast, its
+    // call tests that first, so the wait for the launch before the call,
+    // which hands `dm` the array the launch writes, is in the branch that
+    // dumps.
     // `keep` defines its intent(out) dummy even when it returns at once,
     // and `count` evaluates an impure function: neither call is skipped.
     const std::string source = R"(
@@ -2218,7 +2233,7 @@ contains
 end subroutine
 end module
 )";
-    CHECK(gpu_sync_trace(source, "sync_hooks", "two_steps")
+    CHECK(gpu_sync_trace(source, "sync_hooks", "two_steps", true)
         == "[L|][SC|][L|]SCC");
 }
 
@@ -2706,7 +2721,9 @@ TEST_CASE("Device powers with small integer exponents are products") {
 }
 
 TEST_CASE("A device check every call satisfies does not make a kernel stop") {
-    // gpu_guard_fold_01 checks arguments that every call passes in range,
+    // With --fast, gpu_device_guard_fold removes the checks the ranges of
+    // their integers decide. gpu_guard_fold_01 checks arguments that every
+    // call passes in range,
     // gpu_guard_fold_02 one that a call passes out of range: only its
     // launch keeps a status buffer, and only its copy of the checking
     // function the hidden stop arguments.
@@ -2719,6 +2736,7 @@ TEST_CASE("A device check every call satisfies does not make a kernel stop") {
         CompilerOptions options;
         options.gpu_backend = "metal";
         options.po.gpu_offload_metal = true;
+        options.po.fast = true;
         options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
         FortranEvaluator evaluator(options);
         LocationManager lm;
@@ -2772,14 +2790,15 @@ TEST_CASE("A device check every call satisfies does not make a kernel stop") {
 #ifndef HAVE_BUILD_TO_WASM
 TEST_CASE("A kernel's call of a small function that runs a loop is inlined") {
     // gpu_inline_loop_calls_01 sums the squares of a column through
-    // sum_squares and a weighted column through weighted: both calls are
-    // inlined, so the lanes of an iteration share their loops and combine
-    // the sums, and no kernel calls either function.
+    // sum_squares and a weighted column through weighted: with --fast, both
+    // calls are inlined, so the lanes of an iteration share their loops and
+    // combine the sums, and no kernel calls either function.
     std::string filename = "gpu_inline_loop_calls_01.f90";
     std::string source = read_project_file("integration_tests/" + filename);
     CompilerOptions options;
     options.gpu_backend = "metal";
     options.po.gpu_offload_metal = true;
+    options.po.fast = true;
     options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
     FortranEvaluator evaluator(options);
     LocationManager lm;
@@ -2977,3 +2996,69 @@ TEST_CASE("GPU private maps that only a sum reads need no workspace") {
     CHECK(launches["reread"].workspaces == 1);
 }
 #endif
+
+TEST_CASE("The default pipeline runs GPU passes with --gpu, optimizations "
+        "with --fast") {
+    auto passes = [](bool gpu, bool fast) {
+        PassOptions options;
+        options.gpu_offload_cuda = gpu;
+        options.fast = fast;
+        return PassManager().default_passes(options);
+    };
+    auto has = [](const std::vector<std::string> &list,
+            const std::string &name) {
+        return std::find(list.begin(), list.end(), name) != list.end();
+    };
+    auto is_gpu_pass = [](const std::string &name) {
+        return startswith(name, "gpu_") || startswith(name, "device_");
+    };
+    // The passes that only make a program faster.
+    const std::vector<std::string> optimizations = {"dead_array_store",
+        "specialize_procedure_arguments", "specialize_frame_arguments",
+        "inline_function_calls"};
+    const std::vector<std::string> gpu_optimizations = {"gpu_call_guards",
+        "gpu_loop_transforms", "gpu_array_statements", "gpu_private_map_forwarding",
+        "gpu_private_reduction_fusion", "gpu_residue_unroll",
+        "gpu_device_guard_fold", "gpu_inline_loop_calls", "gpu_vector_lanes",
+        "gpu_sequential_unroll"};
+    // Some of the passes the offload needs.
+    const std::vector<std::string> gpu_required = {"gpu_offload",
+        "device_partition", "gpu_integer_powers", "gpu_kernel_finalize",
+        "gpu_launch_sync", "device_launch_expand"};
+
+    for (bool fast : {false, true}) {
+        INFO("fast: " << fast);
+        std::vector<std::string> cpu = passes(false, fast);
+        for (const std::string &name : cpu) {
+            INFO(name);
+            CHECK_FALSE(is_gpu_pass(name));
+        }
+        CHECK(has(cpu, "nested_vars"));
+        for (const std::string &name : optimizations) {
+            INFO(name);
+            CHECK(has(cpu, name) == fast);
+        }
+
+        std::vector<std::string> gpu = passes(true, fast);
+        for (const std::string &name : gpu_required) {
+            INFO(name);
+            CHECK(has(gpu, name));
+        }
+        for (const std::string &name : gpu_optimizations) {
+            INFO(name);
+            CHECK(has(gpu, name) == fast);
+        }
+        // Without a device, the pipeline is the same less its GPU passes.
+        std::vector<std::string> host;
+        for (const std::string &name : gpu) {
+            if (!is_gpu_pass(name)) host.push_back(name);
+        }
+        CHECK(host == cpu);
+    }
+    // An optimization runs where the pipeline lists it, not after it.
+    std::vector<std::string> gpu = passes(true, true);
+    auto at = [&](const std::string &name) {
+        return std::find(gpu.begin(), gpu.end(), name) - gpu.begin();
+    };
+    CHECK(at("gpu_loop_transforms") < at("gpu_offload"));
+}

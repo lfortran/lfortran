@@ -1085,10 +1085,7 @@ public:
 } // namespace
 
 void pass_specialize_frame_arguments(Allocator &al,
-        ASR::TranslationUnit_t &unit, const PassOptions &pass_options) {
-    if (!pass_options.fast) {
-        return;
-    }
+        ASR::TranslationUnit_t &unit, const PassOptions &/*pass_options*/) {
     FrameArgumentSpecializer specializer(al);
     specializer.analyze(unit.m_symtab);
     if (specializer.eligible.empty()) {

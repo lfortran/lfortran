@@ -140,7 +140,7 @@ kernel void __lfortran_gpu_kernel_0_26gpu_inline_loop_calls_01_m4dots(
             }
         }
         if ((__gpu_lane == 0)) {
-            t_gpu[((int)(m__dc_gpu) - (__lb_t_0_gpu))] = ((((float)2) * __weighted_total_gpu) + ((float)1));
+            t_gpu[((int)(m__dc_gpu) - (__lb_t_0_gpu))] = ((  2.00000000000000000e+00 * __weighted_total_gpu) +   1.00000000000000000e+00);
         }
         if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
     }
@@ -148,7 +148,15 @@ kernel void __lfortran_gpu_kernel_0_26gpu_inline_loop_calls_01_m4dots(
 
 inline float widen_gpu_30(int16_t x_gpu) {
     float y_gpu{};
-    y_gpu = ((float)x_gpu);
+    float _lcompilers_real_i16_result;
+    {
+        float _lcompilers_real_i16_gpu;
+        int16_t x_gpu_1;
+        x_gpu_1 = x_gpu;
+        _lcompilers_real_i16_gpu = ((float)x_gpu_1);
+        _lcompilers_real_i16_result = _lcompilers_real_i16_gpu;
+    }
+    y_gpu = _lcompilers_real_i16_result;
     return y_gpu;
 }
 
@@ -200,6 +208,23 @@ kernel void __lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m10scale_rows(
         device int16_t* __libasr_created__function_call_sum_squares_gpu;
         int d__dc_gpu;
         float total_gpu;
+        float widen_result;
+        float widen_result1;
+        float widen_result10;
+        float widen_result11;
+        float widen_result12;
+        float widen_result13;
+        float widen_result14;
+        float widen_result15;
+        float widen_result16;
+        float widen_result2;
+        float widen_result3;
+        float widen_result4;
+        float widen_result5;
+        float widen_result6;
+        float widen_result7;
+        float widen_result8;
+        float widen_result9;
         __libasr_created__function_call_sum_squares_gpu = x_gpu + ((int)(((int)__lb_x_0_gpu)) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)));
         {
             int __gpu_loop_end1_gpu;
@@ -211,6 +236,40 @@ kernel void __lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m10scale_rows(
             int __sum_squares___gpu_sum_k_gpu;
             float __sum_squares___gpu_sum_res_gpu;
             float __sum_squares_total_gpu;
+            float widen_result;
+            float widen_result1;
+            float widen_result10;
+            float widen_result11;
+            float widen_result12;
+            float widen_result13;
+            float widen_result14;
+            float widen_result15;
+            float widen_result16;
+            float widen_result17;
+            float widen_result18;
+            float widen_result19;
+            float widen_result2;
+            float widen_result20;
+            float widen_result21;
+            float widen_result22;
+            float widen_result23;
+            float widen_result24;
+            float widen_result25;
+            float widen_result26;
+            float widen_result27;
+            float widen_result28;
+            float widen_result29;
+            float widen_result3;
+            float widen_result30;
+            float widen_result31;
+            float widen_result32;
+            float widen_result33;
+            float widen_result4;
+            float widen_result5;
+            float widen_result6;
+            float widen_result7;
+            float widen_result8;
+            float widen_result9;
             __sum_squares___gpu_sum_res_gpu =   0.00000000000000000e+00;
             if ((__gpu_lanes_gpu > 1)) {
                 if ((__gpu_lane != 0)) {
@@ -222,56 +281,175 @@ kernel void __lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m10scale_rows(
                 if ((__gpu_loop_end_gpu >= __gpu_loop_start_gpu)) {
                     for (__gpu_loop_group_gpu = __gpu_loop_start_gpu; __gpu_loop_group_gpu <= (__gpu_loop_end_gpu - (15 * (1 * ((int)__gpu_lanes_gpu)))); __gpu_loop_group_gpu += (16 * (1 * ((int)__gpu_lanes_gpu)))) {
                         __sum_squares___gpu_sum_k_gpu = __gpu_loop_group_gpu;
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (1 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result1 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result1;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (2 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result2 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result2;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (3 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result3 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result3;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (4 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result4 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result4;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (5 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result5 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result5;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (6 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result6 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result6;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (7 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result7 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result7;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (8 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result8 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result8;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (9 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result9 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result9;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (10 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result10 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result10;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (11 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result11 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result11;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (12 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result12 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result12;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (13 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result13 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result13;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (14 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result14 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result14;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group_gpu + (15 * (1 * ((int)__gpu_lanes_gpu))));
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result15 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result15;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                     }
                     for (__sum_squares___gpu_sum_k_gpu = __gpu_loop_group_gpu; __sum_squares___gpu_sum_k_gpu <= __gpu_loop_end_gpu; __sum_squares___gpu_sum_k_gpu += (1 * ((int)__gpu_lanes_gpu))) {
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result16 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result16;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                     }
                 }
@@ -282,56 +460,175 @@ kernel void __lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m10scale_rows(
                 if ((__gpu_loop_end1_gpu >= 1)) {
                     for (__gpu_loop_group1_gpu = 1; __gpu_loop_group1_gpu <= (__gpu_loop_end1_gpu - 15); __gpu_loop_group1_gpu += 16) {
                         __sum_squares___gpu_sum_k_gpu = __gpu_loop_group1_gpu;
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result17 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result17;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 1);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result18 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result18;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 2);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result19 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result19;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 3);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result20 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result20;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 4);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result21 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result21;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 5);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result22 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result22;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 6);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result23 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result23;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 7);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result24 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result24;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 8);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result25 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result25;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 9);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result26 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result26;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 10);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result27 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result27;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 11);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result28 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result28;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 12);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result29 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result29;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 13);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result30 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result30;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 14);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result31 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result31;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                         __sum_squares___gpu_sum_k_gpu = (__gpu_loop_group1_gpu + 15);
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result32 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result32;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                     }
                     for (__sum_squares___gpu_sum_k_gpu = __gpu_loop_group1_gpu; __sum_squares___gpu_sum_k_gpu <= __gpu_loop_end1_gpu; __sum_squares___gpu_sum_k_gpu++) {
-                        __gpu_power_base_gpu = widen_gpu_30(__libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))]);
+                        {
+                            int16_t x_gpu_1;
+                            float y_gpu_1;
+                            x_gpu_1 = __libasr_created__function_call_sum_squares_gpu[((int)(((1 + (__sum_squares___gpu_sum_k_gpu - 1)) + (1 - 1))) - (1))];
+                            y_gpu_1 = ((float)x_gpu_1);
+                            widen_result33 = y_gpu_1;
+                        }
+                        __gpu_power_base_gpu = widen_result33;
                         __sum_squares___gpu_sum_res_gpu = (__sum_squares___gpu_sum_res_gpu + (__gpu_power_base_gpu * __gpu_power_base_gpu));
                     }
                 }
@@ -349,40 +646,159 @@ kernel void __lfortran_gpu_kernel_1_26gpu_inline_loop_calls_01_m10scale_rows(
         if ((__gpu_loop_end_gpu >= __gpu_loop_start_gpu)) {
             for (__gpu_loop_group_gpu = __gpu_loop_start_gpu; __gpu_loop_group_gpu <= (__gpu_loop_end_gpu - (15 * (1 * ((int)__gpu_lanes_gpu)))); __gpu_loop_group_gpu += (16 * (1 * ((int)__gpu_lanes_gpu)))) {
                 d__dc_gpu = __gpu_loop_group_gpu;
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (1 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result1 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result1 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (2 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result2 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result2 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (3 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result3 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result3 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (4 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result4 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result4 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (5 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result5 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result5 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (6 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result6 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result6 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (7 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result7 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result7 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (8 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result8 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result8 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (9 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result9 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result9 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (10 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result10 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result10 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (11 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result11 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result11 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (12 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result12 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result12 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (13 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result13 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result13 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (14 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result14 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result14 * total_gpu);
                 d__dc_gpu = (__gpu_loop_group_gpu + (15 * (1 * ((int)__gpu_lanes_gpu))));
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result15 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result15 * total_gpu);
             }
             for (d__dc_gpu = __gpu_loop_group_gpu; d__dc_gpu <= __gpu_loop_end_gpu; d__dc_gpu += (1 * ((int)__gpu_lanes_gpu))) {
-                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_gpu_30(x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))]) * total_gpu);
+                {
+                    int16_t x_gpu_1;
+                    float y_gpu_1;
+                    x_gpu_1 = x_gpu[((int)(d__dc_gpu) - (__lb_x_0_gpu)) + (__dim_x_0_gpu * ((int)(m__dc_gpu) - (__lb_x_1_gpu)))];
+                    y_gpu_1 = ((float)x_gpu_1);
+                    widen_result16 = y_gpu_1;
+                }
+                y_gpu[((int)(d__dc_gpu) - (__lb_y_0_gpu)) + (__dim_y_0_gpu * ((int)(m__dc_gpu) - (__lb_y_1_gpu)))] = (widen_result16 * total_gpu);
             }
         }
         if (__gpu_lanes_gpu > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
