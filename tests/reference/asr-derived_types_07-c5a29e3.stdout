@@ -7,21 +7,41 @@
                     (SymbolTable
                         9
                         {
+                            1_toml_node_val:
+                                (ExternalSymbol
+                                    9
+                                    1_toml_node_val
+                                    10 val
+                                    tomlf_structure_vector
+                                    [toml_node]
+                                    val
+                                    Private
+                                ),
+                            1_toml_vector_lst:
+                                (ExternalSymbol
+                                    9
+                                    1_toml_vector_lst
+                                    11 lst
+                                    tomlf_structure_vector
+                                    [toml_vector]
+                                    lst
+                                    Private
+                                ),
+                            1_toml_vector_n:
+                                (ExternalSymbol
+                                    9
+                                    1_toml_vector_n
+                                    11 n
+                                    tomlf_structure_vector
+                                    [toml_vector]
+                                    n
+                                    Private
+                                ),
                             find:
                                 (Function
                                     (SymbolTable
                                         13
                                         {
-                                            1_toml_node_val:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_toml_node_val
-                                                    10 val
-                                                    tomlf_structure_vector
-                                                    [toml_node]
-                                                    val
-                                                    Public
-                                                ),
                                             1_toml_value_match_key:
                                                 (ExternalSymbol
                                                     13
@@ -30,26 +50,6 @@
                                                     tomlf_type_value
                                                     [toml_value]
                                                     match_key
-                                                    Public
-                                                ),
-                                            1_toml_vector_lst:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_toml_vector_lst
-                                                    11 lst
-                                                    tomlf_structure_vector
-                                                    [toml_vector]
-                                                    lst
-                                                    Public
-                                                ),
-                                            1_toml_vector_n:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_toml_vector_n
-                                                    11 n
-                                                    tomlf_structure_vector
-                                                    [toml_vector]
-                                                    n
                                                     Public
                                                 ),
                                             i:
@@ -262,7 +262,7 @@
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (StructInstanceMember
                                             (Var 13 self)
-                                            13 1_toml_vector_n
+                                            9 1_toml_vector_n
                                             (Integer 4)
                                             ()
                                         )
@@ -275,7 +275,7 @@
                                                     (ArrayItem
                                                         (StructInstanceMember
                                                             (Var 13 self)
-                                                            13 1_toml_vector_lst
+                                                            9 1_toml_vector_lst
                                                             (Allocatable
                                                                 (Array
                                                                     (StructType
@@ -323,7 +323,7 @@
                                                         ()
                                                         .false.
                                                     )
-                                                    13 1_toml_node_val
+                                                    9 1_toml_node_val
                                                     (Allocatable
                                                         (StructType
                                                             [(Allocatable
@@ -349,7 +349,7 @@
                                                         (ArrayItem
                                                             (StructInstanceMember
                                                                 (Var 13 self)
-                                                                13 1_toml_vector_lst
+                                                                9 1_toml_vector_lst
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
@@ -397,7 +397,7 @@
                                                             ()
                                                             .false.
                                                         )
-                                                        13 1_toml_node_val
+                                                        9 1_toml_node_val
                                                         (Allocatable
                                                             (StructType
                                                                 [(Allocatable
@@ -417,7 +417,7 @@
                                                         (ArrayItem
                                                             (StructInstanceMember
                                                                 (Var 13 self)
-                                                                13 1_toml_vector_lst
+                                                                9 1_toml_vector_lst
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
@@ -465,7 +465,7 @@
                                                             ()
                                                             .false.
                                                         )
-                                                        13 1_toml_node_val
+                                                        9 1_toml_node_val
                                                         (Allocatable
                                                             (StructType
                                                                 [(Allocatable
@@ -485,7 +485,7 @@
                                                         (ArrayItem
                                                             (StructInstanceMember
                                                                 (Var 13 self)
-                                                                13 1_toml_vector_lst
+                                                                9 1_toml_vector_lst
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
@@ -533,7 +533,7 @@
                                                             ()
                                                             .false.
                                                         )
-                                                        13 1_toml_node_val
+                                                        9 1_toml_node_val
                                                         (Allocatable
                                                             (StructType
                                                                 [(Allocatable
@@ -568,26 +568,6 @@
                                     (SymbolTable
                                         12
                                         {
-                                            1_toml_vector_lst:
-                                                (ExternalSymbol
-                                                    12
-                                                    1_toml_vector_lst
-                                                    11 lst
-                                                    tomlf_structure_vector
-                                                    [toml_vector]
-                                                    lst
-                                                    Public
-                                                ),
-                                            1_toml_vector_n:
-                                                (ExternalSymbol
-                                                    12
-                                                    1_toml_vector_n
-                                                    11 n
-                                                    tomlf_structure_vector
-                                                    [toml_vector]
-                                                    n
-                                                    Public
-                                                ),
                                             n:
                                                 (Variable
                                                     12
@@ -720,7 +700,7 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 12 self)
-                                            12 1_toml_vector_n
+                                            9 1_toml_vector_n
                                             (Integer 4)
                                             ()
                                         )
@@ -743,7 +723,7 @@
                                         [(Allocate
                                             [((StructInstanceMember
                                                 (Var 12 self)
-                                                12 1_toml_vector_lst
+                                                9 1_toml_vector_lst
                                                 (Allocatable
                                                     (Array
                                                         (StructType
@@ -1013,31 +993,31 @@
                     (SymbolTable
                         6
                         {
+                            1_toml_keyval_raw:
+                                (ExternalSymbol
+                                    6
+                                    1_toml_keyval_raw
+                                    7 raw
+                                    tomlf_type_keyval
+                                    [toml_keyval]
+                                    raw
+                                    Private
+                                ),
+                            1_toml_value_key:
+                                (ExternalSymbol
+                                    6
+                                    1_toml_value_key
+                                    3 key
+                                    tomlf_type_value
+                                    [toml_value]
+                                    key
+                                    Private
+                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
                                         8
                                         {
-                                            1_toml_keyval_raw:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_toml_keyval_raw
-                                                    7 raw
-                                                    tomlf_type_keyval
-                                                    [toml_keyval]
-                                                    raw
-                                                    Public
-                                                ),
-                                            1_toml_value_key:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_toml_value_key
-                                                    3 key
-                                                    tomlf_type_value
-                                                    [toml_value]
-                                                    key
-                                                    Public
-                                                ),
                                             self:
                                                 (Variable
                                                     8
@@ -1103,7 +1083,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 8 self)
-                                                8 1_toml_value_key
+                                                6 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1116,7 +1096,7 @@
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
                                                 (Var 8 self)
-                                                8 1_toml_value_key
+                                                6 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1133,7 +1113,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 8 self)
-                                                8 1_toml_keyval_raw
+                                                6 1_toml_keyval_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1146,7 +1126,7 @@
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
                                                 (Var 8 self)
-                                                8 1_toml_keyval_raw
+                                                6 1_toml_keyval_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1256,6 +1236,16 @@
                     (SymbolTable
                         2
                         {
+                            1_toml_value_key:
+                                (ExternalSymbol
+                                    2
+                                    1_toml_value_key
+                                    3 key
+                                    tomlf_type_value
+                                    [toml_value]
+                                    key
+                                    Private
+                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
@@ -1333,16 +1323,6 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_toml_value_key:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_toml_value_key
-                                                    3 key
-                                                    tomlf_type_value
-                                                    [toml_value]
-                                                    key
-                                                    Public
-                                                ),
                                             key:
                                                 (Variable
                                                     5
@@ -1462,7 +1442,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 5 self)
-                                                5 1_toml_value_key
+                                                2 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1479,7 +1459,7 @@
                                                 Eq
                                                 (StructInstanceMember
                                                     (Var 5 self)
-                                                    5 1_toml_value_key
+                                                    2 1_toml_value_key
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )

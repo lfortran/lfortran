@@ -54,6 +54,72 @@
                     (SymbolTable
                         2
                         {
+                            1_int_tuple_fst:
+                                (ExternalSymbol
+                                    2
+                                    1_int_tuple_fst
+                                    9 fst
+                                    template_struct_01_m
+                                    [test_template
+                                    int_tuple]
+                                    fst
+                                    Private
+                                ),
+                            1_int_tuple_snd:
+                                (ExternalSymbol
+                                    2
+                                    1_int_tuple_snd
+                                    9 snd
+                                    template_struct_01_m
+                                    [test_template
+                                    int_tuple]
+                                    snd
+                                    Private
+                                ),
+                            1_real_tuple_fst:
+                                (ExternalSymbol
+                                    2
+                                    1_real_tuple_fst
+                                    12 fst
+                                    template_struct_01_m
+                                    [test_template
+                                    real_tuple]
+                                    fst
+                                    Private
+                                ),
+                            1_real_tuple_snd:
+                                (ExternalSymbol
+                                    2
+                                    1_real_tuple_snd
+                                    12 snd
+                                    template_struct_01_m
+                                    [test_template
+                                    real_tuple]
+                                    snd
+                                    Private
+                                ),
+                            1_tuple_fst:
+                                (ExternalSymbol
+                                    2
+                                    1_tuple_fst
+                                    5 fst
+                                    template_struct_01_m
+                                    [struct_t
+                                    tuple]
+                                    fst
+                                    Private
+                                ),
+                            1_tuple_snd:
+                                (ExternalSymbol
+                                    2
+                                    1_tuple_snd
+                                    5 snd
+                                    template_struct_01_m
+                                    [struct_t
+                                    tuple]
+                                    snd
+                                    Private
+                                ),
                             r:
                                 (Requirement
                                     (SymbolTable
@@ -104,17 +170,6 @@
                                                     (SymbolTable
                                                         6
                                                         {
-                                                            1_tuple_fst:
-                                                                (ExternalSymbol
-                                                                    6
-                                                                    1_tuple_fst
-                                                                    5 fst
-                                                                    template_struct_01_m
-                                                                    [struct_t
-                                                                    tuple]
-                                                                    fst
-                                                                    Public
-                                                                ),
                                                             p:
                                                                 (Variable
                                                                     6
@@ -226,7 +281,7 @@
                                                         (Var 6 r)
                                                         (StructInstanceMember
                                                             (Var 6 p)
-                                                            6 1_tuple_fst
+                                                            2 1_tuple_fst
                                                             (TypeParameter
                                                                 t
                                                                 NonExtensible
@@ -251,17 +306,6 @@
                                                     (SymbolTable
                                                         7
                                                         {
-                                                            1_tuple_snd:
-                                                                (ExternalSymbol
-                                                                    7
-                                                                    1_tuple_snd
-                                                                    5 snd
-                                                                    template_struct_01_m
-                                                                    [struct_t
-                                                                    tuple]
-                                                                    snd
-                                                                    Public
-                                                                ),
                                                             p:
                                                                 (Variable
                                                                     7
@@ -373,7 +417,7 @@
                                                         (Var 7 r)
                                                         (StructInstanceMember
                                                             (Var 7 p)
-                                                            7 1_tuple_snd
+                                                            2 1_tuple_snd
                                                             (TypeParameter
                                                                 t
                                                                 NonExtensible
@@ -532,50 +576,6 @@
                                     (SymbolTable
                                         8
                                         {
-                                            1_int_tuple_fst:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_int_tuple_fst
-                                                    9 fst
-                                                    template_struct_01_m
-                                                    [test_template
-                                                    int_tuple]
-                                                    fst
-                                                    Public
-                                                ),
-                                            1_int_tuple_snd:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_int_tuple_snd
-                                                    9 snd
-                                                    template_struct_01_m
-                                                    [test_template
-                                                    int_tuple]
-                                                    snd
-                                                    Public
-                                                ),
-                                            1_real_tuple_fst:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_real_tuple_fst
-                                                    12 fst
-                                                    template_struct_01_m
-                                                    [test_template
-                                                    real_tuple]
-                                                    fst
-                                                    Public
-                                                ),
-                                            1_real_tuple_snd:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_real_tuple_snd
-                                                    12 snd
-                                                    template_struct_01_m
-                                                    [test_template
-                                                    real_tuple]
-                                                    snd
-                                                    Public
-                                                ),
                                             get_int_fst:
                                                 (Function
                                                     (SymbolTable
@@ -590,7 +590,7 @@
                                                                     [test_template
                                                                     int_tuple]
                                                                     fst
-                                                                    Public
+                                                                    Private
                                                                 ),
                                                             p:
                                                                 (Variable
@@ -707,7 +707,7 @@
                                                                     [test_template
                                                                     int_tuple]
                                                                     snd
-                                                                    Public
+                                                                    Private
                                                                 ),
                                                             p:
                                                                 (Variable
@@ -824,7 +824,7 @@
                                                                     [test_template
                                                                     real_tuple]
                                                                     fst
-                                                                    Public
+                                                                    Private
                                                                 ),
                                                             p:
                                                                 (Variable
@@ -941,7 +941,7 @@
                                                                     [test_template
                                                                     real_tuple]
                                                                     snd
-                                                                    Public
+                                                                    Private
                                                                 ),
                                                             p:
                                                                 (Variable
@@ -1286,7 +1286,7 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 8 ti)
-                                            8 1_int_tuple_fst
+                                            2 1_int_tuple_fst
                                             (Integer 4)
                                             ()
                                         )
@@ -1324,7 +1324,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 8 ti)
-                                            8 1_int_tuple_snd
+                                            2 1_int_tuple_snd
                                             (Integer 4)
                                             ()
                                         )
@@ -1362,7 +1362,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 8 tr)
-                                            8 1_real_tuple_fst
+                                            2 1_real_tuple_fst
                                             (Real 4)
                                             ()
                                         )
@@ -1403,7 +1403,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 8 tr)
-                                            8 1_real_tuple_snd
+                                            2 1_real_tuple_snd
                                             (Real 4)
                                             ()
                                         )

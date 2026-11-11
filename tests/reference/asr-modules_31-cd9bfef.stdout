@@ -17,31 +17,31 @@
                                     dependency_config_t
                                     Public
                                 ),
+                            1_dependency_config_t_name:
+                                (ExternalSymbol
+                                    4
+                                    1_dependency_config_t_name
+                                    10 name
+                                    fpm_dependency_modules_31
+                                    [dependency_config_t]
+                                    name
+                                    Private
+                                ),
+                            1_dependency_tree_t_dep:
+                                (ExternalSymbol
+                                    4
+                                    1_dependency_tree_t_dep
+                                    12 dep
+                                    fpm_dependency_modules_31
+                                    [dependency_tree_t]
+                                    dep
+                                    Private
+                                ),
                             cmd_update:
                                 (Function
                                     (SymbolTable
                                         7
                                         {
-                                            1_dependency_config_t_name:
-                                                (ExternalSymbol
-                                                    7
-                                                    1_dependency_config_t_name
-                                                    10 name
-                                                    fpm_dependency_modules_31
-                                                    [dependency_config_t]
-                                                    name
-                                                    Public
-                                                ),
-                                            1_dependency_tree_t_dep:
-                                                (ExternalSymbol
-                                                    7
-                                                    1_dependency_tree_t_dep
-                                                    12 dep
-                                                    fpm_dependency_modules_31
-                                                    [dependency_tree_t]
-                                                    dep
-                                                    Public
-                                                ),
                                             1_dependency_tree_t_update_dependency:
                                                 (ExternalSymbol
                                                     7
@@ -266,7 +266,7 @@
                                             (ArrayItem
                                                 (StructInstanceMember
                                                     (Var 7 deps)
-                                                    7 1_dependency_tree_t_dep
+                                                    4 1_dependency_tree_t_dep
                                                     (Allocatable
                                                         (Array
                                                             (StructType
@@ -310,7 +310,7 @@
                                                 ()
                                                 .false.
                                             )
-                                            7 1_dependency_config_t_name
+                                            4 1_dependency_config_t_name
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )

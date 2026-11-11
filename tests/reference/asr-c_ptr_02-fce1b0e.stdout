@@ -17,7 +17,7 @@
                                     test_obj
                                     []
                                     ptr
-                                    Public
+                                    Private
                                 ),
                             c_alert:
                                 (ExternalSymbol

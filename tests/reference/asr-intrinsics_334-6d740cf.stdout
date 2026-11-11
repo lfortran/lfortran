@@ -15,7 +15,7 @@
                                     toml_value
                                     []
                                     x
-                                    Public
+                                    Private
                                 ),
                             base:
                                 (Struct
@@ -438,7 +438,7 @@
                                                     toml_value
                                                     []
                                                     x
-                                                    Public
+                                                    Private
                                                 )
                                         })
                                     ~select_type_block_
@@ -486,7 +486,7 @@
                                                     toml_value
                                                     []
                                                     x
-                                                    Public
+                                                    Private
                                                 )
                                         })
                                     ~select_type_block_1

@@ -15,7 +15,7 @@
                                     bar_a
                                     []
                                     a
-                                    Public
+                                    Private
                                 ),
                             1_bar_b_b:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     bar_b
                                     []
                                     b
-                                    Public
+                                    Private
                                 ),
                             1_bar_c_c:
                                 (ExternalSymbol
@@ -35,7 +35,7 @@
                                     bar_c
                                     []
                                     c
-                                    Public
+                                    Private
                                 ),
                             1_foo_a_m_bar_a:
                                 (ExternalSymbol
@@ -45,7 +45,7 @@
                                     foo_a
                                     []
                                     m_bar_a
-                                    Public
+                                    Private
                                 ),
                             1_foo_b_m_bar_b:
                                 (ExternalSymbol
@@ -55,7 +55,7 @@
                                     foo_b
                                     []
                                     m_bar_b
-                                    Public
+                                    Private
                                 ),
                             1_foo_c_m_bar_c:
                                 (ExternalSymbol
@@ -65,7 +65,7 @@
                                     foo_c
                                     []
                                     m_bar_c
-                                    Public
+                                    Private
                                 ),
                             bar_a:
                                 (Struct

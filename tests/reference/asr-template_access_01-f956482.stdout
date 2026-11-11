@@ -15,7 +15,7 @@
                                     template_access_01_inst_m
                                     [rbox]
                                     v
-                                    Public
+                                    Private
                                 ),
                             b:
                                 (Variable
@@ -427,7 +427,7 @@
                                                     template_access_01_inst_m
                                                     [rbox]
                                                     v
-                                                    Public
+                                                    Private
                                                 ),
                                             r:
                                                 (Variable
@@ -671,6 +671,17 @@
                     (SymbolTable
                         2
                         {
+                            1_box_v:
+                                (ExternalSymbol
+                                    2
+                                    1_box_v
+                                    4 v
+                                    template_access_01_tmpl_m
+                                    [t_tmpl
+                                    box]
+                                    v
+                                    Private
+                                ),
                             t_tmpl:
                                 (Template
                                     (SymbolTable
@@ -848,17 +859,6 @@
                                                     (SymbolTable
                                                         6
                                                         {
-                                                            1_box_v:
-                                                                (ExternalSymbol
-                                                                    6
-                                                                    1_box_v
-                                                                    4 v
-                                                                    template_access_01_tmpl_m
-                                                                    [t_tmpl
-                                                                    box]
-                                                                    v
-                                                                    Public
-                                                                ),
                                                             r:
                                                                 (Variable
                                                                     6
@@ -959,7 +959,7 @@
                                                     [(Assignment
                                                         (StructInstanceMember
                                                             (Var 6 r)
-                                                            6 1_box_v
+                                                            2 1_box_v
                                                             (TypeParameter
                                                                 t
                                                                 NonExtensible

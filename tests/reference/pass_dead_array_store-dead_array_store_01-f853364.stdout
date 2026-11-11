@@ -15,7 +15,7 @@
                                     dead_array_store_01_m
                                     [workspace_t]
                                     dcdb
-                                    Public
+                                    Private
                                 ),
                             1_workspace_t_dcdw:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     dead_array_store_01_m
                                     [workspace_t]
                                     dcdw
-                                    Public
+                                    Private
                                 ),
                             i:
                                 (Variable
@@ -778,31 +778,31 @@
                     (SymbolTable
                         2
                         {
+                            1_workspace_t_dcdb:
+                                (ExternalSymbol
+                                    2
+                                    1_workspace_t_dcdb
+                                    3 dcdb
+                                    dead_array_store_01_m
+                                    [workspace_t]
+                                    dcdb
+                                    Private
+                                ),
+                            1_workspace_t_dcdw:
+                                (ExternalSymbol
+                                    2
+                                    1_workspace_t_dcdw
+                                    3 dcdw
+                                    dead_array_store_01_m
+                                    [workspace_t]
+                                    dcdw
+                                    Private
+                                ),
                             learn:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            1_workspace_t_dcdb:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_workspace_t_dcdb
-                                                    3 dcdb
-                                                    dead_array_store_01_m
-                                                    [workspace_t]
-                                                    dcdb
-                                                    Public
-                                                ),
-                                            1_workspace_t_dcdw:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_workspace_t_dcdw
-                                                    3 dcdw
-                                                    dead_array_store_01_m
-                                                    [workspace_t]
-                                                    dcdw
-                                                    Public
-                                                ),
                                             associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
@@ -1057,7 +1057,7 @@
                                                         (Var 6 dcdw)
                                                         (StructInstanceMember
                                                             (Var 4 workspace)
-                                                            4 1_workspace_t_dcdw
+                                                            2 1_workspace_t_dcdw
                                                             (Allocatable
                                                                 (Array
                                                                     (Real 4)
@@ -1077,7 +1077,7 @@
                                                         (Var 6 dcdb)
                                                         (StructInstanceMember
                                                             (Var 4 workspace)
-                                                            4 1_workspace_t_dcdb
+                                                            2 1_workspace_t_dcdb
                                                             (Allocatable
                                                                 (Array
                                                                     (Real 4)

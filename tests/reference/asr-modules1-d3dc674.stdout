@@ -174,6 +174,16 @@
                     (SymbolTable
                         4
                         {
+                            1_t2_val:
+                                (ExternalSymbol
+                                    4
+                                    1_t2_val
+                                    5 val
+                                    y
+                                    [t2]
+                                    val
+                                    Private
+                                ),
                             sub:
                                 (Function
                                     (SymbolTable
@@ -187,16 +197,6 @@
                                                     abc
                                                     [t1]
                                                     f
-                                                    Public
-                                                ),
-                                            1_t2_val:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_t2_val
-                                                    5 val
-                                                    y
-                                                    [t2]
-                                                    val
                                                     Public
                                                 ),
                                             self:
@@ -275,7 +275,7 @@
                                             ()
                                             [((StructInstanceMember
                                                 (Var 6 self)
-                                                6 1_t2_val
+                                                4 1_t2_val
                                                 (Allocatable
                                                     (StructType
                                                         []
@@ -290,7 +290,7 @@
                                             ()
                                             (StructInstanceMember
                                                 (Var 6 self)
-                                                6 1_t2_val
+                                                4 1_t2_val
                                                 (Allocatable
                                                     (StructType
                                                         []

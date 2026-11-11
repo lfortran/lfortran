@@ -15,7 +15,7 @@
                                     modules_48_fpm_strings
                                     [string_t]
                                     s
-                                    Public
+                                    Private
                                 ),
                             cat_str_alloc:
                                 (Variable
@@ -780,6 +780,16 @@
                     (SymbolTable
                         2
                         {
+                            1_string_t_s:
+                                (ExternalSymbol
+                                    2
+                                    1_string_t_s
+                                    3 s
+                                    modules_48_fpm_strings
+                                    [string_t]
+                                    s
+                                    Private
+                                ),
                             fnv_1a:
                                 (GenericProcedure
                                     2
@@ -1054,16 +1064,6 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_string_t_s:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_string_t_s
-                                                    3 s
-                                                    modules_48_fpm_strings
-                                                    [string_t]
-                                                    s
-                                                    Public
-                                                ),
                                             hash:
                                                 (Variable
                                                     5
@@ -1238,7 +1238,7 @@
                                                     ()
                                                     .false.
                                                 )
-                                                5 1_string_t_s
+                                                2 1_string_t_s
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1289,7 +1289,7 @@
                                                         ()
                                                         .false.
                                                     )
-                                                    5 1_string_t_s
+                                                    2 1_string_t_s
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
@@ -1725,16 +1725,6 @@
                                     (SymbolTable
                                         7
                                         {
-                                            1_string_t_s:
-                                                (ExternalSymbol
-                                                    7
-                                                    1_string_t_s
-                                                    3 s
-                                                    modules_48_fpm_strings
-                                                    [string_t]
-                                                    s
-                                                    Public
-                                                ),
                                             cat:
                                                 (Variable
                                                     7
@@ -1998,7 +1988,7 @@
                                                 ()
                                                 .false.
                                             )
-                                            7 1_string_t_s
+                                            2 1_string_t_s
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -2051,7 +2041,7 @@
                                                         ()
                                                         .false.
                                                     )
-                                                    7 1_string_t_s
+                                                    2 1_string_t_s
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )

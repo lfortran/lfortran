@@ -15,7 +15,7 @@
                                     global_init_07_m
                                     [extent]
                                     n
-                                    Public
+                                    Private
                                 ),
                             1_extent_step:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     global_init_07_m
                                     [extent]
                                     step
-                                    Public
+                                    Private
                                 ),
                             counts:
                                 (ExternalSymbol
@@ -60,7 +60,7 @@
                                                     global_init_07_m
                                                     [extent]
                                                     n
-                                                    Public
+                                                    Private
                                                 ),
                                             1_extent_step:
                                                 (ExternalSymbol
@@ -70,7 +70,7 @@
                                                     global_init_07_m
                                                     [extent]
                                                     step
-                                                    Public
+                                                    Private
                                                 ),
                                             b:
                                                 (Variable
@@ -793,21 +793,21 @@
                     (SymbolTable
                         2
                         {
+                            1_extent_n:
+                                (ExternalSymbol
+                                    2
+                                    1_extent_n
+                                    3 n
+                                    global_init_07_m
+                                    [extent]
+                                    n
+                                    Private
+                                ),
                             counts:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
-                                            1_extent_n:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_extent_n
-                                                    3 n
-                                                    global_init_07_m
-                                                    [extent]
-                                                    n
-                                                    Public
-                                                ),
                                             e:
                                                 (Variable
                                                     5
@@ -950,7 +950,7 @@
                                                     ()
                                                     .true.
                                                 )
-                                                5 1_extent_n
+                                                2 1_extent_n
                                                 (Integer 4)
                                                 ()
                                             )
@@ -982,7 +982,7 @@
                                                 ()
                                                 .true.
                                             )
-                                            5 1_extent_n
+                                            2 1_extent_n
                                             (Integer 4)
                                             ()
                                         )
@@ -1004,7 +1004,7 @@
                                                     ()
                                                     .true.
                                                 )
-                                                5 1_extent_n
+                                                2 1_extent_n
                                                 (Integer 4)
                                                 ()
                                             )
@@ -1110,16 +1110,6 @@
                                     (SymbolTable
                                         4
                                         {
-                                            1_extent_n:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_extent_n
-                                                    3 n
-                                                    global_init_07_m
-                                                    [extent]
-                                                    n
-                                                    Public
-                                                ),
                                             b:
                                                 (Variable
                                                     4
@@ -1149,7 +1139,7 @@
                                                                 ()
                                                                 .true.
                                                             )
-                                                            4 1_extent_n
+                                                            2 1_extent_n
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -1247,7 +1237,7 @@
                                                         ()
                                                         .true.
                                                     )
-                                                    4 1_extent_n
+                                                    2 1_extent_n
                                                     (Integer 4)
                                                     ()
                                                 ))]
@@ -1291,7 +1281,7 @@
                                                                 ()
                                                                 .true.
                                                             )
-                                                            4 1_extent_n
+                                                            2 1_extent_n
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -1420,7 +1410,7 @@
                                     global_init_07_m
                                     [extent]
                                     n
-                                    Public
+                                    Private
                                 ),
                             1_extent_step:
                                 (ExternalSymbol
@@ -1430,7 +1420,7 @@
                                     global_init_07_m
                                     [extent]
                                     step
-                                    Public
+                                    Private
                                 ),
                             b:
                                 (Variable

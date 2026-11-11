@@ -7,41 +7,41 @@
                     (SymbolTable
                         7
                         {
+                            1_executable_config_main:
+                                (ExternalSymbol
+                                    7
+                                    1_executable_config_main
+                                    8 main
+                                    fpm_manifest_executable_modules_30
+                                    [executable_config]
+                                    main
+                                    Private
+                                ),
+                            1_executable_config_name:
+                                (ExternalSymbol
+                                    7
+                                    1_executable_config_name
+                                    8 name
+                                    fpm_manifest_executable_modules_30
+                                    [executable_config]
+                                    name
+                                    Private
+                                ),
+                            1_executable_config_source_dir:
+                                (ExternalSymbol
+                                    7
+                                    1_executable_config_source_dir
+                                    8 source_dir
+                                    fpm_manifest_executable_modules_30
+                                    [executable_config]
+                                    source_dir
+                                    Private
+                                ),
                             default_executable:
                                 (Function
                                     (SymbolTable
                                         9
                                         {
-                                            1_executable_config_main:
-                                                (ExternalSymbol
-                                                    9
-                                                    1_executable_config_main
-                                                    8 main
-                                                    fpm_manifest_executable_modules_30
-                                                    [executable_config]
-                                                    main
-                                                    Public
-                                                ),
-                                            1_executable_config_name:
-                                                (ExternalSymbol
-                                                    9
-                                                    1_executable_config_name
-                                                    8 name
-                                                    fpm_manifest_executable_modules_30
-                                                    [executable_config]
-                                                    name
-                                                    Public
-                                                ),
-                                            1_executable_config_source_dir:
-                                                (ExternalSymbol
-                                                    9
-                                                    1_executable_config_source_dir
-                                                    8 source_dir
-                                                    fpm_manifest_executable_modules_30
-                                                    [executable_config]
-                                                    source_dir
-                                                    Public
-                                                ),
                                             name:
                                                 (Variable
                                                     9
@@ -144,7 +144,7 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 9 self)
-                                            9 1_executable_config_name
+                                            7 1_executable_config_name
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -160,7 +160,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 9 self)
-                                            9 1_executable_config_source_dir
+                                            7 1_executable_config_source_dir
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -179,7 +179,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 9 self)
-                                            9 1_executable_config_main
+                                            7 1_executable_config_main
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -336,6 +336,26 @@
                     (SymbolTable
                         2
                         {
+                            1_package_config_t_executable:
+                                (ExternalSymbol
+                                    2
+                                    1_package_config_t_executable
+                                    5 executable
+                                    fpm_manifest_package_modules_30
+                                    [package_config_t]
+                                    executable
+                                    Private
+                                ),
+                            1_package_config_t_name:
+                                (ExternalSymbol
+                                    2
+                                    1_package_config_t_name
+                                    5 name
+                                    fpm_manifest_package_modules_30
+                                    [package_config_t]
+                                    name
+                                    Private
+                                ),
                             default_executable:
                                 (ExternalSymbol
                                     2
@@ -361,26 +381,6 @@
                                     (SymbolTable
                                         10
                                         {
-                                            1_package_config_t_executable:
-                                                (ExternalSymbol
-                                                    10
-                                                    1_package_config_t_executable
-                                                    5 executable
-                                                    fpm_manifest_package_modules_30
-                                                    [package_config_t]
-                                                    executable
-                                                    Public
-                                                ),
-                                            1_package_config_t_name:
-                                                (ExternalSymbol
-                                                    10
-                                                    1_package_config_t_name
-                                                    5 name
-                                                    fpm_manifest_package_modules_30
-                                                    [package_config_t]
-                                                    name
-                                                    Public
-                                                ),
                                             package:
                                                 (Variable
                                                     10
@@ -515,7 +515,7 @@
                                     [(Allocate
                                         [((StructInstanceMember
                                             (Var 10 package)
-                                            10 1_package_config_t_executable
+                                            2 1_package_config_t_executable
                                             (Allocatable
                                                 (Array
                                                     (StructType
@@ -556,7 +556,7 @@
                                         [((ArrayItem
                                             (StructInstanceMember
                                                 (Var 10 package)
-                                                10 1_package_config_t_executable
+                                                2 1_package_config_t_executable
                                                 (Allocatable
                                                     (Array
                                                         (StructType
@@ -604,7 +604,7 @@
                                         ))
                                         ((StructInstanceMember
                                             (Var 10 package)
-                                            10 1_package_config_t_name
+                                            2 1_package_config_t_name
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )

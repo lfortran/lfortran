@@ -170,6 +170,26 @@
                                     enum_stat
                                     Public
                                 ),
+                            1_enum_stat_fatal:
+                                (ExternalSymbol
+                                    4
+                                    1_enum_stat_fatal
+                                    13 fatal
+                                    class_default_select_type
+                                    [enum_stat]
+                                    fatal
+                                    Private
+                                ),
+                            1_enum_stat_success:
+                                (ExternalSymbol
+                                    4
+                                    1_enum_stat_success
+                                    13 success
+                                    class_default_select_type
+                                    [enum_stat]
+                                    success
+                                    Private
+                                ),
                             check_table:
                                 (Function
                                     (SymbolTable
@@ -380,16 +400,7 @@
                                                     (SymbolTable
                                                         9
                                                         {
-                                                            1_enum_stat_success:
-                                                                (ExternalSymbol
-                                                                    9
-                                                                    1_enum_stat_success
-                                                                    13 success
-                                                                    class_default_select_type
-                                                                    [enum_stat]
-                                                                    success
-                                                                    Public
-                                                                )
+                                                            
                                                         })
                                                     ~select_type_block_
                                                     [(Associate
@@ -424,7 +435,7 @@
                                                             (Var 8 stat)
                                                             (StructInstanceMember
                                                                 (Var 4 toml_stat)
-                                                                9 1_enum_stat_success
+                                                                4 1_enum_stat_success
                                                                 (Integer 4)
                                                                 (IntegerConstant 0 (Integer 4) Decimal)
                                                             )
@@ -442,16 +453,7 @@
                                                     (SymbolTable
                                                         10
                                                         {
-                                                            1_enum_stat_fatal:
-                                                                (ExternalSymbol
-                                                                    10
-                                                                    1_enum_stat_fatal
-                                                                    13 fatal
-                                                                    class_default_select_type
-                                                                    [enum_stat]
-                                                                    fatal
-                                                                    Public
-                                                                )
+                                                            
                                                         })
                                                     ~select_type_block_1
                                                     [(If
@@ -467,7 +469,7 @@
                                                             (Var 8 stat)
                                                             (StructInstanceMember
                                                                 (Var 4 toml_stat)
-                                                                10 1_enum_stat_fatal
+                                                                4 1_enum_stat_fatal
                                                                 (Integer 4)
                                                                 (IntegerConstant -1 (Integer 4) Decimal)
                                                             )

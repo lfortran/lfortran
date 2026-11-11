@@ -15,7 +15,7 @@
                                     t
                                     []
                                     i
-                                    Public
+                                    Private
                                 ),
                             1_t_s:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     t
                                     []
                                     s
-                                    Public
+                                    Private
                                 ),
                             c_char:
                                 (ExternalSymbol

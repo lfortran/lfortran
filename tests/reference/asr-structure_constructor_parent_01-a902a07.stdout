@@ -15,7 +15,7 @@
                                     base_t
                                     []
                                     x
-                                    Public
+                                    Private
                                 ),
                             1_e2_t_w:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     e2_t
                                     []
                                     w
-                                    Public
+                                    Private
                                 ),
                             1_e_t_z:
                                 (ExternalSymbol
@@ -35,7 +35,7 @@
                                     e_t
                                     []
                                     z
-                                    Public
+                                    Private
                                 ),
                             base_t:
                                 (Struct

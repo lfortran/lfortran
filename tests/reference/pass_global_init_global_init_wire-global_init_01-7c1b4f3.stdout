@@ -15,7 +15,7 @@
                                     global_init_01_a
                                     [leaf]
                                     h
-                                    Public
+                                    Private
                                 ),
                             1_leaf_tag:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     global_init_01_a
                                     [leaf]
                                     tag
-                                    Public
+                                    Private
                                 ),
                             __lfortran_global_init_global_init_01:
                                 (Function
@@ -956,6 +956,26 @@
                     (SymbolTable
                         4
                         {
+                            1_leaf_h:
+                                (ExternalSymbol
+                                    4
+                                    1_leaf_h
+                                    3 h
+                                    global_init_01_a
+                                    [leaf]
+                                    h
+                                    Private
+                                ),
+                            1_leaf_tag:
+                                (ExternalSymbol
+                                    4
+                                    1_leaf_tag
+                                    3 tag
+                                    global_init_01_a
+                                    [leaf]
+                                    tag
+                                    Private
+                                ),
                             __lfortran_global_init_global_init_01_b:
                                 (Function
                                     (SymbolTable
@@ -1143,26 +1163,6 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_leaf_h:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_leaf_h
-                                                    3 h
-                                                    global_init_01_a
-                                                    [leaf]
-                                                    h
-                                                    Public
-                                                ),
-                                            1_leaf_tag:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_leaf_tag
-                                                    3 tag
-                                                    global_init_01_a
-                                                    [leaf]
-                                                    tag
-                                                    Public
-                                                ),
                                             i:
                                                 (Variable
                                                     5
@@ -1234,7 +1234,7 @@
                                                         ()
                                                         .false.
                                                     )
-                                                    5 1_leaf_h
+                                                    4 1_leaf_h
                                                     (Integer 4)
                                                     ()
                                                 )
@@ -1268,7 +1268,7 @@
                                                         ()
                                                         .false.
                                                     )
-                                                    5 1_leaf_tag
+                                                    4 1_leaf_tag
                                                     (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                 )

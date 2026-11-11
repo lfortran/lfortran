@@ -7,6 +7,26 @@
                     (SymbolTable
                         2
                         {
+                            1_integer32complex32orderedmap_map:
+                                (ExternalSymbol
+                                    2
+                                    1_integer32complex32orderedmap_map
+                                    11 map
+                                    gftl2_integer32complex32orderedmap
+                                    [integer32complex32orderedmap]
+                                    map
+                                    Private
+                                ),
+                            1_omap_map_stored_value:
+                                (ExternalSymbol
+                                    2
+                                    1_omap_map_stored_value
+                                    10 stored_value
+                                    gftl2_integer32complex32orderedmap
+                                    [omap_map]
+                                    stored_value
+                                    Private
+                                ),
                             __module_prif_prif_dummy_team_descriptor:
                                 (ExternalSymbol
                                     2
@@ -391,16 +411,6 @@
                                     (SymbolTable
                                         12
                                         {
-                                            1_omap_map_stored_value:
-                                                (ExternalSymbol
-                                                    12
-                                                    1_omap_map_stored_value
-                                                    10 stored_value
-                                                    gftl2_integer32complex32orderedmap
-                                                    [omap_map]
-                                                    stored_value
-                                                    Public
-                                                ),
                                             key:
                                                 (Variable
                                                     12
@@ -558,7 +568,7 @@
                                         (Var 12 res)
                                         (StructInstanceMember
                                             (Var 12 this)
-                                            12 1_omap_map_stored_value
+                                            2 1_omap_map_stored_value
                                             (Complex 4)
                                             ()
                                         )
@@ -611,16 +621,6 @@
                                     (SymbolTable
                                         13
                                         {
-                                            1_integer32complex32orderedmap_map:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_integer32complex32orderedmap_map
-                                                    11 map
-                                                    gftl2_integer32complex32orderedmap
-                                                    [integer32complex32orderedmap]
-                                                    map
-                                                    Public
-                                                ),
                                             1_omap_map_at_rc:
                                                 (ExternalSymbol
                                                     13
@@ -629,16 +629,6 @@
                                                     gftl2_integer32complex32orderedmap
                                                     [omap_map]
                                                     at_rc
-                                                    Public
-                                                ),
-                                            1_omap_map_stored_value:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_omap_map_stored_value
-                                                    10 stored_value
-                                                    gftl2_integer32complex32orderedmap
-                                                    [omap_map]
-                                                    stored_value
                                                     Public
                                                 ),
                                             key:
@@ -864,7 +854,7 @@
                                         (StructInstanceMember
                                             (StructInstanceMember
                                                 (Var 13 this)
-                                                13 1_integer32complex32orderedmap_map
+                                                2 1_integer32complex32orderedmap_map
                                                 (StructType
                                                     [(StructType
                                                         []
@@ -879,7 +869,7 @@
                                                 )
                                                 ()
                                             )
-                                            13 1_omap_map_stored_value
+                                            2 1_omap_map_stored_value
                                             (Complex 4)
                                             ()
                                         )
@@ -897,7 +887,7 @@
                                             ()
                                             [((StructInstanceMember
                                                 (Var 13 this)
-                                                13 1_integer32complex32orderedmap_map
+                                                2 1_integer32complex32orderedmap_map
                                                 (StructType
                                                     [(StructType
                                                         []
@@ -920,7 +910,7 @@
                                             ()
                                             (StructInstanceMember
                                                 (Var 13 this)
-                                                13 1_integer32complex32orderedmap_map
+                                                2 1_integer32complex32orderedmap_map
                                                 (StructType
                                                     [(StructType
                                                         []

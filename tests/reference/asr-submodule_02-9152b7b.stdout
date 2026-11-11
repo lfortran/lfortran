@@ -386,6 +386,26 @@
                     (SymbolTable
                         13
                         {
+                            1_point_x:
+                                (ExternalSymbol
+                                    13
+                                    1_point_x
+                                    10 x
+                                    points
+                                    [point]
+                                    x
+                                    Private
+                                ),
+                            1_point_y:
+                                (ExternalSymbol
+                                    13
+                                    1_point_y
+                                    10 y
+                                    points
+                                    [point]
+                                    y
+                                    Private
+                                ),
                             point:
                                 (ExternalSymbol
                                     13
@@ -401,26 +421,6 @@
                                     (SymbolTable
                                         14
                                         {
-                                            1_point_x:
-                                                (ExternalSymbol
-                                                    14
-                                                    1_point_x
-                                                    10 x
-                                                    points
-                                                    [point]
-                                                    x
-                                                    Public
-                                                ),
-                                            1_point_y:
-                                                (ExternalSymbol
-                                                    14
-                                                    1_point_y
-                                                    10 y
-                                                    points
-                                                    [point]
-                                                    y
-                                                    Public
-                                                ),
                                             a:
                                                 (Variable
                                                     14
@@ -553,14 +553,14 @@
                                                     (RealBinOp
                                                         (StructInstanceMember
                                                             (Var 14 a)
-                                                            14 1_point_x
+                                                            13 1_point_x
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 14 b)
-                                                            14 1_point_x
+                                                            13 1_point_x
                                                             (Real 4)
                                                             ()
                                                         )
@@ -577,14 +577,14 @@
                                                     (RealBinOp
                                                         (StructInstanceMember
                                                             (Var 14 a)
-                                                            14 1_point_y
+                                                            13 1_point_y
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 14 b)
-                                                            14 1_point_y
+                                                            13 1_point_y
                                                             (Real 4)
                                                             ()
                                                         )
@@ -620,26 +620,6 @@
                                     (SymbolTable
                                         15
                                         {
-                                            1_point_x:
-                                                (ExternalSymbol
-                                                    15
-                                                    1_point_x
-                                                    10 x
-                                                    points
-                                                    [point]
-                                                    x
-                                                    Public
-                                                ),
-                                            1_point_y:
-                                                (ExternalSymbol
-                                                    15
-                                                    1_point_y
-                                                    10 y
-                                                    points
-                                                    [point]
-                                                    y
-                                                    Public
-                                                ),
                                             a:
                                                 (Variable
                                                     15
@@ -774,14 +754,14 @@
                                                     (RealBinOp
                                                         (StructInstanceMember
                                                             (Var 15 a)
-                                                            15 1_point_x
+                                                            13 1_point_x
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 15 b)
-                                                            15 1_point_x
+                                                            13 1_point_x
                                                             (Real 4)
                                                             ()
                                                         )
@@ -798,14 +778,14 @@
                                                     (RealBinOp
                                                         (StructInstanceMember
                                                             (Var 15 a)
-                                                            15 1_point_y
+                                                            13 1_point_y
                                                             (Real 4)
                                                             ()
                                                         )
                                                         Sub
                                                         (StructInstanceMember
                                                             (Var 15 b)
-                                                            15 1_point_y
+                                                            13 1_point_y
                                                             (Real 4)
                                                             ()
                                                         )

@@ -7,31 +7,31 @@
                     (SymbolTable
                         15
                         {
+                            1_git_target_t_object:
+                                (ExternalSymbol
+                                    15
+                                    1_git_target_t_object
+                                    16 object
+                                    fpm_git1
+                                    [git_target_t]
+                                    object
+                                    Private
+                                ),
+                            1_git_target_t_url:
+                                (ExternalSymbol
+                                    15
+                                    1_git_target_t_url
+                                    16 url
+                                    fpm_git1
+                                    [git_target_t]
+                                    url
+                                    Private
+                                ),
                             git_target_branch:
                                 (Function
                                     (SymbolTable
                                         17
                                         {
-                                            1_git_target_t_object:
-                                                (ExternalSymbol
-                                                    17
-                                                    1_git_target_t_object
-                                                    16 object
-                                                    fpm_git1
-                                                    [git_target_t]
-                                                    object
-                                                    Public
-                                                ),
-                                            1_git_target_t_url:
-                                                (ExternalSymbol
-                                                    17
-                                                    1_git_target_t_url
-                                                    16 url
-                                                    fpm_git1
-                                                    [git_target_t]
-                                                    url
-                                                    Public
-                                                ),
                                             branch:
                                                 (Variable
                                                     17
@@ -154,7 +154,7 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 17 self)
-                                            17 1_git_target_t_url
+                                            15 1_git_target_t_url
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -170,7 +170,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 17 self)
-                                            17 1_git_target_t_object
+                                            15 1_git_target_t_object
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -292,6 +292,16 @@
                     (SymbolTable
                         8
                         {
+                            1_dependency_config_t_git:
+                                (ExternalSymbol
+                                    8
+                                    1_dependency_config_t_git
+                                    9 git
+                                    fpm_manifest_dependency1
+                                    [dependency_config_t]
+                                    git
+                                    Private
+                                ),
                             dependency_config_t:
                                 (Struct
                                     (SymbolTable
@@ -744,16 +754,6 @@
                                     (SymbolTable
                                         13
                                         {
-                                            1_dependency_config_t_git:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_dependency_config_t_git
-                                                    9 git
-                                                    fpm_manifest_dependency1
-                                                    [dependency_config_t]
-                                                    git
-                                                    Public
-                                                ),
                                             obj:
                                                 (Variable
                                                     13
@@ -908,7 +908,7 @@
                                                 Allocated
                                                 [(StructInstanceMember
                                                     (Var 13 self)
-                                                    13 1_dependency_config_t_git
+                                                    8 1_dependency_config_t_git
                                                     (Allocatable
                                                         (StructType
                                                             [(Allocatable
@@ -934,7 +934,7 @@
                                         [(Allocate
                                             [((StructInstanceMember
                                                 (Var 13 self)
-                                                13 1_dependency_config_t_git
+                                                8 1_dependency_config_t_git
                                                 (Allocatable
                                                     (StructType
                                                         [(Allocatable
@@ -964,7 +964,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 13 self)
-                                            13 1_dependency_config_t_git
+                                            8 1_dependency_config_t_git
                                             (Allocatable
                                                 (StructType
                                                     [(Allocatable
@@ -1084,6 +1084,16 @@
                     (SymbolTable
                         4
                         {
+                            1_executable_config_t_dependency:
+                                (ExternalSymbol
+                                    4
+                                    1_executable_config_t_dependency
+                                    5 dependency
+                                    fpm_manifest_executable
+                                    [executable_config_t]
+                                    dependency
+                                    Private
+                                ),
                             dependency_config_t:
                                 (ExternalSymbol
                                     4
@@ -1329,16 +1339,6 @@
                                     (SymbolTable
                                         6
                                         {
-                                            1_executable_config_t_dependency:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_executable_config_t_dependency
-                                                    5 dependency
-                                                    fpm_manifest_executable
-                                                    [executable_config_t]
-                                                    dependency
-                                                    Public
-                                                ),
                                             child:
                                                 (Variable
                                                     6
@@ -1596,7 +1596,7 @@
                                         ()
                                         [((StructInstanceMember
                                             (Var 6 self)
-                                            6 1_executable_config_t_dependency
+                                            4 1_executable_config_t_dependency
                                             (Allocatable
                                                 (Array
                                                     (StructType

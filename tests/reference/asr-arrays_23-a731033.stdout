@@ -7,31 +7,31 @@
                     (SymbolTable
                         2
                         {
+                            1_toml_context_num:
+                                (ExternalSymbol
+                                    2
+                                    1_toml_context_num
+                                    3 num
+                                    arrays_23
+                                    [toml_context]
+                                    num
+                                    Private
+                                ),
+                            1_toml_context_ptr:
+                                (ExternalSymbol
+                                    2
+                                    1_toml_context_ptr
+                                    3 ptr
+                                    arrays_23
+                                    [toml_context]
+                                    ptr
+                                    Private
+                                ),
                             add_context:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            1_toml_context_num:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_toml_context_num
-                                                    3 num
-                                                    arrays_23
-                                                    [toml_context]
-                                                    num
-                                                    Public
-                                                ),
-                                            1_toml_context_ptr:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_toml_context_ptr
-                                                    3 ptr
-                                                    arrays_23
-                                                    [toml_context]
-                                                    ptr
-                                                    Public
-                                                ),
                                             context:
                                                 (Variable
                                                     4
@@ -210,7 +210,7 @@
                                         (IntegerCompare
                                             (StructInstanceMember
                                                 (Var 4 context)
-                                                4 1_toml_context_num
+                                                2 1_toml_context_num
                                                 (Integer 4)
                                                 ()
                                             )
@@ -232,7 +232,7 @@
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 4 context)
-                                                    4 1_toml_context_num
+                                                    2 1_toml_context_num
                                                     (Integer 4)
                                                     ()
                                                 )]
@@ -335,7 +335,7 @@
                                                 (StringSection
                                                     (StructInstanceMember
                                                         (Var 4 context)
-                                                        4 1_toml_context_ptr
+                                                        2 1_toml_context_ptr
                                                         (Pointer
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )

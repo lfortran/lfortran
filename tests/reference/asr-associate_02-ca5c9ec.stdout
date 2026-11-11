@@ -281,9 +281,7 @@
                                     ()
                                     ()
                                 )
-                                (Pointer
-                                    (Real 8)
-                                )
+                                (Real 8)
                                 ()
                             )
                             RealToInteger
@@ -374,9 +372,7 @@
                             )
                             Mul
                             (Var 2 p3)
-                            (Pointer
-                                (Complex 4)
-                            )
+                            (Complex 4)
                             ()
                         )
                         ()

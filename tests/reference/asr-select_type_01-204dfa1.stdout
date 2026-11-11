@@ -15,7 +15,7 @@
                                     base
                                     []
                                     i
-                                    Public
+                                    Private
                                 ),
                             1_child_j:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     child
                                     []
                                     j
-                                    Public
+                                    Private
                                 ),
                             base:
                                 (Struct
@@ -287,7 +287,7 @@
                                                                     base
                                                                     []
                                                                     i
-                                                                    Public
+                                                                    Private
                                                                 )
                                                         })
                                                     ~select_type_block_
@@ -372,7 +372,7 @@
                                                                     base
                                                                     []
                                                                     i
-                                                                    Public
+                                                                    Private
                                                                 ),
                                                             1_child_j:
                                                                 (ExternalSymbol
@@ -382,7 +382,7 @@
                                                                     child
                                                                     []
                                                                     j
-                                                                    Public
+                                                                    Private
                                                                 )
                                                         })
                                                     ~select_type_block_1

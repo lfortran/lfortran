@@ -15,7 +15,7 @@
                                     allocate_on_assignment_01_m
                                     [item]
                                     v
-                                    Public
+                                    Private
                                 ),
                             1_point_x:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     allocate_on_assignment_01_m
                                     [point]
                                     x
-                                    Public
+                                    Private
                                 ),
                             a:
                                 (Variable
@@ -261,21 +261,21 @@
                     (SymbolTable
                         2
                         {
+                            1_item_v:
+                                (ExternalSymbol
+                                    2
+                                    1_item_v
+                                    4 v
+                                    allocate_on_assignment_01_m
+                                    [item]
+                                    v
+                                    Private
+                                ),
                             fin:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
-                                            1_item_v:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_item_v
-                                                    4 v
-                                                    allocate_on_assignment_01_m
-                                                    [item]
-                                                    v
-                                                    Public
-                                                ),
                                             x:
                                                 (Variable
                                                     5
@@ -334,7 +334,7 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 5 x)
-                                            5 1_item_v
+                                            2 1_item_v
                                             (Integer 4)
                                             ()
                                         )

@@ -15,7 +15,7 @@
                                     shape_mod
                                     [rectangle]
                                     length
-                                    Public
+                                    Private
                                 ),
                             1_rectangle_width:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     shape_mod
                                     [rectangle]
                                     width
-                                    Public
+                                    Private
                                 ),
                             1_shape_color:
                                 (ExternalSymbol
@@ -35,7 +35,7 @@
                                     shape_mod
                                     [shape]
                                     color
-                                    Public
+                                    Private
                                 ),
                             1_shape_filled:
                                 (ExternalSymbol
@@ -45,7 +45,7 @@
                                     shape_mod
                                     [shape]
                                     filled
-                                    Public
+                                    Private
                                 ),
                             1_shape_initialize:
                                 (ExternalSymbol
@@ -65,7 +65,7 @@
                                     shape_mod
                                     [shape]
                                     x
-                                    Public
+                                    Private
                                 ),
                             1_shape_y:
                                 (ExternalSymbol
@@ -75,7 +75,7 @@
                                     shape_mod
                                     [shape]
                                     y
-                                    Public
+                                    Private
                                 ),
                             initialize_subrout:
                                 (ExternalSymbol
@@ -335,51 +335,51 @@
                     (SymbolTable
                         2
                         {
+                            1_shape_color:
+                                (ExternalSymbol
+                                    2
+                                    1_shape_color
+                                    3 color
+                                    shape_mod
+                                    [shape]
+                                    color
+                                    Private
+                                ),
+                            1_shape_filled:
+                                (ExternalSymbol
+                                    2
+                                    1_shape_filled
+                                    3 filled
+                                    shape_mod
+                                    [shape]
+                                    filled
+                                    Private
+                                ),
+                            1_shape_x:
+                                (ExternalSymbol
+                                    2
+                                    1_shape_x
+                                    3 x
+                                    shape_mod
+                                    [shape]
+                                    x
+                                    Private
+                                ),
+                            1_shape_y:
+                                (ExternalSymbol
+                                    2
+                                    1_shape_y
+                                    3 y
+                                    shape_mod
+                                    [shape]
+                                    y
+                                    Private
+                                ),
                             initialize_subrout:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
-                                            1_shape_color:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_shape_color
-                                                    3 color
-                                                    shape_mod
-                                                    [shape]
-                                                    color
-                                                    Public
-                                                ),
-                                            1_shape_filled:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_shape_filled
-                                                    3 filled
-                                                    shape_mod
-                                                    [shape]
-                                                    filled
-                                                    Public
-                                                ),
-                                            1_shape_x:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_shape_x
-                                                    3 x
-                                                    shape_mod
-                                                    [shape]
-                                                    x
-                                                    Public
-                                                ),
-                                            1_shape_y:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_shape_y
-                                                    3 y
-                                                    shape_mod
-                                                    [shape]
-                                                    y
-                                                    Public
-                                                ),
                                             color:
                                                 (Variable
                                                     5
@@ -556,7 +556,7 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 5 sh)
-                                            5 1_shape_color
+                                            2 1_shape_color
                                             (Integer 4)
                                             ()
                                         )
@@ -570,7 +570,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 5 sh)
-                                            5 1_shape_filled
+                                            2 1_shape_filled
                                             (Logical 4)
                                             ()
                                         )
@@ -584,7 +584,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 5 sh)
-                                            5 1_shape_x
+                                            2 1_shape_x
                                             (Integer 4)
                                             ()
                                         )
@@ -598,7 +598,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 5 sh)
-                                            5 1_shape_y
+                                            2 1_shape_y
                                             (Integer 4)
                                             ()
                                         )

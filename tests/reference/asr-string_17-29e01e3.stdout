@@ -7,6 +7,16 @@
                     (SymbolTable
                         2
                         {
+                            1_string_type_raw:
+                                (ExternalSymbol
+                                    2
+                                    1_string_type_raw
+                                    3 raw
+                                    string_17_string_module
+                                    [string_type]
+                                    raw
+                                    Private
+                                ),
                             len:
                                 (GenericProcedure
                                     2
@@ -19,16 +29,6 @@
                                     (SymbolTable
                                         4
                                         {
-                                            1_string_type_raw:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_string_type_raw
-                                                    3 raw
-                                                    string_17_string_module
-                                                    [string_type]
-                                                    raw
-                                                    Public
-                                                ),
                                             length:
                                                 (Variable
                                                     4
@@ -120,7 +120,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 4 string)
-                                                4 1_string_type_raw
+                                                2 1_string_type_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -135,7 +135,7 @@
                                             (StringLen
                                                 (StructInstanceMember
                                                     (Var 4 string)
-                                                    4 1_string_type_raw
+                                                    2 1_string_type_raw
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
@@ -171,16 +171,6 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_string_type_raw:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_string_type_raw
-                                                    3 raw
-                                                    string_17_string_module
-                                                    [string_type]
-                                                    raw
-                                                    Public
-                                                ),
                                             maybe_string:
                                                 (Variable
                                                     5
@@ -298,7 +288,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 5 string)
-                                                5 1_string_type_raw
+                                                2 1_string_type_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -312,7 +302,7 @@
                                             (Var 5 maybe_string)
                                             (StructInstanceMember
                                                 (Var 5 string)
-                                                5 1_string_type_raw
+                                                2 1_string_type_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )

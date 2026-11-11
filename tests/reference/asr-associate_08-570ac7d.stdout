@@ -15,7 +15,7 @@
                                     associate_08_module_1
                                     [t_1]
                                     i
-                                    Public
+                                    Private
                                 ),
                             1_t_2_type_2:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     associate_08_module_1
                                     [t_2]
                                     type_2
-                                    Public
+                                    Private
                                 ),
                             sub_1:
                                 (ExternalSymbol
@@ -305,31 +305,31 @@
                     (SymbolTable
                         2
                         {
+                            1_t_1_i:
+                                (ExternalSymbol
+                                    2
+                                    1_t_1_i
+                                    3 i
+                                    associate_08_module_1
+                                    [t_1]
+                                    i
+                                    Private
+                                ),
+                            1_t_2_type_2:
+                                (ExternalSymbol
+                                    2
+                                    1_t_2_type_2
+                                    4 type_2
+                                    associate_08_module_1
+                                    [t_2]
+                                    type_2
+                                    Private
+                                ),
                             sub_1:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
-                                            1_t_1_i:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_t_1_i
-                                                    3 i
-                                                    associate_08_module_1
-                                                    [t_1]
-                                                    i
-                                                    Public
-                                                ),
-                                            1_t_2_type_2:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_t_2_type_2
-                                                    4 type_2
-                                                    associate_08_module_1
-                                                    [t_2]
-                                                    type_2
-                                                    Public
-                                                ),
                                             associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
@@ -371,7 +371,7 @@
                                                             (ArrayItem
                                                                 (StructInstanceMember
                                                                     (Var 5 type_1)
-                                                                    5 1_t_2_type_2
+                                                                    2 1_t_2_type_2
                                                                     (Pointer
                                                                         (Array
                                                                             (StructType
@@ -401,7 +401,7 @@
                                                                 ()
                                                                 .false.
                                                             )
-                                                            5 1_t_1_i
+                                                            2 1_t_1_i
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -529,7 +529,7 @@
                                     [(Allocate
                                         [((StructInstanceMember
                                             (Var 5 type_1)
-                                            5 1_t_2_type_2
+                                            2 1_t_2_type_2
                                             (Pointer
                                                 (Array
                                                     (StructType
@@ -570,41 +570,11 @@
                                     (SymbolTable
                                         6
                                         {
-                                            1_t_2_type_2:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_t_2_type_2
-                                                    4 type_2
-                                                    associate_08_module_1
-                                                    [t_2]
-                                                    type_2
-                                                    Public
-                                                ),
                                             associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
                                                         9
                                                         {
-                                                            1_t_1_i:
-                                                                (ExternalSymbol
-                                                                    9
-                                                                    1_t_1_i
-                                                                    3 i
-                                                                    associate_08_module_1
-                                                                    [t_1]
-                                                                    i
-                                                                    Public
-                                                                ),
-                                                            1_t_2_type_2:
-                                                                (ExternalSymbol
-                                                                    9
-                                                                    1_t_2_type_2
-                                                                    4 type_2
-                                                                    associate_08_module_1
-                                                                    [t_2]
-                                                                    type_2
-                                                                    Public
-                                                                ),
                                                             target:
                                                                 (Variable
                                                                     9
@@ -690,7 +660,7 @@
                                                             (ArrayItem
                                                                 (StructInstanceMember
                                                                     (Var 9 target)
-                                                                    9 1_t_2_type_2
+                                                                    2 1_t_2_type_2
                                                                     (Pointer
                                                                         (Array
                                                                             (StructType
@@ -720,7 +690,7 @@
                                                                 ()
                                                                 .false.
                                                             )
-                                                            9 1_t_1_i
+                                                            2 1_t_1_i
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -871,7 +841,7 @@
                                                 ()
                                                 .false.
                                             )
-                                            6 1_t_2_type_2
+                                            2 1_t_2_type_2
                                             (Pointer
                                                 (Array
                                                     (StructType

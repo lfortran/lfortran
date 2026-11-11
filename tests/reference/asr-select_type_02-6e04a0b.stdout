@@ -110,7 +110,7 @@
                                     color_point
                                     []
                                     color
-                                    Public
+                                    Private
                                 ),
                             1_point_3d_z:
                                 (ExternalSymbol
@@ -120,7 +120,7 @@
                                     point_3d
                                     []
                                     z
-                                    Public
+                                    Private
                                 ),
                             1_point_x:
                                 (ExternalSymbol
@@ -130,7 +130,7 @@
                                     derived_type_collection
                                     [point]
                                     x
-                                    Public
+                                    Private
                                 ),
                             1_point_y:
                                 (ExternalSymbol
@@ -140,7 +140,7 @@
                                     derived_type_collection
                                     [point]
                                     y
-                                    Public
+                                    Private
                                 ),
                             color_point:
                                 (Struct
@@ -397,7 +397,7 @@
                                                     derived_type_collection
                                                     [point]
                                                     x
-                                                    Public
+                                                    Private
                                                 ),
                                             1_point_y:
                                                 (ExternalSymbol
@@ -407,7 +407,7 @@
                                                     derived_type_collection
                                                     [point]
                                                     y
-                                                    Public
+                                                    Private
                                                 ),
                                             an:
                                                 (Variable
@@ -506,7 +506,7 @@
                                                     color_point
                                                     []
                                                     color
-                                                    Public
+                                                    Private
                                                 ),
                                             1_point_x:
                                                 (ExternalSymbol
@@ -516,7 +516,7 @@
                                                     derived_type_collection
                                                     [point]
                                                     x
-                                                    Public
+                                                    Private
                                                 ),
                                             1_point_y:
                                                 (ExternalSymbol
@@ -526,7 +526,7 @@
                                                     derived_type_collection
                                                     [point]
                                                     y
-                                                    Public
+                                                    Private
                                                 ),
                                             an:
                                                 (Variable

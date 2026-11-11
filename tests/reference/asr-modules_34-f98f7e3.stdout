@@ -192,6 +192,16 @@
                     (SymbolTable
                         4
                         {
+                            1_package_config_t_version:
+                                (ExternalSymbol
+                                    4
+                                    1_package_config_t_version
+                                    11 version
+                                    fpm_manifest_package_modules_34
+                                    [package_config_t]
+                                    version
+                                    Private
+                                ),
                             build_model:
                                 (Function
                                     (SymbolTable
@@ -202,16 +212,6 @@
                                                     (SymbolTable
                                                         6
                                                         {
-                                                            1_package_config_t_version:
-                                                                (ExternalSymbol
-                                                                    6
-                                                                    1_package_config_t_version
-                                                                    11 version
-                                                                    fpm_manifest_package_modules_34
-                                                                    [package_config_t]
-                                                                    version
-                                                                    Public
-                                                                ),
                                                             1_version_t:
                                                                 (ExternalSymbol
                                                                     6
@@ -285,7 +285,7 @@
                                                         ()
                                                         [((StructInstanceMember
                                                             (Var 5 package)
-                                                            6 1_package_config_t_version
+                                                            4 1_package_config_t_version
                                                             (StructType
                                                                 [(Allocatable
                                                                     (Array
@@ -305,7 +305,7 @@
                                                         ((Var 5 version))]
                                                         (StructInstanceMember
                                                             (Var 5 package)
-                                                            6 1_package_config_t_version
+                                                            4 1_package_config_t_version
                                                             (StructType
                                                                 [(Allocatable
                                                                     (Array
