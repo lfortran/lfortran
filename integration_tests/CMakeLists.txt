@@ -1709,6 +1709,7 @@ RUN(NAME procedure_pointer_47 LABELS gfortran llvm EXTRA_ARGS --implicit-interfa
 RUN(NAME procedure_pointer_48 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type of the declaring scope (#16414)
 RUN(NAME procedure_pointer_49 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # typed pointer passed to an external dummy (#16414)
 RUN(NAME procedure_pointer_50 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type in an internal procedure of a program (#16414)
+RUN(NAME procedure_pointer_51 LABELS gfortran llvm EXTRAFILES procedure_pointer_51_mod.f90)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 

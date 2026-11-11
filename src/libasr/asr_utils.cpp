@@ -12077,15 +12077,34 @@ ASR::symbol_t* import_struct_instance_member(Allocator& al,
         struct_t_import_scope->add_symbol(struct_external_symbol_name, struct_external_symbol);
     }
 
-    std::string struct_member_external_symbol_name = "1_" + struct_t_name + "_" + struct_member_name;
-    if (scope->get_symbol(struct_member_external_symbol_name) == nullptr) {
-        ASR::symbol_t* struct_member_external_symbol = make_struct_member_external_symbol(
-            al, struct_member->base.loc, scope, struct_member_external_symbol_name,
-            struct_member, struct_external_symbol_name, ASR::accessType::Public);
-        scope->add_symbol(struct_member_external_symbol_name, struct_member_external_symbol);
+    // A procedure-pointer component stores this member in its interface
+    // when the interface uses it as an array bound (`dimension(me%n)`).
+    // The derived type is loaded before that procedure, so the member
+    // symbol has to live in the module: that symbol table already exists
+    // while the type is read back. A symbol in the procedure does not.
+    SymbolTable* member_scope = scope;
+    for (SymbolTable* candidate = scope; candidate != nullptr;
+            candidate = candidate->parent) {
+        if (candidate->asr_owner == nullptr ||
+                !ASR::is_a<ASR::symbol_t>(*candidate->asr_owner)) {
+            continue;
+        }
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(candidate->asr_owner);
+        if (ASR::is_a<ASR::Module_t>(*owner) || ASRUtils::is_device_kernel(owner)) {
+            member_scope = candidate;
+            break;
+        }
     }
 
-    return scope->get_symbol(struct_member_external_symbol_name);
+    std::string struct_member_external_symbol_name = "1_" + struct_t_name + "_" + struct_member_name;
+    if (member_scope->get_symbol(struct_member_external_symbol_name) == nullptr) {
+        ASR::symbol_t* struct_member_external_symbol = make_struct_member_external_symbol(
+            al, struct_member->base.loc, member_scope, struct_member_external_symbol_name,
+            struct_member, struct_external_symbol_name, ASR::accessType::Public);
+        member_scope->add_symbol(struct_member_external_symbol_name, struct_member_external_symbol);
+    }
+
+    return member_scope->get_symbol(struct_member_external_symbol_name);
 }
 
 ASR::symbol_t* import_enum_member(Allocator& al, ASR::symbol_t* v,
