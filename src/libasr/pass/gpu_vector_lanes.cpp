@@ -3042,6 +3042,86 @@ private:
             Vec<ASR::stmt_t*> &out) {
         const Location &loc = g->base.loc;
         ASRUtils::ASRBuilder b(al, loc);
+        auto *gloop = ASR::down_cast<ASR::DoLoop_t>(g);
+        // The term of the group that does not depend on the sum of the
+        // inner loop (`offsets(g)*sums(g)` of `scale(g)*sum + offsets(g)*
+        // sums(g)`), when it is read from memory by the loop variable
+        // alone: the lanes add up those of their own groups after the loop,
+        // instead of the first lane waiting for them in every group.
+        ASR::stmt_t *term_loop = nullptr;
+        {
+            auto *u = ASR::down_cast<ASR::RealBinOp_t>(d.update->m_value);
+            auto is_total = [&](ASR::expr_t *e) {
+                return ASR::is_a<ASR::Var_t>(*e) && root_of(e) == d.total;
+            };
+            ASR::expr_t *x = is_total(u->m_left) ? u->m_right : u->m_left;
+            if (ASR::is_a<ASR::Var_t>(*x) && d.chain.size() > 0) {
+                ASR::symbol_t *m = root_of(x);
+                ASR::Assignment_t *def = nullptr;
+                for (ASR::Assignment_t *a : d.chain) {
+                    if (root_of(a->m_target) == m) def = a;
+                }
+                size_t readers = 0;
+                for (size_t i = 0; i < gloop->n_body; i++) {
+                    if (mentions(*gloop->m_body[i], m)) readers++;
+                }
+                Effects assigned(k);
+                for (size_t i = 0; i < gloop->n_body; i++) {
+                    assigned.visit_stmt(*gloop->m_body[i]);
+                }
+                if (def && readers == 2 && ASR::is_a<ASR::RealBinOp_t>(
+                        *def->m_value) && gloop->m_head.m_v) {
+                    auto *e = ASR::down_cast<ASR::RealBinOp_t>(def->m_value);
+                    bool l = mentions_any(e->m_left, d.derived);
+                    bool r = mentions_any(e->m_right, d.derived);
+                    if (l != r && (e->m_op == ASR::binopType::Add
+                            || (e->m_op == ASR::binopType::Sub && l))) {
+                        ASR::expr_t *other = l ? e->m_right : e->m_left;
+                        bool pure = !mentions(other, d.total);
+                        ASR::symbol_t *gv = root_of(gloop->m_head.m_v);
+                        for (ASR::symbol_t *v : assigned.scalars) {
+                            if (v != gv && mentions(other, v)) pure = false;
+                        }
+                        if (pure) {
+                            ASR::ttype_t *vt = ASRUtils::expr_type(
+                                gloop->m_head.m_v);
+                            ASR::expr_t *v2 = b.Variable(k.fn->m_symtab,
+                                k.fn->m_symtab->get_unique_name(
+                                    "__gpu_lane_group"),
+                                ASRUtils::duplicate_type(al, vt),
+                                ASR::intentType::Local);
+                            GpuDuplicator dup(al, k.fn->m_symtab);
+                            dup.value_map[gv] = v2;
+                            ASR::expr_t *q = dup.duplicate_expr(other);
+                            ASRUtils::ExprStmtDuplicator copy(al);
+                            copy.allow_procedure_calls = true;
+                            auto step = [&]() {
+                                return gloop->m_head.m_increment
+                                    ? copy.duplicate_expr(
+                                        gloop->m_head.m_increment)
+                                    : b.i_t(1, vt);
+                            };
+                            ASR::expr_t *lanes = b.i2i_t(lanes_var(loc), vt);
+                            ASR::expr_t *lane = b.i2i_t(lane_index(loc), vt);
+                            bool negative = e->m_op == ASR::binopType::Sub;
+                            ASR::expr_t *sum = negative
+                                ? b.Sub(b.Var(d.total), q)
+                                : b.Add(b.Var(d.total), q);
+                            if (dup.ok) {
+                                term_loop = b.DoLoop(v2,
+                                    b.Add(copy.duplicate_expr(
+                                        gloop->m_head.m_start),
+                                        b.Mul(lane, step())),
+                                    copy.duplicate_expr(gloop->m_head.m_end),
+                                    {b.Assignment(b.Var(d.total), sum)},
+                                    b.Mul(step(), lanes));
+                                def->m_value = l ? e->m_left : e->m_right;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         for (ASR::Assignment_t *a : d.chain) {
             linear_in(a->m_value, d.derived, true);
         }
@@ -3102,6 +3182,7 @@ private:
         } else {
             out.push_back(al, g);
         }
+        if (term_loop) out.push_back(al, term_loop);
         finish.push_back(b.Assignment(b.Var(d.total),
             ASRUtils::EXPR(ASR::make_GpuLaneReduce_t(al, loc,
                 b.Var(d.total), ASR::reduction_opType::ReduceAdd,

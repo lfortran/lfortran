@@ -5759,6 +5759,12 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_lanes_exact_01.f90"
 gpu_cuda_kernel = true
 
+# On an NVIDIA GPU, the term of a group that does not depend on the sum of its
+# codes is added up by the lanes, over the groups of their own, after the loop.
+[[test]]
+filename = "../integration_tests/gpu_lanes_term_01.f90"
+gpu_cuda_kernel = true
+
 # On an NVIDIA GPU, a launch of a few iterations gives each the lanes of a
 # whole block, which combine their values across warps in shared memory.
 [[test]]
