@@ -2283,6 +2283,8 @@ lf_float128 lf_f128_erfc(lf_float128 a) {
  *
  * log Γ(z) for z >= 40 is the Stirling series. Smaller positive arguments
  * are shifted up by the recurrence. The coefficients are B2..B32.
+ * A positive integer whose factorial is an exact binary128 value uses that
+ * product instead: shifting a small integer cancels and is not (n-1)!.
  * ======================================================================== */
 
 static const char *const f128_bernoulli_even[] = {
@@ -2335,8 +2337,43 @@ static lf_float128 f128_stirling_log_gamma(lf_float128 z) {
     return lg;
 }
 
+/* 1 and n_out set when x is a positive integer. Values above 1e6 are
+ * reported as 1000001 so the factorial loop stays short; gamma overflows
+ * much earlier. */
+static int f128_positive_int(lf_float128 x, int64_t *n_out) {
+    f128_parts p = f128_unpack(x);
+    if (p.is_nan || p.is_inf || p.sign || p.is_zero) return 0;
+    if (f128_cmp_internal(x, lf_f128_floor(x)) != 0) return 0;
+    if (f128_cmp_internal(x, f_int(1000000)) > 0) {
+        *n_out = 1000001;
+        return 1;
+    }
+    *n_out = __fixtfdi_lf_impl(x);
+    return 1;
+}
+
+/* (n-1)! when every partial product is an exact binary128 value.
+ * Binary128 holds (n-1)! exactly for every n <= 32, which is where the
+ * shifted Stirling series below is not the factorial. */
+static int f128_factorial_exact(int64_t n, lf_float128 *out) {
+    if (n < 1 || n > 1000000) return 0;
+    lf_float128 p = f128_one();
+    for (int64_t k = 2; k < n; k++) {
+        f128_dw pr = two_prod(p, f_int(k));
+        if (!f128_is_zero(pr.lo) || f128_is_inf(pr.hi)) return 0;
+        p = pr.hi;
+    }
+    *out = p;
+    return 1;
+}
+
 /* ln Γ(x) for x > 0, shifted into the Stirling range. */
 static lf_float128 f128_log_gamma_pos(lf_float128 x) {
+    int64_t n_int = 0;
+    lf_float128 fac;
+    if (f128_positive_int(x, &n_int) && f128_factorial_exact(n_int, &fac)) {
+        return lf_f128_log(fac);
+    }
     lf_float128 z = x;
     int n = 0;
     lf_float128 limit = f_int(40);
@@ -2375,6 +2412,11 @@ lf_float128 lf_f128_tgamma(lf_float128 x) {
     if (p.is_nan) return x;
     if (p.is_inf) return p.sign ? f128_make_nan() : f128_make_inf(0);
     if (f128_is_nonpos_int(x)) return f128_make_nan();
+    int64_t n_int = 0;
+    lf_float128 fac;
+    if (f128_positive_int(x, &n_int) && f128_factorial_exact(n_int, &fac)) {
+        return fac;
+    }
     if (f128_cmp_internal(x, f128_half()) < 0) {
         lf_float128 pi = lf_float128_from_str(
             "3.14159265358979323846264338327950288");
@@ -2398,24 +2440,89 @@ lf_float128 lf_f128_hypot(lf_float128 x, lf_float128 y) {
     return f_mul(ax, lf_f128_sqrt(f_add(f128_one(), f_mul(r, r))));
 }
 
-/* J_n(|x|) for n >= 0, power series. */
+static int f128_mag_exp(lf_float128 a) {
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan || p.is_inf) return 200000;
+    if (p.is_zero) return -200000;
+    return (int)p.exp;
+}
+
+/* J_n(|x|) for n >= 0. The power series is used only when its terms
+ * decrease from the first one, so a relative-term test cannot stop while
+ * a later term still dominates. */
+static int f128_bessel_series_safe(int n, lf_float128 ax) {
+    lf_float128 half = f128_scale(ax, -1);
+    lf_float128 h2 = f_mul(half, half);
+    if (f128_is_inf(h2) || f128_is_nan(h2)) return 0;
+    return f128_cmp_internal(h2, f_int((int64_t)n + 1)) <= 0;
+}
+
 static lf_float128 f128_bessel_j_series(int n, lf_float128 ax) {
     lf_float128 half = f128_scale(ax, -1);
     lf_float128 term = f128_one();
     for (int i = 1; i <= n; i++) {
         term = f_div(f_mul(term, half), f_int(i));
+        if (f128_is_zero(term)) return f128_make_zero(0);
     }
     lf_float128 sum = term;
     lf_float128 half2 = f_mul(half, half);
+    lf_float128 prev = term;
     lf_float128 eps = lf_float128_from_str("1e-40");
-    for (int k = 1; k < 400; k++) {
+    for (int k = 1; k < 4000; k++) {
         term = f_neg(f_div(f_mul(term, half2),
             f_mul(f_int(k), f_int((int64_t)n + k))));
         sum = f_add(sum, term);
-        if (f128_cmp_internal(lf_f128_abs(term),
+        lf_float128 at = lf_f128_abs(term);
+        int decreasing = f128_cmp_internal(at, lf_f128_abs(prev)) < 0;
+        if (decreasing && f128_cmp_internal(at,
                 f_mul(lf_f128_abs(sum), eps)) < 0) break;
+        if (f128_is_zero(term)) break;
+        prev = term;
     }
     return sum;
+}
+
+/* Downward recurrence (Miller). m is past both the order and |x|, with
+ * enough extra terms for a binary128 residual (about 160 + 4*sqrt). */
+static lf_float128 f128_jn_miller(int n, lf_float128 ax) {
+    double dax = f_dbl(ax);
+    int ix = (dax >= 0.0 && dax < 2.0e9) ? (int)dax + 1 : 2000000000;
+    int base = n > ix ? n : ix;
+    double root = sqrt((double)base);
+    if (!(root < 1.0e8)) root = 1.0e8;
+    int extra = 160 + (int)(4.0 * root);
+    if (extra < 160) extra = 160;
+    if (base > 2000000000 - extra) return f128_bessel_j_series(n, ax);
+    int m = base + extra;
+    /* A start past this is not worth a compile-time loop of length |x|.
+     * The tested arguments sit far below it. */
+    if (m > 250000) return f128_bessel_j_series(n, ax);
+
+    lf_float128 two_over = f_div(f128_two(), ax);
+    lf_float128 f_next = f128_make_zero(0);
+    lf_float128 f_curr = f128_one();
+    lf_float128 f_n = (m == n) ? f_curr : f128_make_zero(0);
+    lf_float128 sum_even = ((m & 1) == 0) ? f_curr : f128_make_zero(0);
+    for (int k = m; k >= 1; k--) {
+        if (f128_mag_exp(f_curr) > 8000 || f128_mag_exp(f_next) > 8000
+                || f128_mag_exp(sum_even) > 8000 || f128_mag_exp(f_n) > 8000) {
+            f_curr = f128_scale(f_curr, -8000);
+            f_next = f128_scale(f_next, -8000);
+            sum_even = f128_scale(sum_even, -8000);
+            f_n = f128_scale(f_n, -8000);
+        }
+        lf_float128 f_prev = f_sub(f_mul(f_mul(f_int(k), two_over), f_curr),
+                                   f_next);
+        f_next = f_curr;
+        f_curr = f_prev;
+        if (k - 1 == n) f_n = f_curr;
+        if (((k - 1) & 1) == 0) sum_even = f_add(sum_even, f_curr);
+    }
+    lf_float128 s = f_sub(f_mul(f128_two(), sum_even), f_curr);
+    if (f128_is_zero(s) || f128_is_nan(s) || f128_is_inf(s)) {
+        return f128_bessel_j_series(n, ax);
+    }
+    return f_div(f_n, s);
 }
 
 lf_float128 lf_f128_jn(int n, lf_float128 x) {
@@ -2423,51 +2530,120 @@ lf_float128 lf_f128_jn(int n, lf_float128 x) {
     if (p.is_nan || p.is_inf) return f128_make_nan();
     int flip = 0;
     if (n < 0) {
+        if (n == (-2147483647 - 1)) return f128_make_nan();
         n = -n;
         if (n & 1) flip ^= 1;
     }
     if (p.sign && (n & 1)) flip ^= 1;
-    /* Bound the series; the folded cases use a small order. */
-    if (n > 2048) return f128_make_zero(flip);
-    lf_float128 r = f128_bessel_j_series(n, lf_f128_abs(x));
+    lf_float128 ax = lf_f128_abs(x);
+    lf_float128 r;
+    if (f128_is_zero(ax)) {
+        r = (n == 0) ? f128_one() : f128_make_zero(0);
+    } else if (f128_bessel_series_safe(n, ax)) {
+        r = f128_bessel_j_series(n, ax);
+    } else {
+        r = f128_jn_miller(n, ax);
+    }
     return flip ? f_neg(r) : r;
 }
 
 lf_float128 lf_f128_j0(lf_float128 x) { return lf_f128_jn(0, x); }
 lf_float128 lf_f128_j1(lf_float128 x) { return lf_f128_jn(1, x); }
 
+/* Hankel expansion of Y0 (DLMF 10.17). Accurate for x > 40; below that
+ * the truncated series is short of binary128. */
+static lf_float128 f128_y0_hankel(lf_float128 x) {
+    lf_float128 t = f128_one();
+    lf_float128 P = f128_one();
+    lf_float128 Q = f128_make_zero(0);
+    lf_float128 bestP = P, bestQ = Q;
+    int min_e = 200000;
+    for (int k = 0; k < 8000; k++) {
+        /* t <- t * a_{k+1}/a_k / x, with a_{k+1}/a_k = -(2k+1)^2/(8(k+1)). */
+        lf_float128 odd = f_int(2 * (int64_t)k + 1);
+        lf_float128 factor = f_div(f_neg(f_mul(odd, odd)),
+            f_mul(f_mul(f_int(8), f_int((int64_t)k + 1)), x));
+        t = f_mul(t, factor);
+        if (f128_is_zero(t) || f128_is_inf(t) || f128_is_nan(t)) break;
+        int idx = k + 1;
+        if ((idx & 1) == 0) {
+            int m = idx / 2;
+            P = (m & 1) ? f_sub(P, t) : f_add(P, t);
+        } else {
+            int m = idx / 2;
+            Q = (m & 1) ? f_sub(Q, t) : f_add(Q, t);
+        }
+        int e = f128_mag_exp(t);
+        int smaller = e < min_e;
+        if (smaller) {
+            min_e = e;
+            bestP = P;
+            bestQ = Q;
+        }
+        /* Terms fall until k ~ 2x, then diverge. Stop once they grow,
+         * or once a decreasing term is below the binary128 residual. */
+        if (k > 4 && e > min_e + 3) break;
+        if (k > 4 && smaller && e < -140) break;
+    }
+    P = bestP;
+    Q = bestQ;
+    lf_float128 s = lf_f128_sin(x);
+    lf_float128 c = lf_f128_cos(x);
+    lf_float128 inv_sqrt2 = f_div(f128_one(), lf_f128_sqrt(f128_two()));
+    lf_float128 sinw = f_mul(f_sub(s, c), inv_sqrt2);
+    lf_float128 cosw = f_mul(f_add(s, c), inv_sqrt2);
+    lf_float128 pi = lf_float128_from_str(
+        "3.14159265358979323846264338327950288");
+    lf_float128 amp = lf_f128_sqrt(f_div(f128_two(), f_mul(pi, x)));
+    return f_mul(amp, f_add(f_mul(sinw, P), f_mul(cosw, Q)));
+}
+
+/* Y0 power series, accumulated as a double-word so the exp(|x|)
+ * intermediate terms do not wipe the sum for moderate x. */
+static lf_float128 f128_y0_series(lf_float128 x) {
+    lf_float128 pi = lf_float128_from_str(
+        "3.14159265358979323846264338327950288");
+    f128_dw gamma_e = dw_make(lf_float128_from_str(
+        "0.577215664901532860606512090082402431"), f128_make_zero(0));
+    f128_dw j0 = dw_make(lf_f128_j0(x), f128_make_zero(0));
+    f128_dw ln = f128_log_dw(f128_scale(x, -1));
+    f128_dw ln_j0 = dw_mul(ln, j0);
+    f128_dw sum = dw_make(f128_make_zero(0), f128_make_zero(0));
+    f128_dw term = dw_make(f128_one(), f128_make_zero(0));
+    lf_float128 half = f128_scale(x, -1);
+    f128_dw half2 = two_prod(half, half);
+    f128_dw H = dw_make(f128_make_zero(0), f128_make_zero(0));
+    int max_e = -200000;
+    int prev_e = 200000;
+    for (int k = 0; k < 4000; k++) {
+        if (k > 0) {
+            H = dw_add(H, dw_div(dw_make(f128_one(), f128_make_zero(0)),
+                                 dw_make(f_int(k), f128_make_zero(0))));
+            f128_dw kk = two_prod(f_int(k), f_int(k));
+            term = dw_div(dw_mul(term, half2), kk);
+        }
+        f128_dw contrib = dw_mul(dw_add(H, dw_neg(gamma_e)), term);
+        if ((k & 1) == 0) contrib = dw_neg(contrib);
+        sum = dw_add(sum, contrib);
+        int e = f128_mag_exp(contrib.hi);
+        if (e > max_e) max_e = e;
+        if (k > 2 && e < prev_e && max_e - e > 220) break;
+        prev_e = e;
+        if (f128_is_zero(contrib.hi) && f128_is_zero(contrib.lo)) break;
+    }
+    f128_dw total = dw_add(ln_j0, sum);
+    return dw_mul_q(total, f_div(f128_two(), pi)).hi;
+}
+
 lf_float128 lf_f128_y0(lf_float128 x) {
     f128_parts p = f128_unpack(x);
     if (p.is_nan || p.sign) return f128_make_nan();
     if (p.is_zero) return f128_make_inf(1);
     if (p.is_inf) return f128_make_zero(0);
-    /* Y0(x) = (2/π) ln(x/2) J0(x)
-     *       + (2/π) Σ_k (-1)^{k+1} ψ(k+1) / (k!)^2 (x/2)^{2k}
-     * ψ(k+1) = -γ + H_k. */
-    lf_float128 pi = lf_float128_from_str(
-        "3.14159265358979323846264338327950288");
-    lf_float128 gamma_e = lf_float128_from_str(
-        "0.577215664901532860606512090082402431");
-    lf_float128 two_over_pi = f_div(f128_two(), pi);
-    lf_float128 j0 = lf_f128_j0(x);
-    lf_float128 ln = lf_f128_log(f128_scale(x, -1));
-    lf_float128 sum = f128_make_zero(0);
-    lf_float128 term = f128_one();
-    lf_float128 half2 = f_mul(f128_scale(x, -1), f128_scale(x, -1));
-    lf_float128 H = f128_make_zero(0);
-    lf_float128 eps = lf_float128_from_str("1e-40");
-    for (int k = 0; k < 400; k++) {
-        if (k > 0) {
-            H = f_add(H, f_div(f128_one(), f_int(k)));
-            term = f_div(f_mul(term, half2), f_mul(f_int(k), f_int(k)));
-        }
-        lf_float128 contrib = f_mul(f_sub(H, gamma_e), term);
-        if ((k & 1) == 0) contrib = f_neg(contrib);
-        sum = f_add(sum, contrib);
-        if (k > 2 && f128_cmp_internal(lf_f128_abs(contrib),
-                f_mul(lf_f128_abs(sum), eps)) < 0) break;
-    }
-    return f_mul(two_over_pi, f_add(f_mul(ln, j0), sum));
+    /* The double-word series loses about |x|/ln(2) bits. Past 40 that is
+     * no longer a binary128 result, and the Hankel expansion is. */
+    if (f128_cmp_internal(x, f_int(40)) > 0) return f128_y0_hankel(x);
+    return f128_y0_series(x);
 }
 
 lf_float128 lf_f128_erfc_scaled(lf_float128 a) {
