@@ -13149,17 +13149,45 @@ ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Location& loc
     }
 }
 
+// The symbolic value of a parameter array, when it is a flat array
+// constructor. Kinds that are not packed into an ArrayConstant (real(16))
+// still have a constant element there.
+static ASR::ArrayConstructor_t* parameter_array_constructor(ASR::expr_t* array) {
+    if (array == nullptr) {
+        return nullptr;
+    }
+    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*array)) {
+        return parameter_array_constructor(
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(array)->m_arg);
+    }
+    if (ASR::is_a<ASR::ArrayConstructor_t>(*array)) {
+        return ASR::down_cast<ASR::ArrayConstructor_t>(array);
+    }
+    if (!ASR::is_a<ASR::Var_t>(*array)) {
+        return nullptr;
+    }
+    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(array)->m_v);
+    if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+        return nullptr;
+    }
+    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+    if (var->m_storage != ASR::storage_typeType::Parameter
+            || var->m_symbolic_value == nullptr
+            || !ASR::is_a<ASR::ArrayConstructor_t>(*var->m_symbolic_value)) {
+        return nullptr;
+    }
+    return ASR::down_cast<ASR::ArrayConstructor_t>(var->m_symbolic_value);
+}
+
 ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
         ASR::array_index_t* indices, size_t n_indices) {
     if (n_indices == 0) {
         return nullptr;
     }
     ASR::expr_t* base_value = ASRUtils::designator_constant_value(al, array);
-    if (base_value == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*base_value)) {
-        return nullptr;
-    }
-    ASR::ArrayConstant_t* array_constant =
-        ASR::down_cast<ASR::ArrayConstant_t>(base_value);
+    bool have_array_constant = base_value != nullptr
+        && ASR::is_a<ASR::ArrayConstant_t>(*base_value);
     ASR::dimension_t* dims = nullptr;
     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
         ASRUtils::expr_type(array), dims);
@@ -13199,12 +13227,33 @@ ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
         flat_index += index * stride;
         stride *= length;
     }
-    if (flat_index < 0 || flat_index >=
-            ASRUtils::get_fixed_size_of_array(array_constant->m_type)) {
+    if (flat_index < 0 || flat_index >= stride) {
         return nullptr;
     }
-    return ASRUtils::fetch_ArrayConstant_value(al, array_constant,
-        flat_index);
+    if (have_array_constant) {
+        ASR::ArrayConstant_t* array_constant =
+            ASR::down_cast<ASR::ArrayConstant_t>(base_value);
+        if (flat_index >= ASRUtils::get_fixed_size_of_array(
+                array_constant->m_type)) {
+            return nullptr;
+        }
+        return ASRUtils::fetch_ArrayConstant_value(al, array_constant,
+            flat_index);
+    }
+    ASR::ArrayConstructor_t* constructor = parameter_array_constructor(array);
+    if (constructor == nullptr
+            || flat_index >= (int64_t) constructor->n_args) {
+        return nullptr;
+    }
+    ASR::expr_t* element = constructor->m_args[flat_index];
+    ASR::expr_t* element_value = ASRUtils::expr_value(element);
+    if (element_value != nullptr && ASRUtils::is_value_constant(element_value)) {
+        return element_value;
+    }
+    if (ASRUtils::is_value_constant(element)) {
+        return element;
+    }
+    return nullptr;
 }
 
 void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type) {

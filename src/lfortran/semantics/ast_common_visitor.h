@@ -17397,64 +17397,19 @@ public:
             }
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
             if (arr_ref_val == nullptr) {
-                ASR::expr_t *val = ASRUtils::designator_constant_value(al, v_Var);
-                if (val) {
-                    val = ASRUtils::expr_value(val);
-                }
-                if (val && ASR::is_a<ASR::ArrayConstant_t>(*val)) {
-                    ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
-                    ASR::dimension_t* dims = nullptr;
-                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
-                        ASRUtils::expr_type(v_Var), dims);
-                    int64_t flat_index = 0;
-                    int64_t stride = 1;
-                    bool can_fold = (args.size() == n_dims);
-                    for (size_t i = 0; can_fold && i < args.size(); i++) {
-                        if (args[i].m_left != nullptr || args[i].m_step != nullptr
-                                || args[i].m_right == nullptr) {
-                            can_fold = false;
-                            break;
-                        }
-                        ASR::expr_t *index =
-                            ASRUtils::expr_value(args[i].m_right);
-                        if (index == nullptr ||
-                                !ASR::is_a<ASR::IntegerConstant_t>(*index)) {
-                            can_fold = false;
-                            break;
-                        }
-                        int64_t lower_bound = 1;
-                        if (dims[i].m_start) {
-                            ASR::expr_t* lb_value =
-                                ASRUtils::expr_value(dims[i].m_start);
-                            if (lb_value &&
-                                    !ASRUtils::extract_value(lb_value, lower_bound)) {
-                                can_fold = false;
-                                break;
-                            }
-                        }
-                        int64_t length = 0;
-                        if (dims[i].m_length == nullptr ||
-                                !ASRUtils::extract_value(dims[i].m_length, length)) {
-                            can_fold = false;
-                            break;
-                        }
-                        flat_index += (ASR::down_cast<ASR::IntegerConstant_t>(
-                            index)->m_n - lower_bound) * stride;
-                        stride *= length;
-                    }
-                    size_t index = flat_index;
-                    if (can_fold && flat_index >= 0 && index < (size_t)
-                            ASRUtils::get_fixed_size_of_array(val2->m_type)) {
-                        arr_ref_val = ASRUtils::fetch_ArrayConstant_value(
-                            al, val2, index);
-                        // Such an element names its target procedure, which
-                        // need not be accessible here, as after
-                        // `use m, only: table`, so it is read from the array
-                        // at run time instead.
-                        if (ASRUtils::struct_constant_names_procedure(arr_ref_val)) {
-                            arr_ref_val = nullptr;
-                        }
-                    }
+                // ArrayConstant covers kinds packed into a data blob.
+                // A parameter array of real(16) has no such blob; its
+                // elements are still compile-time constants on the
+                // constructor.
+                arr_ref_val = ASRUtils::fold_ArrayItem_value(
+                    al, v_Var, args.p, args.size());
+                // Such an element names its target procedure, which
+                // need not be accessible here, as after
+                // `use m, only: table`, so it is read from the array
+                // at run time instead.
+                if (arr_ref_val &&
+                        ASRUtils::struct_constant_names_procedure(arr_ref_val)) {
+                    arr_ref_val = nullptr;
                 }
             }
             if( ASRUtils::is_character(*root_v_type) &&
