@@ -3681,6 +3681,7 @@ RUN(NAME associate_65 LABELS gfortran llvm)
 RUN(NAME associate_66 LABELS gfortran llvm)
 RUN(NAME associate_67 LABELS gfortran llvm)
 RUN(NAME associate_68 LABELS gfortran llvm)
+RUN(NAME associate_69 LABELS gfortran llvm) # value of an associate name used in a real expression argument
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

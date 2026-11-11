@@ -27139,7 +27139,8 @@ public:
 
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
             value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
-            asr = ASR::make_UnsignedIntegerBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+            asr = ASR::make_UnsignedIntegerBinOp_t(al, x.base.base.loc, left, op, right,
+                ASRUtils::type_get_past_pointer(dest_type), value);
 
         } else if (ASRUtils::is_real(*dest_type)) {
 
@@ -27149,7 +27150,8 @@ public:
 
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
             value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
-            asr = ASR::make_RealBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+            asr = ASR::make_RealBinOp_t(al, x.base.base.loc, left, op, right,
+                ASRUtils::type_get_past_pointer(dest_type), value);
 
         } else if (ASRUtils::is_complex(*dest_type)) {
 
@@ -27159,7 +27161,8 @@ public:
 
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
             value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
-            asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+            asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right,
+                ASRUtils::type_get_past_pointer(dest_type), value);
 
         } else if (ASRUtils::is_character(*dest_type)) {
             if (overloaded == nullptr) {
