@@ -908,7 +908,18 @@ private:
     // writes of what a dummy that is not intent(in) holds, and reads of what
     // any dummy holds, except a scalar a launch is handed by value.
     const Deferral::Pending &twin_pending(ASR::Function_t *t) {
-        if (deferral.own.count(t) > 0) {
+        // A twin of a module loaded from its module file whose body this
+        // translation unit has (the default mode compiles the procedures of
+        // every module it uses) is placed here as well, so what it leaves
+        // pending is known as for a twin of the unit's own modules.
+        bool has_body = false;
+        if (deferral.own.count(t) == 0 && deferral.twins.count(t) > 0
+                && t->n_body > 0) {
+            ASR::FunctionType_t *tt = ASRUtils::get_FunctionType(t);
+            has_body = tt->m_abi == ASR::abiType::Source
+                && tt->m_deftype == ASR::deftypeType::Implementation;
+        }
+        if (deferral.own.count(t) > 0 || has_body) {
             deferral.place(t);
             auto it = deferral.pending.find(t);
             if (it != deferral.pending.end() && it->second.known) {
