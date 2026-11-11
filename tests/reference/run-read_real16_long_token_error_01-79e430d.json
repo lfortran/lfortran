@@ -1,0 +1,13 @@
+{
+    "basename": "run-read_real16_long_token_error_01-79e430d",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/read_real16_long_token_error_01.f90",
+    "infile_hash": "a19a21bda4dbc425859fb706d89b89accf3f2c6ffc4f65884af8a307",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-read_real16_long_token_error_01-79e430d.stdout",
+    "stdout_hash": "a98cf5e9eb68a30c7ec4671b2bea7eb34ac4df8307f76d6c1ea46188",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

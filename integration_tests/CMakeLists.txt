@@ -1452,6 +1452,7 @@ RUN(NAME format_quotes_01 LABELS gfortran llvm)
 
 RUN(NAME list_directed_stdin_eof_01 LABELS gfortran llvm COPY_TO_BIN list_directed_stdin_eof_01_data.txt)
 RUN(NAME read_list_directed_no_newline_01 LABELS gfortran llvm)
+RUN(NAME read_real16_long_token_01 LABELS gfortran llvm)
 
 RUN(NAME format_01 LABELS gfortran llvm fortran)
 RUN(NAME format_02 LABELS gfortran llvm fortran)
