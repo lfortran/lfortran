@@ -5094,12 +5094,32 @@ public:
                     ASR::dimension_t *var_dims;
                     ASRUtils::extract_dimensions_from_ttype(base_type, var_dims);
                     Vec<ASR::dimension_t> tmp_dims; tmp_dims.reserve(al, 1);
+                    bool has_vector_subscript = false;
                     for ( size_t i = 0; i < tmp_array_section->n_args; i++ ) {
-                        if (tmp_array_section->m_args[i].m_left) {
+                        // A triplet has its lower bound filled in. A vector
+                        // subscript has no bounds and an array index, and it
+                        // contributes one dimension of the section (F2018
+                        // 9.5.3.1), the same way a triplet does.
+                        ASR::expr_t* subscript = tmp_array_section->m_args[i].m_right;
+                        bool vector_subscript = tmp_array_section->m_args[i].m_left == nullptr
+                            && tmp_array_section->m_args[i].m_step == nullptr
+                            && subscript != nullptr
+                            && ASRUtils::is_array(ASRUtils::expr_type(subscript));
+                        if (tmp_array_section->m_args[i].m_left || vector_subscript) {
                             tmp_dims.push_back(al, var_dims[i]);
                         }
+                        has_vector_subscript = has_vector_subscript || vector_subscript;
                     }
                     tmp_type = ASRUtils::duplicate_type(al, base_type, &tmp_dims);
+                    if (has_vector_subscript) {
+                        // A vector subscript is not a regular strided section,
+                        // so the associate name cannot share the base
+                        // descriptor. Copy the selected elements into an
+                        // allocatable of the section's rank. Its shape is
+                        // fixed when the selector is evaluated.
+                        create_associate_stmt = false;
+                        tmp_type = ASRUtils::duplicate_type_with_empty_dims(al, tmp_type);
+                    }
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
                     create_associate_stmt = !selector_is_constant;
                 } else if (ASR::is_a<ASR::ArrayReshape_t>(*tmp_expr)) {
