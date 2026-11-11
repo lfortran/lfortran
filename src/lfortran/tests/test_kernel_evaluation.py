@@ -332,7 +332,8 @@ def process_running(pid):
     if sys.platform.startswith("linux") and stat.exists():
         try:
             return stat.read_text().split(") ", 1)[1][0] != "Z"
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError):
+            # Reading the stat of a process that is being reaped fails with ESRCH.
             return False
     return True
 
