@@ -13235,6 +13235,14 @@ public:
                     }
                 }
                 if ( variable_added_to_symtab != nullptr ) {
+                    // A derived type's own scope holds its members. An import
+                    // of a type used by an initializer belongs next to the type.
+                    SymbolTable *anchor_scope = current_scope;
+                    if (is_derived_type && current_scope->parent) {
+                        anchor_scope = current_scope->parent;
+                    }
+                    value = ASRUtils::anchor_struct_constants(al, value, anchor_scope);
+                    init_expr = ASRUtils::anchor_struct_constants(al, init_expr, anchor_scope);
                     variable_added_to_symtab->m_value = value;
                     variable_added_to_symtab->m_symbolic_value = init_expr;
                     variable_added_to_symtab->m_storage = storage_type;
@@ -17397,64 +17405,19 @@ public:
             }
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
             if (arr_ref_val == nullptr) {
-                ASR::expr_t *val = ASRUtils::designator_constant_value(al, v_Var);
-                if (val) {
-                    val = ASRUtils::expr_value(val);
-                }
-                if (val && ASR::is_a<ASR::ArrayConstant_t>(*val)) {
-                    ASR::ArrayConstant_t *val2 = ASR::down_cast<ASR::ArrayConstant_t>(val);
-                    ASR::dimension_t* dims = nullptr;
-                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
-                        ASRUtils::expr_type(v_Var), dims);
-                    int64_t flat_index = 0;
-                    int64_t stride = 1;
-                    bool can_fold = (args.size() == n_dims);
-                    for (size_t i = 0; can_fold && i < args.size(); i++) {
-                        if (args[i].m_left != nullptr || args[i].m_step != nullptr
-                                || args[i].m_right == nullptr) {
-                            can_fold = false;
-                            break;
-                        }
-                        ASR::expr_t *index =
-                            ASRUtils::expr_value(args[i].m_right);
-                        if (index == nullptr ||
-                                !ASR::is_a<ASR::IntegerConstant_t>(*index)) {
-                            can_fold = false;
-                            break;
-                        }
-                        int64_t lower_bound = 1;
-                        if (dims[i].m_start) {
-                            ASR::expr_t* lb_value =
-                                ASRUtils::expr_value(dims[i].m_start);
-                            if (lb_value &&
-                                    !ASRUtils::extract_value(lb_value, lower_bound)) {
-                                can_fold = false;
-                                break;
-                            }
-                        }
-                        int64_t length = 0;
-                        if (dims[i].m_length == nullptr ||
-                                !ASRUtils::extract_value(dims[i].m_length, length)) {
-                            can_fold = false;
-                            break;
-                        }
-                        flat_index += (ASR::down_cast<ASR::IntegerConstant_t>(
-                            index)->m_n - lower_bound) * stride;
-                        stride *= length;
-                    }
-                    size_t index = flat_index;
-                    if (can_fold && flat_index >= 0 && index < (size_t)
-                            ASRUtils::get_fixed_size_of_array(val2->m_type)) {
-                        arr_ref_val = ASRUtils::fetch_ArrayConstant_value(
-                            al, val2, index);
-                        // Such an element names its target procedure, which
-                        // need not be accessible here, as after
-                        // `use m, only: table`, so it is read from the array
-                        // at run time instead.
-                        if (ASRUtils::struct_constant_names_procedure(arr_ref_val)) {
-                            arr_ref_val = nullptr;
-                        }
-                    }
+                // ArrayConstant covers kinds packed into a data blob.
+                // A parameter array of real(16) has no such blob; its
+                // elements are still compile-time constants on the
+                // constructor.
+                arr_ref_val = ASRUtils::fold_ArrayItem_value(
+                    al, v_Var, args.p, args.size());
+                // Such an element names its target procedure, which
+                // need not be accessible here, as after
+                // `use m, only: table`, so it is read from the array
+                // at run time instead.
+                if (arr_ref_val &&
+                        ASRUtils::struct_constant_names_procedure(arr_ref_val)) {
+                    arr_ref_val = nullptr;
                 }
             }
             if( ASRUtils::is_character(*root_v_type) &&
@@ -27176,7 +27139,8 @@ public:
 
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
             value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
-            asr = ASR::make_UnsignedIntegerBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+            asr = ASR::make_UnsignedIntegerBinOp_t(al, x.base.base.loc, left, op, right,
+                ASRUtils::type_get_past_pointer(dest_type), value);
 
         } else if (ASRUtils::is_real(*dest_type)) {
 
@@ -27186,7 +27150,8 @@ public:
 
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
             value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
-            asr = ASR::make_RealBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+            asr = ASR::make_RealBinOp_t(al, x.base.base.loc, left, op, right,
+                ASRUtils::type_get_past_pointer(dest_type), value);
 
         } else if (ASRUtils::is_complex(*dest_type)) {
 
@@ -27196,7 +27161,8 @@ public:
 
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
             value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
-            asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+            asr = ASR::make_ComplexBinOp_t(al, x.base.base.loc, left, op, right,
+                ASRUtils::type_get_past_pointer(dest_type), value);
 
         } else if (ASRUtils::is_character(*dest_type)) {
             if (overloaded == nullptr) {
@@ -30979,7 +30945,7 @@ public:
                     /* a_symtab */ current_scope,
                     /* a_name */ s2c(al, item.first),
                     es0->m_external,
-                    es0->m_module_name, nullptr, 0,
+                    es0->m_module_name, es0->m_scope_names, es0->n_scope_names,
                     es0->m_original_name,
                     dflt_access
                     );
@@ -31295,7 +31261,8 @@ public:
                 s2c(al, local_sym),
                 ext_sym->m_external,
                 ext_sym->m_module_name,
-                nullptr, 0, ext_sym->m_original_name,
+                ext_sym->m_scope_names, ext_sym->n_scope_names,
+                ext_sym->m_original_name,
                 dflt_access);
             current_scope->add_or_overwrite_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(temp));
             // If the symbol originates from a different module than the one
@@ -31327,7 +31294,7 @@ public:
 
     void import_use_symbols(ASR::Module_t *m, const AST::Use_t &x) {
         std::string msym = to_lower(x.m_module);
-        if (msym == "ieee_arithmetic") {
+        if (msym == "ieee_arithmetic" || msym == "ieee_exceptions") {
             msym = "lfortran_intrinsic_" + msym;
         }
         if (x.n_symbols == 0) {

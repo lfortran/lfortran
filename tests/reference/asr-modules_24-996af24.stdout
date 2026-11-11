@@ -140,21 +140,21 @@
                     (SymbolTable
                         2
                         {
+                            1_toml_tokenizer_current:
+                                (ExternalSymbol
+                                    2
+                                    1_toml_tokenizer_current
+                                    4 current
+                                    tomlf_de_tokenizer_24
+                                    [toml_tokenizer]
+                                    current
+                                    Private
+                                ),
                             parse_select:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
-                                            1_toml_tokenizer_current:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_toml_tokenizer_current
-                                                    4 current
-                                                    tomlf_de_tokenizer_24
-                                                    [toml_tokenizer]
-                                                    current
-                                                    Public
-                                                ),
                                             de:
                                                 (Variable
                                                     6
@@ -263,7 +263,7 @@
                                     (Associate
                                         (StructInstanceMember
                                             (Var 6 de)
-                                            6 1_toml_tokenizer_current
+                                            2 1_toml_tokenizer_current
                                             (Pointer
                                                 (StructType
                                                     [(Logical 4)]

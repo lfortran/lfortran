@@ -7,41 +7,111 @@
                     (SymbolTable
                         7
                         {
+                            1_toml_date_day:
+                                (ExternalSymbol
+                                    7
+                                    1_toml_date_day
+                                    8 day
+                                    tomlf_datetime
+                                    [toml_date]
+                                    day
+                                    Private
+                                ),
+                            1_toml_date_month:
+                                (ExternalSymbol
+                                    7
+                                    1_toml_date_month
+                                    8 month
+                                    tomlf_datetime
+                                    [toml_date]
+                                    month
+                                    Private
+                                ),
+                            1_toml_date_year:
+                                (ExternalSymbol
+                                    7
+                                    1_toml_date_year
+                                    8 year
+                                    tomlf_datetime
+                                    [toml_date]
+                                    year
+                                    Private
+                                ),
+                            1_toml_datetime_date:
+                                (ExternalSymbol
+                                    7
+                                    1_toml_datetime_date
+                                    9 date
+                                    tomlf_datetime
+                                    [toml_datetime]
+                                    date
+                                    Private
+                                ),
+                            1_toml_datetime_time:
+                                (ExternalSymbol
+                                    7
+                                    1_toml_datetime_time
+                                    9 time
+                                    tomlf_datetime
+                                    [toml_datetime]
+                                    time
+                                    Private
+                                ),
+                            1_toml_time_hour:
+                                (ExternalSymbol
+                                    7
+                                    1_toml_time_hour
+                                    10 hour
+                                    tomlf_datetime
+                                    [toml_time]
+                                    hour
+                                    Private
+                                ),
+                            1_toml_time_millisec:
+                                (ExternalSymbol
+                                    7
+                                    1_toml_time_millisec
+                                    10 millisec
+                                    tomlf_datetime
+                                    [toml_time]
+                                    millisec
+                                    Private
+                                ),
+                            1_toml_time_minute:
+                                (ExternalSymbol
+                                    7
+                                    1_toml_time_minute
+                                    10 minute
+                                    tomlf_datetime
+                                    [toml_time]
+                                    minute
+                                    Private
+                                ),
+                            1_toml_time_second:
+                                (ExternalSymbol
+                                    7
+                                    1_toml_time_second
+                                    10 second
+                                    tomlf_datetime
+                                    [toml_time]
+                                    second
+                                    Private
+                                ),
+                            1_toml_time_zone:
+                                (ExternalSymbol
+                                    7
+                                    1_toml_time_zone
+                                    10 zone
+                                    tomlf_datetime
+                                    [toml_time]
+                                    zone
+                                    Private
+                                ),
                             date_to_string:
                                 (Function
                                     (SymbolTable
                                         11
                                         {
-                                            1_toml_date_day:
-                                                (ExternalSymbol
-                                                    11
-                                                    1_toml_date_day
-                                                    8 day
-                                                    tomlf_datetime
-                                                    [toml_date]
-                                                    day
-                                                    Public
-                                                ),
-                                            1_toml_date_month:
-                                                (ExternalSymbol
-                                                    11
-                                                    1_toml_date_month
-                                                    8 month
-                                                    tomlf_datetime
-                                                    [toml_date]
-                                                    month
-                                                    Public
-                                                ),
-                                            1_toml_date_year:
-                                                (ExternalSymbol
-                                                    11
-                                                    1_toml_date_year
-                                                    8 year
-                                                    tomlf_datetime
-                                                    [toml_date]
-                                                    year
-                                                    Public
-                                                ),
                                             lfortran_iomsg:
                                                 (Variable
                                                     11
@@ -183,19 +253,19 @@
                                             )
                                             [(StructInstanceMember
                                                 (Var 11 rhs)
-                                                11 1_toml_date_year
+                                                7 1_toml_date_year
                                                 (Integer 4)
                                                 ()
                                             )
                                             (StructInstanceMember
                                                 (Var 11 rhs)
-                                                11 1_toml_date_month
+                                                7 1_toml_date_month
                                                 (Integer 4)
                                                 ()
                                             )
                                             (StructInstanceMember
                                                 (Var 11 rhs)
-                                                11 1_toml_date_day
+                                                7 1_toml_date_day
                                                 (Integer 4)
                                                 ()
                                             )]
@@ -236,26 +306,6 @@
                                                     tomlf_datetime
                                                     [toml_date]
                                                     to_string
-                                                    Public
-                                                ),
-                                            1_toml_datetime_date:
-                                                (ExternalSymbol
-                                                    12
-                                                    1_toml_datetime_date
-                                                    9 date
-                                                    tomlf_datetime
-                                                    [toml_datetime]
-                                                    date
-                                                    Public
-                                                ),
-                                            1_toml_datetime_time:
-                                                (ExternalSymbol
-                                                    12
-                                                    1_toml_datetime_time
-                                                    9 time
-                                                    tomlf_datetime
-                                                    [toml_datetime]
-                                                    time
                                                     Public
                                                 ),
                                             1_toml_time_to_string:
@@ -449,7 +499,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 12 rhs)
-                                                12 1_toml_datetime_date
+                                                7 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
                                                         [(Integer 4)
@@ -472,7 +522,7 @@
                                             [((Var 12 lhs))
                                             ((StructInstanceMember
                                                 (Var 12 rhs)
-                                                12 1_toml_datetime_date
+                                                7 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
                                                         [(Integer 4)
@@ -487,7 +537,7 @@
                                             ))]
                                             (StructInstanceMember
                                                 (Var 12 rhs)
-                                                12 1_toml_datetime_date
+                                                7 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
                                                         [(Integer 4)
@@ -508,7 +558,7 @@
                                                 Allocated
                                                 [(StructInstanceMember
                                                     (Var 12 rhs)
-                                                    12 1_toml_datetime_time
+                                                    7 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
                                                             [(Integer 4)
@@ -537,7 +587,7 @@
                                                 [((Var 12 temporary))
                                                 ((StructInstanceMember
                                                     (Var 12 rhs)
-                                                    12 1_toml_datetime_time
+                                                    7 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
                                                             [(Integer 4)
@@ -558,7 +608,7 @@
                                                 ))]
                                                 (StructInstanceMember
                                                     (Var 12 rhs)
-                                                    12 1_toml_datetime_time
+                                                    7 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
                                                             [(Integer 4)
@@ -603,7 +653,7 @@
                                                 Allocated
                                                 [(StructInstanceMember
                                                     (Var 12 rhs)
-                                                    12 1_toml_datetime_time
+                                                    7 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
                                                             [(Integer 4)
@@ -630,7 +680,7 @@
                                                 (Var 12 lhs)
                                                 (StructInstanceMember
                                                     (Var 12 rhs)
-                                                    12 1_toml_datetime_time
+                                                    7 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
                                                             [(Integer 4)
@@ -655,7 +705,7 @@
                                                     [((Var 12 lhs))
                                                     ((StructInstanceMember
                                                         (Var 12 rhs)
-                                                        12 1_toml_datetime_time
+                                                        7 1_toml_datetime_time
                                                         (Allocatable
                                                             (StructType
                                                                 [(Integer 4)
@@ -696,56 +746,6 @@
                                     (SymbolTable
                                         13
                                         {
-                                            1_toml_time_hour:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_toml_time_hour
-                                                    10 hour
-                                                    tomlf_datetime
-                                                    [toml_time]
-                                                    hour
-                                                    Public
-                                                ),
-                                            1_toml_time_millisec:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_toml_time_millisec
-                                                    10 millisec
-                                                    tomlf_datetime
-                                                    [toml_time]
-                                                    millisec
-                                                    Public
-                                                ),
-                                            1_toml_time_minute:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_toml_time_minute
-                                                    10 minute
-                                                    tomlf_datetime
-                                                    [toml_time]
-                                                    minute
-                                                    Public
-                                                ),
-                                            1_toml_time_second:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_toml_time_second
-                                                    10 second
-                                                    tomlf_datetime
-                                                    [toml_time]
-                                                    second
-                                                    Public
-                                                ),
-                                            1_toml_time_zone:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_toml_time_zone
-                                                    10 zone
-                                                    tomlf_datetime
-                                                    [toml_time]
-                                                    zone
-                                                    Public
-                                                ),
                                             hour:
                                                 (Variable
                                                     13
@@ -967,7 +967,7 @@
                                         [(Assignment
                                             (StructInstanceMember
                                                 (Var 13 self)
-                                                13 1_toml_time_hour
+                                                7 1_toml_time_hour
                                                 (Integer 4)
                                                 ()
                                             )
@@ -992,7 +992,7 @@
                                         [(Assignment
                                             (StructInstanceMember
                                                 (Var 13 self)
-                                                13 1_toml_time_minute
+                                                7 1_toml_time_minute
                                                 (Integer 4)
                                                 ()
                                             )
@@ -1017,7 +1017,7 @@
                                         [(Assignment
                                             (StructInstanceMember
                                                 (Var 13 self)
-                                                13 1_toml_time_second
+                                                7 1_toml_time_second
                                                 (Integer 4)
                                                 ()
                                             )
@@ -1042,7 +1042,7 @@
                                         [(Assignment
                                             (StructInstanceMember
                                                 (Var 13 self)
-                                                13 1_toml_time_millisec
+                                                7 1_toml_time_millisec
                                                 (Allocatable
                                                     (Integer 4)
                                                 )
@@ -1069,7 +1069,7 @@
                                         [(Assignment
                                             (StructInstanceMember
                                                 (Var 13 self)
-                                                13 1_toml_time_zone
+                                                7 1_toml_time_zone
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1095,56 +1095,6 @@
                                     (SymbolTable
                                         14
                                         {
-                                            1_toml_time_hour:
-                                                (ExternalSymbol
-                                                    14
-                                                    1_toml_time_hour
-                                                    10 hour
-                                                    tomlf_datetime
-                                                    [toml_time]
-                                                    hour
-                                                    Public
-                                                ),
-                                            1_toml_time_millisec:
-                                                (ExternalSymbol
-                                                    14
-                                                    1_toml_time_millisec
-                                                    10 millisec
-                                                    tomlf_datetime
-                                                    [toml_time]
-                                                    millisec
-                                                    Public
-                                                ),
-                                            1_toml_time_minute:
-                                                (ExternalSymbol
-                                                    14
-                                                    1_toml_time_minute
-                                                    10 minute
-                                                    tomlf_datetime
-                                                    [toml_time]
-                                                    minute
-                                                    Public
-                                                ),
-                                            1_toml_time_second:
-                                                (ExternalSymbol
-                                                    14
-                                                    1_toml_time_second
-                                                    10 second
-                                                    tomlf_datetime
-                                                    [toml_time]
-                                                    second
-                                                    Public
-                                                ),
-                                            1_toml_time_zone:
-                                                (ExternalSymbol
-                                                    14
-                                                    1_toml_time_zone
-                                                    10 zone
-                                                    tomlf_datetime
-                                                    [toml_time]
-                                                    zone
-                                                    Public
-                                                ),
                                             lfortran_iomsg:
                                                 (Variable
                                                     14
@@ -1306,7 +1256,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 14 rhs)
-                                                14 1_toml_time_millisec
+                                                7 1_toml_time_millisec
                                                 (Allocatable
                                                     (Integer 4)
                                                 )
@@ -1340,25 +1290,25 @@
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 14 rhs)
-                                                    14 1_toml_time_hour
+                                                    7 1_toml_time_hour
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 (StructInstanceMember
                                                     (Var 14 rhs)
-                                                    14 1_toml_time_minute
+                                                    7 1_toml_time_minute
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 (StructInstanceMember
                                                     (Var 14 rhs)
-                                                    14 1_toml_time_second
+                                                    7 1_toml_time_second
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 (StructInstanceMember
                                                     (Var 14 rhs)
-                                                    14 1_toml_time_millisec
+                                                    7 1_toml_time_millisec
                                                     (Allocatable
                                                         (Integer 4)
                                                     )
@@ -1406,19 +1356,19 @@
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 14 rhs)
-                                                    14 1_toml_time_hour
+                                                    7 1_toml_time_hour
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 (StructInstanceMember
                                                     (Var 14 rhs)
-                                                    14 1_toml_time_minute
+                                                    7 1_toml_time_minute
                                                     (Integer 4)
                                                     ()
                                                 )
                                                 (StructInstanceMember
                                                     (Var 14 rhs)
-                                                    14 1_toml_time_second
+                                                    7 1_toml_time_second
                                                     (Integer 4)
                                                     ()
                                                 )]
@@ -1447,7 +1397,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 14 rhs)
-                                                14 1_toml_time_zone
+                                                7 1_toml_time_zone
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -1466,7 +1416,7 @@
                                                     StringTrim
                                                     [(StructInstanceMember
                                                         (Var 14 rhs)
-                                                        14 1_toml_time_zone
+                                                        7 1_toml_time_zone
                                                         (Allocatable
                                                             (String 1 () DeferredLength DescriptorString)
                                                         )
@@ -2073,6 +2023,16 @@
                     (SymbolTable
                         4
                         {
+                            1_toml_datetime_date:
+                                (ExternalSymbol
+                                    4
+                                    1_toml_datetime_date
+                                    9 date
+                                    tomlf_datetime
+                                    [toml_datetime]
+                                    date
+                                    Private
+                                ),
                             convert_raw:
                                 (GenericProcedure
                                     4
@@ -2115,16 +2075,6 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_toml_datetime_date:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_toml_datetime_date
-                                                    9 date
-                                                    tomlf_datetime
-                                                    [toml_datetime]
-                                                    date
-                                                    Public
-                                                ),
                                             dot_pos:
                                                 (Variable
                                                     5
@@ -2374,7 +2324,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 5 timestamp)
-                                            5 1_toml_datetime_date
+                                            4 1_toml_datetime_date
                                             (Allocatable
                                                 (StructType
                                                     [(Integer 4)

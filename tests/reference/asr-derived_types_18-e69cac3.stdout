@@ -15,7 +15,7 @@
                                     derived_types_18_module_1
                                     [t_1]
                                     i
-                                    Public
+                                    Private
                                 ),
                             1_t_1_t_1:
                                 (ExternalSymbol
@@ -35,7 +35,7 @@
                                     derived_types_18_module_1
                                     [t_2]
                                     r
-                                    Public
+                                    Private
                                 ),
                             t_1:
                                 (ExternalSymbol

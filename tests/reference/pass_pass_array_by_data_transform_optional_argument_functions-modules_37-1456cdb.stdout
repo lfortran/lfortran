@@ -24,21 +24,51 @@
                     (SymbolTable
                         2
                         {
+                            1_build_target_ptr_ptr:
+                                (ExternalSymbol
+                                    2
+                                    1_build_target_ptr_ptr
+                                    6 ptr
+                                    modules_37_fpm_backend
+                                    [build_target_ptr]
+                                    ptr
+                                    Private
+                                ),
+                            1_build_target_t_output_dir:
+                                (ExternalSymbol
+                                    2
+                                    1_build_target_t_output_dir
+                                    7 output_dir
+                                    modules_37_fpm_backend
+                                    [build_target_t]
+                                    output_dir
+                                    Private
+                                ),
+                            1_fpm_cmd_settings_verbose:
+                                (ExternalSymbol
+                                    2
+                                    1_fpm_cmd_settings_verbose
+                                    3 verbose
+                                    modules_37_fpm_backend
+                                    [fpm_cmd_settings]
+                                    verbose
+                                    Private
+                                ),
+                            1_string_t_s:
+                                (ExternalSymbol
+                                    2
+                                    1_string_t_s
+                                    5 s
+                                    modules_37_fpm_backend
+                                    [string_t]
+                                    s
+                                    Private
+                                ),
                             build_package_build_target_ptr____0:
                                 (Function
                                     (SymbolTable
                                         13
                                         {
-                                            1_build_target_ptr_ptr:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_build_target_ptr_ptr
-                                                    6 ptr
-                                                    modules_37_fpm_backend
-                                                    [build_target_ptr]
-                                                    ptr
-                                                    Public
-                                                ),
                                             __1targets:
                                                 (Variable
                                                     13
@@ -70,26 +100,6 @@
                                                     (SymbolTable
                                                         14
                                                         {
-                                                            1_build_target_t_output_dir:
-                                                                (ExternalSymbol
-                                                                    14
-                                                                    1_build_target_t_output_dir
-                                                                    7 output_dir
-                                                                    modules_37_fpm_backend
-                                                                    [build_target_t]
-                                                                    output_dir
-                                                                    Public
-                                                                ),
-                                                            1_string_t_s:
-                                                                (ExternalSymbol
-                                                                    14
-                                                                    1_string_t_s
-                                                                    5 s
-                                                                    modules_37_fpm_backend
-                                                                    [string_t]
-                                                                    s
-                                                                    Public
-                                                                ),
                                                             target:
                                                                 (Variable
                                                                     14
@@ -152,7 +162,7 @@
                                                                 ()
                                                                 .false.
                                                             )
-                                                            13 1_build_target_ptr_ptr
+                                                            2 1_build_target_ptr_ptr
                                                             (Pointer
                                                                 (StructType
                                                                     [(Allocatable
@@ -170,7 +180,7 @@
                                                     (Assignment
                                                         (StructInstanceMember
                                                             (Var 13 temp)
-                                                            14 1_string_t_s
+                                                            2 1_string_t_s
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
                                                             )
@@ -178,7 +188,7 @@
                                                         )
                                                         (StructInstanceMember
                                                             (Var 14 target)
-                                                            14 1_build_target_t_output_dir
+                                                            2 1_build_target_t_output_dir
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
                                                             )
@@ -686,16 +696,6 @@
                                     (SymbolTable
                                         10
                                         {
-                                            1_fpm_cmd_settings_verbose:
-                                                (ExternalSymbol
-                                                    10
-                                                    1_fpm_cmd_settings_verbose
-                                                    3 verbose
-                                                    modules_37_fpm_backend
-                                                    [fpm_cmd_settings]
-                                                    verbose
-                                                    Public
-                                                ),
                                             model:
                                                 (Variable
                                                     10
@@ -865,7 +865,7 @@
                                         ((Var 10 model))
                                         ((StructInstanceMember
                                             (Var 10 settings)
-                                            10 1_fpm_cmd_settings_verbose
+                                            2 1_fpm_cmd_settings_verbose
                                             (Logical 4)
                                             ()
                                         ))]

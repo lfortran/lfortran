@@ -25,7 +25,7 @@
                                     class_circle1
                                     [circle]
                                     radius
-                                    Public
+                                    Private
                                 ),
                             c:
                                 (Variable
@@ -131,6 +131,16 @@
                     (SymbolTable
                         2
                         {
+                            1_circle_radius:
+                                (ExternalSymbol
+                                    2
+                                    1_circle_radius
+                                    3 radius
+                                    class_circle1
+                                    [circle]
+                                    radius
+                                    Private
+                                ),
                             circle:
                                 (Struct
                                     (SymbolTable
@@ -212,16 +222,6 @@
                                     (SymbolTable
                                         4
                                         {
-                                            1_circle_radius:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_circle_radius
-                                                    3 radius
-                                                    class_circle1
-                                                    [circle]
-                                                    radius
-                                                    Public
-                                                ),
                                             area:
                                                 (Variable
                                                     4
@@ -311,7 +311,7 @@
                                             (RealBinOp
                                                 (StructInstanceMember
                                                     (Var 4 this)
-                                                    4 1_circle_radius
+                                                    2 1_circle_radius
                                                     (Real 4)
                                                     ()
                                                 )
@@ -348,16 +348,6 @@
                                                     class_circle1
                                                     [circle]
                                                     area
-                                                    Public
-                                                ),
-                                            1_circle_radius:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_circle_radius
-                                                    3 radius
-                                                    class_circle1
-                                                    [circle]
-                                                    radius
                                                     Public
                                                 ),
                                             area:
@@ -466,7 +456,7 @@
                                             )
                                             (StructInstanceMember
                                                 (Var 5 this)
-                                                5 1_circle_radius
+                                                2 1_circle_radius
                                                 (Real 4)
                                                 ()
                                             )

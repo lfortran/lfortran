@@ -25,7 +25,7 @@
                                     derived_types_01_m_01
                                     [x]
                                     i
-                                    Public
+                                    Private
                                 ),
                             1_x_r:
                                 (ExternalSymbol
@@ -35,7 +35,7 @@
                                     derived_types_01_m_01
                                     [x]
                                     r
-                                    Public
+                                    Private
                                 ),
                             1_y_d:
                                 (ExternalSymbol
@@ -45,7 +45,7 @@
                                     derived_types_01_m_01
                                     [y]
                                     d
-                                    Public
+                                    Private
                                 ),
                             1_z_k:
                                 (ExternalSymbol
@@ -55,7 +55,7 @@
                                     derived_types_01_m_02
                                     [z]
                                     k
-                                    Public
+                                    Private
                                 ),
                             1_z_l:
                                 (ExternalSymbol
@@ -65,7 +65,7 @@
                                     derived_types_01_m_02
                                     [z]
                                     l
-                                    Public
+                                    Private
                                 ),
                             b:
                                 (Variable
@@ -593,31 +593,31 @@
                     (SymbolTable
                         2
                         {
+                            1_x_i:
+                                (ExternalSymbol
+                                    2
+                                    1_x_i
+                                    3 i
+                                    derived_types_01_m_01
+                                    [x]
+                                    i
+                                    Private
+                                ),
+                            1_x_r:
+                                (ExternalSymbol
+                                    2
+                                    1_x_r
+                                    3 r
+                                    derived_types_01_m_01
+                                    [x]
+                                    r
+                                    Private
+                                ),
                             set:
                                 (Function
                                     (SymbolTable
                                         5
                                         {
-                                            1_x_i:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_x_i
-                                                    3 i
-                                                    derived_types_01_m_01
-                                                    [x]
-                                                    i
-                                                    Public
-                                                ),
-                                            1_x_r:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_x_r
-                                                    3 r
-                                                    derived_types_01_m_01
-                                                    [x]
-                                                    r
-                                                    Public
-                                                ),
                                             a:
                                                 (Variable
                                                     5
@@ -678,7 +678,7 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 5 a)
-                                            5 1_x_i
+                                            2 1_x_i
                                             (Integer 4)
                                             ()
                                         )
@@ -692,7 +692,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 5 a)
-                                            5 1_x_r
+                                            2 1_x_r
                                             (Real 4)
                                             ()
                                         )

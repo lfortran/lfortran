@@ -15,7 +15,7 @@
                                     operator_overloading_08_mod1
                                     [custom_int]
                                     value
-                                    Public
+                                    Private
                                 ),
                             a:
                                 (Variable
@@ -142,21 +142,21 @@
                     (SymbolTable
                         2
                         {
+                            1_custom_int_value:
+                                (ExternalSymbol
+                                    2
+                                    1_custom_int_value
+                                    3 value
+                                    operator_overloading_08_mod1
+                                    [custom_int]
+                                    value
+                                    Private
+                                ),
                             custom_div:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            1_custom_int_value:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_custom_int_value
-                                                    3 value
-                                                    operator_overloading_08_mod1
-                                                    [custom_int]
-                                                    value
-                                                    Public
-                                                ),
                                             a:
                                                 (Variable
                                                     4
@@ -279,14 +279,14 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 4 res)
-                                            4 1_custom_int_value
+                                            2 1_custom_int_value
                                             (Integer 4)
                                             ()
                                         )
                                         (IntegerBinOp
                                             (StructInstanceMember
                                                 (Var 4 a)
-                                                4 1_custom_int_value
+                                                2 1_custom_int_value
                                                 (Integer 4)
                                                 ()
                                             )

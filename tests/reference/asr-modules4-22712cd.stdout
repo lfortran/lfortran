@@ -274,21 +274,31 @@
                     (SymbolTable
                         4
                         {
+                            1_toml_array_list:
+                                (ExternalSymbol
+                                    4
+                                    1_toml_array_list
+                                    5 list
+                                    tomlf_type_array
+                                    [toml_array]
+                                    list
+                                    Private
+                                ),
+                            1_toml_value_key:
+                                (ExternalSymbol
+                                    4
+                                    1_toml_value_key
+                                    10 key
+                                    tomlf_type_value
+                                    [toml_value]
+                                    key
+                                    Private
+                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
                                         6
                                         {
-                                            1_toml_array_list:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_toml_array_list
-                                                    5 list
-                                                    tomlf_type_array
-                                                    [toml_array]
-                                                    list
-                                                    Public
-                                                ),
                                             1_toml_structure:
                                                 (ExternalSymbol
                                                     6
@@ -307,16 +317,6 @@
                                                     tomlf_structure_base
                                                     [toml_structure]
                                                     destroy
-                                                    Public
-                                                ),
-                                            1_toml_value_key:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_toml_value_key
-                                                    10 key
-                                                    tomlf_type_value
-                                                    [toml_value]
-                                                    key
                                                     Public
                                                 ),
                                             self:
@@ -394,7 +394,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 6 self)
-                                                6 1_toml_value_key
+                                                4 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -407,7 +407,7 @@
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
                                                 (Var 6 self)
-                                                6 1_toml_value_key
+                                                4 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -424,7 +424,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 6 self)
-                                                6 1_toml_array_list
+                                                4 1_toml_array_list
                                                 (Allocatable
                                                     (StructType
                                                         []
@@ -444,7 +444,7 @@
                                             ()
                                             [((StructInstanceMember
                                                 (Var 6 self)
-                                                6 1_toml_array_list
+                                                4 1_toml_array_list
                                                 (Allocatable
                                                     (StructType
                                                         []
@@ -457,7 +457,7 @@
                                             ))]
                                             (StructInstanceMember
                                                 (Var 6 self)
-                                                6 1_toml_array_list
+                                                4 1_toml_array_list
                                                 (Allocatable
                                                     (StructType
                                                         []
@@ -473,7 +473,7 @@
                                         (ExplicitDeallocate
                                             [(StructInstanceMember
                                                 (Var 6 self)
-                                                6 1_toml_array_list
+                                                4 1_toml_array_list
                                                 (Allocatable
                                                     (StructType
                                                         []
@@ -698,31 +698,31 @@
                     (SymbolTable
                         20
                         {
+                            1_toml_keyval_raw:
+                                (ExternalSymbol
+                                    20
+                                    1_toml_keyval_raw
+                                    21 raw
+                                    tomlf_type_keyval
+                                    [toml_keyval]
+                                    raw
+                                    Private
+                                ),
+                            1_toml_value_key:
+                                (ExternalSymbol
+                                    20
+                                    1_toml_value_key
+                                    22 key
+                                    tomlf_type_keyval
+                                    [toml_value]
+                                    key
+                                    Private
+                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
                                         23
                                         {
-                                            1_toml_keyval_raw:
-                                                (ExternalSymbol
-                                                    23
-                                                    1_toml_keyval_raw
-                                                    21 raw
-                                                    tomlf_type_keyval
-                                                    [toml_keyval]
-                                                    raw
-                                                    Public
-                                                ),
-                                            1_toml_value_key:
-                                                (ExternalSymbol
-                                                    23
-                                                    1_toml_value_key
-                                                    22 key
-                                                    tomlf_type_keyval
-                                                    [toml_value]
-                                                    key
-                                                    Public
-                                                ),
                                             self:
                                                 (Variable
                                                     23
@@ -788,7 +788,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 23 self)
-                                                23 1_toml_value_key
+                                                20 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -801,7 +801,7 @@
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
                                                 (Var 23 self)
-                                                23 1_toml_value_key
+                                                20 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -818,7 +818,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 23 self)
-                                                23 1_toml_keyval_raw
+                                                20 1_toml_keyval_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -831,7 +831,7 @@
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
                                                 (Var 23 self)
-                                                23 1_toml_keyval_raw
+                                                20 1_toml_keyval_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )

@@ -362,7 +362,7 @@
                                     module_nullify_03
                                     [rp1d]
                                     f
-                                    Public
+                                    Private
                                 ),
                             1_sds_scales:
                                 (ExternalSymbol
@@ -372,7 +372,7 @@
                                     module_nullify_03
                                     [sds]
                                     scales
-                                    Public
+                                    Private
                                 ),
                             rp1d:
                                 (ExternalSymbol

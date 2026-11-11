@@ -9,15 +9,15 @@
                     (SymbolTable
                         2
                         {
-                            1_test_obj_ptr:
+                            1_test_c_ptr_02_test_obj_ptr:
                                 (ExternalSymbol
                                     2
-                                    1_test_obj_ptr
+                                    1_test_c_ptr_02_test_obj_ptr
                                     13 ptr
                                     test_obj
                                     []
                                     ptr
-                                    Public
+                                    Private
                                 ),
                             c_alert:
                                 (ExternalSymbol
@@ -689,7 +689,7 @@
                         (Var 2 temp_ptr)
                         (StructInstanceMember
                             (Var 2 instance)
-                            2 1_test_obj_ptr
+                            2 1_test_c_ptr_02_test_obj_ptr
                             (CPtr
                                 CPointer
                             )

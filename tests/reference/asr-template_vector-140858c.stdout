@@ -44,22 +44,44 @@
                     (SymbolTable
                         2
                         {
+                            1_main_intvector_elements:
+                                (ExternalSymbol
+                                    2
+                                    1_main_intvector_elements
+                                    8 elements
+                                    template_vector_m
+                                    [main
+                                    intvector]
+                                    elements
+                                    Private
+                                ),
+                            1_vector_elements:
+                                (ExternalSymbol
+                                    2
+                                    1_vector_elements
+                                    4 elements
+                                    template_vector_m
+                                    [vector_t
+                                    vector]
+                                    elements
+                                    Private
+                                ),
+                            1_vector_sz:
+                                (ExternalSymbol
+                                    2
+                                    1_vector_sz
+                                    4 sz
+                                    template_vector_m
+                                    [vector_t
+                                    vector]
+                                    sz
+                                    Private
+                                ),
                             main:
                                 (Function
                                     (SymbolTable
                                         7
                                         {
-                                            1_intvector_elements:
-                                                (ExternalSymbol
-                                                    7
-                                                    1_intvector_elements
-                                                    8 elements
-                                                    template_vector_m
-                                                    [main
-                                                    intvector]
-                                                    elements
-                                                    Public
-                                                ),
                                             1_intvector_push_back:
                                                 (ExternalSymbol
                                                     7
@@ -84,7 +106,7 @@
                                                                     [main
                                                                     intvector]
                                                                     elements
-                                                                    Public
+                                                                    Private
                                                                 ),
                                                             1_intvector_resize:
                                                                 (ExternalSymbol
@@ -106,7 +128,7 @@
                                                                     [main
                                                                     intvector]
                                                                     sz
-                                                                    Public
+                                                                    Private
                                                                 ),
                                                             item:
                                                                 (Variable
@@ -310,7 +332,7 @@
                                                                     [main
                                                                     intvector]
                                                                     elements
-                                                                    Public
+                                                                    Private
                                                                 ),
                                                             1_intvector_sz:
                                                                 (ExternalSymbol
@@ -321,7 +343,7 @@
                                                                     [main
                                                                     intvector]
                                                                     sz
-                                                                    Public
+                                                                    Private
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -853,7 +875,7 @@
                                             (ArrayItem
                                                 (StructInstanceMember
                                                     (Var 7 v)
-                                                    7 1_intvector_elements
+                                                    2 1_main_intvector_elements
                                                     (Allocatable
                                                         (Array
                                                             (Integer 4)
@@ -899,17 +921,6 @@
                                                     (SymbolTable
                                                         5
                                                         {
-                                                            1_vector_elements:
-                                                                (ExternalSymbol
-                                                                    5
-                                                                    1_vector_elements
-                                                                    4 elements
-                                                                    template_vector_m
-                                                                    [vector_t
-                                                                    vector]
-                                                                    elements
-                                                                    Public
-                                                                ),
                                                             1_vector_resize:
                                                                 (ExternalSymbol
                                                                     5
@@ -918,17 +929,6 @@
                                                                     vector
                                                                     []
                                                                     resize
-                                                                    Public
-                                                                ),
-                                                            1_vector_sz:
-                                                                (ExternalSymbol
-                                                                    5
-                                                                    1_vector_sz
-                                                                    4 sz
-                                                                    template_vector_m
-                                                                    [vector_t
-                                                                    vector]
-                                                                    sz
                                                                     Public
                                                                 ),
                                                             item:
@@ -1079,7 +1079,7 @@
                                                         (IntegerBinOp
                                                             (StructInstanceMember
                                                                 (Var 5 this)
-                                                                5 1_vector_sz
+                                                                2 1_vector_sz
                                                                 (Integer 4)
                                                                 ()
                                                             )
@@ -1106,7 +1106,7 @@
                                                         (ArrayItem
                                                             (StructInstanceMember
                                                                 (Var 5 this)
-                                                                5 1_vector_elements
+                                                                2 1_vector_elements
                                                                 (Allocatable
                                                                     (Array
                                                                         (TypeParameter
@@ -1144,7 +1144,7 @@
                                                     (Assignment
                                                         (StructInstanceMember
                                                             (Var 5 this)
-                                                            5 1_vector_sz
+                                                            2 1_vector_sz
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -1166,28 +1166,6 @@
                                                     (SymbolTable
                                                         6
                                                         {
-                                                            1_vector_elements:
-                                                                (ExternalSymbol
-                                                                    6
-                                                                    1_vector_elements
-                                                                    4 elements
-                                                                    template_vector_m
-                                                                    [vector_t
-                                                                    vector]
-                                                                    elements
-                                                                    Public
-                                                                ),
-                                                            1_vector_sz:
-                                                                (ExternalSymbol
-                                                                    6
-                                                                    1_vector_sz
-                                                                    4 sz
-                                                                    template_vector_m
-                                                                    [vector_t
-                                                                    vector]
-                                                                    sz
-                                                                    Public
-                                                                ),
                                                             i:
                                                                 (Variable
                                                                     6
@@ -1368,7 +1346,7 @@
                                                                 Allocated
                                                                 [(StructInstanceMember
                                                                     (Var 6 this)
-                                                                    6 1_vector_elements
+                                                                    2 1_vector_elements
                                                                     (Allocatable
                                                                         (Array
                                                                             (TypeParameter
@@ -1394,7 +1372,7 @@
                                                         [(Allocate
                                                             [((StructInstanceMember
                                                                 (Var 6 this)
-                                                                6 1_vector_elements
+                                                                2 1_vector_elements
                                                                 (Allocatable
                                                                     (Array
                                                                         (TypeParameter
@@ -1428,7 +1406,7 @@
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 6 this)
-                                                                6 1_vector_sz
+                                                                2 1_vector_sz
                                                                 (Integer 4)
                                                                 ()
                                                             )
@@ -1445,7 +1423,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (StructInstanceMember
                                                             (Var 6 this)
-                                                            6 1_vector_sz
+                                                            2 1_vector_sz
                                                             (Integer 4)
                                                             ()
                                                         ))]
@@ -1463,7 +1441,7 @@
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         (StructInstanceMember
                                                             (Var 6 this)
-                                                            6 1_vector_sz
+                                                            2 1_vector_sz
                                                             (Integer 4)
                                                             ()
                                                         )
@@ -1486,7 +1464,7 @@
                                                             (ArrayItem
                                                                 (StructInstanceMember
                                                                     (Var 6 this)
-                                                                    6 1_vector_elements
+                                                                    2 1_vector_elements
                                                                     (Allocatable
                                                                         (Array
                                                                             (TypeParameter
@@ -1525,7 +1503,7 @@
                                                     (Allocate
                                                         [((StructInstanceMember
                                                             (Var 6 this)
-                                                            6 1_vector_elements
+                                                            2 1_vector_elements
                                                             (Allocatable
                                                                 (Array
                                                                     (TypeParameter
@@ -1555,7 +1533,7 @@
                                                         (ArraySection
                                                             (StructInstanceMember
                                                                 (Var 6 this)
-                                                                6 1_vector_elements
+                                                                2 1_vector_elements
                                                                 (Allocatable
                                                                     (Array
                                                                         (TypeParameter
@@ -1574,7 +1552,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (StructInstanceMember
                                                                 (Var 6 this)
-                                                                6 1_vector_sz
+                                                                2 1_vector_sz
                                                                 (Integer 4)
                                                                 ()
                                                             )

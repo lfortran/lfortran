@@ -2369,9 +2369,50 @@ public:
     // The instance of the procedure-local type `struct_sym` in the
     // corresponding instantiated procedure, under its own name; it is
     // instantiated when first needed, before or after the entities using it.
+    // The instantiated procedure that declares `struct_sym`. A component
+    // symbol of a procedure-local type can live in the module, so `sym` is
+    // not always nested in that procedure; `source_scope` is the scope that
+    // contains the reference and is nested like `target_scope`.
     ASR::symbol_t* instantiate_local_type(ASR::symbol_t* struct_sym) {
-        SymbolTable* struct_scope = corresponding_target_scope(
-            ASRUtils::symbol_parent_symtab(struct_sym));
+        SymbolTable* declared_in = ASRUtils::symbol_parent_symtab(struct_sym);
+        SymbolTable* from = ASRUtils::symbol_parent_symtab(sym);
+        bool nested = false;
+        for (SymbolTable* s = from; s != nullptr; s = s->parent) {
+            if (s == declared_in) {
+                nested = true;
+                break;
+            }
+        }
+        SymbolTable* struct_scope = nullptr;
+        if (nested) {
+            struct_scope = corresponding_target_scope(declared_in);
+        } else if (source_scope != nullptr) {
+            SymbolTable* s = source_scope;
+            struct_scope = target_scope;
+            while (s != nullptr && struct_scope != nullptr && s != declared_in) {
+                s = s->parent;
+                struct_scope = struct_scope->parent;
+            }
+            if (s != declared_in) {
+                struct_scope = nullptr;
+            }
+        }
+        if (struct_scope == nullptr) {
+            ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_sym);
+            while (owner != nullptr && !ASR::is_a<ASR::Function_t>(*owner)
+                    && !ASR::is_a<ASR::Program_t>(*owner)) {
+                owner = ASRUtils::get_asr_owner(owner);
+            }
+            if (owner != nullptr && symbol_subs.find(ASRUtils::symbol_name(owner))
+                    != symbol_subs.end()) {
+                ASR::symbol_t* new_owner = ASRUtils::symbol_get_past_external(
+                    symbol_subs[ASRUtils::symbol_name(owner)]);
+                struct_scope = ASRUtils::symbol_symtab(new_owner);
+            }
+        }
+        if (struct_scope == nullptr) {
+            struct_scope = corresponding_target_scope(declared_in);
+        }
         SymbolInstantiator t(al, template_scope, struct_scope, type_subs,
             symbol_subs, ASRUtils::symbol_name(struct_sym), struct_sym,
             diagnostics);
@@ -3290,6 +3331,9 @@ public:
 
         std::string s_name = ASRUtils::symbol_name(x->m_m);
         SymbolInstantiator t_i(al, template_scope, new_scope, type_subs, symbol_subs, s_name, x->m_m);
+        // old_scope is the procedure (or construct) that contains this
+        // member reference. The member symbol itself may live in the module.
+        t_i.source_scope = old_scope;
         ASR::symbol_t *s = t_i.instantiate();
 
         // An array member whose bounds depend on a deferred constant is a

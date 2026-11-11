@@ -24,21 +24,21 @@
                     (SymbolTable
                         2
                         {
+                            1_toml_key_key:
+                                (ExternalSymbol
+                                    2
+                                    1_toml_key_key
+                                    3 key
+                                    tomlf_utils_sort
+                                    [toml_key]
+                                    key
+                                    Private
+                                ),
                             compare_keys_less:
                                 (Function
                                     (SymbolTable
                                         8
                                         {
-                                            1_toml_key_key:
-                                                (ExternalSymbol
-                                                    8
-                                                    1_toml_key_key
-                                                    3 key
-                                                    tomlf_utils_sort
-                                                    [toml_key]
-                                                    key
-                                                    Public
-                                                ),
                                             less:
                                                 (Variable
                                                     8
@@ -171,7 +171,7 @@
                                         (StringCompare
                                             (StructInstanceMember
                                                 (Var 8 lhs)
-                                                8 1_toml_key_key
+                                                2 1_toml_key_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -180,7 +180,7 @@
                                             Lt
                                             (StructInstanceMember
                                                 (Var 8 rhs)
-                                                8 1_toml_key_key
+                                                2 1_toml_key_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )

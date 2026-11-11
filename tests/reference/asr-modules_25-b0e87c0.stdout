@@ -225,6 +225,16 @@
                     (SymbolTable
                         8
                         {
+                            1_toml_tokenizer_current:
+                                (ExternalSymbol
+                                    8
+                                    1_toml_tokenizer_current
+                                    10 current
+                                    tomlf_de_tokenizer_25
+                                    [toml_tokenizer]
+                                    current
+                                    Private
+                                ),
                             next_token:
                                 (Function
                                     (SymbolTable
@@ -340,16 +350,6 @@
                                     (SymbolTable
                                         13
                                         {
-                                            1_toml_tokenizer_current:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_toml_tokenizer_current
-                                                    10 current
-                                                    tomlf_de_tokenizer_25
-                                                    [toml_tokenizer]
-                                                    current
-                                                    Public
-                                                ),
                                             de:
                                                 (Variable
                                                     13
@@ -458,7 +458,7 @@
                                     (Associate
                                         (StructInstanceMember
                                             (Var 13 de)
-                                            13 1_toml_tokenizer_current
+                                            8 1_toml_tokenizer_current
                                             (Pointer
                                                 (StructType
                                                     [(Logical 4)]

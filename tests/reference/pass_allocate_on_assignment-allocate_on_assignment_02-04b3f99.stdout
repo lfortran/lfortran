@@ -15,7 +15,7 @@
                                     allocate_on_assignment_02_m
                                     [t]
                                     v
-                                    Public
+                                    Private
                                 ),
                             a:
                                 (Variable

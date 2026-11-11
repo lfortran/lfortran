@@ -7,15 +7,15 @@
                     (SymbolTable
                         2
                         {
-                            1_toml_value_x:
+                            1_intrinsics_334_toml_value_x:
                                 (ExternalSymbol
                                     2
-                                    1_toml_value_x
+                                    1_intrinsics_334_toml_value_x
                                     4 x
                                     toml_value
                                     []
                                     x
-                                    Public
+                                    Private
                                 ),
                             base:
                                 (Struct
@@ -430,15 +430,15 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_toml_value_x:
+                                            1_intrinsics_334_toml_value_x:
                                                 (ExternalSymbol
                                                     5
-                                                    1_toml_value_x
+                                                    1_intrinsics_334_toml_value_x
                                                     4 x
                                                     toml_value
                                                     []
                                                     x
-                                                    Public
+                                                    Private
                                                 )
                                         })
                                     ~select_type_block_
@@ -458,7 +458,7 @@
                                                     ()
                                                     (Var 2 toml_value)
                                                 )
-                                                5 1_toml_value_x
+                                                5 1_intrinsics_334_toml_value_x
                                                 (Integer 4)
                                                 ()
                                             )
@@ -478,15 +478,15 @@
                                     (SymbolTable
                                         6
                                         {
-                                            1_toml_value_x:
+                                            1_intrinsics_334_toml_value_x:
                                                 (ExternalSymbol
                                                     6
-                                                    1_toml_value_x
+                                                    1_intrinsics_334_toml_value_x
                                                     4 x
                                                     toml_value
                                                     []
                                                     x
-                                                    Public
+                                                    Private
                                                 )
                                         })
                                     ~select_type_block_1
@@ -506,7 +506,7 @@
                                                     ()
                                                     (Var 2 toml_value)
                                                 )
-                                                6 1_toml_value_x
+                                                6 1_intrinsics_334_toml_value_x
                                                 (Integer 4)
                                                 ()
                                             )
@@ -692,7 +692,7 @@
                     (Assignment
                         (StructInstanceMember
                             (Var 2 struct_from)
-                            2 1_toml_value_x
+                            2 1_intrinsics_334_toml_value_x
                             (Integer 4)
                             ()
                         )
@@ -723,7 +723,7 @@
                             (IntegerCompare
                                 (StructInstanceMember
                                     (Var 2 struct_to)
-                                    2 1_toml_value_x
+                                    2 1_intrinsics_334_toml_value_x
                                     (Integer 4)
                                     ()
                                 )
@@ -790,7 +790,7 @@
                                     ()
                                     .false.
                                 )
-                                2 1_toml_value_x
+                                2 1_intrinsics_334_toml_value_x
                                 (Integer 4)
                                 ()
                             )
@@ -868,7 +868,7 @@
                                             ()
                                             .false.
                                         )
-                                        2 1_toml_value_x
+                                        2 1_intrinsics_334_toml_value_x
                                         (Integer 4)
                                         ()
                                     )
@@ -913,7 +913,7 @@
                     (Assignment
                         (StructInstanceMember
                             (Var 2 struct_from3)
-                            2 1_toml_value_x
+                            2 1_intrinsics_334_toml_value_x
                             (Integer 4)
                             ()
                         )
@@ -970,7 +970,7 @@
                     (Assignment
                         (StructInstanceMember
                             (Var 2 struct_from)
-                            2 1_toml_value_x
+                            2 1_intrinsics_334_toml_value_x
                             (Integer 4)
                             ()
                         )

@@ -15,7 +15,7 @@
                                     derived_type1
                                     [enum_escape]
                                     newline
-                                    Public
+                                    Private
                                 ),
                             enum_escape:
                                 (Struct

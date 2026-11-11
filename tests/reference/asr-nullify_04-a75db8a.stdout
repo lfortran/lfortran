@@ -98,7 +98,7 @@
                                     module_nullify_04
                                     [scaled_data_structure]
                                     one_d_real_pointer
-                                    Public
+                                    Private
                                 ),
                             s:
                                 (Variable

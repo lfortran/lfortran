@@ -7,21 +7,21 @@
                     (SymbolTable
                         2
                         {
+                            1_t_1_i:
+                                (ExternalSymbol
+                                    2
+                                    1_t_1_i
+                                    3 i
+                                    derived_types_15_module_1
+                                    [t_1]
+                                    i
+                                    Private
+                                ),
                             multiply:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            1_t_1_i:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_t_1_i
-                                                    3 i
-                                                    derived_types_15_module_1
-                                                    [t_1]
-                                                    i
-                                                    Public
-                                                ),
                                             j:
                                                 (Variable
                                                     4
@@ -136,7 +136,7 @@
                                         (RealBinOp
                                             (StructInstanceMember
                                                 (Var 4 self)
-                                                4 1_t_1_i
+                                                2 1_t_1_i
                                                 (Real 4)
                                                 ()
                                             )
@@ -162,16 +162,6 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_t_1_i:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_t_1_i
-                                                    3 i
-                                                    derived_types_15_module_1
-                                                    [t_1]
-                                                    i
-                                                    Public
-                                                ),
                                             j:
                                                 (Variable
                                                     5
@@ -286,7 +276,7 @@
                                         (RealBinOp
                                             (StructInstanceMember
                                                 (Var 5 self)
-                                                5 1_t_1_i
+                                                2 1_t_1_i
                                                 (Real 4)
                                                 ()
                                             )
@@ -429,7 +419,7 @@
                                     derived_types_15_module_1
                                     [t_1]
                                     i
-                                    Public
+                                    Private
                                 ),
                             1_t_1_multiply:
                                 (ExternalSymbol

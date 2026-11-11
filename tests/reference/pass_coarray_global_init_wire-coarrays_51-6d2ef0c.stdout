@@ -1068,7 +1068,7 @@
                                     coarrays_51_b
                                     [point]
                                     x
-                                    Public
+                                    Private
                                 ),
                             __lfortran_global_init_coarrays_51:
                                 (Function

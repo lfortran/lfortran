@@ -1071,6 +1071,53 @@ public:
     }
 };
 
+// A procedure signature can name a bound of one of its arguments. That
+// symbol lives in the procedure. A null() in another scope cannot take
+// that signature: the reference would point outside its symbol table.
+class ProcedureTypeScopeCheck : public ASR::BaseWalkVisitor<ProcedureTypeScopeCheck> {
+public:
+    SymbolTable* scope = nullptr;
+    bool in_scope = true;
+
+    void note(ASR::symbol_t* sym) {
+        if (!in_scope || sym == nullptr) {
+            return;
+        }
+        if (scope == nullptr) {
+            in_scope = false;
+            return;
+        }
+        SymbolTable* parent = ASRUtils::symbol_parent_symtab(sym);
+        for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+            if (s == parent) {
+                return;
+            }
+        }
+        in_scope = false;
+    }
+
+    void visit_Var(const ASR::Var_t& x) {
+        note(x.m_v);
+        if (in_scope) {
+            ASR::BaseWalkVisitor<ProcedureTypeScopeCheck>::visit_Var(x);
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        note(x.m_name);
+        if (in_scope) {
+            ASR::BaseWalkVisitor<ProcedureTypeScopeCheck>::visit_FunctionCall(x);
+        }
+    }
+};
+
+static bool procedure_type_symbols_in_scope(ASR::ttype_t* type, SymbolTable* scope) {
+    ProcedureTypeScopeCheck check;
+    check.scope = scope;
+    check.visit_ttype(*type);
+    return check.in_scope;
+}
+
 /*
     The following visitor replaces procedure calls with arrays as arguments
     to procedure calls having dimensional information passed as arguments. See example below,
@@ -1593,6 +1640,63 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             current_scope = nullptr;
         }
 
+        // A host-associated explicit-shape array is a descriptor view. The
+        // dummy it is passed to is still a data pointer. Extract that pointer
+        // here: the callee was not rewritten, so the call would otherwise
+        // hand over the descriptor.
+        template <typename T>
+        void cast_descriptor_actual_to_data_pointer(T& x) {
+            if( x.m_name == nullptr ) {
+                return;
+            }
+            ASR::symbol_t* resolved = ASRUtils::symbol_get_past_external(x.m_name);
+            if( !(ASR::is_a<ASR::Function_t>(*resolved) ||
+                    ASR::is_a<ASR::StructMethodDeclaration_t>(*resolved) ||
+                    ASR::is_a<ASR::Variable_t>(*resolved)) ) {
+                return;
+            }
+            if( ASR::is_a<ASR::Variable_t>(*resolved) ) {
+                ASR::ttype_t* var_type = ASR::down_cast<ASR::Variable_t>(resolved)->m_type;
+                if( ASR::is_a<ASR::Pointer_t>(*var_type) ) {
+                    var_type = ASR::down_cast<ASR::Pointer_t>(var_type)->m_type;
+                }
+                if( !ASR::is_a<ASR::FunctionType_t>(*var_type) ) {
+                    return;
+                }
+            }
+            ASR::FunctionType_t* ft = ASRUtils::get_FunctionType(x.m_name);
+            for( size_t i = 0; i < x.n_args && i < ft->n_arg_types; i++ ) {
+                if( x.m_args[i].m_value == nullptr ) {
+                    continue;
+                }
+                ASR::ttype_t* formal = ft->m_arg_types[i];
+                if( formal == nullptr || ASRUtils::is_pointer(formal) ||
+                        ASRUtils::is_allocatable(formal) ||
+                        !ASRUtils::is_array(formal) ||
+                        ASRUtils::extract_physical_type(formal) !=
+                            ASR::array_physical_typeType::PointerArray ) {
+                    continue;
+                }
+                ASR::ttype_t* actual = ASRUtils::expr_type(x.m_args[i].m_value);
+                if( actual == nullptr || !ASRUtils::is_array(actual) ) {
+                    continue;
+                }
+                ASR::ttype_t* actual_array = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(actual));
+                if( !ASR::is_a<ASR::Array_t>(*actual_array) ||
+                        ASR::down_cast<ASR::Array_t>(actual_array)->m_physical_type !=
+                            ASR::array_physical_typeType::DescriptorArray ) {
+                    continue;
+                }
+                ASR::ttype_t* cast_type = ASRUtils::duplicate_type(al, actual_array,
+                    nullptr, ASR::array_physical_typeType::PointerArray, true);
+                x.m_args[i].m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, x.m_args[i].m_value->base.loc, x.m_args[i].m_value,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASR::array_physical_typeType::PointerArray, cast_type, nullptr));
+            }
+        }
+
         bool can_edit_call(ASR::call_arg_t* args, size_t n_args) {
             for ( size_t i = 0; i < n_args; i++ ) {
                 if( args[i].m_value &&
@@ -1730,11 +1834,13 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             if( !can_edit_call(x.m_args, x.n_args)
                     && !is_struct_method_declaration(x.m_name)
                     && !replaces_dummy_procedure(subrout_sym) ) {
+                cast_descriptor_actual_to_data_pointer(xx);
                 not_to_be_erased.insert(subrout_sym);
                 return ;
             }
             if( v.proc2newproc.find(subrout_sym) == v.proc2newproc.end() ) {
                 update_args_for_pass_arr_by_data_funcs_passed_as_callback(x);
+                cast_descriptor_actual_to_data_pointer(xx);
                 return;
             }
 
@@ -2010,6 +2116,27 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_Variable(x);
         }
 
+        // null() keeps its own copy of the procedure type. The pointer it
+        // names is specialised above, so the constant has to follow. The
+        // procedure's signature also names the symbols of its bounds. Those
+        // symbols belong to the procedure, so a constant in another scope
+        // keeps the copy it already has.
+        void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x) {
+            ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_PointerNullConstant(x);
+            if( x.m_var_expr == nullptr ) {
+                return;
+            }
+            ASR::ttype_t* var_type = ASRUtils::expr_type(x.m_var_expr);
+            if( var_type == nullptr || !ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(var_type)) ) {
+                return;
+            }
+            if( !procedure_type_symbols_in_scope(var_type, current_scope) ) {
+                return;
+            }
+            const_cast<ASR::PointerNullConstant_t&>(x).m_type = var_type;
+        }
+
         void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
             //Case: prob % calfun => temp_calfun (where calfun is procedure variable)
             ASR::ASRPassBaseWalkVisitor<EditProcedureCallsVisitor>::visit_StructInstanceMember(x);
@@ -2176,6 +2303,69 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                 || !ASRUtils::is_compiler_generated_name(fn->m_name);
         }
 
+        // `sym` as reached by walking from a component up to `old_proc`,
+        // looked up along the same names in `new_proc`.
+        static ASR::symbol_t* corresponding_symbol(ASR::symbol_t* sym,
+                ASR::symbol_t* old_proc, ASR::symbol_t* new_proc) {
+            std::vector<std::string> path;
+            ASR::symbol_t* s = sym;
+            while (s != nullptr && s != old_proc) {
+                path.push_back(ASRUtils::symbol_name(s));
+                s = ASRUtils::get_asr_owner(s);
+            }
+            if (s != old_proc) {
+                return nullptr;
+            }
+            SymbolTable* scope = ASRUtils::symbol_symtab(new_proc);
+            for (size_t i = path.size(); i > 0; i--) {
+                if (scope == nullptr) {
+                    return nullptr;
+                }
+                ASR::symbol_t* resolved = scope->get_symbol(path[i - 1]);
+                if (resolved == nullptr) {
+                    return nullptr;
+                }
+                if (i == 1) {
+                    return resolved;
+                }
+                scope = ASRUtils::symbol_symtab(resolved);
+            }
+            return nullptr;
+        }
+
+        // A component of a procedure-local derived type is named from the
+        // enclosing module, with a scope path through the procedure. The
+        // specialised procedure has its own copy of the type. Once the
+        // original procedure is removed, that module symbol has to name
+        // the copy.
+        void retarget_local_type_members(SymbolTable* scope,
+                ASR::symbol_t* old_proc, ASR::symbol_t* new_proc) {
+            for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
+                for (auto& item : s->get_scope()) {
+                    if (!ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                        continue;
+                    }
+                    ASR::ExternalSymbol_t* e = ASR::down_cast<ASR::ExternalSymbol_t>(
+                        item.second);
+                    if (e->m_external == nullptr) {
+                        continue;
+                    }
+                    ASR::symbol_t* target = ASRUtils::symbol_get_past_external(
+                        e->m_external);
+                    ASR::symbol_t* owner = ASRUtils::get_asr_owner(target);
+                    if (owner == nullptr || !ASR::is_a<ASR::Struct_t>(*owner)) {
+                        continue;
+                    }
+                    ASR::symbol_t* repl = corresponding_symbol(target, old_proc, new_proc);
+                    if (repl == nullptr) {
+                        continue;
+                    }
+                    e->m_external = repl;
+                    ASRUtils::set_struct_member_owner_path(al, e);
+                }
+            }
+        }
+
     public:
 
         RemoveArrayByDescriptorProceduresVisitor(Allocator& al_, PassArrayByDataProcedureVisitor& v_,
@@ -2281,6 +2471,11 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                         }
                     }
                     if (!protect) {
+                        auto it = v.proc2newproc.find(item.second);
+                        if (it != v.proc2newproc.end()) {
+                            retarget_local_type_members(current_scope,
+                                item.second, it->second.first);
+                        }
                         current_scope->erase_symbol(item.first);
                     }
                 }

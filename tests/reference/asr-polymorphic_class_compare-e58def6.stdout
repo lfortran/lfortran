@@ -7,21 +7,21 @@
                     (SymbolTable
                         2
                         {
+                            1_map_setiterator_i:
+                                (ExternalSymbol
+                                    2
+                                    1_map_setiterator_i
+                                    3 i
+                                    gftl2_integer32complex32map
+                                    [map_setiterator]
+                                    i
+                                    Private
+                                ),
                             map_s_iter_equal:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            1_map_setiterator_i:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_map_setiterator_i
-                                                    3 i
-                                                    gftl2_integer32complex32map
-                                                    [map_setiterator]
-                                                    i
-                                                    Public
-                                                ),
                                             a:
                                                 (Variable
                                                     4
@@ -146,14 +146,14 @@
                                         (IntegerCompare
                                             (StructInstanceMember
                                                 (Var 4 a)
-                                                4 1_map_setiterator_i
+                                                2 1_map_setiterator_i
                                                 (Integer 4)
                                                 ()
                                             )
                                             Eq
                                             (StructInstanceMember
                                                 (Var 4 b)
-                                                4 1_map_setiterator_i
+                                                2 1_map_setiterator_i
                                                 (Integer 4)
                                                 ()
                                             )
@@ -428,7 +428,7 @@
                                     gftl2_integer32complex32map
                                     [map_setiterator]
                                     i
-                                    Public
+                                    Private
                                 ),
                             iter1:
                                 (Variable

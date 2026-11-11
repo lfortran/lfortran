@@ -6903,7 +6903,27 @@ class ReplaceExprWithTemporaryVisitor:
         }
     }
 
-    void visit_Associate(const ASR::Associate_t& /*x*/) {
+    void visit_Associate(const ASR::Associate_t& x) {
+        // A vector subscript is not a view of the array. Copy its elements
+        // into a temporary before associating a name with them. An ordinary
+        // section stays a view, so assigning through the name updates the
+        // original array.
+        ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(x.m_value);
+        bool vector_subscript = false;
+        if (ASR::is_a<ASR::ArrayItem_t>(*value)) {
+            vector_subscript = ASRUtils::is_array_indexed_with_array_indices(
+                ASR::down_cast<ASR::ArrayItem_t>(value));
+        } else if (ASR::is_a<ASR::ArraySection_t>(*value)) {
+            vector_subscript = ASRUtils::is_array_indexed_with_array_indices(
+                ASR::down_cast<ASR::ArraySection_t>(value));
+        }
+        if (!vector_subscript) {
+            return;
+        }
+        ASR::expr_t** current_expr_copy = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&x.m_value);
+        call_replacer();
+        current_expr = current_expr_copy;
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {

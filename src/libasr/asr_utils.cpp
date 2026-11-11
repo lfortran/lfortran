@@ -1011,6 +1011,129 @@ void anchor_cptr_null_constant_to_type_declaration(Allocator& al,
         al, expr->base.loc, var->m_type_declaration));
 }
 
+static ASR::symbol_t* struct_symbol_reachable_from(Allocator& al,
+        ASR::symbol_t* sym, SymbolTable* scope) {
+    if (sym == nullptr || is_visible_from(sym, scope)) {
+        return sym;
+    }
+    // Private, and under a name no user code can spell, when `scope` does not
+    // already import the type. An existing import is reused.
+    return import_symbol(al, sym, scope, ASR::accessType::Private, "1_");
+}
+
+static void anchor_call_args(Allocator& al, ASR::call_arg_t* src, size_t n,
+        SymbolTable* scope, Vec<ASR::call_arg_t>& out, bool& changed) {
+    out.reserve(al, n);
+    for (size_t i = 0; i < n; i++) {
+        ASR::call_arg_t arg = src[i];
+        if (arg.m_value != nullptr) {
+            ASR::expr_t* anchored = anchor_struct_constants(al, arg.m_value, scope);
+            if (anchored != arg.m_value) {
+                changed = true;
+                arg.m_value = anchored;
+            }
+        }
+        out.push_back(al, arg);
+    }
+}
+
+ASR::expr_t* anchor_struct_constants(Allocator& al, ASR::expr_t* expr,
+        SymbolTable* scope) {
+    if (expr == nullptr || scope == nullptr) {
+        return expr;
+    }
+    switch (expr->type) {
+        case ASR::exprType::StructConstant: {
+            ASR::StructConstant_t* x = ASR::down_cast<ASR::StructConstant_t>(expr);
+            bool changed = false;
+            Vec<ASR::call_arg_t> args;
+            anchor_call_args(al, x->m_args, x->n_args, scope, args, changed);
+            ASR::symbol_t* dt = struct_symbol_reachable_from(al, x->m_dt_sym, scope);
+            if (dt != x->m_dt_sym) {
+                changed = true;
+            }
+            if (!changed) {
+                return expr;
+            }
+            return ASRUtils::EXPR(ASR::make_StructConstant_t(
+                al, x->base.base.loc, dt, args.p, args.n, x->m_type));
+        }
+        case ASR::exprType::StructConstructor: {
+            ASR::StructConstructor_t* x = ASR::down_cast<ASR::StructConstructor_t>(expr);
+            bool changed = false;
+            Vec<ASR::call_arg_t> args;
+            anchor_call_args(al, x->m_args, x->n_args, scope, args, changed);
+            ASR::expr_t* value = x->m_value;
+            if (value != nullptr) {
+                ASR::expr_t* anchored = anchor_struct_constants(al, value, scope);
+                if (anchored != value) {
+                    changed = true;
+                    value = anchored;
+                }
+            }
+            ASR::symbol_t* dt = struct_symbol_reachable_from(al, x->m_dt_sym, scope);
+            if (dt != x->m_dt_sym) {
+                changed = true;
+            }
+            if (!changed) {
+                return expr;
+            }
+            return ASRUtils::EXPR(ASR::make_StructConstructor_t(
+                al, x->base.base.loc, dt, args.p, args.n, x->m_type, value));
+        }
+        case ASR::exprType::ArrayConstant: {
+            ASR::ArrayConstant_t* x = ASR::down_cast<ASR::ArrayConstant_t>(expr);
+            if (!ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(x->m_type))
+                    || x->m_data == nullptr || x->m_n_data == 0) {
+                return expr;
+            }
+            int64_t n = x->m_n_data / static_cast<int64_t>(sizeof(ASR::expr_t*));
+            ASR::expr_t** data = static_cast<ASR::expr_t**>(x->m_data);
+            bool changed = false;
+            Vec<ASR::expr_t*> copied;
+            copied.reserve(al, n);
+            for (int64_t i = 0; i < n; i++) {
+                ASR::expr_t* element = data[i];
+                if (element != nullptr) {
+                    ASR::expr_t* anchored = anchor_struct_constants(al, element, scope);
+                    if (anchored != element) {
+                        changed = true;
+                        element = anchored;
+                    }
+                }
+                copied.push_back(al, element);
+            }
+            if (!changed) {
+                return expr;
+            }
+            // The packed elements are shared with the module that defined the
+            // constants. A new buffer leaves that module's value untouched.
+            ASR::expr_t** fresh = new ASR::expr_t*[n];
+            for (int64_t i = 0; i < n; i++) {
+                fresh[i] = copied[i];
+            }
+            return ASRUtils::EXPR(ASR::make_ArrayConstant_t(
+                al, x->base.base.loc, x->m_n_data, fresh, x->m_type,
+                x->m_storage_format));
+        }
+        case ASR::exprType::ArrayConstructor: {
+            ASR::ArrayConstructor_t* x = ASR::down_cast<ASR::ArrayConstructor_t>(expr);
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (x->m_args[i] != nullptr) {
+                    x->m_args[i] = anchor_struct_constants(al, x->m_args[i], scope);
+                }
+            }
+            if (x->m_value != nullptr) {
+                x->m_value = anchor_struct_constants(al, x->m_value, scope);
+            }
+            return expr;
+        }
+        default:
+            return expr;
+    }
+}
+
 ASR::Variable_t* get_variable_from_symbol(ASR::symbol_t* sym)
 {
     if (sym == nullptr) {
@@ -1642,7 +1765,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
             // Module not found as a regular module. Try intrinsic module
             if (module_name == "iso_c_binding"
                 ||module_name == "iso_fortran_env"
-                ||module_name == "ieee_arithmetic") {
+                ||module_name == "ieee_arithmetic"
+                ||module_name == "ieee_exceptions") {
                 Result<ASR::TranslationUnit_t*, ErrorMessage> res
                     = find_and_load_module(al, "lfortran_intrinsic_" + module_name,
                         *symtab, true, pass_options, lm);
@@ -11870,6 +11994,16 @@ bool set_struct_member_owner_path(Allocator& al,
         owner = ASRUtils::get_asr_owner(owner);
     }
     if (owner == nullptr) {
+        // A struct copied into a device kernel lives in that function, and
+        // the function is not in a module. The external symbol is placed in
+        // the kernel, where the verifier accepts the struct's own name.
+        // The name the caller had (`1_<type>` when another symbol hides the
+        // type) does not resolve to the struct from the kernel.
+        if (struct_t != nullptr) {
+            e->m_module_name = s2c(al, ASRUtils::symbol_name(struct_t));
+            e->n_scope_names = 0;
+            e->m_scope_names = nullptr;
+        }
         return false;
     }
     e->m_module_name = s2c(al, ASRUtils::symbol_name(owner));
@@ -11957,15 +12091,67 @@ ASR::symbol_t* import_struct_instance_member(Allocator& al,
         struct_t_import_scope->add_symbol(struct_external_symbol_name, struct_external_symbol);
     }
 
-    std::string struct_member_external_symbol_name = "1_" + struct_t_name + "_" + struct_member_name;
-    if (scope->get_symbol(struct_member_external_symbol_name) == nullptr) {
-        ASR::symbol_t* struct_member_external_symbol = make_struct_member_external_symbol(
-            al, struct_member->base.loc, scope, struct_member_external_symbol_name,
-            struct_member, struct_external_symbol_name, ASR::accessType::Public);
-        scope->add_symbol(struct_member_external_symbol_name, struct_member_external_symbol);
+    // A procedure-pointer component stores this member in its interface
+    // when the interface uses it as an array bound (`dimension(me%n)`).
+    // The derived type is loaded before that procedure, so the member
+    // symbol has to live in the module: that symbol table already exists
+    // while the type is read back. A symbol in the procedure does not.
+    // It stays private. A public module symbol is imported by `use`, and
+    // that import does not keep the component scope, so the next module
+    // file cannot resolve the member.
+    SymbolTable* member_scope = scope;
+    for (SymbolTable* candidate = scope; candidate != nullptr;
+            candidate = candidate->parent) {
+        if (candidate->asr_owner == nullptr ||
+                !ASR::is_a<ASR::symbol_t>(*candidate->asr_owner)) {
+            continue;
+        }
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(candidate->asr_owner);
+        if (ASR::is_a<ASR::Module_t>(*owner) || ASRUtils::is_device_kernel(owner)) {
+            member_scope = candidate;
+            break;
+        }
     }
 
-    return scope->get_symbol(struct_member_external_symbol_name);
+    // The type and the component are not a unique name. Several procedures
+    // of one module, including the procedures of a template, may each
+    // declare a type of that name. The procedure is part of the name then,
+    // so each component keeps its own symbol. A type of the template itself
+    // keeps the short name. A specialised procedure finds the symbol in the
+    // module and retargets it at its own copy of the type.
+    std::string owner_prefix;
+    bool declared_in_procedure = false;
+    {
+        std::vector<std::string> owners;
+        for (ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_t);
+                owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)
+                && !ASRUtils::is_device_kernel(owner);
+                owner = ASRUtils::get_asr_owner(owner)) {
+            if (ASR::is_a<ASR::Function_t>(*owner) || ASR::is_a<ASR::Program_t>(*owner)
+                    || ASR::is_a<ASR::Block_t>(*owner)
+                    || ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                declared_in_procedure = true;
+                owners.push_back(ASRUtils::symbol_name(owner));
+            } else if (ASR::is_a<ASR::Template_t>(*owner)) {
+                owners.push_back(ASRUtils::symbol_name(owner));
+            }
+        }
+        if (declared_in_procedure) {
+            for (size_t i = owners.size(); i > 0; i--) {
+                owner_prefix += owners[i - 1] + "_";
+            }
+        }
+    }
+    std::string struct_member_external_symbol_name =
+        "1_" + owner_prefix + struct_t_name + "_" + struct_member_name;
+    if (member_scope->get_symbol(struct_member_external_symbol_name) == nullptr) {
+        ASR::symbol_t* struct_member_external_symbol = make_struct_member_external_symbol(
+            al, struct_member->base.loc, member_scope, struct_member_external_symbol_name,
+            struct_member, struct_external_symbol_name, ASR::accessType::Private);
+        member_scope->add_symbol(struct_member_external_symbol_name, struct_member_external_symbol);
+    }
+
+    return member_scope->get_symbol(struct_member_external_symbol_name);
 }
 
 ASR::symbol_t* import_enum_member(Allocator& al, ASR::symbol_t* v,
@@ -13153,17 +13339,45 @@ ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Location& loc
     }
 }
 
+// The symbolic value of a parameter array, when it is a flat array
+// constructor. Kinds that are not packed into an ArrayConstant (real(16))
+// still have a constant element there.
+static ASR::ArrayConstructor_t* parameter_array_constructor(ASR::expr_t* array) {
+    if (array == nullptr) {
+        return nullptr;
+    }
+    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*array)) {
+        return parameter_array_constructor(
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(array)->m_arg);
+    }
+    if (ASR::is_a<ASR::ArrayConstructor_t>(*array)) {
+        return ASR::down_cast<ASR::ArrayConstructor_t>(array);
+    }
+    if (!ASR::is_a<ASR::Var_t>(*array)) {
+        return nullptr;
+    }
+    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(array)->m_v);
+    if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+        return nullptr;
+    }
+    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+    if (var->m_storage != ASR::storage_typeType::Parameter
+            || var->m_symbolic_value == nullptr
+            || !ASR::is_a<ASR::ArrayConstructor_t>(*var->m_symbolic_value)) {
+        return nullptr;
+    }
+    return ASR::down_cast<ASR::ArrayConstructor_t>(var->m_symbolic_value);
+}
+
 ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
         ASR::array_index_t* indices, size_t n_indices) {
     if (n_indices == 0) {
         return nullptr;
     }
     ASR::expr_t* base_value = ASRUtils::designator_constant_value(al, array);
-    if (base_value == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*base_value)) {
-        return nullptr;
-    }
-    ASR::ArrayConstant_t* array_constant =
-        ASR::down_cast<ASR::ArrayConstant_t>(base_value);
+    bool have_array_constant = base_value != nullptr
+        && ASR::is_a<ASR::ArrayConstant_t>(*base_value);
     ASR::dimension_t* dims = nullptr;
     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
         ASRUtils::expr_type(array), dims);
@@ -13203,12 +13417,36 @@ ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
         flat_index += index * stride;
         stride *= length;
     }
-    if (flat_index < 0 || flat_index >=
-            ASRUtils::get_fixed_size_of_array(array_constant->m_type)) {
+    if (flat_index < 0 || flat_index >= stride) {
         return nullptr;
     }
-    return ASRUtils::fetch_ArrayConstant_value(al, array_constant,
-        flat_index);
+    if (have_array_constant) {
+        ASR::ArrayConstant_t* array_constant =
+            ASR::down_cast<ASR::ArrayConstant_t>(base_value);
+        if (flat_index >= ASRUtils::get_fixed_size_of_array(
+                array_constant->m_type)) {
+            return nullptr;
+        }
+        return ASRUtils::fetch_ArrayConstant_value(al, array_constant,
+            flat_index);
+    }
+    ASR::ArrayConstructor_t* constructor = parameter_array_constructor(array);
+    if (constructor == nullptr
+            || flat_index >= (int64_t) constructor->n_args) {
+        return nullptr;
+    }
+    ASR::expr_t* element = constructor->m_args[flat_index];
+    // The element's own value, not the element. A deferred parameter is a
+    // named constant with no value yet, and is_value_constant is true for
+    // every parameter, so the element itself must not be returned: a bound
+    // such as arr(1) + 1 would then name that parameter in a compile-time
+    // value the dependency check does not walk.
+    ASR::expr_t* element_value = ASRUtils::expr_value(element);
+    if (element_value != nullptr && !ASR::is_a<ASR::Var_t>(*element_value)
+            && ASRUtils::is_value_constant(element_value)) {
+        return element_value;
+    }
+    return nullptr;
 }
 
 void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type) {

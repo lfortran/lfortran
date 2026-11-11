@@ -1074,6 +1074,14 @@ class UpdateProcedureEntityTypes:
             std::map<ASR::symbol_t*, std::vector<int32_t>>& transformed_) :
             al{al_}, transformed{transformed_} {}
 
+        void adopt_null_type(ASR::expr_t* expr, ASR::ttype_t* type) {
+            if( expr == nullptr || type == nullptr ||
+                !ASR::is_a<ASR::PointerNullConstant_t>(*expr) ) {
+                return;
+            }
+            ASR::down_cast<ASR::PointerNullConstant_t>(expr)->m_type = type;
+        }
+
         void visit_Variable(const ASR::Variable_t& x) {
             ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
             if( xx.m_type_declaration == nullptr ) {
@@ -1097,6 +1105,9 @@ class UpdateProcedureEntityTypes:
             } else {
                 xx.m_type = signature;
             }
+            // `=> null()` on the declaration stores its own copy of the type.
+            adopt_null_type(xx.m_value, xx.m_type);
+            adopt_null_type(xx.m_symbolic_value, xx.m_type);
             retyped.insert((ASR::symbol_t*) &xx);
         }
 
@@ -1114,6 +1125,67 @@ class UpdateProcedureEntityTypes:
             }
             const_cast<ASR::FunctionPointerCast_t&>(x).m_type =
                 ASR::down_cast<ASR::Function_t>(to)->m_function_signature;
+        }
+
+        // `null()` stores the procedure type it is disassociated from. The
+        // reference it names is updated first, and the constant has to follow
+        // when that procedure's argument list changed. Copying the procedure's
+        // own signature otherwise plants its bound expressions, which name
+        // symbols of the procedure, into the scope that contains the constant.
+        void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x) {
+            ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_PointerNullConstant(x);
+            if( x.m_var_expr == nullptr ) {
+                return;
+            }
+            // A null that names the interface procedure itself carries a copy
+            // of that procedure's type. Leave the copy alone unless this pass
+            // changed the procedure: the procedure's signature names symbols
+            // of its own scope, and the constant may live in another one.
+            if( ASR::is_a<ASR::Var_t>(*x.m_var_expr) ) {
+                ASR::symbol_t* target = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_var_expr)->m_v);
+                if( target != nullptr && ASR::is_a<ASR::Function_t>(*target) &&
+                        transformed.find(target) == transformed.end() ) {
+                    return;
+                }
+            }
+            ASR::ttype_t* var_type = ASRUtils::expr_type(x.m_var_expr);
+            if( var_type == nullptr || !ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(var_type)) ) {
+                return;
+            }
+            const_cast<ASR::PointerNullConstant_t&>(x).m_type = var_type;
+        }
+
+        // A component reference stores its own copy of the procedure type.
+        // Reloading a module gives that copy a different allocation from the
+        // interface, so changing the interface does not change the reference.
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t& x) {
+            ASR::BaseWalkVisitor<UpdateProcedureEntityTypes>::visit_StructInstanceMember(x);
+            ASR::symbol_t* member = ASRUtils::symbol_get_past_external(x.m_m);
+            if( member == nullptr || !ASR::is_a<ASR::Variable_t>(*member) ) {
+                return;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(member);
+            if( var->m_type_declaration == nullptr ) {
+                return;
+            }
+            ASR::symbol_t* decl = ASRUtils::symbol_get_past_external(
+                var->m_type_declaration);
+            if( decl == nullptr || !ASR::is_a<ASR::Function_t>(*decl) ||
+                transformed.find(decl) == transformed.end() ) {
+                return;
+            }
+            ASR::ttype_t* signature = ASR::down_cast<ASR::Function_t>(
+                decl)->m_function_signature;
+            ASR::StructInstanceMember_t& xx =
+                const_cast<ASR::StructInstanceMember_t&>(x);
+            if( ASRUtils::is_pointer(xx.m_type) ) {
+                xx.m_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+                    al, xx.base.base.loc, signature));
+            } else {
+                xx.m_type = signature;
+            }
         }
 
         void visit_Function(const ASR::Function_t& x) {

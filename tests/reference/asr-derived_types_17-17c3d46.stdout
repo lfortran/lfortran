@@ -34,21 +34,21 @@
                     (SymbolTable
                         2
                         {
+                            1_t_1_num:
+                                (ExternalSymbol
+                                    2
+                                    1_t_1_num
+                                    3 num
+                                    derived_types_17_module_1
+                                    [t_1]
+                                    num
+                                    Private
+                                ),
                             add:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            1_t_1_num:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_t_1_num
-                                                    3 num
-                                                    derived_types_17_module_1
-                                                    [t_1]
-                                                    num
-                                                    Public
-                                                ),
                                             self:
                                                 (Variable
                                                     4
@@ -107,21 +107,21 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 4 self)
-                                            4 1_t_1_num
+                                            2 1_t_1_num
                                             (Integer 4)
                                             ()
                                         )
                                         (IntegerBinOp
                                             (StructInstanceMember
                                                 (Var 4 self)
-                                                4 1_t_1_num
+                                                2 1_t_1_num
                                                 (Integer 4)
                                                 ()
                                             )
                                             Add
                                             (StructInstanceMember
                                                 (Var 4 self)
-                                                4 1_t_1_num
+                                                2 1_t_1_num
                                                 (Integer 4)
                                                 ()
                                             )
@@ -145,16 +145,6 @@
                                     (SymbolTable
                                         5
                                         {
-                                            1_t_1_num:
-                                                (ExternalSymbol
-                                                    5
-                                                    1_t_1_num
-                                                    3 num
-                                                    derived_types_17_module_1
-                                                    [t_1]
-                                                    num
-                                                    Public
-                                                ),
                                             self:
                                                 (Variable
                                                     5
@@ -213,21 +203,21 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 5 self)
-                                            5 1_t_1_num
+                                            2 1_t_1_num
                                             (Integer 4)
                                             ()
                                         )
                                         (IntegerBinOp
                                             (StructInstanceMember
                                                 (Var 5 self)
-                                                5 1_t_1_num
+                                                2 1_t_1_num
                                                 (Integer 4)
                                                 ()
                                             )
                                             Mul
                                             (StructInstanceMember
                                                 (Var 5 self)
-                                                5 1_t_1_num
+                                                2 1_t_1_num
                                                 (Integer 4)
                                                 ()
                                             )

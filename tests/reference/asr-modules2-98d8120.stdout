@@ -190,21 +190,31 @@
                     (SymbolTable
                         2
                         {
+                            1_toml_array_list:
+                                (ExternalSymbol
+                                    2
+                                    1_toml_array_list
+                                    14 list
+                                    tomlf_type_array
+                                    [toml_array]
+                                    list
+                                    Private
+                                ),
+                            1_toml_value_key:
+                                (ExternalSymbol
+                                    2
+                                    1_toml_value_key
+                                    5 key
+                                    tomlf_type_value
+                                    [toml_value]
+                                    key
+                                    Private
+                                ),
                             destroy:
                                 (Function
                                     (SymbolTable
                                         15
                                         {
-                                            1_toml_array_list:
-                                                (ExternalSymbol
-                                                    15
-                                                    1_toml_array_list
-                                                    14 list
-                                                    tomlf_type_array
-                                                    [toml_array]
-                                                    list
-                                                    Public
-                                                ),
                                             1_toml_structure:
                                                 (ExternalSymbol
                                                     15
@@ -223,16 +233,6 @@
                                                     tomlf_structure_base
                                                     [toml_structure]
                                                     destroy
-                                                    Public
-                                                ),
-                                            1_toml_value_key:
-                                                (ExternalSymbol
-                                                    15
-                                                    1_toml_value_key
-                                                    5 key
-                                                    tomlf_type_value
-                                                    [toml_value]
-                                                    key
                                                     Public
                                                 ),
                                             self:
@@ -310,7 +310,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 15 self)
-                                                15 1_toml_value_key
+                                                2 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -323,7 +323,7 @@
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
                                                 (Var 15 self)
-                                                15 1_toml_value_key
+                                                2 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -340,7 +340,7 @@
                                             Allocated
                                             [(StructInstanceMember
                                                 (Var 15 self)
-                                                15 1_toml_array_list
+                                                2 1_toml_array_list
                                                 (Allocatable
                                                     (StructType
                                                         []
@@ -360,7 +360,7 @@
                                             ()
                                             [((StructInstanceMember
                                                 (Var 15 self)
-                                                15 1_toml_array_list
+                                                2 1_toml_array_list
                                                 (Allocatable
                                                     (StructType
                                                         []
@@ -373,7 +373,7 @@
                                             ))]
                                             (StructInstanceMember
                                                 (Var 15 self)
-                                                15 1_toml_array_list
+                                                2 1_toml_array_list
                                                 (Allocatable
                                                     (StructType
                                                         []
@@ -389,7 +389,7 @@
                                         (ExplicitDeallocate
                                             [(StructInstanceMember
                                                 (Var 15 self)
-                                                15 1_toml_array_list
+                                                2 1_toml_array_list
                                                 (Allocatable
                                                     (StructType
                                                         []

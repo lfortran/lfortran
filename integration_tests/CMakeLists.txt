@@ -1712,6 +1712,10 @@ RUN(NAME procedure_pointer_47 LABELS gfortran llvm EXTRA_ARGS --implicit-interfa
 RUN(NAME procedure_pointer_48 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type of the declaring scope (#16414)
 RUN(NAME procedure_pointer_49 LABELS gfortran llvm EXTRA_ARGS --implicit-interface) # typed pointer passed to an external dummy (#16414)
 RUN(NAME procedure_pointer_50 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing) # implicit result type in an internal procedure of a program (#16414)
+RUN(NAME procedure_pointer_51 LABELS gfortran llvm EXTRAFILES procedure_pointer_51_mod.f90)
+RUN(NAME procedure_pointer_52 LABELS gfortran llvm llvm_submodule EXTRAFILES procedure_pointer_52_mod.f90) # optional argument on a procedure pointer component, reloaded from the module file
+RUN(NAME procedure_pointer_53 LABELS gfortran llvm llvm_submodule EXTRAFILES procedure_pointer_53_mod.f90) # nullifying that component through an optional procedure dummy
+RUN(NAME procedure_pointer_54 LABELS gfortran llvm llvm_submodule EXTRAFILES procedure_pointer_54_mod.f90) # array arguments on a procedure pointer component
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
@@ -2318,6 +2322,8 @@ RUN(NAME parameter_29 LABELS llvm)
 RUN(NAME parameter_30 LABELS gfortran llvm c cpp)
 RUN(NAME parameter_31 LABELS gfortran llvm)
 RUN(NAME parameter_32 LABELS gfortran llvm)
+RUN(NAME parameter_33 LABELS gfortran llvm)
+RUN(NAME parameter_34 LABELS gfortran llvm) # negation of a parameter array
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2436,6 +2442,8 @@ RUN(NAME modules_90 LABELS gfortran llvm)
 RUN(NAME modules_91 LABELS gfortran llvm)
 RUN(NAME modules_92 LABELS gfortran llvm EXTRAFILES modules_92_mod.f90) # derived-type bounds of external procedure interfaces in .mod (#17148)
 RUN(NAME modules_93 LABELS gfortran llvm)
+RUN(NAME modules_94 LABELS gfortran llvm llvm_submodule EXTRAFILES modules_94_m1.f90 modules_94_m2.f90) # component symbol re-exported by use, reloaded from the module file
+RUN(NAME modules_95 LABELS gfortran llvm llvm_submodule EXTRAFILES modules_95_m.f90 modules_95_s.f90) # program loads a submodule that imported a component symbol
 RUN(NAME associate_06 LABELS gfortran EXTRAFILES
         associate_06_module.f90)
 
@@ -3352,6 +3360,8 @@ RUN(NAME derived_types_254 LABELS gfortran llvm) # pointer array component of a 
 RUN(NAME derived_types_255 LABELS gfortran llvm EXTRAFILES derived_types_255c.c EXTRA_ARGS --separate-compilation) # default initialization of an array component of a module variable, used from a C main
 RUN(NAME derived_types_256 LABELS gfortran llvm) # deferred-length character components inherited from the parent type (#7210)
 RUN(NAME derived_types_257 LABELS gfortran llvm) # local derived type with the same name as a non-imported module type (#5874)
+RUN(NAME derived_types_258 LABELS gfortran llvm EXTRAFILES derived_types_258_m1.f90 derived_types_258_m2.f90) # parameter array of a use-associated derived type, reloaded from the module file
+RUN(NAME derived_types_259 LABELS gfortran llvm) # local derived type with an allocatable array component, inside a procedure that has an array argument
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
 RUN(NAME derived_types_vector_subscript_01 LABELS gfortran llvm) # vector subscript then component, c(idx)%n and z(idx)%re (#16913)
 RUN(NAME vector_subscript_02 LABELS gfortran llvm) # vector subscript that is an elemental expression, vals(abs(idx)) and v(int(r)) (#17225)
@@ -3409,6 +3419,7 @@ RUN(NAME line_continuation_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm
 RUN(NAME line_continuation_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME line_continuation_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME line_continuation_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME line_continuation_07 LABELS gfortran llvm)
 
 RUN(NAME program_01 LABELS gfortran)
 RUN(NAME program_02 LABELS gfortran llvm)
@@ -3673,6 +3684,8 @@ RUN(NAME associate_64 LABELS gfortran llvm)
 RUN(NAME associate_65 LABELS gfortran llvm)
 RUN(NAME associate_66 LABELS gfortran llvm)
 RUN(NAME associate_67 LABELS gfortran llvm)
+RUN(NAME associate_68 LABELS gfortran llvm)
+RUN(NAME associate_69 LABELS gfortran llvm) # value of an associate name used in a real expression argument
 
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4381,6 +4394,7 @@ RUN(NAME test_ieee_arithmetic_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_ieee_arithmetic_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME test_ieee_arithmetic_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc NO_FAST_MATH)
 RUN(NAME test_ieee_arithmetic_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME test_ieee_exceptions_01 LABELS gfortran llvm)
 RUN(NAME test_ieee_arithmetic_fast_01 LABELS gfortran llvm)
 RUN(NAME iso_fortran_env_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 RUN(NAME iso_fortran_env_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
@@ -4915,6 +4929,7 @@ RUN(NAME nested_vars_28 LABELS gfortran llvm)
 RUN(NAME nested_vars_31 LABELS gfortran llvm)
 RUN(NAME nested_vars_32 LABELS gfortran llvm)
 RUN(NAME nested_vars_33 LABELS gfortran llvm) # local array of an internal procedure sized by a host program variable (#2430)
+RUN(NAME nested_vars_34 LABELS gfortran llvm) # explicit-shape host array passed from an internal procedure
 
 # No `wasm` label: the wasm backend does not support host association yet
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray c)
@@ -6064,6 +6079,7 @@ RUN(NAME lbound_03 LABELS gfortran llvm)
 RUN(NAME lbound_04 LABELS gfortran llvm)
 RUN(NAME lbound_05 LABELS gfortran llvm)
 RUN(NAME vector_subscript_01 LABELS gfortran llvm) # lbound, ubound and size of x(idx) when idx does not start at 1 (#16926)
+RUN(NAME vector_subscript_03 LABELS gfortran llvm) # element of a nested vector subscript, A(B(V)) and A(B(V(i:j)))
 RUN(NAME module_function_with_nopass LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_function_without_nopass LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

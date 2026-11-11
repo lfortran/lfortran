@@ -7,31 +7,31 @@
                     (SymbolTable
                         11
                         {
+                            1_git_target_t_object:
+                                (ExternalSymbol
+                                    11
+                                    1_git_target_t_object
+                                    12 object
+                                    fpm_git
+                                    [git_target_t]
+                                    object
+                                    Private
+                                ),
+                            1_git_target_t_url:
+                                (ExternalSymbol
+                                    11
+                                    1_git_target_t_url
+                                    12 url
+                                    fpm_git
+                                    [git_target_t]
+                                    url
+                                    Private
+                                ),
                             git_target_branch:
                                 (Function
                                     (SymbolTable
                                         13
                                         {
-                                            1_git_target_t_object:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_git_target_t_object
-                                                    12 object
-                                                    fpm_git
-                                                    [git_target_t]
-                                                    object
-                                                    Public
-                                                ),
-                                            1_git_target_t_url:
-                                                (ExternalSymbol
-                                                    13
-                                                    1_git_target_t_url
-                                                    12 url
-                                                    fpm_git
-                                                    [git_target_t]
-                                                    url
-                                                    Public
-                                                ),
                                             branch:
                                                 (Variable
                                                     13
@@ -154,7 +154,7 @@
                                     [(Assignment
                                         (StructInstanceMember
                                             (Var 13 self)
-                                            13 1_git_target_t_url
+                                            11 1_git_target_t_url
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -170,7 +170,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 13 self)
-                                            13 1_git_target_t_object
+                                            11 1_git_target_t_object
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -292,6 +292,16 @@
                     (SymbolTable
                         4
                         {
+                            1_dependency_config_t_git:
+                                (ExternalSymbol
+                                    4
+                                    1_dependency_config_t_git
+                                    5 git
+                                    fpm_manifest_dependency
+                                    [dependency_config_t]
+                                    git
+                                    Private
+                                ),
                             dependency_config_t:
                                 (Struct
                                     (SymbolTable
@@ -744,16 +754,6 @@
                                     (SymbolTable
                                         9
                                         {
-                                            1_dependency_config_t_git:
-                                                (ExternalSymbol
-                                                    9
-                                                    1_dependency_config_t_git
-                                                    5 git
-                                                    fpm_manifest_dependency
-                                                    [dependency_config_t]
-                                                    git
-                                                    Public
-                                                ),
                                             obj:
                                                 (Variable
                                                     9
@@ -908,7 +908,7 @@
                                                 Allocated
                                                 [(StructInstanceMember
                                                     (Var 9 self)
-                                                    9 1_dependency_config_t_git
+                                                    4 1_dependency_config_t_git
                                                     (Allocatable
                                                         (StructType
                                                             [(Allocatable
@@ -934,7 +934,7 @@
                                         [(Allocate
                                             [((StructInstanceMember
                                                 (Var 9 self)
-                                                9 1_dependency_config_t_git
+                                                4 1_dependency_config_t_git
                                                 (Allocatable
                                                     (StructType
                                                         [(Allocatable
@@ -964,7 +964,7 @@
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 9 self)
-                                            9 1_dependency_config_t_git
+                                            4 1_dependency_config_t_git
                                             (Allocatable
                                                 (StructType
                                                     [(Allocatable

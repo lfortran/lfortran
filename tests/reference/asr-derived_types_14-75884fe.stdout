@@ -298,6 +298,66 @@
                                     enum_type
                                     Public
                                 ),
+                            1_enum_type_boolean:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_type_boolean
+                                    5 boolean
+                                    derived_types_14_module
+                                    [enum_type]
+                                    boolean
+                                    Private
+                                ),
+                            1_enum_type_datetime:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_type_datetime
+                                    5 datetime
+                                    derived_types_14_module
+                                    [enum_type]
+                                    datetime
+                                    Private
+                                ),
+                            1_enum_type_float:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_type_float
+                                    5 float
+                                    derived_types_14_module
+                                    [enum_type]
+                                    float
+                                    Private
+                                ),
+                            1_enum_type_int:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_type_int
+                                    5 int
+                                    derived_types_14_module
+                                    [enum_type]
+                                    int
+                                    Private
+                                ),
+                            1_enum_type_invalid:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_type_invalid
+                                    5 invalid
+                                    derived_types_14_module
+                                    [enum_type]
+                                    invalid
+                                    Private
+                                ),
+                            1_enum_type_string:
+                                (ExternalSymbol
+                                    2
+                                    1_enum_type_string
+                                    5 string
+                                    derived_types_14_module
+                                    [enum_type]
+                                    string
+                                    Private
+                                ),
                             check:
                                 (Function
                                     (SymbolTable
@@ -397,66 +457,6 @@
                                     (SymbolTable
                                         6
                                         {
-                                            1_enum_type_boolean:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_enum_type_boolean
-                                                    5 boolean
-                                                    derived_types_14_module
-                                                    [enum_type]
-                                                    boolean
-                                                    Public
-                                                ),
-                                            1_enum_type_datetime:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_enum_type_datetime
-                                                    5 datetime
-                                                    derived_types_14_module
-                                                    [enum_type]
-                                                    datetime
-                                                    Public
-                                                ),
-                                            1_enum_type_float:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_enum_type_float
-                                                    5 float
-                                                    derived_types_14_module
-                                                    [enum_type]
-                                                    float
-                                                    Public
-                                                ),
-                                            1_enum_type_int:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_enum_type_int
-                                                    5 int
-                                                    derived_types_14_module
-                                                    [enum_type]
-                                                    int
-                                                    Public
-                                                ),
-                                            1_enum_type_invalid:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_enum_type_invalid
-                                                    5 invalid
-                                                    derived_types_14_module
-                                                    [enum_type]
-                                                    invalid
-                                                    Public
-                                                ),
-                                            1_enum_type_string:
-                                                (ExternalSymbol
-                                                    6
-                                                    1_enum_type_string
-                                                    5 string
-                                                    derived_types_14_module
-                                                    [enum_type]
-                                                    string
-                                                    Public
-                                                ),
                                             raw:
                                                 (Variable
                                                     6
@@ -542,7 +542,7 @@
                                             (Var 6 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
-                                                6 1_enum_type_string
+                                                2 1_enum_type_string
                                                 (Integer 4)
                                                 (IntegerConstant 101 (Integer 4) Decimal)
                                             )
@@ -569,7 +569,7 @@
                                             (Var 6 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
-                                                6 1_enum_type_boolean
+                                                2 1_enum_type_boolean
                                                 (Integer 4)
                                                 (IntegerConstant 102 (Integer 4) Decimal)
                                             )
@@ -596,7 +596,7 @@
                                             (Var 6 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
-                                                6 1_enum_type_int
+                                                2 1_enum_type_int
                                                 (Integer 4)
                                                 (IntegerConstant 103 (Integer 4) Decimal)
                                             )
@@ -623,7 +623,7 @@
                                             (Var 6 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
-                                                6 1_enum_type_float
+                                                2 1_enum_type_float
                                                 (Integer 4)
                                                 (IntegerConstant 104 (Integer 4) Decimal)
                                             )
@@ -650,7 +650,7 @@
                                             (Var 6 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
-                                                6 1_enum_type_datetime
+                                                2 1_enum_type_datetime
                                                 (Integer 4)
                                                 (IntegerConstant 105 (Integer 4) Decimal)
                                             )
@@ -667,7 +667,7 @@
                                         (Var 6 vtype)
                                         (StructInstanceMember
                                             (Var 2 toml_type)
-                                            6 1_enum_type_invalid
+                                            2 1_enum_type_invalid
                                             (Integer 4)
                                             (IntegerConstant 100 (Integer 4) Decimal)
                                         )

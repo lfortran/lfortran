@@ -15,7 +15,7 @@
                                     fpm_command_line
                                     [fpm_run_settings]
                                     bool
-                                    Public
+                                    Private
                                 ),
                             1_fpm_run_settings_float:
                                 (ExternalSymbol
@@ -25,7 +25,7 @@
                                     fpm_command_line
                                     [fpm_run_settings]
                                     float
-                                    Public
+                                    Private
                                 ),
                             1_fpm_run_settings_int:
                                 (ExternalSymbol
@@ -35,7 +35,7 @@
                                     fpm_command_line
                                     [fpm_run_settings]
                                     int
-                                    Public
+                                    Private
                                 ),
                             fpm_run_settings:
                                 (ExternalSymbol

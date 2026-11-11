@@ -4543,21 +4543,21 @@
                     (SymbolTable
                         2
                         {
+                            1_my_type_d:
+                                (ExternalSymbol
+                                    2
+                                    1_my_type_d
+                                    3 d
+                                    template_sort_02_type
+                                    [my_type]
+                                    d
+                                    Private
+                                ),
                             lt_my_type:
                                 (Function
                                     (SymbolTable
                                         4
                                         {
-                                            1_my_type_d:
-                                                (ExternalSymbol
-                                                    4
-                                                    1_my_type_d
-                                                    3 d
-                                                    template_sort_02_type
-                                                    [my_type]
-                                                    d
-                                                    Public
-                                                ),
                                             lhs:
                                                 (Variable
                                                     4
@@ -4682,14 +4682,14 @@
                                         (RealCompare
                                             (StructInstanceMember
                                                 (Var 4 lhs)
-                                                4 1_my_type_d
+                                                2 1_my_type_d
                                                 (Real 4)
                                                 ()
                                             )
                                             LtE
                                             (StructInstanceMember
                                                 (Var 4 rhs)
-                                                4 1_my_type_d
+                                                2 1_my_type_d
                                                 (Real 4)
                                                 ()
                                             )
