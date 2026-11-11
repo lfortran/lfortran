@@ -725,6 +725,80 @@ static void* slot_buffer(slot_cache *cache, int idx, size_t size) {
     return cache->buffers[idx];
 }
 
+
+// Small arrays a launch only reads, such as the weights of one layer of a
+// model, are copied to the device once and kept: the host bytes are compared
+// with a shadow of what the device holds, which costs a few nanoseconds, and
+// the copy is made again only when they differ. A copy for each launch costs
+// a stream operation each, which leaves the device idle between the kernels
+// of a short sequence. The entries live until the runtime shuts down.
+enum { SMALL_READ_ENTRIES = 4096 };
+static const size_t SMALL_READ_MAX_BYTES = 16 * 1024;
+static const size_t SMALL_READ_MAX_TOTAL_BYTES = (size_t)64 << 20;
+typedef struct small_read_entry {
+    const void *host;
+    size_t size;
+    void *device;
+    void *shadow;
+} small_read_entry;
+static small_read_entry small_reads[SMALL_READ_ENTRIES];
+static size_t small_read_bytes = 0;
+
+// The device copy of the `size` bytes at `host`, up to date, or NULL when the
+// range is not kept (too large, or no room).
+static void* small_read(const void *host, size_t size) {
+    // LFORTRAN_GPU_SMALL_READS=0 turns the cache off.
+    static int enabled = -1;
+    if (enabled < 0) {
+        const char *value = getenv("LFORTRAN_GPU_SMALL_READS");
+        enabled = !(value && value[0] == '0');
+    }
+    if (!enabled || size > SMALL_READ_MAX_BYTES) return NULL;
+    size_t h = ((uintptr_t)host >> 4) * 11400714819323198485ull;
+    h = (h >> 20) & (SMALL_READ_ENTRIES - 1);
+    for (size_t probe = 0; probe < 16; probe++) {
+        small_read_entry *e = &small_reads[(h + probe) & (SMALL_READ_ENTRIES - 1)];
+        if (e->host == host) {
+            if (e->size == size && memcmp(e->shadow, host, size) == 0) {
+                return e->device;
+            }
+            if (e->size != size) {
+                if (small_read_bytes + size > SMALL_READ_MAX_TOTAL_BYTES + e->size) return NULL;
+                void *shadow = malloc(size);
+                if (!shadow) return NULL;
+                free_later(e->device);
+                free(e->shadow);
+                small_read_bytes += size;
+                small_read_bytes -= e->size;
+                e->shadow = shadow;
+                e->size = size;
+                e->device = device_alloc(size);
+            }
+            memcpy(e->shadow, host, size);
+            check(cudaMemcpyAsync(e->device, e->shadow, size,
+                cudaMemcpyHostToDevice, 0), "cudaMemcpyAsync H2D");
+            device_busy = 1;
+            return e->device;
+        }
+        if (!e->host) {
+            if (small_read_bytes + size > SMALL_READ_MAX_TOTAL_BYTES) return NULL;
+            void *shadow = malloc(size);
+            if (!shadow) return NULL;
+            e->host = host;
+            e->size = size;
+            e->shadow = shadow;
+            e->device = device_alloc(size);
+            small_read_bytes += size;
+            memcpy(shadow, host, size);
+            check(cudaMemcpyAsync(e->device, shadow, size,
+                cudaMemcpyHostToDevice, 0), "cudaMemcpyAsync H2D");
+            device_busy = 1;
+            return e->device;
+        }
+    }
+    return NULL;
+}
+
 // The memory model of the device (see the comment at the top of this file),
 // from LFORTRAN_GPU_MEMORY and what the device reports.
 static int choose_memory_model(int device) {
@@ -1003,6 +1077,9 @@ void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     }
     memset(entries, 0, sizeof(entries));
     n_entries = 0;
+    for (int i = 0; i < SMALL_READ_ENTRIES; i++) free(small_reads[i].shadow);
+    memset(small_reads, 0, sizeof(small_reads));
+    small_read_bytes = 0;
     // The reset frees the managed allocations too.
     managed_lock();
     n_managed = 0;
@@ -1180,6 +1257,8 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                 } else if (!d_ptr && !unified_memory
                         && size >= KEEP_READ_MIN_BYTES) {
                     d_ptr = kept_read(host, size);
+                } else if (!d_ptr && !unified_memory) {
+                    d_ptr = small_read(host, size);
                 }
                 if (d_ptr) {
                     k->copied[i] = 0;
