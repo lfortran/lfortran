@@ -132,6 +132,11 @@ namespace LCompilers::CommandLineInterface {
         parser.kernel->add_option("--parent", parser.opts.arg_kernel_parent,
             "Stop, removing the connection file, when this parent process exits "
             "(the prompt that starts the kernel), or at once if it has exited");
+        parser.kernel->add_option("--load-library", parser.opts.arg_kernel_load_library,
+            "Load a shared library or static archive into the JIT before the "
+            "first cell (repeatable)");
+        parser.kernel->add_option("-I", parser.opts.arg_kernel_include_dirs,
+            "Directory searched for .mod files (repeatable)");
 
         parser.mod = parser.app.add_subcommand("mod", "Fortran mod file utilities.");
         parser.mod->add_option("file", parser.opts.arg_mod_file,

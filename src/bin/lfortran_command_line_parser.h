@@ -61,6 +61,8 @@ namespace LCompilers::CommandLineInterface {
         std::string arg_kernel_f;
         bool arg_kernel_managed = false;
         long long arg_kernel_parent = 0;
+        std::vector<std::string> arg_kernel_load_library;
+        std::vector<std::string> arg_kernel_include_dirs;
         std::string connect;
         std::string linker{""};
         std::string linker_path{""};
