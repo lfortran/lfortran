@@ -168,13 +168,13 @@ struct IntrinsicProcedures {
             return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t));
         } else if (ASR::is_a<ASR::Complex_t>(*t)) {
             if (trig_complex_double) {
-                double re = ASR::down_cast<ASR::ComplexConstant_t>(trig_arg)->m_re;
-                double im = ASR::down_cast<ASR::ComplexConstant_t>(trig_arg)->m_im;
+                double re = ASRUtils::complex_constant_re(ASR::down_cast<ASR::ComplexConstant_t>(trig_arg));
+                double im = ASRUtils::complex_constant_im(ASR::down_cast<ASR::ComplexConstant_t>(trig_arg));
                 std::complex<double> x(re, im);
                 std::complex<double> result = trig_complex_double(x);
                 re = std::real(result);
                 im = std::imag(result);
-                return ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(al, loc, re, im, t));
+                return ASR::down_cast<ASR::expr_t>(ASRUtils::make_ComplexConstant_util(al, loc, re, im, t));
             } else {
                 return nullptr;
             }

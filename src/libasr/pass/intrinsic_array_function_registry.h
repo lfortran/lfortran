@@ -414,6 +414,72 @@ T find_maxval(size_t size, T* data, bool* mask = nullptr) {
     return result;
 }
 
+// Folds sum, product, maxval and minval of a real(16) or complex(16) array
+// constant exactly, in binary128. Returns nullptr when the reduction is left
+// to run time (a NaN operand, or nothing selected by the mask for maxval and
+// minval).
+static inline ASR::expr_t *eval_kind16_reduction(Allocator &al, const Location &loc,
+        ASR::ttype_t *t, ASR::ArrayConstant_t *a, size_t size, const bool *mask_data,
+        ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
+    using F = ASRUtils::IntrinsicArrayFunctions;
+    bool is_complex = ASRUtils::is_complex(*ASRUtils::extract_type(t));
+    lf_float128 zero = lf_f128_from_double(0.0), one = lf_f128_from_double(1.0);
+    lf_float128 re = zero, im = zero;
+    bool seen = false;
+    for (size_t i = 0; i < size; i++) {
+        if (mask_data && !mask_data[i]) continue;
+        ASR::expr_t* e = ASRUtils::fetch_ArrayConstant_value(al, a, i);
+        lf_float128 x_re, x_im = zero;
+        if (is_complex) {
+            ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(e);
+            if (!ASRUtils::complex_constant_is_r16(c)) return nullptr;
+            x_re = ASRUtils::complex_constant_re_r16(c);
+            x_im = ASRUtils::complex_constant_im_r16(c);
+        } else {
+            x_re = ASRUtils::real_expr_get_r16(e);
+        }
+        if (lf_f128_isnan(x_re) || lf_f128_isnan(x_im)) return nullptr;
+        if (!seen && intrinsic_func_id != F::Sum) {
+            re = x_re; im = x_im;
+            seen = true;
+            continue;
+        }
+        seen = true;
+        switch (intrinsic_func_id) {
+            case F::Sum:
+                re = lf_f128_add(re, x_re);
+                im = lf_f128_add(im, x_im);
+                break;
+            case F::Product: {
+                lf_float128 new_re = lf_f128_sub(lf_f128_mul(re, x_re), lf_f128_mul(im, x_im));
+                lf_float128 new_im = lf_f128_add(lf_f128_mul(re, x_im), lf_f128_mul(im, x_re));
+                re = new_re; im = new_im;
+                break;
+            }
+            case F::MaxVal:
+                if (lf_f128_cmp(x_re, re) > 0) re = x_re;
+                break;
+            case F::MinVal:
+                if (lf_f128_cmp(x_re, re) < 0) re = x_re;
+                break;
+            default: return nullptr;
+        }
+    }
+    if (!seen) {
+        if (intrinsic_func_id == F::Sum) {
+            re = zero; im = zero;
+        } else if (intrinsic_func_id == F::Product) {
+            re = one; im = zero;
+        } else {
+            return nullptr;
+        }
+    }
+    if (is_complex) {
+        return ASRUtils::make_ComplexConstant_r16(al, loc, re, im, t);
+    }
+    return ASRUtils::make_RealConstant_r16(al, loc, re, t);
+}
+
 static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
     const Location & loc, ASR::ttype_t *t, Vec<ASR::expr_t*>& args,
     diag::Diagnostics& /*diag*/, ASRUtils::IntrinsicArrayFunctions intrinsic_func_id) {
@@ -491,6 +557,14 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
         }
     }
     bool *mask_data = nullptr;
+    if (ASRUtils::is_kind16_array_constant(array) && !ASRUtils::is_array(t) &&
+            (intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::Sum ||
+             intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::Product ||
+             intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MaxVal ||
+             intrinsic_func_id == ASRUtils::IntrinsicArrayFunctions::MinVal)) {
+        return eval_kind16_reduction(al, loc, t, a, size,
+            mask ? (bool*)(mask->m_data) : nullptr, intrinsic_func_id);
+    }
     switch( intrinsic_func_id ) {
         case ASRUtils::IntrinsicArrayFunctions::Sum: {
             if (mask) mask_data = (bool*)(mask->m_data);
@@ -534,9 +608,9 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                                 result.imag(result.imag() + *(((float*)(a->m_data)) + 2*i + 1));
                             }
                         }
-                        value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
+                        value = ASRUtils::EXPR(ASRUtils::make_ComplexConstant_util(al,
                             loc, result.real(), result.imag(), t));
-                    } else {
+                    } else if (ASRUtils::extract_kind_from_ttype_t(t) == 8) {
                         std::complex<double> result = {0.0, 0.0};
                         if (mask) {
                             for (size_t i = 0; i < size; i++) {
@@ -551,7 +625,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                                 result.imag(result.imag() + *(((double*)(a->m_data)) + 2*i + 1));
                             }
                         }
-                        value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
+                        value = ASRUtils::EXPR(ASRUtils::make_ComplexConstant_util(al,
                             loc, result.real(), result.imag(), t));
                     }
                 }
@@ -606,9 +680,9 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                                 temp_imag = result.imag();
                             }
                         }
-                        value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
+                        value = ASRUtils::EXPR(ASRUtils::make_ComplexConstant_util(al,
                             loc, result.real(), result.imag(), t));
-                    } else {
+                    } else if (ASRUtils::extract_kind_from_ttype_t(t) == 8) {
                         std::complex<double> result = {*(double*)(a->m_data), *((double*)(a->m_data) + 1)};
                         double temp_real = result.real();
                         double temp_imag = result.imag();
@@ -630,7 +704,7 @@ static inline ASR::expr_t *eval_ArrIntrinsic(Allocator & al,
                                 temp_imag = result.imag();
                             }
                         }
-                        value = ASRUtils::EXPR(ASR::make_ComplexConstant_t(al,
+                        value = ASRUtils::EXPR(ASRUtils::make_ComplexConstant_util(al,
                             loc, result.real(), result.imag(), t));
                     }
                 }
@@ -1620,6 +1694,8 @@ static inline ASR::expr_t *eval_MaxMinLoc(Allocator &al, const Location &loc,
     int orig_n_dims = extract_n_dims_from_ttype(orig_array_type);
     array = ASRUtils::expr_value(array);
     if (!array) return nullptr;
+    // The elements are compared as doubles
+    if (ASRUtils::is_kind16_array_constant(array)) return nullptr;
     // The expr_value of a multi-dim array may be flattened to 1D ArrayConstant,
     // so we check the flattened value's dims (should be 1) instead of orig_n_dims.
     if (extract_n_dims_from_ttype(expr_type(array)) == 1) {
@@ -4845,6 +4921,8 @@ namespace FindLoc {
         ASR::expr_t* back = args[5];
         if (!array) return nullptr;
         if (!value) return nullptr;
+        // The elements are compared as doubles
+        if (ASRUtils::is_kind16_array_constant(ASRUtils::expr_value(array))) return nullptr;
         if (extract_n_dims_from_ttype(expr_type(array)) == 1) {
             int arr_size = 0;
             ASR::expr_t* array_value = ASRUtils::expr_value(array);
@@ -4890,12 +4968,12 @@ namespace FindLoc {
                 }
             } else if (is_complex(*expr_type(array))) {
                 double re, im;
-                re = ASR::down_cast<ASR::ComplexConstant_t>(value_value)->m_re;
-                im = ASR::down_cast<ASR::ComplexConstant_t>(value_value)->m_im;
+                re = ASRUtils::complex_constant_re(ASR::down_cast<ASR::ComplexConstant_t>(value_value));
+                im = ASRUtils::complex_constant_im(ASR::down_cast<ASR::ComplexConstant_t>(value_value));
                 for (int i = 0; i < arr_size; i++) {
                     if (((bool*)mask_value_constant->m_data)[i] != 0) {
-                        double re2 = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i))->m_re;
-                        double im2 = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i))->m_im;
+                        double re2 = ASRUtils::complex_constant_re(ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i)));
+                        double im2 = ASRUtils::complex_constant_im(ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::fetch_ArrayConstant_value(al, array_value_constant, i)));
                         if (re == re2 && im == im2) {
                             element_idx = i;
                             if (!(back_value_constant && back_value_constant->m_value)) break;
@@ -5496,7 +5574,7 @@ namespace MatMul {
                 } else if constexpr (std::is_integral_v<T>) {
                     value = EXPR(ASR::make_IntegerConstant_t(al, loc, s, elem_type));
                 } else if constexpr (is_std_complex<T>::value) {
-                    value = EXPR(ASR::make_ComplexConstant_t(al, loc,
+                    value = EXPR(ASRUtils::make_ComplexConstant_util(al, loc,
                         s.real(), s.imag(), elem_type));
                 } else {
                     value = ASRUtils::make_RealConstant_util(al, loc, s, elem_type);
@@ -6381,6 +6459,8 @@ namespace Norm2 {
     static inline ASR::expr_t *eval_Norm2(Allocator &al,
         const Location &loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASR::expr_t* array = args[0];
+        // The elements are summed as floats or doubles
+        if (ASRUtils::is_kind16_array_constant(array)) return nullptr;
         if (array && ASR::is_a<ASR::ArrayConstant_t>(*array)) {
             ASR::ArrayConstant_t *arr = ASR::down_cast<ASR::ArrayConstant_t>(array);
             size_t size = ASRUtils::get_fixed_size_of_array(arr->m_type);
@@ -6805,7 +6885,7 @@ namespace Pack {
                 evaluate_Pack(a, b, c, res);
                  std::vector<ASR::expr_t*> values;
                 for (auto it: res) {
-                    values.push_back(EXPR(ASR::make_ComplexConstant_t(al, loc, it.first, it.second, type_get_past_array(return_type))));
+                    values.push_back(EXPR(ASRUtils::make_ComplexConstant_util(al, loc, it.first, it.second, type_get_past_array(return_type))));
                 }
                 return builder.ArrayConstant(values, extract_type(return_type), false);
             } else if (kind == 8) {
@@ -6817,7 +6897,7 @@ namespace Pack {
                 evaluate_Pack(a, b, c, res);
                 std::vector<ASR::expr_t*> values;
                 for (auto it: res) {
-                    values.push_back(EXPR(ASR::make_ComplexConstant_t(al, loc, it.first, it.second, type_get_past_array(return_type))));
+                    values.push_back(EXPR(ASRUtils::make_ComplexConstant_util(al, loc, it.first, it.second, type_get_past_array(return_type))));
                 }
                 return builder.ArrayConstant(values, extract_type(return_type), false);
             }
@@ -7194,10 +7274,10 @@ namespace Unpack {
 
                 for (int i = 0; i < dim_mask; i++) {
                     if (b[i]) {
-                        values.push_back(al, EXPR(ASR::make_ComplexConstant_t(al, loc, a[k].first, a[k].second, type_get_past_array(return_type))));
+                        values.push_back(al, EXPR(ASRUtils::make_ComplexConstant_util(al, loc, a[k].first, a[k].second, type_get_past_array(return_type))));
                         k++;
                     } else {
-                        values.push_back(al, EXPR(ASR::make_ComplexConstant_t(al, loc, c[i].first, c[i].second, type_get_past_array(return_type))));
+                        values.push_back(al, EXPR(ASRUtils::make_ComplexConstant_util(al, loc, c[i].first, c[i].second, type_get_past_array(return_type))));
                     }
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
@@ -7209,10 +7289,10 @@ namespace Unpack {
 
                 for (int i = 0; i < dim_mask; i++) {
                     if (b[i]) {
-                        values.push_back(al, EXPR(ASR::make_ComplexConstant_t(al, loc, a[k].first, a[k].second, type_get_past_array(return_type))));
+                        values.push_back(al, EXPR(ASRUtils::make_ComplexConstant_util(al, loc, a[k].first, a[k].second, type_get_past_array(return_type))));
                         k++;
                     } else {
-                        values.push_back(al, EXPR(ASR::make_ComplexConstant_t(al, loc, c[i].first, c[i].second, type_get_past_array(return_type))));
+                        values.push_back(al, EXPR(ASRUtils::make_ComplexConstant_util(al, loc, c[i].first, c[i].second, type_get_past_array(return_type))));
                     }
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
@@ -7437,6 +7517,54 @@ namespace DotProduct {
         }
     }
 
+    // Folds dot_product of real(16) or complex(16) array constants exactly.
+    static inline ASR::expr_t *eval_kind16_dot_product(Allocator &al, const Location &loc,
+            ASR::ttype_t *return_type, ASR::expr_t *vector_a, ASR::expr_t *vector_b, int dim) {
+        vector_a = ASRUtils::expr_value(vector_a);
+        vector_b = ASRUtils::expr_value(vector_b);
+        if (!vector_a || !vector_b) return nullptr;
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_a)) {
+            vector_a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_a)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*vector_b)) {
+            vector_b = ASR::down_cast<ASR::ArrayPhysicalCast_t>(vector_b)->m_arg;
+        }
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*vector_a) ||
+                !ASR::is_a<ASR::ArrayConstant_t>(*vector_b)) {
+            return nullptr;
+        }
+        ASR::ArrayConstant_t *a_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_a);
+        ASR::ArrayConstant_t *b_const = ASR::down_cast<ASR::ArrayConstant_t>(vector_b);
+        bool is_complex = ASRUtils::is_complex(*ASRUtils::extract_type(return_type));
+        lf_float128 re = lf_f128_from_double(0.0), im = lf_f128_from_double(0.0);
+        for (int i = 0; i < dim; i++) {
+            ASR::expr_t *ea = ASRUtils::fetch_ArrayConstant_value(al, a_const, i);
+            ASR::expr_t *eb = ASRUtils::fetch_ArrayConstant_value(al, b_const, i);
+            if (is_complex) {
+                ASR::ComplexConstant_t *ca = ASR::down_cast<ASR::ComplexConstant_t>(ea);
+                ASR::ComplexConstant_t *cb = ASR::down_cast<ASR::ComplexConstant_t>(eb);
+                if (!ASRUtils::complex_constant_is_r16(ca) ||
+                        !ASRUtils::complex_constant_is_r16(cb)) {
+                    return nullptr;
+                }
+                lf_float128 ar = ASRUtils::complex_constant_re_r16(ca);
+                lf_float128 ai = ASRUtils::complex_constant_im_r16(ca);
+                lf_float128 br = ASRUtils::complex_constant_re_r16(cb);
+                lf_float128 bi = ASRUtils::complex_constant_im_r16(cb);
+                // conjg(a) * b
+                re = lf_f128_add(re, lf_f128_add(lf_f128_mul(ar, br), lf_f128_mul(ai, bi)));
+                im = lf_f128_add(im, lf_f128_sub(lf_f128_mul(ar, bi), lf_f128_mul(ai, br)));
+            } else {
+                re = lf_f128_add(re, lf_f128_mul(ASRUtils::real_expr_get_r16(ea),
+                    ASRUtils::real_expr_get_r16(eb)));
+            }
+        }
+        if (is_complex) {
+            return ASRUtils::make_ComplexConstant_r16(al, loc, re, im, return_type);
+        }
+        return ASRUtils::make_RealConstant_r16(al, loc, re, return_type);
+    }
+
     static inline ASR::expr_t *eval_DotProduct(Allocator & al,
         const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASR::expr_t *vector_a = args[0], *vector_b = args[1];
@@ -7453,9 +7581,19 @@ namespace DotProduct {
             } else if (ASRUtils::is_logical(*type_a)) {
                 return make_ConstantWithType(make_LogicalConstant_t, false, return_type, loc);
             } else if (ASRUtils::is_complex(*type_a)) {
-                return EXPR(make_ComplexConstant_t(al, loc, 0.0, 0.0, return_type));
+                return EXPR(ASRUtils::make_ComplexConstant_util(al, loc, 0.0, 0.0, return_type));
             }
             return nullptr;
+        }
+
+        ASR::ttype_t *type_vector_b = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(vector_b)));
+        ASR::ttype_t *type_b = ASRUtils::type_get_past_array(type_vector_b);
+        int kind_b = ASRUtils::extract_kind_from_ttype_t(type_b);
+        bool kind16_a = kind == 16 && (ASRUtils::is_real(*type_a) || ASRUtils::is_complex(*type_a));
+        bool kind16_b = kind_b == 16 && (ASRUtils::is_real(*type_b) || ASRUtils::is_complex(*type_b));
+        if (kind16_a || kind16_b) {
+            if (!(kind16_a && kind16_b)) return nullptr;
+            return eval_kind16_dot_product(al, loc, return_type, vector_a, vector_b, dim);
         }
 
         if (ASRUtils::is_real(*type_a)) {
@@ -7499,7 +7637,7 @@ namespace DotProduct {
                     result.first += a[i].first * b[i].first + (a[i].second * b[i].second);
                     result.second += a[i].first * b[i].second + ((-a[i].second)* b[i].first);
                 }
-                return EXPR(make_ComplexConstant_t(al, loc, result.first, result.second, return_type));
+                return EXPR(ASRUtils::make_ComplexConstant_util(al, loc, result.first, result.second, return_type));
             } else if (kind == 8) {
                 std::vector<std::pair<double, double>> a(dim), b(dim);
                 populate_vector_complex(al, a, b, vector_a, vector_b, dim);
@@ -7508,7 +7646,7 @@ namespace DotProduct {
                     result.first += a[i].first * b[i].first + (a[i].second * b[i].second);
                     result.second += a[i].first * b[i].second + ((-a[i].second)* b[i].first);
                 }
-                return EXPR(make_ComplexConstant_t(al, loc, result.first, result.second, return_type));
+                return EXPR(ASRUtils::make_ComplexConstant_util(al, loc, result.first, result.second, return_type));
             }
         }
         // Other types and kinds are not folded at compile time.
@@ -7578,7 +7716,7 @@ namespace DotProduct {
         }
 
         ASR::expr_t *value = nullptr;
-        if (all_args_evaluated(args)) {
+        if (all_args_evaluated(args, false, false, true)) {
             value = eval_DotProduct(al, loc, ret_type, args, diag);
         }
         return make_IntrinsicArrayFunction_t_util(al, loc,
@@ -7608,7 +7746,7 @@ namespace DotProduct {
                 b.Assignment(result, b.Or(result, b.And(b.ArrayItem_01(args[0], {i}), b.ArrayItem_01(args[1], {i}))))
             }));
         } else if (is_complex(*return_type)) {
-            body.push_back(al, b.Assignment(result, EXPR(ASR::make_ComplexConstant_t(al, loc, 0.0, 0.0, return_type))));
+            body.push_back(al, b.Assignment(result, EXPR(ASRUtils::make_ComplexConstant_util(al, loc, 0.0, 0.0, return_type))));
 
             Vec<ASR::call_arg_t> new_args_conjg; new_args_conjg.reserve(al, 1);
             ASR::call_arg_t call_arg; call_arg.loc = loc;

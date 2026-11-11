@@ -4579,6 +4579,28 @@ public:
         }
     }
 
+    void visit_ComplexConstant(const ComplexConstant_t& x) {
+        require(ASRUtils::is_complex(*x.m_type),
+            "ComplexConstant::m_type must be a complex type");
+        require(!ASRUtils::is_array(x.m_type),
+            "ComplexConstant::m_type must not be an array");
+        if (ASRUtils::complex_constant_is_r16(&x)) {
+            require(ASRUtils::real_constant_unpack_r16(x.m_re) != nullptr &&
+                    ASRUtils::real_constant_unpack_r16(x.m_im) != nullptr,
+                "the parts of a complex(16) ComplexConstant must point to "
+                "binary128 values");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexConstant(x);
+    }
+
+    void visit_ComplexConstructor(const ComplexConstructor_t& x) {
+        if (x.m_value != nullptr) {
+            require(ASR::is_a<ASR::ComplexConstant_t>(*x.m_value),
+                "ComplexConstructor::m_value must be a ComplexConstant");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_ComplexConstructor(x);
+    }
+
     void visit_FunctionType(const FunctionType_t& x) {
 
         #define verify_nonscoped_ttype(ttype) non_global_symbol_visited = false; \

@@ -2620,6 +2620,9 @@ class ASRTextSerializationVisitorVisitor(ASDLVisitor):
             assert not field.seq and not field.opt
             if cons_name == "RealConstant" and field.name == "r":
                 self.emit("self().write_real_constant(x);", 2)
+            elif cons_name == "ComplexConstant":
+                self.emit("self().write_complex_constant_part(x, x.m_%s);"
+                    % field.name, 2)
             else:
                 self.emit("self().write_float(x.m_%s);" % field.name, 2)
         elif field.type == "bool":
@@ -3033,6 +3036,9 @@ class ASRSymbolHelperVisitor(ASDLVisitor):
 # stored in `type`. `type` therefore has to precede `r` on the wire. The kind
 # dependent transfer itself lives in write_real()/read_real() in
 # serialization.cpp.
+#
+# ComplexConstant: the same holds for the `re` and `im` parts of a `complex(16)`
+# value, which are written and read by write_complex_part()/read_complex_part().
 serialization_overrides = {
     "RealConstant": {
         "order": ["type", "r"],
@@ -3040,6 +3046,19 @@ serialization_overrides = {
             "r": {
                 "write": "self().write_real(x.m_r, x.m_type);",
                 "read": "double m_r = self().read_real(m_type);",
+            },
+        },
+    },
+    "ComplexConstant": {
+        "order": ["type", "re", "im"],
+        "fields": {
+            "re": {
+                "write": "self().write_complex_part(x.m_re, x.m_type);",
+                "read": "double m_re = self().read_complex_part(m_type);",
+            },
+            "im": {
+                "write": "self().write_complex_part(x.m_im, x.m_type);",
+                "read": "double m_im = self().read_complex_part(m_type);",
             },
         },
     },

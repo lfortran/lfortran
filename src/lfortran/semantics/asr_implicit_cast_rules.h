@@ -99,41 +99,41 @@ private:
   };
 
 public:
-  // Folds a constant integer (src_real_kind == 0) or real(4)/real(8) array
-  // to real(16). The result is an ArrayConstructor of real(16) constants,
-  // since ArrayConstant cannot pack kind-16 elements.
-  static ASR::expr_t* make_real16_array_value(Allocator &al,
-          ASR::ArrayConstant_t* array, ASR::Array_t* array_type,
-          ASR::ttype_t* dest_type, int src_real_kind) {
+  // Whether a cast of the constant array `value` to `dest_type` involves a
+  // real(16) or complex(16) element, which the casts of the raw data of an
+  // array constant do not handle.
+  static bool is_kind16_array_cast(ASR::expr_t *value, ASR::ttype_t *dest_type) {
+      auto is_kind16 = [](ASR::ttype_t *t) {
+          t = ASRUtils::extract_type(t);
+          return (ASRUtils::is_real(*t) || ASRUtils::is_complex(*t))
+              && ASRUtils::extract_kind_from_ttype_t(t) == 16;
+      };
+      return is_kind16(ASRUtils::expr_type(value)) || is_kind16(dest_type);
+  }
+
+  // The constant array `array` converted to the element type `dest_type`, by
+  // converting each of its elements, or nullptr if an element does not fold.
+  static ASR::expr_t* fold_array_cast_by_element(Allocator &al,
+          const Location &a_loc, ASR::ArrayConstant_t *array,
+          ASR::ttype_t *dest_type, diag::Diagnostics &diag) {
       size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
-      int kind = ASRUtils::extract_kind_from_ttype_t(array->m_type);
       Vec<ASR::expr_t*> elements; elements.reserve(al, array_size);
       for (size_t i = 0; i < array_size; i++) {
-          lf_float128 v;
-          if (src_real_kind == 0) {
-              int64_t n;
-              if (kind == 4) n = ((int32_t*) array->m_data)[i];
-              else if (kind == 8) n = ((int64_t*) array->m_data)[i];
-              else if (kind == 2) n = ((int16_t*) array->m_data)[i];
-              else n = ((int8_t*) array->m_data)[i];
-              v = lf_f128_from_int64(n);
-          } else {
-              double d = src_real_kind == 4
-                  ? (double) ((float*) array->m_data)[i]
-                  : ((double*) array->m_data)[i];
-              v = lf_f128_from_double(d);
+          ASR::expr_t *element = ASRUtils::fetch_ArrayConstant_value(al, array, i);
+          set_converted_value(al, a_loc, &element, ASRUtils::expr_type(element),
+              dest_type, diag);
+          if (ASRUtils::expr_value(element) == nullptr) {
+              return nullptr;
           }
-          elements.push_back(al, ASRUtils::make_RealConstant_r16(al,
-              array->base.base.loc, v, dest_type));
+          elements.push_back(al, element);
       }
-      ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al,
-          dest_type->base.loc, dest_type, array_type->m_dims,
-          array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray,
-          ASR::memory_spaceType::Global));
-      ASR::expr_t* result = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
-          al, array->base.base.loc, elements.p, elements.n, new_array_type,
-          array->m_storage_format));
-      return result;
+      ASR::Array_t *array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+      void *new_data = ASRUtils::set_ArrayConstant_data(elements.p, array_size, dest_type);
+      ASR::ttype_t *new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al,
+          dest_type->base.loc, dest_type, array_type->m_dims, array_type->n_dims,
+          ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+      return ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, array->base.base.loc,
+          new_data, new_array_type, array->m_storage_format));
   }
 
   /*
@@ -207,7 +207,12 @@ public:
       throw SemanticAbort();
     } else if (cast_kind != no_cast_required) {
         ASR::expr_t *value=nullptr;
-        if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToInteger) {
+        ASR::expr_t *source_value = ASRUtils::expr_value(*convert_can);
+        if (source_value && ASR::is_a<ASR::ArrayConstant_t>(*source_value)
+                && is_kind16_array_cast(source_value, dest_type2)) {
+            value = fold_array_cast_by_element(al, a_loc,
+                ASR::down_cast<ASR::ArrayConstant_t>(source_value), dest_type2, diag);
+        } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
@@ -259,9 +264,6 @@ public:
                                               array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                     value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
-                  } else if (dest_kind == 16) {
-                      // the data of a constant array has no real(16) or complex(16) element: not folded
-                      value = nullptr;
                   }
                 }
             }
@@ -331,9 +333,6 @@ public:
                                                   array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
-                    } else if (dest_kind == 16) {
-                        // ArrayConstant cannot pack real(16) elements: fold to an ArrayConstructor
-                        value = make_real16_array_value(al, array, array_type, dest_type2, 0);
                     }
                 }
             }
@@ -374,7 +373,6 @@ public:
                   void *data = array->m_data;
                   size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
                   int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
-                  int kind_src_real = ASRUtils::extract_kind_from_ttype_t(array->m_type);
                   void *new_data = nullptr;
                   if (dest_kind == 4) {
                       float *new_array = al.allocate<float>(array_size);
@@ -394,9 +392,6 @@ public:
                                                 array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                       value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
-                  } else if (dest_kind == 16) {
-                      // ArrayConstant cannot pack real(16) elements: fold to an ArrayConstructor
-                      value = make_real16_array_value(al, array, array_type, dest_type2, kind_src_real);
                   }
               }
             }
@@ -410,15 +405,15 @@ public:
                     // kind=10 and kind=16 m_r is a pointer to the value's bytes
                     int src_kind = ASRUtils::extract_kind_from_ttype_t(r->m_type);
                     if (src_kind == 16 && ASRUtils::extract_kind_from_ttype_t(dest_type2) == 16) {
-                      // a ComplexConstant cannot hold a complex(16) value
-                      value = ASRUtils::make_complex16_from_real16(al, a_loc, value, dest_type2);
+                      value = ASRUtils::make_ComplexConstant_r16(al, a_loc,
+                          ASRUtils::real_constant_get_r16(r), lf_f128_from_double(0.0), dest_type2);
                     } else {
                     double rval = src_kind == 10
                         ? ASRUtils::real_constant_get_r10(r)
                         : src_kind == 16
                         ? lf_f128_to_double(ASRUtils::real_constant_get_r16(r))
                         : r->m_r;
-                    value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
+                    value = (ASR::expr_t *)ASRUtils::make_ComplexConstant_util(al, a_loc,
                       rval, 0, dest_type2);
                     }
                 } else {
@@ -456,9 +451,6 @@ public:
                                                   array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
-                    } else if (dest_kind == 16) {
-                        // the data of a constant array has no real(16) or complex(16) element: not folded
-                        value = nullptr;
                     }
                 }
             }
@@ -467,15 +459,10 @@ public:
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
-                if (ASR::is_a<ASR::ComplexConstructor_t>(*value) ||
-                    (ASR::is_a<ASR::ComplexConstant_t>(*value) &&
-                     ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(value)) == 16)) {
-                  value = ASRUtils::fold_complex16_cast(al, a_loc, value, ASR::cast_kindType::ComplexToReal, dest_type2);
-                } else if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
-                  ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
-                  double rval = r->m_re;
-                  value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
-                      rval, dest_type2);
+                if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
+                  value = ASRUtils::fold_complex_cast(al, a_loc,
+                      ASR::down_cast<ASR::ComplexConstant_t>(value),
+                      ASR::cast_kindType::ComplexToReal, dest_type2);
                 } else {
                   value = nullptr;
                 }
@@ -487,7 +474,7 @@ public:
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
                   ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
-                  double rval = r->m_re;
+                  double rval = ASRUtils::complex_constant_re(r);
                   int64_t ival = (int64_t)rval;
                   value = (ASR::expr_t *)ASR::make_IntegerConstant_t(al, a_loc,
                       ival, dest_type2);
@@ -568,9 +555,6 @@ public:
                                                   array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
-                    } else if (dest_kind == 16) {
-                        // the data of a constant array has no real(16) or complex(16) element: not folded
-                        value = nullptr;
                     }
                 }
             }
@@ -582,7 +566,7 @@ public:
                 if( ASR::is_a<ASR::IntegerConstant_t>(*value) ) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
                     int64_t ival = i->m_n;
-                    value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
+                    value = (ASR::expr_t *)ASRUtils::make_ComplexConstant_util(al, a_loc,
                       static_cast<double>(ival), 0, dest_type2);
                 } else {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
@@ -627,9 +611,6 @@ public:
                                                   array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
-                    } else if (dest_kind == 16) {
-                        // the data of a constant array has no real(16) or complex(16) element: not folded
-                        value = nullptr;
                     }
                 }
             }
@@ -638,16 +619,10 @@ public:
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*dest_type2))
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
-                if( ASR::is_a<ASR::ComplexConstructor_t>(*value) ||
-                    (ASR::is_a<ASR::ComplexConstant_t>(*value) &&
-                     ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(value)) == 16) ) {
-                    value = ASRUtils::fold_complex16_cast(al, a_loc, value, ASR::cast_kindType::ComplexToComplex, dest_type2);
-                } else if( ASR::is_a<ASR::ComplexConstant_t>(*value) ) {
-                    ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(value);
-                    double re = c->m_re;
-                    double im = c->m_im;
-                    value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
-                      re, im, dest_type2);
+                if( ASR::is_a<ASR::ComplexConstant_t>(*value) ) {
+                    value = ASRUtils::fold_complex_cast(al, a_loc,
+                        ASR::down_cast<ASR::ComplexConstant_t>(value),
+                        ASR::cast_kindType::ComplexToComplex, dest_type2);
                 } else {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
                     ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -676,9 +651,6 @@ public:
                                                           array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
-                    } else if (dest_kind == 16) {
-                        // the data of a constant array has no real(16) or complex(16) element: not folded
-                        value = nullptr;
                     }
                 }
             }
@@ -754,9 +726,6 @@ public:
                                                           array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
                         value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                             new_data, new_array_type, array->m_storage_format));
-                    } else if (dest_kind == 16) {
-                        // the data of a constant array has no real(16) or complex(16) element: not folded
-                        value = nullptr;
                     }
                 }
             }
