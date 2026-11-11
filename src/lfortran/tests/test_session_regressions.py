@@ -586,6 +586,76 @@ def prompt_killed_in_cell(exe, cwd):
                 kill_pid(pid)
 
 
+def terminal_command(exe, cwd):
+    """A kernel started on a terminal, as by hand: `execute_command_line`
+    gives the terminal to the command, as system() does, so that the command
+    reads what is typed instead of being stopped (SIGTTIN), and Ctrl-C or
+    Ctrl-Z typed there reach the command, not the kernel, which gets the
+    terminal back afterwards."""
+    if os.name != "posix":
+        return
+    import pty
+    import termios
+    connection = cwd / ("kernel-" + uuid.uuid4().hex + ".json")
+    write_connection_file(str(connection), key=uuid.uuid4().hex.encode())
+    pid, fd = pty.fork()
+    if pid == 0:
+        try:
+            os.chdir(cwd)
+            os.execv(exe, [exe, "--no-color", "kernel", "-f", str(connection)])
+        finally:
+            os._exit(127)
+    output = []
+    reader = threading.Thread(target=lambda: drain(fd, output), daemon=True)
+    reader.start()
+    client = None
+    try:
+        client = connect(connection)
+        got = cwd / ("terminal-" + uuid.uuid4().hex)
+
+        def typed(keys, expected_output, note):
+            msg_id = client.execute("call execute_command_line('head -n1 > %s')\n"
+                "print *, 'command-returned'" % got)
+            time.sleep(1)
+            for key in keys:
+                os.write(fd, key)
+                time.sleep(0.3)
+            # The command is stopped for good without the terminal: a hang
+            reply = reply_to(client, msg_id, timeout=10)
+            check(reply["status"] == "ok", (note, reply))
+            check(got.read_text() == expected_output, (note, got.read_text()))
+            check(os.tcgetpgrp(fd) == pid, "%s: the kernel did not get the "
+                "terminal back" % note)
+
+        typed([b"hello\n"], "hello\n", "a read")
+        # Ctrl-C at the terminal ends the command only
+        typed([termios.tcgetattr(fd)[6][termios.VINTR]], "", "Ctrl-C")
+        # Ctrl-Z stops the command; nothing can resume the kernel's job,
+        # which is not in a shell's job control, so the command resumes.
+        typed([termios.tcgetattr(fd)[6][termios.VSUSP], b"again\n"], "again\n",
+            "Ctrl-Z")
+        check(value(client, "40 + 2") == "42", "the kernel lost its session")
+    finally:
+        if client is not None:
+            client.stop_channels()
+        kill_pid(pid)
+        os.waitpid(pid, 0)
+        reader.join(timeout=5)
+        os.close(fd)
+
+
+def drain(fd, output):
+    """Reads a terminal's output, so that writing to it never blocks"""
+    while True:
+        try:
+            data = os.read(fd, 4096)
+        except OSError:
+            return
+        if not data:
+            return
+        output.append(data)
+
+
 def kernel_parent(exe, cwd):
     """`lfortran kernel --parent` takes only the process that started the
     kernel. Another running process, or what is not a process ID, is an
@@ -1369,6 +1439,7 @@ CASES = {f.__name__: f for f in [test_idle_updates, test_edited_updates,
     large_output, slow_subscriber_output, oversized_message_output,
     stalled_connections, read_disconnect,
     late_stdin, prompt_departure, prompt_killed_in_cell, test_interrupt_prompt,
+    terminal_command,
     kernel_parent, stop_ends_session,
     stop_on_error, queued_in_turns, aborted_in_turns, implicit_typing, verbose, xeus_connection_files]}
 # The built-in kernel rejects a host name in the connection file.

@@ -19700,6 +19700,42 @@ static int execute_cancellable_command(char *command)
 #elif !defined(COMPILE_TO_WASM)
 extern char **environ;
 
+// The controlling terminal, if this process's group is its foreground group,
+// or -1. A command in its own group must then be given the terminal, or it
+// is stopped (SIGTTIN, SIGTTOU) as soon as it reads it or changes its modes.
+static int foreground_terminal(void)
+{
+    for (int fd = STDIN_FILENO; fd <= STDERR_FILENO; fd++) {
+        if (isatty(fd) && tcgetpgrp(fd) == getpgrp()) return fd;
+    }
+    return -1;
+}
+
+// Makes `group` the terminal's foreground group. A background caller would
+// otherwise be stopped by SIGTTOU, so it is blocked meanwhile.
+static int set_terminal_group(int terminal, pid_t group)
+{
+    sigset_t blocked, previous;
+    sigemptyset(&blocked);
+    sigaddset(&blocked, SIGTTOU);
+    sigprocmask(SIG_BLOCK, &blocked, &previous);
+    int result = tcsetpgrp(terminal, group);
+    sigprocmask(SIG_SETMASK, &previous, NULL);
+    return result;
+}
+
+// Gives the terminal to the command's group; returns the terminal, or -1.
+static int give_terminal(pid_t child)
+{
+    int terminal = foreground_terminal();
+    if (terminal < 0) return -1;
+    // posix_spawn already put the child in its group; this closes the window
+    // where an implementation returns before that. EACCES means that the
+    // child has already executed the shell, so it is in its group.
+    if (setpgid(child, child) < 0 && errno != EACCES) return -1;
+    return set_terminal_group(terminal, child) == 0 ? terminal : -1;
+}
+
 // Waits for the child's termination. ECHILD means that it has already been
 // reaped (for example, with SIGCHLD ignored), so its status is unknown.
 static int reap_command(pid_t child, int *status)
@@ -19727,22 +19763,60 @@ static int execute_cancellable_command(char *command)
         errno = error;
         return -1;
     }
-    int status;
+    // As with system(), the command owns the terminal while it runs: what is
+    // typed reaches it, and so do Ctrl-C and Ctrl-Z, not this process.
+    int terminal = give_terminal(child);
+    int status, result;
+    bool abandoned = false;
     for (;;) {
         bool cancelled = cancel_poll();
-        pid_t waited = cancelled ? 0 : waitpid(child, &status, WNOHANG);
-        if (waited == child) return status;
-        // Already reaped, so the group may be gone and its id reused
-        if (waited < 0 && errno == ECHILD) return -1;
-        if (cancelled || (waited < 0 && errno != EINTR)) {
+        pid_t waited = cancelled ? 0 : waitpid(child, &status, WNOHANG | WUNTRACED);
+        if (waited == child && WIFSTOPPED(status)) {
+            int stop = WSTOPSIG(status);
+            if (terminal >= 0 && (stop == SIGTTIN || stop == SIGTTOU)) {
+                // Stopped before it had the terminal, which it has now
+                kill(-child, SIGCONT);
+            } else if (stop == SIGTSTP || stop == SIGTTIN || stop == SIGTTOU) {
+                // Ctrl-Z, or a command of a background job that needs the
+                // terminal: stop this job too, as the shell's job control
+                // would with system(), and resume the command with this job.
+                if (terminal >= 0) set_terminal_group(terminal, getpgrp());
+                // kill() may hand the stop to another thread and return
+                // first; raise() stops this thread before it returns.
+                kill(0, stop);
+                raise(stop);
+                terminal = give_terminal(child);
+                if (terminal < 0 && stop != SIGTSTP) {
+                    // Still in the background (or the stop was discarded):
+                    // the command would stop again, silently. End it.
+                    abandoned = true;
+                } else {
+                    kill(-child, SIGCONT);
+                }
+            }
+            // Any other stop (SIGSTOP) is left to whoever sent it.
+            if (!abandoned) continue;
+        } else if (waited == child) {
+            result = status;
+            break;
+        }
+        if (waited < 0 && errno == ECHILD) {
+            // Already reaped, so the group may be gone and its id reused
+            result = -1;
+            break;
+        }
+        if (cancelled || abandoned || (waited < 0 && errno != EINTR)) {
             // The unreaped group leader pins this exact owned process group.
-            // Kill descendants too, even if they ignore SIGTERM.
+            // Kill descendants too, even if they ignore SIGTERM or are stopped.
             kill(-child, SIGKILL);
-            return reap_command(child, &status) == 0 && cancelled ? status : -1;
+            result = reap_command(child, &status) == 0 && cancelled ? status : -1;
+            break;
         }
         const struct timespec delay = {0, 10000000};
         nanosleep(&delay, NULL);
     }
+    if (terminal >= 0) set_terminal_group(terminal, getpgrp());
+    return result;
 }
 #endif
 
