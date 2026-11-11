@@ -12566,7 +12566,7 @@ public:
                         for (size_t k = 0; k < dims.size(); k++) {
                             has_lower_bound = has_lower_bound || dims[k].m_start != nullptr;
                         }
-                        if (!has_lower_bound || dims.size() != 1 || init_rank != dims.size()) {
+                        if (!has_lower_bound || init_rank != dims.size()) {
                             return init_type;
                         }
                         Vec<ASR::dimension_t> new_dims;
