@@ -7533,6 +7533,22 @@ namespace Rrspacing {
             return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_mul(lf_f128_abs(fraction),
                 ASRUtils::real16_pow2(113)), arg_type);
         }
+        // Kind 10 stores a pointer in m_r. 64 binary digits, so
+        // rrspacing(1.0_10) is 2**63, not a zero fraction.
+        if (kind == 10) {
+            long double x = ASRUtils::real_constant_get_r10(
+                ASR::down_cast<ASR::RealConstant_t>(args[0]));
+            if (!(fabsl(x) <= std::numeric_limits<long double>::max())) {
+                return nullptr;
+            }
+            int exponent = 0;
+            long double fraction = 0.0L;
+            if (x != 0.0L) {
+                fraction = frexpl(x, &exponent);
+            }
+            long double result = fabsl(fraction) * ldexpl(1.0L, 64);
+            return ASRUtils::make_RealConstant_r10(al, loc, result, arg_type);
+        }
         double digits = 0.0;
         double fraction = 0.0;
         digits = (kind == 4) ? 24.00 : 53.00;

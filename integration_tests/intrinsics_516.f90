@@ -50,4 +50,7 @@ if (abs(bessel_yn(0, 1.0_kp) - 8.82569642156769579796e-2_kp) > spacing(1.0_kp)) 
 if (exponent(1.0_kp) /= 1) error stop
 if (abs(fraction(1.0_kp) - 0.5_kp) > spacing(1.0_kp)) error stop
 if (set_exponent(1.5_kp, 3) /= 6.0_kp) error stop
+! Kind 10 has 64 binary digits. rrspacing(1) is 2**63, not the zero
+! left when the compile-time fraction is never filled in.
+if (rrspacing(1.0_kp) /= 2.0_kp**63) error stop
 end program
