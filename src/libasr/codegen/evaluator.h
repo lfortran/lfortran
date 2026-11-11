@@ -104,6 +104,10 @@ public:
     void save_object_file(llvm::Module &m, const std::string &filename);
     void create_empty_object_file(const std::string &filename);
     void opt(llvm::Module &m);
+    // The late part of opt() for --fast on x86 with AVX: a cleanup and the
+    // horizontal reduction rewrite (llvm_reductions.h) on the functions of
+    // `m` that the rewrite applies to. Other functions keep their code.
+    void recombine_reductions(llvm::Module &m);
     static std::string module_to_string(llvm::Module &m);
     static void print_version_message();
     static std::string llvm_version();

@@ -87,9 +87,8 @@ bool in_range(ConstantInt *at, Type *type) {
 using Squares = SmallVector<std::pair<Value *, unsigned>, 3>;
 
 // One node of a component expression, in preorder: a fast elementwise
-// operation (`opcode`, its operands follow), a leaf that reads element
-// `lane` of the vector `leaf`, or (with neither) a scalar loaded from a
-// local variable, which the late cleanup may forward from a stored vector.
+// operation (`opcode`, its operands follow) or a leaf that reads element
+// `lane` of the vector `leaf`.
 struct Node {
     unsigned opcode = 0;
     Value *leaf = nullptr;
@@ -105,24 +104,9 @@ const size_t max_component_nodes = 15;
 // and extracts. SLP places the elements of one component expression in
 // different lanes and vectors, and sometimes subtracts before and sometimes
 // after a shuffle; the expression is the same in every case.
-//
-// Before the late cleanup, SLP still loads the scalars of a local array
-// that its stores fill with vectors. `local_loads` accepts such a load as a
-// leaf of unknown vector and lane.
-bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes,
-        bool local_loads) {
+bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes) {
     if (nodes.size() >= max_component_nodes) {
         return false;
-    }
-    if (local_loads && isa<LoadInst>(v) && v->getType()->isDoubleTy()) {
-        Value *p = cast<LoadInst>(v)->getPointerOperand()->stripPointerCasts();
-        while (auto *gep = dyn_cast<GEPOperator>(p)) {
-            p = gep->getPointerOperand()->stripPointerCasts();
-        }
-        if (isa<AllocaInst>(p)) {
-            nodes.push_back(Node());
-            return true;
-        }
     }
     if (auto *shuffle = dyn_cast<ShuffleVectorInst>(v)) {
         if (lane >= shuffle->getShuffleMask().size()) {
@@ -136,7 +120,7 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes,
         }
         unsigned n = source->getNumElements();
         return m >= 0 && lift(shuffle->getOperand(m < (int)n ? 0 : 1),
-            (unsigned)m % n, nodes, local_loads);
+            (unsigned)m % n, nodes);
     }
     if (auto *insert = dyn_cast<InsertElementInst>(v)) {
         auto *at = dyn_cast<ConstantInt>(insert->getOperand(2));
@@ -144,14 +128,13 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes,
             return false;
         }
         return at->getZExtValue() == lane
-            ? lift(insert->getOperand(1), 0, nodes, local_loads)
-            : lift(insert->getOperand(0), lane, nodes, local_loads);
+            ? lift(insert->getOperand(1), 0, nodes)
+            : lift(insert->getOperand(0), lane, nodes);
     }
     if (auto *extract = dyn_cast<ExtractElementInst>(v)) {
         auto *at = dyn_cast<ConstantInt>(extract->getOperand(1));
         return at && in_range(at, extract->getOperand(0)->getType())
-            && lift(extract->getOperand(0), at->getZExtValue(), nodes,
-                local_loads);
+            && lift(extract->getOperand(0), at->getZExtValue(), nodes);
     }
     auto *i = dyn_cast<Instruction>(v);
     if (i && is_fast(i) && (i->getOpcode() == Instruction::FAdd
@@ -160,8 +143,8 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes,
         Node node;
         node.opcode = i->getOpcode();
         nodes.push_back(node);
-        return lift(i->getOperand(0), lane, nodes, local_loads)
-            && lift(i->getOperand(1), lane, nodes, local_loads);
+        return lift(i->getOperand(0), lane, nodes)
+            && lift(i->getOperand(1), lane, nodes);
     }
     // The rewrite squares whole vectors that hold components 0, 1 and 2 of
     // a point in lanes 0, 1 and 2. A component read from a wider vector,
@@ -180,8 +163,8 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes,
 
 // Whether `components` are components 0, 1 and 2 of one four element vector
 // expression, in some order: the same operations on the same vectors, with
-// every leaf of component k read from lane k. A local load stands for any
-// leaf.
+// every leaf of component k read from lane k. `lift` ends every expression
+// in leaves, which it only accepts in lanes 0 to 2.
 bool same_expression(const SmallVectorImpl<Node> *components[3]) {
     const SmallVectorImpl<Node> &a = *components[0];
     for (unsigned k = 1; k < 3; k++) {
@@ -192,25 +175,22 @@ bool same_expression(const SmallVectorImpl<Node> *components[3]) {
     bool seen[3] = {false, false, false};
     for (unsigned k = 0; k < 3; k++) {
         const SmallVectorImpl<Node> &c = *components[k];
-        unsigned component = 3;
+        bool has_leaf = false;
+        unsigned component = 0;
         for (size_t j = 0; j < a.size(); j++) {
-            if (c[j].opcode != a[j].opcode) {
+            if (c[j].opcode != a[j].opcode || c[j].leaf != a[j].leaf) {
                 return false;
             }
             if (c[j].leaf == nullptr) {
                 continue;
             }
-            if ((a[j].leaf != nullptr && c[j].leaf != a[j].leaf)
-                    || (component != 3 && c[j].lane != component)) {
+            if (has_leaf && c[j].lane != component) {
                 return false;
             }
+            has_leaf = true;
             component = c[j].lane;
         }
-        // A component of local loads only is decided after the cleanup.
-        if (component == 3) {
-            continue;
-        }
-        if (seen[component]) {
+        if (!has_leaf || seen[component]) {
             return false;
         }
         seen[component] = true;
@@ -307,16 +287,15 @@ bool is_root(Instruction &i, SmallVectorImpl<Squares> &lanes) {
 }
 
 // Each lane of a root sums components 0, 1 and 2 of one vector expression.
-// Find that expression for every lane. `local_loads` is passed to `lift`.
+// Find that expression for every lane.
 bool expressions_of(const SmallVectorImpl<Squares> &lanes,
-        SmallVectorImpl<SmallVector<Node, 8>> &expressions, bool local_loads) {
+        SmallVectorImpl<SmallVector<Node, 8>> &expressions) {
     expressions.clear();
     for (const Squares &squares : lanes) {
         SmallVector<Node, 8> components[3];
         const SmallVectorImpl<Node> *pointers[3];
         for (unsigned k = 0; k < 3; k++) {
-            if (!lift(squares[k].first, squares[k].second, components[k],
-                    local_loads)) {
+            if (!lift(squares[k].first, squares[k].second, components[k])) {
                 return false;
             }
             pointers[k] = &components[k];
@@ -593,15 +572,36 @@ bool may_recombine_horizontal_reductions(const llvm::Function &f,
     if (f.isDeclaration() || !has_avx(f, tm)) {
         return false;
     }
-    // A root whose lanes the rewrite can read from four element vectors.
-    // The late cleanup forwards the vectors stored to a local array to the
-    // scalars SLP loads from it, so such a load may still become one.
+    // A root, whatever its squares are computed from: the late cleanup
+    // may still turn them into components of four element vectors.
+    llvm::SmallVector<Squares, 8> lanes;
+    for (const llvm::BasicBlock &block : f) {
+        for (const llvm::Instruction &i : block) {
+            if (is_root(const_cast<llvm::Instruction &>(i), lanes)) {
+                return true;
+            }
+        }
+    }
+    return false;
+#else
+    (void)f;
+    (void)tm;
+    return false;
+#endif
+}
+
+bool can_recombine_horizontal_reductions(const llvm::Function &f,
+        const llvm::TargetMachine &tm) {
+#if LLVM_VERSION_MAJOR >= 11
+    if (f.isDeclaration() || !has_avx(f, tm)) {
+        return false;
+    }
     llvm::SmallVector<Squares, 8> lanes;
     llvm::SmallVector<llvm::SmallVector<Node, 8>, 8> expressions;
     for (const llvm::BasicBlock &block : f) {
         for (const llvm::Instruction &i : block) {
             if (is_root(const_cast<llvm::Instruction &>(i), lanes)
-                    && expressions_of(lanes, expressions, true)) {
+                    && expressions_of(lanes, expressions)) {
                 return true;
             }
         }
@@ -636,7 +636,7 @@ bool recombine_horizontal_reductions(llvm::Function &f,
             continue;
         }
         llvm::SmallVector<llvm::SmallVector<Node, 8>, 8> expressions;
-        bool ok = expressions_of(lanes, expressions, false);
+        bool ok = expressions_of(lanes, expressions);
         llvm::Function *hadd = ok ? hadd_pd(*f.getParent()) : nullptr;
         if (!hadd) {
             continue;

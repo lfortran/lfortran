@@ -17,13 +17,19 @@ namespace LCompilers {
 
     // A cheap test, run before the late cleanup that precedes
     // recombine_horizontal_reductions: whether `f` is a definition for x86
-    // with AVX that contains a sum the rewrite may apply to, every square of
-    // which is read from four element vectors or from scalars loaded from a
-    // local array (which the late cleanup may forward from such vectors).
-    // Only such functions get the late cleanup and the rewrite. A rewrite
-    // that fires then runs one module-level O1 cleanup, which also revisits
-    // the other functions.
+    // with AVX that contains a four lane sum of three squares in every lane.
+    // The cleanup may turn the squared values into the components of four
+    // element vectors that the rewrite needs.
     bool may_recombine_horizontal_reductions(const llvm::Function &f,
+        const llvm::TargetMachine &tm);
+
+    // Whether recombine_horizontal_reductions would change `f`, which is
+    // left unchanged. The --fast pipeline runs the late cleanup on a copy of
+    // each function that may_recombine_horizontal_reductions accepts, and
+    // only a function whose copy this accepts gets the cleanup and the
+    // rewrite. A rewrite that fires then runs one module-level O1 cleanup,
+    // which also revisits the other functions.
+    bool can_recombine_horizontal_reductions(const llvm::Function &f,
         const llvm::TargetMachine &tm);
 
 } // namespace LCompilers

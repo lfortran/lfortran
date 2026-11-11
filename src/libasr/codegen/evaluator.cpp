@@ -41,6 +41,7 @@
 #include <llvm/Transforms/Scalar/InstSimplifyPass.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/AlwaysInliner.h>
+#include <llvm/Transforms/Utils/Cloning.h>
 #if LLVM_VERSION_MAJOR >= 9
 #include <llvm/Transforms/Instrumentation/AddressSanitizer.h>
 #include <llvm/Transforms/Instrumentation/ThreadSanitizer.h>
@@ -1068,6 +1069,121 @@ static void disable_upper_bound_unrolling() {
 }
 #endif
 
+namespace {
+
+// The late part of LLVMEvaluator::opt() for --fast on x86 with AVX, run with
+// the analysis managers of the pipeline before it.
+#if LLVM_VERSION_MAJOR >= 17
+void late_reductions(llvm::Module &m, llvm::TargetMachine &tm,
+        llvm::PassBuilder &PB, llvm::FunctionAnalysisManager &FAM,
+        llvm::ModuleAnalysisManager &MAM) {
+#else
+void late_reductions(llvm::Module &m, llvm::TargetMachine &tm) {
+#endif
+    // The late cleanup and the horizontal reduction rewrite only run on
+    // functions that the rewrite applies to after the cleanup. Other
+    // functions and targets (such as AArch64) keep the code of the pipeline
+    // that ran before.
+    //
+    // SROA runs before the vectorizer, so a fixed-size local array that the
+    // vectorized loop then accesses keeps its stack slot. Simplifying once
+    // more promotes it and exposes the reductions the vectorizer built.
+    // The loop passes after the last GVN also leave loads of memory that
+    // was set from constants, such as the values a loop starts from; GVN
+    // forwards them, so the horizontal reduction pass can see the
+    // components that stay zero across the loop.
+#if LLVM_VERSION_MAJOR >= 17
+    llvm::FunctionPassManager LateFPM;
+    LateFPM.addPass(llvm::SROAPass(llvm::SROAOptions(
+        llvm::SROAOptions::ModifyCFG)));
+    LateFPM.addPass(llvm::GVNPass());
+    LateFPM.addPass(llvm::InstCombinePass());
+    LateFPM.addPass(llvm::SimplifyCFGPass());
+    auto cleanup = [&](llvm::Function &f) { LateFPM.run(f, FAM); };
+    auto forget = [&](llvm::Function &f) { FAM.clear(f, f.getName()); };
+    // The rewrite changes a function outside of a pass.
+    auto changed = [&](llvm::Function &f) {
+        FAM.invalidate(f, llvm::PreservedAnalyses::none());
+    };
+#else
+    llvm::legacy::FunctionPassManager late(&m);
+    late.add(llvm::createTargetTransformInfoWrapperPass(
+        tm.getTargetIRAnalysis()));
+    late.add(llvm::createSROAPass());
+    late.add(llvm::createGVNPass());
+    late.add(llvm::createInstructionCombiningPass());
+    late.add(llvm::createCFGSimplificationPass());
+    late.doInitialization();
+    auto cleanup = [&](llvm::Function &f) { late.run(f); };
+    auto forget = [](llvm::Function &) {};
+    auto changed = [](llvm::Function &) {};
+#endif
+    // The cleanup changes a function even where the rewrite then finds
+    // nothing, so it first runs on a copy of each candidate, and the
+    // function itself only gets it if the rewrite applies to the copy.
+    std::vector<llvm::Function *> candidates;
+    for (llvm::Function &f : m) {
+        if (may_recombine_horizontal_reductions(f, tm)) {
+            candidates.push_back(&f);
+        }
+    }
+    bool reduced = false;
+    for (llvm::Function *f : candidates) {
+        llvm::ValueToValueMapTy map;
+        llvm::Function *copy = llvm::CloneFunction(f, map);
+        cleanup(*copy);
+        bool applies = can_recombine_horizontal_reductions(*copy, tm);
+        forget(*copy);
+        copy->eraseFromParent();
+        if (applies) {
+            cleanup(*f);
+            if (recombine_horizontal_reductions(*f, tm)) {
+                changed(*f);
+                reduced = true;
+            }
+        }
+    }
+#if LLVM_VERSION_MAJOR < 17
+    late.doFinalization();
+#endif
+    if (reduced) {
+        // Simplify and schedule the rewritten reductions. This is LLVM's
+        // module O1 pipeline, so it also revisits functions the matcher
+        // left unchanged.
+#if LLVM_VERSION_MAJOR >= 17
+        // The functions changed outside of a module pass: drop the module
+        // analyses computed before.
+        MAM.invalidate(m, llvm::PreservedAnalyses::none());
+        llvm::ModulePassManager Final
+            = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);
+        Final.run(m, MAM);
+#else
+        llvm::legacy::PassManager final_mpm;
+        final_mpm.add(new llvm::TargetLibraryInfoWrapperPass(
+            tm.getTargetTriple()));
+        final_mpm.add(llvm::createTargetTransformInfoWrapperPass(
+            tm.getTargetIRAnalysis()));
+        llvm::legacy::FunctionPassManager final_fpm(&m);
+        final_fpm.add(llvm::createTargetTransformInfoWrapperPass(
+            tm.getTargetIRAnalysis()));
+        llvm::PassManagerBuilder final_builder;
+        final_builder.OptLevel = 1;
+        final_builder.SizeLevel = 0;
+        final_builder.Inliner = llvm::createFunctionInliningPass(1, 0, false);
+        final_builder.populateFunctionPassManager(final_fpm);
+        final_builder.populateModulePassManager(final_mpm);
+        final_fpm.doInitialization();
+        for (llvm::Function &func : m) {
+            final_fpm.run(func);
+        }
+        final_fpm.doFinalization();
+        final_mpm.run(m);
+#endif
+    }
+}
+
+} // namespace
+
 void LLVMEvaluator::opt(llvm::Module &m) {
     configure_module(m);
 
@@ -1125,95 +1241,11 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     mpm.add(llvm::createVerifierPass());
     mpm.run(m);
 #endif
-    // The late cleanup and the horizontal reduction rewrite only run on
-    // functions that the rewrite may apply to: definitions for x86 with AVX
-    // that contain a vector whose lanes are sums of the squares of
-    // components 0, 1 and 2 of four element vectors. Other functions and
-    // targets (such as AArch64) keep the code of the pipeline above.
-    std::vector<llvm::Function *> late_functions;
-    for (llvm::Function &f : m) {
-        if (may_recombine_horizontal_reductions(f, *TM)) {
-            late_functions.push_back(&f);
-        }
-    }
-
-    // SROA runs before the vectorizer, so a fixed-size local array that the
-    // vectorized loop then accesses keeps its stack slot. Simplifying once
-    // more promotes it and exposes the reductions the vectorizer built.
-    // The loop passes after the last GVN also leave loads of memory that
-    // was set from constants, such as the values a loop starts from; GVN
-    // forwards them, so the horizontal reduction pass can see the
-    // components that stay zero across the loop.
-    if (!late_functions.empty()) {
 #if LLVM_VERSION_MAJOR >= 17
-        llvm::FunctionPassManager LateFPM;
-        LateFPM.addPass(llvm::SROAPass(llvm::SROAOptions(
-            llvm::SROAOptions::ModifyCFG)));
-        LateFPM.addPass(llvm::GVNPass());
-        LateFPM.addPass(llvm::InstCombinePass());
-        LateFPM.addPass(llvm::SimplifyCFGPass());
-        for (llvm::Function *f : late_functions) {
-            LateFPM.run(*f, FAM);
-        }
-        // The functions changed outside of a module pass: drop the module
-        // analyses (and through them the function ones) computed before.
-        MAM.invalidate(m, llvm::PreservedAnalyses::none());
+    late_reductions(m, *TM, PB, FAM, MAM);
 #else
-        llvm::legacy::FunctionPassManager late(&m);
-        late.add(llvm::createTargetTransformInfoWrapperPass(
-            TM->getTargetIRAnalysis()));
-        late.add(llvm::createSROAPass());
-        late.add(llvm::createGVNPass());
-        late.add(llvm::createInstructionCombiningPass());
-        late.add(llvm::createCFGSimplificationPass());
-        late.doInitialization();
-        for (llvm::Function *f : late_functions) {
-            late.run(*f);
-        }
-        late.doFinalization();
+    late_reductions(m, *TM);
 #endif
-    }
-
-    // The horizontal reduction pass finds the sums of squares of three
-    // components of four element vectors that the SLP vectorizer builds, in
-    // whatever lane layout, and rewrites them as pairwise horizontal
-    // additions. It only matches fast math instructions, so ordinary
-    // compilations keep their existing output.
-    bool reduced = false;
-    for (llvm::Function *f : late_functions) {
-        reduced |= recombine_horizontal_reductions(*f, *TM);
-    }
-    if (reduced) {
-        // Simplify and schedule the rewritten reductions. This is LLVM's
-        // module O1 pipeline, so it also revisits functions the matcher
-        // left unchanged.
-#if LLVM_VERSION_MAJOR >= 17
-        llvm::ModulePassManager Final
-            = PB.buildPerModuleDefaultPipeline(llvm::OptimizationLevel::O1);
-        Final.run(m, MAM);
-#else
-        llvm::legacy::PassManager final_mpm;
-        final_mpm.add(new llvm::TargetLibraryInfoWrapperPass(
-            TM->getTargetTriple()));
-        final_mpm.add(llvm::createTargetTransformInfoWrapperPass(
-            TM->getTargetIRAnalysis()));
-        llvm::legacy::FunctionPassManager final_fpm(&m);
-        final_fpm.add(llvm::createTargetTransformInfoWrapperPass(
-            TM->getTargetIRAnalysis()));
-        llvm::PassManagerBuilder final_builder;
-        final_builder.OptLevel = 1;
-        final_builder.SizeLevel = 0;
-        final_builder.Inliner = llvm::createFunctionInliningPass(1, 0, false);
-        final_builder.populateFunctionPassManager(final_fpm);
-        final_builder.populateModulePassManager(final_mpm);
-        final_fpm.doInitialization();
-        for (llvm::Function &func : m) {
-            final_fpm.run(func);
-        }
-        final_fpm.doFinalization();
-        final_mpm.run(m);
-#endif
-    }
 
     // The Newton step of a reciprocal square root is written in IR, and IR
     // optimizations (InstCombine in recent LLVM) fold it back into a bare
@@ -1222,6 +1254,27 @@ void LLVMEvaluator::opt(llvm::Module &m) {
     for (llvm::Function &f : m) {
         expand_reciprocal_sqrt(f, TM->getTargetTriple());
     }
+}
+
+void LLVMEvaluator::recombine_reductions(llvm::Module &m) {
+#if LLVM_VERSION_MAJOR >= 17
+    llvm::LoopAnalysisManager LAM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager CGAM;
+    llvm::ModuleAnalysisManager MAM;
+    llvm::PipelineTuningOptions PTO;
+    PTO.LoopVectorization = true;
+    PTO.SLPVectorization = true;
+    llvm::PassBuilder PB(TM.get(), PTO);
+    PB.registerModuleAnalyses(MAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerLoopAnalyses(LAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+    late_reductions(m, *TM, PB, FAM, MAM);
+#else
+    late_reductions(m, *TM);
+#endif
 }
 
 std::string LLVMEvaluator::module_to_string(llvm::Module &m) {

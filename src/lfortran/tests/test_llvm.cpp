@@ -8680,16 +8680,17 @@ TEST_CASE("LLVM horizontal reductions through out of range element indices") {
 #if LLVM_VERSION_MAJOR >= 11
 TEST_CASE("LLVM horizontal reductions only where they may apply") {
     // The --fast pipeline runs its late cleanup and the rewrite only on the
-    // functions `may_recombine_horizontal_reductions` accepts. Everywhere
-    // else the function must stay exactly as it is.
+    // functions `can_recombine_horizontal_reductions` accepts after the
+    // cleanup. Everywhere else the function must stay exactly as it is.
     auto check = [](const std::string &ir, const llvm::TargetMachine &tm,
             bool applies) {
         LCompilers::LLVMEvaluator e;
         std::unique_ptr<llvm::Module> m = e.parse_module(ir, "");
         llvm::Function &f = *m->getFunction("reductions_sum");
         std::string before = e.module_to_string(*m);
-        CHECK(LCompilers::may_recombine_horizontal_reductions(f, tm)
+        CHECK(LCompilers::can_recombine_horizontal_reductions(f, tm)
             == applies);
+        CHECK(e.module_to_string(*m) == before);
         CHECK(LCompilers::recombine_horizontal_reductions(f, tm) == applies);
         CHECK((e.module_to_string(*m) == before) == !applies);
     };
@@ -8947,6 +8948,8 @@ end module
             }
             INFO(f.getName().str());
             CHECK(!calls_intrinsic_like(f, "hadd"));
+            CHECK(!LCompilers::can_recombine_horizontal_reductions(f,
+                e.get_target_machine()));
             functions++;
         }
         CHECK(functions >= 3);
@@ -9139,6 +9142,123 @@ TEST_CASE("Fortran pairwise distances in two lanes stay gathers on Haswell") {
         REQUIRE(main_fn != nullptr);
         CHECK(!calls_intrinsic_like(*main_fn, "hadd"));
     });
+}
+
+// Four points of a local array t(4,4), the sum of the squares of
+// components 1 to 3 of each, as SLP leaves it: scalar loads from the array
+// gathered into lanes. FILL sets the array: four vector stores, which the
+// late cleanup forwards to the loads, or a call to an external routine,
+// after which the loads stay loads. The repeated load of t(1,1) is one the
+// cleanup removes. The result is 1*14 + 2*29 + 4*50 + 8*77 = 888.
+const std::string reductions_local_ir = R"""(
+declare void @reductions_fill(double*)
+
+define double @reductions_local(<4 x double> %a, <4 x double> %b, <4 x double> %c, <4 x double> %d, double* %out) #0 {
+entry:
+  %t = alloca [16 x double], align 32
+  %t0 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 0
+FILL
+  %p0 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 0
+  %p1 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 1
+  %p2 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 2
+  %p4 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 4
+  %p5 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 5
+  %p6 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 6
+  %p8 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 8
+  %p9 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 9
+  %p10 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 10
+  %p12 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 12
+  %p13 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 13
+  %p14 = getelementptr [16 x double], [16 x double]* %t, i64 0, i64 14
+  %l0 = load double, double* %p0
+  %l1 = load double, double* %p1
+  %l2 = load double, double* %p2
+  %l4 = load double, double* %p4
+  %l5 = load double, double* %p5
+  %l6 = load double, double* %p6
+  %l8 = load double, double* %p8
+  %l9 = load double, double* %p9
+  %l10 = load double, double* %p10
+  %l12 = load double, double* %p12
+  %l13 = load double, double* %p13
+  %l14 = load double, double* %p14
+  %again = load double, double* %p0
+  store double %again, double* %out
+  %x0 = insertelement <4 x double> undef, double %l0, i32 0
+  %x1 = insertelement <4 x double> %x0, double %l4, i32 1
+  %x2 = insertelement <4 x double> %x1, double %l8, i32 2
+  %x = insertelement <4 x double> %x2, double %l12, i32 3
+  %y0 = insertelement <4 x double> undef, double %l1, i32 0
+  %y1 = insertelement <4 x double> %y0, double %l5, i32 1
+  %y2 = insertelement <4 x double> %y1, double %l9, i32 2
+  %y = insertelement <4 x double> %y2, double %l13, i32 3
+  %z0 = insertelement <4 x double> undef, double %l2, i32 0
+  %z1 = insertelement <4 x double> %z0, double %l6, i32 1
+  %z2 = insertelement <4 x double> %z1, double %l10, i32 2
+  %z = insertelement <4 x double> %z2, double %l14, i32 3
+  %sx = fmul fast <4 x double> %x, %x
+  %sy = fmul fast <4 x double> %y, %y
+  %sz = fmul fast <4 x double> %z, %z
+  %s0 = fadd fast <4 x double> %sx, %sy
+  %s = fadd fast <4 x double> %s0, %sz
+  %w = fmul <4 x double> %s, <double 1.0, double 2.0, double 4.0, double 8.0>
+  %e0 = extractelement <4 x double> %w, i32 0
+  %e1 = extractelement <4 x double> %w, i32 1
+  %e2 = extractelement <4 x double> %w, i32 2
+  %e3 = extractelement <4 x double> %w, i32 3
+  %h0 = fadd double %e0, %e1
+  %h1 = fadd double %e2, %e3
+  %r = fadd double %h0, %h1
+  ret double %r
+}
+
+define double @reductions_local_main() #0 {
+  %out = alloca double
+  %r = call double @reductions_local(<4 x double> <double 1.0, double 2.0, double 3.0, double 9.0>, <4 x double> <double 2.0, double 3.0, double 4.0, double 8.0>, <4 x double> <double 3.0, double 4.0, double 5.0, double 7.0>, <4 x double> <double 4.0, double 5.0, double 6.0, double 6.0>, double* %out)
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+
+TEST_CASE("LLVM horizontal reductions of local arrays after the late cleanup") {
+    // The late cleanup of the --fast pipeline runs only on the functions
+    // the rewrite applies to after it. A local array set by vector stores
+    // becomes four element vectors and is rewritten; one set by a call is
+    // not, and the function keeps the code it had.
+    const std::string stores =
+        "  %v0 = bitcast [16 x double]* %t to <4 x double>*\n"
+        "  store <4 x double> %a, <4 x double>* %v0, align 32\n"
+        "  %v1 = getelementptr <4 x double>, <4 x double>* %v0, i64 1\n"
+        "  store <4 x double> %b, <4 x double>* %v1, align 32\n"
+        "  %v2 = getelementptr <4 x double>, <4 x double>* %v0, i64 2\n"
+        "  store <4 x double> %c, <4 x double>* %v2, align 32\n"
+        "  %v3 = getelementptr <4 x double>, <4 x double>* %v0, i64 3\n"
+        "  store <4 x double> %d, <4 x double>* %v3, align 32\n";
+    const std::string call = "  call void @reductions_fill(double* %t0)\n";
+    for (bool stored : {true, false}) {
+        INFO(stored);
+        std::string ir = reductions_local_ir;
+        ir.replace(ir.find("FILL"), 4, stored ? stores : call);
+        LCompilers::LLVMEvaluator e;
+        std::unique_ptr<llvm::Module> m = e.parse_module(ir, "");
+        llvm::Function &f = *m->getFunction("reductions_local");
+        const llvm::TargetMachine &tm = e.get_target_machine();
+        CHECK(LCompilers::may_recombine_horizontal_reductions(f, tm));
+        CHECK(!LCompilers::can_recombine_horizontal_reductions(f, tm));
+        std::string before = e.module_to_string(*m);
+        e.recombine_reductions(*m);
+        CHECK((e.module_to_string(*m) == before) == !stored);
+        std::string err;
+        llvm::raw_string_ostream os(err);
+        CHECK(!llvm::verifyModule(*m, &os));
+        llvm::Function *g = m->getFunction("reductions_local");
+        REQUIRE(g != nullptr);
+        CHECK(calls_intrinsic_like(*g, "hadd") == stored);
+        if (stored && __builtin_cpu_supports("avx")) {
+            e.add_module(std::move(m));
+            CHECK(e.execfn<double>("reductions_local_main") == 888.0);
+        }
+    }
 }
 #endif
 #endif // HAVE_TARGET_X86
