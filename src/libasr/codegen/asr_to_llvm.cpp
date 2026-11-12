@@ -5813,9 +5813,12 @@ public:
                         // tmp is already an element pointer (i32*, real*, etc.)
                         llvm::Value* pad_base = tmp;
                         for (int64_t i = source_size; i < target_size; i++) {
+                            // `pad` starts from its first element right
+                            // after the last element of `source`.
                             llvm::Value* pad_elem = builder->CreateLoad(
                                 llvm_data_type,
-                                builder->CreateConstGEP1_32(llvm_data_type, pad_base, checked_integer_cast<unsigned>(i % pad_size)));
+                                builder->CreateConstGEP1_32(llvm_data_type, pad_base,
+                                    checked_integer_cast<unsigned>((i - source_size) % pad_size)));
                             builder->CreateStore(pad_elem,
                                 builder->CreateConstGEP1_32(llvm_data_type, target_, checked_integer_cast<unsigned>(i)));
                         }
