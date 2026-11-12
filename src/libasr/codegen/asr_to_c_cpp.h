@@ -136,6 +136,9 @@ public:
     std::map<std::string, std::string> emit_headers;
     std::string array_types_decls;
     std::string forward_decl_functions;
+    std::map<const ASR::Struct_t*, std::string> c_struct_cleanup_funcs;
+    std::string c_struct_cleanup_bodies;
+    size_t c_cleanup_counter = 0;
 
     // Output configuration:
     // Use std::string or char*
@@ -678,7 +681,8 @@ public:
                 "{\n    int32_t lower_bound, length, stride;\n};\n" + array_types_decls;
         }
 
-        return to_include + head + array_types_decls + forward_decl_functions + unit_src +
+        return to_include + head + array_types_decls + forward_decl_functions +
+              c_struct_cleanup_bodies + unit_src +
               ds_funcs_defined + util_funcs_defined;
     }
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
@@ -1923,6 +1927,64 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src.clear();
         }
         src = check_tmp_buffer();
+        if (is_c && !ASRUtils::is_array(m_target_type) &&
+                ASR::is_a<ASR::String_t>(
+                    *ASRUtils::type_get_past_allocatable_pointer(
+                        m_target_type))) {
+            std::string prelude = std::move(src);
+            ASR::String_t* lhs_type = ASRUtils::get_string_type(
+                x.m_target);
+            ASR::String_t* rhs_type = ASRUtils::get_string_type(
+                x.m_value);
+            if (lhs_type->m_kind != 1 || rhs_type->m_kind != 1 ||
+                    !lhs_type->m_len || !rhs_type->m_len) {
+                throw CodeGenError("character assignment requires explicit "
+                    "kind=1 lengths in the c backend", x.base.base.loc);
+            }
+            self().visit_expr(*lhs_type->m_len);
+            std::string lhs_len = std::move(src);
+            self().visit_expr(*rhs_type->m_len);
+            std::string rhs_len = std::move(src);
+            std::string prefix = "_lfortran_char_copy_" +
+                std::to_string(const_vars_count++);
+            std::string dest = prefix + "_dest";
+            std::string len = prefix + "_len";
+            std::string source_len = prefix + "_source_len";
+            std::string buffer = prefix + "_buffer";
+            src = prelude + indent + "{\n"
+                + indent + "    char** " + dest + " = &(" + target + ");\n"
+                + indent + "    int64_t " + len + " = " + lhs_len + ";\n"
+                + indent + "    if (" + len + " < 0) " + len + " = 0;\n"
+                + indent + "    int64_t " + source_len + " = " +
+                    rhs_len + ";\n"
+                + indent + "    if (" + source_len + " < 0) " +
+                    source_len + " = 0;\n"
+                + indent + "    char* " + buffer +
+                    " = (char*) _lfortran_malloc_alloc("
+                    "_lfortran_get_default_allocator(), " + len + " + 1);\n"
+                + indent + "    _lfortran_copy_str_and_pad(" + buffer +
+                    ", " + len + ", " + value + ", " +
+                    source_len + ", 1);\n"
+                + indent + "    " + buffer + "[" + len + "] = '\\0';\n"
+                + indent + "    *" + dest + " = " + buffer + ";\n"
+                + indent + "}\n";
+            return;
+        }
+        if (is_c && !ASRUtils::is_array(m_target_type) &&
+                (ASRUtils::is_pointer(m_target_type) ||
+                 ASRUtils::is_allocatable(m_target_type))) {
+            ASR::ttype_t* element = ASRUtils::type_get_past_allocatable_pointer(
+                m_target_type);
+            if (!ASR::is_a<ASR::StructType_t>(*element) &&
+                    !ASR::is_a<ASR::String_t>(*element)) {
+                if (ASRUtils::is_pointer(m_value_type) ||
+                        ASRUtils::is_allocatable(m_value_type)) {
+                    value = "(*(" + value + "))";
+                }
+                src += indent + "(*(" + target + ")) = " + value + ";\n";
+                return;
+            }
+        }
         if( is_target_list && is_value_list ) {
             ASR::List_t* list_target = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(x.m_target));
             std::string list_dc_func = c_ds_api->get_list_deepcopy_func(list_target);
@@ -2343,12 +2405,122 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = indent + reference + " = &(" + variable + ");\n";
     }
 
+    std::string c_pointer_association_value(ASR::expr_t* value) {
+        self().visit_expr(*value);
+        std::string rhs = std::move(src);
+        ASR::ttype_t* type = ASRUtils::expr_type(value);
+        if (ASR::is_a<ASR::PointerNullConstant_t>(*value) ||
+                ASR::is_a<ASR::GetPointer_t>(*value) ||
+                ASRUtils::is_pointer(type) || ASRUtils::is_array(type) ||
+                ASRUtils::is_character(*type) ||
+                (ASR::is_a<ASR::StructType_t>(*type) &&
+                 ASR::is_a<ASR::Var_t>(*value))) {
+            return rhs;
+        }
+        return "&(" + rhs + ")";
+    }
+
     void visit_Associate(const ASR::Associate_t &x) {
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
             handle_array_section_association_to_pointer(x);
-        } else {
-            throw CodeGenError("Associate only implemented for ArraySection so far");
+            return;
         }
+        if (!is_c || x.m_form != ASR::pointer_bounds_formType::NoPointerBounds) {
+            throw CodeGenError("pointer bounds association is not supported by "
+                "the c backend yet", x.base.base.loc);
+        }
+        ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+        if (!ASRUtils::is_pointer(target_type)) {
+            throw CodeGenError("association target is not a pointer",
+                x.base.base.loc);
+        }
+        self().visit_expr(*x.m_target);
+        std::string target = std::move(src);
+        std::string indent(indentation_level*indentation_spaces, ' ');
+        if (ASRUtils::is_array(target_type)) {
+            if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
+                src = indent + "if (" + target + " != NULL) {\n"
+                    + indent + "    " + target + "->data = NULL;\n"
+                    + indent + "    " + target + "->is_allocated = false;\n"
+                    + indent + "}\n";
+                return;
+            }
+            ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
+            if (!ASRUtils::is_array(value_type) ||
+                    (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) &&
+                     ASRUtils::extract_physical_type(value_type) ==
+                         ASR::array_physical_typeType::FixedSizeArray)) {
+                throw CodeGenError("association with this array designator is "
+                    "not supported by the c backend yet",
+                    x.m_value->base.loc);
+            }
+            self().visit_expr(*x.m_value);
+            std::string value = std::move(src);
+            std::string tmp_name =
+                current_scope->get_unique_name("_c_associate_value");
+            src = indent + "{\n"
+                + indent + "    const void* " + tmp_name +
+                    " = (const void*) (" + value + ");\n"
+                + indent + "    if (" + tmp_name + " != NULL) {\n"
+                + indent + "        if (" + target + " == NULL) " + target
+                    + " = (void*) _lfortran_calloc_alloc("
+                    "_lfortran_get_default_allocator(), 1, sizeof(*"
+                    + target + "));\n"
+                + indent + "        memcpy(" + target + ", " + tmp_name +
+                    ", sizeof(*" + target + "));\n"
+                + indent + "        " + target + "->is_allocated = false;\n"
+                + indent + "    } else if (" + target + " != NULL) {\n"
+                + indent + "        " + target + "->data = NULL;\n"
+                + indent + "        " + target + "->is_allocated = false;\n"
+                + indent + "    }\n"
+                + indent + "}\n";
+        } else {
+            src = indent + target + " = " +
+                c_pointer_association_value(x.m_value) + ";\n";
+        }
+    }
+
+    void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {
+        if (!is_c) {
+            throw CodeGenError("associated is not supported by the cpp "
+                "backend yet", x.base.base.loc);
+        }
+        if (compiler_options.po.fast && x.m_value) {
+            self().visit_expr(*x.m_value);
+            return;
+        }
+        self().visit_expr(*x.m_ptr);
+        std::string ptr = std::move(src);
+        ASR::ttype_t* type = ASRUtils::expr_type(x.m_ptr);
+        if (ASRUtils::is_array(type)) {
+            std::string condition = "(" + ptr + " != NULL && " +
+                ptr + "->data != NULL)";
+            if (x.m_tgt) {
+                self().visit_expr(*x.m_tgt);
+                std::string target = std::move(src);
+                condition = "(" + condition + " && " + target +
+                    " != NULL && " + ptr + "->data == " + target +
+                    "->data && " + ptr + "->n_dims == " + target +
+                    "->n_dims";
+                int rank = ASRUtils::extract_n_dims_from_ttype(type);
+                for (int i = 0; i < rank; i++) {
+                    std::string dim = std::to_string(i);
+                    condition += " && " + ptr + "->dims[" + dim +
+                        "].length == " + target + "->dims[" + dim +
+                        "].length && " + ptr + "->dims[" + dim +
+                        "].stride == " + target + "->dims[" + dim +
+                        "].stride";
+                }
+                condition += ")";
+            }
+            src = condition;
+        } else if (x.m_tgt) {
+            src = "(" + ptr + " != NULL && " + ptr + " == " +
+                c_pointer_association_value(x.m_tgt) + ")";
+        } else {
+            src = "(" + ptr + " != NULL)";
+        }
+        last_expr_precedence = 2;
     }
 
     void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
@@ -2772,6 +2944,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 && ASRUtils::is_array(sv->m_type)
                 && ASRUtils::is_pointer(sv->m_type)) {
                 src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
+            } else if ((sv->m_intent == ASRUtils::intent_inout ||
+                    sv->m_intent == ASRUtils::intent_out) &&
+                    ASRUtils::is_array(sv->m_type) &&
+                    ASRUtils::is_allocatable(sv->m_type)) {
+                src = "(*" + std::string(sv->m_name) + ")";
             } else if ((sv->m_intent == ASRUtils::intent_inout
                 || sv->m_intent == ASRUtils::intent_out)
                 && !ASRUtils::is_aggregate_type(sv->m_type)) {
@@ -2795,12 +2972,16 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         bool designates_value = ASR::is_a<ASR::ArrayItem_t>(*x.m_v) ||
             ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v);
-        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
-                ASRUtils::get_reference_member(
-                    *ASR::down_cast<ASR::StructInstanceMember_t>(x.m_v))) {
-            // A referenced variable of derived type is designated by its
-            // address, as a Var of it is.
-            designates_value = false;
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v)) {
+            const ASR::StructInstanceMember_t &parent =
+                *ASR::down_cast<ASR::StructInstanceMember_t>(x.m_v);
+            ASR::ttype_t* parent_type = ASRUtils::expr_type(x.m_v);
+            if (ASRUtils::get_reference_member(parent) ||
+                    (!ASRUtils::is_array(parent_type) &&
+                     (ASRUtils::is_pointer(parent_type) ||
+                      ASRUtils::is_allocatable(parent_type)))) {
+                designates_value = false;
+            }
         }
         if (designates_value) {
             return der_expr + "." + member;
@@ -3207,6 +3388,30 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = "NULL";
     }
 
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &x) {
+        if (is_c && x.m_impure_intrinsic_id ==
+                static_cast<int64_t>(
+                    ASRUtils::IntrinsicImpureFunctions::Allocated)) {
+            LCOMPILERS_ASSERT(x.n_args == 1 &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[0])));
+            self().visit_expr(*x.m_args[0]);
+            std::string arg = std::move(src);
+            if (ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0]))) {
+                src = "(" + arg + " != NULL && " + arg +
+                    "->is_allocated)";
+            } else {
+                src = "(" + arg + " != NULL)";
+            }
+            last_expr_precedence = 2;
+            return;
+        }
+        throw CodeGenError(
+            ASRUtils::get_impure_intrinsic_name(x.m_impure_intrinsic_id)
+                + " is not implemented by the "
+                + (is_c ? "c" : "cpp") + " backend",
+            x.base.base.loc);
+    }
+
     void visit_GetPointer(const ASR::GetPointer_t& x) {
         CHECK_FAST_C_CPP(compiler_options, x)
         self().visit_expr(*x.m_arg);
@@ -3374,24 +3579,22 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = "";
         for (size_t i=0; i<x.n_args; i++) {
-            ASR::symbol_t* tmp_sym = nullptr;
-            ASR::ttype_t* type = nullptr;
             ASR::expr_t* tmp_expr = x.m_args[i].m_a;
-            if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
-                const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
-                tmp_sym = tmp_var->m_v;
-                type = ASRUtils::expr_type(tmp_expr);
-            } else {
-                throw CodeGenError("Cannot deallocate variables in expression " +
+            if (!ASR::is_a<ASR::Var_t>(*tmp_expr) &&
+                    !ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
+                throw CodeGenError("Cannot allocate expression " +
                                     ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(tmp_expr), tmp_expr),
                                     tmp_expr->base.loc);
             }
-            std::string sym = ASRUtils::symbol_name(tmp_sym);
+            ASR::ttype_t* type = ASRUtils::expr_type(tmp_expr);
+            self().visit_expr(*tmp_expr);
+            std::string sym = std::move(src);
             if (ASRUtils::is_array(type)) {
-                // The descriptor that the Var designates, also through a
-                // frame for a HostAssociated variable.
-                self().visit_expr(*tmp_expr);
-                sym = src;
+                if (is_c) {
+                    out += indent + "if (" + sym + " == NULL) " + sym +
+                        " = (void*) _lfortran_calloc_alloc(_lfortran_get_default_allocator(),"
+                        " 1, sizeof(*" + sym + "));\n";
+                }
                 std::string size_str = "1";
                 out += indent + sym + "->n_dims = " + std::to_string(x.m_args[i].n_dims) + ";\n";
                 std::string stride = "1";
@@ -3418,18 +3621,42 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     out += stride + ";\n";
                     stride = "(" + stride + " * " + l + ")";
                 }
-                std::string ty = CUtils::get_c_type_from_ttype_t(
-                    ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable(type)));
+                ASR::ttype_t* elem = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(type));
+                std::string ty;
+                if (ASR::is_a<ASR::StructType_t>(*elem)) {
+                    ASR::symbol_t* derived = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(tmp_expr));
+                    LCOMPILERS_ASSERT(derived &&
+                        ASR::is_a<ASR::Struct_t>(*derived));
+                    ty = std::string("struct ") + ASRUtils::symbol_name(derived);
+                } else {
+                    ty = CUtils::get_c_type_from_ttype_t(elem);
+                }
                 size_str += "*sizeof(" + ty + ")";
-                out += indent + sym + "->data = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
+                out += indent + sym + "->data = (" + ty + "*) " +
+                    (is_c && ASR::is_a<ASR::StructType_t>(*elem)
+                        ? "_lfortran_calloc_alloc(_lfortran_get_default_allocator(), 1, "
+                        : "_lfortran_malloc_alloc(_lfortran_get_default_allocator(), ")
+                    + size_str + ")";
                 out += ";\n";
                 out += indent + sym + "->is_allocated = true;\n";
             } else {
-                std::string ty = CUtils::get_c_type_from_ttype_t(type), size_str;
-                size_str = "sizeof(" + ty + ")";
-                out += indent + sym + " = (" + ty + "*) _lfortran_malloc_alloc(_lfortran_get_default_allocator(), " + size_str + ")";
-                out += ";\n";
+                ASR::ttype_t* elem =
+                    ASRUtils::type_get_past_allocatable_pointer(type);
+                std::string ty;
+                if (ASR::is_a<ASR::StructType_t>(*elem)) {
+                    ASR::symbol_t* derived = ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(tmp_expr));
+                    LCOMPILERS_ASSERT(derived &&
+                        ASR::is_a<ASR::Struct_t>(*derived));
+                    ty = std::string("struct ") + ASRUtils::symbol_name(derived);
+                } else {
+                    ty = CUtils::get_c_type_from_ttype_t(elem);
+                }
+                out += indent + sym + " = (" + ty +
+                    "*) _lfortran_calloc_alloc(_lfortran_get_default_allocator(),"
+                    " 1, sizeof(" + ty + "));\n";
             }
         }
         src = out;
@@ -3461,9 +3688,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         src = out;
     }
 
-    // Neither deallocate statement releases anything in this backend yet; both
-    // only name what would be released, so a component is named the same way a
-    // whole variable is rather than being refused.
     std::string deallocate_operand_name(ASR::expr_t* e) {
         if( ASR::is_a<ASR::Var_t>(*e) ) {
             return ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(e)->m_v);
@@ -3483,13 +3707,173 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         return ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(e), e);
     }
 
+    std::string c_cleanup_struct_array(ASR::Struct_t* st,
+            const std::string& descriptor, const std::string& indent) {
+        std::string id = std::to_string(c_cleanup_counter++);
+        std::string n = "_lfortran_cleanup_count_" + id;
+        std::string d = "_lfortran_cleanup_dim_" + id;
+        std::string i = "_lfortran_cleanup_index_" + id;
+        std::string func = c_cleanup_struct_name(st);
+        return indent + "int64_t " + n + " = 1;\n"
+            + indent + "for (int32_t " + d + " = 0; " + d + " < " +
+                descriptor + "->n_dims; " + d + "++) " + n + " *= " +
+                descriptor + "->dims[" + d + "].length;\n"
+            + indent + "for (int64_t " + i + " = 0; " + i + " < " + n +
+                "; " + i + "++) {\n"
+            + indent + "    " + func + "(&(" + descriptor + "->data[" + i +
+                "]));\n"
+            + indent + "}\n";
+    }
+
+    std::string c_cleanup_struct_name(ASR::Struct_t* st) {
+        auto found = c_struct_cleanup_funcs.find(st);
+        if (found != c_struct_cleanup_funcs.end()) {
+            return found->second;
+        }
+        std::string name = "_lfortran_cleanup_struct_" +
+            std::to_string(c_cleanup_counter++);
+        // Register first so allocatable components can recursively use this
+        // type's cleanup function.
+        c_struct_cleanup_funcs[st] = name;
+        forward_decl_functions += "static void " + name + "(struct " +
+            st->m_name + "* object);\n";
+        std::string body;
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::symbol_t* member = st->m_symtab->get_symbol(st->m_members[i]);
+            LCOMPILERS_ASSERT(member && ASR::is_a<ASR::Variable_t>(*member));
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(member);
+            if (var->m_storage == ASR::storage_typeType::Parameter ||
+                    ASRUtils::is_pointer(var->m_type)) {
+                continue;
+            }
+            ASR::Struct_t* nested = nullptr;
+            if (var->m_type_declaration) {
+                ASR::symbol_t* decl = ASRUtils::symbol_get_past_external(
+                    var->m_type_declaration);
+                LCOMPILERS_ASSERT(decl);
+                if (ASR::is_a<ASR::Struct_t>(*decl)) {
+                    nested = ASR::down_cast<ASR::Struct_t>(decl);
+                }
+            }
+            std::string field = "object->" + std::string(var->m_name);
+            if (ASRUtils::is_allocatable(var->m_type)) {
+                if (ASRUtils::is_array(var->m_type)) {
+                    body += "    if (" + field + " != NULL) {\n";
+                    body += "        if (" + field + "->is_allocated) {\n";
+                    if (nested) {
+                        body += c_cleanup_struct_array(nested, field, "            ");
+                    }
+                    body += "            _lfortran_free_alloc("
+                        "_lfortran_get_default_allocator(), (char*)" +
+                        field + "->data);\n";
+                    body += "        }\n";
+                    body += "        _lfortran_free_alloc("
+                        "_lfortran_get_default_allocator(), (char*)" +
+                        field + ");\n";
+                    body += "        " + field + " = NULL;\n";
+                } else {
+                    body += "    if (" + field + " != NULL) {\n";
+                    if (nested) {
+                        body += "        " + c_cleanup_struct_name(nested) +
+                            "(" + field + ");\n";
+                    }
+                    body += "        _lfortran_free_alloc("
+                        "_lfortran_get_default_allocator(), (char*)" +
+                        field + ");\n";
+                    body += "        " + field + " = NULL;\n";
+                }
+                body += "    }\n";
+            } else if (nested && ASRUtils::is_array(var->m_type)) {
+                ASR::dimension_t* dims = nullptr;
+                size_t rank = ASRUtils::extract_dimensions_from_ttype(
+                    var->m_type, dims);
+                if (ASRUtils::is_fixed_size_array(dims, rank)) {
+                    std::string idx = "_lfortran_cleanup_index_" +
+                        std::to_string(c_cleanup_counter++);
+                    body += "    for (int64_t " + idx + " = 0; " + idx +
+                        " < " + std::to_string(
+                            ASRUtils::get_fixed_size_of_array(dims, rank)) +
+                        "; " + idx + "++) {\n";
+                    body += "        " + c_cleanup_struct_name(nested) +
+                        "(&(" + field + "[" + idx + "]));\n";
+                    body += "    }\n";
+                } else {
+                    body += "    if (" + field + " != NULL && " + field +
+                        "->data != NULL) {\n";
+                    body += c_cleanup_struct_array(nested, field, "        ");
+                    body += "    }\n";
+                }
+            } else if (nested) {
+                body += "    " + c_cleanup_struct_name(nested) +
+                    "(&(" + field + "));\n";
+            }
+        }
+        if (body.empty()) {
+            body = "    (void)object;\n";
+        }
+        c_struct_cleanup_bodies += "static void " + name + "(struct " +
+            st->m_name + "* object)\n{\n" + body + "}\n";
+        return name;
+    }
+
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        std::string out = indent + "// FIXME: deallocate(";
-        for (size_t i=0; i<x.n_vars; i++) {
-            out += deallocate_operand_name(x.m_vars[i]) + ", ";
+        if (!is_c) {
+            std::string out = indent + "// FIXME: deallocate(";
+            for (size_t i = 0; i < x.n_vars; i++) {
+                out += deallocate_operand_name(x.m_vars[i]) + ", ";
+            }
+            src = out + ");\n";
+            return;
         }
-        out += ");\n";
+        std::string out;
+        for (size_t i = 0; i < x.n_vars; i++) {
+            ASR::expr_t* operand = x.m_vars[i];
+            ASR::ttype_t* type = ASRUtils::expr_type(operand);
+            if (!ASRUtils::is_allocatable(type)) {
+                out += indent + "// FIXME: deallocate(" +
+                    deallocate_operand_name(operand) + ");\n";
+                continue;
+            }
+            if (x.m_stat || x.m_errmsg) {
+                throw CodeGenError("deallocate with stat or errmsg is not "
+                    "supported by the c backend yet", x.base.base.loc);
+            }
+            self().visit_expr(*operand);
+            std::string value = std::move(src);
+            ASR::ttype_t* elem = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(type));
+            ASR::Struct_t* derived = nullptr;
+            if (ASR::is_a<ASR::StructType_t>(*elem)) {
+                ASR::symbol_t* decl = ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(operand));
+                LCOMPILERS_ASSERT(decl && ASR::is_a<ASR::Struct_t>(*decl));
+                derived = ASR::down_cast<ASR::Struct_t>(decl);
+            }
+            if (ASRUtils::is_array(type)) {
+                out += indent + "if (" + value + " != NULL && " + value +
+                    "->is_allocated) {\n";
+                if (derived) {
+                    out += c_cleanup_struct_array(derived, value, indent + "    ");
+                }
+                out += indent + "    _lfortran_free_alloc("
+                    "_lfortran_get_default_allocator(), (char*)" + value +
+                    "->data);\n";
+                out += indent + "    " + value + "->data = NULL;\n";
+                out += indent + "    " + value + "->is_allocated = false;\n";
+            } else {
+                out += indent + "if (" + value + " != NULL) {\n";
+                if (derived) {
+                    out += indent + "    " + c_cleanup_struct_name(derived) +
+                        "(" + value + ");\n";
+                }
+                out += indent + "    _lfortran_free_alloc("
+                    "_lfortran_get_default_allocator(), (char*)" + value +
+                    ");\n";
+                out += indent + "    " + value + " = NULL;\n";
+            }
+            out += indent + "}\n";
+        }
         src = out;
     }
 

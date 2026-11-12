@@ -30,6 +30,7 @@ class ASRToCVisitor : public BaseCCPPVisitor<ASRToCVisitor>
 public:
 
     int counter;
+    size_t module_array_counter = 0;
 
     std::string indent() {
         return std::string(indentation_level * indentation_spaces, ' ');
@@ -101,7 +102,7 @@ public:
         }
         if( declare_value ) {
             std::string variable_name = std::string(v_m_name) + "_value";
-            sub = format_type_c("", type_name_without_ptr, variable_name, use_ref, dummy) + ";\n";
+            sub = format_type_c("", type_name_without_ptr, variable_name, use_ref, dummy) + " = {0};\n";
             sub += indent + format_type_c("", type_name, v_m_name, use_ref, dummy);
             sub += " = &" + variable_name;
             if( !is_pointer ) {
@@ -112,7 +113,7 @@ public:
                     if( dims.size() > 0 ) {
                         sub += " = " + dims + ";\n";
                     } else {
-                        sub += ";\n";
+                        sub += " = NULL;\n";
                     }
                 } else {
                     sub += indent + format_type_c(dims, type_name_copy, std::string(v_m_name) + "_data",
@@ -161,14 +162,22 @@ public:
             LCOMPILERS_ASSERT(member && ASR::is_a<ASR::Variable_t>(*member));
             ASR::Variable_t* mem_var = ASR::down_cast<ASR::Variable_t>(member);
             ASR::ttype_t* mem_type = mem_var->m_type;
-            if( ASRUtils::is_character(*mem_type) ) {
+            if (ASRUtils::is_allocatable(mem_type) &&
+                    !ASRUtils::is_array(mem_type)) {
+                sub += indent + name + "->" + member_name + " = NULL;\n";
+            } else if( ASRUtils::is_character(*mem_type) ) {
                 sub += indent + name + "->" + member_name + " = NULL;\n";
             } else if( ASRUtils::is_array(mem_type) ) {
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(mem_type, m_dims);
+                if (ASRUtils::is_allocatable(mem_type) ||
+                        ASRUtils::is_pointer(mem_type)) {
+                    sub += indent + name + "->" + member_name + " = NULL;\n";
+                    continue;
+                }
                 std::string mem_var_name = current_scope->get_unique_name(
                     member_name + std::to_string(counter));
                 counter += 1;
-                ASR::dimension_t* m_dims = nullptr;
-                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(mem_type, m_dims);
                 CDeclarationOptions c_decl_options_;
                 c_decl_options_.pre_initialise_derived_type = true;
                 c_decl_options_.use_ptr_for_derived_type = true;
@@ -231,6 +240,9 @@ public:
         } else {
             bool is_fixed_size = true;
             std::string v_m_name = v.m_name;
+            if (ASRUtils::is_allocatable(v.m_type)) {
+                type_name += "*";
+            }
             if( declare_as_constant ) {
                 type_name = "const " + type_name;
                 v_m_name = const_name;
@@ -358,6 +370,11 @@ public:
             return sub;
         }
         if (ASRUtils::is_pointer(v_m_type)) {
+            bool is_struct_member = ASR::is_a<ASR::Struct_t>(
+                *ASR::down_cast<ASR::symbol_t>(
+                    v.m_parent_symtab->asr_owner));
+            std::string array_name = force_declare
+                ? force_declare_name : std::string(v.m_name);
             ASR::ttype_t *t2 = ASR::down_cast<ASR::Pointer_t>(v_m_type)->m_type;
             t2 = ASRUtils::type_get_past_array(t2);
             if (ASRUtils::is_integer(*t2)) {
@@ -370,13 +387,15 @@ public:
                     bool is_fixed_size = true;
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
                     std::string encoded_type_name = "i" + std::to_string(t->m_kind * 8);
-                    generate_array_decl(sub, std::string(v.m_name), type_name, dims,
+                    generate_array_decl(sub, array_name, type_name, dims,
                                         encoded_type_name, m_dims, n_dims,
                                         use_ref, dummy,
-                                        v.m_intent != ASRUtils::intent_in &&
+                                        (v.m_intent != ASRUtils::intent_in &&
                                         v.m_intent != ASRUtils::intent_inout &&
                                         v.m_intent != ASRUtils::intent_out &&
-                                        v.m_intent != ASRUtils::intent_unspecified, is_fixed_size, true, ASR::abiType::Source, false);
+                                        v.m_intent != ASRUtils::intent_unspecified &&
+                                        !is_struct_member) || force_declare,
+                                        is_fixed_size, true, ASR::abiType::Source, false);
                 } else {
                     bool is_fixed_size = true;
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);
@@ -392,13 +411,14 @@ public:
                     bool is_fixed_size = true;
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
                     std::string encoded_type_name = "u" + std::to_string(t->m_kind * 8);
-                    generate_array_decl(sub, std::string(v.m_name), type_name, dims,
+                    generate_array_decl(sub, array_name, type_name, dims,
                                         encoded_type_name, m_dims, n_dims,
                                         use_ref, dummy,
-                                        v.m_intent != ASRUtils::intent_in &&
+                                        (v.m_intent != ASRUtils::intent_in &&
                                         v.m_intent != ASRUtils::intent_inout &&
                                         v.m_intent != ASRUtils::intent_out &&
-                                        v.m_intent != ASRUtils::intent_unspecified,
+                                        v.m_intent != ASRUtils::intent_unspecified &&
+                                        !is_struct_member) || force_declare,
                                         is_fixed_size, true, ASR::abiType::Source, false);
                 } else {
                     bool is_fixed_size = true;
@@ -428,13 +448,14 @@ public:
                     bool is_simd_array = (ASR::is_a<ASR::Array_t>(*v_m_type) &&
                         ASR::down_cast<ASR::Array_t>(v_m_type)->m_physical_type
                             == ASR::array_physical_typeType::SIMDArray);
-                    generate_array_decl(sub, std::string(v.m_name), type_name, dims,
+                    generate_array_decl(sub, array_name, type_name, dims,
                                         encoded_type_name, m_dims, n_dims,
                                         use_ref, dummy,
-                                        v.m_intent != ASRUtils::intent_in &&
+                                        (v.m_intent != ASRUtils::intent_in &&
                                         v.m_intent != ASRUtils::intent_inout &&
                                         v.m_intent != ASRUtils::intent_out &&
-                                        v.m_intent != ASRUtils::intent_unspecified,
+                                        v.m_intent != ASRUtils::intent_unspecified &&
+                                        !is_struct_member) || force_declare,
                                         is_fixed_size, true, ASR::abiType::Source, is_simd_array);
                 } else {
                     bool is_fixed_size = true;
@@ -449,20 +470,17 @@ public:
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
                     std::string encoded_type_name = "x" + der_type_name;
                     std::string type_name = std::string("struct ") + der_type_name;
-                    generate_array_decl(sub, std::string(v.m_name), type_name, dims,
+                    generate_array_decl(sub, array_name, type_name, dims,
                                         encoded_type_name, m_dims, n_dims,
                                         use_ref, dummy,
-                                        v.m_intent != ASRUtils::intent_in &&
+                                        (v.m_intent != ASRUtils::intent_in &&
                                         v.m_intent != ASRUtils::intent_inout &&
                                         v.m_intent != ASRUtils::intent_out &&
-                                        v.m_intent != ASRUtils::intent_unspecified,
+                                        v.m_intent != ASRUtils::intent_unspecified &&
+                                        !is_struct_member) || force_declare,
                                         is_fixed_size, false, ASR::abiType::Source, false);
-                 } else {
-                    std::string ptr_char = "*";
-                    if( !use_ptr_for_derived_type ) {
-                        ptr_char.clear();
-                    }
-                    sub = format_type_c("", "struct " + der_type_name + ptr_char,
+                } else {
+                    sub = format_type_c("", "struct " + der_type_name + "*",
                                         v.m_name, use_ref, dummy);
                 }
             } else if(ASR::is_a<ASR::CPtr_t>(*t2)) {
@@ -554,7 +572,9 @@ public:
                                         v.m_intent != ASRUtils::intent_out &&
                                         v.m_intent != ASRUtils::intent_unspecified,
                                         is_fixed_size, false, ASR::abiType::Source, false);
-                } else if( v.m_intent == ASRUtils::intent_local && pre_initialise_derived_type) {
+                } else if( v.m_intent == ASRUtils::intent_local &&
+                        pre_initialise_derived_type &&
+                        !ASRUtils::is_allocatable(v.m_type)) {
                     bool is_fixed_size = true;
                     dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);
                     std::string value_var_name = v.m_parent_symtab->get_unique_name(std::string(v.m_name) + "_value");
@@ -564,6 +584,8 @@ public:
                         this->visit_expr(*v.m_symbolic_value);
                         std::string init = src;
                         sub += "=" + init;
+                    } else {
+                        sub += " = {0}";
                     }
                     sub += ";\n";
                     std::string ptr_char = "*";
@@ -592,7 +614,8 @@ public:
                         dims = "";
                     }
                     std::string ptr_char = "*";
-                    if( !use_ptr_for_derived_type ) {
+                    if( !use_ptr_for_derived_type &&
+                            !ASRUtils::is_allocatable(v.m_type)) {
                         ptr_char.clear();
                     }
                     sub = format_type_c(dims, "struct " + der_type_name + ptr_char,
@@ -696,8 +719,129 @@ public:
                     }
                 }
             }
+            if (dims.empty() && ASRUtils::is_allocatable(v.m_type) &&
+                    !is_array && v.m_intent == ASRUtils::intent_local &&
+                    !v.m_symbolic_value && !do_not_initialize &&
+                    !ASR::is_a<ASR::Struct_t>(
+                        *ASR::down_cast<ASR::symbol_t>(
+                            v.m_parent_symtab->asr_owner))) {
+                sub += " = NULL";
+            }
         }
         return sub;
+    }
+
+    std::string declare_module_fixed_array(const ASR::Variable_t &v,
+            ASR::dimension_t* dims, size_t rank) {
+        ASR::ttype_t* elem = ASRUtils::type_get_past_array(v.m_type);
+        std::string element_type = CUtils::get_c_type_from_ttype_t(elem);
+        std::string encoded_type = ASRUtils::get_type_code(elem);
+        if (ASR::is_a<ASR::StructType_t>(*elem)) {
+            ASR::symbol_t* derived = ASRUtils::symbol_get_past_external(
+                v.m_type_declaration);
+            LCOMPILERS_ASSERT(derived &&
+                ASR::is_a<ASR::Struct_t>(*derived));
+            std::string derived_name = ASRUtils::symbol_name(derived);
+            element_type = "struct " + derived_name;
+            encoded_type = "x" + derived_name;
+        }
+        c_ds_api->get_array_type(element_type, encoded_type,
+            array_types_decls);
+        std::string descriptor_type = c_ds_api->get_array_type(element_type,
+            encoded_type, array_types_decls, false);
+        std::string name = v.m_name;
+        int64_t count = ASRUtils::get_fixed_size_of_array(dims, rank);
+        std::string init = "{0}";
+        ASR::expr_t* value = ASRUtils::expr_value(
+            v.m_value ? v.m_value : v.m_symbolic_value);
+        if (value) {
+            if (!ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                throw CodeGenError("the module array '" + name +
+                    "' needs a constant initializer in the c backend",
+                    v.base.base.loc);
+            }
+            ASR::ArrayConstant_t* a = ASR::down_cast<ASR::ArrayConstant_t>(
+                value);
+            if (ASRUtils::get_fixed_size_of_array(a->m_type) != count ||
+                    (rank > 1 &&
+                     a->m_storage_format != ASR::arraystorageType::ColMajor)) {
+                throw CodeGenError("the module array '" + name +
+                    "' has an unsupported initializer layout in the c "
+                    "backend", v.base.base.loc);
+            }
+            init = array_constant_initializer(a);
+        }
+        std::vector<std::string> dimensions(rank);
+        int64_t stride = 1;
+        for (size_t i = rank; i-- > 0;) {
+            int64_t lower_bound = 1, length = 0;
+            if ((dims[i].m_start &&
+                    !ASRUtils::extract_value(dims[i].m_start, lower_bound)) ||
+                    !dims[i].m_length ||
+                    !ASRUtils::extract_value(dims[i].m_length, length)) {
+                throw CodeGenError("the module array '" + name +
+                    "' needs constant dimensions in the c backend",
+                    v.base.base.loc);
+            }
+            dimensions[i] = "{" + std::to_string(lower_bound) + ", " +
+                std::to_string(length) + ", " + std::to_string(stride) + "}";
+            stride *= length;
+        }
+        std::string dims_init = "{";
+        for (size_t i = 0; i < rank; i++) {
+            if (i > 0) dims_init += ", ";
+            dims_init += dimensions[i];
+        }
+        dims_init += "}";
+        if (ASRUtils::is_integer(*elem) ||
+                ASRUtils::is_unsigned_integer(*elem)) {
+            headers.insert("inttypes.h");
+        }
+        if (ASRUtils::is_complex(*elem)) {
+            headers.insert("complex.h");
+        }
+        std::string prefix = "_lfortran_module_array_" +
+            std::to_string(module_array_counter++);
+        std::string data = prefix + "_data";
+        std::string descriptor = prefix + "_value";
+        return "static " + element_type + " " + data + "[" +
+            std::to_string(std::max<int64_t>(count, 1)) + "] = " + init +
+            ";\nstatic " + descriptor_type + " " + descriptor +
+            " = {.data = " + data + ", .dims = " + dims_init +
+            ", .n_dims = " + std::to_string(rank) +
+            ", .offset = 0, .is_allocated = false};\n" +
+            descriptor_type + "* " + name + " = &" + descriptor + ";\n";
+    }
+
+    std::string declare_module_variables(const ASR::Module_t &x) {
+        std::string declarations;
+        for (auto &name : ASRUtils::determine_variable_declaration_order(
+                x.m_symtab)) {
+            ASR::symbol_t *sym = x.m_symtab->get_symbol(name);
+            if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (ASRUtils::get_common_block(v) != nullptr) {
+                continue;
+            }
+            ASR::dimension_t* dims = nullptr;
+            size_t rank = ASRUtils::extract_dimensions_from_ttype(
+                v->m_type, dims);
+            if (v->m_storage == ASR::storage_typeType::Save &&
+                    rank > 0 && !ASRUtils::is_allocatable(v->m_type) &&
+                    !ASRUtils::is_pointer(v->m_type) &&
+                    ASRUtils::is_fixed_size_array(dims, rank)) {
+                declarations += declare_module_fixed_array(*v, dims, rank);
+                continue;
+            }
+            std::string decl = convert_variable_decl(*v);
+            declarations += decl;
+            if (!decl.empty()) {
+                declarations += ";\n";
+            }
+        }
+        return declarations;
     }
 
 
@@ -792,6 +936,22 @@ R"(
             }
         }
 
+        // Generated reset procedures live in the unit scope and can refer to
+        // saved targets declared in modules; their C declarations must precede
+        // those procedure definitions.
+        std::vector<std::string> build_order =
+            ASRUtils::determine_module_dependencies(x);
+        for (auto &name : build_order) {
+            if (startswith(name, "lfortran_intrinsic") ||
+                    to_lower(name) == "iso_c_binding") {
+                continue;
+            }
+            ASR::symbol_t* sym = x.m_symtab->get_symbol(name);
+            LCOMPILERS_ASSERT(sym && ASR::is_a<ASR::Module_t>(*sym));
+            unit_src += declare_module_variables(
+                *ASR::down_cast<ASR::Module_t>(sym));
+        }
+
         // Process global functions
         size_t i;
         for (i = 0; i < global_func_order.size(); i++) {
@@ -805,8 +965,6 @@ R"(
         }
 
         // Process modules in the right order
-        std::vector<std::string> build_order
-            = ASRUtils::determine_module_dependencies(x);
         for (auto &item : build_order) {
             LCOMPILERS_ASSERT(x.m_symtab->get_scope().find(item)
                 != x.m_symtab->get_scope().end());
@@ -862,26 +1020,8 @@ R"(
             return;
         }
 
-        std::string unit_src = "";
-        // Declaration order, so that a variable whose initializer names
-        // another of the same module -- the address of the target of a
-        // pointer association, say -- is declared after it, as C requires.
-        for (auto &name : ASRUtils::determine_variable_declaration_order(x.m_symtab)) {
-            ASR::symbol_t *sym = x.m_symtab->get_symbol(name);
-            if (sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)) {
-                std::string unit_src_tmp;
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                // A variable in a common block lives in the block's storage.
-                if (ASRUtils::get_common_block(v) != nullptr) {
-                    continue;
-                }
-                unit_src_tmp = convert_variable_decl(*v);
-                unit_src += unit_src_tmp;
-                if(unit_src_tmp.size() > 0) {
-                    unit_src += ";\n";
-                }
-            }
-        }
+        std::string unit_src = startswith(x.m_name, "lfortran_intrinsic")
+            ? declare_module_variables(x) : "";
         std::map<std::string, std::vector<std::string>> struct_dep_graph;
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Struct_t>(*item.second) ||
