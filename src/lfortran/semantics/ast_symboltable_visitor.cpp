@@ -2066,7 +2066,7 @@ public:
                                         ASR::symbol_t *external_sym = (ASR::symbol_t*)(ASR::make_ExternalSymbol_t(
                                             al, var->base.base.loc, current_scope, s2c(al, type_decl_name),
                                             orig_sym, ASR::down_cast<ASR::Module_t>(owner)->m_name, nullptr, 0,
-                                            s2c(al, type_decl_name), dflt_access));
+                                            ASRUtils::symbol_name(orig_sym), dflt_access));
                                         current_scope->add_symbol(type_decl_name, external_sym);
                                         local_sym = external_sym;
                                     }
