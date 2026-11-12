@@ -6905,6 +6905,8 @@ RUN(NAME gpu_metal_149 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_metal_150 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_cuda_cpu_01 LABELS gfortran llvm cuda EXTRAFILES gpu_cuda_cpu_01_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_cuda_cpu_archive_01 LABELS gfortran llvm cuda STATIC_LIBRARY_FILES gpu_cuda_cpu_archive_01_mod.f90 EXTRA_ARGS --separate-compilation)
+# The option has an effect only with --gpu=cuda; the other backends accept it.
+RUN(NAME gpu_lazy_init_01 LABELS gfortran llvm metal cuda EXTRA_ARGS --gpu-lazy-init)
 RUN(NAME gpu_memory_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_wait_reads_01 LABELS gfortran llvm cuda)
 RUN(NAME gpu_keep_reads_01 LABELS gfortran llvm metal cuda)

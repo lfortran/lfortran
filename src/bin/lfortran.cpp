@@ -2350,6 +2350,11 @@ int link_executable(const std::vector<std::string> &infiles,
                         + (cuda_include.empty() ? ""
                             : " -I\"" + cuda_include + "\"");
                 }
+                // The runtime creates the context of the device before the
+                // program unless it is asked to wait for the first CUDA call.
+                if (compiler_options.gpu_lazy_init) {
+                    cuda_rt_cmd_base += " -DLFORTRAN_GPU_LAZY_INIT";
+                }
                 std::vector<std::string> cuda_runtime_objs;
                 for (size_t i = 0; i < cuda_runtime_srcs.size(); i++) {
                     std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR

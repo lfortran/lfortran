@@ -1171,6 +1171,23 @@ __attribute__((constructor)) static void enable_xnack(void) {
 }
 #endif
 
+#if defined(__GNUC__) && !defined(LFORTRAN_GPU_HIP) \
+    && !defined(LFORTRAN_CUDA_CPU_EMULATION) && !defined(LFORTRAN_GPU_LAZY_INIT)
+// Before the program: the CUDA context of the device is created at the first
+// CUDA call, which costs 0.25-0.3 s on an H200. Made lazily, it is the first
+// managed allocation or the first launch that pays it, inside the timers of a
+// program that times itself (as an nvfortran program that selects its device
+// first does not), although the program takes as long either way. It is
+// created on the main thread: in a thread started here, cudaSetDevice could
+// run before the CUDA runtime was ready and crash. Without a device nothing
+// is done, and the first use reports the error. A program linked with
+// `--gpu-lazy-init` (LFORTRAN_GPU_LAZY_INIT) leaves the context to the first
+// use.
+__attribute__((constructor)) static void create_context_early(void) {
+    if (cudaSetDevice(0) == cudaSuccess) (void)cudaFree(0);
+}
+#endif
+
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
     static lfortran_gpu_ctx *singleton = NULL;
     if (singleton) return singleton;
