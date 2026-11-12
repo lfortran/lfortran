@@ -15000,6 +15000,19 @@ public:
                     }
                 }
 
+                // Bytes of one source element. The characters of a string
+                // array are stored behind its string descriptor, and its
+                // length may be known only at run time.
+                llvm::Value* src_elem_bytes = llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(context), src_elem_size);
+                if (ASRUtils::is_array_of_strings(bc_src_type)) {
+                    src_ptr = llvm_utils->get_stringArray_data(bc_src_type, src_desc);
+                    src_elem_bytes = builder->CreateMul(
+                        get_string_length(bc->m_source),
+                        llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
+                            ASRUtils::get_string_type(bc_src_type)->m_kind));
+                }
+
                 // Get pointer to target array
                 bool is_assignment_target_copy = is_assignment_target;
                 is_assignment_target = true;
@@ -15046,13 +15059,14 @@ public:
                 // Compute byte count
                 int64_t src_n = ASRUtils::get_fixed_size_of_array(bc_src_type);
                 if (src_n > 0) {
-                    // Fixed-size source: constant byte count
-                    int64_t nbytes = src_elem_size * src_n;
+                    // Fixed-size source: the element count is a constant
+                    llvm::Value* nbytes = builder->CreateMul(src_elem_bytes,
+                        llvm::ConstantInt::get(
+                            llvm::Type::getInt64Ty(context), src_n));
                     builder->CreateMemCpy(
                         dest_i8, llvm::MaybeAlign(1),
                         src_i8, llvm::MaybeAlign(1),
-                        llvm::ConstantInt::get(
-                            llvm::Type::getInt64Ty(context), nbytes));
+                        nbytes);
                 } else if (is_descriptor_src && llvm_src_arr_type) {
                     // Runtime-sized descriptor source: get size from descriptor
                     llvm::Value* num_elements = llvm_utils->arr_api->get_array_size(
@@ -15060,8 +15074,7 @@ public:
                     llvm::Value* nbytes = builder->CreateMul(
                         builder->CreateZExtOrTrunc(num_elements,
                             llvm::Type::getInt64Ty(context)),
-                        llvm::ConstantInt::get(
-                            llvm::Type::getInt64Ty(context), src_elem_size));
+                        src_elem_bytes);
                     builder->CreateMemCpy(
                         dest_i8, llvm::MaybeAlign(1),
                         src_i8, llvm::MaybeAlign(1),
