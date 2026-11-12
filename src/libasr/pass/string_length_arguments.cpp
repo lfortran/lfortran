@@ -287,6 +287,17 @@ public:
             down_cast<ASR::Function_t>(to)->m_function_signature;
     }
 
+    void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_PointerNullConstant(x);
+        if (x.m_var_expr && is_a<ASR::FunctionType_t>(
+                *ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_var_expr)))) {
+            // A typed NULL shares the updated mold's signature, including
+            // hidden lengths, rather than retaining its pre-lowering copy.
+            const_cast<ASR::PointerNullConstant_t&>(x).m_type =
+                ASRUtils::expr_type(x.m_var_expr);
+        }
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_Function(x);
         ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(x);
