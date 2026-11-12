@@ -1789,9 +1789,10 @@ namespace LCompilers {
             ASRUtils::ExprStmtDuplicator d(al);
             int n_dims = ASRUtils::extract_n_dims_from_ttype(component_type);
             source = ASRUtils::get_past_array_physical_cast(source);
-            bool source_is_whole_array = is_whole_array(source) &&
+            bool source_is_whole_array = is_whole_array(source);
+            LCOMPILERS_ASSERT(!source_is_whole_array ||
                 ASRUtils::extract_n_dims_from_ttype(
-                    ASRUtils::expr_type(source)) == n_dims;
+                    ASRUtils::expr_type(source)) == n_dims);
             // The bounds are compared as integers of the widest index kind.
             const int bound_kind = 8;
             ASR::expr_t* bounds_differ = nullptr;

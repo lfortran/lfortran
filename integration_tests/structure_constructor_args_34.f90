@@ -81,7 +81,7 @@ real :: vals(3), src(5:7)
 real, allocatable :: a(:)
 real, pointer :: p(:)
 real, target :: tgt(-2:0)
-integer :: im(0:1, 3:4), i
+integer :: im(0:1, 3:4), jm(0:1, 5:6), km(2:3, 5:6), i
 real(8) :: dv(2:3)
 type(elem) :: es(4:5)
 character(len=3) :: cs(0:1)
@@ -206,12 +206,23 @@ mat = matrix(im(:, :), dv(:))
 if (any(lbound(mat%m) /= [1, 1]) .or. any(ubound(mat%m) /= [2, 2])) error stop 52
 if (lbound(mat%d, 1) /= 1 .or. ubound(mat%d, 1) /= 2) error stop 53
 if (any(mat%m /= im) .or. any(mat%d /= dv)) error stop 54
-! Only the lower bound of the second dimension differs
+! A section of another shape in the first dimension only
 mat = matrix(im, dv)
 mat = matrix(im(0:1, :), dv)
 if (any(lbound(mat%m) /= [1, 1]) .or. any(ubound(mat%m) /= [2, 2])) error stop 55
 if (lbound(mat%d, 1) /= 2 .or. ubound(mat%d, 1) /= 3) error stop 56
 if (any(mat%m /= im) .or. any(mat%d /= dv)) error stop 57
+! Only the lower bound of the second dimension differs, then only that of
+! the first
+mat = matrix(im, dv)
+jm = im + 10
+mat = matrix(jm, dv)
+if (any(lbound(mat%m) /= [0, 5]) .or. any(ubound(mat%m) /= [1, 6])) error stop 58
+if (any(mat%m /= jm)) error stop 59
+km = im + 20
+mat = matrix(km, dv)
+if (any(lbound(mat%m) /= [2, 5]) .or. any(ubound(mat%m) /= [3, 6])) error stop 66
+if (any(mat%m /= km)) error stop 67
 
 ! Components of derived type and of character type
 es(4)%v = 1

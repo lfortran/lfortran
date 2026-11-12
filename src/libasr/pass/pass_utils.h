@@ -1101,7 +1101,12 @@ namespace LCompilers {
                 end if
             end if
 
-        Only a whole array has lower bounds other than 1 (F2018 16.9.109).
+        `source` is the data source as the array_struct_temporary pass
+        left it: a whole array, or the temporary that holds the value of
+        any other data source and has its bounds. Its lower bounds are
+        taken as array_op takes them when the assignment allocates the
+        component: those of a whole array (see is_whole_array), 1 for
+        any other value.
         Returns `nullptr` when `component` is not an array.
         */
         ASR::stmt_t* release_component_of_other_bounds(Allocator& al,
