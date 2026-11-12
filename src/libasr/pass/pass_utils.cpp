@@ -321,7 +321,7 @@ namespace LCompilers {
                     !ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(
                         ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(
                             tmp->m_v)->m_m)));
-                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v))) &&
+                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(tmp->m_v))) &&
                    !inherits_shape_from_base){
                     arr_expr = tmp->m_v;
                     array_ref_container_node = &(tmp->m_v);
