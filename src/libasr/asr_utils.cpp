@@ -14123,12 +14123,12 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             if (orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                 is_orig_assumed_rank = true;
             }
-            const bool char_to_bindc_assumed_type =
-                func_type->m_abi == ASR::abiType::BindC &&
-                orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::PointerArray &&
+            const bool char_to_assumed_type =
+                (orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
+                 orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray) &&
                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(orig_arg_type)) &&
                 ASRUtils::is_character(*ASRUtils::extract_type(arg_type));
-            if( char_to_bindc_assumed_type ||
+            if( char_to_assumed_type ||
                 (arg_array_t->m_physical_type != orig_arg_array_t->m_physical_type) ||
                 (arg_array_t->m_physical_type == ASR::array_physical_typeType::DescriptorArray &&
                  arg_array_t->m_physical_type == orig_arg_array_t->m_physical_type &&
@@ -14143,7 +14143,7 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // argument's rank. The dummy's own type is shared by every
                 // call, so the target physical type is kept separately.
                 ASR::array_physical_typeType cast_physical_type = orig_arg_array_t->m_physical_type;
-                if (char_to_bindc_assumed_type) {
+                if (char_to_assumed_type) {
                     // A character actual passed to a bind(c) `type(*)` array
                     // dummy is received as the flat C buffer of its characters,
                     // not as an array of string descriptors.
@@ -14301,8 +14301,10 @@ void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 a_args[i] = physical_cast_arg;
             }
         }
-        if (func_type->m_abi == ASR::abiType::BindC &&
-                ASRUtils::is_array(orig_arg_type) &&
+        if (ASRUtils::is_array(orig_arg_type) &&
+                (func_type->m_abi == ASR::abiType::BindC ||
+                 ASRUtils::extract_physical_type(orig_arg_type) ==
+                    ASR::array_physical_typeType::UnboundedPointerArray) &&
                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(orig_arg_type)) &&
                 ASRUtils::type_get_past_allocatable_pointer(arg_type)->type == ASR::String) {
             // A character scalar passed to a bind(c) `type(*)` array dummy is

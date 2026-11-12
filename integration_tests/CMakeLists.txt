@@ -2475,6 +2475,7 @@ RUN(NAME bindc5 LABELS gfortran llvm fortran)
 RUN(NAME bindc_optional_array_01 LABELS gfortran llvm EXTRAFILES bindc_optional_array_01c.c) # absent optional dummy passed to a bind(c) optional (*) dummy must be NULL
 RUN(NAME bindc_section_01 LABELS gfortran llvm EXTRAFILES bindc_section_01c.c) # non-contiguous section passed to a bind(c) (*) dummy is packed
 RUN(NAME bindc_char_typestar_01 LABELS gfortran llvm EXTRAFILES bindc_char_typestar_01c.c) # character data passed to a bind(c) type(*) assumed-size dummy is the C buffer of its characters
+RUN(NAME assumed_type_09 LABELS gfortran llvm EXTRAFILES assumed_type_09c.c) # non-bind(c) type(*) buf(*) dummy forwarded to a bind(c) type(*) buf(*) dummy
 RUN(NAME bindc6 LABELS gfortran llvm EXTRAFILES bindc6_sum.c)
 RUN(NAME bindc_01 LABELS gfortran llvm EXTRAFILES bindc_01b.f90 bindc_01c.c)
 RUN(NAME test_c_long_double LABELS gfortran llvm EXTRAFILES test_c_long_double_c.c)

@@ -14980,7 +14980,7 @@ public:
                         type = ASRUtils::make_Array_t_util(
                             al, loc, type, dims.p, dims.size(), abi, is_argument,
                             ASR::array_physical_typeType::DescriptorArray, false,
-                            is_dimension_star && abi == ASR::abiType::BindC);
+                            is_dimension_star);
                     }
                     if (is_pointer) {
                         type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
