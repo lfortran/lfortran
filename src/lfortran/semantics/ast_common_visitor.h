@@ -14171,12 +14171,13 @@ public:
 
     ASR::Module_t* current_pdt_requester() {
         for (SymbolTable* scope = current_scope; scope; scope = scope->parent) {
-            if (scope->asr_owner &&
-                    ASR::is_a<ASR::Module_t>(*scope->asr_owner)) {
-                ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(
-                    scope->asr_owner);
-                return module->m_loaded_from_mod ? nullptr : module;
-            }
+            if (!scope->asr_owner ||
+                    !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) continue;
+            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                scope->asr_owner);
+            if (!ASR::is_a<ASR::Module_t>(*owner)) continue;
+            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(owner);
+            return module->m_loaded_from_mod ? nullptr : module;
         }
         return nullptr;
     }
@@ -14309,10 +14310,12 @@ public:
             std::vector<int64_t>& kinds) {
         SymbolTable* scope = st->m_symtab->parent;
         if (!scope || !scope->asr_owner ||
-                !ASR::is_a<ASR::Module_t>(*scope->asr_owner)) {
+                !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
             return false;
         }
-        ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(scope->asr_owner);
+        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        if (!ASR::is_a<ASR::Module_t>(*owner)) return false;
+        ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(owner);
         if (!module->m_loaded_from_mod || !module->m_pdt_state) return false;
         ASR::pdt_module_state_t* state = module->m_pdt_state;
         for (size_t i = 0; i < state->n_templates; i++) {
