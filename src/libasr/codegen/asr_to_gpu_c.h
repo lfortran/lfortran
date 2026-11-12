@@ -3300,6 +3300,11 @@ public:
         }
     }
 
+    void visit_IntentOutReset(const ASR::IntentOutReset_t &x) {
+        throw CodeGenError("dynamic intent(out) reset is not supported by the gpu backend",
+            x.base.base.loc);
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &tu) {
         dialect.emit_prologue(src);
 

@@ -155,6 +155,7 @@
               :alignment nil
               :parent nil
               :kind_params []
+              :intent_out_reset nil
             )
           }
         )

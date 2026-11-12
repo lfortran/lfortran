@@ -15,6 +15,7 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <libasr/pickle.h>
 
@@ -137,6 +138,10 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             return Error();
         }
         if (compiler_options.rtlib) load_rtlib();
+        if (!diagnostics.has_error()) {
+            declare_intent_out_reset_helpers(al, *tu);
+            u.visit_TranslationUnit(*tu);
+        }
         if (compiler_options.po.dump_all_passes) {
             std::ofstream outfile ("pass_00_initial_asr_02.clj");
             outfile << ";; Initial ASR after Body Visitor\n" << LCompilers::pickle(*tu, false, true, compiler_options.po.with_intrinsic_mods) << "\n";

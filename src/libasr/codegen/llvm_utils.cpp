@@ -10386,6 +10386,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
 
+        // Intrinsic dynamic types have no allocatable components or defaults.
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == vtable_intent_out_reset_slot)
+        slots.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+
         llvm::ArrayType *arrTy = llvm::ArrayType::get(llvm_utils->i8_ptr, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
         std::string gv_name = "_VTable_" + ASRUtils::intrinsic_type_to_str_with_kind(ttype, kind);
@@ -10445,6 +10449,18 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
         LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == vtable_intent_out_reset_slot)
+        if (struct_t->m_intent_out_reset != nullptr) {
+            ASR::symbol_t* helper = ASRUtils::symbol_get_past_external(
+                struct_t->m_intent_out_reset);
+            auto reset = llvm_symtab_fn.find(get_hash((ASR::asr_t*)helper));
+            LCOMPILERS_ASSERT_MSG(reset != llvm_symtab_fn.end(),
+                "the defining type's reset helper must be declared before its vtable");
+            slots.push_back(llvm::ConstantExpr::getBitCast(
+                reset->second, llvm_utils->i8_ptr));
+        } else {
+            slots.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+        }
         collect_vtable_function_impls(struct_sym, slots, module);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());

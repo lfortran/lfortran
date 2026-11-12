@@ -115,6 +115,7 @@ public:
     std::map<uint64_t, SymbolInfo> sym_info;
     std::map<uint64_t, std::string> const_var_names;
     std::map<int64_t, std::string> gotoid2name;
+    std::set<const ASR::symbol_t*> intent_out_reset_helpers;
 
     // The constructs being written that an EXIT or a CYCLE can leave,
     // innermost last: the loops, and the BLOCK, named IF and named SELECT
@@ -681,7 +682,43 @@ public:
         return to_include + head + array_types_decls + forward_decl_functions + unit_src +
               ds_funcs_defined + util_funcs_defined;
     }
+    void check_dynamic_reset(const ASR::TranslationUnit_t &x) {
+        class CheckDynamicReset : public ASR::BaseWalkVisitor<CheckDynamicReset> {
+        public:
+            std::set<const ASR::symbol_t*> helpers;
+            void visit_Struct(const ASR::Struct_t &st) {
+                if (st.m_intent_out_reset) {
+                    helpers.insert(ASRUtils::symbol_get_past_external(st.m_intent_out_reset));
+                }
+                ASR::BaseWalkVisitor<CheckDynamicReset>::visit_Struct(st);
+            }
+            void visit_IntentOutReset(const ASR::IntentOutReset_t &reset) {
+                throw CodeGenError("dynamic intent(out) reset is not supported by the c/c++ backend",
+                    reset.base.base.loc);
+            }
+            void visit_Function(const ASR::Function_t &fn) {
+                // The C++ entry point also accepts ASR before entry lowering.
+                for (size_t i = 0; i < fn.n_args; i++) {
+                    if (!ASR::is_a<ASR::Var_t>(*fn.m_args[i])) continue;
+                    ASR::Variable_t* arg = ASRUtils::EXPR2VAR(fn.m_args[i]);
+                    if (arg->m_intent == ASR::intentType::Out &&
+                            !ASRUtils::is_allocatable_or_pointer(arg->m_type) &&
+                            ASRUtils::is_class_type(ASRUtils::extract_type(arg->m_type))) {
+                        throw CodeGenError("dynamic intent(out) reset is not supported by the c/c++ backend",
+                            arg->base.base.loc);
+                    }
+                }
+                ASR::BaseWalkVisitor<CheckDynamicReset>::visit_Function(fn);
+            }
+        } check;
+        // Diagnose dispatch before trying to emit its helper bodies. Without
+        // a dispatch, these metadata-only procedures are unreachable here.
+        check.visit_TranslationUnit(x);
+        intent_out_reset_helpers = std::move(check.helpers);
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        check_dynamic_reset(x);
         // A translation unit initializer has to run before main, which only
         // a target with a startup hook of its own can arrange. Nothing that
         // reaches this backend sets one today — it comes from a saved coarray
@@ -1171,6 +1208,7 @@ R"(#include <stdio.h>
         std::string code, t;
         for (auto &item : scope.get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                if (intent_out_reset_helpers.count(item.second)) continue;
                 ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
                 t = declare_all_functions(*s->m_symtab);
                 bool has_typevar = false;
@@ -1209,6 +1247,10 @@ R"(#include <stdio.h>
     }
 
     void visit_Function(const ASR::Function_t &x) {
+        if (intent_out_reset_helpers.count(&x.base)) {
+            src.clear();
+            return;
+        }
         if (ASRUtils::is_bare_implicit_interface(x)) {
             return;
         }
@@ -3481,6 +3523,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             return deallocate_operand_name(ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
         }
         return ASRUtils::type_to_str_python_expr(ASRUtils::expr_type(e), e);
+    }
+
+    void visit_IntentOutReset(const ASR::IntentOutReset_t &x) {
+        throw CodeGenError("dynamic intent(out) reset is not supported by the c/c++ backend",
+            x.base.base.loc);
     }
 
     void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &x) {

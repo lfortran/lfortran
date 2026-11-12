@@ -437,6 +437,7 @@ public:
 
 
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        check_dynamic_reset(x);
         global_scope = x.m_symtab;
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -893,12 +894,13 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     int64_t default_lower_bound)
 {
     co.po.always_run = true;
-    pass_unused_functions(al, asr, co.po);
-    // Internal procedures reach the variables of their host through a
-    // frame, which the visitor lowers.
-    pass_nested_vars(al, asr, co.po);
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);
     try {
+        v.check_dynamic_reset(asr);
+        pass_unused_functions(al, asr, co.po);
+        // Internal procedures reach the variables of their host through a
+        // frame, which the visitor lowers.
+        pass_nested_vars(al, asr, co.po);
         v.visit_asr((ASR::asr_t &)asr);
     } catch (const CodeGenError &e) {
         diagnostics.diagnostics.push_back(e.d);

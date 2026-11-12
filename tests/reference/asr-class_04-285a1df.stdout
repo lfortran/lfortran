@@ -118,6 +118,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_bar_a
                                 ),
                             bar_b:
                                 (Struct
@@ -170,6 +171,7 @@
                                     ()
                                     2 bar_a
                                     []
+                                    2 lcompilers_intent_out_reset_bar_b
                                 ),
                             bar_c:
                                 (Struct
@@ -222,6 +224,7 @@
                                     ()
                                     2 bar_b
                                     []
+                                    2 lcompilers_intent_out_reset_bar_c
                                 ),
                             foo:
                                 (Variable
@@ -320,6 +323,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_foo_a
                                 ),
                             foo_b:
                                 (Struct
@@ -382,6 +386,7 @@
                                     ()
                                     2 foo_a
                                     []
+                                    2 lcompilers_intent_out_reset_foo_b
                                 ),
                             foo_c:
                                 (Struct
@@ -444,6 +449,439 @@
                                     ()
                                     2 foo_b
                                     []
+                                    2 lcompilers_intent_out_reset_foo_c
+                                ),
+                            lcompilers_intent_out_reset_bar_a:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            object:
+                                                (Variable
+                                                    9
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 bar_a
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_bar_a
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 9 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_bar_b:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            object:
+                                                (Variable
+                                                    10
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 bar_b
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_bar_b
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 10 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_bar_c:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            object:
+                                                (Variable
+                                                    11
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 bar_c
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_bar_c
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 11 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_foo_a:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            object:
+                                                (Variable
+                                                    12
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(StructType
+                                                            [(Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 foo_a
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_foo_a
+                                    (FunctionType
+                                        [(StructType
+                                            [(StructType
+                                                [(Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 12 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_foo_b:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            object:
+                                                (Variable
+                                                    13
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(StructType
+                                                            [(Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 foo_b
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_foo_b
+                                    (FunctionType
+                                        [(StructType
+                                            [(StructType
+                                                [(Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 13 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_foo_c:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            object:
+                                                (Variable
+                                                    14
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(StructType
+                                                            [(Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 foo_c
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_foo_c
+                                    (FunctionType
+                                        [(StructType
+                                            [(StructType
+                                                [(Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 14 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 )
                         })
                     main

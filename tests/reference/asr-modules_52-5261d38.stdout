@@ -112,7 +112,7 @@
                                                 (ExternalSymbol
                                                     3
                                                     toml_table
-                                                    12 toml_table
+                                                    13 toml_table
                                                     module_52_tomlf_type
                                                     []
                                                     toml_table
@@ -524,7 +524,7 @@
                                 (ExternalSymbol
                                     5
                                     toml_table
-                                    12 toml_table
+                                    13 toml_table
                                     module_52_tomlf_type
                                     []
                                     toml_table
@@ -546,6 +546,79 @@
                     (SymbolTable
                         9
                         {
+                            lcompilers_intent_out_reset_toml_error:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            object:
+                                                (Variable
+                                                    11
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    9 toml_error
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_toml_error
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 11 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             toml_error:
                                 (Struct
                                     (SymbolTable
@@ -629,6 +702,7 @@
                                     ()
                                     ()
                                     []
+                                    9 lcompilers_intent_out_reset_toml_error
                                 )
                         })
                     module_52_tomlf_error
@@ -643,16 +717,85 @@
             module_52_tomlf_type:
                 (Module
                     (SymbolTable
-                        12
+                        13
                         {
+                            lcompilers_intent_out_reset_toml_table:
+                                (Function
+                                    (SymbolTable
+                                        15
+                                        {
+                                            object:
+                                                (Variable
+                                                    15
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Logical 4)
+                                                        (Logical 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    13 toml_table
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_toml_table
+                                    (FunctionType
+                                        [(StructType
+                                            [(Logical 4)
+                                            (Logical 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 15 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             toml_table:
                                 (Struct
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             implicit:
                                                 (Variable
-                                                    13
+                                                    14
                                                     implicit
                                                     []
                                                     Local
@@ -684,7 +827,7 @@
                                                 ),
                                             inline:
                                                 (Variable
-                                                    13
+                                                    14
                                                     inline
                                                     []
                                                     Local
@@ -736,6 +879,7 @@
                                     ()
                                     ()
                                     []
+                                    13 lcompilers_intent_out_reset_toml_table
                                 )
                         })
                     module_52_tomlf_type

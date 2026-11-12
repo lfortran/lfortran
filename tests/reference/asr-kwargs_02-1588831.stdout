@@ -161,6 +161,73 @@
                                     .true.
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_logger_type:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            object:
+                                                (Variable
+                                                    7
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 logger_type
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_logger_type
+                                    (FunctionType
+                                        [(StructType
+                                            []
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 7 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             log_io_error:
                                 (Function
                                     (SymbolTable
@@ -361,6 +428,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_logger_type
                                 )
                         })
                     kwargs_02_stdlib_logger

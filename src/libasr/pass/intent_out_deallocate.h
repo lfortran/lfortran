@@ -10,6 +10,11 @@ namespace LCompilers {
     // otherwise an elemental FINAL. A nonelemental scalar never handles arrays.
     ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank);
 
+    // Reserve the defining type's reset symbol before module serialization.
+    // The existing entry pass supplies its body before expression lowering.
+    void declare_intent_out_reset_helpers(Allocator &al,
+                                ASR::TranslationUnit_t &unit);
+
     void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &pass_options);
 

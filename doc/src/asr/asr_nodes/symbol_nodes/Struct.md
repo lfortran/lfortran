@@ -12,7 +12,7 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
     identifier* member_functions, abi abi, access access,
     bool is_packed, bool is_abstract, bool is_sequence,
     call_arg* initializers, expr? alignment, symbol? parent,
-    identifier* kind_params)
+    identifier* kind_params, symbol? intent_out_reset)
 ```
 
 ### Arguments
@@ -24,7 +24,7 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
 | `struct_signature` | the [StructType](../type_nodes/StructType.md) that describes an instance of this type, with `is_cstruct` true (`asr.verify.struct.signature_is_instance_type`). |
 | `dependencies` | the names of the symbols the definition refers to. |
 | `members` | the names of the data components, in declaration order. The order fixes the storage layout. |
-| `member_functions` | the names of the type-bound procedures. |
+| `member_functions` | the names of the FINAL subroutines in the defining scope. User type-bound procedures are `StructMethodDeclaration` symbols in `symtab`. |
 | `abi` | `Source` for a type defined here, `BindC` for `bind(c)`. |
 | `access` | `Public` or `Private`. |
 | `is_packed` | `true` when the layout must not be padded. |
@@ -34,6 +34,7 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
 | `alignment` | an explicit alignment in bytes, or `nil`. |
 | `parent` | the type this one extends, or `nil`. |
 | `kind_params` | the names of the kind type parameters of the type. |
+| `intent_out_reset` | the compiler-generated reset subroutine in the type's defining scope, or `nil` before synthesis or for a nonconcrete type. This is not a user-visible type-bound procedure. |
 
 ### Return values
 
@@ -54,6 +55,15 @@ A component is read with
 [StructInstanceMember](../expression_nodes/StructInstanceMember.md) and a whole
 value is built with
 [StructConstructor](../expression_nodes/StructConstructor.md).
+
+The frontend reserves `intent_out_reset` before saving module files; the
+`intent_out_deallocate` pass fills its body using the same cleanup and
+default-initialization emitters as nonpolymorphic entry handling. The
+canonical symbol reference, rather than a helper-name convention, connects
+the type and its helper across imports and separate compilation. The
+receiver must be a required scalar `type(T), intent(inout)` argument of
+exactly this defining type; the ASR verifier checks this invariant.
+See [IntentOutReset](../statement_nodes/IntentOutReset.md).
 
 ## Examples
 

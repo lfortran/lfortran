@@ -11,7 +11,7 @@
                                 (ExternalSymbol
                                     2
                                     c_associated
-                                    11 c_associated
+                                    12 c_associated
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_associated
@@ -21,7 +21,7 @@
                                 (ExternalSymbol
                                     2
                                     c_ptr
-                                    11 c_ptr
+                                    12 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -69,11 +69,11 @@
                             get_temp_filename:
                                 (Function
                                     (SymbolTable
-                                        21
+                                        24
                                         {
                                             c_tempfile:
                                                 (Variable
-                                                    21
+                                                    24
                                                     c_tempfile
                                                     []
                                                     Local
@@ -107,7 +107,7 @@
                                                 ),
                                             tempfile:
                                                 (Variable
-                                                    21
+                                                    24
                                                     tempfile
                                                     []
                                                     ReturnVar
@@ -155,11 +155,11 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 21 tempfile)
+                                        (Var 24 tempfile)
                                         (FunctionCall
                                             2 f_string~genericprocedure@f_string
                                             2 f_string
-                                            [((Var 21 c_tempfile))]
+                                            [((Var 24 c_tempfile))]
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -172,7 +172,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 21 tempfile)
+                                    (Var 24 tempfile)
                                     Public
                                     .true.
                                     .true.
@@ -181,11 +181,11 @@
                             list_files:
                                 (Function
                                     (SymbolTable
-                                        20
+                                        23
                                         {
                                             dir_entry_c:
                                                 (Variable
-                                                    20
+                                                    23
                                                     dir_entry_c
                                                     []
                                                     Local
@@ -213,7 +213,7 @@
                                                 ),
                                             dir_handle:
                                                 (Variable
-                                                    20
+                                                    23
                                                     dir_handle
                                                     []
                                                     Local
@@ -241,7 +241,7 @@
                                                 ),
                                             string_fortran:
                                                 (Variable
-                                                    20
+                                                    23
                                                     string_fortran
                                                     []
                                                     Local
@@ -296,7 +296,7 @@
                                             ()
                                             (LogicalNot
                                                 (PointerAssociated
-                                                    (Var 20 dir_entry_c)
+                                                    (Var 23 dir_entry_c)
                                                     ()
                                                     (Logical 4)
                                                     ()
@@ -308,11 +308,11 @@
                                                 ()
                                             )]
                                             [(Assignment
-                                                (Var 20 string_fortran)
+                                                (Var 23 string_fortran)
                                                 (FunctionCall
                                                     2 f_string_cptr@f_string
                                                     2 f_string
-                                                    [((Var 20 dir_entry_c))]
+                                                    [((Var 23 dir_entry_c))]
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )
@@ -364,7 +364,7 @@
                                 (ExternalSymbol
                                     4
                                     c_char
-                                    11 c_char
+                                    12 c_char
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_char
@@ -374,7 +374,7 @@
                                 (ExternalSymbol
                                     4
                                     c_ptr
-                                    11 c_ptr
+                                    12 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -384,7 +384,7 @@
                                 (ExternalSymbol
                                     4
                                     c_size_t
-                                    11 c_size_t
+                                    12 c_size_t
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_size_t
@@ -853,6 +853,77 @@
                                     .true.
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_string_t:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            object:
+                                                (Variable
+                                                    10
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 string_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_string_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 10 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             string_t:
                                 (Struct
                                     (SymbolTable
@@ -908,6 +979,7 @@
                                     ()
                                     ()
                                     []
+                                    4 lcompilers_intent_out_reset_string_t
                                 )
                         })
                     fpm_strings

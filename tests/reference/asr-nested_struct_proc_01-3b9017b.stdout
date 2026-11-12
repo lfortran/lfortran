@@ -11,7 +11,7 @@
                                 (ExternalSymbol
                                     2
                                     1_integer32complex32orderedmap_map
-                                    11 map
+                                    13 map
                                     gftl2_integer32complex32orderedmap
                                     [integer32complex32orderedmap]
                                     map
@@ -21,7 +21,7 @@
                                 (ExternalSymbol
                                     2
                                     1_omap_map_stored_value
-                                    10 stored_value
+                                    12 stored_value
                                     gftl2_integer32complex32orderedmap
                                     [omap_map]
                                     stored_value
@@ -216,18 +216,18 @@
                             integer32complex32orderedmap:
                                 (Struct
                                     (SymbolTable
-                                        11
+                                        13
                                         {
                                             insert:
                                                 (GenericProcedure
-                                                    11
+                                                    13
                                                     insert
-                                                    [11 insert_key_value]
+                                                    [13 insert_key_value]
                                                     Public
                                                 ),
                                             insert_key_value:
                                                 (StructMethodDeclaration
-                                                    11
+                                                    13
                                                     insert_key_value
                                                     ()
                                                     omap_insert_key_value
@@ -239,7 +239,7 @@
                                                 ),
                                             map:
                                                 (Variable
-                                                    11
+                                                    13
                                                     map
                                                     []
                                                     Local
@@ -305,6 +305,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_integer32complex32orderedmap
                                 ),
                             integer_kinds:
                                 (ExternalSymbol
@@ -345,6 +346,241 @@
                                     []
                                     iostat_inquire_internal_unit
                                     Public
+                                ),
+                            lcompilers_intent_out_reset_integer32complex32orderedmap:
+                                (Function
+                                    (SymbolTable
+                                        17
+                                        {
+                                            object:
+                                                (Variable
+                                                    17
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(StructType
+                                                            [(StructType
+                                                                []
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            (Complex 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 integer32complex32orderedmap
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_integer32complex32orderedmap
+                                    (FunctionType
+                                        [(StructType
+                                            [(StructType
+                                                [(StructType
+                                                    []
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                (Complex 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 17 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_omap_i_set:
+                                (Function
+                                    (SymbolTable
+                                        18
+                                        {
+                                            object:
+                                                (Variable
+                                                    18
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 omap_i_set
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_omap_i_set
+                                    (FunctionType
+                                        [(StructType
+                                            []
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 18 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_omap_map:
+                                (Function
+                                    (SymbolTable
+                                        19
+                                        {
+                                            object:
+                                                (Variable
+                                                    19
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        (Complex 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 omap_map
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_omap_map
+                                    (FunctionType
+                                        [(StructType
+                                            [(StructType
+                                                []
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            (Complex 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 19 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             logical16:
                                 (ExternalSymbol
@@ -409,11 +645,11 @@
                             omap_i_at_rc:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        14
                                         {
                                             key:
                                                 (Variable
-                                                    12
+                                                    14
                                                     key
                                                     []
                                                     In
@@ -439,7 +675,7 @@
                                                 ),
                                             rc:
                                                 (Variable
-                                                    12
+                                                    14
                                                     rc
                                                     []
                                                     Out
@@ -465,7 +701,7 @@
                                                 ),
                                             res:
                                                 (Variable
-                                                    12
+                                                    14
                                                     res
                                                     []
                                                     ReturnVar
@@ -493,7 +729,7 @@
                                                 ),
                                             this:
                                                 (Variable
-                                                    12
+                                                    14
                                                     this
                                                     []
                                                     In
@@ -561,13 +797,13 @@
                                         Host
                                     )
                                     []
-                                    [(Var 12 this)
-                                    (Var 12 key)
-                                    (Var 12 rc)]
+                                    [(Var 14 this)
+                                    (Var 14 key)
+                                    (Var 14 rc)]
                                     [(Associate
-                                        (Var 12 res)
+                                        (Var 14 res)
                                         (StructInstanceMember
-                                            (Var 12 this)
+                                            (Var 14 this)
                                             2 1_omap_map_stored_value
                                             (Complex 4)
                                             ()
@@ -575,7 +811,7 @@
                                         NoPointerBounds
                                     )
                                     (Assignment
-                                        (Var 12 rc)
+                                        (Var 14 rc)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                         .false.
@@ -583,7 +819,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 12 res)
+                                    (Var 14 res)
                                     Public
                                     .true.
                                     .true.
@@ -592,7 +828,7 @@
                             omap_i_set:
                                 (Struct
                                     (SymbolTable
-                                        9
+                                        11
                                         {
                                             
                                         })
@@ -615,17 +851,18 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_omap_i_set
                                 ),
                             omap_insert_key_value:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             1_omap_map_at_rc:
                                                 (ExternalSymbol
-                                                    13
+                                                    15
                                                     1_omap_map_at_rc
-                                                    10 at_rc
+                                                    12 at_rc
                                                     gftl2_integer32complex32orderedmap
                                                     [omap_map]
                                                     at_rc
@@ -633,7 +870,7 @@
                                                 ),
                                             key:
                                                 (Variable
-                                                    13
+                                                    15
                                                     key
                                                     []
                                                     In
@@ -659,7 +896,7 @@
                                                 ),
                                             status:
                                                 (Variable
-                                                    13
+                                                    15
                                                     status
                                                     []
                                                     Local
@@ -685,7 +922,7 @@
                                                 ),
                                             this:
                                                 (Variable
-                                                    13
+                                                    15
                                                     this
                                                     []
                                                     InOut
@@ -727,7 +964,7 @@
                                                 ),
                                             tmp:
                                                 (Variable
-                                                    13
+                                                    15
                                                     tmp
                                                     []
                                                     Local
@@ -755,7 +992,7 @@
                                                 ),
                                             tol:
                                                 (Variable
-                                                    13
+                                                    15
                                                     tol
                                                     []
                                                     Local
@@ -787,7 +1024,7 @@
                                                 ),
                                             value:
                                                 (Variable
-                                                    13
+                                                    15
                                                     value
                                                     []
                                                     In
@@ -847,13 +1084,13 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 this)
-                                    (Var 13 key)
-                                    (Var 13 value)]
+                                    [(Var 15 this)
+                                    (Var 15 key)
+                                    (Var 15 value)]
                                     [(Assignment
                                         (StructInstanceMember
                                             (StructInstanceMember
-                                                (Var 13 this)
+                                                (Var 15 this)
                                                 2 1_integer32complex32orderedmap_map
                                                 (StructType
                                                     [(StructType
@@ -873,7 +1110,7 @@
                                             (Complex 4)
                                             ()
                                         )
-                                        (Var 13 value)
+                                        (Var 15 value)
                                         ()
                                         .false.
                                         .false.
@@ -881,12 +1118,12 @@
                                         .false.
                                     )
                                     (Associate
-                                        (Var 13 tmp)
+                                        (Var 15 tmp)
                                         (FunctionCall
-                                            13 1_omap_map_at_rc
+                                            15 1_omap_map_at_rc
                                             ()
                                             [((StructInstanceMember
-                                                (Var 13 this)
+                                                (Var 15 this)
                                                 2 1_integer32complex32orderedmap_map
                                                 (StructType
                                                     [(StructType
@@ -902,14 +1139,14 @@
                                                 )
                                                 ()
                                             ))
-                                            ((Var 13 key))
-                                            ((Var 13 status))]
+                                            ((Var 15 key))
+                                            ((Var 15 status))]
                                             (Pointer
                                                 (Complex 4)
                                             )
                                             ()
                                             (StructInstanceMember
-                                                (Var 13 this)
+                                                (Var 15 this)
                                                 2 1_integer32complex32orderedmap_map
                                                 (StructType
                                                     [(StructType
@@ -937,7 +1174,7 @@
                                                     [(RealBinOp
                                                         (IntrinsicElementalFunction
                                                             Real
-                                                            [(Var 13 tmp)]
+                                                            [(Var 15 tmp)]
                                                             0
                                                             (Real 4)
                                                             ()
@@ -945,7 +1182,7 @@
                                                         Sub
                                                         (IntrinsicElementalFunction
                                                             Real
-                                                            [(Var 13 value)]
+                                                            [(Var 15 value)]
                                                             0
                                                             (Real 4)
                                                             ()
@@ -958,7 +1195,7 @@
                                                     ()
                                                 )
                                                 Gt
-                                                (Var 13 tol)
+                                                (Var 15 tol)
                                                 (Logical 4)
                                                 ()
                                             )
@@ -969,7 +1206,7 @@
                                                     [(RealBinOp
                                                         (IntrinsicElementalFunction
                                                             Aimag
-                                                            [(Var 13 tmp)]
+                                                            [(Var 15 tmp)]
                                                             0
                                                             (Real 4)
                                                             ()
@@ -977,7 +1214,7 @@
                                                         Sub
                                                         (IntrinsicElementalFunction
                                                             Aimag
-                                                            [(Var 13 value)]
+                                                            [(Var 15 value)]
                                                             0
                                                             (Real 4)
                                                             ()
@@ -990,7 +1227,7 @@
                                                     ()
                                                 )
                                                 Gt
-                                                (Var 13 tol)
+                                                (Var 15 tol)
                                                 (Logical 4)
                                                 ()
                                             )
@@ -1017,18 +1254,18 @@
                             omap_map:
                                 (Struct
                                     (SymbolTable
-                                        10
+                                        12
                                         {
                                             at:
                                                 (GenericProcedure
-                                                    10
+                                                    12
                                                     at
-                                                    [10 at_rc]
+                                                    [12 at_rc]
                                                     Public
                                                 ),
                                             at_rc:
                                                 (StructMethodDeclaration
-                                                    10
+                                                    12
                                                     at_rc
                                                     ()
                                                     omap_i_at_rc
@@ -1040,7 +1277,7 @@
                                                 ),
                                             stored_value:
                                                 (Variable
-                                                    10
+                                                    12
                                                     stored_value
                                                     []
                                                     Local
@@ -1066,7 +1303,7 @@
                                                 ),
                                             tree:
                                                 (Variable
-                                                    10
+                                                    12
                                                     tree
                                                     []
                                                     Local
@@ -1122,6 +1359,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_omap_map
                                 ),
                             output_unit:
                                 (ExternalSymbol
@@ -1305,13 +1543,13 @@
             nested_struct_proc_01:
                 (Program
                     (SymbolTable
-                        14
+                        16
                         {
                             1_insert:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     1_insert
-                                    11 insert
+                                    13 insert
                                     integer32complex32orderedmap
                                     []
                                     insert
@@ -1319,9 +1557,9 @@
                                 ),
                             1_integer32complex32orderedmap_insert_key_value:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     1_integer32complex32orderedmap_insert_key_value
-                                    11 insert_key_value
+                                    13 insert_key_value
                                     gftl2_integer32complex32orderedmap
                                     [integer32complex32orderedmap]
                                     insert_key_value
@@ -1329,7 +1567,7 @@
                                 ),
                             __module_prif_prif_dummy_team_descriptor:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     __module_prif_prif_dummy_team_descriptor
                                     4 __module_prif_prif_dummy_team_descriptor
                                     lfortran_intrinsic_iso_fortran_env
@@ -1339,7 +1577,7 @@
                                 ),
                             atomic_int_kind:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     atomic_int_kind
                                     4 atomic_int_kind
                                     lfortran_intrinsic_iso_fortran_env
@@ -1349,7 +1587,7 @@
                                 ),
                             atomic_logical_kind:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     atomic_logical_kind
                                     4 atomic_logical_kind
                                     lfortran_intrinsic_iso_fortran_env
@@ -1359,7 +1597,7 @@
                                 ),
                             character_kinds:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     character_kinds
                                     4 character_kinds
                                     lfortran_intrinsic_iso_fortran_env
@@ -1369,7 +1607,7 @@
                                 ),
                             character_storage_size:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     character_storage_size
                                     4 character_storage_size
                                     lfortran_intrinsic_iso_fortran_env
@@ -1379,7 +1617,7 @@
                                 ),
                             compiler_options:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     compiler_options
                                     4 compiler_options
                                     lfortran_intrinsic_iso_fortran_env
@@ -1389,7 +1627,7 @@
                                 ),
                             compiler_version:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     compiler_version
                                     4 compiler_version
                                     lfortran_intrinsic_iso_fortran_env
@@ -1399,7 +1637,7 @@
                                 ),
                             current_team:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     current_team
                                     4 current_team
                                     lfortran_intrinsic_iso_fortran_env
@@ -1409,7 +1647,7 @@
                                 ),
                             error_unit:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     error_unit
                                     4 error_unit
                                     lfortran_intrinsic_iso_fortran_env
@@ -1419,7 +1657,7 @@
                                 ),
                             file_storage_size:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     file_storage_size
                                     4 file_storage_size
                                     lfortran_intrinsic_iso_fortran_env
@@ -1429,7 +1667,7 @@
                                 ),
                             i32:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     i32
                                     2 i32
                                     gftl2_integer32complex32orderedmap
@@ -1439,7 +1677,7 @@
                                 ),
                             initial_team:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     initial_team
                                     4 initial_team
                                     lfortran_intrinsic_iso_fortran_env
@@ -1449,7 +1687,7 @@
                                 ),
                             input_unit:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     input_unit
                                     4 input_unit
                                     lfortran_intrinsic_iso_fortran_env
@@ -1459,7 +1697,7 @@
                                 ),
                             int16:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     int16
                                     4 int16
                                     lfortran_intrinsic_iso_fortran_env
@@ -1469,7 +1707,7 @@
                                 ),
                             int32:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     int32
                                     4 int32
                                     lfortran_intrinsic_iso_fortran_env
@@ -1479,7 +1717,7 @@
                                 ),
                             int64:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     int64
                                     4 int64
                                     lfortran_intrinsic_iso_fortran_env
@@ -1489,7 +1727,7 @@
                                 ),
                             int8:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     int8
                                     4 int8
                                     lfortran_intrinsic_iso_fortran_env
@@ -1499,7 +1737,7 @@
                                 ),
                             integer32complex32orderedmap:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     integer32complex32orderedmap
                                     2 integer32complex32orderedmap
                                     gftl2_integer32complex32orderedmap
@@ -1509,7 +1747,7 @@
                                 ),
                             integer_kinds:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     integer_kinds
                                     4 integer_kinds
                                     lfortran_intrinsic_iso_fortran_env
@@ -1519,7 +1757,7 @@
                                 ),
                             iostat_end:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     iostat_end
                                     4 iostat_end
                                     lfortran_intrinsic_iso_fortran_env
@@ -1529,7 +1767,7 @@
                                 ),
                             iostat_eor:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     iostat_eor
                                     4 iostat_eor
                                     lfortran_intrinsic_iso_fortran_env
@@ -1539,7 +1777,7 @@
                                 ),
                             iostat_inquire_internal_unit:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     iostat_inquire_internal_unit
                                     4 iostat_inquire_internal_unit
                                     lfortran_intrinsic_iso_fortran_env
@@ -1549,7 +1787,7 @@
                                 ),
                             key:
                                 (Variable
-                                    14
+                                    16
                                     key
                                     []
                                     Local
@@ -1575,7 +1813,7 @@
                                 ),
                             logical16:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     logical16
                                     4 logical16
                                     lfortran_intrinsic_iso_fortran_env
@@ -1585,7 +1823,7 @@
                                 ),
                             logical32:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     logical32
                                     4 logical32
                                     lfortran_intrinsic_iso_fortran_env
@@ -1595,7 +1833,7 @@
                                 ),
                             logical64:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     logical64
                                     4 logical64
                                     lfortran_intrinsic_iso_fortran_env
@@ -1605,7 +1843,7 @@
                                 ),
                             logical8:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     logical8
                                     4 logical8
                                     lfortran_intrinsic_iso_fortran_env
@@ -1615,7 +1853,7 @@
                                 ),
                             logical_kinds:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     logical_kinds
                                     4 logical_kinds
                                     lfortran_intrinsic_iso_fortran_env
@@ -1625,7 +1863,7 @@
                                 ),
                             my_map:
                                 (Variable
-                                    14
+                                    16
                                     my_map
                                     []
                                     Local
@@ -1649,7 +1887,7 @@
                                         .true.
                                         .false.
                                     )
-                                    14 integer32complex32orderedmap
+                                    16 integer32complex32orderedmap
                                     Source
                                     Public
                                     Required
@@ -1667,7 +1905,7 @@
                                 ),
                             numeric_storage_size:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     numeric_storage_size
                                     4 numeric_storage_size
                                     lfortran_intrinsic_iso_fortran_env
@@ -1677,7 +1915,7 @@
                                 ),
                             omap_i_at_rc:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     omap_i_at_rc
                                     2 omap_i_at_rc
                                     gftl2_integer32complex32orderedmap
@@ -1687,7 +1925,7 @@
                                 ),
                             omap_i_set:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     omap_i_set
                                     2 omap_i_set
                                     gftl2_integer32complex32orderedmap
@@ -1697,7 +1935,7 @@
                                 ),
                             omap_insert_key_value:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     omap_insert_key_value
                                     2 omap_insert_key_value
                                     gftl2_integer32complex32orderedmap
@@ -1707,7 +1945,7 @@
                                 ),
                             omap_map:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     omap_map
                                     2 omap_map
                                     gftl2_integer32complex32orderedmap
@@ -1717,7 +1955,7 @@
                                 ),
                             output_unit:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     output_unit
                                     4 output_unit
                                     lfortran_intrinsic_iso_fortran_env
@@ -1727,7 +1965,7 @@
                                 ),
                             parent_team:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     parent_team
                                     4 parent_team
                                     lfortran_intrinsic_iso_fortran_env
@@ -1737,7 +1975,7 @@
                                 ),
                             r32:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     r32
                                     2 r32
                                     gftl2_integer32complex32orderedmap
@@ -1747,7 +1985,7 @@
                                 ),
                             real128:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     real128
                                     4 real128
                                     lfortran_intrinsic_iso_fortran_env
@@ -1757,7 +1995,7 @@
                                 ),
                             real16:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     real16
                                     4 real16
                                     lfortran_intrinsic_iso_fortran_env
@@ -1767,7 +2005,7 @@
                                 ),
                             real32:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     real32
                                     4 real32
                                     lfortran_intrinsic_iso_fortran_env
@@ -1777,7 +2015,7 @@
                                 ),
                             real64:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     real64
                                     4 real64
                                     lfortran_intrinsic_iso_fortran_env
@@ -1787,7 +2025,7 @@
                                 ),
                             real_kinds:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     real_kinds
                                     4 real_kinds
                                     lfortran_intrinsic_iso_fortran_env
@@ -1797,7 +2035,7 @@
                                 ),
                             stat_failed_image:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     stat_failed_image
                                     4 stat_failed_image
                                     lfortran_intrinsic_iso_fortran_env
@@ -1807,7 +2045,7 @@
                                 ),
                             stat_locked:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     stat_locked
                                     4 stat_locked
                                     lfortran_intrinsic_iso_fortran_env
@@ -1817,7 +2055,7 @@
                                 ),
                             stat_locked_other_image:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     stat_locked_other_image
                                     4 stat_locked_other_image
                                     lfortran_intrinsic_iso_fortran_env
@@ -1827,7 +2065,7 @@
                                 ),
                             stat_stopped_image:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     stat_stopped_image
                                     4 stat_stopped_image
                                     lfortran_intrinsic_iso_fortran_env
@@ -1837,7 +2075,7 @@
                                 ),
                             stat_unlocked:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     stat_unlocked
                                     4 stat_unlocked
                                     lfortran_intrinsic_iso_fortran_env
@@ -1847,7 +2085,7 @@
                                 ),
                             stat_unlocked_failed_image:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     stat_unlocked_failed_image
                                     4 stat_unlocked_failed_image
                                     lfortran_intrinsic_iso_fortran_env
@@ -1857,7 +2095,7 @@
                                 ),
                             team_type:
                                 (ExternalSymbol
-                                    14
+                                    16
                                     team_type
                                     4 team_type
                                     lfortran_intrinsic_iso_fortran_env
@@ -1867,7 +2105,7 @@
                                 ),
                             value:
                                 (Variable
-                                    14
+                                    16
                                     value
                                     []
                                     Local
@@ -1895,7 +2133,7 @@
                     nested_struct_proc_01
                     [gftl2_integer32complex32orderedmap]
                     [(Assignment
-                        (Var 14 key)
+                        (Var 16 key)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                         .false.
@@ -1904,7 +2142,7 @@
                         .false.
                     )
                     (Assignment
-                        (Var 14 value)
+                        (Var 16 value)
                         (ComplexConstructor
                             (RealConstant
                                 2.000000
@@ -1928,12 +2166,12 @@
                         .false.
                     )
                     (SubroutineCall
-                        14 1_integer32complex32orderedmap_insert_key_value
-                        14 1_insert
-                        [((Var 14 my_map))
-                        ((Var 14 key))
-                        ((Var 14 value))]
-                        (Var 14 my_map)
+                        16 1_integer32complex32orderedmap_insert_key_value
+                        16 1_insert
+                        [((Var 16 my_map))
+                        ((Var 16 key))
+                        ((Var 16 value))]
+                        (Var 16 my_map)
                         .false.
                     )
                     (Print

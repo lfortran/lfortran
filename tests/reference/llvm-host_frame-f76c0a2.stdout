@@ -79,6 +79,17 @@ FINALIZE_SYMTABLE_inner:                          ; preds = %return
   ret void
 }
 
+define internal void @outer.lcompilers_intent_out_reset_frame(%frame.4* %object) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset_frame
+
+FINALIZE_SYMTABLE_lcompilers_intent_out_reset_frame: ; preds = %return
+  ret void
+}
+
 declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, i32, i32, i8**, ...)

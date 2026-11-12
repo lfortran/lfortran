@@ -5,13 +5,13 @@
             fpm_git:
                 (Module
                     (SymbolTable
-                        11
+                        14
                         {
                             1_git_target_t_object:
                                 (ExternalSymbol
-                                    11
+                                    14
                                     1_git_target_t_object
-                                    12 object
+                                    15 object
                                     fpm_git
                                     [git_target_t]
                                     object
@@ -19,9 +19,9 @@
                                 ),
                             1_git_target_t_url:
                                 (ExternalSymbol
-                                    11
+                                    14
                                     1_git_target_t_url
-                                    12 url
+                                    15 url
                                     fpm_git
                                     [git_target_t]
                                     url
@@ -30,11 +30,11 @@
                             git_target_branch:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        16
                                         {
                                             branch:
                                                 (Variable
-                                                    13
+                                                    16
                                                     branch
                                                     []
                                                     In
@@ -60,7 +60,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    13
+                                                    16
                                                     self
                                                     []
                                                     ReturnVar
@@ -78,7 +78,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    11 git_target_t
+                                                    14 git_target_t
                                                     Source
                                                     Public
                                                     Required
@@ -96,7 +96,7 @@
                                                 ),
                                             url:
                                                 (Variable
-                                                    13
+                                                    16
                                                     url
                                                     []
                                                     In
@@ -149,18 +149,18 @@
                                         Host
                                     )
                                     []
-                                    [(Var 13 url)
-                                    (Var 13 branch)]
+                                    [(Var 16 url)
+                                    (Var 16 branch)]
                                     [(Assignment
                                         (StructInstanceMember
-                                            (Var 13 self)
-                                            11 1_git_target_t_url
+                                            (Var 16 self)
+                                            14 1_git_target_t_url
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 13 url)
+                                        (Var 16 url)
                                         ()
                                         .false.
                                         .false.
@@ -169,21 +169,21 @@
                                     )
                                     (Assignment
                                         (StructInstanceMember
-                                            (Var 13 self)
-                                            11 1_git_target_t_object
+                                            (Var 16 self)
+                                            14 1_git_target_t_object
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 13 branch)
+                                        (Var 16 branch)
                                         ()
                                         .false.
                                         .false.
                                         .false.
                                         .false.
                                     )]
-                                    (Var 13 self)
+                                    (Var 16 self)
                                     Public
                                     .true.
                                     .true.
@@ -192,11 +192,11 @@
                             git_target_t:
                                 (Struct
                                     (SymbolTable
-                                        12
+                                        15
                                         {
                                             object:
                                                 (Variable
-                                                    12
+                                                    15
                                                     object
                                                     []
                                                     Local
@@ -224,7 +224,7 @@
                                                 ),
                                             url:
                                                 (Variable
-                                                    12
+                                                    15
                                                     url
                                                     []
                                                     Local
@@ -276,6 +276,84 @@
                                     ()
                                     ()
                                     []
+                                    14 lcompilers_intent_out_reset_git_target_t
+                                ),
+                            lcompilers_intent_out_reset_git_target_t:
+                                (Function
+                                    (SymbolTable
+                                        17
+                                        {
+                                            object:
+                                                (Variable
+                                                    17
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    14 git_target_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_git_target_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 17 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 )
                         })
                     fpm_git
@@ -441,6 +519,7 @@
                                     ()
                                     ()
                                     []
+                                    4 lcompilers_intent_out_reset_dependency_config_t
                                 ),
                             error_t:
                                 (Struct
@@ -497,12 +576,13 @@
                                     ()
                                     ()
                                     []
+                                    4 lcompilers_intent_out_reset_error_t
                                 ),
                             git_target_branch:
                                 (ExternalSymbol
                                     4
                                     git_target_branch
-                                    11 git_target_branch
+                                    14 git_target_branch
                                     fpm_git
                                     []
                                     git_target_branch
@@ -512,20 +592,261 @@
                                 (ExternalSymbol
                                     4
                                     git_target_t
-                                    11 git_target_t
+                                    14 git_target_t
                                     fpm_git
                                     []
                                     git_target_t
                                     Public
                                 ),
-                            new_dependencies:
+                            lcompilers_intent_out_reset_dependency_config_t:
                                 (Function
                                     (SymbolTable
                                         8
                                         {
-                                            deps:
+                                            object:
                                                 (Variable
                                                     8
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 dependency_config_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_dependency_config_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (StructType
+                                                    [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 8 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_error_t:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            object:
+                                                (Variable
+                                                    9
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 error_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_error_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 9 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_toml_table:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            object:
+                                                (Variable
+                                                    10
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Logical 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 toml_table
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_toml_table
+                                    (FunctionType
+                                        [(StructType
+                                            [(Logical 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 10 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            new_dependencies:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            deps:
+                                                (Variable
+                                                    11
                                                     deps
                                                     []
                                                     Out
@@ -582,7 +903,7 @@
                                                 ),
                                             error:
                                                 (Variable
-                                                    8
+                                                    11
                                                     error
                                                     []
                                                     Out
@@ -617,7 +938,7 @@
                                                 ),
                                             root:
                                                 (Variable
-                                                    8
+                                                    11
                                                     root
                                                     []
                                                     In
@@ -643,7 +964,7 @@
                                                 ),
                                             table:
                                                 (Variable
-                                                    8
+                                                    11
                                                     table
                                                     []
                                                     InOut
@@ -738,10 +1059,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 8 deps)
-                                    (Var 8 table)
-                                    (Var 8 root)
-                                    (Var 8 error)]
+                                    [(Var 11 deps)
+                                    (Var 11 table)
+                                    (Var 11 root)
+                                    (Var 11 error)]
                                     []
                                     ()
                                     Public
@@ -752,11 +1073,11 @@
                             new_dependency:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        12
                                         {
                                             obj:
                                                 (Variable
-                                                    9
+                                                    12
                                                     obj
                                                     []
                                                     Local
@@ -784,7 +1105,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    9
+                                                    12
                                                     self
                                                     []
                                                     Out
@@ -833,7 +1154,7 @@
                                                 ),
                                             url:
                                                 (Variable
-                                                    9
+                                                    12
                                                     url
                                                     []
                                                     Local
@@ -900,14 +1221,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 9 self)]
+                                    [(Var 12 self)]
                                     [(If
                                         ()
                                         (LogicalNot
                                             (IntrinsicImpureFunction
                                                 Allocated
                                                 [(StructInstanceMember
-                                                    (Var 9 self)
+                                                    (Var 12 self)
                                                     4 1_dependency_config_t_git
                                                     (Allocatable
                                                         (StructType
@@ -933,7 +1254,7 @@
                                         )
                                         [(Allocate
                                             [((StructInstanceMember
-                                                (Var 9 self)
+                                                (Var 12 self)
                                                 4 1_dependency_config_t_git
                                                 (Allocatable
                                                     (StructType
@@ -963,7 +1284,7 @@
                                     )
                                     (Assignment
                                         (StructInstanceMember
-                                            (Var 9 self)
+                                            (Var 12 self)
                                             4 1_dependency_config_t_git
                                             (Allocatable
                                                 (StructType
@@ -983,8 +1304,8 @@
                                         (FunctionCall
                                             4 git_target_branch
                                             ()
-                                            [((Var 9 url))
-                                            ((Var 9 obj))]
+                                            [((Var 12 url))
+                                            ((Var 12 obj))]
                                             (StructType
                                                 [(Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
@@ -1068,6 +1389,7 @@
                                     ()
                                     ()
                                     []
+                                    4 lcompilers_intent_out_reset_toml_table
                                 )
                         })
                     fpm_manifest_dependency
@@ -1108,7 +1430,7 @@
                                 (ExternalSymbol
                                     2
                                     git_target_branch
-                                    11 git_target_branch
+                                    14 git_target_branch
                                     fpm_git
                                     []
                                     git_target_branch
@@ -1118,7 +1440,7 @@
                                 (ExternalSymbol
                                     2
                                     git_target_t
-                                    11 git_target_t
+                                    14 git_target_t
                                     fpm_git
                                     []
                                     git_target_t

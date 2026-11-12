@@ -15,4 +15,11 @@ y = f(1)
 call g(i)
 a%p => sub
 call a%p(1)
+
+contains
+
+subroutine lcompilers_intent_out_reset_t(object)
+    type(t), intent(inout) :: object
+end subroutine lcompilers_intent_out_reset_t
+
 end program prog_ext_sub

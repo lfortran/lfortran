@@ -6,7 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "pass_dead_array_store-dead_array_store_01-f853364.stdout",
-    "stdout_hash": "06ed0e1ec4ae9da4782068e6aeef86ddd73833cc48923e57cc12ab57",
+    "stdout_hash": "c5ea227342ae90ccc8ea688a567a4b43a3d74a494de5fd705b62e5a4",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

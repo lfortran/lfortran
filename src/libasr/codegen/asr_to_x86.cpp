@@ -88,6 +88,11 @@ public:
         }
     }
 
+    void visit_IntentOutReset(const ASR::IntentOutReset_t &x) {
+        throw CodeGenError("dynamic intent(out) reset is not supported by the x86 backend",
+            x.base.base.loc);
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         // All loose statements must be converted to a function, so the items
         // must be empty:

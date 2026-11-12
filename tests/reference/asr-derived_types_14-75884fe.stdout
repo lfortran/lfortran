@@ -198,6 +198,84 @@
                                     ()
                                     ()
                                     []
+                                    4 lcompilers_intent_out_reset_enum_type
+                                ),
+                            lcompilers_intent_out_reset_enum_type:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            object:
+                                                (Variable
+                                                    6
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 enum_type
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_enum_type
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 6 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             toml_type:
                                 (Variable
@@ -361,11 +439,11 @@
                             check:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             raw:
                                                 (Variable
-                                                    7
+                                                    8
                                                     raw
                                                     []
                                                     In
@@ -391,7 +469,7 @@
                                                 ),
                                             res:
                                                 (Variable
-                                                    7
+                                                    8
                                                     res
                                                     []
                                                     ReturnVar
@@ -433,9 +511,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 raw)]
+                                    [(Var 8 raw)]
                                     [(Assignment
-                                        (Var 7 res)
+                                        (Var 8 res)
                                         (LogicalConstant
                                             .true.
                                             (Logical 4)
@@ -446,7 +524,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 7 res)
+                                    (Var 8 res)
                                     Public
                                     .true.
                                     .true.
@@ -455,11 +533,11 @@
                             toml_get_value_type:
                                 (Function
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             raw:
                                                 (Variable
-                                                    6
+                                                    7
                                                     raw
                                                     []
                                                     In
@@ -485,7 +563,7 @@
                                                 ),
                                             vtype:
                                                 (Variable
-                                                    6
+                                                    7
                                                     vtype
                                                     []
                                                     ReturnVar
@@ -527,19 +605,19 @@
                                         Host
                                     )
                                     [check]
-                                    [(Var 6 raw)]
+                                    [(Var 7 raw)]
                                     [(If
                                         ()
                                         (FunctionCall
                                             2 check
                                             ()
-                                            [((Var 6 raw))]
+                                            [((Var 7 raw))]
                                             (Logical 4)
                                             ()
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 6 vtype)
+                                            (Var 7 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
                                                 2 1_enum_type_string
@@ -560,13 +638,13 @@
                                         (FunctionCall
                                             2 check
                                             ()
-                                            [((Var 6 raw))]
+                                            [((Var 7 raw))]
                                             (Logical 4)
                                             ()
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 6 vtype)
+                                            (Var 7 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
                                                 2 1_enum_type_boolean
@@ -587,13 +665,13 @@
                                         (FunctionCall
                                             2 check
                                             ()
-                                            [((Var 6 raw))]
+                                            [((Var 7 raw))]
                                             (Logical 4)
                                             ()
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 6 vtype)
+                                            (Var 7 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
                                                 2 1_enum_type_int
@@ -614,13 +692,13 @@
                                         (FunctionCall
                                             2 check
                                             ()
-                                            [((Var 6 raw))]
+                                            [((Var 7 raw))]
                                             (Logical 4)
                                             ()
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 6 vtype)
+                                            (Var 7 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
                                                 2 1_enum_type_float
@@ -641,13 +719,13 @@
                                         (FunctionCall
                                             2 check
                                             ()
-                                            [((Var 6 raw))]
+                                            [((Var 7 raw))]
                                             (Logical 4)
                                             ()
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 6 vtype)
+                                            (Var 7 vtype)
                                             (StructInstanceMember
                                                 (Var 2 toml_type)
                                                 2 1_enum_type_datetime
@@ -664,7 +742,7 @@
                                         []
                                     )
                                     (Assignment
-                                        (Var 6 vtype)
+                                        (Var 7 vtype)
                                         (StructInstanceMember
                                             (Var 2 toml_type)
                                             2 1_enum_type_invalid
@@ -677,7 +755,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 6 vtype)
+                                    (Var 7 vtype)
                                     Public
                                     .true.
                                     .true.
@@ -707,7 +785,7 @@
             main:
                 (Program
                     (SymbolTable
-                        8
+                        9
                         {
                             
                         })

@@ -13,7 +13,7 @@
                                 (ExternalSymbol
                                     2
                                     1_test_c_ptr_02_test_obj_ptr
-                                    13 ptr
+                                    15 ptr
                                     test_obj
                                     []
                                     ptr
@@ -554,6 +554,77 @@
                                     []
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_test_obj:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            object:
+                                                (Variable
+                                                    16
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(CPtr
+                                                            CPointer
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 test_obj
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_test_obj
+                                    (FunctionType
+                                        [(StructType
+                                            [(CPtr
+                                                CPointer
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 16 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             r_ptr:
                                 (Variable
                                     2
@@ -619,11 +690,11 @@
                             test_obj:
                                 (Struct
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             ptr:
                                                 (Variable
-                                                    13
+                                                    15
                                                     ptr
                                                     [c_ptr]
                                                     Local
@@ -681,6 +752,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_test_obj
                                 )
                         })
                     test_c_ptr_02

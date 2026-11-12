@@ -60,6 +60,7 @@
         :alignment nil
         :parent nil
         :kind_params []
+        :intent_out_reset nil
       )
       "__lfortran_gpu_kernel_0" (Function
         :symtab (SymbolTable

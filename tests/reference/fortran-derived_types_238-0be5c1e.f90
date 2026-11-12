@@ -22,6 +22,10 @@ subroutine fill1(d)
     d(3:1:-1) = g%w + real(1, kind=4)
 end subroutine fill1
 
+subroutine lcompilers_intent_out_reset_tw(object)
+    type(tw), intent(inout) :: object
+end subroutine lcompilers_intent_out_reset_tw
+
 end module derived_types_238_g
 
 module derived_types_238_m
@@ -61,7 +65,7 @@ subroutine add_col(a, j)
 end subroutine add_col
 
 subroutine add_poly(a, c)
-    type(t), intent(in) :: a
+    class(t), intent(in) :: a
     real(4), dimension(:), intent(out) :: c
     c = a%x*a%y
 end subroutine add_poly
@@ -84,6 +88,14 @@ subroutine fixed(a, c)
     real(4), dimension(:), intent(out) :: c
     c = a%w + real(1, kind=4)
 end subroutine fixed
+
+subroutine lcompilers_intent_out_reset_inner(object)
+    type(inner), intent(inout) :: object
+end subroutine lcompilers_intent_out_reset_inner
+
+subroutine lcompilers_intent_out_reset_t(object)
+    type(t), intent(inout) :: object
+end subroutine lcompilers_intent_out_reset_t
 
 subroutine neg(a, c)
     type(t), intent(in) :: a

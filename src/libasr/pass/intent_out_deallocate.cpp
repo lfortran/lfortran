@@ -5,6 +5,7 @@
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
+#include <libasr/asr_builder.h>
 #include <libasr/pass/intent_out_deallocate.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
@@ -30,22 +31,13 @@ ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank) {
     return elemental;
 }
 
-// Deallocate allocatable `intent(out)` dummy arguments at function entry.
-//
-// Notes / limitations:
-//
-// - This pass only inserts an explicit `deallocate()` statement guarded by
-//   `allocated()` (and additionally by `present()` for optional dummies).
-//   Correct finalization / deep deallocation semantics are handled downstream by
-//   the runtime/codegen and are currently incomplete in some cases (#9097).
-//
-// - It only considers dummy arguments that appear as `Var` entries in
-//   `Function_t::m_args` and are `allocatable` with `intent(out)`. It does not
-//   handle pointers, components, or more complex argument expressions.
-//
-// - We intentionally skip compiler-generated intrinsic implementations
-//   (`deftype == Implementation`) to avoid changing their internal ownership
-//   conventions.
+// Establish INTENT(OUT) entry semantics in ordinary ASR. A polymorphic
+// nonallocatable dummy dispatches once to its dynamic type's concrete helper;
+// that helper shares the cleanup and initialization emitters below. The helper
+// is part of the defining scope, not a Fortran type-bound procedure. Root
+// finalization remains separate; dynamic root FINAL dispatch is not added here.
+// Compiler-generated intrinsic implementations retain their own ownership
+// conventions.
 class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDeallocateVisitor>
 {
     Allocator &al;
@@ -780,8 +772,14 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         if (presence != ASR::presenceType::Optional) {
             return stmt_to_wrap;
         }
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        body.push_back(al, stmt_to_wrap);
+        return make_presence_guard(loc, var_expr, body);
+    }
 
-        // Create present(var_expr) check
+    ASR::stmt_t* make_presence_guard(const Location &loc,
+            ASR::expr_t* var_expr, Vec<ASR::stmt_t*> &body) {
         ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));  // 4 = default logical kind
         Vec<ASR::expr_t*> present_args;
         present_args.reserve(al, 1);
@@ -792,17 +790,35 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present),
             present_args.p, present_args.n, 0, logical_type, nullptr));
 
-        // Wrap stmt_to_wrap in: if (present(var_expr)) then stmt_to_wrap end if
-        Vec<ASR::stmt_t*> present_body;
-        present_body.reserve(al, 1);
-        present_body.push_back(al, stmt_to_wrap);
-
         return ASRUtils::STMT(ASR::make_If_t(
-            al, loc, nullptr, is_present, present_body.p, present_body.n, nullptr, 0));
+            al, loc, nullptr, is_present, body.p, body.n, nullptr, 0));
     }
 
 public:
     IntentOutDeallocateVisitor(Allocator& al_) : al(al_) {}
+
+    void build_reset_helper(ASR::Struct_t &st) {
+        if (st.m_intent_out_reset == nullptr) return;
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(st.m_intent_out_reset));
+        if (ASRUtils::get_FunctionType(fn)->m_abi ==
+                ASR::abiType::ExternalUndefined) return;
+        const Location &loc = st.base.base.loc;
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 4);
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(
+            ASR::make_Logical_t(al, loc, 4));
+        // The root FINAL call remains with the caller. Allocatable components'
+        // FINAL procedures are run by ordinary explicit deallocation.
+        emit_struct_component_finalize_stmts(fn->m_args[0], &st,
+            fn->m_symtab, loc, body);
+        emit_struct_cleanup_stmts(fn->m_args[0], &st, fn->m_symtab,
+            loc, logical_type, body);
+        emit_struct_default_init_stmts(fn->m_args[0], &st,
+            fn->m_symtab, loc, body);
+        fn->m_body = body.p;
+        fn->n_body = body.n;
+    }
 
     // What an intent(out) dummy of derived type gets on entry, less the
     // finalization; see initialize_function_result_on_entry.
@@ -914,6 +930,40 @@ public:
 
         Location loc = arg_var->base.base.loc;
         ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));  // 4 = default logical kind
+
+        if (!ASRUtils::is_allocatable_or_pointer(arg_var->m_type) &&
+                ASRUtils::is_class_type(ASRUtils::extract_type(arg_var->m_type))) {
+            ASR::expr_t* object = ASRUtils::EXPR(
+                ASR::make_Var_t(al, loc, arg_sym));
+            Vec<ASR::stmt_t*> entry;
+            entry.reserve(al, 2);
+            ASR::symbol_t* declared = ASRUtils::symbol_get_past_external(
+                arg_var->m_type_declaration);
+            // Preserve existing declared-type root finalization, without
+            // claiming dynamic root FINAL dispatch (#17550).
+            if (!ASRUtils::is_array(arg_var->m_type) && declared &&
+                    ASR::is_a<ASR::Struct_t>(*declared)) {
+                emit_final_calls(object, ASR::down_cast<ASR::Struct_t>(declared),
+                    xx.m_symtab, loc, entry);
+            }
+            auto reset = [&](ASR::expr_t* element, Vec<ASR::stmt_t*>& body) {
+                body.push_back(al, ASRUtils::STMT(
+                    ASR::make_IntentOutReset_t(al, loc, element)));
+            };
+            if (ASRUtils::is_array(arg_var->m_type)) {
+                emit_per_element_stmts(object, "_intent_out_reset_idx_",
+                    xx.m_symtab, loc, entry, reset);
+            } else {
+                reset(object, entry);
+            }
+            // One presence guard encloses both finalization and reset.
+            if (arg_var->m_presence == ASR::presenceType::Optional) {
+                dealloc_stmts.push_back(al, make_presence_guard(loc, object, entry));
+            } else {
+                for (ASR::stmt_t* stmt : entry) dealloc_stmts.push_back(al, stmt);
+            }
+            return;
+        }
 
         // Handle allocatable arguments (scalars, arrays, or structs)
         // CRITICAL: If the struct itself is allocatable, deallocate it as a whole.
@@ -1106,11 +1156,59 @@ public:
     }
 };
 
+namespace {
+
+class CollectResetTypes : public ASR::BaseWalkVisitor<CollectResetTypes> {
+public:
+    std::vector<ASR::Struct_t*> types;
+    void visit_Struct(const ASR::Struct_t &x) {
+        // An abstract type has no concrete instances. class(*) has no
+        // defining derived type; intrinsic dynamic types need no reset.
+        if (!x.m_is_abstract && x.n_kind_params == 0 &&
+                !ASRUtils::is_unlimited_polymorphic_type(x.m_struct_signature)) {
+            types.push_back(const_cast<ASR::Struct_t*>(&x));
+        }
+    }
+};
+
+} // namespace
+
+void declare_intent_out_reset_helpers(Allocator &al,
+        ASR::TranslationUnit_t &unit) {
+    CollectResetTypes collect;
+    collect.visit_TranslationUnit(unit);
+    for (ASR::Struct_t* st : collect.types) {
+        if (st->m_intent_out_reset != nullptr) continue;
+        SymbolTable* parent = st->m_symtab->parent;
+        const Location &loc = st->base.base.loc;
+        std::string name = parent->get_unique_name(
+            "lcompilers_intent_out_reset_" + std::string(st->m_name), false);
+        SymbolTable* scope = al.make_new<SymbolTable>(parent);
+        ASRUtils::ASRBuilder b(al, loc);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 1);
+        args.push_back(al, b.Variable(scope, "object", st->m_struct_signature,
+            ASR::intentType::InOut, &st->base));
+        ASR::symbol_t* helper = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Function_t_util(al, loc, scope, s2c(al, name),
+                nullptr, 0, args.p, args.n, nullptr, 0, nullptr,
+                ASR::abiType::Source, ASR::accessType::Private,
+                ASR::deftypeType::Implementation, nullptr, false, false,
+                false, false, false, nullptr, 0, false, false, false));
+        parent->add_symbol(name, helper);
+        st->m_intent_out_reset = helper;
+    }
+}
+
 
 void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
                                 const PassOptions &/*pass_options*/) {
-    // Deallocate intent(out) allocatable arguments at function entry
+    // Also cover types synthesized by earlier passes.
+    declare_intent_out_reset_helpers(al, unit);
     IntentOutDeallocateVisitor iod(al);
+    CollectResetTypes collect;
+    collect.visit_TranslationUnit(unit);
+    for (ASR::Struct_t* st : collect.types) iod.build_reset_helper(*st);
     iod.visit_TranslationUnit(unit);
 
     PassUtils::UpdateDependenciesVisitor u(al);

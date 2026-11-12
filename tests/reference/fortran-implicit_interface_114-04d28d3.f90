@@ -35,6 +35,10 @@ subroutine incr(x)
     x = x + 1
 end subroutine incr
 
+subroutine lcompilers_intent_out_reset_t(object)
+    type(t), intent(inout) :: object
+end subroutine lcompilers_intent_out_reset_t
+
 subroutine touch(n)
     integer(4), intent(in) :: n
     if (n /= 1) then

@@ -5,16 +5,16 @@
             class_default_select_type:
                 (Module
                     (SymbolTable
-                        12
+                        14
                         {
                             enum_stat:
                                 (Struct
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             fatal:
                                                 (Variable
-                                                    13
+                                                    15
                                                     fatal
                                                     []
                                                     Local
@@ -44,7 +44,7 @@
                                                 ),
                                             success:
                                                 (Variable
-                                                    13
+                                                    15
                                                     success
                                                     []
                                                     Local
@@ -90,15 +90,85 @@
                                     ()
                                     ()
                                     []
+                                    14 lcompilers_intent_out_reset_enum_stat
+                                ),
+                            lcompilers_intent_out_reset_enum_stat:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            object:
+                                                (Variable
+                                                    16
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    14 enum_stat
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_enum_stat
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)
+                                            (Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 16 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             toml_stat:
                                 (Variable
-                                    12
+                                    14
                                     toml_stat
                                     []
                                     Local
                                     (StructConstant
-                                        12 enum_stat
+                                        14 enum_stat
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
@@ -110,7 +180,7 @@
                                         )
                                     )
                                     (StructConstant
-                                        12 enum_stat
+                                        14 enum_stat
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
@@ -129,7 +199,7 @@
                                         .true.
                                         .false.
                                     )
-                                    12 enum_stat
+                                    14 enum_stat
                                     Source
                                     Public
                                     Required
@@ -164,7 +234,7 @@
                                 (ExternalSymbol
                                     4
                                     1_enum_stat
-                                    12 enum_stat
+                                    14 enum_stat
                                     class_default_select_type
                                     []
                                     enum_stat
@@ -174,7 +244,7 @@
                                 (ExternalSymbol
                                     4
                                     1_enum_stat_fatal
-                                    13 fatal
+                                    15 fatal
                                     class_default_select_type
                                     [enum_stat]
                                     fatal
@@ -184,7 +254,7 @@
                                 (ExternalSymbol
                                     4
                                     1_enum_stat_success
-                                    13 success
+                                    15 success
                                     class_default_select_type
                                     [enum_stat]
                                     success
@@ -559,11 +629,149 @@
                                     .true.
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_toml_table:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            object:
+                                                (Variable
+                                                    11
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Logical 4)
+                                                        (Logical 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 toml_table
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_toml_table
+                                    (FunctionType
+                                        [(StructType
+                                            [(Logical 4)
+                                            (Logical 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 11 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_toml_value:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            object:
+                                                (Variable
+                                                    12
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Real 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 toml_value
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_toml_value
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)
+                                            (Real 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 12 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             toml_stat:
                                 (ExternalSymbol
                                     4
                                     toml_stat
-                                    12 toml_stat
+                                    14 toml_stat
                                     class_default_select_type
                                     []
                                     toml_stat
@@ -660,6 +868,7 @@
                                     ()
                                     4 toml_value
                                     []
+                                    4 lcompilers_intent_out_reset_toml_table
                                 ),
                             toml_value:
                                 (Struct
@@ -740,6 +949,7 @@
                                     ()
                                     ()
                                     []
+                                    4 lcompilers_intent_out_reset_toml_value
                                 )
                         })
                     class_default_select_type_user
@@ -760,7 +970,7 @@
                                 (ExternalSymbol
                                     2
                                     1_enum_stat
-                                    12 enum_stat
+                                    14 enum_stat
                                     class_default_select_type
                                     []
                                     enum_stat
@@ -790,7 +1000,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_stat
-                                    12 toml_stat
+                                    14 toml_stat
                                     class_default_select_type
                                     []
                                     toml_stat
@@ -830,7 +1040,7 @@
             select_type4:
                 (Program
                     (SymbolTable
-                        14
+                        17
                         {
                             
                         })

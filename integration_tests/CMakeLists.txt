@@ -6599,6 +6599,8 @@ RUN(NAME array_item_in_bounds_02 LABELS gfortran llvm)
 
 RUN(NAME intent_out_array_01 LABELS gfortran llvm)
 RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)
+RUN(NAME intent_out_dynamic_01 LABELS gfortran llvm EXTRAFILES intent_out_dynamic_base.f90 intent_out_dynamic_extension.f90)
+RUN(NAME intent_out_dynamic_02 LABELS gfortran llvm EXTRAFILES intent_out_dynamic_base.f90 intent_out_dynamic_extension.f90)
 RUN(NAME intent_out_struct_member_no_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_module_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_nested_allocatable_01 LABELS gfortran llvm)

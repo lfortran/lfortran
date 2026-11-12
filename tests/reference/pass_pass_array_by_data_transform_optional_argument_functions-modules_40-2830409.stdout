@@ -24,6 +24,77 @@
                     (SymbolTable
                         2
                         {
+                            lcompilers_intent_out_reset_toml_key:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            object:
+                                                (Variable
+                                                    9
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 4 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 toml_key
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_toml_key
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 4 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 9 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             parse_select:
                                 (Function
                                     (SymbolTable
@@ -529,6 +600,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_toml_key
                                 ),
                             toml_tokenizer:
                                 (Struct
@@ -567,6 +639,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     modules_40_tomlf_de_tokenizer

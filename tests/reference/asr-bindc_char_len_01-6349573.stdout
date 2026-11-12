@@ -11,7 +11,7 @@
                                 (ExternalSymbol
                                     2
                                     1_bindc_char_len_01_t_i
-                                    13 i
+                                    15 i
                                     t
                                     []
                                     i
@@ -21,7 +21,7 @@
                                 (ExternalSymbol
                                     2
                                     1_bindc_char_len_01_t_s
-                                    13 s
+                                    15 s
                                     t
                                     []
                                     s
@@ -47,14 +47,83 @@
                                     c_int
                                     Public
                                 ),
+                            lcompilers_intent_out_reset_t:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            object:
+                                                (Variable
+                                                    16
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)
+                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 16 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             t:
                                 (Struct
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             i:
                                                 (Variable
-                                                    13
+                                                    15
                                                     i
                                                     []
                                                     Local
@@ -80,7 +149,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    13
+                                                    15
                                                     s
                                                     []
                                                     Local
@@ -126,6 +195,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_t
                                 ),
                             x:
                                 (Variable

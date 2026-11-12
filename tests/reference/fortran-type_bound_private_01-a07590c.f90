@@ -18,7 +18,7 @@ integer(4), save :: counter = 0
 interface
     subroutine sub_driver(self)
         import base_t
-        type(base_t), intent(in) :: self
+        class(base_t), intent(in) :: self
     end subroutine sub_driver
 end interface
 
@@ -51,6 +51,14 @@ integer(4) function getf(self)
     getf = self%i
 end function getf
 
+subroutine lcompilers_intent_out_reset_base_t(object)
+    type(base_t), intent(inout) :: object
+end subroutine lcompilers_intent_out_reset_base_t
+
+subroutine lcompilers_intent_out_reset_child_t(object)
+    type(child_t), intent(inout) :: object
+end subroutine lcompilers_intent_out_reset_child_t
+
 subroutine run(self)
     class(child_t), intent(in) :: self
     call self%bump()
@@ -82,7 +90,7 @@ implicit none
 contains
 
 subroutine sub_driver(self)
-    type(base_t), intent(in) :: self
+    class(base_t), intent(in) :: self
     call self%bump()
     if (self%getf() /= 3) then
         error stop

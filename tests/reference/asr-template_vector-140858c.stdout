@@ -810,6 +810,74 @@
                                                     ()
                                                     ()
                                                     []
+                                                    7 lcompilers_intent_out_reset_intvector
+                                                ),
+                                            lcompilers_intent_out_reset_intvector:
+                                                (Function
+                                                    (SymbolTable
+                                                        12
+                                                        {
+                                                            object:
+                                                                (Variable
+                                                                    12
+                                                                    object
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    7 intvector
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                )
+                                                        })
+                                                    lcompilers_intent_out_reset_intvector
+                                                    (FunctionType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 12 object)]
+                                                    []
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                 ),
                                             v:
                                                 (Variable
@@ -916,6 +984,99 @@
                                     (SymbolTable
                                         3
                                         {
+                                            lcompilers_intent_out_reset_vector:
+                                                (Function
+                                                    (SymbolTable
+                                                        13
+                                                        {
+                                                            object:
+                                                                (Variable
+                                                                    13
+                                                                    object
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (Array
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                    NonExtensible
+                                                                                    .false.
+                                                                                )
+                                                                                [(()
+                                                                                ())]
+                                                                                DescriptorArray
+                                                                                Global
+                                                                            )
+                                                                        )
+                                                                        (Integer 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    3 vector
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                )
+                                                        })
+                                                    lcompilers_intent_out_reset_vector
+                                                    (FunctionType
+                                                        [(StructType
+                                                            [(Allocatable
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                    Global
+                                                                )
+                                                            )
+                                                            (Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 13 object)]
+                                                    []
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
                                             push_back:
                                                 (Function
                                                     (SymbolTable
@@ -1740,6 +1901,7 @@
                                                     ()
                                                     ()
                                                     []
+                                                    3 lcompilers_intent_out_reset_vector
                                                 )
                                         })
                                     vector_t

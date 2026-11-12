@@ -437,6 +437,91 @@
                                                     .true.
                                                     ()
                                                 ),
+                                            lcompilers_intent_out_reset_tuple:
+                                                (Function
+                                                    (SymbolTable
+                                                        16
+                                                        {
+                                                            object:
+                                                                (Variable
+                                                                    16
+                                                                    object
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        [(TypeParameter
+                                                                            t
+                                                                            NonExtensible
+                                                                            .false.
+                                                                        )
+                                                                        (TypeParameter
+                                                                            t
+                                                                            NonExtensible
+                                                                            .false.
+                                                                        )]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    4 tuple
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                )
+                                                        })
+                                                    lcompilers_intent_out_reset_tuple
+                                                    (FunctionType
+                                                        [(StructType
+                                                            [(TypeParameter
+                                                                t
+                                                                NonExtensible
+                                                                .false.
+                                                            )
+                                                            (TypeParameter
+                                                                t
+                                                                NonExtensible
+                                                                .false.
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 16 object)]
+                                                    []
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
                                             t:
                                                 (Variable
                                                     4
@@ -562,6 +647,7 @@
                                                     ()
                                                     ()
                                                     []
+                                                    4 lcompilers_intent_out_reset_tuple
                                                 )
                                         })
                                     struct_t
@@ -1122,6 +1208,141 @@
                                                     ()
                                                     ()
                                                     []
+                                                    8 lcompilers_intent_out_reset_int_tuple
+                                                ),
+                                            lcompilers_intent_out_reset_int_tuple:
+                                                (Function
+                                                    (SymbolTable
+                                                        17
+                                                        {
+                                                            object:
+                                                                (Variable
+                                                                    17
+                                                                    object
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    8 int_tuple
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                )
+                                                        })
+                                                    lcompilers_intent_out_reset_int_tuple
+                                                    (FunctionType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 17 object)]
+                                                    []
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                ),
+                                            lcompilers_intent_out_reset_real_tuple:
+                                                (Function
+                                                    (SymbolTable
+                                                        18
+                                                        {
+                                                            object:
+                                                                (Variable
+                                                                    18
+                                                                    object
+                                                                    []
+                                                                    InOut
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    8 real_tuple
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                )
+                                                        })
+                                                    lcompilers_intent_out_reset_real_tuple
+                                                    (FunctionType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
+                                                        ()
+                                                        Source
+                                                        Implementation
+                                                        ()
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 18 object)]
+                                                    []
+                                                    ()
+                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                 ),
                                             real_tuple:
                                                 (Struct
@@ -1201,6 +1422,7 @@
                                                     ()
                                                     ()
                                                     []
+                                                    8 lcompilers_intent_out_reset_real_tuple
                                                 ),
                                             ti:
                                                 (Variable

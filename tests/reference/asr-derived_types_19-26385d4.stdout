@@ -266,6 +266,7 @@
                                     ()
                                     4 toml_value
                                     []
+                                    4 lcompilers_intent_out_reset_child_value
                                 ),
                             default_class:
                                 (Function
@@ -304,6 +305,73 @@
                                     .false.
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_child_value:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            object:
+                                                (Variable
+                                                    11
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Logical 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 child_value
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_child_value
+                                    (FunctionType
+                                        [(StructType
+                                            [(Logical 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 11 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             new:
                                 (GenericProcedure
                                     4
@@ -314,7 +382,7 @@
                             not_ok:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             
                                         })
@@ -403,6 +471,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     derived_types_module_19
@@ -422,7 +491,7 @@
                             check_here:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             
                                         })
@@ -480,7 +549,7 @@
             main:
                 (Program
                     (SymbolTable
-                        13
+                        14
                         {
                             
                         })

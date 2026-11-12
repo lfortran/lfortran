@@ -898,6 +898,11 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             x.base.base.loc);
     }
 
+    void visit_IntentOutReset(const ASR::IntentOutReset_t &x) {
+        throw CodeGenError("dynamic intent(out) reset is not supported by the wasm backend",
+            x.base.base.loc);
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         // A translation unit initializer has to run before main, which only
         // a target with a startup hook of its own can arrange. Nothing that

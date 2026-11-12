@@ -158,6 +158,11 @@ public:
         return r;
     }
 
+    void visit_IntentOutReset(const ASR::IntentOutReset_t &x) {
+        throw CodeGenError("dynamic intent(out) reset is not supported by the python backend",
+            x.base.base.loc);
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
 

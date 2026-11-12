@@ -2,11 +2,11 @@
     "basename": "llvm-host_frame-f76c0a2",
     "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
     "infile": "tests/asr/compile/host_frame.asr",
-    "infile_hash": "95743b4c4422a49f3d056d4f7573ea8a0323c36e85916f26d2afaca9",
+    "infile_hash": "c846d5caa8a388549ba44ae7cefee394f0bbb3894e77b04108b7356b",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-host_frame-f76c0a2.stdout",
-    "stdout_hash": "5a4f55e88b93f98d9cc7f2b426a55533fdc96326f2e71ec5a81fcb7a",
+    "stdout_hash": "a84ae45dccff14706709bfa3cd5705af89d1bcef0e410f8c8eca5bc9",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

@@ -62,6 +62,10 @@ subroutine host_dummy(y)
 
 end subroutine host_dummy
 
+subroutine lcompilers_intent_out_reset_t(object)
+    type(t), intent(inout) :: object
+end subroutine lcompilers_intent_out_reset_t
+
 end module functions_69_m
 
 program functions_69

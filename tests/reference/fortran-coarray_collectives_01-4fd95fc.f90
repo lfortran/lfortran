@@ -52,6 +52,10 @@ call __module_prif_prif_stop(.false.)
 
 contains
 
+subroutine lcompilers_intent_out_reset_point(object)
+    type(point), intent(inout) :: object
+end subroutine lcompilers_intent_out_reset_point
+
 interface
     subroutine __module_prif_prif_co_broadcast(a, source_image, stat, errmsg, errmsg_alloc)
         type(*), dimension(..), intent(inout), target :: a

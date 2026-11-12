@@ -281,6 +281,7 @@ public:
     }
 
     void visit_Struct(const ASR::Struct_t &x) {
+        mark_procedure_used(x.m_intent_out_reset);
         // Mark final procedures (stored in member_functions) as used
         for (size_t i = 0; i < x.n_member_functions; i++) {
             ASR::symbol_t* sym = x.m_symtab->parent->get_symbol(x.m_member_functions[i]);

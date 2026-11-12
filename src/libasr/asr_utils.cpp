@@ -8480,18 +8480,31 @@ std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t *f)
             for (size_t i = 0; i < n_deps; ++i) {
                 if (deps[i]) unique_deps.insert(deps[i]);
             }
+            // A nonallocatable component, including an array component,
+            // requires its type definition before this definition. Pointer
+            // and allocatable components can refer to an incomplete type.
+            for (auto &item : sym->m_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+                ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (ASRUtils::is_allocatable_or_pointer(member->m_type) ||
+                        member->m_type_declaration == nullptr) continue;
+                ASR::symbol_t* declared = ASRUtils::symbol_get_past_external(
+                    member->m_type_declaration);
+                if (ASR::is_a<ASR::Struct_t>(*declared)) {
+                    unique_deps.insert(symbol_name(member->m_type_declaration));
+                }
+            }
 
             // if there exists a parent, add parent and it's dependencies
             if (sym->m_parent) {
-                ASR::Struct_t* parent = ASR::down_cast<ASR::Struct_t>(sym->m_parent);
-                unique_deps.insert(std::string(parent->m_name));
-
-                auto parent_deps = symbol_dependencies(sym->m_parent);
-                char** parent_dep_array = parent_deps.first;
-                size_t parent_dep_count = parent_deps.second;
-
-                for (size_t i = 0; i < parent_dep_count; ++i) {
-                    unique_deps.insert(parent_dep_array[i]);
+                unique_deps.insert(symbol_name(sym->m_parent));
+                // An imported parent's own dependencies belong to its
+                // defining scope, not to the scope of this extension.
+                if (!ASR::is_a<ASR::ExternalSymbol_t>(*sym->m_parent)) {
+                    auto parent_deps = symbol_dependencies(sym->m_parent);
+                    for (size_t i = 0; i < parent_deps.second; ++i) {
+                        unique_deps.insert(parent_deps.first[i]);
+                    }
                 }
             }
 
@@ -12213,7 +12226,7 @@ ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* struct_sym,
             upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
             nullptr, 0, nullptr, 0, ASR::abiType::Source,
             ASR::accessType::Public, false, true, false, nullptr, 0,
-            nullptr, nullptr, nullptr, 0);
+            nullptr, nullptr, nullptr, 0, nullptr);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, new_sym, true);
@@ -15848,6 +15861,19 @@ void SymbolDuplicator::fixup_type_declarations_in_scope(SymbolTable *new_scope,
                 orig_sym->type != item.second->type) {
             continue;
         }
+        if (ASR::is_a<ASR::Struct_t>(*orig_sym)) {
+            ASR::Struct_t* original = ASR::down_cast<ASR::Struct_t>(orig_sym);
+            ASR::Struct_t* copy = ASR::down_cast<ASR::Struct_t>(item.second);
+            if (original->m_intent_out_reset != nullptr) {
+                copy->m_intent_out_reset = new_scope->get_symbol(
+                    ASRUtils::symbol_name(original->m_intent_out_reset));
+                if (copy->m_intent_out_reset != nullptr) {
+                    ASR::Function_t* reset = ASR::down_cast<ASR::Function_t>(
+                        copy->m_intent_out_reset);
+                    ASRUtils::EXPR2VAR(reset->m_args[0])->m_type_declaration = &copy->base;
+                }
+            }
+        }
         SymbolTable *orig_nested = ASRUtils::symbol_symtab(orig_sym);
         if (orig_nested != nullptr && orig_nested != new_nested) {
             fixup_type_declarations_in_scope(new_nested, orig_nested,
@@ -16031,7 +16057,7 @@ ASR::symbol_t* SymbolDuplicator::duplicate_Struct(ASR::Struct_t* struct_type_t,
         struct_type_t->m_is_sequence,
         struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
         struct_type_t->m_parent,
-        struct_type_t->m_kind_params, struct_type_t->n_kind_params));
+        struct_type_t->m_kind_params, struct_type_t->n_kind_params, nullptr));
 }
 
 ASR::symbol_t* SymbolDuplicator::duplicate_StructMethodDeclaration(

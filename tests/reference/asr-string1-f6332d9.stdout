@@ -49,16 +49,16 @@
                             f_string_cptr:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        17
                                         {
                                             c_strlen:
                                                 (Function
                                                     (SymbolTable
-                                                        16
+                                                        18
                                                         {
                                                             r:
                                                                 (Variable
-                                                                    16
+                                                                    18
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -84,7 +84,7 @@
                                                                 ),
                                                             s:
                                                                 (Variable
-                                                                    16
+                                                                    18
                                                                     s
                                                                     []
                                                                     In
@@ -130,9 +130,9 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 16 s)]
+                                                    [(Var 18 s)]
                                                     []
-                                                    (Var 16 r)
+                                                    (Var 18 r)
                                                     Public
                                                     .false.
                                                     .false.
@@ -140,7 +140,7 @@
                                                 ),
                                             cptr:
                                                 (Variable
-                                                    15
+                                                    17
                                                     cptr
                                                     []
                                                     In
@@ -168,7 +168,7 @@
                                                 ),
                                             lfortran_tmp:
                                                 (Variable
-                                                    15
+                                                    17
                                                     lfortran_tmp
                                                     []
                                                     Local
@@ -194,7 +194,7 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    15
+                                                    17
                                                     s
                                                     []
                                                     ReturnVar
@@ -242,13 +242,13 @@
                                         Host
                                     )
                                     [f_string_cptr_n]
-                                    [(Var 15 cptr)]
+                                    [(Var 17 cptr)]
                                     [(Assignment
-                                        (Var 15 lfortran_tmp)
+                                        (Var 17 lfortran_tmp)
                                         (FunctionCall
-                                            15 c_strlen
+                                            17 c_strlen
                                             ()
-                                            [((Var 15 cptr))]
+                                            [((Var 17 cptr))]
                                             (Integer 8)
                                             ()
                                             ()
@@ -260,13 +260,13 @@
                                         .false.
                                     )
                                     (Assignment
-                                        (Var 15 s)
+                                        (Var 17 s)
                                         (FunctionCall
                                             2 f_string_cptr_n
                                             ()
-                                            [((Var 15 cptr))
-                                            ((Var 15 lfortran_tmp))]
-                                            (String 1 (Var 15 lfortran_tmp) ExpressionLength DescriptorString)
+                                            [((Var 17 cptr))
+                                            ((Var 17 lfortran_tmp))]
+                                            (String 1 (Var 17 lfortran_tmp) ExpressionLength DescriptorString)
                                             ()
                                             ()
                                         )
@@ -276,7 +276,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 15 s)
+                                    (Var 17 s)
                                     Public
                                     .false.
                                     .false.
@@ -285,11 +285,11 @@
                             f_string_cptr_n:
                                 (Function
                                     (SymbolTable
-                                        17
+                                        19
                                         {
                                             cptr:
                                                 (Variable
-                                                    17
+                                                    19
                                                     cptr
                                                     []
                                                     In
@@ -317,7 +317,7 @@
                                                 ),
                                             n:
                                                 (Variable
-                                                    17
+                                                    19
                                                     n
                                                     []
                                                     In
@@ -343,14 +343,14 @@
                                                 ),
                                             s:
                                                 (Variable
-                                                    17
+                                                    19
                                                     s
                                                     [n]
                                                     ReturnVar
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (Var 17 n) ExpressionLength DescriptorString)
+                                                    (String 1 (Var 19 n) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -392,10 +392,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 17 cptr)
-                                    (Var 17 n)]
+                                    [(Var 19 cptr)
+                                    (Var 19 n)]
                                     []
-                                    (Var 17 s)
+                                    (Var 19 s)
                                     Public
                                     .true.
                                     .true.
@@ -404,11 +404,11 @@
                             f_string~genericprocedure:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        16
                                         {
                                             c_string:
                                                 (Variable
-                                                    14
+                                                    16
                                                     c_string
                                                     []
                                                     In
@@ -440,7 +440,7 @@
                                                 ),
                                             f_string:
                                                 (Variable
-                                                    14
+                                                    16
                                                     f_string
                                                     []
                                                     ReturnVar
@@ -492,22 +492,93 @@
                                         Host
                                     )
                                     []
-                                    [(Var 14 c_string)]
+                                    [(Var 16 c_string)]
                                     []
-                                    (Var 14 f_string)
+                                    (Var 16 f_string)
                                     Public
                                     .true.
                                     .true.
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_string_t:
+                                (Function
+                                    (SymbolTable
+                                        20
+                                        {
+                                            object:
+                                                (Variable
+                                                    20
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 string_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_string_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 20 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             string_t:
                                 (Struct
                                     (SymbolTable
-                                        13
+                                        15
                                         {
                                             s:
                                                 (Variable
-                                                    13
+                                                    15
                                                     s
                                                     []
                                                     Local
@@ -555,6 +626,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_string_t
                                 )
                         })
                     fpm_strings

@@ -138,6 +138,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_complextype
                                 ),
                             integer_add_subrout:
                                 (Function
@@ -367,6 +368,75 @@
                                     )]
                                     ()
                                     Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_complextype:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            object:
+                                                (Variable
+                                                    7
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Real 4)
+                                                        (Real 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 complextype
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_complextype
+                                    (FunctionType
+                                        [(StructType
+                                            [(Real 4)
+                                            (Real 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 7 object)]
+                                    []
+                                    ()
+                                    Private
                                     .false.
                                     .false.
                                     ()

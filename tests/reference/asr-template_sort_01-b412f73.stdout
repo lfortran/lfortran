@@ -3452,6 +3452,73 @@
                                     d
                                     Private
                                 ),
+                            lcompilers_intent_out_reset_my_type:
+                                (Function
+                                    (SymbolTable
+                                        22
+                                        {
+                                            object:
+                                                (Variable
+                                                    22
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Real 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    2 my_type
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_my_type
+                                    (FunctionType
+                                        [(StructType
+                                            [(Real 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 22 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             lt_my_type:
                                 (Function
                                     (SymbolTable
@@ -3658,6 +3725,7 @@
                                     ()
                                     ()
                                     []
+                                    2 lcompilers_intent_out_reset_my_type
                                 )
                         })
                     template_sort_01_type

@@ -11,7 +11,7 @@
                                 (ExternalSymbol
                                     4
                                     1_dependency_config_t
-                                    9 dependency_config_t
+                                    10 dependency_config_t
                                     fpm_dependency_modules_31
                                     []
                                     dependency_config_t
@@ -21,7 +21,7 @@
                                 (ExternalSymbol
                                     4
                                     1_dependency_config_t_name
-                                    10 name
+                                    11 name
                                     fpm_dependency_modules_31
                                     [dependency_config_t]
                                     name
@@ -31,7 +31,7 @@
                                 (ExternalSymbol
                                     4
                                     1_dependency_tree_t_dep
-                                    12 dep
+                                    13 dep
                                     fpm_dependency_modules_31
                                     [dependency_tree_t]
                                     dep
@@ -46,7 +46,7 @@
                                                 (ExternalSymbol
                                                     7
                                                     1_dependency_tree_t_update_dependency
-                                                    12 update_dependency
+                                                    13 update_dependency
                                                     fpm_dependency_modules_31
                                                     [dependency_tree_t]
                                                     update_dependency
@@ -56,7 +56,7 @@
                                                 (ExternalSymbol
                                                     7
                                                     1_update
-                                                    12 update
+                                                    13 update
                                                     dependency_tree_t
                                                     []
                                                     update
@@ -330,7 +330,7 @@
                                 (ExternalSymbol
                                     4
                                     dependency_tree_t
-                                    9 dependency_tree_t
+                                    10 dependency_tree_t
                                     fpm_dependency_modules_31
                                     []
                                     dependency_tree_t
@@ -340,7 +340,7 @@
                                 (ExternalSymbol
                                     4
                                     error_t
-                                    9 error_t
+                                    10 error_t
                                     fpm_dependency_modules_31
                                     []
                                     error_t
@@ -435,6 +435,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 ),
                             fpm_update_settings:
                                 (Struct
@@ -559,6 +560,94 @@
                                     ()
                                     4 fpm_cmd_settings
                                     []
+                                    4 lcompilers_intent_out_reset_fpm_update_settings
+                                ),
+                            lcompilers_intent_out_reset_fpm_update_settings:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            object:
+                                                (Variable
+                                                    8
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (Array
+                                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                                Global
+                                                            )
+                                                        )
+                                                        (Logical 4)
+                                                        (Logical 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 fpm_update_settings
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_fpm_update_settings
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (Array
+                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                    Global
+                                                )
+                                            )
+                                            (Logical 4)
+                                            (Logical 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 8 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 )
                         })
                     fpm_cmd_update_modules_31
@@ -573,16 +662,16 @@
             fpm_dependency_modules_31:
                 (Module
                     (SymbolTable
-                        9
+                        10
                         {
                             dependency_config_t:
                                 (Struct
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             name:
                                                 (Variable
-                                                    10
+                                                    11
                                                     name
                                                     []
                                                     Local
@@ -610,7 +699,7 @@
                                                 ),
                                             path:
                                                 (Variable
-                                                    10
+                                                    11
                                                     path
                                                     []
                                                     Local
@@ -662,15 +751,16 @@
                                     ()
                                     ()
                                     []
+                                    10 lcompilers_intent_out_reset_dependency_config_t
                                 ),
                             dependency_node_t:
                                 (Struct
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             done:
                                                 (Variable
-                                                    11
+                                                    12
                                                     done
                                                     []
                                                     Local
@@ -702,7 +792,7 @@
                                                 ),
                                             proj_dir:
                                                 (Variable
-                                                    11
+                                                    12
                                                     proj_dir
                                                     []
                                                     Local
@@ -730,7 +820,7 @@
                                                 ),
                                             revision:
                                                 (Variable
-                                                    11
+                                                    12
                                                     revision
                                                     []
                                                     Local
@@ -758,7 +848,7 @@
                                                 ),
                                             update:
                                                 (Variable
-                                                    11
+                                                    12
                                                     update
                                                     []
                                                     Local
@@ -816,17 +906,18 @@
                                     .false.
                                     []
                                     ()
-                                    9 dependency_config_t
+                                    10 dependency_config_t
                                     []
+                                    10 lcompilers_intent_out_reset_dependency_node_t
                                 ),
                             dependency_tree_t:
                                 (Struct
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             cache:
                                                 (Variable
-                                                    12
+                                                    13
                                                     cache
                                                     []
                                                     Local
@@ -854,7 +945,7 @@
                                                 ),
                                             dep:
                                                 (Variable
-                                                    12
+                                                    13
                                                     dep
                                                     []
                                                     Local
@@ -882,7 +973,7 @@
                                                             Global
                                                         )
                                                     )
-                                                    9 dependency_node_t
+                                                    10 dependency_node_t
                                                     Source
                                                     Public
                                                     Required
@@ -900,7 +991,7 @@
                                                 ),
                                             dep_dir:
                                                 (Variable
-                                                    12
+                                                    13
                                                     dep_dir
                                                     []
                                                     Local
@@ -928,7 +1019,7 @@
                                                 ),
                                             ndep:
                                                 (Variable
-                                                    12
+                                                    13
                                                     ndep
                                                     []
                                                     Local
@@ -954,7 +1045,7 @@
                                                 ),
                                             unit:
                                                 (Variable
-                                                    12
+                                                    13
                                                     unit
                                                     []
                                                     Local
@@ -980,18 +1071,18 @@
                                                 ),
                                             update:
                                                 (GenericProcedure
-                                                    12
+                                                    13
                                                     update
-                                                    [12 update_dependency]
+                                                    [13 update_dependency]
                                                     Public
                                                 ),
                                             update_dependency:
                                                 (StructMethodDeclaration
-                                                    12
+                                                    13
                                                     update_dependency
                                                     ()
                                                     update_dependency
-                                                    9 update_dependency
+                                                    10 update_dependency
                                                     Source
                                                     .false.
                                                     .false.
@@ -999,7 +1090,7 @@
                                                 ),
                                             verbosity:
                                                 (Variable
-                                                    12
+                                                    13
                                                     verbosity
                                                     []
                                                     Local
@@ -1077,15 +1168,16 @@
                                     ()
                                     ()
                                     []
+                                    10 lcompilers_intent_out_reset_dependency_tree_t
                                 ),
                             error_t:
                                 (Struct
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             message:
                                                 (Variable
-                                                    13
+                                                    14
                                                     message
                                                     []
                                                     Local
@@ -1133,15 +1225,370 @@
                                     ()
                                     ()
                                     []
+                                    10 lcompilers_intent_out_reset_error_t
+                                ),
+                            lcompilers_intent_out_reset_dependency_config_t:
+                                (Function
+                                    (SymbolTable
+                                        15
+                                        {
+                                            object:
+                                                (Variable
+                                                    15
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    10 dependency_config_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_dependency_config_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 15 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_dependency_node_t:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            object:
+                                                (Variable
+                                                    16
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Logical 4)
+                                                        (Logical 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    10 dependency_node_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_dependency_node_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Logical 4)
+                                            (Logical 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 16 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_dependency_tree_t:
+                                (Function
+                                    (SymbolTable
+                                        17
+                                        {
+                                            object:
+                                                (Variable
+                                                    17
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Integer 4)
+                                                        (Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Logical 4)
+                                                                    (Logical 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                                Global
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    10 dependency_tree_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_dependency_tree_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Integer 4)
+                                            (Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Logical 4)
+                                                        (Logical 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                    Global
+                                                )
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 17 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_error_t:
+                                (Function
+                                    (SymbolTable
+                                        18
+                                        {
+                                            object:
+                                                (Variable
+                                                    18
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    10 error_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_error_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 18 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             update_dependency:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        19
                                         {
                                             error:
                                                 (Variable
-                                                    14
+                                                    19
                                                     error
                                                     []
                                                     Out
@@ -1158,7 +1605,7 @@
                                                             .false.
                                                         )
                                                     )
-                                                    9 error_t
+                                                    10 error_t
                                                     Source
                                                     Public
                                                     Required
@@ -1176,7 +1623,7 @@
                                                 ),
                                             name:
                                                 (Variable
-                                                    14
+                                                    19
                                                     name
                                                     []
                                                     In
@@ -1202,7 +1649,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    14
+                                                    19
                                                     self
                                                     []
                                                     InOut
@@ -1244,7 +1691,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    9 dependency_tree_t
+                                                    10 dependency_tree_t
                                                     Source
                                                     Public
                                                     Required
@@ -1323,9 +1770,9 @@
                                         Host
                                     )
                                     []
-                                    [(Var 14 self)
-                                    (Var 14 name)
-                                    (Var 14 error)]
+                                    [(Var 19 self)
+                                    (Var 19 name)
+                                    (Var 19 error)]
                                     []
                                     ()
                                     Public
@@ -1352,7 +1799,7 @@
                                 (ExternalSymbol
                                     2
                                     1_dependency_config_t
-                                    9 dependency_config_t
+                                    10 dependency_config_t
                                     fpm_dependency_modules_31
                                     []
                                     dependency_config_t
@@ -1372,7 +1819,7 @@
                                 (ExternalSymbol
                                     2
                                     dependency_tree_t
-                                    9 dependency_tree_t
+                                    10 dependency_tree_t
                                     fpm_dependency_modules_31
                                     []
                                     dependency_tree_t
@@ -1382,7 +1829,7 @@
                                 (ExternalSymbol
                                     2
                                     error_t
-                                    9 error_t
+                                    10 error_t
                                     fpm_dependency_modules_31
                                     []
                                     error_t

@@ -57,6 +57,105 @@
                     (SymbolTable
                         10
                         {
+                            lcompilers_intent_out_reset_package_config_t:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            object:
+                                                (Variable
+                                                    12
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                    Global
+                                                                )
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    10 package_config_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_package_config_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (StructType
+                                                [(Allocatable
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                )]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 12 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             package_config_t:
                                 (Struct
                                     (SymbolTable
@@ -166,12 +265,13 @@
                                     ()
                                     ()
                                     []
+                                    10 lcompilers_intent_out_reset_package_config_t
                                 ),
                             version_t:
                                 (ExternalSymbol
                                     10
                                     version_t
-                                    13 version_t
+                                    14 version_t
                                     fpm_versioning_modules_34
                                     []
                                     version_t
@@ -216,7 +316,7 @@
                                                                 (ExternalSymbol
                                                                     6
                                                                     1_version_t
-                                                                    13 version_t
+                                                                    14 version_t
                                                                     fpm_versioning_modules_34
                                                                     []
                                                                     version_t
@@ -226,7 +326,7 @@
                                                                 (ExternalSymbol
                                                                     6
                                                                     1_version_t_to_string
-                                                                    14 to_string
+                                                                    15 to_string
                                                                     fpm_versioning_modules_34
                                                                     [version_t]
                                                                     to_string
@@ -500,18 +600,18 @@
             fpm_versioning_modules_34:
                 (Module
                     (SymbolTable
-                        13
+                        14
                         {
                             as_string:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        16
                                         {
                                             1_version_t_to_string:
                                                 (ExternalSymbol
-                                                    15
+                                                    16
                                                     1_version_t_to_string
-                                                    14 to_string
+                                                    15 to_string
                                                     fpm_versioning_modules_34
                                                     [version_t]
                                                     to_string
@@ -519,7 +619,7 @@
                                                 ),
                                             self:
                                                 (Variable
-                                                    15
+                                                    16
                                                     self
                                                     []
                                                     In
@@ -540,7 +640,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    13 version_t
+                                                    14 version_t
                                                     Source
                                                     Public
                                                     Required
@@ -558,7 +658,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    15
+                                                    16
                                                     string
                                                     []
                                                     ReturnVar
@@ -617,16 +717,16 @@
                                         Host
                                     )
                                     []
-                                    [(Var 15 self)]
+                                    [(Var 16 self)]
                                     [(SubroutineCall
-                                        15 1_version_t_to_string
+                                        16 1_version_t_to_string
                                         ()
-                                        [((Var 15 self))
-                                        ((Var 15 string))]
-                                        (Var 15 self)
+                                        [((Var 16 self))
+                                        ((Var 16 string))]
+                                        (Var 16 self)
                                         .false.
                                     )]
-                                    (Var 15 string)
+                                    (Var 16 string)
                                     Public
                                     .true.
                                     .true.
@@ -634,19 +734,102 @@
                                 ),
                             char:
                                 (GenericProcedure
-                                    13
+                                    14
                                     char
-                                    [13 as_string]
+                                    [14 as_string]
                                     Public
+                                ),
+                            lcompilers_intent_out_reset_version_t:
+                                (Function
+                                    (SymbolTable
+                                        17
+                                        {
+                                            object:
+                                                (Variable
+                                                    17
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                                Global
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    14 version_t
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_version_t
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                    Global
+                                                )
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 17 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
                                 ),
                             to_string:
                                 (Function
                                     (SymbolTable
-                                        16
+                                        18
                                         {
                                             self:
                                                 (Variable
-                                                    16
+                                                    18
                                                     self
                                                     []
                                                     In
@@ -667,7 +850,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    13 version_t
+                                                    14 version_t
                                                     Source
                                                     Public
                                                     Required
@@ -685,7 +868,7 @@
                                                 ),
                                             string:
                                                 (Variable
-                                                    16
+                                                    18
                                                     string
                                                     []
                                                     Out
@@ -745,8 +928,8 @@
                                         Host
                                     )
                                     []
-                                    [(Var 16 self)
-                                    (Var 16 string)]
+                                    [(Var 18 self)
+                                    (Var 18 string)]
                                     []
                                     ()
                                     Public
@@ -757,11 +940,11 @@
                             version_t:
                                 (Struct
                                     (SymbolTable
-                                        14
+                                        15
                                         {
                                             num:
                                                 (Variable
-                                                    14
+                                                    15
                                                     num
                                                     []
                                                     Local
@@ -795,11 +978,11 @@
                                                 ),
                                             to_string:
                                                 (StructMethodDeclaration
-                                                    14
+                                                    15
                                                     to_string
                                                     ()
                                                     to_string
-                                                    13 to_string
+                                                    14 to_string
                                                     Source
                                                     .false.
                                                     .false.
@@ -833,6 +1016,7 @@
                                     ()
                                     ()
                                     []
+                                    14 lcompilers_intent_out_reset_version_t
                                 )
                         })
                     fpm_versioning_modules_34
@@ -847,7 +1031,7 @@
             modules_34:
                 (Program
                     (SymbolTable
-                        17
+                        19
                         {
                             
                         })

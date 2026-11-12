@@ -5,13 +5,13 @@
             tomlf_structure:
                 (Module
                     (SymbolTable
-                        13
+                        14
                         {
                             toml_ordered:
                                 (ExternalSymbol
-                                    13
+                                    14
                                     toml_ordered
-                                    15 toml_ordered
+                                    16 toml_ordered
                                     tomlf_structure_base
                                     []
                                     toml_ordered
@@ -30,16 +30,16 @@
             tomlf_structure_base:
                 (Module
                     (SymbolTable
-                        15
+                        16
                         {
                             destroy:
                                 (Function
                                     (SymbolTable
-                                        18
+                                        19
                                         {
                                             self:
                                                 (Variable
-                                                    18
+                                                    19
                                                     self
                                                     []
                                                     InOut
@@ -52,7 +52,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    15 toml_structure
+                                                    16 toml_structure
                                                     Source
                                                     Public
                                                     Required
@@ -70,9 +70,9 @@
                                                 ),
                                             toml_value:
                                                 (ExternalSymbol
-                                                    18
+                                                    19
                                                     toml_value
-                                                    9 toml_value
+                                                    10 toml_value
                                                     tomlf_type_value
                                                     []
                                                     toml_value
@@ -101,7 +101,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 18 self)]
+                                    [(Var 19 self)]
                                     []
                                     ()
                                     Public
@@ -113,7 +113,7 @@
                             toml_ordered:
                                 (Struct
                                     (SymbolTable
-                                        16
+                                        17
                                         {
                                             
                                         })
@@ -134,21 +134,22 @@
                                     .false.
                                     []
                                     ()
-                                    15 toml_structure
+                                    16 toml_structure
                                     []
+                                    ()
                                 ),
                             toml_structure:
                                 (Struct
                                     (SymbolTable
-                                        17
+                                        18
                                         {
                                             destroy:
                                                 (StructMethodDeclaration
-                                                    17
+                                                    18
                                                     destroy
                                                     ()
                                                     destroy
-                                                    15 destroy
+                                                    16 destroy
                                                     Source
                                                     .true.
                                                     .false.
@@ -174,6 +175,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     tomlf_structure_base
@@ -222,7 +224,7 @@
                                 (ExternalSymbol
                                     2
                                     new_keyval
-                                    20 new_keyval
+                                    21 new_keyval
                                     tomlf_type_keyval
                                     []
                                     new_keyval
@@ -232,7 +234,7 @@
                                 (ExternalSymbol
                                     2
                                     new_keyval@new
-                                    20 new_keyval
+                                    21 new_keyval
                                     tomlf_type_keyval
                                     []
                                     new_keyval
@@ -252,7 +254,7 @@
                                 (ExternalSymbol
                                     2
                                     toml_keyval
-                                    20 toml_keyval
+                                    21 toml_keyval
                                     tomlf_type_keyval
                                     []
                                     toml_keyval
@@ -288,7 +290,7 @@
                                 (ExternalSymbol
                                     4
                                     1_toml_value_key
-                                    10 key
+                                    11 key
                                     tomlf_type_value
                                     [toml_value]
                                     key
@@ -303,7 +305,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     1_toml_structure
-                                                    15 toml_structure
+                                                    16 toml_structure
                                                     tomlf_structure_base
                                                     []
                                                     toml_structure
@@ -313,7 +315,7 @@
                                                 (ExternalSymbol
                                                     6
                                                     1_toml_structure_destroy
-                                                    17 destroy
+                                                    18 destroy
                                                     tomlf_structure_base
                                                     [toml_structure]
                                                     destroy
@@ -495,6 +497,87 @@
                                     .true.
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_toml_array:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            object:
+                                                (Variable
+                                                    7
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    4 toml_array
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_toml_array
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
+                                                    .false.
+                                                )
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 7 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             new:
                                 (GenericProcedure
                                     4
@@ -505,11 +588,11 @@
                             new_array:
                                 (Function
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             self:
                                                 (Variable
-                                                    7
+                                                    8
                                                     self
                                                     []
                                                     Out
@@ -575,7 +658,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 7 self)]
+                                    [(Var 8 self)]
                                     []
                                     ()
                                     Public
@@ -660,12 +743,13 @@
                                     ()
                                     4 toml_value
                                     []
+                                    4 lcompilers_intent_out_reset_toml_array
                                 ),
                             toml_ordered:
                                 (ExternalSymbol
                                     4
                                     toml_ordered
-                                    15 toml_ordered
+                                    16 toml_ordered
                                     tomlf_structure_base
                                     []
                                     toml_ordered
@@ -675,7 +759,7 @@
                                 (ExternalSymbol
                                     4
                                     toml_value
-                                    9 toml_value
+                                    10 toml_value
                                     tomlf_type_value
                                     []
                                     toml_value
@@ -696,13 +780,13 @@
             tomlf_type_keyval:
                 (Module
                     (SymbolTable
-                        20
+                        21
                         {
                             1_toml_keyval_raw:
                                 (ExternalSymbol
-                                    20
+                                    21
                                     1_toml_keyval_raw
-                                    21 raw
+                                    22 raw
                                     tomlf_type_keyval
                                     [toml_keyval]
                                     raw
@@ -710,9 +794,9 @@
                                 ),
                             1_toml_value_key:
                                 (ExternalSymbol
-                                    20
+                                    21
                                     1_toml_value_key
-                                    22 key
+                                    23 key
                                     tomlf_type_keyval
                                     [toml_value]
                                     key
@@ -721,11 +805,11 @@
                             destroy:
                                 (Function
                                     (SymbolTable
-                                        23
+                                        24
                                         {
                                             self:
                                                 (Variable
-                                                    23
+                                                    24
                                                     self
                                                     []
                                                     InOut
@@ -740,7 +824,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    20 toml_keyval
+                                                    21 toml_keyval
                                                     Source
                                                     Public
                                                     Required
@@ -781,14 +865,14 @@
                                         Host
                                     )
                                     []
-                                    [(Var 23 self)]
+                                    [(Var 24 self)]
                                     [(If
                                         ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
-                                                (Var 23 self)
-                                                20 1_toml_value_key
+                                                (Var 24 self)
+                                                21 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -800,8 +884,8 @@
                                         )
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
-                                                (Var 23 self)
-                                                20 1_toml_value_key
+                                                (Var 24 self)
+                                                21 1_toml_value_key
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -817,8 +901,8 @@
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
-                                                (Var 23 self)
-                                                20 1_toml_keyval_raw
+                                                (Var 24 self)
+                                                21 1_toml_keyval_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -830,8 +914,8 @@
                                         )
                                         [(ExplicitDeallocate
                                             [(StructInstanceMember
-                                                (Var 23 self)
-                                                20 1_toml_keyval_raw
+                                                (Var 24 self)
+                                                21 1_toml_keyval_raw
                                                 (Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
                                                 )
@@ -848,21 +932,92 @@
                                     .true.
                                     ()
                                 ),
+                            lcompilers_intent_out_reset_toml_keyval:
+                                (Function
+                                    (SymbolTable
+                                        25
+                                        {
+                                            object:
+                                                (Variable
+                                                    25
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    21 toml_keyval
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_toml_keyval
+                                    (FunctionType
+                                        [(StructType
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 25 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
                             new:
                                 (GenericProcedure
-                                    20
+                                    21
                                     new
-                                    [20 new_keyval]
+                                    [21 new_keyval]
                                     Public
                                 ),
                             new_keyval:
                                 (Function
                                     (SymbolTable
-                                        24
+                                        26
                                         {
                                             self:
                                                 (Variable
-                                                    24
+                                                    26
                                                     self
                                                     []
                                                     Out
@@ -877,7 +1032,7 @@
                                                         .true.
                                                         .false.
                                                     )
-                                                    20 toml_keyval
+                                                    21 toml_keyval
                                                     Source
                                                     Public
                                                     Required
@@ -918,7 +1073,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 24 self)]
+                                    [(Var 26 self)]
                                     []
                                     ()
                                     Public
@@ -929,15 +1084,15 @@
                             toml_keyval:
                                 (Struct
                                     (SymbolTable
-                                        21
+                                        22
                                         {
                                             destroy:
                                                 (StructMethodDeclaration
-                                                    21
+                                                    22
                                                     destroy
                                                     ()
                                                     destroy
-                                                    20 destroy
+                                                    21 destroy
                                                     Source
                                                     .false.
                                                     .false.
@@ -945,7 +1100,7 @@
                                                 ),
                                             raw:
                                                 (Variable
-                                                    21
+                                                    22
                                                     raw
                                                     []
                                                     Local
@@ -991,21 +1146,22 @@
                                     .false.
                                     []
                                     ()
-                                    20 toml_value
+                                    21 toml_value
                                     []
+                                    21 lcompilers_intent_out_reset_toml_keyval
                                 ),
                             toml_value:
                                 (Struct
                                     (SymbolTable
-                                        22
+                                        23
                                         {
                                             destroy:
                                                 (StructMethodDeclaration
-                                                    22
+                                                    23
                                                     destroy
                                                     ()
                                                     destroy
-                                                    20 destroy
+                                                    21 destroy
                                                     Source
                                                     .true.
                                                     .false.
@@ -1013,7 +1169,7 @@
                                                 ),
                                             key:
                                                 (Variable
-                                                    22
+                                                    23
                                                     key
                                                     []
                                                     Local
@@ -1061,6 +1217,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     tomlf_type_keyval
@@ -1075,16 +1232,16 @@
             tomlf_type_value:
                 (Module
                     (SymbolTable
-                        9
+                        10
                         {
                             destroy:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        12
                                         {
                                             self:
                                                 (Variable
-                                                    11
+                                                    12
                                                     self
                                                     []
                                                     InOut
@@ -1099,7 +1256,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    9 toml_value
+                                                    10 toml_value
                                                     Source
                                                     Private
                                                     Required
@@ -1140,7 +1297,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 11 self)]
+                                    [(Var 12 self)]
                                     []
                                     ()
                                     Private
@@ -1152,15 +1309,15 @@
                             toml_value:
                                 (Struct
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             destroy:
                                                 (StructMethodDeclaration
-                                                    10
+                                                    11
                                                     destroy
                                                     ()
                                                     destroy
-                                                    9 destroy
+                                                    10 destroy
                                                     Source
                                                     .true.
                                                     .false.
@@ -1168,7 +1325,7 @@
                                                 ),
                                             key:
                                                 (Variable
-                                                    10
+                                                    11
                                                     key
                                                     []
                                                     Local
@@ -1216,6 +1373,7 @@
                                     ()
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     tomlf_type_value

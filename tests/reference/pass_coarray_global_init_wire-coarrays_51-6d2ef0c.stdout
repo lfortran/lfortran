@@ -127,7 +127,7 @@
             __module_prif_prif_dummy_team_descriptor:
                 (Struct
                     (SymbolTable
-                        17
+                        18
                         {
                             
                         })
@@ -150,15 +150,16 @@
                     ()
                     ()
                     []
+                    ()
                 ),
             __module_prif_prif_get:
                 (Function
                     (SymbolTable
-                        19
+                        20
                         {
                             coarray_handle:
                                 (Variable
-                                    19
+                                    20
                                     coarray_handle
                                     []
                                     In
@@ -191,7 +192,7 @@
                                 ),
                             current_image_buffer:
                                 (Variable
-                                    19
+                                    20
                                     current_image_buffer
                                     []
                                     In
@@ -219,7 +220,7 @@
                                 ),
                             errmsg:
                                 (Variable
-                                    19
+                                    20
                                     errmsg
                                     []
                                     InOut
@@ -245,7 +246,7 @@
                                 ),
                             errmsg_alloc:
                                 (Variable
-                                    19
+                                    20
                                     errmsg_alloc
                                     []
                                     InOut
@@ -273,7 +274,7 @@
                                 ),
                             image_num:
                                 (Variable
-                                    19
+                                    20
                                     image_num
                                     []
                                     In
@@ -299,7 +300,7 @@
                                 ),
                             offset:
                                 (Variable
-                                    19
+                                    20
                                     offset
                                     []
                                     In
@@ -325,7 +326,7 @@
                                 ),
                             size_in_bytes:
                                 (Variable
-                                    19
+                                    20
                                     size_in_bytes
                                     []
                                     In
@@ -351,7 +352,7 @@
                                 ),
                             stat:
                                 (Variable
-                                    19
+                                    20
                                     stat
                                     []
                                     Out
@@ -411,14 +412,14 @@
                         Host
                     )
                     []
-                    [(Var 19 image_num)
-                    (Var 19 coarray_handle)
-                    (Var 19 offset)
-                    (Var 19 current_image_buffer)
-                    (Var 19 size_in_bytes)
-                    (Var 19 stat)
-                    (Var 19 errmsg)
-                    (Var 19 errmsg_alloc)]
+                    [(Var 20 image_num)
+                    (Var 20 coarray_handle)
+                    (Var 20 offset)
+                    (Var 20 current_image_buffer)
+                    (Var 20 size_in_bytes)
+                    (Var 20 stat)
+                    (Var 20 errmsg)
+                    (Var 20 errmsg_alloc)]
                     []
                     ()
                     Private
@@ -429,11 +430,11 @@
             __module_prif_prif_init:
                 (Function
                     (SymbolTable
-                        9
+                        10
                         {
                             stat:
                                 (Variable
-                                    9
+                                    10
                                     stat
                                     []
                                     Out
@@ -475,7 +476,7 @@
                         Host
                     )
                     []
-                    [(Var 9 stat)]
+                    [(Var 10 stat)]
                     []
                     ()
                     Private
@@ -486,11 +487,11 @@
             __module_prif_prif_initial_team_index:
                 (Function
                     (SymbolTable
-                        20
+                        21
                         {
                             coarray_handle:
                                 (Variable
-                                    20
+                                    21
                                     coarray_handle
                                     []
                                     In
@@ -523,7 +524,7 @@
                                 ),
                             initial_team_index:
                                 (Variable
-                                    20
+                                    21
                                     initial_team_index
                                     []
                                     Out
@@ -549,7 +550,7 @@
                                 ),
                             stat:
                                 (Variable
-                                    20
+                                    21
                                     stat
                                     []
                                     Out
@@ -575,7 +576,7 @@
                                 ),
                             sub:
                                 (Variable
-                                    20
+                                    21
                                     sub
                                     []
                                     In
@@ -639,10 +640,10 @@
                         Host
                     )
                     []
-                    [(Var 20 coarray_handle)
-                    (Var 20 sub)
-                    (Var 20 initial_team_index)
-                    (Var 20 stat)]
+                    [(Var 21 coarray_handle)
+                    (Var 21 sub)
+                    (Var 21 initial_team_index)
+                    (Var 21 stat)]
                     []
                     ()
                     Private
@@ -653,11 +654,11 @@
             __module_prif_prif_stop:
                 (Function
                     (SymbolTable
-                        11
+                        12
                         {
                             quiet:
                                 (Variable
-                                    11
+                                    12
                                     quiet
                                     []
                                     In
@@ -683,7 +684,7 @@
                                 ),
                             stop_code_char:
                                 (Variable
-                                    11
+                                    12
                                     stop_code_char
                                     []
                                     In
@@ -709,7 +710,7 @@
                                 ),
                             stop_code_int:
                                 (Variable
-                                    11
+                                    12
                                     stop_code_int
                                     []
                                     In
@@ -753,9 +754,9 @@
                         Host
                     )
                     []
-                    [(Var 11 quiet)
-                    (Var 11 stop_code_int)
-                    (Var 11 stop_code_char)]
+                    [(Var 12 quiet)
+                    (Var 12 stop_code_int)
+                    (Var 12 stop_code_char)]
                     []
                     ()
                     Private
@@ -766,11 +767,11 @@
             __module_prif_prif_sync_all:
                 (Function
                     (SymbolTable
-                        10
+                        11
                         {
                             errmsg:
                                 (Variable
-                                    10
+                                    11
                                     errmsg
                                     []
                                     InOut
@@ -796,7 +797,7 @@
                                 ),
                             errmsg_alloc:
                                 (Variable
-                                    10
+                                    11
                                     errmsg_alloc
                                     []
                                     InOut
@@ -824,7 +825,7 @@
                                 ),
                             stat:
                                 (Variable
-                                    10
+                                    11
                                     stat
                                     []
                                     Out
@@ -870,9 +871,9 @@
                         Host
                     )
                     []
-                    [(Var 10 stat)
-                    (Var 10 errmsg)
-                    (Var 10 errmsg_alloc)]
+                    [(Var 11 stat)
+                    (Var 11 errmsg)
+                    (Var 11 errmsg_alloc)]
                     []
                     ()
                     Private
@@ -883,11 +884,11 @@
             __module_prif_prif_team_type:
                 (Struct
                     (SymbolTable
-                        16
+                        17
                         {
                             info:
                                 (Variable
-                                    16
+                                    17
                                     info
                                     []
                                     Local
@@ -945,15 +946,16 @@
                     ()
                     ()
                     []
+                    ()
                 ),
             __module_prif_prif_this_image_no_coarray:
                 (Function
                     (SymbolTable
-                        15
+                        16
                         {
                             team:
                                 (Variable
-                                    15
+                                    16
                                     team
                                     []
                                     In
@@ -991,7 +993,7 @@
                                 ),
                             this_image:
                                 (Variable
-                                    15
+                                    16
                                     this_image
                                     []
                                     Out
@@ -1046,8 +1048,8 @@
                         Host
                     )
                     []
-                    [(Var 15 team)
-                    (Var 15 this_image)]
+                    [(Var 16 team)
+                    (Var 16 this_image)]
                     []
                     ()
                     Private
@@ -1073,11 +1075,11 @@
                             __lfortran_global_init_coarrays_51:
                                 (Function
                                     (SymbolTable
-                                        21
+                                        22
                                         {
                                             __lfortran_global_init_coarrays_51_a:
                                                 (ExternalSymbol
-                                                    21
+                                                    22
                                                     __lfortran_global_init_coarrays_51_a
                                                     4 __lfortran_global_init_coarrays_51_a
                                                     coarrays_51_a
@@ -1087,7 +1089,7 @@
                                                 ),
                                             __lfortran_global_init_coarrays_51_b:
                                                 (ExternalSymbol
-                                                    21
+                                                    22
                                                     __lfortran_global_init_coarrays_51_b
                                                     6 __lfortran_global_init_coarrays_51_b
                                                     coarrays_51_b
@@ -1097,7 +1099,7 @@
                                                 ),
                                             __lfortran_global_init_done:
                                                 (Variable
-                                                    21
+                                                    22
                                                     __lfortran_global_init_done
                                                     []
                                                     Local
@@ -1149,12 +1151,12 @@
                                     [(If
                                         ()
                                         (LogicalNot
-                                            (Var 21 __lfortran_global_init_done)
+                                            (Var 22 __lfortran_global_init_done)
                                             (Logical 4)
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 21 __lfortran_global_init_done)
+                                            (Var 22 __lfortran_global_init_done)
                                             (LogicalConstant
                                                 .true.
                                                 (Logical 4)
@@ -1166,15 +1168,15 @@
                                             .false.
                                         )
                                         (SubroutineCall
-                                            21 __lfortran_global_init_coarrays_51_a
-                                            21 __lfortran_global_init_coarrays_51_a
+                                            22 __lfortran_global_init_coarrays_51_a
+                                            22 __lfortran_global_init_coarrays_51_a
                                             []
                                             ()
                                             .false.
                                         )
                                         (SubroutineCall
-                                            21 __lfortran_global_init_coarrays_51_b
-                                            21 __lfortran_global_init_coarrays_51_b
+                                            22 __lfortran_global_init_coarrays_51_b
+                                            22 __lfortran_global_init_coarrays_51_b
                                             []
                                             ()
                                             .false.
@@ -1616,11 +1618,11 @@
                             __lfortran_global_init_coarrays_51_a:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        13
                                         {
                                             __lfortran_global_init_done:
                                                 (Variable
-                                                    12
+                                                    13
                                                     __lfortran_global_init_done
                                                     []
                                                     Local
@@ -1724,11 +1726,11 @@
                             __lfortran_global_init_coarrays_51_b:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        14
                                         {
                                             __lfortran_global_init_done:
                                                 (Variable
-                                                    13
+                                                    14
                                                     __lfortran_global_init_done
                                                     []
                                                     Local
@@ -1812,6 +1814,73 @@
                                     [(()
                                     ()
                                     CodimensionStar)]
+                                    ()
+                                ),
+                            lcompilers_intent_out_reset_point:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            object:
+                                                (Variable
+                                                    8
+                                                    object
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    6 point
+                                                    ExternalUndefined
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    lcompilers_intent_out_reset_point
+                                    (FunctionType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        ()
+                                        ExternalUndefined
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 8 object)]
+                                    []
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
                                     ()
                                 ),
                             p:
@@ -1903,6 +1972,7 @@
                                     ()
                                     ()
                                     []
+                                    6 lcompilers_intent_out_reset_point
                                 ),
                             pts:
                                 (Variable
@@ -1990,11 +2060,11 @@
             lcompilers_prif_get_integer(4):
                 (Function
                     (SymbolTable
-                        18
+                        19
                         {
                             coarray_handle:
                                 (Variable
-                                    18
+                                    19
                                     coarray_handle
                                     []
                                     In
@@ -2027,7 +2097,7 @@
                                 ),
                             image_num:
                                 (Variable
-                                    18
+                                    19
                                     image_num
                                     []
                                     Local
@@ -2053,7 +2123,7 @@
                                 ),
                             offset:
                                 (Variable
-                                    18
+                                    19
                                     offset
                                     []
                                     In
@@ -2079,7 +2149,7 @@
                                 ),
                             result:
                                 (Variable
-                                    18
+                                    19
                                     result
                                     []
                                     ReturnVar
@@ -2105,7 +2175,7 @@
                                 ),
                             sub:
                                 (Variable
-                                    18
+                                    19
                                     sub
                                     []
                                     In
@@ -2169,15 +2239,15 @@
                     )
                     [__module_prif_prif_initial_team_index
                     __module_prif_prif_get]
-                    [(Var 18 coarray_handle)
-                    (Var 18 sub)
-                    (Var 18 offset)]
+                    [(Var 19 coarray_handle)
+                    (Var 19 sub)
+                    (Var 19 offset)]
                     [(SubroutineCall
                         1 __module_prif_prif_initial_team_index
                         ()
-                        [((Var 18 coarray_handle))
-                        ((Var 18 sub))
-                        ((Var 18 image_num))
+                        [((Var 19 coarray_handle))
+                        ((Var 19 sub))
+                        ((Var 19 image_num))
                         (())]
                         ()
                         .false.
@@ -2185,12 +2255,12 @@
                     (SubroutineCall
                         1 __module_prif_prif_get
                         ()
-                        [((Var 18 image_num))
-                        ((Var 18 coarray_handle))
-                        ((Var 18 offset))
+                        [((Var 19 image_num))
+                        ((Var 19 coarray_handle))
+                        ((Var 19 offset))
                         ((PointerToCPtr
                             (GetPointer
-                                (Var 18 result)
+                                (Var 19 result)
                                 (Pointer
                                     (Integer 4)
                                 )
@@ -2205,7 +2275,7 @@
                         ()
                         .false.
                     )]
-                    (Var 18 result)
+                    (Var 19 result)
                     Private
                     .false.
                     .false.
@@ -2214,11 +2284,11 @@
             lcompilers_prif_this_image:
                 (Function
                     (SymbolTable
-                        14
+                        15
                         {
                             lcompilers_prif_this_image:
                                 (Variable
-                                    14
+                                    15
                                     lcompilers_prif_this_image
                                     []
                                     ReturnVar
@@ -2265,11 +2335,11 @@
                         1 __module_prif_prif_this_image_no_coarray
                         1 __module_prif_prif_this_image_no_coarray
                         [(())
-                        ((Var 14 lcompilers_prif_this_image))]
+                        ((Var 15 lcompilers_prif_this_image))]
                         ()
                         .false.
                     )]
-                    (Var 14 lcompilers_prif_this_image)
+                    (Var 15 lcompilers_prif_this_image)
                     Private
                     .false.
                     .false.
@@ -2278,11 +2348,11 @@
             prif_coarray_handle:
                 (Struct
                     (SymbolTable
-                        8
+                        9
                         {
                             info:
                                 (Variable
-                                    8
+                                    9
                                     info
                                     []
                                     Local
@@ -2330,6 +2400,7 @@
                     ()
                     ()
                     []
+                    ()
                 )
         })
     []

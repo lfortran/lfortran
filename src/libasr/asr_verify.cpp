@@ -1629,6 +1629,30 @@ public:
         }
         verify_deferred_bindings(x);
         verify_final_procedures(x);
+        if (x.m_intent_out_reset != nullptr) {
+            ASR::symbol_t* reset = ASRUtils::symbol_get_past_external(
+                x.m_intent_out_reset);
+            require_id(reset && ASR::is_a<ASR::Function_t>(*reset),
+                "asr.verify.struct.reset_is_function",
+                "a derived type's reset helper must be a subroutine");
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(reset);
+            require_id(fn->m_symtab->parent == x.m_symtab->parent &&
+                    fn->m_symtab->parent->get_symbol(fn->m_name) == reset,
+                "asr.verify.struct.reset_in_defining_scope",
+                "a reset helper must belong to its type's defining scope");
+            require_id(fn->n_args == 1 && fn->m_return_var == nullptr &&
+                    ASR::is_a<ASR::Var_t>(*fn->m_args[0]),
+                "asr.verify.struct.reset_interface",
+                "a reset helper takes one scalar type(t), intent(inout) argument");
+            ASR::Variable_t* arg = ASRUtils::EXPR2VAR(fn->m_args[0]);
+            require_id(arg->m_intent == ASR::intentType::InOut &&
+                    arg->m_presence == ASR::presenceType::Required &&
+                    ASR::is_a<ASR::StructType_t>(*arg->m_type) &&
+                    !ASRUtils::is_class_type(arg->m_type) &&
+                    ASRUtils::symbol_get_past_external(arg->m_type_declaration) == &x.base,
+                "asr.verify.struct.reset_receiver",
+                "a reset helper receives an existing concrete instance of its type");
+        }
         visit_UserDefinedType(x);
         // The signature is the type of an instance of this type, which is not
         // polymorphic: a backend lays an instance out from it, and a
@@ -5888,6 +5912,16 @@ public:
                 stmt_name + "::" + errmsg_name + " must be of string type, found " +
                 ASRUtils::type_to_str_fortran_expr(errmsg_type, errmsg), loc);
         }
+    }
+
+    void visit_IntentOutReset(const IntentOutReset_t &x) {
+        ASR::ttype_t* type = ASRUtils::expr_type(x.m_object);
+        require_id(ASRUtils::is_class_type(type) &&
+                (ASR::is_a<ASR::Var_t>(*x.m_object) ||
+                 ASR::is_a<ASR::ArrayItem_t>(*x.m_object)),
+            "asr.verify.intent_out_reset.polymorphic_scalar",
+            "dynamic intent(out) reset requires a nonallocatable, nonpointer polymorphic scalar");
+        visit_expr(*x.m_object);
     }
 
     void visit_ExplicitDeallocate(const ExplicitDeallocate_t &x) {
