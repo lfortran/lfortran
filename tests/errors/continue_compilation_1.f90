@@ -4898,3 +4898,16 @@ subroutine cc1_substring_section_assignment()
     names(3:1:-2)(2:3) = ['xy', 'zw', 'uv']  ! {Error} Different shape for array assignment on dimension 1 (2 and 3)
     where (names /= '') names(:)(2:3) = t(:, 1)  ! {Error} assignment to a substring of an array section is not supported in `where` yet
 end subroutine
+
+! A substring of a character array section with more than one section
+! subscript, `m(:, :)(1:2)`, is not supported as the target of an assignment
+! yet: it would define the elements `m(i, i)` only (#16161).
+subroutine cc1_substring_section_assignment_rank_2()
+    implicit none
+    character(len=4) :: m(2, 2), m3(2, 2, 2)
+    character(len=2) :: t(2), t2(2, 2), c
+    m(:, :)(1:2) = t2  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+    m(:, :)(1:2) = t  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+    m(:, :)(1:2) = c  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+    m3(1:2, 1, :)(1:2) = 'xy'  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+end subroutine

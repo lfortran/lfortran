@@ -5771,6 +5771,30 @@ semantic error: assignment to a substring of an array section is not supported i
 4899 |     where (names /= '') names(:)(2:3) = t(:, 1)  ! {Error} assignment to a substring of an array section is not supported in `where` yet
      |                         ^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: assignment to a substring of an array section with more than one section subscript is not supported yet
+    --> tests/errors/continue_compilation_1.f90:4909:5
+     |
+4909 |     m(:, :)(1:2) = t2  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+     |     ^^^^^^^^^^^^ 
+
+semantic error: assignment to a substring of an array section with more than one section subscript is not supported yet
+    --> tests/errors/continue_compilation_1.f90:4910:5
+     |
+4910 |     m(:, :)(1:2) = t  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+     |     ^^^^^^^^^^^^ 
+
+semantic error: assignment to a substring of an array section with more than one section subscript is not supported yet
+    --> tests/errors/continue_compilation_1.f90:4911:5
+     |
+4911 |     m(:, :)(1:2) = c  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+     |     ^^^^^^^^^^^^ 
+
+semantic error: assignment to a substring of an array section with more than one section subscript is not supported yet
+    --> tests/errors/continue_compilation_1.f90:4912:5
+     |
+4912 |     m3(1:2, 1, :)(1:2) = 'xy'  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
+     |     ^^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

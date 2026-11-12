@@ -8797,9 +8797,42 @@ public:
         }
     }
 
+    // The target `a(lb:ub:st)(l:r)` of an assignment is the implied do loop
+    // `idl`, `(a(i)(l:r), i = lb, ub, st)`. It has one loop variable, which
+    // is the subscript of every section dimension, so that with several of
+    // them, `a(:, :)(l:r)`, it has the elements `a(i, i)(l:r)` only.
+    void check_substring_section_target(ASR::ImpliedDoLoop_t *idl,
+            const Location &loc) {
+        ASR::expr_t *array = ASR::down_cast<ASR::StringSection_t>(
+            idl->m_values[0])->m_arg;
+        if (!ASR::is_a<ASR::ArrayItem_t>(*array)) {
+            return;
+        }
+        ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(array);
+        ASR::symbol_t *loop_var = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
+        size_t n_section_dims = 0;
+        for (size_t i = 0; i < item->n_args; i++) {
+            ASR::expr_t *subscript = item->m_args[i].m_right;
+            if (subscript != nullptr && ASR::is_a<ASR::Var_t>(*subscript) &&
+                    ASR::down_cast<ASR::Var_t>(subscript)->m_v == loop_var) {
+                n_section_dims++;
+            }
+        }
+        if (n_section_dims > 1) {
+            diag.add(Diagnostic(
+                "assignment to a substring of an array section with more "
+                "than one section subscript is not supported yet",
+                Level::Error, Stage::Semantic, {
+                    Label("", {loc})
+                }));
+            throw SemanticAbort();
+        }
+    }
+
     // The array `value` of `a(lb:ub:st)(l:r) = value` conforms to `target`,
     // the rank 1 array of the elements `a(i)(l:r)` of the implied do loop
-    // `idl`, and is of its type.
+    // `idl`, and is of its type. The section has one section dimension
+    // (`check_substring_section_target`), so its rank is that of `target`.
     void check_substring_section_value(ASR::expr_t *target,
             ASR::ImpliedDoLoop_t *idl, ASR::expr_t *value,
             const AST::Assignment_t &x) {
@@ -9072,6 +9105,7 @@ public:
             if (ac->n_args == 1 && ASR::is_a<ASR::ImpliedDoLoop_t>(*ac->m_args[0])) {
                 ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(ac->m_args[0]);
                 if (idl->n_values == 1 && ASR::is_a<ASR::StringSection_t>(*idl->m_values[0])) {
+                    check_substring_section_target(idl, target->base.loc);
                     this->visit_expr(*x.m_value);
                     ASR::expr_t* value = ASRUtils::EXPR(tmp);
                     if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
