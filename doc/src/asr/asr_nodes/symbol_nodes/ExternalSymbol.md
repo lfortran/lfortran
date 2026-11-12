@@ -45,6 +45,14 @@ the using scope gets its own node for it. Its specific procedures are imported
 as private **ExternalSymbol**s named `<specific>@<generic>`, such as
 `show_int@show`. See [GenericProcedure](GenericProcedure.md).
 
+A synthesized procedure outside a BLOCK may also need a type declared inside
+that construct. Such an import uses `module_name` for the visible outer
+BLOCK or ASSOCIATE symbol and `scope_names` for the path to the declaration.
+The verifier requires this path to reach exactly `external`; the type itself
+is neither copied nor moved. The same path is resolved when loading a module
+file. This lets a type's reset helper live in a procedure-owning scope without
+putting procedure implementations inside BLOCK.
+
 ## Examples
 
 ```clojure

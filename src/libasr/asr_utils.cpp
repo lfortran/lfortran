@@ -10543,8 +10543,29 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         }
     }
     ASR::symbol_t* module_sym = get_asr_owner(definition);
+    Vec<char*> scope_names;
+    scope_names.reserve(al, 0);
+    if (module_sym && (ASR::is_a<ASR::Block_t>(*module_sym) ||
+            ASR::is_a<ASR::AssociateBlock_t>(*module_sym))) {
+        // Anchor a cross-block import at the outermost construct, which is
+        // visible to procedures of the enclosing host. Preserve the path to
+        // the actual declaration, including shadowed names in nested blocks.
+        std::vector<char*> path;
+        ASR::symbol_t *owner = get_asr_owner(module_sym);
+        while (owner && (ASR::is_a<ASR::Block_t>(*owner) ||
+                ASR::is_a<ASR::AssociateBlock_t>(*owner))) {
+            path.push_back(symbol_name(module_sym));
+            module_sym = owner;
+            owner = get_asr_owner(module_sym);
+        }
+        for (auto it = path.rbegin(); it != path.rend(); ++it) {
+            scope_names.push_back(al, *it);
+        }
+    }
     if (module_sym == nullptr || (!ASR::is_a<ASR::Module_t>(*module_sym) &&
-            !ASR::is_a<ASR::Struct_t>(*module_sym))) {
+            !ASR::is_a<ASR::Struct_t>(*module_sym) &&
+            !ASR::is_a<ASR::Block_t>(*module_sym) &&
+            !ASR::is_a<ASR::AssociateBlock_t>(*module_sym))) {
         return sym;
     }
     for (int i = 1; scope->resolve_symbol(local_name) != nullptr; i++) {
@@ -10553,7 +10574,7 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
     ASR::symbol_t* imported = ASR::down_cast<ASR::symbol_t>(
         ASR::make_ExternalSymbol_t(al, definition->base.loc, scope,
             s2c(al, local_name), definition, symbol_name(module_sym),
-            nullptr, 0, s2c(al, name), access));
+            scope_names.p, scope_names.n, s2c(al, name), access));
     scope->add_symbol(local_name, imported);
     return imported;
 }
@@ -15865,12 +15886,21 @@ void SymbolDuplicator::fixup_type_declarations_in_scope(SymbolTable *new_scope,
             ASR::Struct_t* original = ASR::down_cast<ASR::Struct_t>(orig_sym);
             ASR::Struct_t* copy = ASR::down_cast<ASR::Struct_t>(item.second);
             if (original->m_intent_out_reset != nullptr) {
-                copy->m_intent_out_reset = new_scope->get_symbol(
-                    ASRUtils::symbol_name(original->m_intent_out_reset));
+                ASR::symbol_t *original_reset = ASRUtils::symbol_get_past_external(
+                    original->m_intent_out_reset);
+                copy->m_intent_out_reset = nullptr;
+                for (auto &scopes : copied_scopes) {
+                    if (ASRUtils::symbol_parent_symtab(original_reset) == scopes.first) {
+                        copy->m_intent_out_reset = scopes.second->get_symbol(
+                            ASRUtils::symbol_name(original_reset));
+                        break;
+                    }
+                }
                 if (copy->m_intent_out_reset != nullptr) {
                     ASR::Function_t* reset = ASR::down_cast<ASR::Function_t>(
                         copy->m_intent_out_reset);
-                    ASRUtils::EXPR2VAR(reset->m_args[0])->m_type_declaration = &copy->base;
+                    ASRUtils::EXPR2VAR(reset->m_args[0])->m_type_declaration =
+                        ASRUtils::import_type_declaration(al, &copy->base, reset->m_symtab);
                 }
             }
         }

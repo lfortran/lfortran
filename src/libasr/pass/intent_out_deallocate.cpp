@@ -34,7 +34,8 @@ ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank) {
 // Establish INTENT(OUT) entry semantics in ordinary ASR. A polymorphic
 // nonallocatable dummy dispatches once to its dynamic type's concrete helper;
 // that helper shares the cleanup and initialization emitters below. The helper
-// is part of the defining scope, not a Fortran type-bound procedure. Root
+// belongs to the nearest enclosing procedure-owning scope, not a Fortran
+// type-bound procedure. Root
 // finalization remains separate; dynamic root FINAL dispatch is not added here.
 // Compiler-generated intrinsic implementations retain their own ownership
 // conventions.
@@ -1163,13 +1164,26 @@ public:
 
 } // namespace
 
+SymbolTable *intent_out_reset_scope(const ASR::Struct_t &type) {
+    SymbolTable *scope = type.m_symtab->parent;
+    while (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        if (!ASR::is_a<ASR::Block_t>(*owner) &&
+                !ASR::is_a<ASR::AssociateBlock_t>(*owner)) break;
+        scope = scope->parent;
+    }
+    return scope;
+}
+
 void declare_intent_out_reset_helpers(Allocator &al,
         ASR::TranslationUnit_t &unit) {
     CollectResetTypes collect;
     collect.visit_TranslationUnit(unit);
     for (ASR::Struct_t* st : collect.types) {
         if (st->m_intent_out_reset != nullptr) continue;
-        SymbolTable* parent = st->m_symtab->parent;
+        // BLOCK scopes own declarations, never implementations. Keep the
+        // canonical type in place and import it into the hoisted helper.
+        SymbolTable* parent = intent_out_reset_scope(*st);
         const Location &loc = st->base.base.loc;
         std::string name = parent->get_unique_name(
             "lcompilers_intent_out_reset_" + std::string(st->m_name), false);
@@ -1178,7 +1192,8 @@ void declare_intent_out_reset_helpers(Allocator &al,
         Vec<ASR::expr_t*> args;
         args.reserve(al, 1);
         args.push_back(al, b.Variable(scope, "object", st->m_struct_signature,
-            ASR::intentType::InOut, &st->base));
+            ASR::intentType::InOut,
+            ASRUtils::import_type_declaration(al, &st->base, scope)));
         ASR::symbol_t* helper = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Function_t_util(al, loc, scope, s2c(al, name),
                 nullptr, 0, args.p, args.n, nullptr, 0, nullptr,

@@ -8,6 +8,7 @@
 #include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
+#include <libasr/pass/intent_out_deallocate.h>
 
 #include <algorithm>
 #include <set>
@@ -1636,10 +1637,10 @@ public:
                 "asr.verify.struct.reset_is_function",
                 "a derived type's reset helper must be a subroutine");
             ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(reset);
-            require_id(fn->m_symtab->parent == x.m_symtab->parent &&
+            require_id(fn->m_symtab->parent == intent_out_reset_scope(x) &&
                     fn->m_symtab->parent->get_symbol(fn->m_name) == reset,
                 "asr.verify.struct.reset_in_defining_scope",
-                "a reset helper must belong to its type's defining scope");
+                "a reset helper must belong to its type's enclosing procedure-owning scope");
             require_id(fn->n_args == 1 && fn->m_return_var == nullptr &&
                     ASR::is_a<ASR::Var_t>(*fn->m_args[0]),
                 "asr.verify.struct.reset_interface",
@@ -1649,9 +1650,19 @@ public:
                     arg->m_presence == ASR::presenceType::Required &&
                     ASR::is_a<ASR::StructType_t>(*arg->m_type) &&
                     !ASRUtils::is_class_type(arg->m_type) &&
-                    ASRUtils::symbol_get_past_external(arg->m_type_declaration) == &x.base,
+                    arg->m_type_declaration != nullptr,
                 "asr.verify.struct.reset_receiver",
                 "a reset helper receives an existing concrete instance of its type");
+            // Modfiles are first verified before external symbols are linked.
+            // Check the canonical identity once the imported type is resolved,
+            // just as for other imported type declarations.
+            if (check_external ||
+                    !ASR::is_a<ASR::ExternalSymbol_t>(*arg->m_type_declaration)) {
+                require_id(ASRUtils::symbol_get_past_external(
+                        arg->m_type_declaration) == &x.base,
+                    "asr.verify.struct.reset_receiver",
+                    "a reset helper receives an existing concrete instance of its type");
+            }
         }
         visit_UserDefinedType(x);
         // The signature is the type of an instance of this type, which is not
@@ -2411,6 +2422,22 @@ public:
             char *orig_name = symbol_name(x.m_external);
             require(std::string(x.m_original_name) == std::string(orig_name),
                 "ExternalSymbol::m_original_name must match external->m_name");
+            ASR::symbol_t *owner = ASRUtils::get_asr_owner(x.m_external);
+            if (owner && (ASR::is_a<ASR::Block_t>(*owner) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*owner))) {
+                ASR::symbol_t *anchor = ASRUtils::symbol_get_past_external(
+                    current_symtab->resolve_symbol(x.m_module_name));
+                require_id(anchor && (ASR::is_a<ASR::Block_t>(*anchor) ||
+                        ASR::is_a<ASR::AssociateBlock_t>(*anchor)),
+                    "asr.verify.external_symbol.block_owner_in_scope",
+                    "a block import must name a visible enclosing construct");
+                require_id(ASRUtils::symbol_symtab(anchor)->find_scoped_symbol(
+                        x.m_original_name, x.n_scope_names, x.m_scope_names) ==
+                        x.m_external,
+                    "asr.verify.external_symbol.block_path",
+                    "a block import's scope path must resolve to its canonical symbol");
+                return;
+            }
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::Struct_t* sm = nullptr;
             ASR::Enum_t* em = nullptr;

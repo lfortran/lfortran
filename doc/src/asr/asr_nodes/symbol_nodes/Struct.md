@@ -34,7 +34,7 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
 | `alignment` | an explicit alignment in bytes, or `nil`. |
 | `parent` | the type this one extends, or `nil`. |
 | `kind_params` | the names of the kind type parameters of the type. |
-| `intent_out_reset` | the compiler-generated reset subroutine in the type's defining scope, or `nil` before synthesis or for a nonconcrete type. This is not a user-visible type-bound procedure. |
+| `intent_out_reset` | the compiler-generated reset subroutine in the type's nearest enclosing procedure-owning scope, or `nil` before synthesis or for a nonconcrete type. This is not a user-visible type-bound procedure. |
 
 ### Return values
 
@@ -63,6 +63,13 @@ canonical symbol reference, rather than a helper-name convention, connects
 the type and its helper across imports and separate compilation. The
 receiver must be a required scalar `type(T), intent(inout)` argument of
 exactly this defining type; the ASR verifier checks this invariant.
+For a type declared in a BLOCK or ASSOCIATE construct, the helper belongs to
+the enclosing procedure or program, because constructs cannot own procedure
+implementations. The type stays in its original scope; an `ExternalSymbol`
+in the helper names it through the visible outer construct and its nested
+scope path. Module, program and procedure types keep helpers in their own
+defining scopes. No backend-specific traversal of block implementations is
+needed.
 See [IntentOutReset](../statement_nodes/IntentOutReset.md).
 
 ## Examples
