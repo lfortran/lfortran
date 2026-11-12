@@ -1851,6 +1851,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
             // are available, the vtable would be inconsistent between units
             // that define vs. merely use the type.
             if (is_struct_method_declaration(x.m_name)) {
+                cast_descriptor_actual_to_data_pointer(xx);
                 not_to_be_erased.insert(subrout_sym);
                 return;
             }

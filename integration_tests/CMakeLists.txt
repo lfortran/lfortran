@@ -1323,6 +1323,7 @@ RUN(NAME array_constructor_14 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-
 RUN(NAME array_constructor_15 LABELS gfortran llvm) # implied-do with non-default integer bounds
 RUN(NAME array_constructor_16 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64)
 RUN(NAME array_constructor_17 FILE array_constructor_15 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME array_constructor_18 LABELS gfortran llvm) # real(16) arrays from default-real, real(8) and integer constants
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_nested_dealloc_derived_pointer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1587,6 +1588,7 @@ RUN(NAME format_117 LABELS gfortran llvm)
 RUN(NAME format_118 LABELS gfortran llvm)
 RUN(NAME format_119 LABELS gfortran llvm)
 RUN(NAME format_120 LABELS gfortran llvm) # trim() in an implied-DO output list with T and colon editing (#11408)
+RUN(NAME format_121 LABELS gfortran llvm)
 # GFortran 16 lacks the F2023 LZ/LZP/LZS descriptors (13.8.5).
 RUN(NAME format_leading_zero LABELS llvm)
 RUN(NAME submodule_01 LABELS gfortran)
@@ -1728,6 +1730,7 @@ RUN(NAME floor_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran)
 
 RUN(NAME modulo_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME modulo_02 LABELS gfortran llvm)
+RUN(NAME modulo_03 LABELS gfortran llvm)
 
 RUN(NAME int_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # int body
 RUN(NAME int_02 LABELS gfortran wasm fortran) # int symboltable
@@ -2329,6 +2332,8 @@ RUN(NAME parameter_31 LABELS gfortran llvm)
 RUN(NAME parameter_32 LABELS gfortran llvm)
 RUN(NAME parameter_33 LABELS gfortran llvm)
 RUN(NAME parameter_34 LABELS gfortran llvm) # negation of a parameter array
+RUN(NAME parameter_35 LABELS gfortran llvm) # implied-shape parameter with explicit lower bound and array-valued constructor elements
+RUN(NAME parameter_36 LABELS gfortran llvm) # implied-shape parameter with a lower bound in a later dimension
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3369,6 +3374,7 @@ RUN(NAME derived_types_256 LABELS gfortran llvm) # deferred-length character com
 RUN(NAME derived_types_257 LABELS gfortran llvm) # local derived type with the same name as a non-imported module type (#5874)
 RUN(NAME derived_types_258 LABELS gfortran llvm EXTRAFILES derived_types_258_m1.f90 derived_types_258_m2.f90) # parameter array of a use-associated derived type, reloaded from the module file
 RUN(NAME derived_types_259 LABELS gfortran llvm) # local derived type with an allocatable array component, inside a procedure that has an array argument
+RUN(NAME derived_types_260 LABELS gfortran llvm EXTRAFILES derived_types_260_mod.f90) # runtime index into a parameter array of derived types must not use the component default
 RUN(NAME parent_component_01 LABELS gfortran llvm) # parent component reference, v%a_t, with the types in a program or procedure (#13073)
 RUN(NAME derived_types_vector_subscript_01 LABELS gfortran llvm) # vector subscript then component, c(idx)%n and z(idx)%re (#16913)
 RUN(NAME vector_subscript_02 LABELS gfortran llvm) # vector subscript that is an elemental expression, vals(abs(idx)) and v(int(r)) (#17225)
@@ -3961,6 +3967,8 @@ RUN(NAME host_assoc_22 LABELS gfortran llvm EXTRA_ARGS --internal-procedure-thun
 RUN(NAME host_assoc_23 FAIL LABELS llvm NO_FAST EXTRA_ARGS --internal-procedure-thunks=2)
 RUN(NAME host_assoc_26 LABELS gfortran llvm)
 RUN(NAME host_assoc_27 LABELS gfortran llvm)
+RUN(NAME host_assoc_28 LABELS gfortran llvm)
+RUN(NAME host_assoc_29 LABELS gfortran llvm)
 RUN(NAME procedure_argument_specialization_01 LABELS gfortran llvm)
 # Passes only with the copies that --fast makes: without them the recursive
 # host needs more than 2 thunks.
@@ -4341,6 +4349,7 @@ RUN(NAME class_172 LABELS gfortran llvm)
 RUN(NAME class_173 LABELS gfortran llvm)
 RUN(NAME class_174 LABELS gfortran llvm)
 RUN(NAME class_175 LABELS gfortran llvm EXTRAFILES class_175_ext.f90)
+RUN(NAME class_176 LABELS gfortran llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
@@ -5775,6 +5784,7 @@ RUN(NAME optional_17 LABELS gfortran llvm)
 RUN(NAME optional_18 LABELS gfortran llvm)
 RUN(NAME optional_19 LABELS gfortran llvm)
 RUN(NAME optional_20 LABELS gfortran llvm)
+RUN(NAME optional_associate_01 LABELS gfortran llvm)
 RUN(NAME optional_string_arg_01 LABELS gfortran llvm)
 RUN(NAME optional_string_arg_02 LABELS gfortran llvm)
 
@@ -6071,6 +6081,7 @@ RUN(NAME elemental_26 LABELS gfortran llvm fortran)
 RUN(NAME elemental_27 LABELS gfortran llvm)
 RUN(NAME elemental_28 LABELS gfortran llvm)
 RUN(NAME elemental_29 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME elemental_30 LABELS gfortran llvm)
 
 RUN(NAME types_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME types_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -6331,6 +6342,7 @@ RUN(NAME derived_component_section_01 LABELS gfortran llvm)
 RUN(NAME derived_component_section_02 LABELS gfortran llvm)
 RUN(NAME generic_interface_function_call_of_function_call LABELS gfortran llvm
     llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME elemental_optional_array_01 LABELS gfortran llvm)
 RUN(NAME elemental_function_scalar_array_arg LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME elemental_function_overloaded_compare LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --realloc-lhs-arrays)
@@ -6441,6 +6453,7 @@ RUN(NAME separate_compilation_72 LABELS gfortran llvm
     EXTRAFILES separate_compilation_72a.f90 separate_compilation_72b.f90)
 RUN(NAME separate_compilation_74 LABELS gfortran llvm EXTRAFILES separate_compilation_74a.f90) # ieee_value(x, ieee_quiet_nan) and ieee_is_nan in a module compiled to its own object file (#8714)
 RUN(NAME separate_compilation_75 LABELS gfortran llvm EXTRAFILES separate_compilation_75a.f90 separate_compilation_75b.f90 EXTRA_ARGS --separate-compilation --mangle-underscore) # ieee_arithmetic procedures compiled into two object files link (#16118)
+RUN(NAME separate_compilation_76 LABELS gfortran llvm EXTRAFILES separate_compilation_76a.f90 EXTRA_ARGS --separate-compilation) # real(16) array initializer in a module procedure compiled to its own object file
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)

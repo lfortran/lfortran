@@ -2730,9 +2730,6 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                     value = init_value;
                 }
             }
-            if (value == nullptr && member_variable->m_symbolic_value != nullptr) {
-                value = expr_value(member_variable->m_symbolic_value);
-            }
             if (value != nullptr && ASRUtils::is_array(ASRUtils::expr_type(value))
                     && ASRUtils::is_character(*ASRUtils::expr_type(value))) {
                 value = nullptr;

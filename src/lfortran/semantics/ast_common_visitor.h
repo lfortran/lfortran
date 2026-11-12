@@ -12557,7 +12557,30 @@ public:
                         throw; // Re-throw to continue error reporting
                     }
                     current_variable_type_ = temp_current_variable_type_;
-                    bool type_inferred_from_initializer = false;
+                    // `x(*)`, `x(lb:*)`, `x(*,lb:*)`: the extents come from the
+                    // evaluated initializer, the declared lower bounds are kept.
+                    auto implied_shape_type = [&](ASR::ttype_t *init_type) -> ASR::ttype_t* {
+                        ASR::dimension_t *init_dims = nullptr;
+                        size_t init_rank = ASRUtils::extract_dimensions_from_ttype(init_type, init_dims);
+                        bool has_lower_bound = false;
+                        for (size_t k = 0; k < dims.size(); k++) {
+                            has_lower_bound = has_lower_bound || dims[k].m_start != nullptr;
+                        }
+                        if (!has_lower_bound || init_rank != dims.size()) {
+                            return init_type;
+                        }
+                        Vec<ASR::dimension_t> new_dims;
+                        new_dims.reserve(al, init_rank);
+                        for (size_t k = 0; k < init_rank; k++) {
+                            ASR::dimension_t nd = init_dims[k];
+                            if (dims[k].m_start != nullptr) {
+                                nd.m_start = dims[k].m_start;
+                            }
+                            new_dims.push_back(al, nd);
+                        }
+                        return ASRUtils::duplicate_type(al, init_type, &new_dims,
+                            ASR::array_physical_typeType::FixedSizeArray, true);
+                    };
                     if (is_compile_time && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
                         AST::ArrayInitializer_t *temp_array =
                             AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
@@ -12574,7 +12597,6 @@ public:
                         temp_dims.push_back(al, temp_dim);
                         type = ASRUtils::duplicate_type(al, type, &temp_dims,
                             ASR::array_physical_typeType::FixedSizeArray, true);
-                        type_inferred_from_initializer = (dims.size() > 0 && dims[0].m_start != nullptr);
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
@@ -13190,8 +13212,8 @@ public:
                                     // }
                                     body.push_back(al, a_m_args);
                                 }
-                                if (ASRUtils::is_dimension_empty(dims.p, dims.n) && !type_inferred_from_initializer) {
-                                    type = a->m_type;
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                    type = implied_shape_type(a->m_type);
                                 }
                             }
                             if (ASR::is_a<ASR::ArrayConstructor_t>(*value)) {
@@ -13210,8 +13232,8 @@ public:
                                 value = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al,
                                     a->base.base.loc, body.p, body.size(),
                                     a->m_type, a->m_storage_format));
-                                if (ASRUtils::is_dimension_empty(dims.p, dims.n) && !type_inferred_from_initializer) {
-                                    type = a->m_type;
+                                if (ASRUtils::is_dimension_empty(dims.p, dims.n)) {
+                                    type = implied_shape_type(a->m_type);
                                 }
                             }
                             if (ASR::is_a<ASR::StringLen_t>(*value)) {
@@ -23171,7 +23193,11 @@ public:
      * [min(-1, 2, 5, 4, 5), min(2, 2, 5, 4, -8), min(3, 2, 5, 5, 7)]
      *
     */
-    void compiletime_broadcast_elemental_intrinsic(
+    // Fold an elemental intrinsic over compile-time array arguments.
+    // nullptr means an element did not fold; the caller builds a runtime
+    // intrinsic. real(16)/complex(16) results stay ArrayConstructors because
+    // ArrayConstant cannot pack a pointer-encoded m_r payload.
+    ASR::expr_t* compiletime_broadcast_elemental_intrinsic(
         Vec<ASR::expr_t*> args,
         ASR::ArrayConstant_t** result_array,
         std::vector<size_t> array_indices_in_args,
@@ -23212,7 +23238,7 @@ public:
                     (*result_array)->m_type = correct_type;
                 }
             }
-            return;
+            return (ASR::expr_t*)(*result_array);
         }
         ASR::ttype_t* array_type = ASRUtils::expr_type(first_arg_);
         Vec<ASR::expr_t*> new_expr; new_expr.reserve(al, max_array_size);
@@ -23239,11 +23265,14 @@ public:
                 }
             }
             // Call the intrinsic function for the current combination of arguments
-            // result_array->m_args[i] = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
-            if (create_func(al, loc, intrinsic_args, diag) == nullptr) {
+            ASR::asr_t* element_asr = create_func(al, loc, intrinsic_args, diag);
+            if (element_asr == nullptr) {
                 throw SemanticAbort();
             }
-            ASR::expr_t* result = ASRUtils::expr_value(ASRUtils::EXPR(create_func(al, loc, intrinsic_args, diag)));
+            ASR::expr_t* result = ASRUtils::expr_value(ASRUtils::EXPR(element_asr));
+            if (result == nullptr) {
+                return nullptr;
+            }
             array_type = ASRUtils::expr_type(result);
             new_expr.push_back(al, result);
             // ASRUtils::set_ArrayConstant_value(result_array, result, i);
@@ -23256,14 +23285,22 @@ public:
         (*result_array)->m_type = correct_type;
         ASR::expr_t* new_expr_ = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, (*result_array)->base.base.loc,
                                     new_expr.p, new_expr.n, (*result_array)->m_type, (*result_array)->m_storage_format));
-        if (ASR::is_a<ASR::ArrayConstant_t>(*new_expr_)) {
-            (*result_array) = ASR::down_cast<ASR::ArrayConstant_t>(new_expr_);
-        } else {
-            (*result_array) = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(new_expr_));
+        // ArrayConstant when the element kind packs; otherwise the
+        // constructor itself. Its value is null for real(16), and
+        // down_cast of that null asserted `f != nullptr`.
+        ASR::expr_t* folded = new_expr_;
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*folded)) {
+            ASR::expr_t* value = ASRUtils::expr_value(folded);
+            if (value && ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                folded = value;
+            }
         }
-        // Restore the correct multi-dimensional type; make_ArrayConstructor_t_util
-        // flattens it to 1D internally.
-        (*result_array)->m_type = correct_type;
+        if (ASR::is_a<ASR::ArrayConstant_t>(*folded)) {
+            ASR::down_cast<ASR::ArrayConstant_t>(folded)->m_type = correct_type;
+        } else if (ASR::is_a<ASR::ArrayConstructor_t>(*folded)) {
+            ASR::down_cast<ASR::ArrayConstructor_t>(folded)->m_type = correct_type;
+        }
+        return folded;
     }
 
     std::vector<size_t> find_array_indices_in_args(const Vec<ASR::expr_t*>& args) {
@@ -23396,8 +23433,13 @@ public:
                         ASR::expr_t* arg_ = expr_duplicator.duplicate_expr(arg);
                         ASR::ArrayConstant_t* result_array = ASR::down_cast<ASR::ArrayConstant_t>(arg_);
 
-                        compiletime_broadcast_elemental_intrinsic(args, &result_array, array_indices_in_args, create_func, x.base.base.loc, al);;
-                        tmp = (ASR::asr_t*) result_array;
+                        ASR::expr_t* broadcast = compiletime_broadcast_elemental_intrinsic(
+                            args, &result_array, array_indices_in_args, create_func, x.base.base.loc, al);
+                        if (broadcast) {
+                            tmp = (ASR::asr_t*) broadcast;
+                        } else {
+                            tmp = create_func(al, x.base.base.loc, args, diag);
+                        }
                     } else {
                         tmp = create_func(al, x.base.base.loc, args, diag);
                     }
@@ -30195,17 +30237,6 @@ public:
                             var->m_value : var->m_symbolic_value;
                         value = get_struct_member_value_from_constant_array(
                             parameter_value, tmp2_m_m_ext, tmp2_mem_type);
-                        ASR::symbol_t* mem_sym =
-                            ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
-
-                        if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
-                            ASR::Variable_t* mem_var =
-                                ASR::down_cast<ASR::Variable_t>(mem_sym);
-
-                            if (mem_var->m_symbolic_value) {
-                                value = mem_var->m_symbolic_value; // ArrayConstant
-                            }
-                        }
                         value = ASRUtils::import_folded_constant_value(
                             al, value, current_scope);
                     }
@@ -30220,17 +30251,6 @@ public:
                     if (base_value) {
                         value = get_struct_member_value_from_constant_array(
                             base_value, tmp2_m_m_ext, tmp2_mem_type);
-                        ASR::symbol_t* mem_sym =
-                            ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
-
-                        if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
-                            ASR::Variable_t* mem_var =
-                                ASR::down_cast<ASR::Variable_t>(mem_sym);
-
-                            if (mem_var->m_symbolic_value) {
-                                value = mem_var->m_symbolic_value; // ArrayConstant
-                            }
-                        }
                         value = ASRUtils::import_folded_constant_value(
                             al, value, current_scope);
                     }
@@ -30291,17 +30311,6 @@ public:
                         var->m_value : var->m_symbolic_value;
                     value = get_struct_member_value_from_constant_array(
                         parameter_value, tmp2_m_m_ext, tmp2_mem_type);
-                    ASR::symbol_t* mem_sym =
-                        ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
-
-                    if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
-                        ASR::Variable_t* mem_var =
-                            ASR::down_cast<ASR::Variable_t>(mem_sym);
-
-                        if (mem_var->m_symbolic_value) {
-                            value = mem_var->m_symbolic_value; // ArrayConstant
-                        }
-                    }
                     value = ASRUtils::import_folded_constant_value(
                         al, value, current_scope);
                 }
@@ -30316,17 +30325,6 @@ public:
                 if (base_value) {
                     value = get_struct_member_value_from_constant_array(
                         base_value, tmp2_m_m_ext, tmp2_mem_type);
-                    ASR::symbol_t* mem_sym =
-                        ASRUtils::symbol_get_past_external(tmp2_m_m_ext);
-
-                    if (value == nullptr && ASR::is_a<ASR::Variable_t>(*mem_sym)) {
-                        ASR::Variable_t* mem_var =
-                            ASR::down_cast<ASR::Variable_t>(mem_sym);
-
-                        if (mem_var->m_symbolic_value) {
-                            value = mem_var->m_symbolic_value; // ArrayConstant
-                        }
-                    }
                     value = ASRUtils::import_folded_constant_value(
                         al, value, current_scope);
                 }

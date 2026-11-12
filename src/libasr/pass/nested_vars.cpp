@@ -1330,9 +1330,11 @@ public:
         al(al_), diagnostics(diagnostics_), pool_size(pool_size_),
         openmp(openmp_) {}
 
-    // A value dummy argument of a bind(c) procedure is held by the procedure
-    // as a value, not as a variable with an address that a frame can refer
-    // to (#14178).
+    // The code generation holds a scalar integer, real or logical value
+    // dummy argument of a bind(c) procedure in a local variable that a frame
+    // can refer to. Any other value dummy argument of a bind(c) procedure is
+    // held by the procedure as a value, not as a variable with an address
+    // (#14178).
     bool reject_unsupported(ASR::symbol_t *host_sym,
             const std::vector<ASR::symbol_t*> &captured) {
         if (!ASR::is_a<ASR::Function_t>(*host_sym) || ASRUtils::get_FunctionType(
@@ -1344,6 +1346,13 @@ public:
             if (!ASR::is_a<ASR::Variable_t>(*sym) ||
                     !ASR::down_cast<ASR::Variable_t>(sym)->m_value_attr ||
                     !is_dummy_argument_of(sym, host_sym)) {
+                continue;
+            }
+            ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(sym)->m_type;
+            if (ASR::is_a<ASR::Integer_t>(*type) ||
+                    ASR::is_a<ASR::UnsignedInteger_t>(*type) ||
+                    ASR::is_a<ASR::Real_t>(*type) ||
+                    ASR::is_a<ASR::Logical_t>(*type)) {
                 continue;
             }
             std::string msg = "host association of a value dummy argument "
