@@ -1858,7 +1858,14 @@ class ASRToLLVMVisitor;
                 llvm::Value* const member_ptr = get_ptr_to_struct_variable_member(ptr, struct_sym, i);
                 auto const member_asr_type = member_variable->m_type;
                 auto* member_struct_sym = get_struct_sym(member_variable);
+                // What an allocatable component holds is freed with it and
+                // does not live on, so it is finalized as usual.
+                const bool saved_reset = reset_freed_members_;
+                if (ASRUtils::is_allocatable(member_asr_type)) {
+                    reset_freed_members_ = false;
+                }
                 check_userDefinedFinalizer_then_finalize(member_ptr, member_asr_type, member_struct_sym, true);
+                reset_freed_members_ = saved_reset;
                 if (reset_freed_members_ && ASRUtils::is_allocatable(member_asr_type)
                         && is_finalizable_type(member_asr_type, member_struct_sym, true)) {
                     mark_member_unallocated(ptr, struct_sym, i);

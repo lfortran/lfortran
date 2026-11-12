@@ -6597,6 +6597,7 @@ RUN(NAME intent_out_polymorphic_dyn_03 LABELS gfortran llvm)
 RUN(NAME intent_out_polymorphic_dyn_04 LABELS gfortran llvm)
 RUN(NAME intent_out_polymorphic_dyn_05 LABELS gfortran llvm)
 RUN(NAME intent_out_polymorphic_dyn_06 LABELS gfortran llvm)
+RUN(NAME intent_out_polymorphic_dyn_07 LABELS gfortran llvm)
 RUN(NAME array_shape_func_call LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_neg_extent_01 LABELS gfortran llvm)
 
