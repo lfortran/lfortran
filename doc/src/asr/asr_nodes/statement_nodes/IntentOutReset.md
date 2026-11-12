@@ -27,6 +27,9 @@ not target ownership; fixed character storage remains owned by the object.
 Null pointer defaults use the component expression's type in the helper's
 scope, including imported procedure-interface bounds, rather than reusing
 the default initializer's declaration-scope type.
+Non-null procedure and data targets are copied into the receiving scope using
+canonical symbol imports, then restored with ordinary pointer association.
+This preserves saved target storage rather than assigning its initial value.
 
 This is not destruction of the object or allocation of a replacement.
 Root finalization is separate; this node does not implement dynamic root

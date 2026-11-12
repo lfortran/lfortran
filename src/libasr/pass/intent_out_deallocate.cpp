@@ -105,20 +105,45 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             const Location& loc,
             Vec<ASR::stmt_t*>& out_stmts) {
         if (ASRUtils::is_pointer(ASRUtils::expr_type(target))) {
-            // A pointer component is associated, not assigned.  Only a null
-            // default is handled, as elsewhere in this pass; the
-            // PointerNullConstant is rebuilt around the component so that
-            // codegen can resolve what it points at. Use the member's type,
-            // whose procedure-interface dependencies are imported into this
-            // scope, rather than the default's declaration-scope type.
-            if (!ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
-                return false;
-            }
-            ASR::expr_t* null_value = ASRUtils::EXPR(
-                ASR::make_PointerNullConstant_t(al, loc,
+            if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+                // Use the member's type, whose procedure-interface
+                // dependencies are imported into this scope.
+                value = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, loc,
                     ASRUtils::expr_type(target), target));
+            } else {
+                // The initializer belongs to the type's declaration scope,
+                // not necessarily the procedure receiving the reset.
+                class ImportTarget: public ASR::BaseExprReplacer<ImportTarget> {
+                    Allocator &al;
+                    SymbolTable *scope;
+                public:
+                    ImportTarget(Allocator &al, SymbolTable *scope):
+                        al(al), scope(scope) {}
+
+                    void replace_Var(ASR::Var_t *x) {
+                        x->m_v = ASRUtils::import_symbol(al, x->m_v, scope,
+                            ASR::accessType::Private, "1_");
+                    }
+
+                    void replace_StructInstanceMember(ASR::StructInstanceMember_t *x) {
+                        ASR::BaseExprReplacer<ImportTarget>::replace_StructInstanceMember(x);
+                        *current_expr = ASRUtils::EXPR(
+                            ASRUtils::getStructInstanceMember_t(al, x->base.base.loc,
+                                (ASR::asr_t*)x->m_v, x->m_m, x->m_m, scope));
+                    }
+
+                    void replace_FunctionPointerCast(ASR::FunctionPointerCast_t *x) {
+                        ASR::BaseExprReplacer<ImportTarget>::replace_FunctionPointerCast(x);
+                        x->m_to = ASRUtils::import_type_declaration(al, x->m_to, scope);
+                        x->m_type = ASRUtils::import_procedure_type(al, x->m_type, scope);
+                    }
+                } importer(al, current_scope);
+                value = ASRUtils::ExprStmtDuplicator(al).duplicate_expr(value);
+                importer.current_expr = &value;
+                importer.replace_expr(value);
+            }
             out_stmts.push_back(al, ASRUtils::STMT(
-                ASRUtils::make_Associate_t_util(al, loc, target, null_value)));
+                ASRUtils::make_Associate_t_util(al, loc, target, value)));
             return true;
         }
         if (!ASR::is_a<ASR::StructConstant_t>(*value)) {
