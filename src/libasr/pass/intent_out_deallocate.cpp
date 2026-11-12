@@ -31,13 +31,13 @@ public:
     }
 };
 
-class PointerDefaultTargetImporter
-        : public ASR::BaseExprReplacer<PointerDefaultTargetImporter> {
+class DefaultValueImporter
+        : public ASR::BaseExprReplacer<DefaultValueImporter> {
     Allocator &al;
     SymbolTable *scope;
 
 public:
-    PointerDefaultTargetImporter(Allocator &al_, SymbolTable *scope_)
+    DefaultValueImporter(Allocator &al_, SymbolTable *scope_)
         : al(al_), scope(scope_) {}
 
     void replace_Var(ASR::Var_t *x) {
@@ -47,13 +47,13 @@ public:
     }
 
     void replace_StructInstanceMember(ASR::StructInstanceMember_t *x) {
-        ASR::BaseExprReplacer<PointerDefaultTargetImporter>::
+        ASR::BaseExprReplacer<DefaultValueImporter>::
             replace_StructInstanceMember(x);
         x->m_m = ASRUtils::import_struct_instance_member(al, x->m_m, scope);
     }
 
     void replace_FunctionPointerCast(ASR::FunctionPointerCast_t *x) {
-        ASR::BaseExprReplacer<PointerDefaultTargetImporter>::
+        ASR::BaseExprReplacer<DefaultValueImporter>::
             replace_FunctionPointerCast(x);
         x->m_to = ASRUtils::import_symbol(al, x->m_to, scope,
             ASR::accessType::Private, "1_");
@@ -252,7 +252,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             association_target = ASRUtils::ExprStmtDuplicator(al).duplicate_expr(
                 value);
             LCOMPILERS_ASSERT(association_target != nullptr);
-            PointerDefaultTargetImporter(al, current_scope).replace_expr(
+            DefaultValueImporter(al, current_scope).replace_expr(
                 association_target);
         }
         out_stmts.push_back(al, ASRUtils::STMT(
@@ -281,6 +281,11 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             return true;
         }
         if (!ASR::is_a<ASR::StructConstant_t>(*value)) {
+            if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+                value = ASRUtils::ExprStmtDuplicator(al).duplicate_expr(value);
+                LCOMPILERS_ASSERT(value != nullptr);
+                DefaultValueImporter(al, current_scope).replace_expr(value);
+            }
             out_stmts.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
                 al, loc, target, value, nullptr, false, false, false, false)));
             return true;
