@@ -413,6 +413,90 @@ ASR::symbol_t *optional_call_symbol(const ASR::GpuKernelLaunch_t &x) {
     return x.m_kernel;
 }
 
+// A bind(C) procedure receives NULL for an absent optional argument, as it
+// has no presence argument. When the actual argument is an optional dummy of
+// an owning function, it is replaced by a temporary pointer that is
+// associated with the dummy only when it is present:
+//     if (is_present) then
+//         tmp => x
+//     else
+//         nullify(tmp)
+//     end if
+// as an absent dummy would otherwise be passed as the address of the
+// placeholder that its caller made for it.
+template <typename T>
+bool pass_absent_optional_as_null(Allocator& al, const T& x, ASR::Function_t* func,
+        const std::vector<ASR::Function_t*>& owning_functions,
+        std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx,
+        SymbolTable* scope, Vec<ASR::call_arg_t>& new_args, Vec<ASR::stmt_t*>& pass_result) {
+    bool replaced = false;
+    new_args.reserve(al, x.n_args);
+    for( size_t i = 0; i < x.n_args; i++ ) {
+        ASR::call_arg_t arg = x.m_args[i];
+        ASR::expr_t* actual = arg.m_value ?
+            ASRUtils::get_past_array_physical_cast(arg.m_value) : nullptr;
+        if( i < func->n_args && actual && ASR::is_a<ASR::Var_t>(*actual) &&
+                ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v) &&
+                ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional &&
+                !ASRUtils::is_pointer(ASRUtils::expr_type(actual)) &&
+                !ASRUtils::is_allocatable(ASRUtils::expr_type(actual)) ) {
+            ASR::expr_t* is_present = nullptr;
+            for( ASR::Function_t* owning_function: owning_functions ) {
+                std::vector<int32_t>& optional_idx = sym2optionalargidx[&(owning_function->base)];
+                for( int32_t k: optional_idx ) {
+                    if( ASR::down_cast<ASR::Var_t>(owning_function->m_args[k])->m_v ==
+                            ASR::down_cast<ASR::Var_t>(actual)->m_v ) {
+                        is_present = owning_function->m_args[k + 1];
+                        break;
+                    }
+                }
+                if( is_present ) {
+                    break;
+                }
+            }
+            ASR::ttype_t* target_type = ASRUtils::expr_type(actual);
+            // The extent of an assumed-size array is unknown, so a pointer
+            // cannot be associated with it.
+            bool is_assumed_size = ASRUtils::is_array(target_type) &&
+                ASRUtils::extract_physical_type(target_type) ==
+                    ASR::array_physical_typeType::UnboundedPointerArray;
+            if( is_present && !is_assumed_size ) {
+                const Location& loc = arg.loc;
+                bool is_array = ASRUtils::is_array(target_type);
+                ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                    is_array ? ASRUtils::create_array_type_with_empty_dims(al,
+                        ASRUtils::extract_n_dims_from_ttype(target_type), target_type)
+                        : target_type));
+                std::string pointer_name = scope->get_unique_name(
+                    "__libasr_created_optional_target_pointer_");
+                ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(loc,
+                    pointer_name, al, scope, pointer_type, ASR::intentType::Local,
+                    ASRUtils::EXPR2VAR(actual)->m_type_declaration, actual);
+                ASRUtils::ASRBuilder builder(al, loc);
+                Vec<ASR::expr_t*> nullify_vars; nullify_vars.reserve(al, 1);
+                nullify_vars.push_back(al, pointer_variable);
+                pass_result.push_back(al, builder.If(is_present,
+                    {ASRUtils::STMT(ASR::make_Associate_t(al, loc, pointer_variable, actual,
+                        ASR::pointer_bounds_formType::NoPointerBounds))},
+                    {ASRUtils::STMT(ASR::make_Nullify_t(al, loc, nullify_vars.p,
+                        nullify_vars.size()))}));
+                if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg.m_value) ) {
+                    ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg.m_value);
+                    arg.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
+                        arg.m_value->base.loc, pointer_variable,
+                        ASR::array_physical_typeType::DescriptorArray, cast->m_new,
+                        cast->m_type, nullptr));
+                } else {
+                    arg.m_value = pointer_variable;
+                }
+                replaced = true;
+            }
+        }
+        new_args.push_back(al, arg);
+    }
+    return replaced;
+}
+
 template <typename T>
 bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     const T& x, SymbolTable* scope, std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx, Vec<ASR::stmt_t*>& pass_result) {
@@ -470,6 +554,10 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
 
     if( !replace_func_call ) {
+        if( ASRUtils::get_FunctionType(func)->m_abi == ASR::abiType::BindC ) {
+            return pass_absent_optional_as_null(al, x, func, owning_functions,
+                sym2optionalargidx, scope, new_args, pass_result);
+        }
         return false;
     }
 

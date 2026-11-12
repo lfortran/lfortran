@@ -47,7 +47,8 @@ set(LFORTRAN_SMOKE_TESTS
     interface_01 interface_02 interface_03
     procedure_pointer_array_01 procedure_pointer_12
     bindc_01 bindc_02 bindc_03 bindc_04 bindc_05 bindc_08
-    bindc_06 bindc_07 complex_cloc_01 test_c_long_double_02
+    bindc_06 bindc_07 bindc_optional_array_01
+    complex_cloc_01 test_c_long_double_02
     bindc_iso_fb_01 bindc_iso_fb_02 bindc_iso_fb_03
     c_f_pointer_01 c_f_pointer_02 c_f_proc_ptr_01
     separate_compilation_07 separate_compilation_09
