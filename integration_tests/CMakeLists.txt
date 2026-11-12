@@ -2349,6 +2349,7 @@ RUN(NAME parameter_33 LABELS gfortran llvm)
 RUN(NAME parameter_34 LABELS gfortran llvm) # negation of a parameter array
 RUN(NAME parameter_35 LABELS gfortran llvm) # implied-shape parameter with explicit lower bound and array-valued constructor elements
 RUN(NAME parameter_36 LABELS gfortran llvm) # implied-shape parameter with a lower bound in a later dimension
+RUN(NAME parameter_37 LABELS gfortran llvm) # substring of a parameter array element
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

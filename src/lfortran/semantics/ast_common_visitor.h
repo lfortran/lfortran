@@ -17201,6 +17201,57 @@ public:
         return kind;
     }
 
+    // The compile-time value of the substring `(start:end:step)` of a string
+    // whose compile-time value is `string_value`, or nullptr if the substring
+    // is not known at compile time. Substring bounds are character positions.
+    // For kind > 1 the value holds UTF-8, so whole characters are sliced.
+    ASR::expr_t* fold_substring_value(const Location& loc,
+            ASR::expr_t* string_value, ASR::expr_t* start, ASR::expr_t* end,
+            ASR::expr_t* step) {
+        if (string_value == nullptr ||
+                !ASR::is_a<ASR::StringConstant_t>(*string_value)) {
+            return nullptr;
+        }
+        ASR::StringConstant_t* string_constant =
+            ASR::down_cast<ASR::StringConstant_t>(string_value);
+        ASR::String_t* string_type =
+            ASRUtils::get_string_type(string_constant->m_type);
+        int64_t start_value = 0, end_value = 0, step_value = 0, string_len = 0;
+        if (!ASRUtils::extract_value(ASRUtils::expr_value(start), start_value) ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(end), end_value) ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(step), step_value) ||
+                !ASRUtils::extract_value(string_type->m_len, string_len) ||
+                step_value != 1) {
+            return nullptr;
+        }
+        // A substring whose end is before its start has zero length, whatever
+        // its bounds are. Any other out of bounds substring is not folded.
+        int64_t substring_len = 0;
+        if (start_value <= end_value) {
+            if (start_value < 1 || end_value > string_len) {
+                return nullptr;
+            }
+            substring_len = end_value - start_value + 1;
+        }
+        std::vector<std::string> characters = ASRUtils::string_value_characters(
+            string_constant->m_s, string_type->m_kind);
+        // A value shorter than the length of its type is blank padded
+        characters.resize(string_len, " ");
+        std::string substring;
+        for (int64_t i = start_value; i <= end_value; i++) {
+            substring += characters[i - 1];
+        }
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+            compiler_options.po.default_integer_kind));
+        ASR::ttype_t* substring_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+            string_type->m_kind,
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, substring_len,
+                int_type)),
+            ASR::ExpressionLength, ASR::DescriptorString));
+        return ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc,
+            s2c(al, substring), substring_type));
+    }
+
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
         size_t n_args, AST::fnarg_t* m_subargs, size_t n_subargs,
         ASR::expr_t* v_expr, ASR::symbol_t *v, ASR::symbol_t *f2) {
@@ -17540,8 +17591,14 @@ public:
                 step = ASRUtils::EXPR(tmp);
                 step = CastingUtil::perform_casting(step, int_type, al, loc);
 
+                // `arr_ref_val` is the value of the element, which is not the
+                // value of its substring
+                ASR::expr_t* section_value = fold_substring_value(loc,
+                    arr_ref_val, l, r, step);
                 ASR::ttype_t *string_tt;
-                {
+                if (section_value) {
+                    string_tt = ASRUtils::expr_type(section_value);
+                } else {
                     ASRUtils::ASRBuilder b(al, loc);
                     string_tt = ASRUtils::TYPE(ASR::make_String_t(
                         al, loc, ASRUtils::extract_kind_from_ttype_t(root_v_type),
@@ -17550,7 +17607,7 @@ public:
                         ASR::DescriptorString));
                 }
                 return ASR::make_StringSection_t(al, loc, array_item, l,
-                        r, ASRUtils::EXPR(tmp), string_tt, arr_ref_val);
+                        r, ASRUtils::EXPR(tmp), string_tt, section_value);
             } else {
                 ASR::ttype_t* final_type;
                 if (is_arg_array) {
