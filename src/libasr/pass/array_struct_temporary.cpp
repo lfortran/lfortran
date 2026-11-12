@@ -4377,6 +4377,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 }
             }
         }
+        // The reshaped value is a contiguous buffer, which codegen copies
+        // into the target's data as is. An array section target (such as
+        // `m(:, ::2)`) is not contiguous in general: it is assigned from a
+        // temporary, element by element.
+        if (ASR::is_a<ASR::ArraySection_t>(*xx.m_target) &&
+                ASR::is_a<ASR::ArrayReshape_t>(*xx.m_value)) {
+            std::string name_hint = "_reshape_temp_";
+            xx.m_value = call_create_and_allocate_temporary_variable(
+                xx.m_value, al, current_body, name_hint, current_scope, exprs_with_target);
+        }
         // e.g.; a = [b, a], where 'a' is an allocatable
         if (realloc_lhs && ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
             ASRUtils::is_allocatable(xx.m_target)
