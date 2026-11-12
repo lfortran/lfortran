@@ -4382,6 +4382,7 @@ RUN(NAME class_180 LABELS gfortran llvm)
 # GNU Fortran 15 on Linux emits invalid '@' assembler symbols for these BLOCK-local types.
 RUN(NAME class_181 LABELS llvm)
 RUN(NAME class_182 LABELS gfortran llvm c)
+RUN(NAME class_183 LABELS gfortran llvm c)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 RUN(NAME class_procedure_nopass_01 LABELS gfortran llvm)
