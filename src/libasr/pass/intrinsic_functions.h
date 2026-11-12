@@ -530,6 +530,45 @@ static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x,
 
 } // namespace UnaryIntrinsicFunction
 
+// MSVC long double is double and its CRT has no erfl/tgammal/lgammal/log10l.
+// real(10) is not that target. Everywhere else these are the C long-double
+// entry points, which is the kind-10 fold.
+inline long double host_erfl(long double x) {
+#if defined(_MSC_VER)
+    return static_cast<long double>(std::erf(static_cast<double>(x)));
+#else
+    return erfl(x);
+#endif
+}
+inline long double host_truncl(long double x) {
+#if defined(_MSC_VER)
+    return static_cast<long double>(std::trunc(static_cast<double>(x)));
+#else
+    return truncl(x);
+#endif
+}
+inline long double host_tgammal(long double x) {
+#if defined(_MSC_VER)
+    return static_cast<long double>(std::tgamma(static_cast<double>(x)));
+#else
+    return tgammal(x);
+#endif
+}
+inline long double host_lgammal(long double x) {
+#if defined(_MSC_VER)
+    return static_cast<long double>(std::lgamma(static_cast<double>(x)));
+#else
+    return lgammal(x);
+#endif
+}
+inline long double host_log10l(long double x) {
+#if defined(_MSC_VER)
+    return static_cast<long double>(std::log10(static_cast<double>(x)));
+#else
+    return log10l(x);
+#endif
+}
+
 // `X` is the name of the function in the IntrinsicElementalFunctions enum and
 // we use the same name for `create_X` and other places
 // `eval_X` is the name of the function in the `std` namespace for compile
@@ -555,11 +594,25 @@ namespace X {                                                                   
         if (kind == 16) {                                                       \
             return nullptr;                                                     \
         }                                                                       \
-        if (kind == 10 && std::string(#X) == "Erf") {                           \
-            /* Kind 10 stores a pointer in m_r. Fold erf in long double. */    \
+        if (kind == 10) {                                                       \
+            /* Kind 10 stores a pointer in m_r. Fold in long double. */        \
             long double rv = ASRUtils::real_constant_get_r10(                   \
                 ASR::down_cast<ASR::RealConstant_t>(args[0]));                  \
-            return ASRUtils::make_RealConstant_r10(al, loc, erfl(rv), t);       \
+            long double result;                                                 \
+            if (std::string(#X) == "Erf") {                                     \
+                result = host_erfl(rv);                                         \
+            } else if (std::string(#X) == "Trunc") {                            \
+                result = host_truncl(rv);                                       \
+            } else if (std::string(#X) == "Gamma") {                            \
+                result = host_tgammal(rv);                                      \
+            } else if (std::string(#X) == "LogGamma") {                         \
+                result = host_lgammal(rv);                                      \
+            } else if (std::string(#X) == "Log10") {                            \
+                result = host_log10l(rv);                                       \
+            } else {                                                            \
+                return nullptr;                                                 \
+            }                                                                   \
+            return ASRUtils::make_RealConstant_r10(al, loc, result, t);         \
         }                                                                       \
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;          \
         ASRUtils::ASRBuilder b(al, loc);                                        \

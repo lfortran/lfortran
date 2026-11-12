@@ -74,4 +74,10 @@ if (abs(cosd(60.0_kp) - 0.5_kp) &
         > 16*spacing(0.5_kp)) error stop
 if (abs(tand(45.0_kp) - 1.0_kp) &
         > 16*spacing(1.0_kp)) error stop
+! The unary evaluators still folded kind 10 from the pointer bits:
+! gamma(5) was Infinity, log_gamma(1) was about 712, and log10(100)
+! was about -309. These three values are exact in every real kind.
+if (gamma(5.0_kp) /= 24.0_kp) error stop
+if (log_gamma(1.0_kp) /= 0.0_kp) error stop
+if (log10(100.0_kp) /= 2.0_kp) error stop
 end program
