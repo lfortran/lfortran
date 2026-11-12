@@ -2,7 +2,7 @@
     "basename": "asr-nested_vars_frame_call_in_declaration-00af952",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/nested_vars_frame_call_in_declaration.asr",
-    "infile_hash": "779393e60ebdcfa2842619c992cd57cff7010f22b6e6287eaef5e2a1",
+    "infile_hash": "95654ff9f9e17661c9bb5898af5484e0c6a352620d8ed15cd1feba49",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

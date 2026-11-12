@@ -1,7 +1,7 @@
 (TranslationUnit (SymbolTable 0 {
   "test" (Program (SymbolTable 1 {
     "t" (Struct (SymbolTable 2 {}) "t" (StructType [] [] true false)
-      [] [] [] :Source :Public false false false [] nil nil [])
+      [] [] [] :Source :Public false false false [] nil nil [] nil)
     "write" (Function (SymbolTable 3 {
       "a" (Variable 3 "a" [] :In nil nil :Default (Integer 4) nil :Source :Public :Required false false false nil false false false :NotMethod nil [] nil)
       "b" (Variable 3 "b" [] :In nil nil :Default (Integer 4) nil :Source :Public :Required false false false nil false false false :NotMethod nil [] nil)

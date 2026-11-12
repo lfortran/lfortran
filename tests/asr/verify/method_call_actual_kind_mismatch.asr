@@ -42,6 +42,7 @@
               nil
               nil
               []
+              nil
             )
             "base_meth" (Function
               (SymbolTable

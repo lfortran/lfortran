@@ -76,6 +76,7 @@
               nil
               nil
               []
+              nil
             )
             "inner" (Function
               (SymbolTable

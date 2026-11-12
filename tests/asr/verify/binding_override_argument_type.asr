@@ -42,6 +42,7 @@
               nil
               nil
               []
+              nil
             )
             "base_meth" (Function
               (SymbolTable
@@ -145,6 +146,7 @@
               nil
               (SymbolRef 1 "base")
               []
+              nil
             )
             "derived_meth" (Function
               (SymbolTable
