@@ -6,6 +6,7 @@ program transfer_40
     character(4) :: labels(2), table(2, 2)
     character(3) :: odd(3)
     character(kind=4, len=2) :: wide(2)
+    character(0) :: empty(3)
     integer(1), parameter :: bytes(8) = [integer(1) :: 119, 120, 121, 122, &
         112, 113, 114, 115]
 
@@ -23,6 +24,8 @@ program transfer_40
 
     wide = [4_"wx", 4_"yz"]
     call wide_characters(wide)
+
+    call zero_length(empty, empty)
     print *, "OK"
 contains
     subroutine explicit_len(s, n)
@@ -93,5 +96,18 @@ contains
         k = transfer(s, k)
         if (any(k /= [119, 120, 121, 122])) error stop 22
         if (size(transfer(s, [0_1])) /= 16) error stop 23
+    end subroutine
+
+    subroutine zero_length(s, z)
+        character(*), intent(in) :: s(:)
+        character(0), intent(in) :: z(3)
+        integer(1) :: b(0)
+        if (size(transfer(s, [0_1])) /= 0) error stop 24
+        if (size(transfer(s, [0])) /= 0) error stop 25
+        if (size(transfer(z, [0_1])) /= 0) error stop 26
+        b = transfer(s, b)
+        if (size(b) /= 0) error stop 27
+        b = transfer(z, b)
+        if (size(b) /= 0) error stop 28
     end subroutine
 end program transfer_40

@@ -15000,15 +15000,20 @@ public:
                     }
                 }
 
-                // Bytes of one source element. The characters of a string
-                // array are stored behind its string descriptor, and its
-                // length may be known only at run time.
+                // Bytes of one source element. The characters of an array of
+                // descriptor strings are stored behind its string descriptor,
+                // and their length may be known only at run time. A C
+                // character buffer and a character member stored inline in
+                // its struct are the characters themselves, of constant size.
                 llvm::Value* src_elem_bytes = llvm::ConstantInt::get(
                     llvm::Type::getInt64Ty(context), src_elem_size);
-                if (ASRUtils::is_array_of_strings(bc_src_type)) {
+                if (ASRUtils::is_array_of_strings(bc_src_type) &&
+                        ASRUtils::get_string_type(bc_src_type)->m_physical_type ==
+                            ASR::string_physical_typeType::DescriptorString &&
+                        !ASRUtils::is_inline_character_struct_member(bc->m_source)) {
                     src_ptr = llvm_utils->get_stringArray_data(bc_src_type, src_desc);
                     src_elem_bytes = builder->CreateMul(
-                        get_string_length(bc->m_source),
+                        llvm_utils->get_stringArray_length(bc_src_type, src_desc),
                         llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),
                             ASRUtils::get_string_type(bc_src_type)->m_kind));
                 }

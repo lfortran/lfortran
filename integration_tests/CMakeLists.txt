@@ -5994,6 +5994,7 @@ RUN(NAME transfer_37 LABELS gfortran llvm) # transfer of an integer(8) scalar to
 RUN(NAME transfer_38 LABELS gfortran llvm) # transfer of a character array constant to a longer character variable mold (#3494)
 RUN(NAME transfer_39 LABELS gfortran llvm) # transfer of a character array to an array mold of another element size
 RUN(NAME transfer_40 LABELS gfortran llvm) # transfer of a character array whose length is not a constant to an array mold (#17268)
+RUN(NAME transfer_41 LABELS gfortran llvm) # transfer of a C character buffer or a character array component of a bind(C) or sequence type to an array mold
 RUN(NAME transfer_assumed_shape_01 LABELS gfortran llvm)
 
 RUN(NAME present_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
