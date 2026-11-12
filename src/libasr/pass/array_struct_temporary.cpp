@@ -1984,6 +1984,11 @@ static ASR::expr_t* get_implicitly_converted_whole_array(ASR::expr_t* data_sourc
 //
 // The conversion of a named constant has a compile time value, and its
 // temporary is a named constant with that value and the bounds of `array`.
+//
+// F2018 7.5.10 allows the data source of an allocatable component to be an
+// unallocated allocatable array, and then the component is unallocated. An
+// allocatable `array` is converted only if it is allocated, which leaves the
+// temporary unallocated otherwise.
 ASR::expr_t* create_temporary_with_bounds_of_converted_array(
     ASR::expr_t* conversion, ASR::expr_t* array, const std::string& name_hint,
     Allocator& al, Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
@@ -2055,10 +2060,25 @@ ASR::expr_t* create_temporary_with_bounds_of_converted_array(
     // The statement can run again, with the temporary still allocated
     current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
         loc, dealloc_args.p, dealloc_args.size(), nullptr, nullptr)));
-    current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, loc,
-        alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr)));
-    current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
-        al, loc, temporary, conversion, nullptr, exprs_with_target)));
+    ASR::stmt_t* allocate = ASRUtils::STMT(ASR::make_Allocate_t(al, loc,
+        alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr));
+    ASR::stmt_t* assign = ASRUtils::STMT(make_Assignment_t_util(
+        al, loc, temporary, conversion, nullptr, exprs_with_target));
+    if( ASRUtils::is_allocatable(ASRUtils::expr_type(array)) ) {
+        Vec<ASR::expr_t*> allocated_args;
+        allocated_args.reserve(al, 1);
+        allocated_args.push_back(al, duplicator.duplicate_expr(array));
+        ASRUtils::ASRBuilder b(al, loc);
+        current_body->push_back(al, b.If(ASRUtils::EXPR(
+            ASR::make_IntrinsicImpureFunction_t(al, loc,
+                static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                allocated_args.p, allocated_args.size(), 0,
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)),
+            {allocate, assign}, {}));
+    } else {
+        current_body->push_back(al, allocate);
+        current_body->push_back(al, assign);
+    }
     return temporary;
 }
 
