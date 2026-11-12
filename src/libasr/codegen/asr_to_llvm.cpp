@@ -1014,6 +1014,9 @@ public:
     struct_api(std::make_unique<LLVMStruct>(context, llvm_utils.get(), builder.get(), llvm_symtab_fn,
                 [this](ASR::Struct_t* s, llvm::Value* v, ASR::ttype_t* t, bool flag) {
                         allocate_array_members_of_struct(s, v, t, flag);
+                },
+                [this](ASR::Struct_t* s, llvm::Value* v, ASR::ttype_t* t) {
+                        allocate_array_members_of_struct(s, v, t, true, true, false, nullptr, true);
                 }, llvm_symtab_finalizer)),
     tuple_api(std::make_unique<LLVMTuple>(context, llvm_utils.get(), builder.get())),
     dict_api_lp(std::make_unique<LLVMDictOptimizedLinearProbing>(context, llvm_utils.get(), builder.get())),
@@ -9124,10 +9127,50 @@ public:
         }
     }
 
+    // F2018 8.5.10: an `intent(out)` polymorphic dummy is default-initialized
+    // according to its dynamic type, which only the vtable of the actual
+    // argument knows. The components of the declared type have been
+    // initialized by the caller of this function; the call below deallocates
+    // the allocatable components of the dynamic type and sets all its
+    // components, extension components included. A
+    // declared type with final subroutines is left to the intent_out_deallocate
+    // pass, which must run them before the initialization.
+    void default_init_dynamic_type_of_class_dummy(ASR::Struct_t* declared_struct,
+            llvm::Value* class_wrapper) {
+        if (ASRUtils::is_unlimited_polymorphic_type(&declared_struct->base)) {
+            return;
+        }
+        for (ASR::Struct_t* st = declared_struct; st != nullptr;) {
+            if (st->n_member_functions > 0) {
+                return;
+            }
+            st = st->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(st->m_parent)) : nullptr;
+        }
+        llvm::Type* class_type = llvm_utils->getClassType(declared_struct, false);
+        llvm::Type* data_type = llvm_utils->getStructType(declared_struct, module.get(), true);
+        llvm::Value* data = llvm_utils->CreateLoad2(data_type,
+            llvm_utils->create_gep2(class_type, class_wrapper, 1));
+        llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr->getPointerTo(),
+            llvm_utils->create_gep2(class_type, class_wrapper, 0));
+        llvm::Value* usable = builder->CreateAnd(
+            builder->CreateIsNotNull(data), builder->CreateIsNotNull(vptr));
+        llvm_utils->create_if_else(usable, [&]() {
+            llvm::FunctionType* fn_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false);
+            llvm::Value* slot = llvm_utils->create_ptr_gep2(llvm_utils->i8_ptr, vptr,
+                LLVMFinalize::vtable_default_init_slot);
+            llvm::Value* fn = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, slot);
+            builder->CreateCall(fn_type, builder->CreateBitCast(fn, fn_type->getPointerTo()),
+                {builder->CreateBitCast(data, llvm_utils->i8_ptr)});
+        }, [](){});
+    }
+
     void allocate_array_members_of_struct(ASR::Struct_t* struct_sym, llvm::Value* ptr,
             ASR::ttype_t* asr_type, bool is_intent_out = false, bool initialize_val = true,
             bool skip_allocatable_array_descriptor_init = false,
-            ASR::StructConstant_t* init_sc = nullptr) {
+            ASR::StructConstant_t* init_sc = nullptr,
+            bool force_default_init = false) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*asr_type));
         ASR::Struct_t* struct_type_t = nullptr;
         if (ASR::is_a<ASR::StructType_t>(*asr_type)) {
@@ -9184,7 +9227,7 @@ public:
             LCOMPILERS_ASSERT(i == init_sc->n_args);
         }
         bool apply_init = initialize_val &&
-            (init_sc || !(is_intent_out && struct_has_finalizer));
+            (init_sc || force_default_init || !(is_intent_out && struct_has_finalizer));
 
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
             llvm::Type* const class_type = llvm_utils->getClassType(struct_sym, false);
@@ -12196,6 +12239,7 @@ public:
 
                 if (ASRUtils::is_class_type(symbol_type)) {
                     allocate_array_members_of_struct(struct_sym, st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
+                    default_init_dynamic_type_of_class_dummy(struct_sym, st_desc);
                 } else {
                     allocate_array_members_of_struct(struct_sym, st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
                 }

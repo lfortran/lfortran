@@ -4461,12 +4461,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::IRBuilder<>* builder_, 
         std::map<uint64_t, llvm::Function*>& llvm_symtab_fn_,
         std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_arr_mem_struct,
+        std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*)> default_init_in_place,
         LLVMFinalize &finalizer_instnace_):
         context(context_),
         llvm_utils(std::move(llvm_utils_)),
         builder(std::move(builder_)),
         llvm_symtab_fn(llvm_symtab_fn_), 
         allocate_struct_array_members(allocate_arr_mem_struct),
+        default_init_struct_in_place(default_init_in_place),
         finalizer_instnace(finalizer_instnace_)
         {}
 
@@ -10445,6 +10447,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
         LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_default_init_slot)
+        llvm::Function* default_init_function = define_default_init_struct_function(struct_sym, module);
+        slots.push_back(llvm::ConstantExpr::getBitCast(default_init_function, llvm_utils->i8_ptr));
         collect_vtable_function_impls(struct_sym, slots, module);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
@@ -10463,6 +10468,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         // populate copy function body after creating vtable
         fill_struct_copy_body(struct_sym, copy_function, module);
         fill_allocate_struct_body(struct_sym, allocate_array_members_function, module);
+        fill_default_init_struct_body(struct_sym, default_init_function, module);
     }
 
     void LLVMStruct::create_type_info_for_struct(ASR::symbol_t* struct_sym, llvm::Module* module)
@@ -10609,6 +10615,44 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, struct_sym, true);
         allocate_struct_array_members(struct_t, malloc_ptr, struct_signature, false);
+        builder->CreateRetVoid();
+
+        if (savedBB) {
+            builder->SetInsertPoint(savedBB, savedBB->end());
+        }
+    }
+
+    llvm::Function* LLVMStruct::define_default_init_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module)
+    {
+        llvm::FunctionType *funcType = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false);
+        std::string func_name = "_default_init_struct_";
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
+        if (owner) {
+            func_name += ASRUtils::symbol_name(owner) + std::string("_");
+        }
+        func_name += ASRUtils::symbol_name(struct_sym);
+        return llvm::Function::Create(funcType, llvm::Function::InternalLinkage,
+            func_name, module);
+    }
+
+    void LLVMStruct::fill_default_init_struct_body(
+        ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module)
+    {
+        Allocator al(1024);
+        llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
+        builder->SetInsertPoint(entry);
+
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        llvm::Type *struct_type = llvm_utils->getStructType(struct_t, module);
+        llvm::Value* data = builder->CreateBitCast(&*func->arg_begin(),
+            struct_type->getPointerTo());
+        ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
+            al, struct_sym->base.loc, struct_sym, true);
+        finalizer_instnace.deallocate_allocatable_components(data, struct_t);
+        default_init_struct_in_place(struct_t, data, struct_signature);
         builder->CreateRetVoid();
 
         if (savedBB) {
