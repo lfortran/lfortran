@@ -14702,6 +14702,15 @@ public:
                                         loaded_data_ptr = builder->CreateBitCast(loaded_data_ptr, target_el_type->getPointerTo());
                                         builder->CreateStore(loaded_data_ptr, target_data_ptr);
                                     }
+
+                                    // The pointer owns a different class wrapper, but
+                                    // its descriptor retains the source's dynamic
+                                    // element size, type and other scalar metadata.
+                                    if (target_is_class && source_is_class) {
+                                        arr_descr->copy_scalar_metadata(
+                                            value_array_desc_type, llvm_value,
+                                            target_array_desc_type, llvm_target_);
+                                    }
                                     
                                     // Deep Copy dimension descriptors (inline)
                                     llvm::Value* value_dim_ptr = arr_descr->get_pointer_to_dimension_descriptor_array(value_array_desc_type, llvm_value);
@@ -28093,13 +28102,7 @@ public:
                         llvm::Value* actual_desc = llvm_utils->CreateLoad2(
                             desc_type->getPointerTo(), slot);
                         absent_optional_pointer = builder->CreateIsNull(actual_desc);
-                        llvm::Value* empty_desc = arr_descr->create_descriptor_alloca(
-                            desc_type, "absent_optional_rank");
-                        builder->CreateMemSet(empty_desc,
-                            llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), 0),
-                            data_layout.getTypeAllocSize(desc_type), llvm::MaybeAlign());
-                        tmp = builder->CreateSelect(absent_optional_pointer,
-                            empty_desc, actual_desc);
+                        tmp = actual_desc;
                     }
 
                     // Ensure tmp is a pointer to the descriptor.
@@ -28150,6 +28153,20 @@ public:
                     if (tmp->getType()->isPointerTy()) {
                         tmp = builder->CreateBitCast(tmp,
                             desc_type->getPointerTo());
+                    }
+
+                    llvm::BasicBlock* absent_cfi_block = nullptr;
+                    llvm::BasicBlock* cfi_merge_block = nullptr;
+                    if (absent_optional_pointer) {
+                        llvm::Function* caller = builder->GetInsertBlock()->getParent();
+                        llvm::BasicBlock* cfi_convert_block =
+                            llvm::BasicBlock::Create(context, "cfi_present", caller);
+                        cfi_merge_block = llvm::BasicBlock::Create(
+                            context, "cfi_optional_merge", caller);
+                        absent_cfi_block = builder->GetInsertBlock();
+                        builder->CreateCondBr(absent_optional_pointer,
+                            cfi_merge_block, cfi_convert_block);
+                        builder->SetInsertPoint(cfi_convert_block);
                     }
 
                     // Convert internal descriptor to CFI layout (no offset
@@ -28219,11 +28236,16 @@ public:
                             : llvm_utils->get_string_length(str_type, str_desc);
                         elem_size_val = builder->CreateMul(str_len, elem_size_val);
                     }
+                    bool is_type_star = ASR::is_a<ASR::StructType_t>(*elem_asr_type)
+                        && ASR::down_cast<ASR::StructType_t>(elem_asr_type)->m_is_unlimited_polymorphic;
+                    if (is_type_star) {
+                        elem_size_val = llvm_utils->CreateLoad2(
+                            llvm::Type::getInt64Ty(context),
+                            llvm_utils->create_gep2(desc_type, tmp, 1));
+                    }
                     bool assumed_rank_actual = ASRUtils::is_assumed_rank_array(actual_type);
                     int n_dims = assumed_rank_actual ? 15 :
                         ASRUtils::extract_n_dims_from_ttype(actual_type);
-                    bool is_type_star = ASR::is_a<ASR::StructType_t>(*elem_asr_type)
-                        && ASR::down_cast<ASR::StructType_t>(elem_asr_type)->m_is_unlimited_polymorphic;
                     int8_t cfi_type_code = get_cfi_type_code(elem_asr_type);
                     int cfi_attr = 0;
                     if (actual_type && ASRUtils::is_allocatable(actual_type)) {
@@ -28277,7 +28299,8 @@ public:
                         llvm::Value* cfi_base_gep = llvm_utils->create_gep2(
                             cfi_struct, tmp, 0);
                         llvm::Value* box_i8 = llvm_utils->CreateLoad2(
-                            i8_ptr_type, cfi_base_gep);
+                            i8_ptr_type,
+                            llvm_utils->create_gep2(desc_type, internal_desc_ptr, 0));
                         llvm::Value* box_ptr = builder->CreateBitCast(
                             box_i8, elem_llvm_type->getPointerTo());
                         llvm::Value* data_ptr = unwrap_polymorphic_box_data(
@@ -28286,9 +28309,7 @@ public:
                         llvm::Value* src_type = llvm_utils->CreateLoad2(
                             llvm::Type::getInt8Ty(context),
                             llvm_utils->create_gep2(desc_type, internal_desc_ptr, 4));
-                        llvm::Value* src_elem_len = llvm_utils->CreateLoad2(
-                            llvm::Type::getInt64Ty(context),
-                            llvm_utils->create_gep2(desc_type, internal_desc_ptr, 1));
+                        llvm::Value* src_elem_len = elem_size_val;
 
                         // The box of a `type(*)` dummy already holds the
                         // address of the data. A `class(*)` box holds a
@@ -28322,7 +28343,15 @@ public:
                         final_data->addIncoming(raw_char_data, char_bb);
                         final_data->addIncoming(data_ptr, other_bb);
 
-                        builder->CreateStore(final_data, cfi_base_gep);
+                        llvm::Value* offset = arr_descr->get_offset(
+                            desc_type, internal_desc_ptr, true);
+                        llvm::Value* offset_bytes = builder->CreateMul(
+                            offset, src_elem_len);
+                        llvm::Value* first_data = builder->CreateGEP(
+                            llvm::Type::getInt8Ty(context), final_data, offset_bytes);
+                        builder->CreateStore(builder->CreateSelect(
+                            builder->CreateIsNull(final_data), final_data, first_data),
+                            cfi_base_gep);
 
                         builder->CreateStore(src_type,
                             llvm_utils->create_gep2(cfi_struct, tmp, 4));
@@ -28341,9 +28370,15 @@ public:
                         }
                     }
                     if (absent_optional_pointer) {
-                        tmp = builder->CreateSelect(absent_optional_pointer,
-                            llvm::ConstantPointerNull::get(
-                                llvm::cast<llvm::PointerType>(tmp->getType())), tmp);
+                        llvm::BasicBlock* converted_block = builder->GetInsertBlock();
+                        builder->CreateBr(cfi_merge_block);
+                        builder->SetInsertPoint(cfi_merge_block);
+                        llvm::PHINode* cfi_arg = builder->CreatePHI(tmp->getType(), 2);
+                        cfi_arg->addIncoming(llvm::ConstantPointerNull::get(
+                            llvm::cast<llvm::PointerType>(tmp->getType())),
+                            absent_cfi_block);
+                        cfi_arg->addIncoming(tmp, converted_block);
+                        tmp = cfi_arg;
                     }
                 }
             }

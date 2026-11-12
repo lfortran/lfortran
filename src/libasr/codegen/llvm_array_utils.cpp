@@ -1630,6 +1630,22 @@ namespace LCompilers {
         }
 
         // Shallow copies source array descriptor to destination descriptor
+        void SimpleCMODescriptor::copy_scalar_metadata(
+                llvm::Type* src_ty, llvm::Value* src,
+                llvm::Type* dest_ty, llvm::Value* dest) {
+            llvm::StructType* src_desc = llvm::cast<llvm::StructType>(src_ty);
+            llvm::StructType* dest_desc = llvm::cast<llvm::StructType>(dest_ty);
+            for (int field : {FIELD_ELEM_LEN, FIELD_VERSION, FIELD_TYPE,
+                              FIELD_ATTRIBUTE, FIELD_EXTRA}) {
+                llvm::Type* field_ty = src_desc->getElementType(field);
+                LCOMPILERS_ASSERT(field_ty == dest_desc->getElementType(field));
+                llvm::Value* src_field = llvm_utils->create_gep2(src_ty, src, field);
+                llvm::Value* dest_field = llvm_utils->create_gep2(dest_ty, dest, field);
+                builder->CreateStore(llvm_utils->CreateLoad2(field_ty, src_field),
+                    dest_field);
+            }
+        }
+
         void SimpleCMODescriptor::copy_array(llvm::Type* src_ty, llvm::Value* src, llvm::Type* dest_ty, llvm::Value* dest,
             llvm::Module* module, ASR::expr_t* array_expr, ASR::ttype_t* asr_data_type, bool reserve_memory) {
             llvm::Value* num_elements = this->get_array_size(src_ty, src, nullptr, 4);
