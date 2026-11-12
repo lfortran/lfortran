@@ -5640,7 +5640,7 @@ public:
         }
         llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
         llvm::Value* pad_size = arr_descr->get_array_size(pad_llvm_type, pad, nullptr, 8);
-        llvm::Value* index_ptr = llvm_utils->CreateAlloca(*builder, i64_ty);
+        llvm::Value* index_ptr = llvm_utils->CreateAlloca(i64_ty);
         arr_descr->for_each_element_of_descriptor(pad_llvm_type, pad, llvm_data_type,
             ASRUtils::extract_n_dims_from_ttype(pad_type), "reshape_pad",
             [&](llvm::Value* iter, llvm::Value* pad_elem) {

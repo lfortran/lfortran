@@ -93,6 +93,9 @@ program array_reshape_pad_03
     if (.not. all(rl(1:2))) error stop
     if (any(rl(3:4))) error stop
 
+    ! In a loop, the reshape must not use more stack on every execution
+    call check_loop(t(1:3:2), 1000000)
+
 contains
 
     ! `pad` is taken from its first element on, in array element order, and
@@ -115,6 +118,19 @@ contains
         if (any(r(:,1) /= [1, 2])) error stop
         if (r(1,2) /= 3) error stop
         if (any([r(2,2), r(:,3)] /= expected)) error stop
+    end subroutine
+
+    subroutine check_loop(d, n)
+        integer, intent(in) :: d(:), n
+        integer :: w(2,2), r(2,3), i
+        integer(8) :: s
+        w = reshape([1, 2, 3, 4], [2, 2])
+        s = 0
+        do i = 1, n
+            r = reshape(w, [2, 3], pad=d)
+            s = s + r(1,3) - r(2,3)
+        end do
+        if (s /= -int(n, 8)) error stop
     end subroutine
 
 end program
