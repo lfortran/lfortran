@@ -30,6 +30,35 @@ public:
         ASR::BaseWalkVisitor<StructCollector>::visit_StructType(x);
     }
 };
+
+class PointerDefaultTargetImporter
+        : public ASR::BaseExprReplacer<PointerDefaultTargetImporter> {
+    Allocator &al;
+    SymbolTable *scope;
+
+public:
+    PointerDefaultTargetImporter(Allocator &al_, SymbolTable *scope_)
+        : al(al_), scope(scope_) {}
+
+    void replace_Var(ASR::Var_t *x) {
+        x->m_v = ASRUtils::import_symbol(al, x->m_v, scope,
+            ASR::accessType::Private, "1_");
+        LCOMPILERS_ASSERT(ASRUtils::is_visible_from(x->m_v, scope));
+    }
+
+    void replace_StructInstanceMember(ASR::StructInstanceMember_t *x) {
+        ASR::BaseExprReplacer<PointerDefaultTargetImporter>::
+            replace_StructInstanceMember(x);
+        x->m_m = ASRUtils::import_struct_instance_member(al, x->m_m, scope);
+    }
+
+    void replace_FunctionPointerCast(ASR::FunctionPointerCast_t *x) {
+        ASR::BaseExprReplacer<PointerDefaultTargetImporter>::
+            replace_FunctionPointerCast(x);
+        x->m_to = ASRUtils::import_symbol(al, x->m_to, scope,
+            ASR::accessType::Private, "1_");
+    }
+};
 }
 
 ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank) {
@@ -205,6 +234,32 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         }
     }
 
+    void emit_pointer_default(
+            ASR::expr_t* target,
+            ASR::expr_t* value,
+            SymbolTable* current_scope,
+            const Location& loc,
+            Vec<ASR::stmt_t*>& out_stmts) {
+        ASR::expr_t* association_target = nullptr;
+        if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+            // The component supplies the procedure interface for null().
+            association_target = ASRUtils::EXPR(
+                ASR::make_PointerNullConstant_t(al, loc,
+                    ASRUtils::expr_type(value), target));
+        } else {
+            // The initializer belongs to the declaring type, not to this
+            // generated procedure; do not change its original symbol refs.
+            association_target = ASRUtils::ExprStmtDuplicator(al).duplicate_expr(
+                value);
+            LCOMPILERS_ASSERT(association_target != nullptr);
+            PointerDefaultTargetImporter(al, current_scope).replace_expr(
+                association_target);
+        }
+        out_stmts.push_back(al, ASRUtils::STMT(
+            ASRUtils::make_Associate_t_util(al, loc, target,
+                association_target)));
+    }
+
     // Assign `value` to `target`, returning false when it cannot be done here.
     // A struct constant is assigned member by member: this pass runs after the
     // passes that would have lowered such a node, so a whole-struct assignment
@@ -221,18 +276,8 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             const Location& loc,
             Vec<ASR::stmt_t*>& out_stmts) {
         if (ASRUtils::is_pointer(ASRUtils::expr_type(target))) {
-            // A pointer component is associated, not assigned.  Only a null
-            // default is handled, as elsewhere in this pass; the
-            // PointerNullConstant is rebuilt around the component so that
-            // codegen can resolve what it points at.
-            if (!ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
-                return false;
-            }
-            ASR::expr_t* null_value = ASRUtils::EXPR(
-                ASR::make_PointerNullConstant_t(al, loc,
-                    ASRUtils::expr_type(value), target));
-            out_stmts.push_back(al, ASRUtils::STMT(
-                ASRUtils::make_Associate_t_util(al, loc, target, null_value)));
+            emit_pointer_default(target, value, current_scope, loc,
+                out_stmts);
             return true;
         }
         if (!ASR::is_a<ASR::StructConstant_t>(*value)) {
@@ -513,23 +558,9 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                         (ASR::asr_t*)struct_expr, m.second,
                         m.second, current_scope));
 
-                ASR::stmt_t* init_stmt = nullptr;
                 if (ASRUtils::is_pointer(m_var->m_type)) {
-                    // Only handle pointer-null defaults. We rebuild the
-                    // PointerNullConstant using `member_expr` as its
-                    // `var_expr` so codegen can resolve the underlying
-                    // procedure interface (when the pointer targets a
-                    // procedure) without relying on a symbol from the
-                    // declaring module's scope.
-                    if (!ASR::is_a<ASR::PointerNullConstant_t>(
-                            *m_var->m_symbolic_value)) continue;
-                    ASR::expr_t* null_value = ASRUtils::EXPR(
-                        ASR::make_PointerNullConstant_t(al, loc,
-                            ASRUtils::expr_type(m_var->m_symbolic_value),
-                            member_expr));
-                    init_stmt = ASRUtils::STMT(
-                        ASRUtils::make_Associate_t_util(al, loc,
-                            member_expr, null_value));
+                    emit_pointer_default(member_expr, m_var->m_symbolic_value,
+                        current_scope, loc, out_stmts);
                 } else {
                     // Use the folded value, not `m_symbolic_value`: the
                     // symbolic form may name a constant declared in the type's
@@ -559,7 +590,6 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                         current_scope, loc, out_stmts);
                     continue;
                 }
-                out_stmts.push_back(al, init_stmt);
             }
             if (st->m_parent != nullptr) {
                 st = ASR::down_cast<ASR::Struct_t>(
