@@ -17236,6 +17236,14 @@ public:
                 tmp = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),tmp);
             }
         } else if (
+            m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
+            m_old == ASR::array_physical_typeType::AssumedRankArray) {
+            llvm::Value* data_loaded = llvm_utils->CreateLoad2(
+                data_type->getPointerTo(),
+                arr_descr->get_pointer_to_data(arr_type, arg));
+            tmp = llvm_utils->get_string_data(
+                ASRUtils::get_string_type(ASRUtils::expr_type(m_arg)), data_loaded);
+        } else if (
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::AssumedRankArray) {
 
