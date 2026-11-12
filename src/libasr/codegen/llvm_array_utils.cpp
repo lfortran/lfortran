@@ -1634,7 +1634,7 @@ namespace LCompilers {
                 llvm::Type* src_ty, llvm::Value* src,
                 llvm::Type* dest_ty, llvm::Value* dest) {
             llvm::StructType* src_desc = llvm::cast<llvm::StructType>(src_ty);
-            llvm::StructType* dest_desc = llvm::cast<llvm::StructType>(dest_ty);
+            [[maybe_unused]] llvm::StructType* dest_desc = llvm::cast<llvm::StructType>(dest_ty);
             for (int field : {FIELD_ELEM_LEN, FIELD_VERSION, FIELD_TYPE,
                               FIELD_ATTRIBUTE, FIELD_EXTRA}) {
                 llvm::Type* field_ty = src_desc->getElementType(field);
