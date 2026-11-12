@@ -29,6 +29,11 @@ fi
 src/bin/lfortran modules_15.o modules_15b.o modules_15c.o -o modules_15
 ./modules_15
 
+if [[ $WIN == "1" ]]; then
+    cl /MD /c integration_tests/bindc_optional_array_01c.c /Fobindc_optional_array_01c.o
+    src/bin/lfortran integration_tests/bindc_optional_array_01.f90 bindc_optional_array_01c.o -o bindc_optional_array_01
+    ./bindc_optional_array_01
+fi
 
 # Compile and link in one step
 src/bin/lfortran integration_tests/intrinsics_04s.f90 -o intrinsics_04s
