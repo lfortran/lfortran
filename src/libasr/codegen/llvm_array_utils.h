@@ -392,7 +392,7 @@ namespace LCompilers {
                 llvm::Value* internal_to_cfi(
                     llvm::Type* internal_type, llvm::Value* internal_desc,
                     llvm::Type* el_type, int n_dims, llvm::Value* elem_size,
-                    int8_t type_code, int cfi_attr) = 0;
+                    int8_t type_code, int cfi_attr, bool assumed_rank) = 0;
 
                 virtual
                 llvm::Value* cfi_to_internal(
@@ -695,7 +695,7 @@ namespace LCompilers {
                 llvm::Value* internal_to_cfi(
                     llvm::Type* internal_type, llvm::Value* internal_desc,
                     llvm::Type* el_type, int n_dims, llvm::Value* elem_size,
-                    int8_t type_code, int cfi_attr);
+                    int8_t type_code, int cfi_attr, bool assumed_rank);
 
                 // Convert a CFI descriptor to an internal descriptor:
                 // sets offset=0, converts byte strides to element strides.

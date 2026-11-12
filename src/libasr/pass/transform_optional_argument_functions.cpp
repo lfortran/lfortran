@@ -462,11 +462,12 @@ bool pass_absent_optional_as_null(Allocator& al, const T& x, ASR::Function_t* fu
                     ASR::array_physical_typeType::UnboundedPointerArray;
             if( is_present && !is_assumed_size ) {
                 const Location& loc = arg.loc;
-                bool is_array = ASRUtils::is_array(target_type);
-                ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
-                    is_array ? ASRUtils::create_array_type_with_empty_dims(al,
-                        ASRUtils::extract_n_dims_from_ttype(target_type), target_type)
-                        : target_type));
+                // An assumed-rank target has zero static dimensions, but its
+                // pointer must still carry the descriptor and dynamic rank.
+                ASR::ttype_t* pointer_type =
+                    ASRUtils::make_Pointer_t_util(al, loc, target_type);
+                LCOMPILERS_ASSERT(!ASRUtils::is_assumed_rank_array(target_type) ||
+                    ASRUtils::is_assumed_rank_array(pointer_type));
                 std::string pointer_name = scope->get_unique_name(
                     "__libasr_created_optional_target_pointer_");
                 ASR::expr_t* pointer_variable = PassUtils::create_auxiliary_variable(loc,
