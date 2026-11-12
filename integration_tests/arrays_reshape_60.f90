@@ -11,6 +11,8 @@ program arrays_reshape_60
     character(len=3), pointer :: psrc(:)
     character(len=2) :: cube_src(24), cube(2,3,4), pairs(3,2)
     character(len=1) :: letters(6), lgrid(2,3)
+    character(len=64) :: big_src(1024), big(32,32)
+    character(len=3) :: digits
     type(box) :: b
     integer :: ord(2), ord3(3), i, j, k, n, m
     integer(8) :: ord8(2)
@@ -172,6 +174,35 @@ program arrays_reshape_60
     end do
     if (k /= 1000000) error stop
 
+    ! a large result takes stack only where and when it is computed: not in
+    ! every invocation of a recursive procedure, and not on a path that is
+    ! not taken
+    digits = "400"
+    read(digits, *) n
+    big_src = "x"
+    big_src(2) = "second"
+    big_src(33) = "next row"
+    big_src(1024) = "last"
+    big = ""
+    call deep(big_src, big, n)
+    if (big(1,1) /= "x" .or. big(1,2) /= "second") error stop
+    if (big(2,1) /= "next row" .or. big(32,32) /= "last") error stop
+    call not_taken(src, 4, n /= 400)
+
+    ! a BLOCK releases the stack that it takes on exit: the large result
+    ! every time, but not the small one, which the next iteration uses again
+    k = 0
+    do i = 1, 2000
+        block
+            integer :: row
+            row = 2
+            grid = reshape(src, [2, 2], order=[2, 1])
+            big = reshape(big_src, [32, 32], order=[2, 1])
+            if (grid(row,1) == "six" .and. big(row,1) == "next row") k = k + 1
+        end block
+    end do
+    if (k /= 2000) error stop
+
     ! single characters
     letters = ["a", "b", "c", "d", "e", "f"]
     lgrid = reshape(letters, [2, 3], order=[2, 1])
@@ -223,6 +254,24 @@ contains
         if (g(1,1) /= "one" .or. g(1,2) /= "two") error stop
         if (g(2,1) /= "six" .or. g(2,2) /= "ten") error stop
         if (g(3,1) /= "abc" .or. g(3,2) /= "def") error stop
+    end subroutine
+
+    recursive subroutine deep(a, g, depth)
+        character(len=64), intent(in) :: a(1024)
+        character(len=64), intent(inout) :: g(32,32)
+        integer, intent(in) :: depth
+        if (depth > 0) then
+            call deep(a, g, depth - 1)
+        else
+            g = reshape(a, [32, 32], order=[2, 1])
+        end if
+    end subroutine
+
+    subroutine not_taken(a, n, taken)
+        integer, intent(in) :: n
+        logical, intent(in) :: taken
+        character(len=3), intent(in) :: a(n)
+        if (taken) call check_argument(reshape(a, [2000, 2000], order=[2, 1]))
     end subroutine
 
     ! only the elements of the result are copied, whatever their type

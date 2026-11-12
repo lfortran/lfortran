@@ -24,6 +24,14 @@ namespace LCompilers {
 
     namespace LLVMArrUtils {
 
+        /*
+        * The largest size in bytes of a fixed-size array, or of a
+        * fixed-size array temporary, that can be reserved on the stack
+        * in the entry block of its function, where a recursive procedure
+        * pays for it in every invocation.
+        */
+        constexpr uint64_t MAX_STACK_ARRAY_SIZE = 4 * 1024 - 1;
+
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,

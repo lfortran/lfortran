@@ -1589,22 +1589,46 @@ namespace LCompilers {
                             ordered_string_type, src_data);
                         string_elem_size = builder->CreateMul(string_len,
                             llvm::ConstantInt::get(i64, ordered_string_type->m_kind));
-                        // A buffer whose size is known at compile time is
-                        // taken once, in the entry block, so that a reshape
-                        // inside a loop does not take more stack every time.
+                        // A small buffer whose size is known at compile time
+                        // is taken once in an invocation of the procedure,
+                        // the first time the reshape is executed there: a
+                        // reshape inside a loop does not take more stack
+                        // every time, and one that is not executed takes
+                        // none. A BLOCK or ASSOCIATE construct moves an
+                        // alloca of a constant size to the entry block,
+                        // hence the limit. A larger buffer is taken every
+                        // time, like one of a run-time size.
                         int64_t fixed_size = asr_result_type == nullptr ? -1 :
                             ASRUtils::get_fixed_size_of_array(asr_result_type);
                         int64_t fixed_len = -1;
+                        const int64_t max_reused_size = MAX_STACK_ARRAY_SIZE;
+                        llvm::Type* i8 = llvm::Type::getInt8Ty(context);
                         llvm::Value* dest_chars = nullptr;
-                        if (fixed_size >= 0 && ordered_string_type->m_len != nullptr &&
+                        if (fixed_size >= 0 && fixed_size <= max_reused_size &&
+                                ordered_string_type->m_len != nullptr &&
                                 ASRUtils::extract_value(ASRUtils::expr_value(
                                     ordered_string_type->m_len), fixed_len) &&
-                                fixed_len >= 0) {
-                            dest_chars = llvm_utils->CreateAlloca(
-                                llvm::Type::getInt8Ty(context),
-                                llvm::ConstantInt::get(i64, fixed_size * fixed_len *
-                                    ordered_string_type->m_kind),
-                                "reshaped_chars");
+                                fixed_len >= 0 && fixed_len <= max_reused_size &&
+                                fixed_size * fixed_len * ordered_string_type->m_kind
+                                    <= max_reused_size) {
+                            llvm::PointerType* i8_ptr = i8->getPointerTo();
+                            llvm::AllocaInst* reused = llvm_utils->CreateAlloca(
+                                i8_ptr, nullptr, "reshaped_chars");
+                            llvm::IRBuilder<> entry_builder(context);
+                            entry_builder.SetInsertPoint(reused->getParent(),
+                                std::next(reused->getIterator()));
+                            entry_builder.CreateStore(
+                                llvm::ConstantPointerNull::get(i8_ptr), reused);
+                            llvm_utils->create_if_else(
+                                builder->CreateIsNull(
+                                    llvm_utils->CreateLoad2(i8_ptr, reused)),
+                                [&]() {
+                                    builder->CreateStore(llvm_utils->CreateAlloca(
+                                        *builder, i8, llvm::ConstantInt::get(i64,
+                                            fixed_size * fixed_len *
+                                            ordered_string_type->m_kind)), reused);
+                                }, []() {});
+                            dest_chars = llvm_utils->CreateLoad2(i8_ptr, reused);
                         } else {
                             dest_chars = llvm_utils->CreateAlloca(*builder,
                                 llvm::Type::getInt8Ty(context),

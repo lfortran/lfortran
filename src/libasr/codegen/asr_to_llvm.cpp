@@ -10428,7 +10428,6 @@ public:
                     // This is recursion-safe unlike static storage, as each call gets its own copy.
                     // Memory is freed at function exit.
                     // BLOCK constructs always use heap regardless of size (can be in loops).
-                    constexpr uint64_t MAX_STACK_ARRAY_SIZE = 4 * 1024 - 1;  // 4KB arrays and above use heap
                     bool use_heap_allocation = false;
                     uint64_t type_size = 0;
                     if (!compiler_options.po.stack_arrays &&
@@ -10438,7 +10437,7 @@ public:
                         const llvm::DataLayout& data_layout = module->getDataLayout();
                         type_size = data_layout.getTypeAllocSize(type);
                         // BLOCKs always use heap (can be in loops), others use threshold
-                        if (in_block_context || type_size > MAX_STACK_ARRAY_SIZE) {
+                        if (in_block_context || type_size > LLVMArrUtils::MAX_STACK_ARRAY_SIZE) {
                             use_heap_allocation = true;
                         }
                     }
