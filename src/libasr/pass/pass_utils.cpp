@@ -1219,6 +1219,16 @@ namespace LCompilers {
             }
         }
 
+        bool is_whole_array(ASR::expr_t* expr) {
+            if( !ASRUtils::is_array(ASRUtils::expr_type(expr)) ) {
+                return false;
+            }
+            return ASR::is_a<ASR::Var_t>(*expr) ||
+                (ASR::is_a<ASR::StructInstanceMember_t>(*expr) &&
+                 !ASRUtils::is_array(ASRUtils::expr_type(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v)));
+        }
+
         ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int64_t dim, std::string bound, Allocator& al, int integer_kind) {
             ASR::ttype_t* x_mv_type = ASRUtils::expr_type(arr_expr);
             ASR::dimension_t* m_dims;
@@ -1767,18 +1777,6 @@ namespace LCompilers {
                 is_allocated, assign.p, assign.n, else_body.p, else_body.n));
             assign.reserve(al, 1);
             assign.push_back(al, guarded);
-        }
-
-        // Whether `expr` is a whole array (F2018 9.5.2): a named array, or
-        // an array component of a scalar.
-        static bool is_whole_array(ASR::expr_t* expr) {
-            if( !ASRUtils::is_array(ASRUtils::expr_type(expr)) ) {
-                return false;
-            }
-            return ASR::is_a<ASR::Var_t>(*expr) ||
-                (ASR::is_a<ASR::StructInstanceMember_t>(*expr) &&
-                 !ASRUtils::is_array(ASRUtils::expr_type(
-                    ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v)));
         }
 
         ASR::stmt_t* release_component_of_other_bounds(Allocator& al,

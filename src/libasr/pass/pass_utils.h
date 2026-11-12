@@ -389,6 +389,11 @@ namespace LCompilers {
         ASR::expr_t* create_binop_helper(Allocator &al, const Location &loc, ASR::expr_t* left, ASR::expr_t* right,
                                             ASR::binopType op);
 
+        // Whether `expr` is a whole array (F2018 9.5.2): a named array, or
+        // an array component of a scalar. Only a whole array has lower
+        // bounds other than 1 (F2018 16.9.109).
+        bool is_whole_array(ASR::expr_t* expr);
+
         ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int64_t dim, std::string bound,
                                 Allocator& al, int integer_kind = 4);
 

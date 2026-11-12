@@ -475,9 +475,58 @@ static ASR::ttype_t* clamp_extents(Allocator& al, ASR::ttype_t* type) {
         ASRUtils::extract_physical_type(type), true) : type;
 }
 
+// The explicit-shape array type `type` with the lower bounds of the
+// dimensions `bounds`, or with lower bounds of 1 when `bounds` is nullptr.
+static ASR::ttype_t* with_lower_bounds(Allocator& al, ASR::ttype_t* type,
+        ASR::dimension_t* bounds) {
+    if (!ASR::is_a<ASR::Array_t>(*type)) {
+        return type;
+    }
+    ASR::dimension_t* dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+    Vec<ASR::dimension_t> rebased;
+    rebased.reserve(al, n_dims);
+    bool changed = false;
+    for (size_t i = 0; i < n_dims; i++) {
+        ASR::dimension_t dim = dims[i];
+        if (dim.m_start != nullptr && dim.m_length != nullptr) {
+            int64_t start = 0, new_start = 1;
+            bool is_start_known = ASRUtils::extract_value(
+                ASRUtils::expr_value(dim.m_start), start);
+            if (bounds != nullptr) {
+                ASRUtils::extract_value(ASRUtils::expr_value(bounds[i].m_start),
+                    new_start);
+            }
+            if (!is_start_known || start != new_start) {
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                    dim.m_start->base.loc, new_start,
+                    ASRUtils::expr_type(dim.m_start)));
+                changed = true;
+            }
+        }
+        rebased.push_back(al, dim);
+    }
+    return changed ? ASRUtils::duplicate_type(al, type, &rebased,
+        ASRUtils::extract_physical_type(type), true) : type;
+}
+
+// The type of an array expression can carry the lower bounds of an operand,
+// while the expression itself has lower bounds of 1 (F2018 16.9.109).
+static ASR::ttype_t* with_lower_bounds_of_one(Allocator& al, ASR::ttype_t* type) {
+    return with_lower_bounds(al, type, nullptr);
+}
+
+// The array constant `constant` with the type `type`
+static ASR::expr_t* retype_array_constant(Allocator& al,
+        ASR::ArrayConstant_t* constant, ASR::ttype_t* type) {
+    return ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, constant->base.base.loc,
+        constant->m_n_data, constant->m_data, type, constant->m_storage_format));
+}
+
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
     ASR::expr_t* value, SymbolTable* scope, std::string name_hint,
-    bool is_pointer_required, bool override_physical_type) {
+    bool is_pointer_required, bool override_physical_type,
+    bool lower_bounds_of_one) {
     ASR::ttype_t* value_type = ASRUtils::expr_type(value);
     LCOMPILERS_ASSERT(ASRUtils::is_array(value_type));
 
@@ -551,6 +600,9 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
         }
         var_type = is_size_only_dependent_on_arguments && !is_allocatable
             && !is_pointer_func ? clamp_extents(al, value_type) : value_type;
+        if( lower_bounds_of_one ) {
+            var_type = with_lower_bounds_of_one(al, var_type);
+        }
     } else {
         var_type = ASRUtils::create_array_type_with_empty_dims(al, value_n_dims, value_type);
         if( ASR::is_a<ASR::ArraySection_t>(*value) && is_pointer_required &&
@@ -580,6 +632,20 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
             ASRUtils::extract_physical_type(const_type) !=
             ASRUtils::extract_physical_type(value_type) ) {
             var_type_for_param = const_type;
+        }
+        if( lower_bounds_of_one ) {
+            // The named constant and its value agree on the bounds
+            ASR::ttype_t* rebased_const_type = with_lower_bounds_of_one(al, const_type);
+            if( rebased_const_type != const_type &&
+                    ASR::is_a<ASR::ArrayConstant_t>(*const_value) ) {
+                const_value = retype_array_constant(al,
+                    ASR::down_cast<ASR::ArrayConstant_t>(const_value),
+                    rebased_const_type);
+                const_type = rebased_const_type;
+            }
+            if( rebased_const_type == const_type ) {
+                var_type_for_param = with_lower_bounds_of_one(al, var_type_for_param);
+            }
         }
         ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
@@ -1832,7 +1898,8 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     ASR::expr_t* array_expr, const std::string& name_hint, Allocator& al,
     Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
     ExprsWithTargetType& exprs_with_target, bool is_pointer_required=false,
-    ASR::expr_t* allocate_size_reference=nullptr, bool override_physical_type=false) {
+    ASR::expr_t* allocate_size_reference=nullptr, bool override_physical_type=false,
+    bool lower_bounds_of_one=false) {
     array_expr = get_past_defined_operation(array_expr);
     const Location& loc = array_expr->base.loc;
     if( allocate_size_reference == nullptr ) {
@@ -1840,7 +1907,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
     }
     ASR::expr_t* array_var_temporary = create_temporary_variable_for_array(
         al, allocate_size_reference, current_scope, name_hint,
-        is_pointer_required, override_physical_type);
+        is_pointer_required, override_physical_type, lower_bounds_of_one);
     if (ASRUtils::is_value_constant(ASRUtils::expr_value(allocate_size_reference))) {
         return array_var_temporary;
     }
@@ -1885,6 +1952,114 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
             al, loc, array_var_temporary, array_expr, nullptr, exprs_with_target)));
     }
     return array_var_temporary;
+}
+
+// The whole array that the data source `data_source` of a structure
+// constructor converts to the type of its component, or nullptr. The frontend
+// writes that conversion as a Cast to the type of the component, whose shape
+// is deferred when the component is allocatable. A Cast with the shape of
+// its argument is an explicit conversion, an expression like any other.
+static ASR::expr_t* get_implicitly_converted_whole_array(ASR::expr_t* data_source) {
+    data_source = ASRUtils::get_past_array_physical_cast(data_source);
+    if( !ASR::is_a<ASR::Cast_t>(*data_source) ) {
+        return nullptr;
+    }
+    ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(data_source);
+    ASR::dimension_t* dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(cast->m_type, dims);
+    for( size_t i = 0; i < n_dims; i++ ) {
+        if( dims[i].m_start != nullptr || dims[i].m_length != nullptr ) {
+            return nullptr;
+        }
+    }
+    ASR::expr_t* array = ASRUtils::get_past_array_physical_cast(cast->m_arg);
+    return n_dims > 0 && PassUtils::is_whole_array(array) ? array : nullptr;
+}
+
+// Returns a temporary that holds the value of `conversion`, which converts
+// the whole array `array` to another type, and has the bounds of `array`:
+//
+//     allocate(temporary(lbound(array, 1):ubound(array, 1), ...))
+//     temporary = conversion
+//
+// The conversion of a named constant has a compile time value, and its
+// temporary is a named constant with that value and the bounds of `array`.
+ASR::expr_t* create_temporary_with_bounds_of_converted_array(
+    ASR::expr_t* conversion, ASR::expr_t* array, const std::string& name_hint,
+    Allocator& al, Vec<ASR::stmt_t*>*& current_body, SymbolTable* current_scope,
+    ExprsWithTargetType& exprs_with_target) {
+    conversion = ASRUtils::get_past_array_physical_cast(conversion);
+    const Location& loc = conversion->base.loc;
+    size_t rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array));
+    ASR::expr_t* constant = ASRUtils::expr_value(conversion);
+    if( ASRUtils::is_value_constant(constant) ) {
+        ASR::dimension_t* array_dims = nullptr;
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array), array_dims);
+        if( !ASR::is_a<ASR::ArrayConstant_t>(*constant) ||
+                !ASRUtils::is_fixed_size_array(ASRUtils::expr_type(array)) ||
+                ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(constant)) != rank ) {
+            return create_and_allocate_temporary_variable_for_array(conversion,
+                name_hint, al, current_body, current_scope, exprs_with_target);
+        }
+        ASR::ttype_t* constant_type = with_lower_bounds(al,
+            ASRUtils::expr_type(constant), array_dims);
+        constant = retype_array_constant(al,
+            ASR::down_cast<ASR::ArrayConstant_t>(constant), constant_type);
+        std::string name = PassUtils::temporary_name(current_scope, name_hint);
+        ASR::symbol_t* named_constant = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, name),
+                nullptr, 0, ASR::intentType::Local, constant, constant,
+                ASR::storage_typeType::Parameter, constant_type, nullptr,
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(name, named_constant);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, named_constant));
+    }
+    ASR::ttype_t* temporary_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(
+        al, loc, ASRUtils::create_array_type_with_empty_dims(al, rank,
+            ASRUtils::expr_type(conversion))));
+    ASR::expr_t* temporary = create_temporary_variable_for_array(al, loc,
+        current_scope, name_hint, temporary_type, conversion);
+
+    ASRUtils::ExprStmtDuplicator duplicator(al);
+    ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+    Vec<ASR::dimension_t> allocate_dims;
+    allocate_dims.reserve(al, rank);
+    for( size_t i = 0; i < rank; i++ ) {
+        ASR::dimension_t allocate_dim;
+        allocate_dim.loc = loc;
+        allocate_dim.m_start = PassUtils::get_bound(
+            duplicator.duplicate_expr(array), i + 1, "lbound", al);
+        allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
+            duplicator.duplicate_expr(array),
+            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i + 1, int_type)),
+            int_type, nullptr));
+        allocate_dims.push_back(al, allocate_dim);
+    }
+    ASR::alloc_arg_t alloc_arg;
+    alloc_arg.loc = loc;
+    alloc_arg.m_a = temporary;
+    alloc_arg.m_dims = allocate_dims.p;
+    alloc_arg.n_dims = allocate_dims.size();
+    alloc_arg.m_len_expr = nullptr;
+    alloc_arg.m_type = nullptr;
+    alloc_arg.m_sym_subclass = nullptr;
+    alloc_arg.m_codims = nullptr;
+    alloc_arg.n_codims = 0;
+    Vec<ASR::alloc_arg_t> alloc_args;
+    alloc_args.reserve(al, 1);
+    alloc_args.push_back(al, alloc_arg);
+    Vec<ASR::expr_t*> dealloc_args;
+    dealloc_args.reserve(al, 1);
+    dealloc_args.push_back(al, temporary);
+    // The statement can run again, with the temporary still allocated
+    current_body->push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al,
+        loc, dealloc_args.p, dealloc_args.size(), nullptr, nullptr)));
+    current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, loc,
+        alloc_args.p, alloc_args.size(), nullptr, nullptr, nullptr)));
+    current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+        al, loc, temporary, conversion, nullptr, exprs_with_target)));
+    return temporary;
 }
 
 ASR::stmt_t* allocate_struct_expr(Allocator& al, ASR::expr_t* struct_expr) {
@@ -3710,7 +3885,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     // value would be lost.
     ASR::expr_t* call_create_and_allocate_temporary_variable(ASR::expr_t*& expr, Allocator &al, Vec<ASR::stmt_t*>*& current_body,
         const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target,
-        bool is_defined_by_callee=false) {
+        bool is_defined_by_callee=false, bool lower_bounds_of_one=false) {
         ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr);
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) && 
         ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_old == ASR::array_physical_typeType::AssumedRankArray) {
@@ -3725,7 +3900,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     !ASRUtils::is_array_indexed_with_array_indices(ASR::down_cast<ASR::ArraySection_t>(x_m_args_i));
         array_var_temporary = create_and_allocate_temporary_variable_for_array(
             x_m_args_i, name_hint, al, current_body, current_scope, exprs_with_target,
-            is_pointer_required);
+            is_pointer_required, nullptr, false, lower_bounds_of_one);
         return array_var_temporary;
     }
 
@@ -4110,8 +4285,21 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 bool is_defined_by_callee = is_call && dummy &&
                     (dummy->m_intent == ASRUtils::intent_out ||
                      dummy->m_intent == ASRUtils::intent_inout);
-                ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target,
-                    is_defined_by_callee);
+                // F2018 7.5.10: an allocatable component of the value a
+                // structure constructor builds has the bounds of its data
+                // source. The temporary stands for the data source from
+                // here on, so it takes them: lower bounds of 1, as any
+                // array that is not a whole array has, or the bounds of
+                // the whole array whose value is converted to the type of
+                // the component.
+                ASR::expr_t* converted_array = is_call ? nullptr :
+                    get_implicitly_converted_whole_array(x_m_args[i].m_value);
+                ASR::expr_t* array_var_temporary = converted_array != nullptr ?
+                    create_temporary_with_bounds_of_converted_array(
+                        x_m_args[i].m_value, converted_array, name_hint, al,
+                        current_body, current_scope, exprs_with_target) :
+                    call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target,
+                        is_defined_by_callee, !is_call);
                 replaced_call_arg = replaced_call_arg || is_call;
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
