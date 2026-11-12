@@ -8797,6 +8797,93 @@ public:
         }
     }
 
+    // `a(lb:ub:st)(l:r) = value` with an array `value`. The target is the
+    // implied do loop `idl`, `(a(i)(l:r), i = lb, ub, st)`. The elements of
+    // the value are assigned one by one, after the whole value is evaluated
+    // into a temporary, as it may reference the target
+    // (`a(:)(2:3) = a(:)(1:2)`):
+    //
+    //     allocate(character(len=max(0, r - l + 1)) :: tmp(max(0, (ub - lb + st)/st)))
+    //     tmp = value
+    //     do i = lb, ub, st
+    //         a(i)(l:r) = tmp((i - lb)/st + 1)
+    //     end do
+    //     deallocate(tmp)
+    //
+    // `tmp = value` is an array assignment: it gives every element the
+    // length of the substring, and it checks the shape of the value. The
+    // temporary is local to a block that holds these statements, so the
+    // assignment stays one statement.
+    void assign_to_substring_section(const Location &loc,
+            ASR::ImpliedDoLoop_t *idl, ASR::expr_t *value) {
+        ASRUtils::ASRBuilder b(al, loc);
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::StringSection_t *section =
+            ASR::down_cast<ASR::StringSection_t>(idl->m_values[0]);
+        ASR::symbol_t *loop_var = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
+        ASR::ttype_t *int_type = ASRUtils::symbol_type(loop_var);
+        // An expression node belongs to one statement only, so every use of
+        // a bound gets its own copy.
+        auto copy = [&](ASR::expr_t *e) {
+            return CastingUtil::perform_casting(duplicator.duplicate_expr(e),
+                int_type, al, loc);
+        };
+        auto at_least_zero = [&](ASR::expr_t *e) {
+            Vec<ASR::expr_t*> args; args.reserve(al, 2);
+            args.push_back(al, b.i_t(0, int_type));
+            args.push_back(al, e);
+            return ASRUtils::EXPR(ASRUtils::Max::create_Max(al, loc, args, diag));
+        };
+        ASR::expr_t *len = at_least_zero(b.Add(
+            b.Sub(copy(section->m_end), copy(section->m_start)),
+            b.i_t(1, int_type)));
+        ASR::expr_t *size = at_least_zero(b.Div(
+            b.Add(b.Sub(copy(idl->m_end), copy(idl->m_start)),
+                copy(idl->m_increment)),
+            copy(idl->m_increment)));
+
+        ASR::ttype_t *elem_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+            ASRUtils::extract_kind_from_ttype_t(section->m_type), nullptr,
+            ASR::string_length_kindType::DeferredLength,
+            ASR::string_physical_typeType::DescriptorString));
+        ASR::ttype_t *tmp_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+            ASRUtils::create_array_type_with_empty_dims(al, 1, elem_type)));
+        SymbolTable *block_scope = al.make_new<SymbolTable>(current_scope);
+        ASR::symbol_t *tmp_sym = ASR::down_cast<ASR::Var_t>(b.Variable(
+            block_scope, "value", tmp_type, ASR::intentType::Local))->m_v;
+
+        Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+        dims.push_back(al, b.set_dim(b.i_t(1, int_type), size));
+        ASR::expr_t *index = b.Add(
+            b.Div(b.Sub(b.Var(loop_var), copy(idl->m_start)),
+                copy(idl->m_increment)),
+            b.i_t(1, int_type));
+        ASR::do_loop_head_t head;
+        head.loc = loc;
+        head.m_v = idl->m_var;
+        head.m_start = idl->m_start;
+        head.m_end = idl->m_end;
+        head.m_increment = idl->m_increment;
+        Vec<ASR::stmt_t*> loop_body; loop_body.reserve(al, 1);
+        loop_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+            idl->m_values[0], b.ArrayItem_01(b.Var(tmp_sym), {index}),
+            nullptr, false, false)));
+
+        Vec<ASR::stmt_t*> body; body.reserve(al, 4);
+        body.push_back(al, b.Allocate(b.Var(tmp_sym), dims.p, dims.size(), len));
+        body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+            b.Var(tmp_sym), value, nullptr, false, false)));
+        body.push_back(al, ASRUtils::STMT(ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
+            head, loop_body.p, loop_body.size(), nullptr, 0)));
+        body.push_back(al, b.Deallocate(b.Var(tmp_sym)));
+        std::string name = current_scope->get_unique_name(
+            "__lfortran_substring_section_assignment");
+        ASR::symbol_t *block = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
+            al, loc, block_scope, s2c(al, name), body.p, body.size()));
+        current_scope->add_symbol(name, block);
+        tmp = ASR::make_BlockCall_t(al, loc, -1, block);
+    }
+
     void visit_Assignment(const AST::Assignment_t &x) {
         if (is_statement_function(x)) {
             create_statement_function(x);
@@ -8841,6 +8928,10 @@ public:
 
                     this->visit_expr(*x.m_value);
                     ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                    if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                        assign_to_substring_section(x.base.base.loc, idl, value);
+                        return;
+                    }
                     // Cast value to match element (scalar string) type if needed
                     ASR::ttype_t* target_elem_type = ASRUtils::expr_type(string_section_target);
                     ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
