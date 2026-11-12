@@ -1319,10 +1319,27 @@ namespace LCompilers {
                     num_elements, result_elements);
             }
 
+            bool has_order = (order != nullptr && order_expr != nullptr);
+            // A character array keeps its elements in one buffer of `len`
+            // characters each, behind a single string descriptor. With
+            // `order`, the result gets a string descriptor and a buffer of
+            // its own, which the elements are copied into one by one below.
+            ASR::String_t* ordered_string_type = nullptr;
+            if (has_order && asr_data_type != nullptr &&
+                    ASRUtils::is_character(*asr_data_type) &&
+                    ASRUtils::get_string_type(asr_data_type)->m_physical_type ==
+                        ASR::string_physical_typeType::DescriptorString) {
+                LCOMPILERS_ASSERT(result == nullptr);
+                ordered_string_type = ASRUtils::get_string_type(asr_data_type);
+            }
+
             llvm::Value* first_ptr = this->get_pointer_to_data(result_type, reshaped);
             llvm::Value* arr_first;
             if (result) {
                 arr_first = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), first_ptr);
+            } else if (ordered_string_type != nullptr) {
+                arr_first = llvm_utils->create_string_descriptor("reshaped_string");
+                builder->CreateStore(arr_first, first_ptr);
             } else {
                 arr_first = llvm_utils->CreateAlloca(*builder, llvm_data_type, num_elements);
                 builder->CreateStore(arr_first, first_ptr);
@@ -1332,7 +1349,6 @@ namespace LCompilers {
 
             bool is_struct_type = asr_data_type != nullptr &&
                 ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(asr_data_type));
-            bool has_order = (order != nullptr && order_expr != nullptr);
             // Whether the elements were copied in array element order (so the
             // result is contiguous from its first element) rather than as the
             // raw source storage.
@@ -1554,6 +1570,31 @@ namespace LCompilers {
                     llvm::Value* dest_data = llvm_utils->CreateLoad2(
                         llvm_data_type->getPointerTo(), first_ptr);
 
+                    // Only the elements of the result are copied: it can have
+                    // fewer elements than `source`, and none at all, which
+                    // the subscripts below cannot be computed for.
+                    llvm::Value* result_size = llvm_utils->CreateLoad2(index_type, prod);
+                    llvm::Value* num_copied = builder->CreateSExtOrTrunc(num_elements, index_type);
+                    num_copied = builder->CreateSelect(
+                        builder->CreateICmpSLT(result_size, num_copied), result_size, num_copied);
+
+                    llvm::Value* string_elem_size = nullptr;
+                    if (ordered_string_type != nullptr) {
+                        llvm::Type* i64 = llvm::Type::getInt64Ty(context);
+                        llvm::Value* string_len = llvm_utils->get_string_length(
+                            ordered_string_type, src_data);
+                        string_elem_size = builder->CreateMul(string_len,
+                            llvm::ConstantInt::get(i64, ordered_string_type->m_kind));
+                        llvm::Value* dest_chars = llvm_utils->CreateAlloca(*builder,
+                            llvm::Type::getInt8Ty(context),
+                            builder->CreateMul(builder->CreateSExtOrTrunc(result_size, i64),
+                                string_elem_size));
+                        builder->CreateStore(dest_chars,
+                            llvm_utils->get_string_data(ordered_string_type, dest_data, true));
+                        builder->CreateStore(string_len,
+                            llvm_utils->get_string_length(ordered_string_type, dest_data, true));
+                    }
+
                     llvm::Value* I_arr = llvm_utils->CreateAlloca(
                         *builder, llvm::Type::getInt64Ty(context),
                         llvm::ConstantInt::get(context, llvm::APInt(32, rank)));
@@ -1567,8 +1608,7 @@ namespace LCompilers {
 
                     llvm_utils->start_new_block(order_loop_head);
                     llvm::Value* idx_val = llvm_utils->CreateLoad2(index_type, idx);
-                    llvm::Value* cond2 = builder->CreateICmpSLT(idx_val,
-                        builder->CreateSExtOrTrunc(num_elements, index_type));
+                    llvm::Value* cond2 = builder->CreateICmpSLT(idx_val, num_copied);
                     builder->CreateCondBr(cond2, order_loop_body, order_loop_end);
 
                     llvm_utils->start_new_block(order_loop_body);
@@ -1613,10 +1653,20 @@ namespace LCompilers {
                         stride = builder->CreateMul(stride, shape_dim);
                     }
 
-                    llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, src_data, source_index);
-                    llvm::Value* val = llvm_utils->CreateLoad2(llvm_data_type, src_ptr);
-                    llvm::Value* dst_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, dest_data, idx_val);
-                    builder->CreateStore(val, dst_ptr);
+                    if (ordered_string_type != nullptr) {
+                        builder->CreateMemCpy(
+                            llvm_utils->get_string_element_in_array_(
+                                ordered_string_type, dest_data, idx_val),
+                            llvm::MaybeAlign(),
+                            llvm_utils->get_string_element_in_array_(
+                                ordered_string_type, src_data, source_index),
+                            llvm::MaybeAlign(), string_elem_size);
+                    } else {
+                        llvm::Value* src_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, src_data, source_index);
+                        llvm::Value* val = llvm_utils->CreateLoad2(llvm_data_type, src_ptr);
+                        llvm::Value* dst_ptr = llvm_utils->create_ptr_gep2(llvm_data_type, dest_data, idx_val);
+                        builder->CreateStore(val, dst_ptr);
+                    }
 
                     llvm::Value* idx_next = builder->CreateAdd(idx_val,
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));

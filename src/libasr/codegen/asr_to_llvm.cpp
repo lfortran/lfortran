@@ -5908,10 +5908,12 @@ public:
             case ASR::PointerArray: {
                 ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
                     ASRUtils::expr_type(const_cast<ASR::expr_t*>(&(x.base))));
-                if ((result != nullptr ||
-                     result_ptype == ASR::array_physical_typeType::DescriptorArray ||
-                     x.m_order != nullptr) &&
-                    !ASRUtils::is_character(*x_m_array_type)) {
+                // A character array is only reshaped through a descriptor for
+                // `order`, whose element by element copy is done there.
+                if (x.m_order != nullptr ||
+                    ((result != nullptr ||
+                      result_ptype == ASR::array_physical_typeType::DescriptorArray) &&
+                     !ASRUtils::is_character(*x_m_array_type))) {
                     ASR::ttype_t* desc_input_type = ASRUtils::duplicate_type(al, x_m_array_type,
                         nullptr, ASR::array_physical_typeType::DescriptorArray, true);
                     tmp = array;
