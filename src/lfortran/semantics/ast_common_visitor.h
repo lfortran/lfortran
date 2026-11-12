@@ -21214,11 +21214,16 @@ public:
                     ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(pad_expr), pad_expr) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
-            } else if ( (ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(pad_expr), pad_expr) != ASRUtils::type_to_str_fortran_expr(ASRUtils::expr_type(array), array))||
-            (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(pad_expr)) != ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(array))) ){
+            }
+            // Only the element types are compared: `pad` may differ from
+            // `source` in rank and in the allocatable or pointer attribute
+            ASR::ttype_t* pad_element_type = ASRUtils::extract_type(ASRUtils::expr_type(pad_expr));
+            ASR::ttype_t* source_element_type = ASRUtils::extract_type(ASRUtils::expr_type(array));
+            if ( (ASRUtils::type_to_str_fortran_expr(pad_element_type, pad_expr) != ASRUtils::type_to_str_fortran_expr(source_element_type, array))||
+            (ASRUtils::extract_kind_from_ttype_t(pad_element_type) != ASRUtils::extract_kind_from_ttype_t(source_element_type)) ){
                 diag.add(Diagnostic("`pad` argument of reshape intrinsic must have same type and kind as `source` argument, found pad type " +
-                    ASRUtils::type_to_str_with_kind(ASRUtils::extract_type(ASRUtils::expr_type(pad_expr)), pad_expr) +
-                    " source type " + ASRUtils::type_to_str_with_kind(ASRUtils::extract_type(ASRUtils::expr_type(array)), array) +
+                    ASRUtils::type_to_str_with_kind(pad_element_type, pad_expr) +
+                    " source type " + ASRUtils::type_to_str_with_kind(source_element_type, array) +
                     " instead.", Level::Error, Stage::Semantic, {Label("", {pad->base.loc})}));
                 throw SemanticAbort();
             }
