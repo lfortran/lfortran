@@ -2477,6 +2477,7 @@ RUN(NAME bindc_optional_array_01 LABELS gfortran llvm EXTRAFILES bindc_optional_
 RUN(NAME bindc_optional_rank_forward_01 LABELS gfortran llvm EXTRAFILES bindc_optional_rank_forward_01c.c) # forwarding preserves assumed rank and absence for bind(c)
 RUN(NAME bindc_optional_type_star_rank_01 LABELS gfortran llvm EXTRAFILES bindc_optional_type_star_rank_01c.c)
 RUN(NAME bindc_optional_associate_01 LABELS gfortran llvm EXTRAFILES bindc_optional_associate_01c.c)
+RUN(NAME bindc_optional_char_01 LABELS gfortran llvm EXTRAFILES bindc_optional_char_01c.c)
 RUN(NAME bindc_section_01 LABELS gfortran llvm EXTRAFILES bindc_section_01c.c) # non-contiguous section passed to a bind(c) (*) dummy is packed
 RUN(NAME bindc_char_typestar_01 LABELS gfortran llvm EXTRAFILES bindc_char_typestar_01c.c) # character data passed to a bind(c) type(*) assumed-size dummy is the C buffer of its characters
 RUN(NAME bindc_char_section_01 LABELS gfortran llvm EXTRAFILES bindc_char_section_01c.c) # non-contiguous character sections passed to a bind(c) type(*) dummy are packed

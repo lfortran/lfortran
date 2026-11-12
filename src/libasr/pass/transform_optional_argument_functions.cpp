@@ -413,6 +413,38 @@ ASR::symbol_t *optional_call_symbol(const ASR::GpuKernelLaunch_t &x) {
     return x.m_kernel;
 }
 
+ASR::expr_t* forwarded_optional_base(ASR::expr_t* expr) {
+    while (expr) {
+        expr = ASRUtils::get_past_array_physical_cast(expr);
+        if (!ASRUtils::is_stringToArray_cast(expr)) {
+            break;
+        }
+        expr = ASR::down_cast<ASR::Cast_t>(expr)->m_arg;
+    }
+    return expr;
+}
+
+ASR::expr_t* rewrap_forwarded_optional(Allocator& al, ASR::expr_t* original,
+        ASR::expr_t* replacement) {
+    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*original)) {
+        ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(original);
+        return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+            al, original->base.loc,
+            rewrap_forwarded_optional(al, cast->m_arg, replacement),
+            ASR::is_a<ASR::Var_t>(*cast->m_arg)
+                ? ASR::array_physical_typeType::DescriptorArray : cast->m_old,
+            cast->m_new, cast->m_type, nullptr));
+    }
+    if (ASRUtils::is_stringToArray_cast(original)) {
+        ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(original);
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, original->base.loc,
+            rewrap_forwarded_optional(al, cast->m_arg, replacement),
+            cast->m_kind, cast->m_type, cast->m_value, cast->m_dest));
+    }
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*original));
+    return replacement;
+}
+
 // A bind(C) procedure receives NULL for an absent optional argument, as it
 // has no presence argument. When the actual argument is an optional dummy of
 // an owning function, it is replaced by a temporary pointer that is
@@ -433,8 +465,7 @@ bool pass_absent_optional_as_null(Allocator& al, const T& x, ASR::Function_t* fu
     new_args.reserve(al, x.n_args);
     for( size_t i = 0; i < x.n_args; i++ ) {
         ASR::call_arg_t arg = x.m_args[i];
-        ASR::expr_t* actual = arg.m_value ?
-            ASRUtils::get_past_array_physical_cast(arg.m_value) : nullptr;
+        ASR::expr_t* actual = forwarded_optional_base(arg.m_value);
         if( i < func->n_args && actual && ASR::is_a<ASR::Var_t>(*actual) &&
                 ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v) &&
                 ASRUtils::EXPR2VAR(func->m_args[i])->m_presence == ASR::presenceType::Optional &&
@@ -464,8 +495,8 @@ bool pass_absent_optional_as_null(Allocator& al, const T& x, ASR::Function_t* fu
                 const Location& loc = arg.loc;
                 // An assumed-rank target has zero static dimensions, but its
                 // pointer must still carry the descriptor and dynamic rank.
-                ASR::ttype_t* pointer_type =
-                    ASRUtils::make_Pointer_t_util(al, loc, target_type);
+                ASR::ttype_t* pointer_type = normalize_string_temporary_type(al,
+                    loc, ASRUtils::make_Pointer_t_util(al, loc, target_type));
                 LCOMPILERS_ASSERT(!ASRUtils::is_assumed_rank_array(target_type) ||
                     ASRUtils::is_assumed_rank_array(pointer_type));
                 std::string pointer_name = scope->get_unique_name(
@@ -481,15 +512,7 @@ bool pass_absent_optional_as_null(Allocator& al, const T& x, ASR::Function_t* fu
                         ASR::pointer_bounds_formType::NoPointerBounds))},
                     {ASRUtils::STMT(ASR::make_Nullify_t(al, loc, nullify_vars.p,
                         nullify_vars.size()))}));
-                if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg.m_value) ) {
-                    ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg.m_value);
-                    arg.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
-                        arg.m_value->base.loc, pointer_variable,
-                        ASR::array_physical_typeType::DescriptorArray, cast->m_new,
-                        cast->m_type, nullptr));
-                } else {
-                    arg.m_value = pointer_variable;
-                }
+                arg.m_value = rewrap_forwarded_optional(al, arg.m_value, pointer_variable);
                 replaced = true;
             }
         }
@@ -647,20 +670,11 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 for( ASR::Function_t* owning_function: owning_functions ) {
                     size_t k;
                     bool k_found = false;
-                    ASR::expr_t* original_expr = nullptr;
-                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i].m_value)) {
-                        ASR::ArrayPhysicalCast_t *x_array_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[i].m_value);
-                        original_expr = x_array_cast->m_arg;
-                    }
+                    ASR::expr_t* original_expr =
+                        forwarded_optional_base(x.m_args[i].m_value);
                     for( k = 0; k < owning_function->n_args; k++ ) {
-                        if( original_expr && ASR::is_a<ASR::Var_t>(*original_expr) && ASR::down_cast<ASR::Var_t>(owning_function->m_args[k])->m_v ==
+                        if( ASR::is_a<ASR::Var_t>(*original_expr) && ASR::down_cast<ASR::Var_t>(owning_function->m_args[k])->m_v ==
                             ASR::down_cast<ASR::Var_t>(original_expr)->m_v ) {
-                            k_found = true;
-                            break ;
-                        }
-
-                        if( ASR::is_a<ASR::Var_t>(*x.m_args[i].m_value) && ASR::down_cast<ASR::Var_t>(owning_function->m_args[k])->m_v ==
-                            ASR::down_cast<ASR::Var_t>(x.m_args[i].m_value)->m_v ) {
                             k_found = true;
                             break ;
                         }
