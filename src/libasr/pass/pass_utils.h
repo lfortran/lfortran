@@ -392,6 +392,30 @@ namespace LCompilers {
         ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int64_t dim, std::string bound,
                                 Allocator& al, int integer_kind = 4);
 
+        /*
+            A bound of the loop that reads the array `value` element by
+            element, with the loop index put on `value` by
+            `create_array_ref`.
+
+            For a component of a whole array, `a%x` or `s%w%x`,
+            `create_array_ref` indexes that array, `a(i)%x`, so this is a
+            bound of `a`, not of `a%x`, whose lower bound is 1 whatever that
+            of `a` is.
+
+            For any other value it is a bound of `value` itself. That
+            includes a component of a section or of a vector-subscripted
+            array, `a(lo:hi)%x`: such a base starts at 1 like its component,
+            and its bounds cannot be read in place, a later pass has to
+            evaluate it first. It also includes a whole array that is named
+            with a function reference, `s(f(n))%w%x`: only a designator
+            that needs no evaluation is written out again for its bounds.
+            TODO: for that last form the loop is still wrong when the lower
+            bound of `w` is not 1; the base has to be evaluated once and
+            then both indexed and asked for its bounds.
+        */
+        ASR::expr_t* get_array_ref_index_bound(ASR::expr_t* value, int64_t dim,
+                                std::string bound, Allocator& al);
+
         ASR::expr_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
                              Allocator& al, ASR::TranslationUnit_t& unit, const Location& loc,
                              PassOptions& pass_options);
@@ -1295,15 +1319,11 @@ namespace LCompilers {
                         PassUtils::create_idx_vars(idx_vars_local, n_dims, loc, al, current_scope, "_t");
                         Vec<ASR::stmt_t*> inner_body;
                         ASR::stmt_t* inner_doloop = nullptr;
-                        // The bounds of the array `create_array_ref` indexes,
-                        // see the `create_do_loop` over a whole array below.
-                        ASR::expr_t* indexed_array =
-                            ASRUtils::get_struct_member_chain_array_part(curr_init);
                         for (int di = 0; di < n_dims; di++) {
                             ASR::do_loop_head_t head;
                             head.m_v = idx_vars_local[di];
-                            head.m_start = PassUtils::get_bound(indexed_array, di + 1, "lbound", al);
-                            head.m_end = PassUtils::get_bound(indexed_array, di + 1, "ubound", al);
+                            head.m_start = PassUtils::get_array_ref_index_bound(curr_init, di + 1, "lbound", al);
+                            head.m_end = PassUtils::get_array_ref_index_bound(curr_init, di + 1, "ubound", al);
                             head.m_increment = nullptr;
                             head.loc = head.m_v->base.loc;
                             inner_body.reserve(al, 1);
@@ -1423,20 +1443,14 @@ namespace LCompilers {
             LCOMPILERS_ASSERT(value_rank == (int) idx_vars.size())
 
             // The loop body puts these indices on `value_array` with
-            // `create_array_ref`, which for a component of an array, `a%x`,
-            // indexes the base: `a(i)%x`. So the loop has to run over the
-            // bounds of that base. Those of `a%x` are not the same: it is
-            // not a whole array, so its lower bound is 1 whatever that of
-            // `a` is.
-            ASR::expr_t* indexed_array =
-                ASRUtils::get_struct_member_chain_array_part(value_array);
+            // `create_array_ref`.
             ASR::stmt_t* doloop = nullptr;
             for( int i = 0; i < value_rank; i++ ) {
                 // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
                 ASR::do_loop_head_t head;
                 head.m_v = idx_vars[i];
-                head.m_start = PassUtils::get_bound(indexed_array, i + 1, "lbound", al);
-                head.m_end = PassUtils::get_bound(indexed_array, i + 1, "ubound", al);
+                head.m_start = PassUtils::get_array_ref_index_bound(value_array, i + 1, "lbound", al);
+                head.m_end = PassUtils::get_array_ref_index_bound(value_array, i + 1, "ubound", al);
                 head.m_increment = nullptr;
                 head.loc = head.m_v->base.loc;
 
