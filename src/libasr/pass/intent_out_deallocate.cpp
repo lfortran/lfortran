@@ -91,6 +91,18 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
     Allocator &al;
     std::map<ASR::Struct_t*, ASR::symbol_t*> dynamic_init_bindings;
 
+    static bool has_unresolved_kind_params(ASR::Struct_t* st) {
+        while (st != nullptr) {
+            if (st->n_kind_params > 0) return true;
+            if (st->m_parent == nullptr) break;
+            ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            LCOMPILERS_ASSERT(parent && ASR::is_a<ASR::Struct_t>(*parent));
+            st = ASR::down_cast<ASR::Struct_t>(parent);
+        }
+        return false;
+    }
+
     void create_dynamic_init_procedures(ASR::TranslationUnit_t &unit) {
         StructCollector collector;
         collector.visit_TranslationUnit(unit);
@@ -109,9 +121,9 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         }
         seen.clear();
         for (ASR::Struct_t* st : collector.structs) {
-            // Only concrete PDT instantiations have a runtime layout and vtable.
+            // An extension also needs all its ancestors to have a concrete layout.
             if (!seen.insert(st).second ||
-                    st->n_kind_params > 0 ||
+                    has_unresolved_kind_params(st) ||
                     ASRUtils::is_unlimited_polymorphic_type(&st->base) ||
                     st->m_abi == ASR::abiType::BindC || st->m_is_sequence ||
                     ASRUtils::is_iso_c_ptr_type_symbol(unit.m_symtab,
