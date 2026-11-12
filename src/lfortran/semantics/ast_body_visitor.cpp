@@ -8922,9 +8922,12 @@ public:
                     copy(idl->m_increment)),
                 copy(idl->m_increment)))));
         }
+        // The name of the temporary is not a name of the program: the value
+        // may be a variable of the same name.
         SymbolTable *block_scope = al.make_new<SymbolTable>(current_scope);
         ASR::symbol_t *tmp_sym = ASR::down_cast<ASR::Var_t>(b.Variable(
-            block_scope, "value",
+            block_scope, block_scope->get_unique_name(
+                "__lfortran_substring_section_value"),
             ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, tmp_type)),
             ASR::intentType::Local))->m_v;
         ASR::expr_t *element = b.Var(tmp_sym);

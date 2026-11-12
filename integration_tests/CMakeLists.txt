@@ -6574,6 +6574,7 @@ RUN(NAME array_section_assign_13 LABELS gfortran llvm)
 RUN(NAME array_section_assign_14 LABELS llvm)
 RUN(NAME array_section_assign_15 LABELS gfortran llvm) # array assigned to a substring of a section (#16161)
 RUN(NAME array_section_assign_16 LABELS gfortran llvm) # scalar part of the target assigned to a substring of a section
+RUN(NAME array_section_assign_17 LABELS gfortran llvm) # substring of a section assigned in a procedure with a variable named `value`
 RUN(NAME array_item_in_bounds_01 LABELS gfortran llvm)
 RUN(NAME array_in_place_sections_01 LABELS gfortran llvm)
 RUN(NAME array_conditional_window_updates LABELS gfortran llvm)
