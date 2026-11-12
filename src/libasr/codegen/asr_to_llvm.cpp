@@ -27520,11 +27520,13 @@ public:
                 }
             }
 
+            llvm::Value* scalar_assumed_rank_desc = nullptr;
             if( orig_arg && ASRUtils::is_assumed_rank_array(orig_arg->m_type) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) ) {
                 llvm::Type* descriptor_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type), orig_arg->m_type_declaration, module.get());
                 llvm::Value* descriptor = arr_descr->create_descriptor_alloca(descriptor_type);
+                scalar_assumed_rank_desc = descriptor;
                 llvm::Value* data_ptr = arr_descr->get_pointer_to_data(descriptor_type, descriptor);
                 // If target is unlimited polymorphic, wrap the scalar in a polymorphic type
                 // For bind(C), just store raw data pointer (C expects raw data, not wrappers)
@@ -27720,21 +27722,26 @@ public:
                     ASRUtils::is_assumed_rank_array(orig_arg->m_type)) {
                 llvm::Type* expected_desc_type = llvm_utils->get_type_from_ttype_t_util(
                     orig_arg->m_type, orig_arg->m_type_declaration, module.get());
-                if (tmp->getType() != expected_desc_type->getPointerTo()) {
-                    if (tmp->getType() == expected_desc_type) {
-                        // An allocatable or pointer assumed-rank dummy takes a
-                        // pointer to the caller's descriptor pointer. A scalar
-                        // actual is wrapped in a fresh descriptor, so store its
-                        // address in a slot rather than punning the descriptor
-                        // itself as a pointer to a pointer.
-                        llvm::Value* desc_slot = llvm_utils->CreateAlloca(
-                            expected_desc_type, nullptr,
-                            "assumed_rank_desc");
-                        builder->CreateStore(tmp, desc_slot);
-                        tmp = desc_slot;
-                    } else {
-                        tmp = builder->CreateBitCast(tmp, expected_desc_type->getPointerTo());
-                    }
+                if (tmp == scalar_assumed_rank_desc &&
+                        x_abi != ASR::abiType::BindC &&
+                        LLVM::is_llvm_pointer(*orig_arg->m_type)) {
+                    // An allocatable or pointer assumed-rank dummy takes a
+                    // pointer to the caller's descriptor pointer (a bind(C)
+                    // one takes the descriptor itself). A scalar
+                    // actual is wrapped in a fresh descriptor, so store its
+                    // address in a slot rather than punning the descriptor
+                    // itself as a pointer to a pointer. Decide this from the
+                    // dummy's type: with opaque pointers both LLVM types are
+                    // the same `ptr`.
+                    llvm::Value* desc_slot = llvm_utils->CreateAlloca(
+                        expected_desc_type, nullptr,
+                        "assumed_rank_desc");
+                    builder->CreateStore(
+                        builder->CreateBitCast(tmp, expected_desc_type),
+                        desc_slot);
+                    tmp = desc_slot;
+                } else if (tmp->getType() != expected_desc_type->getPointerTo()) {
+                    tmp = builder->CreateBitCast(tmp, expected_desc_type->getPointerTo());
                 }
             }
 
