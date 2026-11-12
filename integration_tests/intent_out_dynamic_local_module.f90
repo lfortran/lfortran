@@ -20,7 +20,7 @@ contains
         if (allocated(x%data) .or. x%value /= initial) error stop 1
         block
             integer, parameter :: offset = 4
-            block
+            nested_defaults: block
                 type :: item
                     integer :: value = initial + offset
                     integer, allocatable :: data(:)
@@ -34,9 +34,9 @@ contains
                 call reset(y)
                 if (allocated(y%data) .or. y%value /= initial + offset) error stop 2
                 if (associated(y%text) .or. target /= 'abc') error stop 3
-            end block
+            end block nested_defaults
         end block
-        block
+        sibling_defaults: block
             type :: item
                 integer :: value = initial + 2
                 integer, allocatable :: data(:)
@@ -46,6 +46,6 @@ contains
             y%value = -1
             call reset(y)
             if (allocated(y%data) .or. y%value /= initial + 2) error stop 4
-        end block
+        end block sibling_defaults
     end subroutine
 end module
