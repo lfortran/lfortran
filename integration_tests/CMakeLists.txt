@@ -6605,6 +6605,7 @@ RUN(NAME intent_out_dynamic_local LABELS gfortran llvm EXTRAFILES intent_out_dyn
 RUN(NAME intent_out_dynamic_empty LABELS gfortran llvm EXTRAFILES intent_out_dynamic_empty_base.f90)
 RUN(NAME intent_out_pointer_defaults LABELS gfortran llvm)
 RUN(NAME intent_out_saved_target LABELS gfortran llvm EXTRAFILES intent_out_saved_target_module.f90)
+RUN(NAME intent_out_implicit_saved_target LABELS gfortran llvm)
 RUN(NAME intent_out_struct_member_no_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_module_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_nested_allocatable_01 LABELS gfortran llvm)

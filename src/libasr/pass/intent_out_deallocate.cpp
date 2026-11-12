@@ -1219,7 +1219,14 @@ public:
         if (!ASR::is_a<ASR::Variable_t>(*sym)) return;
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
         ASR::symbol_t *owner = ASRUtils::get_asr_owner(sym);
-        if (v->m_storage == ASR::storage_typeType::Save &&
+        // Initialized locals already have Save storage. Main-program
+        // variables can retain Default storage but have the same lifetime;
+        // use the defining owner, not an enclosing host of a local variable.
+        // Module targets already have static storage and need no move.
+        bool saved = v->m_storage == ASR::storage_typeType::Save ||
+            (v->m_storage == ASR::storage_typeType::Default && owner &&
+             ASR::is_a<ASR::Program_t>(*owner));
+        if (saved &&
                 ASRUtils::is_reached_through_host_frame(*v) && owner &&
                 (ASR::is_a<ASR::Function_t>(*owner) ||
                  ASR::is_a<ASR::Program_t>(*owner) ||

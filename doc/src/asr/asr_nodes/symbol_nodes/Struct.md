@@ -75,11 +75,14 @@ the type and its helper across imports and separate compilation. The
 receiver must be a required scalar `type(T), intent(inout)` argument of
 exactly this defining type; the ASR verifier checks this invariant.
 A reset entry has no host-frame argument. When its pointer defaults name
-procedure-, program- or BLOCK-local SAVE targets, the pass moves those
+procedure- or BLOCK-local SAVE targets (including initialization-implied SAVE),
+or main-program-owned targets even with `Default` storage, the pass moves those
 canonical variable symbols into module storage and imports them at their
 uses before closure lowering. It preserves the same saved objects, not
-copies of their initial values. Local type declarations remain in their
-defining scopes and are imported by the storage declarations. Storage for
+copies of their initial values. Module-owned targets already have static
+storage and are not moved. Ownership means the canonical defining scope, not
+an enclosing main program or module of an unsaved local. Local type declarations
+remain in their defining scopes and are imported by the storage declarations. Storage for
 hosts outside modules uses the complete defining scope path to keep
 separately compiled hosts distinct.
 For a type declared in a BLOCK or ASSOCIATE construct, the helper belongs to
