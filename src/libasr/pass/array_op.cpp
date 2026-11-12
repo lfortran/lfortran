@@ -2274,10 +2274,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         // F2018 10.2.1.3 allocates the variable with LBOUND(expr), which is
         // the operand's lower bound only for a whole array (F2018 16.9.109).
         // Any other array expression has lower bounds of 1.
-        bool value_is_whole_array = ASR::is_a<ASR::Var_t>(*underlying_value) ||
-            (ASR::is_a<ASR::StructInstanceMember_t>(*underlying_value) &&
-             !ASRUtils::is_array(ASRUtils::expr_type(
-                ASR::down_cast<ASR::StructInstanceMember_t>(underlying_value)->m_v)));
+        bool value_is_whole_array = PassUtils::is_whole_array(underlying_value);
         Vec<ASR::dimension_t> realloc_dims;
         size_t target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
         realloc_dims.reserve(al, target_rank);
