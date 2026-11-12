@@ -8841,41 +8841,58 @@ public:
 
     // `a(lb:ub:st)(l:r) = value`. The target is the implied do loop `idl`,
     // `(a(i)(l:r), i = lb, ub, st)`. The value is assigned to its elements
-    // one by one, after the whole value is evaluated into a temporary, as it
-    // may reference the target (`a(:)(2:3) = a(:)(1:2)`,
-    // `a(:)(2:3) = a(1)(1:2)`). With an array value:
+    // one by one, after the bounds and the whole value are evaluated, once:
+    // the value may reference the target (`a(:)(2:3) = a(:)(1:2)`,
+    // `a(:)(2:3) = a(1)(1:2)`), and so may a bound, which may also be a
+    // function with a side effect. With an array value:
     //
-    //     allocate(character(len=max(0, r - l + 1)) :: tmp(max(0, (ub - lb + st)/st)))
+    //     lb_ = lb; ub_ = ub; st_ = st; l_ = l; r_ = r
+    //     allocate(character(len=max(0, r_ - l_ + 1)) :: tmp(max(0, (ub_ - lb_ + st_)/st_)))
     //     tmp = value
-    //     do i = lb, ub, st
-    //         a(i)(l:r) = tmp((i - lb)/st + 1)
+    //     do i = lb_, ub_, st_
+    //         a(i)(l_:r_) = tmp((i - lb_)/st_ + 1)
     //     end do
     //     deallocate(tmp)
     //
     // `tmp = value` is an array assignment: it gives every element the
     // length of the substring, and it checks the shape of the value. The
     // temporary of a scalar value is a scalar, and a constant needs none.
-    // The temporary is local to a block that holds these statements, so the
-    // assignment stays one statement.
+    // A bound that is a constant or a variable needs no temporary either,
+    // nor do the bounds of the section when the value is a scalar: the loop
+    // head is their only use, and it evaluates them once. The temporaries
+    // are local to a block that holds these statements, so the assignment
+    // stays one statement.
     void assign_to_substring_section(const Location &loc,
             ASR::ImpliedDoLoop_t *idl, ASR::expr_t *value) {
         ASRUtils::ASRBuilder b(al, loc);
-        ASR::do_loop_head_t head;
-        head.loc = loc;
-        head.m_v = idl->m_var;
-        head.m_start = idl->m_start;
-        head.m_end = idl->m_end;
-        head.m_increment = idl->m_increment;
-        auto loop = [&](ASR::expr_t *element) {
+        ASR::StringSection_t *section =
+            ASR::down_cast<ASR::StringSection_t>(idl->m_values[0]);
+        auto loop = [&](ASR::expr_t *start, ASR::expr_t *end,
+                ASR::expr_t *increment, ASR::expr_t *element_target,
+                ASR::expr_t *element_value) {
+            ASR::do_loop_head_t head;
+            head.loc = loc;
+            head.m_v = idl->m_var;
+            head.m_start = start;
+            head.m_end = end;
+            head.m_increment = increment;
             Vec<ASR::stmt_t*> body; body.reserve(al, 1);
             body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, loc, idl->m_values[0], element, nullptr, false, false)));
+                al, loc, element_target, element_value, nullptr, false, false)));
             return ASRUtils::make_DoLoop_t_util(al, loc, nullptr,
                 head, body.p, body.size(), nullptr, 0);
         };
+        auto needs_temporary = [](ASR::expr_t *bound) {
+            return ASRUtils::expr_value(bound) == nullptr
+                && !ASR::is_a<ASR::Var_t>(*bound);
+        };
         bool is_array = ASRUtils::is_array(ASRUtils::expr_type(value));
-        if (!is_array && ASRUtils::expr_value(value) != nullptr) {
-            tmp = loop(value);
+        bool value_temporary = is_array || ASRUtils::expr_value(value) == nullptr;
+        bool substring_temporary = needs_temporary(section->m_start)
+            || needs_temporary(section->m_end);
+        if (!value_temporary && !substring_temporary) {
+            tmp = loop(idl->m_start, idl->m_end, idl->m_increment,
+                idl->m_values[0], value);
             return;
         }
         if (body_enclosing_where != nullptr) {
@@ -8891,15 +8908,33 @@ public:
         }
 
         ASRUtils::ExprStmtDuplicator duplicator(al);
-        ASR::StringSection_t *section =
-            ASR::down_cast<ASR::StringSection_t>(idl->m_values[0]);
         ASR::symbol_t *loop_var = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
         ASR::ttype_t *int_type = ASRUtils::symbol_type(loop_var);
+        SymbolTable *block_scope = al.make_new<SymbolTable>(current_scope);
+        Vec<ASR::stmt_t*> body; body.reserve(al, 9);
+        // The names of the temporaries are not names of the program: the
+        // statement may reference a variable of any name.
+        auto temporary = [&](const std::string &name, ASR::ttype_t *type) {
+            return ASR::down_cast<ASR::Var_t>(b.Variable(block_scope,
+                block_scope->get_unique_name(
+                    "__lfortran_substring_section_" + name),
+                type, ASR::intentType::Local))->m_v;
+        };
         // An expression node belongs to one statement only, so every use of
         // a bound gets its own copy.
         auto copy = [&](ASR::expr_t *e) {
-            return CastingUtil::perform_casting(duplicator.duplicate_expr(e),
-                int_type, al, loc);
+            return duplicator.duplicate_expr(e);
+        };
+        auto evaluate_once = [&](ASR::expr_t *bound, const std::string &name) {
+            bool is_evaluated = !needs_temporary(bound);
+            bound = CastingUtil::perform_casting(bound, int_type, al, loc);
+            if (is_evaluated) {
+                return bound;
+            }
+            ASR::symbol_t *bound_sym = temporary(name, int_type);
+            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, b.Var(bound_sym), bound, nullptr, false, false)));
+            return b.Var(bound_sym);
         };
         auto at_least_zero = [&](ASR::expr_t *e) {
             Vec<ASR::expr_t*> args; args.reserve(al, 2);
@@ -8907,43 +8942,70 @@ public:
             args.push_back(al, e);
             return ASRUtils::EXPR(ASRUtils::Max::create_Max(al, loc, args, diag));
         };
-        ASR::expr_t *len = at_least_zero(b.Add(
-            b.Sub(copy(section->m_end), copy(section->m_start)),
-            b.i_t(1, int_type)));
-        ASR::ttype_t *tmp_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
-            ASRUtils::extract_kind_from_ttype_t(section->m_type), nullptr,
-            ASR::string_length_kindType::DeferredLength,
-            ASR::string_physical_typeType::DescriptorString));
-        Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+
+        ASR::expr_t *start = idl->m_start;
+        ASR::expr_t *end = idl->m_end;
+        ASR::expr_t *increment = idl->m_increment;
         if (is_array) {
-            tmp_type = ASRUtils::create_array_type_with_empty_dims(al, 1, tmp_type);
-            dims.push_back(al, b.set_dim(b.i_t(1, int_type), at_least_zero(b.Div(
-                b.Add(b.Sub(copy(idl->m_end), copy(idl->m_start)),
-                    copy(idl->m_increment)),
-                copy(idl->m_increment)))));
+            start = evaluate_once(start, "lower_bound");
+            end = evaluate_once(end, "upper_bound");
+            increment = evaluate_once(increment, "stride");
         }
-        // The name of the temporary is not a name of the program: the value
-        // may be a variable of the same name.
-        SymbolTable *block_scope = al.make_new<SymbolTable>(current_scope);
-        ASR::symbol_t *tmp_sym = ASR::down_cast<ASR::Var_t>(b.Variable(
-            block_scope, block_scope->get_unique_name(
-                "__lfortran_substring_section_value"),
-            ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, tmp_type)),
-            ASR::intentType::Local))->m_v;
-        ASR::expr_t *element = b.Var(tmp_sym);
-        if (is_array) {
-            element = b.ArrayItem_01(element, {b.Add(
-                b.Div(b.Sub(b.Var(loop_var), copy(idl->m_start)),
-                    copy(idl->m_increment)),
-                b.i_t(1, int_type))});
+        ASR::expr_t *element_target = idl->m_values[0];
+        ASR::expr_t *substring_start = evaluate_once(section->m_start, "start");
+        ASR::expr_t *substring_end = evaluate_once(section->m_end, "end");
+        if (substring_temporary) {
+            ASR::ttype_t *element_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                ASRUtils::extract_kind_from_ttype_t(section->m_type),
+                b.Add(b.Sub(copy(substring_end), copy(substring_start)),
+                    b.i_t(1, int_type)),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString));
+            element_target = ASRUtils::EXPR(ASR::make_StringSection_t(al,
+                section->base.base.loc, section->m_arg, copy(substring_start),
+                copy(substring_end), section->m_step, element_type, nullptr));
         }
 
-        Vec<ASR::stmt_t*> body; body.reserve(al, 4);
-        body.push_back(al, b.Allocate(b.Var(tmp_sym), dims.p, dims.size(), len));
-        body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
-            b.Var(tmp_sym), value, nullptr, false, false)));
-        body.push_back(al, ASRUtils::STMT(loop(element)));
-        body.push_back(al, b.Deallocate(b.Var(tmp_sym)));
+        ASR::expr_t *element_value = value;
+        ASR::symbol_t *value_sym = nullptr;
+        if (value_temporary) {
+            ASR::expr_t *len = at_least_zero(b.Add(
+                b.Sub(copy(substring_end), copy(substring_start)),
+                b.i_t(1, int_type)));
+            ASR::ttype_t *value_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                ASRUtils::extract_kind_from_ttype_t(section->m_type), nullptr,
+                ASR::string_length_kindType::DeferredLength,
+                ASR::string_physical_typeType::DescriptorString));
+            Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+            if (is_array) {
+                value_type = ASRUtils::create_array_type_with_empty_dims(
+                    al, 1, value_type);
+                dims.push_back(al, b.set_dim(b.i_t(1, int_type), at_least_zero(
+                    b.Div(b.Add(b.Sub(copy(end), copy(start)), copy(increment)),
+                        copy(increment)))));
+            }
+            value_sym = temporary("value",
+                ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, value_type)));
+            body.push_back(al, b.Allocate(b.Var(value_sym), dims.p, dims.size(), len));
+            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, b.Var(value_sym), value, nullptr, false, false)));
+            element_value = b.Var(value_sym);
+            if (is_array) {
+                element_value = b.ArrayItem_01(element_value, {b.Add(
+                    b.Div(b.Sub(b.Var(loop_var), copy(start)), copy(increment)),
+                    b.i_t(1, int_type))});
+            }
+        }
+        if (is_array) {
+            start = copy(start);
+            end = copy(end);
+            increment = copy(increment);
+        }
+        body.push_back(al, ASRUtils::STMT(loop(start, end, increment,
+            element_target, element_value)));
+        if (value_sym != nullptr) {
+            body.push_back(al, b.Deallocate(b.Var(value_sym)));
+        }
         std::string name = current_scope->get_unique_name(
             "__lfortran_substring_section_assignment");
         ASR::symbol_t *block = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
