@@ -982,47 +982,61 @@ namespace HostBessel {
         return ::yn(n, x);
 #endif
     }
-    // MSVC has no long-double Bessel entry points. real(10) is not that target.
+    // glibc provides j0l and the other long-double Bessel entry points.
+    // Apple, MSVC, and Emscripten do not. Those hosts fold through the
+    // double entry point. real(10) there is not the x87 format.
     inline long double j0l(long double x) {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
         return static_cast<long double>(::_j0(static_cast<double>(x)));
-#else
+#elif defined(__GLIBC__)
         return ::j0l(x);
+#else
+        return static_cast<long double>(::j0(static_cast<double>(x)));
 #endif
     }
     inline long double j1l(long double x) {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
         return static_cast<long double>(::_j1(static_cast<double>(x)));
-#else
+#elif defined(__GLIBC__)
         return ::j1l(x);
+#else
+        return static_cast<long double>(::j1(static_cast<double>(x)));
 #endif
     }
     inline long double y0l(long double x) {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
         return static_cast<long double>(::_y0(static_cast<double>(x)));
-#else
+#elif defined(__GLIBC__)
         return ::y0l(x);
+#else
+        return static_cast<long double>(::y0(static_cast<double>(x)));
 #endif
     }
     inline long double y1l(long double x) {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
         return static_cast<long double>(::_y1(static_cast<double>(x)));
-#else
+#elif defined(__GLIBC__)
         return ::y1l(x);
+#else
+        return static_cast<long double>(::y1(static_cast<double>(x)));
 #endif
     }
     inline long double jnl(int n, long double x) {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
         return static_cast<long double>(::_jn(n, static_cast<double>(x)));
-#else
+#elif defined(__GLIBC__)
         return ::jnl(n, x);
+#else
+        return static_cast<long double>(::jn(n, static_cast<double>(x)));
 #endif
     }
     inline long double ynl(int n, long double x) {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
         return static_cast<long double>(::_yn(n, static_cast<double>(x)));
-#else
+#elif defined(__GLIBC__)
         return ::ynl(n, x);
+#else
+        return static_cast<long double>(::yn(n, static_cast<double>(x)));
 #endif
     }
 } // namespace HostBessel
