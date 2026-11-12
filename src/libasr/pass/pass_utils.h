@@ -1295,11 +1295,15 @@ namespace LCompilers {
                         PassUtils::create_idx_vars(idx_vars_local, n_dims, loc, al, current_scope, "_t");
                         Vec<ASR::stmt_t*> inner_body;
                         ASR::stmt_t* inner_doloop = nullptr;
+                        // The bounds of the array `create_array_ref` indexes,
+                        // see the `create_do_loop` over a whole array below.
+                        ASR::expr_t* indexed_array =
+                            ASRUtils::get_struct_member_chain_array_part(curr_init);
                         for (int di = 0; di < n_dims; di++) {
                             ASR::do_loop_head_t head;
                             head.m_v = idx_vars_local[di];
-                            head.m_start = PassUtils::get_bound(curr_init, di + 1, "lbound", al);
-                            head.m_end = PassUtils::get_bound(curr_init, di + 1, "ubound", al);
+                            head.m_start = PassUtils::get_bound(indexed_array, di + 1, "lbound", al);
+                            head.m_end = PassUtils::get_bound(indexed_array, di + 1, "ubound", al);
                             head.m_increment = nullptr;
                             head.loc = head.m_v->base.loc;
                             inner_body.reserve(al, 1);
@@ -1418,13 +1422,21 @@ namespace LCompilers {
             PassUtils::create_idx_vars(idx_vars, value_rank, loc, al, current_scope, "_t");
             LCOMPILERS_ASSERT(value_rank == (int) idx_vars.size())
 
+            // The loop body puts these indices on `value_array` with
+            // `create_array_ref`, which for a component of an array, `a%x`,
+            // indexes the base: `a(i)%x`. So the loop has to run over the
+            // bounds of that base. Those of `a%x` are not the same: it is
+            // not a whole array, so its lower bound is 1 whatever that of
+            // `a` is.
+            ASR::expr_t* indexed_array =
+                ASRUtils::get_struct_member_chain_array_part(value_array);
             ASR::stmt_t* doloop = nullptr;
             for( int i = 0; i < value_rank; i++ ) {
                 // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
                 ASR::do_loop_head_t head;
                 head.m_v = idx_vars[i];
-                head.m_start = PassUtils::get_bound(value_array, i + 1, "lbound", al);
-                head.m_end = PassUtils::get_bound(value_array, i + 1, "ubound", al);
+                head.m_start = PassUtils::get_bound(indexed_array, i + 1, "lbound", al);
+                head.m_end = PassUtils::get_bound(indexed_array, i + 1, "ubound", al);
                 head.m_increment = nullptr;
                 head.loc = head.m_v->base.loc;
 
