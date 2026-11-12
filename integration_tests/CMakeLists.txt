@@ -1259,6 +1259,7 @@ RUN(NAME select_rank_43 LABELS gfortran llvm)
 RUN(NAME select_rank_44 LABELS gfortran llvm)
 RUN(NAME select_rank_45 LABELS gfortran llvm)
 RUN(NAME select_rank_46 LABELS gfortran llvm)
+RUN(NAME select_rank_48 LABELS gfortran llvm)
 
 RUN(NAME global_allocatable_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME global_allocatable_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
