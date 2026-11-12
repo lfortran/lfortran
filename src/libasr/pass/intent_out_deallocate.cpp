@@ -107,13 +107,15 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             // A pointer component is associated, not assigned.  Only a null
             // default is handled, as elsewhere in this pass; the
             // PointerNullConstant is rebuilt around the component so that
-            // codegen can resolve what it points at.
+            // codegen can resolve what it points at. Use the member's type,
+            // whose procedure-interface dependencies are imported into this
+            // scope, rather than the default's declaration-scope type.
             if (!ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
                 return false;
             }
             ASR::expr_t* null_value = ASRUtils::EXPR(
                 ASR::make_PointerNullConstant_t(al, loc,
-                    ASRUtils::expr_type(value), target));
+                    ASRUtils::expr_type(target), target));
             out_stmts.push_back(al, ASRUtils::STMT(
                 ASRUtils::make_Associate_t_util(al, loc, target, null_value)));
             return true;
@@ -398,21 +400,9 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
 
                 ASR::stmt_t* init_stmt = nullptr;
                 if (ASRUtils::is_pointer(m_var->m_type)) {
-                    // Only handle pointer-null defaults. We rebuild the
-                    // PointerNullConstant using `member_expr` as its
-                    // `var_expr` so codegen can resolve the underlying
-                    // procedure interface (when the pointer targets a
-                    // procedure) without relying on a symbol from the
-                    // declaring module's scope.
-                    if (!ASR::is_a<ASR::PointerNullConstant_t>(
-                            *m_var->m_symbolic_value)) continue;
-                    ASR::expr_t* null_value = ASRUtils::EXPR(
-                        ASR::make_PointerNullConstant_t(al, loc,
-                            ASRUtils::expr_type(m_var->m_symbolic_value),
-                            member_expr));
-                    init_stmt = ASRUtils::STMT(
-                        ASRUtils::make_Associate_t_util(al, loc,
-                            member_expr, null_value));
+                    (void)emit_value_assignment(member_expr,
+                        m_var->m_symbolic_value, current_scope, loc, out_stmts);
+                    continue;
                 } else {
                     // Use the folded value, not `m_symbolic_value`: the
                     // symbolic form may name a constant declared in the type's
