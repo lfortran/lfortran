@@ -87,8 +87,10 @@ MANAGED_MIN_BYTES, such as an allocatable array, is managed memory:
 * The host does not change a range a pending launch reads before
   lfortran_gpu_wait, as in the unified model.
 * Freeing managed memory waits for every launch first.
-* Smaller allocations, and memory the allocator did not make (stack and
-  static arrays), keep the copy model.
+* Smaller allocations, the slots of a reduction (allocated between
+  lfortran_gpu_begin_host_allocations and lfortran_gpu_end_host_allocations),
+  and memory the allocator did not make (stack and static arrays), keep the
+  copy model.
 
 The model is chosen at the first allocation the allocator could make managed
 or when the runtime starts, whichever is first: LFORTRAN_GPU_MEMORY=copy,
@@ -1006,8 +1008,28 @@ static void managed_cache_flush(void) {
     managed_unlock();
 }
 
+// The depth of lfortran_gpu_begin_host_allocations calls not yet ended: the
+// allocations made meanwhile are memory of the host. They are the slots of a
+// reduction, which the host reads right after every launch: as managed memory
+// the host's reads would fault each page over from the device, and the next
+// launch's writes fault it back (a dot product of POT3D took 400 microseconds
+// instead of 40), while the copy model copies the slots back in one go.
+#if defined(__GNUC__)
+static __thread int host_allocations = 0;
+#else
+static int host_allocations = 0;
+#endif
+
+void lfortran_gpu_begin_host_allocations(void) {
+    host_allocations++;
+}
+
+void lfortran_gpu_end_host_allocations(void) {
+    if (host_allocations > 0) host_allocations--;
+}
+
 static void* managed_alloc(void *context, int64_t size) {
-    if (size >= MANAGED_MIN_BYTES
+    if (size >= MANAGED_MIN_BYTES && host_allocations == 0
             && current_memory_model() == MEMORY_MANAGED) {
         size_t block_size = (size_t)size;
         int c = -1;

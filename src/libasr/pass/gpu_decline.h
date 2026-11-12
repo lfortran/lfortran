@@ -124,6 +124,14 @@ struct GpuDeviceCapabilities {
     // one vector (gpu_wide_loads.cpp).
     bool wide_loads = false;
 
+    // Whether the slots a reduction fills, which the host folds right after
+    // every launch, are allocated between lfortran_gpu_begin_host_allocations
+    // and lfortran_gpu_end_host_allocations, so that the runtime keeps them
+    // out of managed memory (lfortran_gpu_cuda.c): the host reading the slots
+    // a kernel wrote would move each of their pages from the device and the
+    // next launch move it back, one page fault at a time.
+    bool reduction_slots_in_host_memory = false;
+
     int threads_per_block = 256;
 
     // The number of iterations the threads of one block of a loop nest

@@ -1615,6 +1615,10 @@ long long lfortran_gpu_heap_size(void) {
     return lfortran_gpu_parse_heap_size();
 }
 
+// Every allocation is memory of the host.
+void lfortran_gpu_begin_host_allocations(void) {}
+void lfortran_gpu_end_host_allocations(void) {}
+
 void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
     lfortran_gpu_metal_telemetry *out)
 {

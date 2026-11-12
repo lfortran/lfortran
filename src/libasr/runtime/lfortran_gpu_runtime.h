@@ -208,6 +208,11 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size);
 // them may still serve the launches after this one.
 void lfortran_gpu_keep(lfortran_gpu_ctx* ctx, void* ptr, size_t size);
 long long lfortran_gpu_heap_size(void);
+// The allocations the program makes between these two calls (the slots of a
+// reduction, which the host reads right after every launch) are memory of the
+// host, never managed memory.
+void lfortran_gpu_begin_host_allocations(void);
+void lfortran_gpu_end_host_allocations(void);
 
 // The size in bytes of the device's last-level cache, which the loop
 // transformations compare what a launch touches with (gpu_index_set_split).
