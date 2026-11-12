@@ -449,7 +449,8 @@ public:
                     sub = format_type_c(dims, type_name, v.m_name, use_ref, dummy);
                 }
             } else if(ASR::is_a<ASR::StructType_t>(*t2)) {
-                std::string der_type_name = ASRUtils::symbol_name(v.m_type_declaration);
+                std::string der_type_name = ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(v.m_type_declaration));
                 if( is_array ) {
                     bool is_fixed_size = true;
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
@@ -545,7 +546,8 @@ public:
                 }
             } else if (ASR::is_a<ASR::StructType_t>(*v_m_type)) {
                 std::string indent(indentation_level*indentation_spaces, ' ');
-                std::string der_type_name = ASRUtils::symbol_name(v.m_type_declaration);
+                std::string der_type_name = ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(v.m_type_declaration));
                  if( is_array ) {
                     bool is_fixed_size = true;
                     dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
