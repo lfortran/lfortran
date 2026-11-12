@@ -109,7 +109,9 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         }
         seen.clear();
         for (ASR::Struct_t* st : collector.structs) {
+            // Only concrete PDT instantiations have a runtime layout and vtable.
             if (!seen.insert(st).second ||
+                    st->n_kind_params > 0 ||
                     ASRUtils::is_unlimited_polymorphic_type(&st->base) ||
                     st->m_abi == ASR::abiType::BindC || st->m_is_sequence ||
                     ASRUtils::is_iso_c_ptr_type_symbol(unit.m_symtab,
@@ -528,6 +530,9 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
                 ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
                     m.second);
+                // Kind parameters are compile-time properties, not components.
+                if (m_var->m_storage == ASR::storage_typeType::Parameter)
+                    continue;
                 if (m_var->m_symbolic_value == nullptr) {
                     // A component of a derived type carries its own type's
                     // default initialization even when the component itself
