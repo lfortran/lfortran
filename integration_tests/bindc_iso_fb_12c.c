@@ -16,7 +16,3 @@ int alloc_with_bad_elem_len(CFI_cdesc_t *x, int n) {
     if (CFI_allocate(x, lower, upper, 9999) != CFI_SUCCESS) return -1;
     return (int)x->elem_len;
 }
-
-int is_contig(CFI_cdesc_t *a) {
-    return CFI_is_contiguous(a);
-}

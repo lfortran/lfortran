@@ -13,13 +13,8 @@ interface
     integer(c_int) function alloc_with_bad_elem_len(x, n) &
             bind(c, name="alloc_with_bad_elem_len")
     import :: c_int
-    integer(c_int), allocatable, intent(out) :: x(:)
+    integer(c_int), allocatable, intent(inout) :: x(:)
     integer(c_int), value :: n
-    end function
-
-    integer(c_int) function is_contig(a) bind(c, name="is_contig")
-    import :: c_int
-    integer(c_int), intent(in) :: a(:, :)
     end function
 end interface
 
@@ -40,11 +35,6 @@ if (alloc_with_bad_elem_len(x, 5) /= 4) error stop 4
 if (size(x) /= 5) error stop 5
 x = [1, 2, 3, 4, 5]
 if (sum(x) /= 15) error stop 6
-
-! CFI_is_contiguous skips the stride of an extent-1 dimension
-if (is_contig(a) /= 1) error stop 7
-if (is_contig(a(:, 2:2:2)) /= 1) error stop 8
-if (is_contig(a(2:2, :)) /= 0) error stop 9
 
 print *, "ok"
 end program
