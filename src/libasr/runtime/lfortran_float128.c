@@ -2343,37 +2343,35 @@ static int big_digit(Big *a, const Big *b) {
     while(big_cmp(a,b)>=0&&q<9){big_sub(a,(Big*)b);q++;}
     return q;
 }
+static int big_is_zero(const Big *a) {
+    for(int i=0;i<a->n;i++) if(a->d[i]) return 0;
+    return 1;
+}
 static int32_t floor_log10_pow2b(int32_t n) {
     if(!n) return 0;
     if(n>0) return (int32_t)((uint32_t)n*30103u/100000u);
     return -(int32_t)((uint32_t)(-n)*30103u/100000u+1);
 }
 
-void lf_float128_to_str(char *result, const uint8_t bytes[16]) {
-    lf_float128_to_str_digits(result, bytes, 34);
-}
-
-void lf_float128_to_str_digits(char *result, const uint8_t bytes[16], int ndigits) {
+/* Leading unrounded digits of a binary128 value.
+ * kind: 0 finite nonzero, 1 NaN, 2 Inf, 3 zero.
+ * For kind 0, digits[0..nkeep) are exact leading digits (not rounded),
+ * *extra is the next digit, and *sticky is 1 when any remainder follows
+ * that digit. *dec_exp is the lf_float128_to_str exponent
+ * (digits[0].digits[1..] * 10^dec_exp). nkeep is a significant-digit count,
+ * not the decimal exponent. */
+static int lf_float128_digits(const uint8_t bytes[16], char *digits, int nkeep,
+                              int *extra, int *sticky, int32_t *dec_exp_out, int *vsign_out) {
     uint64_t lo_w, hi_w;
     memcpy(&lo_w, bytes, 8); memcpy(&hi_w, bytes+8, 8);
     int vsign=(int)(hi_w>>63);
     int32_t biased=(int32_t)((hi_w>>48)&0x7FFFu);
     uint64_t mhi=hi_w&0x0000FFFFFFFFFFFFull, mlo=lo_w;
+    *extra=0; *sticky=0; *dec_exp_out=0; *vsign_out=vsign;
 
-    if(biased==0x7FFF){
-        sprintf(result,(mhi||mlo)?"NaN":"%sInfinity",vsign?"-":"");
-        return;
-    }
-    if(!biased&&!mhi&&!mlo){
-        {
-        char *z=result;
-        if(vsign) *z++='-';
-        *z++='0'; *z++='.';
-        for(int i=1;i<ndigits;i++) *z++='0';
-        sprintf(z,"E+0000");
-    }
-        return;
-    }
+    if(biased==0x7FFF) return (mhi||mlo)?1:2;
+    if(!biased&&!mhi&&!mlo) return 3;
+
     uint64_t sig_hi=mhi|(biased?(1ull<<48):0ull);
     uint64_t sig_lo=mlo;
     int32_t bin_exp=biased?(biased-16383-112):(1-16383-112);
@@ -2391,25 +2389,60 @@ void lf_float128_to_str_digits(char *result, const uint8_t bytes[16], int ndigit
      if(big_cmp(&R,&S10)>=0){dec_exp++;S_scaled=S10;}
      else if(big_cmp(&R,&S_scaled)<0){dec_exp--;big_mul_small(&R,10);}}
 
-    char digits[48]; int nd=0;
-    digits[nd++]=(char)('0'+big_digit(&R,&S_scaled));
-    for(int i=1;i<ndigits;i++){big_mul_small(&R,10);digits[nd++]=(char)('0'+big_digit(&R,&S_scaled));}
-
+    if(nkeep<1) nkeep=1;
+    digits[0]=(char)('0'+big_digit(&R,&S_scaled));
+    for(int i=1;i<nkeep;i++){big_mul_small(&R,10);digits[i]=(char)('0'+big_digit(&R,&S_scaled));}
     big_mul_small(&R,10);
-    if(big_digit(&R,&S_scaled)>=5){
-        for(int i=nd-1;i>=0;i--){
+    *extra=big_digit(&R,&S_scaled);
+    *sticky=!big_is_zero(&R);
+    *dec_exp_out=dec_exp;
+    return 0;
+}
+
+/* ndigits is a significant-digit count. The historical buffer holds 48. */
+void lf_float128_to_str_digits(char *result, const uint8_t bytes[16], int ndigits) {
+    char digits[48];
+    int extra=0, sticky=0, vsign=0;
+    int32_t dec_exp=0;
+    int kind;
+    int nkeep=ndigits;
+    if(nkeep<1) nkeep=1;
+    if(nkeep>48) nkeep=48;
+    kind=lf_float128_digits(bytes, digits, nkeep, &extra, &sticky, &dec_exp, &vsign);
+    (void)sticky; /* nearest output rounds on the next digit only. */
+    if(kind==1){sprintf(result,"NaN");return;}
+    if(kind==2){sprintf(result,"%sInfinity",vsign?"-":"");return;}
+    if(kind==3){
+        char *z=result;
+        int i;
+        if(vsign) *z++='-';
+        *z++='0'; *z++='.';
+        for(i=1;i<nkeep;i++) *z++='0';
+        sprintf(z,"E+0000");
+        return;
+    }
+    if(extra>=5){
+        int i;
+        for(i=nkeep-1;i>=0;i--){
             int dv=(digits[i]-'0')+1; digits[i]=(char)('0'+dv%10);
             if(dv<10) break;
-            if(i==0){memmove(digits+1,digits,nd-1);digits[0]='1';dec_exp++;break;}
+            if(i==0){memmove(digits+1,digits,nkeep-1);digits[0]='1';dec_exp++;break;}
         }
     }
+    {
+        char *p=result;
+        int i;
+        int ae;
+        if(vsign) *p++='-';
+        *p++=digits[0]; *p++='.';
+        for(i=1;i<nkeep;i++) *p++=digits[i];
+        ae=dec_exp>=0?dec_exp:-dec_exp;
+        sprintf(p,"E%c%04d",dec_exp>=0?'+':'-',ae);
+    }
+}
 
-    char *p=result;
-    if(vsign) *p++='-';
-    *p++=digits[0]; *p++='.';
-    for(int i=1;i<ndigits;i++) *p++=digits[i];
-    int ae=dec_exp>=0?dec_exp:-dec_exp;
-    sprintf(p,"E%c%04d",dec_exp>=0?'+':'-',ae);
+void lf_float128_to_str(char *result, const uint8_t bytes[16]) {
+    lf_float128_to_str_digits(result, bytes, 34);
 }
 
 /* ========================================================================
