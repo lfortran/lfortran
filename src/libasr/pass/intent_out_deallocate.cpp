@@ -269,7 +269,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             // The component supplies the procedure interface for null().
             association_target = ASRUtils::EXPR(
                 ASR::make_PointerNullConstant_t(al, loc,
-                    ASRUtils::expr_type(value), target));
+                    ASRUtils::expr_type(target), target));
         } else {
             // The initializer belongs to the declaring type, not to this
             // generated procedure; do not change its original symbol refs.
