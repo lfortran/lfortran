@@ -9259,6 +9259,46 @@ TEST_CASE("LLVM horizontal reductions of local arrays after the late cleanup") {
             CHECK(e.execfn<double>("reductions_local_main") == 888.0);
         }
     }
+    // A candidate the rewrite does not apply to, with calls the cleanup
+    // simplifies: `pow(2.0, q)` to `exp2`, `pow(q, 0.5)` to `sqrt` and the
+    // select to `llvm.fabs`. The cleanup only runs on a copy of the
+    // function, and the functions it declares go with the copy, so the
+    // module stays exactly as it was.
+    const std::string calls_ir = R"""(
+declare double @pow(double, double)
+
+define double @reductions_calls(<12 x double> %w, double %p, double %q) #0 {
+entry:
+  %x = shufflevector <12 x double> %w, <12 x double> undef, <4 x i32> <i32 0, i32 3, i32 6, i32 9>
+  %y = shufflevector <12 x double> %w, <12 x double> undef, <4 x i32> <i32 1, i32 4, i32 7, i32 10>
+  %z = shufflevector <12 x double> %w, <12 x double> undef, <4 x i32> <i32 2, i32 5, i32 8, i32 11>
+  %sx = fmul fast <4 x double> %x, %x
+  %sy = fmul fast <4 x double> %y, %y
+  %sz = fmul fast <4 x double> %z, %z
+  %t0 = fadd fast <4 x double> %sx, %sy
+  %t1 = fadd fast <4 x double> %t0, %sz
+  %r = extractelement <4 x double> %t1, i32 0
+  %c = fcmp fast olt double %p, 0.0
+  %n = fneg fast double %p
+  %a = select fast i1 %c, double %n, double %p
+  %e = call fast double @pow(double 2.0, double %q)
+  %s = call fast double @pow(double %q, double 0.5)
+  %u = fadd fast double %a, %e
+  %v = fadd fast double %u, %s
+  %res = fadd fast double %r, %v
+  ret double %res
+}
+attributes #0 = { "target-features"="+avx" }
+)""";
+    LCompilers::LLVMEvaluator e;
+    std::unique_ptr<llvm::Module> m = e.parse_module(calls_ir, "");
+    llvm::Function &f = *m->getFunction("reductions_calls");
+    const llvm::TargetMachine &tm = e.get_target_machine();
+    CHECK(LCompilers::may_recombine_horizontal_reductions(f, tm));
+    CHECK(!LCompilers::can_recombine_horizontal_reductions(f, tm));
+    std::string before = e.module_to_string(*m);
+    e.recombine_reductions(*m);
+    CHECK(e.module_to_string(*m) == before);
 }
 #endif
 #endif // HAVE_TARGET_X86

@@ -28,6 +28,7 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/ADT/APFloat.h>
+#include <llvm/ADT/SmallPtrSet.h>
 #include <llvm/ADT/SmallVector.h>
 #include <llvm/ADT/STLExtras.h>
 #include <llvm/ADT/StringMap.h>
@@ -1129,12 +1130,28 @@ void late_reductions(llvm::Module &m, llvm::TargetMachine &tm) {
     }
     bool reduced = false;
     for (llvm::Function *f : candidates) {
+        // The cleanup of the copy can declare functions it calls, such as
+        // `exp2` for `pow(2.0, x)`; they are removed with the copy.
+        llvm::SmallPtrSet<llvm::Function *, 32> known;
+        for (llvm::Function &g : m) {
+            known.insert(&g);
+        }
         llvm::ValueToValueMapTy map;
         llvm::Function *copy = llvm::CloneFunction(f, map);
         cleanup(*copy);
         bool applies = can_recombine_horizontal_reductions(*copy, tm);
         forget(*copy);
         copy->eraseFromParent();
+        std::vector<llvm::Function *> declared;
+        for (llvm::Function &g : m) {
+            if (!known.count(&g) && g.isDeclaration() && g.use_empty()) {
+                declared.push_back(&g);
+            }
+        }
+        for (llvm::Function *g : declared) {
+            forget(*g);
+            g->eraseFromParent();
+        }
         if (applies) {
             cleanup(*f);
             if (recombine_horizontal_reductions(*f, tm)) {
