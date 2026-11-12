@@ -34,6 +34,16 @@ namespace mlir {
 
 namespace LCompilers {
 
+// When `MACOSX_DEPLOYMENT_TARGET` is set, a macOS triple names that release
+// instead of the host OS. Object files and the link then record one minimum,
+// which is what Apple's clang does. Other triples, and an unset variable,
+// are returned unchanged.
+std::string apply_macos_deployment_target(const std::string &triple);
+
+// The macOS version a triple records, such as "15.0.0". Empty when `triple`
+// is not a macOS or Darwin triple.
+std::string macos_platform_version(const std::string &triple);
+
 struct LLVMTargetConfig {
     std::string triple;
     std::string cpu = "generic";

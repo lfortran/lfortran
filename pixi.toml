@@ -265,10 +265,10 @@ gxx = "==15.3.0"
 # bring only x86_64-conda-linux-gnu-ar etc. (the same version).
 binutils = "==2.46.1"
 # Each LLVM feature pins clangdev, which also supplies the Clang executable for
-# LLVM 7 (it predates the separate Linux clang package). From LLVM 10 the
-# backend links with the matching `lld` package, in-process. clangdev remains
-# for C compilation (CC=clang) and for an explicit `--linker=clang`. Native
-# LLVM OpenMP uses LLVM's runtime.
+# LLVM 7 (it predates the separate Linux clang package). From LLVM 10 on
+# Linux and LLVM 15 on macOS the backend links with the matching `lld`
+# package, in-process. clangdev remains for C compilation (CC=clang) and for
+# an explicit `--linker=clang`. Native LLVM OpenMP uses LLVM's runtime.
 llvm-openmp = "==23.1.4"
 
 [feature.build.activation.env]

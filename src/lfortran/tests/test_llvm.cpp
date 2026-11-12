@@ -1,6 +1,7 @@
 #include <tests/doctest.h>
 
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -98,6 +99,27 @@ TEST_CASE("LLVM target configuration") {
     CHECK(fast_config.host_target);
     CHECK(fast_config.emit_cpu_attribute);
     CHECK(!fast_config.cpu.empty());
+
+#ifdef __APPLE__
+    // A deployment-target rewrite changes darwin to macosx. --fast still
+    // targets this machine, so native CPU selection must keep working.
+    const char *saved_deployment = std::getenv("MACOSX_DEPLOYMENT_TARGET");
+    std::string saved_deployment_value = saved_deployment
+        ? saved_deployment : "";
+    setenv("MACOSX_DEPLOYMENT_TARGET", "11.0", 1);
+    CompilerOptions deployed_options;
+    deployed_options.po.fast = true;
+    LCompilers::LLVMTargetConfig deployed_config
+        = LCompilers::resolve_llvm_target_config(deployed_options);
+    CHECK(deployed_config.host_target);
+    CHECK(deployed_config.triple.find("macosx11.0.0") != std::string::npos);
+    CHECK(!deployed_config.cpu.empty());
+    if (saved_deployment) {
+        setenv("MACOSX_DEPLOYMENT_TARGET", saved_deployment_value.c_str(), 1);
+    } else {
+        unsetenv("MACOSX_DEPLOYMENT_TARGET");
+    }
+#endif
 
     CompilerOptions generic_options;
     generic_options.po.fast = true;
