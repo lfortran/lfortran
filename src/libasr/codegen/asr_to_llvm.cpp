@@ -27786,6 +27786,14 @@ public:
                 ASRUtils::is_assumed_rank_array(orig_arg->m_type)) {
                 skip_polymorphic_conversion = true;
             }
+            // A bind(C) `type(*) buf(*)` dummy is a plain address on the C side.
+            if (x_abi == ASR::abiType::BindC && orig_arg &&
+                    ASRUtils::is_assumed_type_dummy(orig_arg) &&
+                    ASRUtils::is_array(orig_arg->m_type) &&
+                    ASRUtils::extract_physical_type(orig_arg->m_type) !=
+                        ASR::array_physical_typeType::DescriptorArray) {
+                skip_polymorphic_conversion = true;
+            }
             if( orig_arg && !skip_polymorphic_conversion ) {
                 tmp = convert_to_polymorphic_arg(x.m_args[i].m_value, tmp, orig_arg,
                     ASRUtils::type_get_past_allocatable(

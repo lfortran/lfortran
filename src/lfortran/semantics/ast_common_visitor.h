@@ -14978,7 +14978,9 @@ public:
                         type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                     } else {
                         type = ASRUtils::make_Array_t_util(
-                            al, loc, type, dims.p, dims.size(), abi, is_argument);
+                            al, loc, type, dims.p, dims.size(), abi, is_argument,
+                            ASR::array_physical_typeType::DescriptorArray, false,
+                            is_dimension_star && abi == ASR::abiType::BindC);
                     }
                     if (is_pointer) {
                         type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
