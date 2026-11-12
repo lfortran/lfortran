@@ -1472,7 +1472,10 @@ namespace LCompilers {
                 this->get_offset(result_type, reshaped, false));
 
             if( ASRUtils::is_array(asr_shape_type) ) {
-                llvm::Type *i32 = llvm::Type::getInt32Ty(context);
+                // The elements of `shape` are read with the integer kind it
+                // is declared with.
+                llvm::Type* shape_elem_type = llvm_utils->getIntType(
+                    ASRUtils::extract_kind_from_ttype_t(asr_shape_type));
                 if (!is_source_gathered) {
                     llvm::Value* src_offset = this->get_offset(arr_type, array);
                     builder->CreateStore(src_offset,
@@ -1480,7 +1483,7 @@ namespace LCompilers {
                 }
 
                 // Determine n_dims and a pointer to the shape data.
-                // When the shape argument is a FixedSizeArray ([N x i32]) we
+                // When the shape argument is a FixedSizeArray (an LLVM array) we
                 // must not access descriptor fields that do not exist.
                 llvm::Value* n_dims = nullptr;
                 llvm::Value* shape_data = nullptr;
@@ -1495,7 +1498,7 @@ namespace LCompilers {
                 } else {
                     n_dims = this->get_array_size(shape_type, shape, nullptr, 4);
                     shape_data = llvm_utils->CreateLoad2(
-                        i32->getPointerTo(),
+                        shape_elem_type->getPointerTo(),
                         this->get_pointer_to_data(shape_type, shape));
                 }
                 this->set_rank(result_type, reshaped, n_dims);
@@ -1524,7 +1527,7 @@ namespace LCompilers {
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, DIM_EXTENT);
                 builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)), l_val);
                 builder->CreateStore(llvm_utils->CreateLoad2(index_type, prod), s_val);
-                llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(i32, llvm_utils->create_ptr_gep2(i32, shape_data, r_val)), index_type);
+                llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_utils->CreateLoad2(shape_elem_type, llvm_utils->create_ptr_gep2(shape_elem_type, shape_data, r_val)), index_type);
                 builder->CreateStore(builder->CreateMul(llvm_utils->CreateLoad2(index_type, prod), dim_size), prod);
                 builder->CreateStore(dim_size, dim_size_ptr);
                 r_val = builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
@@ -1559,8 +1562,8 @@ namespace LCompilers {
                     std::vector<llvm::Value*> shape_values(rank);
                     for (int64_t i = 0; i < rank; i++) {
                         llvm::Value* sv = llvm_utils->CreateLoad2(
-                            i32,
-                            llvm_utils->create_ptr_gep2(i32, shape_data,
+                            shape_elem_type,
+                            llvm_utils->create_ptr_gep2(shape_elem_type, shape_data,
                                 llvm::ConstantInt::get(context, llvm::APInt(32, i))));
                         shape_values[i] = builder->CreateSExtOrTrunc(sv, index_type);
                     }
