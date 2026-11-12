@@ -1042,6 +1042,7 @@ RUN(NAME arrays_reshape_58 LABELS gfortran llvm) # reshape of an automatic array
 RUN(NAME arrays_reshape_59 LABELS gfortran llvm) # integer(8) rank-2 initializer from reshape of a default-kind constructor (#5284)
 RUN(NAME array_reshape_pad_01 LABELS gfortran llvm)
 RUN(NAME array_reshape_pad_02 LABELS gfortran llvm) # pad= of another rank, or allocatable/pointer unlike source (#14279)
+RUN(NAME array_reshape_pad_03 LABELS gfortran llvm) # pad= of run-time size with a fixed-size source (#14279)
 RUN(NAME arrays_elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_elemental_16 LABELS gfortran llvm)
 RUN(NAME arrays_03_func LABELS gfortran cpp llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)

@@ -5618,6 +5618,51 @@ public:
         }
     }
 
+    /*
+        Fills the elements `n_source`, ..., `n_result - 1` of the contiguous
+        reshape result `result_data` from the descriptor array `pad_expr`,
+        whose size is only known at run time: its elements are taken in
+        array element order and repeated as often as needed.
+    */
+    void fill_reshape_result_from_descriptor_pad(ASR::expr_t* pad_expr,
+            llvm::Type* llvm_data_type, llvm::Value* result_data,
+            int64_t n_source, int64_t n_result) {
+        ASR::ttype_t* pad_type = ASRUtils::expr_type(pad_expr);
+        llvm::Type* pad_llvm_type = llvm_utils->get_type_from_ttype_t_util(pad_expr,
+            ASRUtils::type_get_past_allocatable_pointer(pad_type), module.get());
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*pad_expr);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* pad = tmp;
+        if (LLVM::is_llvm_pointer(*pad_type)) {
+            pad = llvm_utils->CreateLoad2(pad_llvm_type->getPointerTo(), pad);
+        }
+        llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
+        llvm::Value* pad_size = arr_descr->get_array_size(pad_llvm_type, pad, nullptr, 8);
+        llvm::Value* index_ptr = llvm_utils->CreateAlloca(*builder, i64_ty);
+        arr_descr->for_each_element_of_descriptor(pad_llvm_type, pad, llvm_data_type,
+            ASRUtils::extract_n_dims_from_ttype(pad_type), "reshape_pad",
+            [&](llvm::Value* iter, llvm::Value* pad_elem) {
+                // Element `iter` of `pad` goes to every `size(pad)`-th
+                // element of the result, starting from `n_source + iter`.
+                builder->CreateStore(builder->CreateAdd(
+                    builder->CreateSExtOrTrunc(iter, i64_ty),
+                    llvm::ConstantInt::get(i64_ty, n_source)), index_ptr);
+                llvm_utils->create_loop("reshape_pad_repeat", [&]() {
+                    return builder->CreateICmpSLT(
+                        llvm_utils->CreateLoad2(i64_ty, index_ptr),
+                        llvm::ConstantInt::get(i64_ty, n_result));
+                }, [&]() {
+                    llvm::Value* index = llvm_utils->CreateLoad2(i64_ty, index_ptr);
+                    builder->CreateStore(
+                        llvm_utils->CreateLoad2(llvm_data_type, pad_elem),
+                        builder->CreateInBoundsGEP(llvm_data_type, result_data, index));
+                    builder->CreateStore(builder->CreateAdd(index, pad_size), index_ptr);
+                });
+            });
+    }
+
     void visit_ArrayReshape(const ASR::ArrayReshape_t& x) {
         if (x.m_value) {
             this->visit_expr(*x.m_value);
@@ -5757,7 +5802,12 @@ public:
                         context, llvm::APInt(64, copy_size * data_size));
                     builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), copy_bytes);
                     // Fill remaining elements with pad (cycling).
-                    if (x.m_pad != nullptr && target_size > source_size) {
+                    if (x.m_pad != nullptr && target_size > source_size &&
+                            ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_pad)) ==
+                            ASR::array_physical_typeType::DescriptorArray) {
+                        fill_reshape_result_from_descriptor_pad(x.m_pad, llvm_data_type,
+                            target_, source_size, target_size);
+                    } else if (x.m_pad != nullptr && target_size > source_size) {
                         int64_t pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_pad));
                         this->visit_expr(*x.m_pad);
                         // tmp is already an element pointer (i32*, real*, etc.)
