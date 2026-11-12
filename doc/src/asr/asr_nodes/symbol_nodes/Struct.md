@@ -56,6 +56,10 @@ A component is read with
 value is built with
 [StructConstructor](../expression_nodes/StructConstructor.md).
 
+Uninstantiated parameterized types, including extensions that only inherit
+their parameters, have no reset helper. A monomorphized concrete type has its
+own helper; its complete parent chain must have concrete parameters.
+
 The frontend reserves `intent_out_reset` before saving module files; the
 `intent_out_deallocate` pass fills its body using the same cleanup and
 default-initialization emitters as nonpolymorphic entry handling. The

@@ -1631,6 +1631,11 @@ public:
         verify_deferred_bindings(x);
         verify_final_procedures(x);
         if (x.m_intent_out_reset != nullptr) {
+            if (check_external) {
+                require_id(is_concrete_reset_type(x),
+                    "asr.verify.struct.reset_concrete_type",
+                    "a reset helper requires a concrete type with no uninstantiated inherited parameters");
+            }
             ASR::symbol_t* reset = ASRUtils::symbol_get_past_external(
                 x.m_intent_out_reset);
             require_id(reset && ASR::is_a<ASR::Function_t>(*reset),

@@ -13,6 +13,8 @@ namespace LCompilers {
     // BLOCK and ASSOCIATE scopes cannot own procedure implementations.
     SymbolTable *intent_out_reset_scope(const ASR::Struct_t &type);
 
+    bool is_concrete_reset_type(const ASR::Struct_t &type);
+
     // Reserve the defining type's reset symbol before module serialization.
     // The existing entry pass supplies its body before expression lowering.
     void declare_intent_out_reset_helpers(Allocator &al,

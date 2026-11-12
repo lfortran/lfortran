@@ -1153,16 +1153,30 @@ class CollectResetTypes : public ASR::BaseWalkVisitor<CollectResetTypes> {
 public:
     std::vector<ASR::Struct_t*> types;
     void visit_Struct(const ASR::Struct_t &x) {
-        // An abstract type has no concrete instances. class(*) has no
-        // defining derived type; intrinsic dynamic types need no reset.
-        if (!x.m_is_abstract && x.n_kind_params == 0 &&
-                !ASRUtils::is_unlimited_polymorphic_type(x.m_struct_signature)) {
+        if (is_concrete_reset_type(x)) {
             types.push_back(const_cast<ASR::Struct_t*>(&x));
         }
     }
 };
 
 } // namespace
+
+bool is_concrete_reset_type(const ASR::Struct_t &type) {
+    if (type.m_is_abstract ||
+            ASRUtils::is_unlimited_polymorphic_type(type.m_struct_signature)) {
+        return false;
+    }
+    // An extension can inherit all its kind parameters without declaring any
+    // of its own. Only monomorphized types have concrete layouts throughout
+    // the parent chain and can be the receiver of an implemented helper.
+    const ASR::Struct_t *level = &type;
+    while (level != nullptr) {
+        if (level->n_kind_params != 0) return false;
+        level = level->m_parent ? ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(level->m_parent)) : nullptr;
+    }
+    return true;
+}
 
 SymbolTable *intent_out_reset_scope(const ASR::Struct_t &type) {
     SymbolTable *scope = type.m_symtab->parent;
