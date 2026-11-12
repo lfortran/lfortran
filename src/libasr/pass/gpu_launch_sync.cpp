@@ -1604,21 +1604,23 @@ private:
     }
 
     // Whether a call counted as `globals` can reach `root` while this
-    // procedure runs. A local cannot, unless a pointer that escaped was
-    // associated with it (`escaped`). A target dummy can: the caller may
-    // already have associated a pointer with the actual argument, and that
-    // pointer is not visible here, so it is not in `escaped`. A summarized
-    // call that kept its real roots does not use this; it overlaps those
-    // roots. A module pointer path still overlaps this dummy, and so does
-    // a non-local variable of the same type, kind, and rank when the dummy
+    // procedure runs. A local cannot, unless `esc` names it: a pointer that
+    // escaped was associated with it, or (`escaped_host`) a procedure
+    // contained here names it. A target dummy can: the caller may already
+    // have associated a pointer with the actual argument, and that pointer
+    // is not visible here, so it is not in `esc`. A summarized call that
+    // kept its real roots does not use this; it overlaps those roots. A
+    // module pointer path still overlaps this dummy, and so does a
+    // non-local variable of the same type, kind, and rank when the dummy
     // is a scalar or assumed-shape target that is not intent(in): that
     // name may be the actual argument. An explicit-shape dummy does not.
-    bool globals_reach(ASR::symbol_t *root) const {
+    bool globals_reach(ASR::symbol_t *root,
+            const std::set<ASR::symbol_t*> &esc) const {
         if (may_point_anywhere(root) || root == nullptr
                 || !ASR::is_a<ASR::Variable_t>(*root)) {
             return true;
         }
-        if (escaped.count(root) > 0) return true;
+        if (esc.count(root) > 0) return true;
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(root);
         if (v->m_target_attr && dummy_index(root) >= 0) return true;
         if (enclosing_routine(v->m_parent_symtab) == routine) return false;
@@ -1650,7 +1652,7 @@ private:
             ? escaped_host : escaped;
         for (const Path &w : paths) {
             if (ignore != nullptr && ignore->count(w.root) > 0) continue;
-            if (acc.globals && globals_reach(w.root)
+            if (acc.globals && globals_reach(w.root, esc)
                     && !out_of_reach(w.root)
                     && !unnamed_by_others(w.root, esc)) {
                 return true;
