@@ -6,7 +6,7 @@ struct acc_t_gpu {
     int n_gpu;
 };
 
-inline void upd_gpu_10(int i_gpu, thread acc_t_gpu& self_gpu, thread float& y_gpu) {
+inline void upd_gpu_9(int i_gpu, thread acc_t_gpu& self_gpu, thread float& y_gpu) {
     y_gpu = (self_gpu.c_gpu * ((float)i_gpu));
     if ((i_gpu == 3)) {
         self_gpu.n_gpu = 7;
@@ -33,7 +33,7 @@ kernel void __lfortran_gpu_kernel_0_14gpu_liveout_15(
     __gpu_before_gpu = __gpu_private_m_gpu.c_gpu;
     __gpu_before1_gpu = __gpu_private_m_gpu.n_gpu;
     __gpu_scalar_argument_gpu = y_gpu[((int)(i__dc_gpu) - (1))];
-    upd_gpu_10(i__dc_gpu, __gpu_private_m_gpu, __gpu_scalar_argument_gpu);
+    upd_gpu_9(i__dc_gpu, __gpu_private_m_gpu, __gpu_scalar_argument_gpu);
     y_gpu[((int)(i__dc_gpu) - (1))] = __gpu_scalar_argument_gpu;
     if (((int)((__gpu_private_m_gpu.c_gpu != __gpu_before_gpu) && ((int)((__gpu_private_m_gpu.c_gpu == __gpu_private_m_gpu.c_gpu) || (__gpu_before_gpu == __gpu_before_gpu)))))) {
         m_gpu.c_gpu = __gpu_private_m_gpu.c_gpu;

@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-inline float half_gpu_25(float x_gpu) {
+inline float half_gpu_24(float x_gpu) {
     float y_gpu{};
     y_gpu = (  5.00000000000000000e-01 * x_gpu);
     return y_gpu;
@@ -46,7 +46,7 @@ kernel void __lfortran_gpu_kernel_0_21gpu_integer_powers_01(
     p_gpu[((int)(7) - (0)) + (9 * ((int)(i__dc_gpu) - (1)))] = ((((__gpu_power_base5_gpu * __gpu_power_base5_gpu) * (__gpu_power_base5_gpu * __gpu_power_base5_gpu)) * (__gpu_power_base5_gpu * __gpu_power_base5_gpu)) * __gpu_power_base5_gpu);
     __gpu_power_base6_gpu = x_gpu[((int)(i__dc_gpu) - (1))];
     p_gpu[((int)(8) - (0)) + (9 * ((int)(i__dc_gpu) - (1)))] = (((__gpu_power_base6_gpu * __gpu_power_base6_gpu) * (__gpu_power_base6_gpu * __gpu_power_base6_gpu)) * ((__gpu_power_base6_gpu * __gpu_power_base6_gpu) * (__gpu_power_base6_gpu * __gpu_power_base6_gpu)));
-    __gpu_power_base7_gpu = half_gpu_25(x_gpu[((int)(i__dc_gpu) - (1))]);
+    __gpu_power_base7_gpu = half_gpu_24(x_gpu[((int)(i__dc_gpu) - (1))]);
     q_gpu[((int)(i__dc_gpu) - (1))] = ((__gpu_power_base7_gpu * __gpu_power_base7_gpu) +   1.00000000000000000e+00);
     __gpu_power_base8_gpu = (x_gpu[((int)(i__dc_gpu) - (1))] +   1.00000000000000000e+00);
     s_gpu[((int)(i__dc_gpu) - (1))] = (__gpu_power_base8_gpu * (__gpu_power_base8_gpu * __gpu_power_base8_gpu));

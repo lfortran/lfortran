@@ -931,7 +931,7 @@
                                     ()
                                     ()
                                     []
-                                    2 lcompilers_intent_out_reset_fpm_model_t
+                                    ()
                                 ),
                             lcompilers_intent_out_reset_build_target_ptr:
                                 (Function
@@ -1152,7 +1152,7 @@
                                     .false.
                                     ()
                                 ),
-                            lcompilers_intent_out_reset_fpm_model_t:
+                            lcompilers_intent_out_reset_string_t:
                                 (Function
                                     (SymbolTable
                                         16
@@ -1160,73 +1160,6 @@
                                             object:
                                                 (Variable
                                                     16
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        []
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 fpm_model_t
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_fpm_model_t
-                                    (FunctionType
-                                        [(StructType
-                                            []
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 16 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            lcompilers_intent_out_reset_string_t:
-                                (Function
-                                    (SymbolTable
-                                        17
-                                        {
-                                            object:
-                                                (Variable
-                                                    17
                                                     object
                                                     []
                                                     InOut
@@ -1282,7 +1215,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 17 object)]
+                                    [(Var 16 object)]
                                     []
                                     ()
                                     Private

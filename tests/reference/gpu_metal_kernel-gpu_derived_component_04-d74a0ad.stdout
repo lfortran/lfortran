@@ -88,7 +88,7 @@ kernel void __lfortran_gpu_kernel_1_26gpu_derived_component_04_m1s(
     r_gpu[((int)(i__dc_gpu) - (__lb_r_0_gpu))] = (__gpu_private_p_gpu.x_gpu + __gpu_private_p_gpu.y_gpu);
 }
 
-inline float _lcompilers_aint_f32_gpu_35(float a_gpu) {
+inline float _lcompilers_aint_f32_gpu_29(float a_gpu) {
     float _lcompilers_aint_f32_gpu{};
     if ((abs(a_gpu) <   9.22337203685477581e+18)) {
         _lcompilers_aint_f32_gpu = ((float)((long)a_gpu));
@@ -98,7 +98,7 @@ inline float _lcompilers_aint_f32_gpu_35(float a_gpu) {
     return _lcompilers_aint_f32_gpu;
 }
 
-inline float _lcompilers_aint_f321_gpu_36(float a_gpu) {
+inline float _lcompilers_aint_f321_gpu_30(float a_gpu) {
     float _lcompilers_aint_f321_gpu{};
     if ((abs(a_gpu) <   9.22337203685477581e+18)) {
         _lcompilers_aint_f321_gpu = ((float)((long)a_gpu));
@@ -108,12 +108,12 @@ inline float _lcompilers_aint_f321_gpu_36(float a_gpu) {
     return _lcompilers_aint_f321_gpu;
 }
 
-inline float _lcompilers_anint_f32_gpu_34(float a_gpu) {
+inline float _lcompilers_anint_f32_gpu_28(float a_gpu) {
     float _lcompilers_anint_f32_gpu{};
     if ((a_gpu >   0.00000000000000000e+00)) {
-        _lcompilers_anint_f32_gpu = _lcompilers_aint_f32_gpu_35((a_gpu +   5.00000000000000000e-01));
+        _lcompilers_anint_f32_gpu = _lcompilers_aint_f32_gpu_29((a_gpu +   5.00000000000000000e-01));
     } else {
-        _lcompilers_anint_f32_gpu = _lcompilers_aint_f321_gpu_36((a_gpu -   5.00000000000000000e-01));
+        _lcompilers_anint_f32_gpu = _lcompilers_aint_f321_gpu_30((a_gpu -   5.00000000000000000e-01));
     }
     return _lcompilers_anint_f32_gpu;
 }

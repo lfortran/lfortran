@@ -66,7 +66,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_20gpu_
     }
 }
 
-__device__ inline void update_gpu_42(aggregate& q, int j) {
+__device__ inline void update_gpu_40(aggregate& q, int j) {
     int __libasr_index_0_;
     #pragma unroll 16
     for (__libasr_index_0_ = 1; __libasr_index_0_ <= ((120000 - 1) + 1); __libasr_index_0_++) {
@@ -95,13 +95,13 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_20gpu_
             large[((int)(k) - (1))] = ((float)(k + j__dc2));
         }
         __gpu_struct_argument = shared[((int)(j__dc2) - (1))];
-        update_gpu_42(__gpu_struct_argument, j__dc2);
+        update_gpu_40(__gpu_struct_argument, j__dc2);
         shared[((int)(j__dc2) - (1))] = __gpu_struct_argument;
         y[((int)(j__dc2) - (1))] = (large[((int)(20000) - (1))] + shared[((int)(j__dc2) - (1))].a[((int)(1) - (1))]);
     }
 }
 
-__device__ inline float read_value_gpu_51(aggregate q) {
+__device__ inline float read_value_gpu_49(aggregate q) {
     float read_value{};
     read_value = (q.a[((int)(1) - (1))] + q.a[((int)(120000) - (1))]);
     return read_value;
@@ -119,7 +119,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_3_20gpu_
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j__dc3 = (__flat_idx + 1);
     {
-        y[((int)(j__dc3) - (1))] = (((float)(20000 + j__dc3)) + read_value_gpu_51(shared[((int)(j__dc3) - (1))]));
+        y[((int)(j__dc3) - (1))] = (((float)(20000 + j__dc3)) + read_value_gpu_49(shared[((int)(j__dc3) - (1))]));
     }
 }
 

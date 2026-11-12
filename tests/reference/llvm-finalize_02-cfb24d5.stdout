@@ -2,13 +2,13 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%t.3 = type { i32 }
-%tt.4 = type { float, %t.3 }
 %string_descriptor = type { i8*, i64 }
 %array.1.1 = type { %string_descriptor*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %dimension_descriptor = type { i64, i64, i64 }
 %array.1.0 = type { i32*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %array.1 = type { %tt.4*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
+%tt.4 = type { float, %t.3 }
+%t.3 = type { i32 }
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -24,28 +24,6 @@ return:                                           ; preds = %.entry
 FINALIZE_SYMTABLE_finalize_02:                    ; preds = %return
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
-}
-
-define internal void @finalize_02.lcompilers_intent_out_reset_t(%t.3* %object) {
-.entry:
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset_t
-
-FINALIZE_SYMTABLE_lcompilers_intent_out_reset_t:  ; preds = %return
-  ret void
-}
-
-define internal void @finalize_02.lcompilers_intent_out_reset_tt(%tt.4* %object) {
-.entry:
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset_tt
-
-FINALIZE_SYMTABLE_lcompilers_intent_out_reset_tt: ; preds = %return
-  ret void
 }
 
 define internal void @finalize_02.ss(i32* %nang) {

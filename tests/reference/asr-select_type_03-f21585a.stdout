@@ -698,75 +698,6 @@
                                     .false.
                                     ()
                                 ),
-                            lcompilers_intent_out_reset_toml_value:
-                                (Function
-                                    (SymbolTable
-                                        14
-                                        {
-                                            object:
-                                                (Variable
-                                                    14
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Integer 4)
-                                                        (Real 4)]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 toml_value
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_toml_value
-                                    (FunctionType
-                                        [(StructType
-                                            [(Integer 4)
-                                            (Real 4)]
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 14 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             toml_stat:
                                 (ExternalSymbol
                                     2
@@ -949,7 +880,7 @@
                                     ()
                                     ()
                                     []
-                                    2 lcompilers_intent_out_reset_toml_value
+                                    ()
                                 )
                         })
                     class_default_select_type_user

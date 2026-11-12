@@ -6,13 +6,13 @@ struct pt_gpu {
     int y_gpu;
 };
 
-inline void maybe_move_gpu_14(thread pt_gpu& p_gpu, int i_gpu) {
+inline void maybe_move_gpu_13(thread pt_gpu& p_gpu, int i_gpu) {
     if ((i_gpu == 9)) {
         p_gpu.y_gpu = 90;
     }
 }
 
-inline void maybe_set_gpu_15(thread int& k_gpu, int i_gpu) {
+inline void maybe_set_gpu_14(thread int& k_gpu, int i_gpu) {
     if ((i_gpu == 7)) {
         k_gpu = 70;
     }
@@ -47,13 +47,13 @@ kernel void __lfortran_gpu_kernel_0_14gpu_liveout_06(
     __gpu_private_p_gpu = p_gpu;
     a_gpu[((int)(i__dc_gpu) - (__lb_a_0_gpu))] = i__dc_gpu;
     __gpu_before_gpu = k_gpu;
-    maybe_set_gpu_15(k_gpu, i__dc_gpu);
+    maybe_set_gpu_14(k_gpu, i__dc_gpu);
     if ((k_gpu != __gpu_before_gpu)) {
         __gpu_buf_k_gpu[((int)(1) - (1))] = k_gpu;
     }
     __gpu_before1_gpu = __gpu_private_p_gpu.x_gpu;
     __gpu_before2_gpu = __gpu_private_p_gpu.y_gpu;
-    maybe_move_gpu_14(__gpu_private_p_gpu, i__dc_gpu);
+    maybe_move_gpu_13(__gpu_private_p_gpu, i__dc_gpu);
     if ((__gpu_private_p_gpu.x_gpu != __gpu_before1_gpu)) {
         p_gpu.x_gpu = __gpu_private_p_gpu.x_gpu;
     }
@@ -62,7 +62,7 @@ kernel void __lfortran_gpu_kernel_0_14gpu_liveout_06(
     }
 }
 
-inline void set_gpu_23(thread int& k_gpu, int i_gpu) {
+inline void set_gpu_22(thread int& k_gpu, int i_gpu) {
     k_gpu = (2 * i_gpu);
 }
 
@@ -81,7 +81,7 @@ kernel void __lfortran_gpu_kernel_1_14gpu_liveout_06(
     i__dc1_gpu = (__flat_idx_gpu + 1);
     m_gpu = __gpu_buf_m_gpu[((int)(1) - (1))];
     if ((i__dc1_gpu == n_gpu)) {
-        set_gpu_23(m_gpu, i__dc1_gpu);
+        set_gpu_22(m_gpu, i__dc1_gpu);
         __gpu_buf_m_gpu[((int)(1) - (1))] = m_gpu;
     }
 }

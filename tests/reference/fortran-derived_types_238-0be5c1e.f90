@@ -22,10 +22,6 @@ subroutine fill1(d)
     d(3:1:-1) = g%w + real(1, kind=4)
 end subroutine fill1
 
-subroutine lcompilers_intent_out_reset_tw(object)
-    type(tw), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_tw
-
 end module derived_types_238_g
 
 module derived_types_238_m

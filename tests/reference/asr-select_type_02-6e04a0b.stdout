@@ -7,75 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            lcompilers_intent_out_reset_point:
-                                (Function
-                                    (SymbolTable
-                                        9
-                                        {
-                                            object:
-                                                (Variable
-                                                    9
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Real 4)
-                                                        (Real 4)]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 point
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_point
-                                    (FunctionType
-                                        [(StructType
-                                            [(Real 4)
-                                            (Real 4)]
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 9 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             point:
                                 (Struct
                                     (SymbolTable
@@ -155,7 +86,7 @@
                                     ()
                                     ()
                                     []
-                                    2 lcompilers_intent_out_reset_point
+                                    ()
                                 )
                         })
                     derived_type_collection
@@ -263,7 +194,7 @@
                                     ()
                                     4 point
                                     []
-                                    4 lcompilers_intent_out_reset_color_point
+                                    ()
                                 ),
                             cp:
                                 (Variable
@@ -294,140 +225,6 @@
                                     NotMethod
                                     ()
                                     []
-                                    ()
-                                ),
-                            lcompilers_intent_out_reset_color_point:
-                                (Function
-                                    (SymbolTable
-                                        10
-                                        {
-                                            object:
-                                                (Variable
-                                                    10
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Integer 4)]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    4 color_point
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_color_point
-                                    (FunctionType
-                                        [(StructType
-                                            [(Integer 4)]
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 10 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            lcompilers_intent_out_reset_point_3d:
-                                (Function
-                                    (SymbolTable
-                                        11
-                                        {
-                                            object:
-                                                (Variable
-                                                    11
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Real 4)]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    4 point_3d
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_point_3d
-                                    (FunctionType
-                                        [(StructType
-                                            [(Real 4)]
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 11 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
                                     ()
                                 ),
                             p:
@@ -588,7 +385,7 @@
                                     ()
                                     4 point
                                     []
-                                    4 lcompilers_intent_out_reset_point_3d
+                                    ()
                                 ),
                             ~select_type_block_:
                                 (Block

@@ -50,11 +50,11 @@
                             get_current_directory:
                                 (Function
                                     (SymbolTable
-                                        16
+                                        14
                                         {
                                             buffersize:
                                                 (Variable
-                                                    16
+                                                    14
                                                     buffersize
                                                     []
                                                     Local
@@ -80,7 +80,7 @@
                                                 ),
                                             cpath:
                                                 (Variable
-                                                    16
+                                                    14
                                                     cpath
                                                     []
                                                     Local
@@ -114,7 +114,7 @@
                                                 ),
                                             path:
                                                 (Variable
-                                                    16
+                                                    14
                                                     path
                                                     []
                                                     Out
@@ -142,7 +142,7 @@
                                                 ),
                                             tmp:
                                                 (Variable
-                                                    16
+                                                    14
                                                     tmp
                                                     []
                                                     Local
@@ -188,9 +188,9 @@
                                         Host
                                     )
                                     [getcwd]
-                                    [(Var 16 path)]
+                                    [(Var 14 path)]
                                     [(Allocate
-                                        [((Var 16 cpath)
+                                        [((Var 14 cpath)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1000 (Integer 4) Decimal))]
                                         []
@@ -202,12 +202,12 @@
                                         ()
                                     )
                                     (Assignment
-                                        (Var 16 tmp)
+                                        (Var 14 tmp)
                                         (FunctionCall
                                             2 getcwd
                                             ()
                                             [((ArrayPhysicalCast
-                                                (Var 16 cpath)
+                                                (Var 14 cpath)
                                                 DescriptorArray
                                                 StringArraySinglePointer
                                                 (Array
@@ -219,7 +219,7 @@
                                                 )
                                                 ()
                                             ))
-                                            ((Var 16 buffersize))]
+                                            ((Var 14 buffersize))]
                                             (CPtr
                                                 CPointer
                                             )
@@ -235,7 +235,7 @@
                                     (If
                                         ()
                                         (PointerAssociated
-                                            (Var 16 tmp)
+                                            (Var 14 tmp)
                                             ()
                                             (Logical 4)
                                             ()
@@ -247,7 +247,7 @@
                                                     "PWD: "
                                                     (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
-                                                (Var 16 tmp)]
+                                                (Var 14 tmp)]
                                                 FormatFortran
                                                 []
                                                 ()
@@ -268,11 +268,11 @@
                             getcwd:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        13
                                         {
                                             buf:
                                                 (Variable
-                                                    15
+                                                    13
                                                     buf
                                                     []
                                                     In
@@ -304,7 +304,7 @@
                                                 ),
                                             bufsize:
                                                 (Variable
-                                                    15
+                                                    13
                                                     bufsize
                                                     []
                                                     In
@@ -330,7 +330,7 @@
                                                 ),
                                             path:
                                                 (Variable
-                                                    15
+                                                    13
                                                     path
                                                     []
                                                     ReturnVar
@@ -383,10 +383,10 @@
                                         Host
                                     )
                                     []
-                                    [(Var 15 buf)
-                                    (Var 15 bufsize)]
+                                    [(Var 13 buf)
+                                    (Var 13 bufsize)]
                                     []
-                                    (Var 15 path)
+                                    (Var 13 path)
                                     Public
                                     .false.
                                     .false.

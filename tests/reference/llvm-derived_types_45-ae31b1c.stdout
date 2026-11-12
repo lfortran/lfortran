@@ -15,17 +15,6 @@ target datalayout = "..."
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @8 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define void @__module_derived_types_45_mod_lcompilers_intent_out_reset_myint(%derived_types_45_mod.myint.3* %object) {
-.entry:
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset_myint
-
-FINALIZE_SYMTABLE_lcompilers_intent_out_reset_myint: ; preds = %return
-  ret void
-}
-
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)

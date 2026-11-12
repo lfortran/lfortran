@@ -9,7 +9,7 @@ target datalayout = "..."
 @__module_class_circle2_pi = global float 0x400921FB60000000
 @_Name_circle = private unnamed_addr constant [7 x i8] c"circle\00", align 1
 @_Type_Info_circle = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_circle, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
-@_VTable_circle = linkonce_odr unnamed_addr constant { [9 x i8*] } { [9 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*, i1)* @_copy_class_circle2_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_class_circle2_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_3_of_class_circle2_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_3_of_class_circle2_no_final_for_UPoly to i8*), i8* bitcast (void (%class_circle2.circle.3*)* @__module_class_circle2_lcompilers_intent_out_reset_circle to i8*), i8* bitcast (float (%class_circle2.circle.3_class*)* @__module_class_circle2_circle_area to i8*), i8* bitcast (void (%class_circle2.circle.3_class*)* @__module_class_circle2_circle_print to i8*)] }, align 8
+@_VTable_circle = linkonce_odr unnamed_addr constant { [9 x i8*] } { [9 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_circle to i8*), i8* bitcast (void (i8*, i8*, i1)* @_copy_class_circle2_circle to i8*), i8* bitcast (void (i8**)* @_allocate_struct_class_circle2_circle to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_3_of_class_circle2_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__circle_3_of_class_circle2_no_final_for_UPoly to i8*), i8* null, i8* bitcast (float (%class_circle2.circle.3_class*)* @__module_class_circle2_circle_area to i8*), i8* bitcast (void (%class_circle2.circle.3_class*)* @__module_class_circle2_circle_print to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [31 x i8] c"S-DESC-K1-12,R4,S-DESC-K1-8,R4\00", align 1
 @string_const_data = private constant [12 x i8] c"Circle: r = "
@@ -83,17 +83,6 @@ return:                                           ; preds = %free_done
   br label %FINALIZE_SYMTABLE_circle_print
 
 FINALIZE_SYMTABLE_circle_print:                   ; preds = %return
-  ret void
-}
-
-define void @__module_class_circle2_lcompilers_intent_out_reset_circle(%class_circle2.circle.3* %object) {
-.entry:
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset_circle
-
-FINALIZE_SYMTABLE_lcompilers_intent_out_reset_circle: ; preds = %return
   ret void
 }
 

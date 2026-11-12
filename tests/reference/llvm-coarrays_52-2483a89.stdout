@@ -9,7 +9,7 @@ target datalayout = "..."
 %array.1.0 = type { i64*, i64, i32, i8, i8, i8, i8, i64, [1 x %dimension_descriptor] }
 %__module_prif_prif_team_type.22 = type { %__module_prif_prif_dummy_team_descriptor.23* }
 %__module_prif_prif_dummy_team_descriptor.23 = type {}
-%__lcompilers_frame_coarrays_52.27 = type { i32** }
+%__lcompilers_frame_coarrays_52.24 = type { i32** }
 
 @__cac_m__coarray_data = internal global void* null
 @__cac_m__coarray_data1 = internal global void* null
@@ -210,39 +210,6 @@ return:                                           ; preds = %.entry
   br label %FINALIZE_SYMTABLE_coarrays_52_sub
 
 FINALIZE_SYMTABLE_coarrays_52_sub:                ; preds = %return
-  ret void
-}
-
-define internal void @lcompilers_intent_out_reset___module_prif_prif_dummy_team_descriptor(%__module_prif_prif_dummy_team_descriptor.23* %object) {
-.entry:
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset___module_prif_prif_dummy_team_descriptor
-
-FINALIZE_SYMTABLE_lcompilers_intent_out_reset___module_prif_prif_dummy_team_descriptor: ; preds = %return
-  ret void
-}
-
-define internal void @lcompilers_intent_out_reset___module_prif_prif_team_type(%__module_prif_prif_team_type.22* %object) {
-.entry:
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset___module_prif_prif_team_type
-
-FINALIZE_SYMTABLE_lcompilers_intent_out_reset___module_prif_prif_team_type: ; preds = %return
-  ret void
-}
-
-define internal void @lcompilers_intent_out_reset_prif_coarray_handle(%prif_coarray_handle.8* %object) {
-.entry:
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset_prif_coarray_handle
-
-FINALIZE_SYMTABLE_lcompilers_intent_out_reset_prif_coarray_handle: ; preds = %return
   ret void
 }
 
@@ -853,7 +820,7 @@ define i32 @main(i32 %0, i8** %1) {
   %10 = getelementptr %array.1, %array.1* %arr_desc, i32 0, i32 0
   store i32* null, i32** %10, align 8
   store %array.1* %arr_desc, %array.1** @__module_coarrays_52_m_coarrays_52_mod_sub_m__coarray_ptr, align 8
-  %__lcompilers_frame = alloca %__lcompilers_frame_coarrays_52.27, align 8
+  %__lcompilers_frame = alloca %__lcompilers_frame_coarrays_52.24, align 8
   %__libasr_created_variable_ = alloca i32, align 4
   store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_1, align 8
   %11 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_1, i32 0, i32 1
@@ -882,9 +849,9 @@ define i32 @main(i32 %0, i8** %1) {
   store i8* %22, i8** %20, align 8
   %stat = alloca i32, align 4
   %v = alloca i32, align 4
-  %23 = getelementptr %__lcompilers_frame_coarrays_52.27, %__lcompilers_frame_coarrays_52.27* %__lcompilers_frame, i32 0, i32 0
+  %23 = getelementptr %__lcompilers_frame_coarrays_52.24, %__lcompilers_frame_coarrays_52.24* %__lcompilers_frame, i32 0, i32 0
   store i32** @coarrays_52.m, i32*** %23, align 8
-  call void @coarrays_52.__lfortran_global_init_coarrays_52(%__lcompilers_frame_coarrays_52.27* %__lcompilers_frame)
+  call void @coarrays_52.__lfortran_global_init_coarrays_52(%__lcompilers_frame_coarrays_52.24* %__lcompilers_frame)
   call void @__module_prif_prif_init(i32* %stat)
   store i32 0, i32* %call_arg_value, align 4
   %24 = getelementptr %string_descriptor, %string_descriptor* %__libasr_created_variable_1, i32 0, i32 0
@@ -1072,7 +1039,7 @@ Finalize_Variable___libasr_created_variable_7:    ; preds = %Finalize_Variable__
   ret i32 0
 }
 
-define internal void @coarrays_52.__lfortran_global_init_coarrays_52(%__lcompilers_frame_coarrays_52.27* %__lcompilers_frame) {
+define internal void @coarrays_52.__lfortran_global_init_coarrays_52(%__lcompilers_frame_coarrays_52.24* %__lcompilers_frame) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %array_descriptor8 = alloca %array.1.0, align 8
@@ -1089,7 +1056,7 @@ define internal void @coarrays_52.__lfortran_global_init_coarrays_52(%__lcompile
   %__libasr_created_variable_4 = alloca %string_descriptor, align 8
   %__libasr_created_variable_2 = alloca %string_descriptor, align 8
   %__libasr_created_variable_1 = alloca %string_descriptor, align 8
-  %1 = getelementptr %__lcompilers_frame_coarrays_52.27, %__lcompilers_frame_coarrays_52.27* %__lcompilers_frame, i32 0, i32 0
+  %1 = getelementptr %__lcompilers_frame_coarrays_52.24, %__lcompilers_frame_coarrays_52.24* %__lcompilers_frame, i32 0, i32 0
   %2 = load i32**, i32*** %1, align 1
   %__libasr_created_variable_ = alloca i32, align 4
   store %string_descriptor zeroinitializer, %string_descriptor* %__libasr_created_variable_1, align 8

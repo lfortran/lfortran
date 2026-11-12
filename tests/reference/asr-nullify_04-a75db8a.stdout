@@ -7,89 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            lcompilers_intent_out_reset_scaled_data_structure:
-                                (Function
-                                    (SymbolTable
-                                        5
-                                        {
-                                            object:
-                                                (Variable
-                                                    5
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Pointer
-                                                            (Array
-                                                                (Real 4)
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
-                                                                Global
-                                                            )
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 scaled_data_structure
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_scaled_data_structure
-                                    (FunctionType
-                                        [(StructType
-                                            [(Pointer
-                                                (Array
-                                                    (Real 4)
-                                                    [(()
-                                                    ())]
-                                                    DescriptorArray
-                                                    Global
-                                                )
-                                            )]
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 5 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             scaled_data_structure:
                                 (Struct
                                     (SymbolTable
@@ -157,7 +74,7 @@
                                     ()
                                     ()
                                     []
-                                    2 lcompilers_intent_out_reset_scaled_data_structure
+                                    ()
                                 )
                         })
                     module_nullify_04

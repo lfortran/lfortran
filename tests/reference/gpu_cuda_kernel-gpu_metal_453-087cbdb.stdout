@@ -8,7 +8,7 @@ struct tensor_t {
     long values_;
 };
 
-__device__ inline void values_gpu_44(tensor_t self, float* __data_self_values_, int __size_self_values_, int __lb_self_values__dim1, float* r) {
+__device__ inline void values_gpu_43(tensor_t self, float* __data_self_values_, int __size_self_values_, int __lb_self_values__dim1, float* r) {
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = __lb_self_values__dim1;
@@ -20,7 +20,7 @@ __device__ inline void values_gpu_44(tensor_t self, float* __data_self_values_, 
     }
 }
 
-__device__ inline void twice_gpu_46(float* x, int __size_x_dim1, int __stride_x_dim1, float* r) {
+__device__ inline void twice_gpu_45(float* x, int __size_x_dim1, int __stride_x_dim1, float* r) {
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = 1;
@@ -32,7 +32,7 @@ __device__ inline void twice_gpu_46(float* x, int __size_x_dim1, int __stride_x_
     }
 }
 
-__device__ inline void points_device_t_gpu_66(int p, int n, point_t* r) {
+__device__ inline void points_device_t_gpu_64(int p, int n, point_t* r) {
     int i;
     #pragma unroll 16
     for (i = 1; i <= n; i++) {
@@ -113,7 +113,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_13g
         float* __libasr_created__subroutine_from_function_ = ((__workspace_extent2) > 0) ? (__workspace_14 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent2) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
-        values_gpu_44(x[((int)(p__dc) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p__dc) - (1))], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
+        values_gpu_43(x[((int)(p__dc) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p__dc) - (1))], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
         for (int __copy_i = 0; __copy_i < ((((int)__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]))); __copy_i++) __libasr_created__function_call_1_tensor_t_values[__copy_i] = __libasr_created__subroutine_from_function_[__copy_i];
         __libasr_index_0_1 = 1;
         const int __lfortran_end_2 = (__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
@@ -133,7 +133,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_13g
         float* __libasr_created__subroutine_from_function_ = ((__workspace_extent5) > 0) ? (__workspace_17 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent5) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
-        values_gpu_44(x[((int)(p__dc) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p__dc) - (1))], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
+        values_gpu_43(x[((int)(p__dc) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p__dc) - (1))], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
         for (int __copy_i = 0; __copy_i < ((((int)__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]))); __copy_i++) __libasr_created__function_call_1_tensor_t_values[__copy_i] = __libasr_created__subroutine_from_function_[__copy_i];
         __libasr_index_0_1 = 1;
         const int __lfortran_end_3 = (__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
@@ -155,7 +155,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_13g
         float* __libasr_created__subroutine_from_function_ = ((__workspace_extent8) > 0) ? (__workspace_20 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent8) : nullptr;
         int __libasr_index_0_;
         int __libasr_index_0_1;
-        values_gpu_44(x[((int)(p__dc) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p__dc) - (1))], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
+        values_gpu_43(x[((int)(p__dc) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p__dc) - (1))], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p__dc) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
         for (int __copy_i = 0; __copy_i < ((((int)__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]))); __copy_i++) __libasr_created__function_call_1_tensor_t_values[__copy_i] = __libasr_created__subroutine_from_function_[__copy_i];
         __libasr_index_0_1 = 1;
         const int __lfortran_end_4 = (__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
@@ -184,7 +184,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_13g
         int __libasr_index_0_3;
         __libasr_created__result_metadata_ = (1 * (((0 > (((n - 1) + 1) / 1))) ? (0) : ((((n - 1) + 1) / 1))));
         __libasr_created__function_call_twice = a + ((int)(1) - (1)) + (3 * ((int)(p__dc) - (1)));
-        twice_gpu_46(__libasr_created__function_call_twice, ((((n) - (1)) / (1)) + 1), 1, __libasr_created__subroutine_from_function_);
+        twice_gpu_45(__libasr_created__function_call_twice, ((((n) - (1)) / (1)) + 1), 1, __libasr_created__subroutine_from_function_);
         __libasr_index_0_3 = 1;
         #pragma unroll 64
         for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + (1 * (((0 > (((3 - 1) + 1) / 1))) ? (0) : ((((3 - 1) + 1) / 1)))) - 1); __libasr_index_0_2++) {
@@ -214,7 +214,7 @@ extern "C" __global__ void __launch_bounds__(256, 1) __lfortran_gpu_kernel_0_13g
         int __libasr_index_0_1;
         int __libasr_index_0_2;
         int __libasr_index_0_3;
-        points_device_t_gpu_66(p__dc, 3, __libasr_created__subroutine_from_function_);
+        points_device_t_gpu_64(p__dc, 3, __libasr_created__subroutine_from_function_);
         __libasr_index_0_3 = 1;
         #pragma unroll 64
         for (__libasr_index_0_2 = 1; __libasr_index_0_2 <= (1 + 3 - 1); __libasr_index_0_2++) {

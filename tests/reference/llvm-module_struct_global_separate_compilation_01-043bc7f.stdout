@@ -6,17 +6,6 @@ target datalayout = "..."
 
 @__module_module_struct_global_separate_compilation_01_targets = global %module_struct_global_separate_compilation_01.t.3 zeroinitializer
 
-define void @__module_module_struct_global_separate_compilation_01_lcompilers_intent_out_reset_t(%module_struct_global_separate_compilation_01.t.3* %object) {
-.entry:
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset_t
-
-FINALIZE_SYMTABLE_lcompilers_intent_out_reset_t:  ; preds = %return
-  ret void
-}
-
 define void @__module_module_struct_global_separate_compilation_01_set_targets(i32* %v) {
 .entry:
   %0 = load i32, i32* %v, align 1

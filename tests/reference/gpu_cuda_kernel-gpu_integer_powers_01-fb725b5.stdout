@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-__device__ inline float half_gpu_25(float x) {
+__device__ inline float half_gpu_24(float x) {
     float y{};
     y = (  5.00000000000000000e-01f * x);
     return y;
@@ -44,7 +44,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_21gpu_
     p[((int)(7) - (0)) + (9 * ((int)(i__dc) - (1)))] = ((((__gpu_power_base5 * __gpu_power_base5) * (__gpu_power_base5 * __gpu_power_base5)) * (__gpu_power_base5 * __gpu_power_base5)) * __gpu_power_base5);
     __gpu_power_base6 = x[((int)(i__dc) - (1))];
     p[((int)(8) - (0)) + (9 * ((int)(i__dc) - (1)))] = (((__gpu_power_base6 * __gpu_power_base6) * (__gpu_power_base6 * __gpu_power_base6)) * ((__gpu_power_base6 * __gpu_power_base6) * (__gpu_power_base6 * __gpu_power_base6)));
-    __gpu_power_base7 = half_gpu_25(x[((int)(i__dc) - (1))]);
+    __gpu_power_base7 = half_gpu_24(x[((int)(i__dc) - (1))]);
     q[((int)(i__dc) - (1))] = ((__gpu_power_base7 * __gpu_power_base7) +   1.00000000000000000e+00f);
     __gpu_power_base8 = (x[((int)(i__dc) - (1))] +   1.00000000000000000e+00f);
     s[((int)(i__dc) - (1))] = (__gpu_power_base8 * (__gpu_power_base8 * __gpu_power_base8));

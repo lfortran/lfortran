@@ -67,11 +67,11 @@
                             build_package_build_target_ptr____0:
                                 (Function
                                     (SymbolTable
-                                        18
+                                        17
                                         {
                                             __1targets:
                                                 (Variable
-                                                    18
+                                                    17
                                                     __1targets
                                                     []
                                                     In
@@ -98,11 +98,11 @@
                                             associate_block:
                                                 (AssociateBlock
                                                     (SymbolTable
-                                                        19
+                                                        18
                                                         {
                                                             target:
                                                                 (Variable
-                                                                    19
+                                                                    18
                                                                     target
                                                                     []
                                                                     Local
@@ -138,12 +138,12 @@
                                                         })
                                                     associate_block
                                                     [(Associate
-                                                        (Var 19 target)
+                                                        (Var 18 target)
                                                         (StructInstanceMember
                                                             (ArrayItem
-                                                                (Var 18 targets)
+                                                                (Var 17 targets)
                                                                 [(()
-                                                                (Var 18 i)
+                                                                (Var 17 i)
                                                                 ())]
                                                                 (StructType
                                                                     [(Pointer
@@ -179,7 +179,7 @@
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
-                                                            (Var 18 temp)
+                                                            (Var 17 temp)
                                                             2 1_string_t_s
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
@@ -187,7 +187,7 @@
                                                             ()
                                                         )
                                                         (StructInstanceMember
-                                                            (Var 19 target)
+                                                            (Var 18 target)
                                                             2 1_build_target_t_output_dir
                                                             (Allocatable
                                                                 (String 1 () DeferredLength DescriptorString)
@@ -201,10 +201,10 @@
                                                         .false.
                                                     )
                                                     (Assignment
-                                                        (Var 18 build_dirs)
+                                                        (Var 17 build_dirs)
                                                         (ArrayConstructor
-                                                            [(Var 18 build_dirs)
-                                                            (Var 18 temp)]
+                                                            [(Var 17 build_dirs)
+                                                            (Var 17 temp)]
                                                             (Array
                                                                 (StructType
                                                                     [(Allocatable
@@ -232,7 +232,7 @@
                                                 ),
                                             build_dirs:
                                                 (Variable
-                                                    18
+                                                    17
                                                     build_dirs
                                                     []
                                                     Local
@@ -273,7 +273,7 @@
                                                 ),
                                             i:
                                                 (Variable
-                                                    18
+                                                    17
                                                     i
                                                     []
                                                     Local
@@ -299,7 +299,7 @@
                                                 ),
                                             j:
                                                 (Variable
-                                                    18
+                                                    17
                                                     j
                                                     []
                                                     Local
@@ -325,7 +325,7 @@
                                                 ),
                                             model:
                                                 (Variable
-                                                    18
+                                                    17
                                                     model
                                                     []
                                                     In
@@ -356,7 +356,7 @@
                                                 ),
                                             targets:
                                                 (Variable
-                                                    18
+                                                    17
                                                     targets
                                                     [__1targets]
                                                     InOut
@@ -378,7 +378,7 @@
                                                             .false.
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Var 18 __1targets))]
+                                                        (Var 17 __1targets))]
                                                         PointerArray
                                                         Global
                                                     )
@@ -400,7 +400,7 @@
                                                 ),
                                             temp:
                                                 (Variable
-                                                    18
+                                                    17
                                                     temp
                                                     []
                                                     Local
@@ -433,7 +433,7 @@
                                                 ),
                                             verbose:
                                                 (Variable
-                                                    18
+                                                    17
                                                     verbose
                                                     []
                                                     In
@@ -505,12 +505,12 @@
                                         Host
                                     )
                                     []
-                                    [(Var 18 targets)
-                                    (Var 18 __1targets)
-                                    (Var 18 model)
-                                    (Var 18 verbose)]
+                                    [(Var 17 targets)
+                                    (Var 17 __1targets)
+                                    (Var 17 model)
+                                    (Var 17 verbose)]
                                     [(Allocate
-                                        [((Var 18 build_dirs)
+                                        [((Var 17 build_dirs)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 0 (Integer 4) Decimal))]
                                         []
@@ -523,17 +523,17 @@
                                     )
                                     (DoLoop
                                         ()
-                                        ((Var 18 i)
+                                        ((Var 17 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (ArraySize
-                                            (Var 18 targets)
+                                            (Var 17 targets)
                                             ()
                                             (Integer 4)
                                             ()
                                         )
                                         (IntegerConstant 1 (Integer 4) Decimal))
                                         [(AssociateBlockCall
-                                            18 associate_block
+                                            17 associate_block
                                         )]
                                         []
                                     )]
@@ -993,7 +993,7 @@
                                     ()
                                     ()
                                     []
-                                    2 lcompilers_intent_out_reset_fpm_model_t
+                                    ()
                                 ),
                             lcompilers_intent_out_reset_build_target_ptr:
                                 (Function
@@ -1214,7 +1214,7 @@
                                     .false.
                                     ()
                                 ),
-                            lcompilers_intent_out_reset_fpm_model_t:
+                            lcompilers_intent_out_reset_string_t:
                                 (Function
                                     (SymbolTable
                                         16
@@ -1222,73 +1222,6 @@
                                             object:
                                                 (Variable
                                                     16
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        []
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 fpm_model_t
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_fpm_model_t
-                                    (FunctionType
-                                        [(StructType
-                                            []
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 16 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            lcompilers_intent_out_reset_string_t:
-                                (Function
-                                    (SymbolTable
-                                        17
-                                        {
-                                            object:
-                                                (Variable
-                                                    17
                                                     object
                                                     []
                                                     InOut
@@ -1344,7 +1277,7 @@
                                         Host
                                     )
                                     []
-                                    [(Var 17 object)]
+                                    [(Var 16 object)]
                                     []
                                     ()
                                     Private

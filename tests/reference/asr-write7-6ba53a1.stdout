@@ -7,73 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            lcompilers_intent_out_reset_person:
-                                (Function
-                                    (SymbolTable
-                                        6
-                                        {
-                                            object:
-                                                (Variable
-                                                    6
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        []
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 person
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_person
-                                    (FunctionType
-                                        [(StructType
-                                            []
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 6 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             person:
                                 (Struct
                                     (SymbolTable
@@ -137,7 +70,7 @@
                                     ()
                                     ()
                                     []
-                                    2 lcompilers_intent_out_reset_person
+                                    ()
                                 ),
                             pwf:
                                 (Function

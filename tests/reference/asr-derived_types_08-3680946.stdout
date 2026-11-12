@@ -615,148 +615,6 @@
                                     .true.
                                     ()
                                 ),
-                            lcompilers_intent_out_reset_rectangle:
-                                (Function
-                                    (SymbolTable
-                                        7
-                                        {
-                                            object:
-                                                (Variable
-                                                    7
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Integer 4)
-                                                        (Integer 4)]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 rectangle
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_rectangle
-                                    (FunctionType
-                                        [(StructType
-                                            [(Integer 4)
-                                            (Integer 4)]
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 7 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            lcompilers_intent_out_reset_shape:
-                                (Function
-                                    (SymbolTable
-                                        8
-                                        {
-                                            object:
-                                                (Variable
-                                                    8
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Integer 4)
-                                                        (Logical 4)
-                                                        (Integer 4)
-                                                        (Integer 4)]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 shape
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_shape
-                                    (FunctionType
-                                        [(StructType
-                                            [(Integer 4)
-                                            (Logical 4)
-                                            (Integer 4)
-                                            (Integer 4)]
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 8 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             rectangle:
                                 (Struct
                                     (SymbolTable
@@ -836,7 +694,7 @@
                                     ()
                                     2 shape
                                     []
-                                    2 lcompilers_intent_out_reset_rectangle
+                                    ()
                                 ),
                             shape:
                                 (Struct
@@ -985,7 +843,7 @@
                                     ()
                                     ()
                                     []
-                                    2 lcompilers_intent_out_reset_shape
+                                    ()
                                 )
                         })
                     shape_mod

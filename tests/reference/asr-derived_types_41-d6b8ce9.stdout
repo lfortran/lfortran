@@ -206,101 +206,6 @@
                     (SymbolTable
                         2
                         {
-                            lcompilers_intent_out_reset_mytype:
-                                (Function
-                                    (SymbolTable
-                                        5
-                                        {
-                                            object:
-                                                (Variable
-                                                    5
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Array
-                                                            (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (IntegerConstant 2 (Integer 4) Decimal))]
-                                                            FixedSizeArray
-                                                            Global
-                                                        )
-                                                        (Integer 4)
-                                                        (Array
-                                                            (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (IntegerConstant 2 (Integer 4) Decimal))]
-                                                            FixedSizeArray
-                                                            Global
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 mytype
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_mytype
-                                    (FunctionType
-                                        [(StructType
-                                            [(Array
-                                                (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 2 (Integer 4) Decimal))]
-                                                FixedSizeArray
-                                                Global
-                                            )
-                                            (Integer 4)
-                                            (Array
-                                                (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 2 (Integer 4) Decimal))]
-                                                FixedSizeArray
-                                                Global
-                                            )]
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 5 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             mytype:
                                 (Struct
                                     (SymbolTable
@@ -432,7 +337,7 @@
                                     ()
                                     ()
                                     []
-                                    2 lcompilers_intent_out_reset_mytype
+                                    ()
                                 ),
                             mytype_instance:
                                 (Variable

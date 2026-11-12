@@ -53,186 +53,6 @@
                                     []
                                     ()
                                 ),
-                            lcompilers_intent_out_reset_t:
-                                (Function
-                                    (SymbolTable
-                                        5
-                                        {
-                                            object:
-                                                (Variable
-                                                    5
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Array
-                                                            (Real 4)
-                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (IntegerConstant 4 (Integer 4) Decimal))]
-                                                            FixedSizeArray
-                                                            Global
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 t
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_t
-                                    (FunctionType
-                                        [(StructType
-                                            [(Array
-                                                (Real 4)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 4 (Integer 4) Decimal))]
-                                                FixedSizeArray
-                                                Global
-                                            )]
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 5 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
-                            lcompilers_intent_out_reset_v:
-                                (Function
-                                    (SymbolTable
-                                        6
-                                        {
-                                            object:
-                                                (Variable
-                                                    6
-                                                    object
-                                                    []
-                                                    InOut
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (StructType
-                                                        [(Array
-                                                            (StructType
-                                                                [(Array
-                                                                    (Real 4)
-                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (IntegerConstant 4 (Integer 4) Decimal))]
-                                                                    FixedSizeArray
-                                                                    Global
-                                                                )]
-                                                                []
-                                                                .true.
-                                                                .false.
-                                                            )
-                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (IntegerConstant 3 (Integer 4) Decimal))]
-                                                            FixedSizeArray
-                                                            Global
-                                                        )]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    2 v
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                    ()
-                                                )
-                                        })
-                                    lcompilers_intent_out_reset_v
-                                    (FunctionType
-                                        [(StructType
-                                            [(Array
-                                                (StructType
-                                                    [(Array
-                                                        (Real 4)
-                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (IntegerConstant 4 (Integer 4) Decimal))]
-                                                        FixedSizeArray
-                                                        Global
-                                                    )]
-                                                    []
-                                                    .true.
-                                                    .false.
-                                                )
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 3 (Integer 4) Decimal))]
-                                                FixedSizeArray
-                                                Global
-                                            )]
-                                            []
-                                            .true.
-                                            .false.
-                                        )]
-                                        ()
-                                        Source
-                                        Implementation
-                                        ()
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                        Host
-                                    )
-                                    []
-                                    [(Var 6 object)]
-                                    []
-                                    ()
-                                    Private
-                                    .false.
-                                    .false.
-                                    ()
-                                ),
                             t:
                                 (Struct
                                     (SymbolTable
@@ -296,7 +116,7 @@
                                     ()
                                     ()
                                     []
-                                    2 lcompilers_intent_out_reset_t
+                                    ()
                                 ),
                             v:
                                 (Struct
@@ -383,7 +203,7 @@
                                     ()
                                     ()
                                     []
-                                    2 lcompilers_intent_out_reset_v
+                                    ()
                                 ),
                             zz:
                                 (Variable

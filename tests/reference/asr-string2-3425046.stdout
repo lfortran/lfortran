@@ -69,11 +69,11 @@
                             get_temp_filename:
                                 (Function
                                     (SymbolTable
-                                        24
+                                        22
                                         {
                                             c_tempfile:
                                                 (Variable
-                                                    24
+                                                    22
                                                     c_tempfile
                                                     []
                                                     Local
@@ -107,7 +107,7 @@
                                                 ),
                                             tempfile:
                                                 (Variable
-                                                    24
+                                                    22
                                                     tempfile
                                                     []
                                                     ReturnVar
@@ -155,11 +155,11 @@
                                     []
                                     []
                                     [(Assignment
-                                        (Var 24 tempfile)
+                                        (Var 22 tempfile)
                                         (FunctionCall
                                             2 f_string~genericprocedure@f_string
                                             2 f_string
-                                            [((Var 24 c_tempfile))]
+                                            [((Var 22 c_tempfile))]
                                             (Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
                                             )
@@ -172,7 +172,7 @@
                                         .false.
                                         .false.
                                     )]
-                                    (Var 24 tempfile)
+                                    (Var 22 tempfile)
                                     Public
                                     .true.
                                     .true.
@@ -181,11 +181,11 @@
                             list_files:
                                 (Function
                                     (SymbolTable
-                                        23
+                                        21
                                         {
                                             dir_entry_c:
                                                 (Variable
-                                                    23
+                                                    21
                                                     dir_entry_c
                                                     []
                                                     Local
@@ -213,7 +213,7 @@
                                                 ),
                                             dir_handle:
                                                 (Variable
-                                                    23
+                                                    21
                                                     dir_handle
                                                     []
                                                     Local
@@ -241,7 +241,7 @@
                                                 ),
                                             string_fortran:
                                                 (Variable
-                                                    23
+                                                    21
                                                     string_fortran
                                                     []
                                                     Local
@@ -296,7 +296,7 @@
                                             ()
                                             (LogicalNot
                                                 (PointerAssociated
-                                                    (Var 23 dir_entry_c)
+                                                    (Var 21 dir_entry_c)
                                                     ()
                                                     (Logical 4)
                                                     ()
@@ -308,11 +308,11 @@
                                                 ()
                                             )]
                                             [(Assignment
-                                                (Var 23 string_fortran)
+                                                (Var 21 string_fortran)
                                                 (FunctionCall
                                                     2 f_string_cptr@f_string
                                                     2 f_string
-                                                    [((Var 23 dir_entry_c))]
+                                                    [((Var 21 dir_entry_c))]
                                                     (Allocatable
                                                         (String 1 () DeferredLength DescriptorString)
                                                     )

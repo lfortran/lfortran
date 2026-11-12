@@ -23,9 +23,5 @@ subroutine h(x)
 
 end subroutine h
 
-subroutine lcompilers_intent_out_reset_node(object)
-    type(node), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_node
-
 end module host_assoc_frame_02_m
 

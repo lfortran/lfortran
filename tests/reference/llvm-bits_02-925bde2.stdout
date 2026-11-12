@@ -2,8 +2,8 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
-%lfortran_intrinsic_iso_fortran_env.__module_prif_prif_dummy_team_descriptor.5 = type {}
 %lfortran_intrinsic_iso_fortran_env.team_type.6 = type { %lfortran_intrinsic_iso_fortran_env.__module_prif_prif_dummy_team_descriptor.5* }
+%lfortran_intrinsic_iso_fortran_env.__module_prif_prif_dummy_team_descriptor.5 = type {}
 %string_descriptor = type { i8*, i64 }
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
@@ -15,17 +15,6 @@ target datalayout = "..."
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info.2 = private unnamed_addr constant [3 x i8] c"I8\00", align 1
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-
-define weak_odr void @__module_lfortran_intrinsic_iso_fortran_env_lcompilers_intent_out_reset___module_prif_prif_dummy_team_descriptor(%lfortran_intrinsic_iso_fortran_env.__module_prif_prif_dummy_team_descriptor.5* %object) {
-.entry:
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset___module_prif_prif_dummy_team_descriptor
-
-FINALIZE_SYMTABLE_lcompilers_intent_out_reset___module_prif_prif_dummy_team_descriptor: ; preds = %return
-  ret void
-}
 
 define weak_odr void @__module_lfortran_intrinsic_iso_fortran_env_lcompilers_intent_out_reset_team_type(%lfortran_intrinsic_iso_fortran_env.team_type.6* %object) {
 .entry:
