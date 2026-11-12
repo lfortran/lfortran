@@ -1293,7 +1293,8 @@ namespace LCompilers {
                                                   llvm::Type* result_desc_type,
                                                   llvm::Value* order,
                                                   ASR::expr_t* order_expr,
-                                                  llvm::Value* result) {
+                                                  llvm::Value* result,
+                                                  ASR::ttype_t* asr_result_type) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
             llvm::Type* result_type;
             if (result_desc_type) {
@@ -1588,10 +1589,28 @@ namespace LCompilers {
                             ordered_string_type, src_data);
                         string_elem_size = builder->CreateMul(string_len,
                             llvm::ConstantInt::get(i64, ordered_string_type->m_kind));
-                        llvm::Value* dest_chars = llvm_utils->CreateAlloca(*builder,
-                            llvm::Type::getInt8Ty(context),
-                            builder->CreateMul(builder->CreateSExtOrTrunc(result_size, i64),
-                                string_elem_size));
+                        // A buffer whose size is known at compile time is
+                        // taken once, in the entry block, so that a reshape
+                        // inside a loop does not take more stack every time.
+                        int64_t fixed_size = asr_result_type == nullptr ? -1 :
+                            ASRUtils::get_fixed_size_of_array(asr_result_type);
+                        int64_t fixed_len = -1;
+                        llvm::Value* dest_chars = nullptr;
+                        if (fixed_size >= 0 && ordered_string_type->m_len != nullptr &&
+                                ASRUtils::extract_value(ASRUtils::expr_value(
+                                    ordered_string_type->m_len), fixed_len) &&
+                                fixed_len >= 0) {
+                            dest_chars = llvm_utils->CreateAlloca(
+                                llvm::Type::getInt8Ty(context),
+                                llvm::ConstantInt::get(i64, fixed_size * fixed_len *
+                                    ordered_string_type->m_kind),
+                                "reshaped_chars");
+                        } else {
+                            dest_chars = llvm_utils->CreateAlloca(*builder,
+                                llvm::Type::getInt8Ty(context),
+                                builder->CreateMul(builder->CreateSExtOrTrunc(result_size, i64),
+                                    string_elem_size));
+                        }
                         builder->CreateStore(dest_chars,
                             llvm_utils->get_string_data(ordered_string_type, dest_data, true));
                         builder->CreateStore(string_len,
@@ -1599,8 +1618,8 @@ namespace LCompilers {
                     }
 
                     llvm::Value* I_arr = llvm_utils->CreateAlloca(
-                        *builder, llvm::Type::getInt64Ty(context),
-                        llvm::ConstantInt::get(context, llvm::APInt(32, rank)));
+                        llvm::Type::getInt64Ty(context),
+                        llvm::ConstantInt::get(context, llvm::APInt(32, rank)), "reshape_I");
 
                     llvm::BasicBlock *order_loop_head = llvm::BasicBlock::Create(context, "reshape_order.head");
                     llvm::BasicBlock *order_loop_body = llvm::BasicBlock::Create(context, "reshape_order.body");

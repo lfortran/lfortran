@@ -5669,7 +5669,7 @@ public:
                 }
                 tmp = arr_descr->reshape(array_type, array, llvm_data_type, shape_type, shape, asr_shape_type, module.get(),
                     const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
-                    result_desc_type, order, x.m_order, result);
+                    result_desc_type, order, x.m_order, result, x.m_type);
                 // If the result type is PointerArray, extract the data pointer
                 // from the descriptor, since the assignment expects a raw pointer.
                 ASR::array_physical_typeType result_ptype = ASRUtils::extract_physical_type(
@@ -5944,7 +5944,7 @@ public:
                     tmp = arr_descr->reshape(array_type, array, llvm_data_type,
                         shape_type, shape, asr_shape_type, module.get(),
                         const_cast<ASR::expr_t*>(x.m_array), asr_data_type,
-                        result_desc_type, order, x.m_order, result);
+                        result_desc_type, order, x.m_order, result, x.m_type);
                     // If the result type is not a descriptor, extract the data
                     // pointer from the descriptor, since the consumer expects
                     // a raw pointer.

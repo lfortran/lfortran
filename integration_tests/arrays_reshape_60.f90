@@ -158,6 +158,20 @@ program arrays_reshape_60
     if (agrid(2,1) /= "six" .or. agrid(2,2) /= "ten") error stop
     if (agrid(3,1) /= "abc" .or. agrid(3,2) /= "def") error stop
 
+    ! in a long loop the result must not take more stack every time
+    k = 0
+    do i = 1, 1000000
+        grid = reshape(src, [2, 2], order=[2, 1])
+        if (grid(2,1) == "six") k = k + 1
+    end do
+    if (k /= 1000000) error stop
+    k = 0
+    do i = 1, 1000000
+        grid = reshape(asrc, [2, 2], order=[2, 1])
+        if (grid(1,2) == "two") k = k + 1
+    end do
+    if (k /= 1000000) error stop
+
     ! single characters
     letters = ["a", "b", "c", "d", "e", "f"]
     lgrid = reshape(letters, [2, 3], order=[2, 1])
