@@ -6285,6 +6285,7 @@ RUN(NAME contig LABELS gfortran llvm)
 RUN(NAME contig_stmt_01 LABELS gfortran llvm)
 RUN(NAME contiguous_dummy_01 LABELS gfortran llvm) # non-contiguous actual for a contiguous dummy (#17133)
 RUN(NAME contiguous_dummy_02 LABELS gfortran llvm) # copy-back of an actual copied in the test of an IF or DO WHILE
+RUN(NAME contiguous_dummy_03 LABELS gfortran llvm) # non-contiguous actual for a contiguous dummy of a type-bound procedure
 RUN(NAME compiler_version_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME compiler_version_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME compiler_version_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

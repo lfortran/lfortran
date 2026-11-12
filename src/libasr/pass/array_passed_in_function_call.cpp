@@ -1318,6 +1318,12 @@ public:
     void visit_Call(const T& x, const std::string& name_hint) {
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(x.m_name);
+        if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*callee) ) {
+            // A type-bound call goes through the dummies of the procedure
+            // bound to the name.
+            callee = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(callee)->m_proc);
+        }
         bool is_procedure_variable = ASR::is_a<ASR::Variable_t>(*callee) &&
             ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
                 ASR::down_cast<ASR::Variable_t>(callee)->m_type));
