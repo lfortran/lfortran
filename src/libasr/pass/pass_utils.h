@@ -1066,7 +1066,8 @@ namespace LCompilers {
         F2018 7.5.10: if the data source `source` of an allocatable
         component is an unallocated allocatable object, the component
         of the constructed value is unallocated. When `source` is an
-        allocatable variable or component, returns
+        allocatable variable or component, replaces the statements
+        `assign`, which give the component the value of the source, with
 
             if (allocated(source)) then
                 assign ! component = source
@@ -1074,11 +1075,32 @@ namespace LCompilers {
                 deallocate(component) ! only if allocated
             end if
 
-        otherwise returns `assign` unchanged.
+        otherwise leaves `assign` unchanged.
         */
-        ASR::stmt_t* guard_allocatable_component_assignment(Allocator& al,
+        void guard_allocatable_component_assignment(Allocator& al,
             const Location& loc, ASR::expr_t* source, ASR::expr_t* component,
-            ASR::stmt_t* assign);
+            Vec<ASR::stmt_t*>& assign);
+
+        /*
+        F2018 7.5.10: an allocatable array component of the value a
+        structure constructor builds has the bounds of its data source
+        `source`. The constructor is written into `component` by an array
+        assignment, which keeps the bounds of an allocated variable of the
+        same shape (F2018 10.2.1.3). So the component is released first
+        unless it has the lower bounds of the data source, and the
+        assignment then allocates it with them:
+
+            if (allocated(component)) then
+                if (lbound(component, 1) /= lbound(source, 1) .or. ...) then
+                    deallocate(component)
+                end if
+            end if
+
+        Only a whole array has lower bounds other than 1 (F2018 16.9.109).
+        Returns `nullptr` when `component` is not an array.
+        */
+        ASR::stmt_t* release_component_of_other_bounds(Allocator& al,
+            const Location& loc, ASR::expr_t* source, ASR::expr_t* component);
 
         template <typename T>
         void replace_StructConstructor(ASR::StructConstructor_t* x,
@@ -1187,24 +1209,40 @@ namespace LCompilers {
                         x_m_args_i = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, x->base.base.loc,
                             x_m_args_i, cast_kind, casted_type, nullptr, nullptr));
                     }
-                    ASR::stmt_t* assign;
+                    Vec<ASR::stmt_t*> assign;
+                    assign.reserve(replacer->al, 2);
                     if (ASRUtils::is_pointer(ASRUtils::expr_type(derived_ref))) {
-                        assign = ASRUtils::STMT(ASRUtils::make_Associate_t_util(replacer->al,
-                                                    x->base.base.loc, derived_ref, x_m_args_i));
+                        assign.push_back(replacer->al, ASRUtils::STMT(
+                            ASRUtils::make_Associate_t_util(replacer->al,
+                                x->base.base.loc, derived_ref, x_m_args_i)));
                     } else {
                         bool member_is_allocatable =
                             ASRUtils::is_allocatable(ASRUtils::expr_type(derived_ref));
                         bool member_realloc = realloc_lhs || member_is_allocatable;
-                        assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
-                                                    x->base.base.loc, derived_ref,
-                                                    x_m_args_i, nullptr, member_realloc, false));
+                        // A variable's initializer is stored into a
+                        // component that is not allocated yet.
+                        ASR::stmt_t* release = nullptr;
+                        if( member_is_allocatable && !inside_symtab ) {
+                            release = release_component_of_other_bounds(
+                                replacer->al, x->base.base.loc,
+                                x->m_args[i].m_value, derived_ref);
+                        }
+                        if( release != nullptr ) {
+                            assign.push_back(replacer->al, release);
+                        }
+                        assign.push_back(replacer->al, ASRUtils::STMT(
+                            ASRUtils::make_Assignment_t_util(replacer->al,
+                                x->base.base.loc, derived_ref,
+                                x_m_args_i, nullptr, member_realloc, false)));
                         if( member_is_allocatable ) {
-                            assign = guard_allocatable_component_assignment(
+                            guard_allocatable_component_assignment(
                                 replacer->al, x->base.base.loc,
                                 x->m_args[i].m_value, derived_ref, assign);
                         }
                     }
-                    result_vec->push_back(replacer->al, assign);
+                    for( size_t j = 0; j < assign.size(); j++ ) {
+                        result_vec->push_back(replacer->al, assign[j]);
+                    }
                 }
             }
             if( omitted_components.size() > 0 ) {

@@ -1737,15 +1737,15 @@ namespace LCompilers {
             }
         }
 
-        ASR::stmt_t* guard_allocatable_component_assignment(Allocator& al,
+        void guard_allocatable_component_assignment(Allocator& al,
             const Location& loc, ASR::expr_t* source, ASR::expr_t* component,
-            ASR::stmt_t* assign) {
+            Vec<ASR::stmt_t*>& assign) {
             // Only an allocatable object can be unallocated; any other
             // data source is a value and is assigned as is.
             if( !(ASR::is_a<ASR::Var_t>(*source) ||
                     ASR::is_a<ASR::StructInstanceMember_t>(*source)) ||
                     !ASRUtils::is_allocatable(ASRUtils::expr_type(source)) ) {
-                return assign;
+                return ;
             }
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             Vec<ASR::expr_t*> allocated_args;
@@ -1756,9 +1756,6 @@ namespace LCompilers {
                     static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
                     allocated_args.p, allocated_args.n, 0,
                     ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
-            Vec<ASR::stmt_t*> if_body;
-            if_body.reserve(al, 1);
-            if_body.push_back(al, assign);
             Vec<ASR::expr_t*> dealloc_args;
             dealloc_args.reserve(al, 1);
             dealloc_args.push_back(al, component);
@@ -1766,8 +1763,67 @@ namespace LCompilers {
             else_body.reserve(al, 1);
             else_body.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
                 al, loc, dealloc_args.p, dealloc_args.n)));
-            return ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, is_allocated,
-                if_body.p, if_body.n, else_body.p, else_body.n));
+            ASR::stmt_t* guarded = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
+                is_allocated, assign.p, assign.n, else_body.p, else_body.n));
+            assign.reserve(al, 1);
+            assign.push_back(al, guarded);
+        }
+
+        // Whether `expr` is a whole array (F2018 9.5.2): a named array, or
+        // an array component of a scalar.
+        static bool is_whole_array(ASR::expr_t* expr) {
+            if( !ASRUtils::is_array(ASRUtils::expr_type(expr)) ) {
+                return false;
+            }
+            return ASR::is_a<ASR::Var_t>(*expr) ||
+                (ASR::is_a<ASR::StructInstanceMember_t>(*expr) &&
+                 !ASRUtils::is_array(ASRUtils::expr_type(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v)));
+        }
+
+        ASR::stmt_t* release_component_of_other_bounds(Allocator& al,
+            const Location& loc, ASR::expr_t* source, ASR::expr_t* component) {
+            ASR::ttype_t* component_type = ASRUtils::expr_type(component);
+            if( !ASRUtils::is_array(component_type) ) {
+                return nullptr;
+            }
+            ASRUtils::ASRBuilder b(al, loc);
+            ASRUtils::ExprStmtDuplicator d(al);
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(component_type);
+            source = ASRUtils::get_past_array_physical_cast(source);
+            bool source_is_whole_array = is_whole_array(source) &&
+                ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(source)) == n_dims;
+            // The bounds are compared as integers of the widest index kind.
+            const int bound_kind = 8;
+            ASR::expr_t* bounds_differ = nullptr;
+            for( int dim = 1; dim <= n_dims; dim++ ) {
+                ASR::expr_t* source_bound = source_is_whole_array
+                    ? get_bound(d.duplicate_expr(source), dim, "lbound", al,
+                        bound_kind)
+                    : b.i64(1);
+                ASR::expr_t* dim_differs = b.NotEq(get_bound(
+                    d.duplicate_expr(component), dim, "lbound", al, bound_kind),
+                    source_bound);
+                bounds_differ = bounds_differ == nullptr ? dim_differs
+                    : b.Or(bounds_differ, dim_differs);
+            }
+            Vec<ASR::expr_t*> allocated_args;
+            allocated_args.reserve(al, 1);
+            allocated_args.push_back(al, d.duplicate_expr(component));
+            ASR::expr_t* is_allocated = ASRUtils::EXPR(
+                ASR::make_IntrinsicImpureFunction_t(al, loc,
+                    static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                    allocated_args.p, allocated_args.n, 0,
+                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+            Vec<ASR::expr_t*> dealloc_args;
+            dealloc_args.reserve(al, 1);
+            dealloc_args.push_back(al, d.duplicate_expr(component));
+            ASR::stmt_t* deallocate = ASRUtils::STMT(
+                ASR::make_ImplicitDeallocate_t(al, loc, dealloc_args.p,
+                    dealloc_args.n));
+            return b.If(is_allocated, {b.If(bounds_differ, {deallocate}, {})},
+                {});
         }
 
         void visit_ArrayConstructor(ASR::ArrayConstructor_t* x, Allocator& al,

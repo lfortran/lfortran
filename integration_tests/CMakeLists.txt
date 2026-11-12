@@ -6303,6 +6303,7 @@ RUN(NAME structure_constructor_args_30 LABELS llvm) # gfortran 13 at CI rejects 
 RUN(NAME structure_constructor_args_31 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME structure_constructor_args_32 LABELS gfortran llvm NO_STD_F23)
 RUN(NAME structure_constructor_args_33 LABELS gfortran llvm) # allocatable component given a value in an array element constructor (#13383)
+RUN(NAME structure_constructor_args_34 LABELS gfortran llvm) # bounds of an already allocated allocatable component assigned by a constructor (#17226)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_call_in_decl_02 LABELS gfortran llvm)
