@@ -5618,22 +5618,42 @@ public:
         }
     }
 
+    // Whether the size of the reshape `pad` is only known at run time: a
+    // descriptor array, or an explicit-shape array with run-time bounds.
+    bool is_reshape_pad_size_known_at_run_time_only(ASR::expr_t* pad_expr) {
+        ASR::ttype_t* pad_type = ASRUtils::expr_type(pad_expr);
+        ASR::array_physical_typeType pad_physical_type =
+            ASRUtils::extract_physical_type(pad_type);
+        return pad_physical_type == ASR::array_physical_typeType::DescriptorArray ||
+            (pad_physical_type == ASR::array_physical_typeType::PointerArray &&
+             !ASRUtils::is_fixed_size_array(pad_type));
+    }
+
     /*
         Fills the elements `n_source`, ..., `n_result - 1` of the contiguous
-        reshape result `result_data` from the descriptor array `pad_expr`,
-        whose size is only known at run time: its elements are taken in
-        array element order and repeated as often as needed.
+        reshape result `result_data` from the array `pad_expr`, whose size is
+        only known at run time: its elements are taken in array element
+        order, through its descriptor, and repeated as often as needed.
     */
     void fill_reshape_result_from_descriptor_pad(ASR::expr_t* pad_expr,
             llvm::Type* llvm_data_type, llvm::Value* result_data,
             int64_t n_source, int64_t n_result) {
         ASR::ttype_t* pad_type = ASRUtils::expr_type(pad_expr);
-        llvm::Type* pad_llvm_type = llvm_utils->get_type_from_ttype_t_util(pad_expr,
-            ASRUtils::type_get_past_allocatable_pointer(pad_type), module.get());
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*pad_expr);
         ptr_loads = ptr_loads_copy;
+        ASR::ttype_t* pad_desc_type = pad_type;
+        if (ASRUtils::extract_physical_type(pad_type) ==
+                ASR::array_physical_typeType::PointerArray) {
+            // An explicit-shape `pad` is a pointer to its data: give it a
+            // descriptor that holds its run-time bounds.
+            pad_desc_type = ASRUtils::duplicate_type(al, pad_type, nullptr,
+                ASR::array_physical_typeType::DescriptorArray, true);
+            PointerToData_to_Descriptor(pad_expr, pad_desc_type, pad_type);
+        }
+        llvm::Type* pad_llvm_type = llvm_utils->get_type_from_ttype_t_util(pad_expr,
+            ASRUtils::type_get_past_allocatable_pointer(pad_desc_type), module.get());
         llvm::Value* pad = tmp;
         if (LLVM::is_llvm_pointer(*pad_type)) {
             pad = llvm_utils->CreateLoad2(pad_llvm_type->getPointerTo(), pad);
@@ -5803,8 +5823,7 @@ public:
                     builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), copy_bytes);
                     // Fill remaining elements with pad (cycling).
                     if (x.m_pad != nullptr && target_size > source_size &&
-                            ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_pad)) ==
-                            ASR::array_physical_typeType::DescriptorArray) {
+                            is_reshape_pad_size_known_at_run_time_only(x.m_pad)) {
                         fill_reshape_result_from_descriptor_pad(x.m_pad, llvm_data_type,
                             target_, source_size, target_size);
                     } else if (x.m_pad != nullptr && target_size > source_size) {
