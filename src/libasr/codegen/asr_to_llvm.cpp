@@ -6787,10 +6787,15 @@ public:
     }
 
     llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
-        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
-        ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value)
+            || is_constant_real_array_constructor(value));
+        ASR::ArrayConstant_t* arr_const = ASR::is_a<ASR::ArrayConstant_t>(*value) ?
+            ASR::down_cast<ASR::ArrayConstant_t>(value) : nullptr;
+        ASR::ArrayConstructor_t* arr_ctor = arr_const ? nullptr :
+            ASR::down_cast<ASR::ArrayConstructor_t>(value);
+        ASR::ttype_t* arr_ttype = arr_const ? arr_const->m_type : arr_ctor->m_type;
         std::vector<llvm::Constant*> arr_elements;
-        size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_const->m_type);
+        size_t arr_const_size = (size_t) ASRUtils::get_fixed_size_of_array(arr_ttype);
         arr_elements.reserve(arr_const_size);
         llvm::ArrayType* arr_type = nullptr;
         llvm::Type* elem_type = type;
@@ -6800,7 +6805,8 @@ public:
         }
         int a_kind;
         for (size_t i = 0; i < arr_const_size; i++) {
-            ASR::expr_t* elem = ASRUtils::fetch_ArrayConstant_value(al, arr_const, i);
+            ASR::expr_t* elem = arr_const ?
+                ASRUtils::fetch_ArrayConstant_value(al, arr_const, i) : arr_ctor->m_args[i];
             a_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(elem));
             if (ASR::is_a<ASR::IntegerConstant_t>(*elem)) {
                 ASR::IntegerConstant_t* int_const = ASR::down_cast<ASR::IntegerConstant_t>(elem);
@@ -6808,12 +6814,8 @@ public:
                     context, llvm::APInt(8 * a_kind, int_const->m_n, true)));
             } else if (ASR::is_a<ASR::RealConstant_t>(*elem)) {
                 ASR::RealConstant_t* real_const = ASR::down_cast<ASR::RealConstant_t>(elem);
-                if (a_kind == 4) {
-                    arr_elements.push_back(llvm::ConstantFP::get(
-                        context, llvm::APFloat((float) real_const->m_r)));
-                } else if (a_kind == 8) {
-                    arr_elements.push_back(llvm::ConstantFP::get(
-                        context, llvm::APFloat((double) real_const->m_r)));
+                if (llvm::Constant* real_init = real_constant_to_llvm(*real_const)) {
+                    arr_elements.push_back(real_init);
                 }
             } else if (ASR::is_a<ASR::LogicalConstant_t>(*elem)) {
                 ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
@@ -6822,7 +6824,7 @@ public:
                     context, llvm::APInt(kind * 8, logical_const->m_value)));
             } else if (ASR::is_a<ASR::StructConstant_t>(*elem)) {
                 llvm::Constant* elem_constant = create_llvm_constant_from_asr_expr(
-                    elem, ASRUtils::type_get_past_array(arr_const->m_type));
+                    elem, ASRUtils::type_get_past_array(arr_ttype));
                 if (elem_constant == nullptr) {
                     throw CodeGenError("Non-constant value found in struct array initializer");
                 }
@@ -9998,10 +10000,32 @@ public:
         }
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
+    // A fixed-size array constructor whose elements are all real constants.
+    // The constant data of an ArrayConstant holds doubles, so such an array of
+    // a wider kind stays an ArrayConstructor.
+    static bool is_constant_real_array_constructor(ASR::expr_t* e) {
+        if (e == nullptr || !ASR::is_a<ASR::ArrayConstructor_t>(*e)) return false;
+        ASR::ArrayConstructor_t* ctor = ASR::down_cast<ASR::ArrayConstructor_t>(e);
+        if (!ASRUtils::is_fixed_size_array(ctor->m_type)
+                || ASRUtils::get_fixed_size_of_array(ctor->m_type) != (int64_t) ctor->n_args) {
+            return false;
+        }
+        for (size_t i = 0; i < ctor->n_args; i++) {
+            if (!ASR::is_a<ASR::RealConstant_t>(*ctor->m_args[i])) return false;
+        }
+        return true;
+    }
+
     // Whether the initial value of the SAVE variable `v` is a constant that
     // becomes the static initializer of its global.
     static bool is_static_save_initial_value(ASR::Variable_t* v) {
-        if (!v->m_value) return false;
+        if (!v->m_value && !v->m_symbolic_value) return false;
+        if (!v->m_value) {
+            return ASRUtils::is_array(v->m_type)
+                && ASRUtils::extract_physical_type(v->m_type)
+                    == ASR::array_physical_typeType::FixedSizeArray
+                && is_constant_real_array_constructor(v->m_symbolic_value);
+        }
         if (ASR::is_a<ASR::Integer_t>(*v->m_type)
                 || ASR::is_a<ASR::Real_t>(*v->m_type)
                 || ASR::is_a<ASR::Logical_t>(*v->m_type)) {
@@ -10396,7 +10420,8 @@ public:
                         init_value = llvm::dyn_cast<llvm::Constant>(tmp);
                     } else if (is_static_save_initial_value(v)) {
                         llvm::Type* el_type = type->getArrayElementType();
-                        init_value = get_const_array(v->m_value, el_type);
+                        init_value = get_const_array(
+                            v->m_value ? v->m_value : v->m_symbolic_value, el_type);
                     } else if (v->m_symbolic_value
                             && ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type))
                             && ASR::is_a<ASR::Var_t>(*v->m_symbolic_value)) {
@@ -11382,7 +11407,7 @@ public:
                     // void* itself, not as a pointer to it.
                     LCOMPILERS_ASSERT(!LLVM::is_struct_value_dummy_copied(*arg) ||
                         llvm_arg.getType()->isPointerTy());
-                    if (LLVM::is_value_dummy_passed_by_value(*arg)) {
+                    if (LLVM::is_scalar_value_dummy_held_in_local(*arg)) {
                         llvm::Value* local_copy = builder->CreateAlloca(
                             llvm_arg.getType(), nullptr,
                             std::string(arg->m_name) + "_value");
@@ -12270,7 +12295,58 @@ public:
             // in the prologue above. No additional stride conversion needed.
         }
         finalize_intent_out_array_args(x);
+        reset_intent_out_polymorphic_args(x);
         declare_local_vars(x);
+    }
+
+    /**
+     * Deallocates the allocatable components of the actual argument of
+     * every scalar polymorphic INTENT(OUT) dummy argument of `x` that is
+     * neither allocatable nor a pointer (F2018 8.5.10). Those of the dynamic
+     * type decide, extensions of the declared type adding some, so the
+     * intent_out_deallocate pass, which only sees the declared type,
+     * cannot do it and this goes through the vtable. A dummy whose type has
+     * final subroutines is left to the pass: they are called before the
+     * components are deallocated, which this would precede.
+     */
+    void reset_intent_out_polymorphic_args(const ASR::Function_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*x.m_args[i])) continue;
+            ASR::symbol_t* const sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
+            ASR::Variable_t* const v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (v->m_intent != ASR::intentType::Out || ASRUtils::is_array(v->m_type)
+                    || ASRUtils::is_allocatable_or_pointer(v->m_type)
+                    || !ASR::is_a<ASR::StructType_t>(*v->m_type)
+                    || !ASRUtils::is_class_type(v->m_type)
+                    || ASRUtils::is_unlimited_polymorphic_type(v->m_type)) continue;
+            ASR::symbol_t* const decl = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+            if (decl == nullptr || !ASR::is_a<ASR::Struct_t>(*decl)) continue;
+            ASR::Struct_t* const struct_sym = ASR::down_cast<ASR::Struct_t>(decl);
+            if (LLVMFinalize::chain_has_final_procedure(struct_sym)) continue;
+            uint64_t const h = get_hash((ASR::asr_t*)v);
+            LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+            llvm::Value* is_present = nullptr;
+            if (v->m_presence == ASR::presenceType::Optional) {
+                // The transform_optional_argument_functions pass follows an
+                // optional dummy argument with a flag that says whether it
+                // is present.
+                if (i + 1 >= x.n_args || !ASR::is_a<ASR::Var_t>(*x.m_args[i + 1])) continue;
+                ASR::symbol_t* const flag_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x.m_args[i + 1])->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*flag_sym) ||
+                        std::string(ASR::down_cast<ASR::Variable_t>(flag_sym)->m_name)
+                            != "__libasr_is_present_" + std::string(v->m_name)) continue;
+                uint64_t const flag_h = get_hash((ASR::asr_t*)flag_sym);
+                LCOMPILERS_ASSERT(llvm_symtab.find(flag_h) != llvm_symtab.end());
+                llvm::Type* const flag_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_args[i + 1], ASR::down_cast<ASR::Variable_t>(flag_sym)->m_type, module.get());
+                is_present = llvm_utils->to_i1(llvm_utils->CreateLoad2(flag_type, llvm_symtab[flag_h]));
+            }
+            if (compiler_options.emit_debug_info) debug_emit_loc(*v);
+            llvm_symtab_finalizer.reset_dynamic_allocatable_components(llvm_symtab[h], struct_sym, is_present);
+        }
     }
 
     /**
@@ -19766,20 +19842,17 @@ public:
         handle_SU_IntegerConstant(x);
     }
 
-    void visit_RealConstant(const ASR::RealConstant_t &x) {
+    llvm::Constant* real_constant_to_llvm(const ASR::RealConstant_t &x) {
         int a_kind = checked_integer_cast<int>(((ASR::Real_t*)(&(x.m_type->base)))->m_kind);
         // For kind 4/8, x.m_r is the IEEE-754 double approximation/value.
         // For kind 16, x.m_r is a pointer-encoded payload; we MUST go through
         // real_constant_get_r16_bytes() rather than reading it as a double.
         switch( a_kind ) {
-
             case 4 : {
-                tmp = llvm::ConstantFP::get(context, llvm::APFloat((float)x.m_r));
-                break;
+                return llvm::ConstantFP::get(context, llvm::APFloat((float)x.m_r));
             }
             case 8 : {
-                tmp = llvm::ConstantFP::get(context, llvm::APFloat(x.m_r));
-                break;
+                return llvm::ConstantFP::get(context, llvm::APFloat(x.m_r));
             }
             case 10 : {
                 // The payload is a host `long double`, whose format can
@@ -19790,8 +19863,7 @@ public:
                 bool loses_info;
                 apf.convert(llvm_utils->getFPType(a_kind)->getFltSemantics(),
                     llvm::APFloat::rmNearestTiesToEven, &loses_info);
-                tmp = llvm::ConstantFP::get(context, apf);
-                break;
+                return llvm::ConstantFP::get(context, apf);
             }
             case 16 : {
                 const uint8_t* bytes = ASRUtils::real_constant_get_r16_bytes(&x);
@@ -19802,15 +19874,18 @@ public:
                 uint64_t words[2] = { lo, hi };
                 llvm::APInt bits(128, llvm::ArrayRef<uint64_t>(words, 2));
                 llvm::APFloat apf(llvm::APFloat::IEEEquad(), bits);
-                tmp = llvm::ConstantFP::get(context, apf);
-                break;
+                return llvm::ConstantFP::get(context, apf);
             }
             default : {
-                break;
+                return nullptr;
             }
-
         }
+    }
 
+    void visit_RealConstant(const ASR::RealConstant_t &x) {
+        if (llvm::Constant* c = real_constant_to_llvm(x)) {
+            tmp = c;
+        }
     }
 
     template <typename T>
@@ -20178,7 +20253,8 @@ public:
         llvm::Value* x_v;
         LCOMPILERS_ASSERT(llvm_symtab.find(x_h) != llvm_symtab.end());
         x_v = llvm_symtab[x_h];
-        if (x->m_abi == ASR::abiType::BindC && x->m_value_attr) {
+        if (x->m_abi == ASR::abiType::BindC && x->m_value_attr &&
+                !LLVM::is_scalar_value_dummy_held_in_local(*x)) {
             // Already a value, such as value argument to bind(c)
             tmp = x_v;
             return;
@@ -20308,7 +20384,8 @@ public:
                 } else {
                     throw CodeGenError("Function type not supported yet");
                 }
-                if (x->m_abi == ASR::abiType::BindC && x->m_value_attr) {
+                if (x->m_abi == ASR::abiType::BindC && x->m_value_attr &&
+                        !LLVM::is_scalar_value_dummy_held_in_local(*x)) {
                     // Already a value, such as value argument to bind(c)
                     break;
                 }
@@ -26834,7 +26911,9 @@ public:
                                             tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                         }
                                     } else {
-                                        if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)
+                                        if ((!arg->m_value_attr ||
+                                                LLVM::is_scalar_value_dummy_held_in_local(*arg))
+                                                && !ASR::is_a<ASR::String_t>(*arg_type)
                                                 && !ASR::is_a<ASR::StructType_t>(*arg_type)) {
                                             // Dereference the pointer argument (unless it is a CPtr)
                                             // to pass by value
@@ -26849,7 +26928,8 @@ public:
                                     }
                                 }
                                 if (!orig_arg->m_value_attr && arg->m_value_attr
-                                        && arg->m_abi == ASR::abiType::BindC) {
+                                        && arg->m_abi == ASR::abiType::BindC
+                                        && !LLVM::is_scalar_value_dummy_held_in_local(*arg)) {
                                     pass_bindc_value_arg(orig_arg, arg->m_type);
                                 }
                             } else {
@@ -26914,7 +26994,8 @@ public:
                                     tmp = convert_class_to_type(x.m_args[i].m_value, nullptr, orig_arg->m_type_declaration, orig_arg->m_type, tmp);
                                 }
                                 if (orig_arg && !orig_arg->m_value_attr && arg->m_value_attr
-                                        && arg->m_abi == ASR::abiType::BindC) {
+                                        && arg->m_abi == ASR::abiType::BindC
+                                        && !LLVM::is_scalar_value_dummy_held_in_local(*arg)) {
                                     pass_bindc_value_arg(orig_arg, arg->m_type);
                                 }
                             }

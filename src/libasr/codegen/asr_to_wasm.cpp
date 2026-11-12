@@ -77,7 +77,9 @@ enum RT_FUNCS {
     equal_c32 = 11,
     equal_c64 = 12,
     string_cmp = 13,
-    NO_OF_RT_FUNCS = 14,
+    fmod_f32 = 14,
+    fmod_f64 = 15,
+    NO_OF_RT_FUNCS = 16,
 };
 
 enum GLOBAL_VAR {
@@ -576,6 +578,122 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         });
     }
 
+    // The exact remainder of x by y with the sign of x, as the C `fmod`:
+    // subtract the largest power-of-two multiple of |y| not above the
+    // remainder until it is below |y|. Every operation is exact.
+    template <typename Ops>
+    void emit_fmod(wasm::var_type ty, const std::string &name, const Ops &o) {
+        m_wa.define_func({ty, ty}, {ty}, {ty, ty}, name, [&](){
+            // locals 0 is x, 1 is y, 2 is the remainder, 3 is the multiple of |y|
+            // NaN result: x is infinite or NaN, y is zero or NaN.
+            m_wa.emit_if_else([&](){
+                m_wa.emit_local_get(0);
+                m_wa.emit_local_get(0);
+                o.sub();
+                o.zero();
+                o.ne();
+                m_wa.emit_local_get(1);
+                m_wa.emit_local_get(1);
+                o.ne();
+                m_wa.emit_i32_or();
+                m_wa.emit_local_get(1);
+                o.zero();
+                o.eq();
+                m_wa.emit_i32_or();
+            }, [&](){
+                m_wa.emit_local_get(0);
+                m_wa.emit_local_get(1);
+                o.mul();
+                m_wa.emit_local_set(2);
+                m_wa.emit_local_get(2);
+                m_wa.emit_local_get(2);
+                o.div();
+                m_wa.emit_return();
+            }, [&](){});
+            // y is infinite: the remainder is x.
+            m_wa.emit_if_else([&](){
+                m_wa.emit_local_get(1);
+                m_wa.emit_local_get(1);
+                o.sub();
+                o.zero();
+                o.ne();
+            }, [&](){
+                m_wa.emit_local_get(0);
+                m_wa.emit_return();
+            }, [&](){});
+            m_wa.emit_local_get(0);
+            o.abs();
+            m_wa.emit_local_set(2);
+            m_wa.emit_local_get(1);
+            o.abs();
+            m_wa.emit_local_set(1);
+            m_wa.emit_loop([&](){
+                m_wa.emit_local_get(2);
+                m_wa.emit_local_get(1);
+                o.ge();
+            }, [&](){
+                m_wa.emit_local_get(1);
+                m_wa.emit_local_set(3);
+                m_wa.emit_loop([&](){
+                    m_wa.emit_local_get(3);
+                    m_wa.emit_local_get(3);
+                    o.add();
+                    m_wa.emit_local_get(2);
+                    o.le();
+                }, [&](){
+                    m_wa.emit_local_get(3);
+                    m_wa.emit_local_get(3);
+                    o.add();
+                    m_wa.emit_local_set(3);
+                });
+                m_wa.emit_local_get(2);
+                m_wa.emit_local_get(3);
+                o.sub();
+                m_wa.emit_local_set(2);
+            });
+            m_wa.emit_local_get(2);
+            m_wa.emit_local_get(0);
+            o.copysign();
+            m_wa.emit_return();
+        });
+    }
+
+    void emit_fmod_32() {
+        struct Ops {
+            WASMAssembler &w;
+            void sub() const { w.emit_f32_sub(); }
+            void add() const { w.emit_f32_add(); }
+            void mul() const { w.emit_f32_mul(); }
+            void div() const { w.emit_f32_div(); }
+            void zero() const { w.emit_f32_const(0); }
+            void ne() const { w.emit_f32_ne(); }
+            void eq() const { w.emit_f32_eq(); }
+            void ge() const { w.emit_f32_ge(); }
+            void le() const { w.emit_f32_le(); }
+            void abs() const { w.emit_f32_abs(); }
+            void copysign() const { w.emit_f32_copysign(); }
+        };
+        emit_fmod(wasm::f32, "fmod_f32", Ops{m_wa});
+    }
+
+    void emit_fmod_64() {
+        struct Ops {
+            WASMAssembler &w;
+            void sub() const { w.emit_f64_sub(); }
+            void add() const { w.emit_f64_add(); }
+            void mul() const { w.emit_f64_mul(); }
+            void div() const { w.emit_f64_div(); }
+            void zero() const { w.emit_f64_const(0); }
+            void ne() const { w.emit_f64_ne(); }
+            void eq() const { w.emit_f64_eq(); }
+            void ge() const { w.emit_f64_ge(); }
+            void le() const { w.emit_f64_le(); }
+            void abs() const { w.emit_f64_abs(); }
+            void copysign() const { w.emit_f64_copysign(); }
+        };
+        emit_fmod(wasm::f64, "fmod_f64", Ops{m_wa});
+    }
+
     void emit_string_cmp() {
         using namespace wasm;
         m_wa.define_func({i32, i32}, {i32}, {i32, i32, i32, i32, i32, i32}, "string_cmp", [&](){
@@ -840,6 +958,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_rt_funcs_map[equal_c32] = &ASRToWASMVisitor::emit_complex_equal_32;
         m_rt_funcs_map[equal_c64] = &ASRToWASMVisitor::emit_complex_equal_64;
         m_rt_funcs_map[string_cmp] = &ASRToWASMVisitor::emit_string_cmp;
+        m_rt_funcs_map[fmod_f32] = &ASRToWASMVisitor::emit_fmod_32;
+        m_rt_funcs_map[fmod_f64] = &ASRToWASMVisitor::emit_fmod_64;
 
         {
             // Pre-declare all functions first, then generate code
@@ -3047,6 +3167,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 m_wa.emit_global_set(m_compiler_globals[tmp_reg_f32]);
                 m_wa.emit_drop();
                 m_wa.emit_global_get(m_compiler_globals[tmp_reg_f32]);
+            } else if (strcmp(fn->m_name, "_lfortran_sfmod") == 0) {
+                INCLUDE_RUNTIME_FUNC(fmod_f32);
+                m_wa.emit_call(m_rt_func_used_idx[fmod_f32]);
+            } else if (strcmp(fn->m_name, "_lfortran_dfmod") == 0) {
+                INCLUDE_RUNTIME_FUNC(fmod_f64);
+                m_wa.emit_call(m_rt_func_used_idx[fmod_f64]);
             } else if (strcmp(fn->m_name, "_lfortran_zaimag") == 0) {
                 m_wa.emit_global_set(m_compiler_globals[tmp_reg_f64]);
                 m_wa.emit_drop();

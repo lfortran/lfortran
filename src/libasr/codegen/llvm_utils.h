@@ -252,11 +252,11 @@ class ASRToLLVMVisitor;
         bool is_llvm_pointer(const ASR::ttype_t& asr_type);
 
         // A non-optional scalar integer, real or logical VALUE dummy
-        // argument is passed by value (the same convention as GFortran).
-        // VALUE dummies with the bind(c) ABI follow the C ABI and are
-        // lowered by the bind(c) specific code paths instead.
-        static inline bool is_value_dummy_passed_by_value(const ASR::Variable_t& v) {
-            if (!v.m_value_attr || v.m_abi == ASR::abiType::BindC ||
+        // argument, which the procedure copies into a local variable, also
+        // when the procedure has the bind(c) ABI and the argument is passed
+        // by value according to the C ABI.
+        static inline bool is_scalar_value_dummy_held_in_local(const ASR::Variable_t& v) {
+            if (!v.m_value_attr ||
                     v.m_presence == ASR::presenceType::Optional ||
                     !ASRUtils::is_arg_dummy(v.m_intent)) {
                 return false;
@@ -265,6 +265,15 @@ class ASRToLLVMVisitor;
                    ASR::is_a<ASR::UnsignedInteger_t>(*v.m_type) ||
                    ASR::is_a<ASR::Real_t>(*v.m_type) ||
                    ASR::is_a<ASR::Logical_t>(*v.m_type);
+        }
+
+        // A non-optional scalar integer, real or logical VALUE dummy
+        // argument is passed by value (the same convention as GFortran).
+        // VALUE dummies with the bind(c) ABI follow the C ABI and are
+        // lowered by the bind(c) specific code paths instead.
+        static inline bool is_value_dummy_passed_by_value(const ASR::Variable_t& v) {
+            return v.m_abi != ASR::abiType::BindC &&
+                is_scalar_value_dummy_held_in_local(v);
         }
 
         // A scalar VALUE dummy of derived type of a procedure without the
@@ -1118,6 +1127,13 @@ class ASRToLLVMVisitor;
          * not finalized (F2018 7.5.6.4), only their memory is freed.
          */
         bool                                                        call_final_subroutines_ = true;
+        /**
+         * Whether the allocatable components that a struct finalizer frees
+         * are also left unallocated, so that the object can be used again.
+         * Used for the entities that an INTENT(OUT) dummy argument
+         * deallocates on entry (F2018 8.5.10), which live on.
+         */
+        bool                                                        reset_freed_members_ = false;
 
     public:
         /// The vtable slot of the function that finalizes an object of the
@@ -1126,6 +1142,10 @@ class ASRToLLVMVisitor;
         /// The vtable slot of the function that frees the memory of the object
         /// without calling final subroutines.
         static constexpr int vtable_free_slot = 3;
+        /// The vtable slot of the function that deallocates the allocatable
+        /// components of the object, leaving them unallocated, without
+        /// calling final subroutines.
+        static constexpr int vtable_reset_slot = 4;
 
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
             std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder, Allocator& al,
@@ -1830,8 +1850,13 @@ class ASRToLLVMVisitor;
                 if(is_bindc &&
                    !ASR::is_a<ASR::Allocatable_t>(*member_variable->m_type) &&
                    ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_variable->m_type))) { continue; }
-                if(!is_finalizable_type(member_variable->m_type, struct_sym, true)){continue;} 
-
+                if(!is_finalizable_type(member_variable->m_type, struct_sym, true)){continue;}
+                // The object lives on when its components are reset: what
+                // is not allocatable (a character component of fixed length
+                // owns heap storage here) stays valid, only the allocatable
+                // components of a nonallocatable derived type component go.
+                if(reset_freed_members_ && !ASRUtils::is_allocatable(member_variable->m_type) &&
+                   !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(member_variable->m_type))) { continue; }
 
                 auto const BB_str_label = std::string("Finalize_struct_") + struct_sym->m_name + "'s_"
                                         + member_variable->m_name +"_member";
@@ -1841,6 +1866,10 @@ class ASRToLLVMVisitor;
                 auto const member_asr_type = member_variable->m_type;
                 auto* member_struct_sym = get_struct_sym(member_variable);
                 check_userDefinedFinalizer_then_finalize(member_ptr, member_asr_type, member_struct_sym, true);
+                if (reset_freed_members_ && ASRUtils::is_allocatable(member_asr_type)
+                        && is_finalizable_type(member_asr_type, member_struct_sym, true)) {
+                    mark_member_unallocated(ptr, struct_sym, i);
+                }
             }
 
             // Finalize Parent (F2018 7.5.6.2 step 3): the parent component is
@@ -2396,6 +2425,9 @@ class ASRToLLVMVisitor;
                 if (!call_final_subroutines_) {
                     key += "_no_final";
                 }
+                if (reset_freed_members_) {
+                    key += "_reset";
+                }
             } else {
                 key += ASRUtils::get_type_code(t_past, false, false, false);
             }
@@ -2751,6 +2783,32 @@ class ASRToLLVMVisitor;
             }
             return fetched_member;
         }
+        /**
+         * Leaves the allocatable component `idx` of the struct `ptr` points to
+         * unallocated, after its storage was freed: the pointer to its
+         * storage becomes null, as does the data of a string.
+         */
+        void mark_member_unallocated(llvm::Value* const ptr, ASR::Struct_t* const struct_, const int idx) {
+            auto const member_variable = ASR::down_cast<ASR::Variable_t>(
+                struct_->m_symtab->get_symbol(struct_->m_members[idx]));
+            ASR::ttype_t* const member_type = member_variable->m_type;
+            bool is_extended = struct_->m_parent != nullptr;
+            llvm::Value* const slot = llvm_utils_->create_gep2(
+                llvm_utils_->getStructType(struct_, llvm_utils_->module), ptr, idx + is_extended);
+            if (LLVM::is_llvm_pointer(*member_type)) {
+                llvm::Type* const slot_type = get_llvm_type(member_type, get_struct_sym(member_variable));
+                builder_->CreateStore(llvm::Constant::getNullValue(slot_type), slot);
+            } else {
+                LCOMPILERS_ASSERT(ASRUtils::is_string_only(member_type))
+                builder_->CreateStore(
+                    llvm::ConstantPointerNull::get(llvm_utils_->character_type),
+                    llvm_utils_->create_gep2(llvm_utils_->string_descriptor, slot, 0));
+                builder_->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(builder_->getContext()), 0),
+                    llvm_utils_->create_gep2(llvm_utils_->string_descriptor, slot, 1));
+            }
+        }
+
         /**
          * Check if this type is finalizable.
          * It dispatches to other helper functions.
@@ -3179,6 +3237,76 @@ class ASRToLLVMVisitor;
                 fn = create_UPoly_finalize_fn(type, struct_sym);
             });
             return fn;
+        }
+
+        /**
+         * @brief Get the function of `vtable_reset_slot` of `struct_sym`: it
+         * deallocates the allocatable components of an object of that type,
+         * those of its ancestors included, and leaves them unallocated.
+         */
+        llvm::Function* get_UPoly_reset_fn(ASR::Struct_t* const struct_sym){
+            ASR::StructType_t* const struct_t = ASR::down_cast<ASR::StructType_t>(struct_sym->m_struct_signature);
+            llvm::Function* fn = nullptr;
+            const bool saved = reset_freed_members_;
+            reset_freed_members_ = true;
+            with_final_subroutines(false, [&]() {
+                fn = create_UPoly_finalize_fn(&struct_t->base, struct_sym);
+            });
+            reset_freed_members_ = saved;
+            return fn;
+        }
+
+        /**
+         * Deallocates the allocatable components of the dynamic type of the
+         * polymorphic entity `class_ptr` (a pointer to its {vptr, data}
+         * wrapper, which may be null), those that an extension adds included.
+         * The dynamic type is not known statically, so this goes through
+         * the `vtable_reset_slot` of its vtable. Nothing is done for an
+         * entity that has no vtable or data, nor for one that is not present
+         * (`is_present`, if not null, is an i1 that says so).
+         */
+        void reset_dynamic_allocatable_components(llvm::Value* const class_ptr, ASR::Struct_t* const struct_sym,
+                llvm::Value* const is_present = nullptr){
+            llvm::Type* const class_llvm_t = llvm_utils_->getClassType(struct_sym, false);
+            llvm::Function* const current_fn = builder_->GetInsertBlock()->getParent();
+            llvm::BasicBlock* const wrapper_bb = llvm::BasicBlock::Create(builder_->getContext(), "reset_wrapper", current_fn);
+            llvm::BasicBlock* const vtable_bb = llvm::BasicBlock::Create(builder_->getContext(), "reset_vtable", current_fn);
+            llvm::BasicBlock* const call_bb = llvm::BasicBlock::Create(builder_->getContext(), "reset_call", current_fn);
+            llvm::BasicBlock* const done_bb = llvm::BasicBlock::Create(builder_->getContext(), "reset_done", current_fn);
+            llvm::Value* wrapper_usable = builder_->CreateIsNotNull(class_ptr);
+            if (is_present != nullptr) {
+                wrapper_usable = builder_->CreateAnd(wrapper_usable, is_present);
+            }
+            builder_->CreateCondBr(wrapper_usable, wrapper_bb, done_bb);
+
+            builder_->SetInsertPoint(wrapper_bb);
+            llvm::Value* const vptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->vptr_type, llvm_utils_->create_gep2(class_llvm_t, class_ptr, 0));
+            llvm::Type* const data_ptr_type =
+                llvm_utils_->getStructType(struct_sym, llvm_utils_->module, true)->getPointerTo();
+            llvm::Value* const data = builder_->CreateBitCast(
+                llvm_utils_->CreateLoad2(data_ptr_type, llvm_utils_->create_gep2(class_llvm_t, class_ptr, 1)),
+                llvm_utils_->i8_ptr);
+            builder_->CreateCondBr(builder_->CreateAnd(
+                builder_->CreateIsNotNull(vptr), builder_->CreateIsNotNull(data)), vtable_bb, done_bb);
+
+            builder_->SetInsertPoint(vtable_bb);
+            llvm::FunctionType* const reset_fn_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(builder_->getContext()), {llvm_utils_->i8_ptr}, false);
+            llvm::FunctionType const* fnTy = llvm::FunctionType::get(
+                llvm::Type::getInt32Ty(builder_->getContext()), {}, true);
+            llvm::Value* const reset_fn_i8ptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->i8_ptr,
+                llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), vptr,
+                    {llvm::ConstantInt::get(llvm::Type::getInt32Ty(builder_->getContext()), vtable_reset_slot, false)}));
+            llvm::Value* const reset_fn = builder_->CreateBitCast(reset_fn_i8ptr, reset_fn_type->getPointerTo());
+            builder_->CreateBr(call_bb);
+
+            builder_->SetInsertPoint(call_bb);
+            builder_->CreateCall(reset_fn_type, reset_fn, {data});
+            builder_->CreateBr(done_bb);
+
+            builder_->SetInsertPoint(done_bb);
         }
 
     private:

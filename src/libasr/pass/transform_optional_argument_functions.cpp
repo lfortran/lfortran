@@ -426,7 +426,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             ASR::symbol_t* owner_sym = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
             if( ASR::is_a<ASR::Function_t>(*owner_sym) ) {
                 owning_functions.push_back(ASR::down_cast<ASR::Function_t>(owner_sym));
-            } else if( !ASR::is_a<ASR::Block_t>(*owner_sym) ) {
+            } else if( !ASR::is_a<ASR::Block_t>(*owner_sym) &&
+                    !ASR::is_a<ASR::AssociateBlock_t>(*owner_sym) ) {
                 break;
             }
             s = s->parent;
