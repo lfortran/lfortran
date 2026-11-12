@@ -1,7 +1,8 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-void bindc_optional_array_01_check(int expect_present, const long *md)
+void bindc_optional_array_01_check(int expect_present, const int64_t *md)
 {
     if (expect_present == 0 && md != NULL) {
         printf("absent optional array arrived as non-NULL\n");
@@ -13,7 +14,7 @@ void bindc_optional_array_01_check(int expect_present, const long *md)
     }
 }
 
-void bindc_optional_array_01_check_scalar(int expect_present, const long *md)
+void bindc_optional_array_01_check_scalar(int expect_present, const int64_t *md)
 {
     if (expect_present == 0 && md != NULL) {
         printf("absent optional scalar arrived as non-NULL\n");
