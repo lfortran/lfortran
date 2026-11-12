@@ -22383,9 +22383,17 @@ public:
                         // element_kind * size(source) at runtime
                         int64_t elem_kind = src_bytes;
                         src_bytes = -1;
+                        ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                            al, x.base.base.loc, compiler_options.po.default_integer_kind));
+                        ASR::expr_t* elem_len_expr = nullptr;
+                        if( elem_kind <= 0 && ASR::is_a<ASR::String_t>(*src_elem) ) {
+                            // Character array whose length is not a constant:
+                            // an element takes kind * len(source) bytes
+                            elem_kind = ASR::down_cast<ASR::String_t>(src_elem)->m_kind;
+                            elem_len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(
+                                al, x.base.base.loc, source, int_type, nullptr));
+                        }
                         if( elem_kind > 0 ) {
-                            ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
-                                al, x.base.base.loc, compiler_options.po.default_integer_kind));
                             ASR::expr_t* array_size = ASRUtils::EXPR(
                                 ASRUtils::make_ArraySize_t_util(
                                     al, x.base.base.loc, source, nullptr,
@@ -22398,6 +22406,13 @@ public:
                                     al, x.base.base.loc, elem_kind_expr,
                                     ASR::binopType::Mul, array_size,
                                     int_type, nullptr));
+                            if( elem_len_expr ) {
+                                src_len_expr = ASRUtils::EXPR(
+                                    ASR::make_IntegerBinOp_t(
+                                        al, x.base.base.loc, elem_len_expr,
+                                        ASR::binopType::Mul, src_len_expr,
+                                        int_type, nullptr));
+                            }
                         }
                     }
                 } else if( ASR::is_a<ASR::String_t>(*src_type) ) {
