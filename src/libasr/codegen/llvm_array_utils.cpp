@@ -1823,7 +1823,7 @@ namespace LCompilers {
             llvm::Value* data = get_pointer_to_data(desc_llvm_type, desc);
             data = llvm_utils->CreateLoad2(elem_type->getPointerTo(), data);
 
-            llvm::Value* iter_ptr = builder->CreateAlloca(
+            llvm::Value* iter_ptr = llvm_utils->CreateAlloca(
                 index_type, nullptr, "strided_copy_iter");
             builder->CreateStore(
                 llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 0)),
