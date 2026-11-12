@@ -2416,6 +2416,21 @@ int link_executable(const std::vector<std::string> &infiles,
                         compile_cmd += cuda_runtime_obj + " ";
                     }
                     compile_cmd += extra_library_flags;
+                    // The linker options given with -Wl: the HIP driver takes
+                    // them as they are, nvcc as -Xlinker (each a list of
+                    // options separated by commas, as after -Wl,). Without
+                    // them an -rpath the program asked for was lost, and a
+                    // program could load another build of a library than the
+                    // one it was linked against.
+                    for (auto &s : linker_flags) {
+                        if (hip) {
+                            compile_cmd += " -W" + s;
+                        } else if (s.rfind("l,", 0) == 0) {
+                            compile_cmd += " -Xlinker " + s.substr(2);
+                        } else {
+                            compile_cmd += " -Xcompiler -W" + s;
+                        }
+                    }
                     compile_cmd += " -L" + base_path
                         + " -Xlinker -rpath -Xlinker " + base_path
                         + " -l" + runtime_lib + " -lm";
