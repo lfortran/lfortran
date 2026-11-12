@@ -8797,6 +8797,48 @@ public:
         }
     }
 
+    // The array `value` of `a(lb:ub:st)(l:r) = value` conforms to `target`,
+    // the rank 1 array of the elements `a(i)(l:r)` of the implied do loop
+    // `idl`, and is of its type.
+    void check_substring_section_value(ASR::expr_t *target,
+            ASR::ImpliedDoLoop_t *idl, ASR::expr_t *value,
+            const AST::Assignment_t &x) {
+        check_ArrayAssignmentCompatibility(target, value, x);
+        ASR::ttype_t *target_type = ASRUtils::expr_type(target);
+        ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(value));
+        if (!ASRUtils::check_equal_type(target_type, value_type, target, value)) {
+            diag.semantic_error_label(
+                "Type mismatch in assignment, the types must be compatible",
+                {target->base.loc, value->base.loc},
+                "type mismatch (" + ASRUtils::type_to_str_fortran_expr(target_type, target)
+                    + " and " + ASRUtils::type_to_str_fortran_expr(value_type, value) + ")"
+            );
+            throw SemanticAbort();
+        }
+        // The type of the target does not have the extent of the section,
+        // which is known when the bounds of the section are constants.
+        int64_t lb, ub, st;
+        int64_t value_size = ASRUtils::get_fixed_size_of_array(value_type);
+        if (value_size >= 0 &&
+                ASRUtils::extract_value(ASRUtils::expr_value(idl->m_start), lb) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(idl->m_end), ub) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(idl->m_increment), st) &&
+                st != 0) {
+            int64_t target_size = std::max<int64_t>(0, (ub - lb + st)/st);
+            if (target_size != value_size) {
+                diag.add(Diagnostic(
+                    "Different shape for array assignment on dimension 1 ("
+                    + std::to_string(target_size) + " and "
+                    + std::to_string(value_size) + ")",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     // `a(lb:ub:st)(l:r) = value` with an array `value`. The target is the
     // implied do loop `idl`, `(a(i)(l:r), i = lb, ub, st)`. The elements of
     // the value are assigned one by one, after the whole value is evaluated
@@ -8816,6 +8858,17 @@ public:
     // assignment stays one statement.
     void assign_to_substring_section(const Location &loc,
             ASR::ImpliedDoLoop_t *idl, ASR::expr_t *value) {
+        if (body_enclosing_where != nullptr) {
+            // The mask would select elements of the temporary, not of the
+            // target.
+            diag.add(Diagnostic(
+                "assignment to a substring of an array section is not "
+                "supported in `where` yet",
+                Level::Error, Stage::Semantic, {
+                    Label("", {loc})
+                }));
+            throw SemanticAbort();
+        }
         ASRUtils::ASRBuilder b(al, loc);
         ASRUtils::ExprStmtDuplicator duplicator(al);
         ASR::StringSection_t *section =
@@ -8929,6 +8982,7 @@ public:
                     this->visit_expr(*x.m_value);
                     ASR::expr_t* value = ASRUtils::EXPR(tmp);
                     if (ASRUtils::is_array(ASRUtils::expr_type(value))) {
+                        check_substring_section_value(target, idl, value, x);
                         assign_to_substring_section(x.base.base.loc, idl, value);
                         return;
                     }

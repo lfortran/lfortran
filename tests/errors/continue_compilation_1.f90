@@ -4884,3 +4884,17 @@ module cc1_requirement_undeclared_argument
         end function
     end template
 end module
+
+! An array assigned to a substring of a character array section,
+! `names(:)(2:3) = t`, conforms to the section and is of type character
+! (#16161).
+subroutine cc1_substring_section_assignment()
+    implicit none
+    character(len=4) :: names(3)
+    character(len=2) :: t(3, 1)
+    names(:)(2:3) = t  ! {Error} Incompatible ranks 1 and 2 in assignment
+    names(:)(2:3) = [1, 2, 3]  ! {Error} Type mismatch in assignment, the types must be compatible
+    names(:)(2:3) = ['xy', 'zw']  ! {Error} Different shape for array assignment on dimension 1 (3 and 2)
+    names(3:1:-2)(2:3) = ['xy', 'zw', 'uv']  ! {Error} Different shape for array assignment on dimension 1 (2 and 3)
+    where (names /= '') names(:)(2:3) = t(:, 1)  ! {Error} assignment to a substring of an array section is not supported in `where` yet
+end subroutine
