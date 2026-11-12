@@ -3132,6 +3132,10 @@ RUN(NAME pdt_22 LABELS gfortran llvm)
 RUN(NAME pdt_23 LABELS gfortran llvm)
 # GFortran 16.2 fails to restore defaulted extension components on CLASS INTENT(OUT).
 RUN(NAME pdt_24 LABELS llvm)
+RUN(NAME pdt_modfile_parent_default_01 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_default_01_base.f90
+                   pdt_modfile_parent_default_01_child.f90
+        EXTRA_ARGS --separate-compilation)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)
