@@ -9151,8 +9151,10 @@ public:
         llvm::Type* data_type = llvm_utils->getStructType(declared_struct, module.get(), true);
         llvm::Value* data = llvm_utils->CreateLoad2(data_type,
             llvm_utils->create_gep2(class_type, class_wrapper, 1));
-        llvm::Value* vptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr->getPointerTo(),
-            llvm_utils->create_gep2(class_type, class_wrapper, 0));
+        llvm::Type* vptr_field_type = class_type->getStructElementType(0);
+        llvm::Value* vptr = builder->CreateBitCast(llvm_utils->CreateLoad2(vptr_field_type,
+            llvm_utils->create_gep2(class_type, class_wrapper, 0)),
+            llvm_utils->i8_ptr->getPointerTo());
         llvm::Value* usable = builder->CreateAnd(
             builder->CreateIsNotNull(data), builder->CreateIsNotNull(vptr));
         llvm_utils->create_if_else(usable, [&]() {
