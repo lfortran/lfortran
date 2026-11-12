@@ -18208,7 +18208,7 @@ public:
             if (expr == nullptr) {
                 ArrayConstructorScope array_constructor_scope(*this);
                 this->visit_expr(*x.m_args[i]);
-                expr = ASRUtils::EXPR(tmp);
+                expr = cast_assumed_rank_selector(ASRUtils::EXPR(tmp));
             }
 
             if( ASR::is_a<ASR::ImpliedDoLoop_t>(*expr) ) {
