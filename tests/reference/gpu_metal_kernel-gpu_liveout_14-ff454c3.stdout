@@ -11,7 +11,7 @@ struct poly_t_gpu {
     float s_gpu;
 };
 
-inline void eval_gpu_14(float x_gpu, thread float& y_gpu) {
+inline void eval_gpu_16(float x_gpu, thread float& y_gpu) {
     y_gpu = (((float)2) * x_gpu);
 }
 
@@ -42,12 +42,12 @@ kernel void __lfortran_gpu_kernel_0_16gpu_liveout_14_m3run(
     __flat_idx_gpu = ((0 * 0) + __thread_id);
     i__dc_gpu = (__flat_idx_gpu + 1);
     __gpu_scalar_argument_gpu = y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))];
-    eval_gpu_14(x_gpu[((int)(i__dc_gpu) - (__lb_x_0_gpu))], __gpu_scalar_argument_gpu);
+    eval_gpu_16(x_gpu[((int)(i__dc_gpu) - (__lb_x_0_gpu))], __gpu_scalar_argument_gpu);
     y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))] = __gpu_scalar_argument_gpu;
     y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))] = ((y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))] + m_gpu.s_gpu) + m_gpu.coef_gpu[((int)(2) - (1))]);
 }
 
-inline void eval_poly_gpu_20(float x_gpu, thread float& y_gpu) {
+inline void eval_poly_gpu_22(float x_gpu, thread float& y_gpu) {
     y_gpu = (((float)2) * x_gpu);
 }
 
@@ -78,7 +78,7 @@ kernel void __lfortran_gpu_kernel_1_16gpu_liveout_14_m8run_poly(
     __flat_idx_gpu = ((0 * 0) + __thread_id);
     i__dc_gpu = (__flat_idx_gpu + 1);
     __gpu_scalar_argument_gpu = y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))];
-    eval_poly_gpu_20(x_gpu[((int)(i__dc_gpu) - (__lb_x_0_gpu))], __gpu_scalar_argument_gpu);
+    eval_poly_gpu_22(x_gpu[((int)(i__dc_gpu) - (__lb_x_0_gpu))], __gpu_scalar_argument_gpu);
     y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))] = __gpu_scalar_argument_gpu;
     y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))] = ((y_gpu[((int)(i__dc_gpu) - (__lb_y_0_gpu))] + m_gpu.s_gpu) + m_gpu.c1_gpu);
 }

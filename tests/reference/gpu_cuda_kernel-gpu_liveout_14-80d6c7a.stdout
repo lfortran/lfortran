@@ -10,7 +10,7 @@ struct poly_t {
     float s;
 };
 
-__device__ inline void eval_gpu_14(float x, float& y) {
+__device__ inline void eval_gpu_16(float x, float& y) {
     y = (((float)2) * x);
 }
 
@@ -40,12 +40,12 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_16gpu_
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
     __gpu_scalar_argument = y[((int)(i__dc) - (__lb_y_0))];
-    eval_gpu_14(x[((int)(i__dc) - (__lb_x_0))], __gpu_scalar_argument);
+    eval_gpu_16(x[((int)(i__dc) - (__lb_x_0))], __gpu_scalar_argument);
     y[((int)(i__dc) - (__lb_y_0))] = __gpu_scalar_argument;
     y[((int)(i__dc) - (__lb_y_0))] = ((y[((int)(i__dc) - (__lb_y_0))] + m.s) + m.coef[((int)(2) - (1))]);
 }
 
-__device__ inline void eval_poly_gpu_20(float x, float& y) {
+__device__ inline void eval_poly_gpu_22(float x, float& y) {
     y = (((float)2) * x);
 }
 
@@ -75,7 +75,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_16gpu_
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i__dc = (__flat_idx + 1);
     __gpu_scalar_argument = y[((int)(i__dc) - (__lb_y_0))];
-    eval_poly_gpu_20(x[((int)(i__dc) - (__lb_x_0))], __gpu_scalar_argument);
+    eval_poly_gpu_22(x[((int)(i__dc) - (__lb_x_0))], __gpu_scalar_argument);
     y[((int)(i__dc) - (__lb_y_0))] = __gpu_scalar_argument;
     y[((int)(i__dc) - (__lb_y_0))] = ((y[((int)(i__dc) - (__lb_y_0))] + m.s) + m.c1);
 }

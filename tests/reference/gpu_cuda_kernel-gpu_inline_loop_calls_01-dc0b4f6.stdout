@@ -167,7 +167,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_26gpu_
     }
 }
 
-__device__ inline float widen_gpu_30(int16_t x) {
+__device__ inline float widen_gpu_32(int16_t x) {
     float y{};
     y = ((float)x);
     return y;
@@ -235,7 +235,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_26gpu_
                 const int __lfortran_trips_4 = __lfortran_end_3 >= __sum_squares___gpu_sum_k ? (__lfortran_end_3 - __sum_squares___gpu_sum_k) / (1 * ((int)__gpu_lanes)) + 1 : 0;
                 #pragma unroll 16
                 for (int __lfortran_count_4 = 0; __lfortran_count_4 < __lfortran_trips_4; __lfortran_count_4++, __sum_squares___gpu_sum_k += (1 * ((int)__gpu_lanes))) {
-                    __gpu_power_base = widen_gpu_30(__libasr_created__function_call_sum_squares[((int)(((1 + (__sum_squares___gpu_sum_k - 1)) + (1 - 1))) - (1))]);
+                    __gpu_power_base = widen_gpu_32(__libasr_created__function_call_sum_squares[((int)(((1 + (__sum_squares___gpu_sum_k - 1)) + (1 - 1))) - (1))]);
                     __sum_squares___gpu_sum_res = (__sum_squares___gpu_sum_res + (__gpu_power_base * __gpu_power_base));
                 }
                 __sum_squares___gpu_sum_res = __lfortran_lane_reduce_block<0>(__sum_squares___gpu_sum_res, __gpu_lanes_n, __gpu_lane_mask);
@@ -243,7 +243,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_26gpu_
                 const int __lfortran_end_5 = ((((((((int)__dim_x_0) + ((int)__lb_x_0)) - 1)) - (((int)__lb_x_0))) / (1)) + 1);
                 #pragma unroll 16
                 for (__sum_squares___gpu_sum_k = 1; __sum_squares___gpu_sum_k <= __lfortran_end_5; __sum_squares___gpu_sum_k++) {
-                    __gpu_power_base = widen_gpu_30(__libasr_created__function_call_sum_squares[((int)(((1 + (__sum_squares___gpu_sum_k - 1)) + (1 - 1))) - (1))]);
+                    __gpu_power_base = widen_gpu_32(__libasr_created__function_call_sum_squares[((int)(((1 + (__sum_squares___gpu_sum_k - 1)) + (1 - 1))) - (1))]);
                     __sum_squares___gpu_sum_res = (__sum_squares___gpu_sum_res + (__gpu_power_base * __gpu_power_base));
                 }
             }
@@ -258,7 +258,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_1_26gpu_
         const int __lfortran_trips_6 = __dim_x_0 >= d__dc ? (__dim_x_0 - d__dc) / (1 * ((int)__gpu_lanes)) + 1 : 0;
         #pragma unroll 16
         for (int __lfortran_count_6 = 0; __lfortran_count_6 < __lfortran_trips_6; __lfortran_count_6++, d__dc += (1 * ((int)__gpu_lanes))) {
-            y[((int)(d__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m__dc) - (__lb_y_1)))] = (widen_gpu_30(x[((int)(d__dc) - (__lb_x_0)) + (__dim_x_0 * ((int)(m__dc) - (__lb_x_1)))]) * total);
+            y[((int)(d__dc) - (__lb_y_0)) + (__dim_y_0 * ((int)(m__dc) - (__lb_y_1)))] = (widen_gpu_32(x[((int)(d__dc) - (__lb_x_0)) + (__dim_x_0 * ((int)(m__dc) - (__lb_x_1)))]) * total);
         }
         __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
     }

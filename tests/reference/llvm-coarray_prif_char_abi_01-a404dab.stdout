@@ -3,6 +3,7 @@ source_filename = "LFortran"
 target datalayout = "..."
 
 %string_descriptor = type { i8*, i64 }
+%prif_coarray_handle.3 = type { void* }
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
@@ -13,6 +14,17 @@ declare void @__module_prif_prif_init(i32*)
 declare void @__module_prif_prif_stop(i8*, i32*, i32*, i8*, i32*, i64)
 
 declare void @__module_prif_prif_sync_all(i32*, i32*, i8*, i32*, %string_descriptor*, i32*, i64)
+
+define internal void @lcompilers_intent_out_reset_prif_coarray_handle(%prif_coarray_handle.3* %object) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset_prif_coarray_handle
+
+FINALIZE_SYMTABLE_lcompilers_intent_out_reset_prif_coarray_handle: ; preds = %return
+  ret void
+}
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

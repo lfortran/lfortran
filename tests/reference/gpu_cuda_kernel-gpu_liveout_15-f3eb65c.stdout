@@ -5,7 +5,7 @@ struct acc_t {
     int n;
 };
 
-__device__ inline void upd_gpu_9(int i, acc_t& self, float& y) {
+__device__ inline void upd_gpu_10(int i, acc_t& self, float& y) {
     y = (self.c * ((float)i));
     if ((i == 3)) {
         self.n = 7;
@@ -31,7 +31,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_14gpu_
     __gpu_before = __gpu_private_m.c;
     __gpu_before1 = __gpu_private_m.n;
     __gpu_scalar_argument = y[((int)(i__dc) - (1))];
-    upd_gpu_9(i__dc, __gpu_private_m, __gpu_scalar_argument);
+    upd_gpu_10(i__dc, __gpu_private_m, __gpu_scalar_argument);
     y[((int)(i__dc) - (1))] = __gpu_scalar_argument;
     if (((int)((__gpu_private_m.c != __gpu_before) && ((int)((__gpu_private_m.c == __gpu_private_m.c) || (__gpu_before == __gpu_before)))))) {
         m.c = __gpu_private_m.c;

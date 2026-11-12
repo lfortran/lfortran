@@ -4,13 +4,13 @@ struct data_t {
     long v;
 };
 
-__device__ inline float f_gpu_16(float x) {
+__device__ inline float f_gpu_17(float x) {
     float r{};
     r = (x *   2.00000000000000000e+00f);
     return r;
 }
 
-__device__ inline void get_v_gpu_17(data_t d, float* __data_d_v, int __size_d_v, int __lb_d_v_dim1, float* res) {
+__device__ inline void get_v_gpu_18(data_t d, float* __data_d_v, int __size_d_v, int __lb_d_v_dim1, float* res) {
     int __libasr_index_0_;
     int __libasr_index_0_1;
     __libasr_index_0_1 = __lb_d_v_dim1;
@@ -62,7 +62,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_15gpu_
         int __libasr_index_0_1;
         float* y = ((__workspace_extent1) > 0) ? (__workspace_8 + ((long)(blockIdx.x * blockDim.x + threadIdx.x)) * __workspace_extent1) : nullptr;
         __libasr_created__result_metadata_ = __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 0];
-        get_v_gpu_17(arr[((int)(i__dc) - (__lb_arr_0))], __data_arr_v + __offsets_arr_v[((int)(i__dc) - (__lb_arr_0))], __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 0], __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 1], __libasr_created__subroutine_from_function_);
+        get_v_gpu_18(arr[((int)(i__dc) - (__lb_arr_0))], __data_arr_v + __offsets_arr_v[((int)(i__dc) - (__lb_arr_0))], __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 0], __sizes_arr_v[(((int)(i__dc) - (__lb_arr_0))) * 2 + 1], __libasr_created__subroutine_from_function_);
         __libasr_index_0_1 = 1;
         const int __lfortran_end_1 = (__sizes_arr_v[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (__lb_arr_0))) * 2 + 0]);
         #pragma unroll 16
@@ -72,7 +72,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_15gpu_
         }
         #pragma unroll 16
         for (__gpu_sec_i = 1; __gpu_sec_i <= n; __gpu_sec_i++) {
-            out[((int)(__gpu_sec_i) - (1))] = f_gpu_16(z[((int)(__gpu_sec_i) - (1))]);
+            out[((int)(__gpu_sec_i) - (1))] = f_gpu_17(z[((int)(__gpu_sec_i) - (1))]);
         }
     }
 }

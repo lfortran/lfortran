@@ -2,6 +2,8 @@
 source_filename = "LFortran"
 target datalayout = "..."
 
+%lfortran_intrinsic_iso_fortran_env.__module_prif_prif_dummy_team_descriptor.5 = type {}
+%lfortran_intrinsic_iso_fortran_env.team_type.6 = type { %lfortran_intrinsic_iso_fortran_env.__module_prif_prif_dummy_team_descriptor.5* }
 %string_descriptor = type { i8*, i64 }
 
 @intrinsics_03.i = internal global i32 -12
@@ -37,6 +39,30 @@ FINALIZE_SYMTABLE__lcompilers_cos_f64:            ; preds = %return
 }
 
 declare double @_lfortran_dcos(double)
+
+define weak_odr void @__module_lfortran_intrinsic_iso_fortran_env_lcompilers_intent_out_reset___module_prif_prif_dummy_team_descriptor(%lfortran_intrinsic_iso_fortran_env.__module_prif_prif_dummy_team_descriptor.5* %object) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset___module_prif_prif_dummy_team_descriptor
+
+FINALIZE_SYMTABLE_lcompilers_intent_out_reset___module_prif_prif_dummy_team_descriptor: ; preds = %return
+  ret void
+}
+
+define weak_odr void @__module_lfortran_intrinsic_iso_fortran_env_lcompilers_intent_out_reset_team_type(%lfortran_intrinsic_iso_fortran_env.team_type.6* %object) {
+.entry:
+  %0 = getelementptr %lfortran_intrinsic_iso_fortran_env.team_type.6, %lfortran_intrinsic_iso_fortran_env.team_type.6* %object, i32 0, i32 0
+  store %lfortran_intrinsic_iso_fortran_env.__module_prif_prif_dummy_team_descriptor.5* null, %lfortran_intrinsic_iso_fortran_env.__module_prif_prif_dummy_team_descriptor.5** %0, align 8
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE_lcompilers_intent_out_reset_team_type
+
+FINALIZE_SYMTABLE_lcompilers_intent_out_reset_team_type: ; preds = %return
+  ret void
+}
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
