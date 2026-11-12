@@ -27,30 +27,6 @@ namespace LCompilers::LFortran {
 class BodyVisitor : public CommonVisitor<BodyVisitor> {
 private:
 
-    // A normal RETURN leaves the alternate-return specifier at 0. The dummy
-    // is intent(out), so the caller's slot is undefined until the procedure
-    // writes it. Without this store, a caller that takes the normal return
-    // reads an uninitialized value and can take an alternate branch.
-    void zero_alternate_return(Vec<ASR::stmt_t*> &body, const Location &loc) {
-        ASR::symbol_t *alt = current_scope->get_symbol("__lfortran_alt_ret");
-        if (alt == nullptr) {
-            return;
-        }
-        ASR::expr_t *var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, alt));
-        ASR::ttype_t *int_type = ASRUtils::expr_type(var);
-        ASR::expr_t *zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-            al, loc, 0, int_type));
-        ASR::stmt_t *assign = ASRUtils::STMT(ASR::make_Assignment_t(
-            al, loc, var, zero, nullptr, false, false, false, false));
-        Vec<ASR::stmt_t*> with_zero;
-        with_zero.reserve(al, body.size() + 1);
-        with_zero.push_back(al, assign);
-        for (size_t i = 0; i < body.size(); i++) {
-            with_zero.push_back(al, body[i]);
-        }
-        body.from_pointer_n_copy(al, with_zero.p, with_zero.n);
-    }
-
     // The Fortran standard allows the stop code to be a default integer,
     // but the runtime ABI expects a 32-bit (kind=4) integer. When
     // -fdefault-integer-8 is active, integer literals become kind=8.
@@ -7947,7 +7923,6 @@ public:
             master_function_body.push_back(al, it);
         }
 
-        zero_alternate_return(master_function_body, loc);
         master_function->m_body = master_function_body.p;
         master_function->n_body = master_function_body.size();
         ElementalChecks::check_body(*master_function, diag, compiler_options);
@@ -8118,7 +8093,6 @@ public:
             func_deps.push_back(al, s2c(al, itr));
         }
         current_function_dependencies = current_function_dependencies_copy;
-        zero_alternate_return(body, x.base.base.loc);
         v->m_body = body.p;
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
