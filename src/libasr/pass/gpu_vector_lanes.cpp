@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <limits>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -593,6 +594,10 @@ struct KernelInfo {
     // a reduction loop rather than the loop
     // (GpuDeviceCapabilities::lane_inner_reductions_first).
     bool inner_reductions_first = false;
+    // Whether a reduction loop that reads an array across its columns (the
+    // loop variable only in a later subscript) is shared out as well
+    // (give_lanes: only for a launch of few iterations).
+    bool scattered_reductions = false;
     int lanes_count = 1;
 
     bool local(ASR::symbol_t *s) const {
@@ -2704,7 +2709,7 @@ private:
             for (size_t i = 0; i < d->n_body; i++) {
                 scattered.visit_stmt(*d->m_body[i]);
             }
-            if (scattered.found) return false;
+            if (scattered.found && !k.scattered_reductions) return false;
         }
         return !accumulators.empty();
     }
@@ -3551,8 +3556,10 @@ ASR::symbol_t* add_lanes_parameter(Allocator &al, ASR::Function_t &kernel) {
 // Rewrites `kernel` to run each iteration on lanes, when it has a loop to
 // distribute and nothing in the way.
 bool give_lanes(Allocator &al, ASR::Function_t &kernel,
-        const GpuDeviceCapabilities &caps, bool &any_size, int &lanes) {
+        const GpuDeviceCapabilities &caps, bool &any_size, int &lanes,
+        bool &scattered) {
     any_size = false;
+    scattered = false;
     // A kernel whose warps already combine the accumulators of a reduction
     // (gpu_offload.cpp) runs every thread on its own iterations.
     {
@@ -3612,13 +3619,37 @@ bool give_lanes(Allocator &al, ASR::Function_t &kernel,
         added = iteration.added;
     }
     std::vector<Frame> frames;
-    LaneRewriter rewrite(al, k);
-    rewrite.decide(kernel.m_body, kernel.n_body, nullptr, frames);
+    LaneRewriter first(al, k);
+    first.decide(kernel.m_body, kernel.n_body, nullptr, frames);
+    // A kernel with no loop to share out but a sum that reads across the
+    // columns of an array (`do i = 1, n; s = 0; do k = 1, m; s = s +
+    // x(i, k)`, the iterations along the column) is tried again with that
+    // sum shared out. One lane per iteration reads the elements of a row
+    // with consecutive threads, which pays when the iterations fill the
+    // GPU; a launch of few iterations instead leaves each a long chain of
+    // dependent loads on one thread, and such a launch gets lanes
+    // (lanes_scattered_iterations_max): the sum over the 360 longitudes of
+    // the 55 radii of a pole of POT3D goes from 40 to a few microseconds.
+    std::unique_ptr<LaneRewriter> second;
+    LaneRewriter *chosen = &first;
+    if (!first.distributed && k.lane_reductions
+            && caps.lanes_scattered_iterations_max > 0) {
+        first.restore();
+        k.scattered_reductions = true;
+        frames.clear();
+        second.reset(new LaneRewriter(al, k));
+        second->decide(kernel.m_body, kernel.n_body, nullptr, frames);
+        chosen = second.get();
+        scattered = true;
+    }
+    LaneRewriter &rewrite = *chosen;
     if (rewrite.failed || !rewrite.distributed) {
         rewrite.restore();
+        scattered = false;
         return false;
     }
-    any_size = rewrite.pays_at_any_size(kernel.m_body, kernel.n_body)
+    any_size = !scattered
+        && rewrite.pays_at_any_size(kernel.m_body, kernel.n_body)
         && !gpu_reads_wide(kernel, caps);
     lanes = caps.lanes_per_iteration;
     while (rewrite.lane_limit > 0 && lanes > rewrite.lane_limit && lanes > 2) {
@@ -3649,11 +3680,12 @@ public:
             *ASR::down_cast<ASR::Function_t>(x.m_kernel);
         if (kernel.m_gpu == nullptr) return;
         if (decided.insert(&kernel).second && kernel.m_gpu->m_lanes == nullptr) {
-            bool any_size = false;
+            bool any_size = false, scattered = false;
             int kernel_lanes = lanes;
-            give_lanes(al, kernel, caps, any_size, kernel_lanes);
+            give_lanes(al, kernel, caps, any_size, kernel_lanes, scattered);
             kernel_lane_count[&kernel] = kernel_lanes;
             if (any_size) column_kernels.insert(&kernel);
+            if (scattered) scattered_kernels.insert(&kernel);
         }
         if (kernel.m_gpu->m_lanes == nullptr
                 || x.n_args == kernel.n_args) {
@@ -3672,10 +3704,18 @@ public:
         ASR::expr_t *count = dup.duplicate_expr(x.m_thread_count);
         LCOMPILERS_ASSERT(dup.success && count);
         pass_result.push_back(al, b.Assignment(n, b.i32(1)));
+        bool scattered = scattered_kernels.count(&kernel) > 0;
         int64_t iterations_max = column_kernels.count(&kernel)
             ? std::max(caps.lanes_iterations_max,
                 caps.lanes_column_iterations_max)
             : caps.lanes_iterations_max;
+        int64_t block_iterations_max = caps.lanes_block_iterations_max;
+        if (scattered) {
+            iterations_max = std::min(iterations_max,
+                caps.lanes_scattered_iterations_max);
+            block_iterations_max = std::min(block_iterations_max,
+                caps.lanes_scattered_iterations_max);
+        }
         // A kernel whose lanes were cut to the length of a loop they share
         // keeps that many.
         int kernel_lanes = kernel_lane_count[&kernel];
@@ -3690,7 +3730,7 @@ public:
         // kernel has no use for more lanes than it gets.
         if (kernel.m_gpu->m_lanes_max > caps.lanes_per_iteration) {
             pass_result.push_back(al, b.If(b.LtE(count,
-                b.i_t(caps.lanes_block_iterations_max, count_type)),
+                b.i_t(block_iterations_max, count_type)),
                 {b.Assignment(n, b.i32(kernel.m_gpu->m_lanes_max))}, {}));
         }
         // A tiled launch (gpu_offload.cpp) numbers an iteration in its tile
@@ -3734,6 +3774,9 @@ private:
     // The kernels whose lanes pay for themselves however many iterations a
     // launch has (LaneRewriter::pays_at_any_size).
     std::set<ASR::Function_t*> column_kernels;
+    // The kernels that share out a sum read across columns, which get
+    // lanes only for a launch of few iterations (give_lanes).
+    std::set<ASR::Function_t*> scattered_kernels;
 };
 
 } // namespace

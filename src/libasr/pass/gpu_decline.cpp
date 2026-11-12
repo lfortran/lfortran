@@ -129,6 +129,9 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
         caps.lane_inner_reductions_first = true;
         caps.wide_loads = true;
         caps.lanes_block = caps.threads_per_block;
+        // 1024 iterations are 32 warps, which an H200 (8,448 resident
+        // warps) runs on a few of its 132 multiprocessors.
+        caps.lanes_scattered_iterations_max = 1024;
     }
     if (pass_options.descriptor_index_64
             && caps.offsets_follow_descriptor_index_64()) {
