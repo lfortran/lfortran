@@ -3683,6 +3683,10 @@ public:
                     llvm::ConstantPointerNull::get(llvm_utils->get_el_type(x.m_vars[i],
                         ASRUtils::extract_type(ASRUtils::expr_type(x.m_vars[i])), module.get())->getPointerTo())
                     , data_ptr);
+                // A disassociated array has a zero offset, so that its
+                // data pointer stays NULL when passed on by address.
+                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
+                    arr_descr->get_offset(tp, target_, false));
             } else if(ASRUtils::is_string_only(ASRUtils::expr_type(x.m_vars[i]))) {
                 llvm::Value* np = llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo());
                 llvm::Value* data_target = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(x.m_vars[i],
@@ -29454,6 +29458,26 @@ public:
                             builder->SetInsertPoint(present_checkBB);
                         }
                     }
+                }
+
+                if (optional_check_mergeBB == nullptr && i < function->n_args &&
+                        ASRUtils::get_FunctionType(function)->m_abi == ASR::abiType::BindC &&
+                        ASRUtils::is_pointer(ASRUtils::expr_type(arr_cast->m_arg)) &&
+                        ASRUtils::expr_to_variable_or_null(function->m_args[i]) != nullptr &&
+                        ASRUtils::expr_to_variable_or_null(function->m_args[i])->m_presence ==
+                            ASR::presenceType::Optional) {
+                    // A disassociated pointer is an absent argument for an
+                    // optional bind(C) dummy, which receives NULL for it.
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 1 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
+                    this->visit_expr_wrapper(arr_cast->m_arg, true);
+                    ptr_loads = ptr_loads_copy;
+                    is_present_flag = arr_descr->get_is_allocated_flag(tmp, arr_cast->m_arg);
+                    llvm::Function *fn = builder->GetInsertBlock()->getParent();
+                    llvm::BasicBlock *present_checkBB = llvm::BasicBlock::Create(context, "optional_present", fn);
+                    optional_check_mergeBB = llvm::BasicBlock::Create(context, "optional_merge");
+                    builder->CreateCondBr(llvm_utils->to_i1(is_present_flag), present_checkBB, optional_check_mergeBB);
+                    builder->SetInsertPoint(present_checkBB);
                 }
 
                 if (arr_cast->m_old == ASR::DescriptorArray && (arr_cast->m_new == ASR::PointerArray || arr_cast->m_new == ASR::FixedSizeArray)) {
