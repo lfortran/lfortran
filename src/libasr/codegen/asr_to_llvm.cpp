@@ -785,6 +785,7 @@ public:
     struct CFIArrayWriteback {
         llvm::Value* internal_desc;
         llvm::Value* cfi_desc;
+        llvm::Value* is_absent;
         llvm::Type* internal_type;
         llvm::Type* el_type;
         int n_dims;
@@ -28288,7 +28289,8 @@ public:
                         // Write back to the original descriptor, not to the
                         // base_addr-replaced copy made for character arrays
                         pending_cfi_array_writebacks.push_back({orig_desc_ptr,
-                            tmp, desc_type, elem_llvm_type, n_dims, elem_size,
+                            tmp, absent_optional_pointer, desc_type, elem_llvm_type,
+                            n_dims, elem_size,
                             local_str_desc});
                     }
                     if (is_type_star) {
@@ -30145,26 +30147,34 @@ public:
 
     void apply_cfi_array_writebacks() {
         for (auto& wb : pending_cfi_array_writebacks) {
-            if (is_string_descriptor_type(wb.el_type)) {
-                if (wb.local_str_desc) {
-                    // Use a stack string_descriptor, so it is not leaked
-                    llvm::Value* base_addr_gep = llvm_utils->create_gep2(
-                        wb.internal_type, wb.internal_desc, 0);
-                    llvm::Value* str_desc = llvm_utils->CreateLoad2(
-                        wb.el_type->getPointerTo(), base_addr_gep);
-                    llvm::Value* is_null = builder->CreateICmpEQ(str_desc,
-                        llvm::ConstantPointerNull::get(
-                            llvm::cast<llvm::PointerType>(str_desc->getType())));
-                    llvm_utils->create_if_else(is_null, [&]() {
-                        builder->CreateStore(llvm_utils->CreateAlloca(
-                            wb.el_type, nullptr, "cfi_str_desc"), base_addr_gep);
-                    }, [](){});
+            auto write_back = [&]() {
+                if (is_string_descriptor_type(wb.el_type)) {
+                    if (wb.local_str_desc) {
+                        // Use a stack string_descriptor, so it is not leaked
+                        llvm::Value* base_addr_gep = llvm_utils->create_gep2(
+                            wb.internal_type, wb.internal_desc, 0);
+                        llvm::Value* str_desc = llvm_utils->CreateLoad2(
+                            wb.el_type->getPointerTo(), base_addr_gep);
+                        llvm::Value* is_null = builder->CreateICmpEQ(str_desc,
+                            llvm::ConstantPointerNull::get(
+                                llvm::cast<llvm::PointerType>(str_desc->getType())));
+                        llvm_utils->create_if_else(is_null, [&]() {
+                            builder->CreateStore(llvm_utils->CreateAlloca(
+                                wb.el_type, nullptr, "cfi_str_desc"), base_addr_gep);
+                        }, [](){});
+                    }
+                    arr_descr->cfi_to_internal_string(wb.internal_type, wb.el_type,
+                        wb.cfi_desc, wb.n_dims, wb.internal_desc);
+                } else {
+                    arr_descr->cfi_to_internal(wb.internal_type, wb.el_type,
+                        wb.cfi_desc, wb.n_dims, wb.elem_size, wb.internal_desc);
                 }
-                arr_descr->cfi_to_internal_string(wb.internal_type, wb.el_type,
-                    wb.cfi_desc, wb.n_dims, wb.internal_desc);
+            };
+            if (wb.is_absent) {
+                llvm_utils->create_if_else(builder->CreateNot(wb.is_absent),
+                    write_back, [](){});
             } else {
-                arr_descr->cfi_to_internal(wb.internal_type, wb.el_type,
-                    wb.cfi_desc, wb.n_dims, wb.elem_size, wb.internal_desc);
+                write_back();
             }
         }
         pending_cfi_array_writebacks.clear();

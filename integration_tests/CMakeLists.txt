@@ -2476,6 +2476,7 @@ RUN(NAME bindc5 LABELS gfortran llvm fortran)
 RUN(NAME bindc_optional_array_01 LABELS gfortran llvm EXTRAFILES bindc_optional_array_01c.c) # absent optional dummy passed to a bind(c) optional (*) dummy must be NULL
 RUN(NAME bindc_optional_rank_forward_01 LABELS gfortran llvm EXTRAFILES bindc_optional_rank_forward_01c.c) # forwarding preserves assumed rank and absence for bind(c)
 RUN(NAME bindc_optional_type_star_rank_01 LABELS gfortran llvm EXTRAFILES bindc_optional_type_star_rank_01c.c)
+RUN(NAME bindc_optional_pointer_rank_01 LABELS gfortran llvm EXTRAFILES bindc_optional_pointer_rank_01c.c)
 RUN(NAME bindc_optional_associate_01 LABELS gfortran llvm EXTRAFILES bindc_optional_associate_01c.c)
 RUN(NAME bindc_optional_char_01 LABELS gfortran llvm EXTRAFILES bindc_optional_char_01c.c)
 RUN(NAME bindc_section_01 LABELS gfortran llvm EXTRAFILES bindc_section_01c.c) # non-contiguous section passed to a bind(c) (*) dummy is packed
