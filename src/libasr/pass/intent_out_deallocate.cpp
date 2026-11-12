@@ -1149,11 +1149,32 @@ public:
 
 namespace {
 
+bool has_reset_work(const ASR::Struct_t &type,
+        std::set<const ASR::Struct_t*> &visited, bool component = false) {
+    if (!visited.insert(&type).second) return false;
+    if (component && type.n_member_functions > 0) return true;
+    for (auto &item : type.m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+        const ASR::Variable_t &member = *ASR::down_cast<ASR::Variable_t>(item.second);
+        if (ASRUtils::is_allocatable(member.m_type) ||
+                member.m_symbolic_value != nullptr) return true;
+        if (ASRUtils::is_pointer(member.m_type)) continue;
+        ASR::symbol_t *decl = ASRUtils::symbol_get_past_external(
+            member.m_type_declaration);
+        if (decl && ASR::is_a<ASR::Struct_t>(*decl) &&
+                has_reset_work(*ASR::down_cast<ASR::Struct_t>(decl),
+                    visited, true)) return true;
+    }
+    return type.m_parent && has_reset_work(*ASR::down_cast<ASR::Struct_t>(
+        ASRUtils::symbol_get_past_external(type.m_parent)), visited, component);
+}
+
 class CollectResetTypes : public ASR::BaseWalkVisitor<CollectResetTypes> {
 public:
     std::vector<ASR::Struct_t*> types;
     void visit_Struct(const ASR::Struct_t &x) {
-        if (is_concrete_reset_type(x)) {
+        std::set<const ASR::Struct_t*> visited;
+        if (is_concrete_reset_type(x) && has_reset_work(x, visited)) {
             types.push_back(const_cast<ASR::Struct_t*>(&x));
         }
     }

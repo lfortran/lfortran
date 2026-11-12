@@ -33,7 +33,9 @@ Root finalization is separate; this node does not implement dynamic root
 FINAL dispatch. An intrinsic dynamic type of `class(*)` needs no reset.
 
 LLVM lowers the node to an indirect call through the reset slot of the
-dynamic type's vtable. Other backends must diagnose unsupported dispatch,
+dynamic type's vtable. A null slot means the dynamic type needs no component
+cleanup or initialization; extensions are checked independently of their base.
+Other backends must diagnose unsupported dispatch,
 not drop the statement. Source Fortran should be emitted before this pass:
 it retains `intent(out)` and its native entry semantics. Emitting a lowered
 reset as another `intent(out)` call would incorrectly finalize twice.

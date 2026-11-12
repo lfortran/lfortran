@@ -34,7 +34,7 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
 | `alignment` | an explicit alignment in bytes, or `nil`. |
 | `parent` | the type this one extends, or `nil`. |
 | `kind_params` | the names of the kind type parameters of the type. |
-| `intent_out_reset` | the compiler-generated reset subroutine in the type's nearest enclosing procedure-owning scope, or `nil` before synthesis or for a nonconcrete type. This is not a user-visible type-bound procedure. |
+| `intent_out_reset` | the compiler-generated reset subroutine in the type's nearest enclosing procedure-owning scope, or `nil` before synthesis, for a nonconcrete type, or when no component cleanup or default initialization is needed. This is not a user-visible type-bound procedure. |
 
 ### Return values
 
@@ -58,7 +58,10 @@ value is built with
 
 Uninstantiated parameterized types, including extensions that only inherit
 their parameters, have no reset helper. A monomorphized concrete type has its
-own helper; its complete parent chain must have concrete parameters.
+own helper when reset work is needed; its complete parent chain must have
+concrete parameters. Work is determined independently for each type, including
+inherited and nested components, so an extension can require a helper even
+when its parent does not.
 
 The frontend reserves `intent_out_reset` before saving module files; the
 `intent_out_deallocate` pass fills its body using the same cleanup and
