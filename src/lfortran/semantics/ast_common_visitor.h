@@ -14149,6 +14149,13 @@ public:
                 visitor.al, x->base.base.loc, x->m_args, x->n_args, x->m_type,
                 x->m_storage_format, x->m_struct_var));
             ASR::expr_t* array_value = ASRUtils::expr_value(array);
+            if (array_value && ASR::is_a<ASR::ArrayConstant_t>(*array_value)) {
+                // A scalar component default is stored as a constructor
+                // until its kind is concrete. Folding must retain the
+                // component's rank and bounds, not flatten it to rank one.
+                ASR::down_cast<ASR::ArrayConstant_t>(array_value)->m_type =
+                    ASRUtils::duplicate_type(visitor.al, x->m_type);
+            }
             *this->current_expr = array_value ? array_value : array;
         }
 
