@@ -1171,6 +1171,7 @@ RUN(NAME arrays_136 LABELS gfortran llvm) # explicit-shape dummies with integer(
 RUN(NAME arrays_137 LABELS gfortran llvm) # list-directed write of real arrays with vector subscripts (#3695)
 RUN(NAME arrays_138 LABELS gfortran llvm) # local array with huge(0) elements (#6508)
 RUN(NAME arrays_139 LABELS gfortran llvm) # local array of 1e7 elements must not overflow the stack (#5427)
+RUN(NAME arrays_140 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections) # assumed-size dummy passed on as a descriptor (#10347)
 
 # DISABLED: #8115 - ICE: get_struct_sym_from_struct_expr returns nullptr for empty struct array constructors [tp ::]
 # RUN(NAME array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
