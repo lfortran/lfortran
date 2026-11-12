@@ -2483,8 +2483,10 @@ static lf_float128 f128_bessel_j_series(int n, lf_float128 ax) {
 }
 
 /* Downward recurrence (Miller). m is past both the order and |x|, with
- * enough extra terms for a binary128 residual (about 160 + 4*sqrt). */
-static lf_float128 f128_jn_miller(int n, lf_float128 ax) {
+ * enough extra terms for a binary128 residual (about 160 + 4*sqrt).
+ * Returns 0 when the recurrence will not run. The caller must not
+ * replace that with the power series. */
+static int f128_jn_miller(int n, lf_float128 ax, lf_float128 *out) {
     double dax = f_dbl(ax);
     int ix = (dax >= 0.0 && dax < 2.0e9) ? (int)dax + 1 : 2000000000;
     int base = n > ix ? n : ix;
@@ -2492,11 +2494,11 @@ static lf_float128 f128_jn_miller(int n, lf_float128 ax) {
     if (!(root < 1.0e8)) root = 1.0e8;
     int extra = 160 + (int)(4.0 * root);
     if (extra < 160) extra = 160;
-    if (base > 2000000000 - extra) return f128_bessel_j_series(n, ax);
+    /* Past this the recurrence is too long to fold, and the power series
+     * is already unstable. Leave the call unfolded. */
+    if (base > 2000000000 - extra) return 0;
     int m = base + extra;
-    /* A start past this is not worth a compile-time loop of length |x|.
-     * The tested arguments sit far below it. */
-    if (m > 250000) return f128_bessel_j_series(n, ax);
+    if (m > 250000) return 0;
 
     lf_float128 two_over = f_div(f128_two(), ax);
     lf_float128 f_next = f128_make_zero(0);
@@ -2519,18 +2521,23 @@ static lf_float128 f128_jn_miller(int n, lf_float128 ax) {
         if (((k - 1) & 1) == 0) sum_even = f_add(sum_even, f_curr);
     }
     lf_float128 s = f_sub(f_mul(f128_two(), sum_even), f_curr);
-    if (f128_is_zero(s) || f128_is_nan(s) || f128_is_inf(s)) {
-        return f128_bessel_j_series(n, ax);
-    }
-    return f_div(f_n, s);
+    if (f128_is_zero(s) || f128_is_nan(s) || f128_is_inf(s)) return 0;
+    *out = f_div(f_n, s);
+    return 1;
 }
 
-lf_float128 lf_f128_jn(int n, lf_float128 x) {
+int lf_f128_jn_try(int n, lf_float128 x, lf_float128 *out) {
     f128_parts p = f128_unpack(x);
-    if (p.is_nan || p.is_inf) return f128_make_nan();
+    if (p.is_nan || p.is_inf) {
+        *out = f128_make_nan();
+        return 1;
+    }
     int flip = 0;
     if (n < 0) {
-        if (n == (-2147483647 - 1)) return f128_make_nan();
+        if (n == (-2147483647 - 1)) {
+            *out = f128_make_nan();
+            return 1;
+        }
         n = -n;
         if (n & 1) flip ^= 1;
     }
@@ -2541,10 +2548,19 @@ lf_float128 lf_f128_jn(int n, lf_float128 x) {
         r = (n == 0) ? f128_one() : f128_make_zero(0);
     } else if (f128_bessel_series_safe(n, ax)) {
         r = f128_bessel_j_series(n, ax);
-    } else {
-        r = f128_jn_miller(n, ax);
+    } else if (!f128_jn_miller(n, ax, &r)) {
+        return 0;
     }
-    return flip ? f_neg(r) : r;
+    *out = flip ? f_neg(r) : r;
+    return 1;
+}
+
+lf_float128 lf_f128_jn(int n, lf_float128 x) {
+    /* Y0's series calls this only for x <= 40, which Miller handles.
+       A failed try is not a Bessel value, so it is not returned as one. */
+    lf_float128 out;
+    if (!lf_f128_jn_try(n, x, &out)) return f128_make_nan();
+    return out;
 }
 
 lf_float128 lf_f128_j0(lf_float128 x) { return lf_f128_jn(0, x); }

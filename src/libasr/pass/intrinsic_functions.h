@@ -1058,12 +1058,20 @@ namespace math_func {                                                           
             diag::Diagnostics& /*diag*/) {                                                              \
         LCOMPILERS_ASSERT(args.size() == 1);                                                            \
         if (ASRUtils::extract_kind_from_ttype_t(t) == 16) {                                             \
-            lf_float128 (*quad_fn)(lf_float128) = quad_eval;                                            \
-            if (!quad_fn) {                                                                             \
-                return nullptr;                                                                         \
+            lf_float128 arg = ASRUtils::real_expr_get_r16(args[0]);                                     \
+            lf_float128 y;                                                                              \
+            if (std::string(#math_func) == "BesselJ0") {                                                \
+                if (!lf_f128_jn_try(0, arg, &y)) return nullptr;                                         \
+            } else if (std::string(#math_func) == "BesselJ1") {                                          \
+                if (!lf_f128_jn_try(1, arg, &y)) return nullptr;                                         \
+            } else {                                                                                    \
+                lf_float128 (*quad_fn)(lf_float128) = quad_eval;                                        \
+                if (!quad_fn) {                                                                         \
+                    return nullptr;                                                                     \
+                }                                                                                       \
+                y = quad_fn(arg);                                                                       \
             }                                                                                           \
-            return ASRUtils::make_RealConstant_r16(al, loc,                                             \
-                quad_fn(ASRUtils::real_expr_get_r16(args[0])), t);                                      \
+            return ASRUtils::make_RealConstant_r16(al, loc, y, t);                                      \
         }                                                                                               \
         if (ASRUtils::extract_kind_from_ttype_t(t) == 10) {                                             \
             /* Kind 10 stores a pointer in m_r. Fold in long double. */                                 \
@@ -5655,7 +5663,9 @@ namespace BesselJN {
                 ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n);
             lf_float128 x = ASRUtils::real_constant_get_r16(
                 ASR::down_cast<ASR::RealConstant_t>(args[1]));
-            return ASRUtils::make_RealConstant_r16(al, loc, lf_f128_jn(n, x), t1);
+            lf_float128 y;
+            if (!lf_f128_jn_try(n, x, &y)) return nullptr;
+            return ASRUtils::make_RealConstant_r16(al, loc, y, t1);
         }
         if (ASRUtils::extract_kind_from_ttype_t(t1) == 10) {
             // Kind 10 stores a pointer in m_r. Fold Jn in long double.
