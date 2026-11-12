@@ -8272,7 +8272,7 @@ TEST_CASE("LLVM horizontal reductions of four vector squares") {
         CHECK(!reductions_loop_masks(
             "  %v0 = shufflevector <4 x double> %x, <4 x double> <double 1.0, double 1.0, double 1.0, double 0.0>, <4 x i32> <i32 0, i32 1, i32 2, i32 4>\n"
             "  %v1 = fsub fast <4 x double> %x, %v0\n"
-            "  %v2 = fsub fast <4 x double> %v0, %x\n"
+            "  %v2 = fsub fast <4 x double> %v0, <double 1.0, double 1.0, double 1.0, double 0.0>\n"
             "  %v3 = fadd fast <4 x double> %v0, %x\n",
             "  %x.next = fadd fast <4 x double> %x, %x\n", *x86));
 #endif
@@ -8459,8 +8459,9 @@ TEST_CASE("LLVM horizontal reductions in the lane layouts of newer SLP") {
 #endif
 
 #if LLVM_VERSION_MAJOR >= 11
-// Lanes 0 to 3 of the sum are |(a-b)*c|^2 = 6, |(a-d)*c|^2 = 11, 6 and 11
-// over components 0 to 2; the function returns 6 + 2*11 + 4*6 + 8*11 = 140.
+// Lanes 0 to 3 of the sum are |(a-b)*c|^2 = 6, |(a-d)*c|^2 = 11,
+// |(a-g)*c|^2 = 0 and |(a-h)*c|^2 = 14 over components 0 to 2; the function
+// returns 6 + 2*11 + 4*0 + 8*14 = 140.
 // The original code never computes component 3 of a-b, which is Inf - Inf.
 // Component 3 of c is zero, but the rewrite rebuilds (a-b)*c on whole
 // vectors, where it is NaN, so it must clear lane 3 of the square.
@@ -8470,24 +8471,32 @@ entry:
   %a = freeze <4 x double> <double 1.0, double 2.0, double 3.0, double 0x7FF0000000000000>
   %b = freeze <4 x double> <double 2.0, double 3.0, double 5.0, double 0x7FF0000000000000>
   %d = freeze <4 x double> <double 4.0, double 1.0, double 2.0, double 0.0>
+  %g = freeze <4 x double> <double 1.0, double 2.0, double 3.0, double 0.0>
+  %h = freeze <4 x double> <double 0.0, double 0.0, double 0.0, double 0.0>
   %w = freeze <4 x double> <double 1.0, double 1.0, double 1.0, double 1.0>
   %c = fmul fast <4 x double> %w, <double 1.0, double 1.0, double 1.0, double 0.0>
   %a0 = shufflevector <4 x double> %a, <4 x double> undef, <4 x i32> <i32 0, i32 0, i32 0, i32 0>
-  %bd0 = shufflevector <4 x double> %b, <4 x double> %d, <4 x i32> <i32 0, i32 4, i32 0, i32 4>
+  %bd0 = shufflevector <4 x double> %b, <4 x double> %d, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
+  %gh0 = shufflevector <4 x double> %g, <4 x double> %h, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
+  %q0 = shufflevector <4 x double> %bd0, <4 x double> %gh0, <4 x i32> <i32 0, i32 1, i32 4, i32 5>
   %c0 = shufflevector <4 x double> %c, <4 x double> undef, <4 x i32> <i32 0, i32 0, i32 0, i32 0>
-  %e0 = fsub fast <4 x double> %a0, %bd0
+  %e0 = fsub fast <4 x double> %a0, %q0
   %f0 = fmul fast <4 x double> %e0, %c0
   %s0 = fmul fast <4 x double> %f0, %f0
   %a1 = shufflevector <4 x double> %a, <4 x double> undef, <4 x i32> <i32 1, i32 1, i32 1, i32 1>
-  %bd1 = shufflevector <4 x double> %b, <4 x double> %d, <4 x i32> <i32 1, i32 5, i32 1, i32 5>
+  %bd1 = shufflevector <4 x double> %b, <4 x double> %d, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
+  %gh1 = shufflevector <4 x double> %g, <4 x double> %h, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
+  %q1 = shufflevector <4 x double> %bd1, <4 x double> %gh1, <4 x i32> <i32 0, i32 1, i32 4, i32 5>
   %c1 = shufflevector <4 x double> %c, <4 x double> undef, <4 x i32> <i32 1, i32 1, i32 1, i32 1>
-  %e1 = fsub fast <4 x double> %a1, %bd1
+  %e1 = fsub fast <4 x double> %a1, %q1
   %f1 = fmul fast <4 x double> %e1, %c1
   %s1 = fmul fast <4 x double> %f1, %f1
   %a2 = shufflevector <4 x double> %a, <4 x double> undef, <4 x i32> <i32 2, i32 2, i32 2, i32 2>
-  %bd2 = shufflevector <4 x double> %b, <4 x double> %d, <4 x i32> <i32 2, i32 6, i32 2, i32 6>
+  %bd2 = shufflevector <4 x double> %b, <4 x double> %d, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
+  %gh2 = shufflevector <4 x double> %g, <4 x double> %h, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
+  %q2 = shufflevector <4 x double> %bd2, <4 x double> %gh2, <4 x i32> <i32 0, i32 1, i32 4, i32 5>
   %c2 = shufflevector <4 x double> %c, <4 x double> undef, <4 x i32> <i32 2, i32 2, i32 2, i32 2>
-  %e2 = fsub fast <4 x double> %a2, %bd2
+  %e2 = fsub fast <4 x double> %a2, %q2
   %f2 = fmul fast <4 x double> %e2, %c2
   %s2 = fmul fast <4 x double> %f2, %f2
   %p = fadd fast <4 x double> %s0, %s1
@@ -8540,8 +8549,8 @@ TEST_CASE("LLVM horizontal reductions clear lane 3 of rebuilt products") {
 
 #if LLVM_VERSION_MAJOR >= 11
 // The squared vector is a select of a fast product a*w and of w, where
-// component 3 of w is zero. Lane 0 of the sum is 1^2+2^2+3^2 = 14 for
-// a = (1, 2, 3, Inf) and w = 1. The original code never reads component 3 of
+// component 3 of w is zero; the other lanes square w, 2*w and 3*w. Lane 0
+// of the sum is 1^2+2^2+3^2 = 14 for a = (1, 2, 3, Inf) and w = 1. The original code never reads component 3 of
 // a*w, which is Inf*0 = NaN, so the rewrite must clear lane 3 of the square.
 const std::string reductions_anyleaf_ir = R"""(
 define double @reductions_anyleaf(<4 x double> %a, <4 x double> %w0, i1 %c) #0 {
@@ -8549,17 +8558,19 @@ entry:
   %w = insertelement <4 x double> %w0, double 0.0, i32 3
   %m = fmul fast <4 x double> %a, %w
   %v = select i1 %c, <4 x double> %m, <4 x double> %w
-  %g0a = shufflevector <4 x double> %v, <4 x double> %v, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
-  %g0b = shufflevector <4 x double> %g0a, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
-  %g0c = shufflevector <4 x double> %g0b, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
+  %w2 = fmul fast <4 x double> %w, <double 2.0, double 2.0, double 2.0, double 2.0>
+  %w3 = fmul fast <4 x double> %w, <double 3.0, double 3.0, double 3.0, double 3.0>
+  %g0a = shufflevector <4 x double> %v, <4 x double> %w, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
+  %g0b = shufflevector <4 x double> %g0a, <4 x double> %w2, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
+  %g0c = shufflevector <4 x double> %g0b, <4 x double> %w3, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
   %s0 = fmul fast <4 x double> %g0c, %g0c
-  %g1a = shufflevector <4 x double> %v, <4 x double> %v, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
-  %g1b = shufflevector <4 x double> %g1a, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 5, i32 undef>
-  %g1c = shufflevector <4 x double> %g1b, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
+  %g1a = shufflevector <4 x double> %v, <4 x double> %w, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
+  %g1b = shufflevector <4 x double> %g1a, <4 x double> %w2, <4 x i32> <i32 0, i32 1, i32 5, i32 undef>
+  %g1c = shufflevector <4 x double> %g1b, <4 x double> %w3, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
   %s1 = fmul fast <4 x double> %g1c, %g1c
-  %g2a = shufflevector <4 x double> %v, <4 x double> %v, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
-  %g2b = shufflevector <4 x double> %g2a, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 6, i32 undef>
-  %g2c = shufflevector <4 x double> %g2b, <4 x double> %v, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
+  %g2a = shufflevector <4 x double> %v, <4 x double> %w, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
+  %g2b = shufflevector <4 x double> %g2a, <4 x double> %w2, <4 x i32> <i32 0, i32 1, i32 6, i32 undef>
+  %g2c = shufflevector <4 x double> %g2b, <4 x double> %w3, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
   %s2 = fmul fast <4 x double> %g2c, %g2c
   %t0 = fadd fast <4 x double> %s0, %s1
   %t1 = fadd fast <4 x double> %t0, %s2
@@ -8624,7 +8635,7 @@ entry:
   ret <4 x double> %r
 }
 
-define <4 x double> @reductions_oob_zero(<4 x double> %a, <4 x double> %b, i1 %c) #0 {
+define <4 x double> @reductions_oob_zero(<4 x double> %a, <4 x double> %b, <4 x double> %d, i1 %c) #0 {
 entry:
   %s = shufflevector <4 x double> %a, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 3>
   %e = extractelement <4 x double> %s, i32 7
@@ -8632,15 +8643,15 @@ entry:
   %v0 = select i1 %c, <4 x double> %v, <4 x double> %a
   %g0a = shufflevector <4 x double> %v0, <4 x double> %b, <4 x i32> <i32 0, i32 4, i32 undef, i32 undef>
   %g0b = shufflevector <4 x double> %g0a, <4 x double> %a, <4 x i32> <i32 0, i32 1, i32 4, i32 undef>
-  %g0c = shufflevector <4 x double> %g0b, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
+  %g0c = shufflevector <4 x double> %g0b, <4 x double> %d, <4 x i32> <i32 0, i32 1, i32 2, i32 4>
   %s0 = fmul fast <4 x double> %g0c, %g0c
   %g1a = shufflevector <4 x double> %v0, <4 x double> %b, <4 x i32> <i32 1, i32 5, i32 undef, i32 undef>
   %g1b = shufflevector <4 x double> %g1a, <4 x double> %a, <4 x i32> <i32 0, i32 1, i32 5, i32 undef>
-  %g1c = shufflevector <4 x double> %g1b, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
+  %g1c = shufflevector <4 x double> %g1b, <4 x double> %d, <4 x i32> <i32 0, i32 1, i32 2, i32 5>
   %s1 = fmul fast <4 x double> %g1c, %g1c
   %g2a = shufflevector <4 x double> %v0, <4 x double> %b, <4 x i32> <i32 2, i32 6, i32 undef, i32 undef>
   %g2b = shufflevector <4 x double> %g2a, <4 x double> %a, <4 x i32> <i32 0, i32 1, i32 6, i32 undef>
-  %g2c = shufflevector <4 x double> %g2b, <4 x double> %b, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
+  %g2c = shufflevector <4 x double> %g2b, <4 x double> %d, <4 x i32> <i32 0, i32 1, i32 2, i32 6>
   %s2 = fmul fast <4 x double> %g2c, %g2c
   %t0 = fadd fast <4 x double> %s0, %s1
   %t1 = fadd fast <4 x double> %t0, %s2
@@ -8762,6 +8773,30 @@ attributes #0 = { "target-features"="+avx" }
         // A repeated term is not rewritten, and the late cleanup must not
         // run for it either.
         check(reductions_diamond_ir, *x86, false);
+        // Four lanes of which lane 3 repeats the sum of lane 0: three
+        // distinct sums.
+        check(R"""(
+define double @reductions_sum(<4 x double> %a, <4 x double> %b, <4 x double> %c) #0 {
+entry:
+  %ab = shufflevector <4 x double> %a, <4 x double> %b, <8 x i32> <i32 0, i32 1, i32 2, i32 3, i32 4, i32 5, i32 6, i32 7>
+  %cc = shufflevector <4 x double> %c, <4 x double> undef, <8 x i32> <i32 0, i32 1, i32 2, i32 3, i32 undef, i32 undef, i32 undef, i32 undef>
+  %x = shufflevector <8 x double> %ab, <8 x double> %cc, <4 x i32> <i32 0, i32 4, i32 8, i32 0>
+  %y = shufflevector <8 x double> %ab, <8 x double> %cc, <4 x i32> <i32 1, i32 5, i32 9, i32 1>
+  %z = shufflevector <8 x double> %ab, <8 x double> %cc, <4 x i32> <i32 2, i32 6, i32 10, i32 2>
+  %sx = fmul fast <4 x double> %x, %x
+  %sy = fmul fast <4 x double> %y, %y
+  %sz = fmul fast <4 x double> %z, %z
+  %t0 = fadd fast <4 x double> %sx, %sy
+  %t1 = fadd fast <4 x double> %t0, %sz
+  %e0 = extractelement <4 x double> %t1, i32 0
+  %e1 = extractelement <4 x double> %t1, i32 1
+  %e2 = extractelement <4 x double> %t1, i32 2
+  %r0 = fadd double %e0, %e1
+  %r = fadd double %r0, %e2
+  ret double %r
+}
+attributes #0 = { "target-features"="+avx" }
+)""", *x86, false);
     }
     // AArch64, such as Apple Silicon.
     std::unique_ptr<llvm::TargetMachine> arm

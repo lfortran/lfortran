@@ -37,14 +37,14 @@ two lanes concatenated, or differences taken before or after the gather.
 
 So the rewrite does not match the shuffles. A root is a fast addition of
 four double lanes where every lane, followed through the additions and the
-shuffles, is a sum of three squares. A sum of two or three lanes is left
-alone: it needs the same two horizontal adds, which then cost more than the
-gather they replace. Each squared element is
-followed through shuffles and fast elementwise operations to the vector
-elements it is computed from. The three squares of a lane must be the same
-expression, one element further on for each component; that expression on
-whole vectors is r. The rewrite computes r for every lane and sums its
-squares with `vhaddpd`.
+shuffles, is a sum of three squares, and the four sums differ. A sum of two
+or three lanes, or of four lanes of which two repeat a sum, is left alone:
+it needs the same two horizontal adds, which then cost more than the gather
+they replace. Each squared element is followed through shuffles and fast
+elementwise operations to the vector elements it is computed from. The three
+squares of a lane must be the same expression on the same leaf vectors, with
+component k reading lane k of each leaf; that expression on whole vectors is
+r. The rewrite computes r for every lane and sums its squares with `vhaddpd`.
 
 Every vector the expression reads must be a four element double vector
 that already holds components 0, 1 and 2 in lanes 0, 1 and 2, such as a
@@ -286,8 +286,24 @@ bool is_root(Instruction &i, SmallVectorImpl<Squares> &lanes) {
     return true;
 }
 
+// Whether two component expressions compute the same vector: the same
+// operations on the same leaf vectors, whatever component they read.
+bool same_vector(const SmallVectorImpl<Node> &a,
+        const SmallVectorImpl<Node> &b) {
+    if (a.size() != b.size()) {
+        return false;
+    }
+    for (size_t j = 0; j < a.size(); j++) {
+        if (a[j].opcode != b[j].opcode || a[j].leaf != b[j].leaf) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Each lane of a root sums components 0, 1 and 2 of one vector expression.
-// Find that expression for every lane.
+// Find that expression for every lane. The four expressions must differ: a
+// lane that repeats the sum of another needs no horizontal add of its own.
 bool expressions_of(const SmallVectorImpl<Squares> &lanes,
         SmallVectorImpl<SmallVector<Node, 8>> &expressions) {
     expressions.clear();
@@ -302,6 +318,11 @@ bool expressions_of(const SmallVectorImpl<Squares> &lanes,
         }
         if (!same_expression(pointers)) {
             return false;
+        }
+        for (const SmallVector<Node, 8> &other : expressions) {
+            if (same_vector(other, components[0])) {
+                return false;
+            }
         }
         expressions.push_back(components[0]);
     }
