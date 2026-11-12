@@ -3136,6 +3136,16 @@ RUN(NAME pdt_modfile_parent_default_01 LABELS gfortran llvm
         EXTRAFILES pdt_modfile_parent_default_01_base.f90
                    pdt_modfile_parent_default_01_child.f90
         EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_01 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_01_base.f90
+                   pdt_modfile_parent_nondefault_01_first.f90
+                   pdt_modfile_parent_nondefault_01_second.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_02 LABELS gfortran llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_02_leaf.f90
+                   pdt_modfile_parent_nondefault_02_base.f90
+                   pdt_modfile_parent_nondefault_02_child.f90
+        EXTRA_ARGS --separate-compilation)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)

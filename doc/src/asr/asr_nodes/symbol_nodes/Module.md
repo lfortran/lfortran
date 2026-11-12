@@ -9,8 +9,8 @@ A Fortran module or submodule.
 ```text
 Module(symbol_table symtab, identifier name, identifier? parent_module,
     identifier* dependencies, bool loaded_from_mod, bool intrinsic,
-    bool has_submodules, bool host_only_object, identifier? global_init,
-    location start_name, location end_name)
+    bool has_submodules, bool host_only_object, pdt_module_state? pdt_state,
+    identifier? global_init, location start_name, location end_name)
 ```
 
 ### Arguments
@@ -25,6 +25,7 @@ Module(symbol_table symtab, identifier name, identifier? parent_module,
 | `intrinsic` | `true` for a module defined by the language itself (`iso_c_binding`, `iso_fortran_env`, ...). The backends do not emit code for it. |
 | `has_submodules` | `true` when at least one submodule extends this module. A module procedure declared here may then be defined elsewhere. |
 | `host_only_object` | `true` when the module was compiled with separate compilation (its own object file defines its procedures) and without GPU offloading, so that object defines none of the deferring twins (`<name>__gpu_deferred`) that the `gpu_launch_sync` pass gives its procedures. A translation unit that uses the module from its module file then calls the procedures themselves. `false` otherwise, also in the default mode, where the unit with the main program compiles the module's procedures and their twins. |
+| `pdt_state` | [PDT specialization requests and deferred-member recipes](../helper_nodes/pdt_module_state.md), or `nil` if the module needs neither. |
 | `global_init` | the name of this module's startup initializer in `symtab`, or `nil`. It is an argument-less procedure that runs once before any code can observe the module's variables. See [Program](Program.md). |
 | `start_name` | the source span of the name in `module name`. |
 | `end_name` | the source span of the name in `end module name`. |
@@ -44,6 +45,13 @@ When a module is compiled, the full ASR (`abi=Source`, non-empty procedure
 bodies) and the interface ASR (`abi=LFortranModule`, empty bodies) are both
 written to the module file. `loaded_from_mod` records which side of that a
 particular **Module** came from.
+
+When a dependent module instantiates a nondefault kind of an imported PDT, its
+`pdt_state` records the defining module, template and concrete kind arguments.
+Loading that module materializes the specialization in the defining module's
+in-memory scope before resolving imports. The defining module's already-written
+module file is never modified. The same state carries deferred inner PDT member
+arguments so a reloaded template can be instantiated without source AST state.
 
 ## Examples
 

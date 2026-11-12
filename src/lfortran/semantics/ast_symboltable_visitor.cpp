@@ -1010,7 +1010,10 @@ public:
                                                     diag.add(diag::Diagnostic(
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
                                                             diag::Label("", {loc})}));
-                                                    throw SemanticAbort();}, lm, compiler_options.separate_compilation
+                                                    throw SemanticAbort();}, lm, compiler_options.separate_compilation,
+                                                false, [&](ASR::TranslationUnit_t& tu) {
+                                                    materialize_imported_pdt_specializations(tu);
+                                                }
                                                 ));
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             tmp0 = ASR::make_Module_t(al, x.base.base.loc,
@@ -1020,7 +1023,7 @@ public:
                                                 nullptr,
                                                 0,
                                                 false, false, false,
-                                                host_only_object, nullptr);
+                                                host_only_object, nullptr, nullptr);
             std::set<std::string> submodule_proc_names;
             for (size_t i = 0; i < x.n_contains; i++) {
                 AST::program_unit_t *pu = x.m_contains[i];
@@ -1068,7 +1071,7 @@ public:
                                                 nullptr,
                                                 0,
                                                 false, false, false,
-                                                host_only_object, nullptr);
+                                                host_only_object, nullptr, nullptr);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_items; i++) {
@@ -1245,6 +1248,8 @@ public:
         for (ASR::symbol_t* symbol : defaulted_pdts) {
             instantiate_default_pdt(symbol, symbol->base.loc);
         }
+        persist_pdt_member_recipes(
+            ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(tmp0)));
 
         tmp = tmp0;
         // Add module dependencies
@@ -6622,7 +6627,10 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }, lm, compiler_options.separate_compilation, load_submodules));
+            }, lm, compiler_options.separate_compilation, load_submodules,
+                [&](ASR::TranslationUnit_t& tu) {
+                    materialize_imported_pdt_specializations(tu);
+                }));
         } else {
             if (!ASR::is_a<ASR::Module_t>(*t)) {
                 diag.add(diag::Diagnostic(
@@ -6640,7 +6648,10 @@ public:
                                                             msg, diag::Level::Error, diag::Stage::Semantic, {
                                                                 diag::Label("", {loc})}));
                                                         throw SemanticAbort();
-                                                    }, lm);
+                                                    }, lm,
+                                                    [&](ASR::TranslationUnit_t& tu) {
+                                                        materialize_imported_pdt_specializations(tu);
+                                                    });
 
                 // Create a temporary TranslationUnit just for fixing the symbols
                 ASR::asr_t *orig_asr_owner = tu_symtab->asr_owner;
@@ -6649,6 +6660,7 @@ public:
                         tu_symtab, nullptr, 0, nullptr));
 
                 // Fix all external symbols and update dependencies
+                materialize_imported_pdt_specializations(*tu);
                 ASRUtils::fix_translation_unit(al, tu, tu_symtab, !diag.has_error());
                 tu_symtab->asr_owner = orig_asr_owner;
             }

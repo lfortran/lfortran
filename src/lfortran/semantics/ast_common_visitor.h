@@ -5,6 +5,7 @@
 #include <libasr/assert.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/serialization.h>
 #include <lfortran/ast.h>
 #include <libasr/bigint.h>
 #include <libasr/string_utils.h>
@@ -14168,6 +14169,221 @@ public:
             ASRUtils::symbol_get_past_external(template_sym))) + "_";
     }
 
+    ASR::Module_t* current_pdt_requester() {
+        for (SymbolTable* scope = current_scope; scope; scope = scope->parent) {
+            if (scope->asr_owner &&
+                    ASR::is_a<ASR::Module_t>(*scope->asr_owner)) {
+                ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(
+                    scope->asr_owner);
+                return module->m_loaded_from_mod ? nullptr : module;
+            }
+        }
+        return nullptr;
+    }
+
+    ASR::pdt_module_state_t* ensure_pdt_module_state(ASR::Module_t* module) {
+        if (!module->m_pdt_state) {
+            module->m_pdt_state = al.make_new<ASR::pdt_module_state_t>();
+            module->m_pdt_state->loc = module->base.base.loc;
+            module->m_pdt_state->m_specializations = nullptr;
+            module->m_pdt_state->n_specializations = 0;
+            module->m_pdt_state->m_templates = nullptr;
+            module->m_pdt_state->n_templates = 0;
+        }
+        return module->m_pdt_state;
+    }
+
+    Vec<ASR::expr_t*> pdt_kind_constants(const Location& loc,
+                                          const std::vector<int64_t>& values) {
+        Vec<ASR::expr_t*> kinds;
+        kinds.reserve(al, values.size());
+        ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        for (int64_t value : values) {
+            kinds.push_back(al, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, loc, value, integer_type)));
+        }
+        return kinds;
+    }
+
+    static std::vector<int64_t> pdt_kind_values(ASR::expr_t** kinds,
+                                                  size_t n_kinds) {
+        std::vector<int64_t> values;
+        values.reserve(n_kinds);
+        for (size_t i = 0; i < n_kinds; i++) {
+            LCOMPILERS_ASSERT(kinds[i] &&
+                ASR::is_a<ASR::IntegerConstant_t>(*kinds[i]));
+            values.push_back(ASR::down_cast<ASR::IntegerConstant_t>(
+                kinds[i])->m_n);
+        }
+        return values;
+    }
+
+    void record_imported_pdt_specialization(ASR::Module_t* requester,
+            ASR::symbol_t* template_sym,
+            const std::vector<int64_t>& kinds, const Location& loc) {
+        if (!requester) return;
+        ASR::Module_t* owner = ASRUtils::get_sym_module(template_sym);
+        if (!owner || !owner->m_loaded_from_mod || owner == requester) return;
+
+        if (is_body_visitor) {
+            SetChar dependencies;
+            dependencies.from_pointer_n_copy(al, requester->m_dependencies,
+                requester->n_dependencies);
+            dependencies.push_back(al, owner->m_name);
+            requester->m_dependencies = dependencies.p;
+            requester->n_dependencies = dependencies.size();
+        } else {
+            bool found = false;
+            for (size_t i = 0; i < current_module_dependencies.size(); i++) {
+                if (std::string(current_module_dependencies[i]) == owner->m_name) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) current_module_dependencies.push_back(al, owner->m_name);
+        }
+
+        ASR::pdt_module_state_t* state = ensure_pdt_module_state(requester);
+        for (size_t i = 0; i < state->n_specializations; i++) {
+            ASR::pdt_specialization_t& spec = state->m_specializations[i];
+            if (std::string(spec.m_owner_module) == owner->m_name &&
+                    std::string(spec.m_template_name) ==
+                        ASRUtils::symbol_name(template_sym) &&
+                    pdt_kind_values(spec.m_kinds, spec.n_kinds) == kinds) {
+                return;
+            }
+        }
+        Vec<ASR::pdt_specialization_t> specs;
+        specs.from_pointer_n_copy(al, state->m_specializations,
+            state->n_specializations);
+        Vec<ASR::expr_t*> values = pdt_kind_constants(loc, kinds);
+        ASR::pdt_specialization_t spec{};
+        spec.loc = loc;
+        spec.m_owner_module = owner->m_name;
+        spec.m_template_name = ASRUtils::symbol_name(template_sym);
+        spec.m_kinds = values.p;
+        spec.n_kinds = values.size();
+        specs.push_back(al, spec);
+        state->m_specializations = specs.p;
+        state->n_specializations = specs.size();
+    }
+
+    void persist_pdt_member_recipes(ASR::Module_t* module) {
+        for (auto& item : module->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Struct_t>(*item.second)) continue;
+            ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(item.second);
+            Vec<ASR::pdt_member_recipe_t> members;
+            members.reserve(al, st->m_symtab->get_scope().size());
+            for (auto& member : st->m_symtab->get_scope()) {
+                auto pending = m_pdt_pending_members.find(
+                    {st->m_symtab, member.first});
+                if (pending == m_pdt_pending_members.end()) continue;
+                Vec<ASR::expr_t*> kinds = pdt_kind_constants(
+                    member.second->base.loc, pending->second.second);
+                ASR::pdt_member_recipe_t recipe{};
+                recipe.loc = member.second->base.loc;
+                recipe.m_member_name = s2c(al, member.first);
+                recipe.m_type_name = s2c(al, pending->second.first);
+                recipe.m_kinds = kinds.p;
+                recipe.n_kinds = kinds.size();
+                members.push_back(al, recipe);
+            }
+            if (members.size() == 0) continue;
+            ASR::pdt_module_state_t* state = ensure_pdt_module_state(module);
+            Vec<ASR::pdt_template_recipe_t> templates;
+            templates.from_pointer_n_copy(al, state->m_templates,
+                state->n_templates);
+            ASR::pdt_template_recipe_t recipe{};
+            recipe.loc = st->base.base.loc;
+            recipe.m_template_name = st->m_name;
+            recipe.m_members = members.p;
+            recipe.n_members = members.size();
+            templates.push_back(al, recipe);
+            state->m_templates = templates.p;
+            state->n_templates = templates.size();
+        }
+    }
+
+    bool loaded_pdt_member_recipe(ASR::Struct_t* st,
+            const std::string& member_name, std::string& type_name,
+            std::vector<int64_t>& kinds) {
+        SymbolTable* scope = st->m_symtab->parent;
+        if (!scope || !scope->asr_owner ||
+                !ASR::is_a<ASR::Module_t>(*scope->asr_owner)) {
+            return false;
+        }
+        ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(scope->asr_owner);
+        if (!module->m_loaded_from_mod || !module->m_pdt_state) return false;
+        ASR::pdt_module_state_t* state = module->m_pdt_state;
+        for (size_t i = 0; i < state->n_templates; i++) {
+            ASR::pdt_template_recipe_t& recipe = state->m_templates[i];
+            if (std::string(recipe.m_template_name) != st->m_name) continue;
+            for (size_t j = 0; j < recipe.n_members; j++) {
+                ASR::pdt_member_recipe_t& member = recipe.m_members[j];
+                if (std::string(member.m_member_name) != member_name) continue;
+                type_name = member.m_type_name;
+                kinds = pdt_kind_values(member.m_kinds, member.n_kinds);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void materialize_imported_pdt_specializations(ASR::TranslationUnit_t& tu) {
+        struct Request {
+            ASR::Struct_t* templ;
+            std::vector<int64_t> kinds;
+            Location loc;
+        };
+        std::vector<Request> requests;
+        std::set<std::pair<std::string, std::string>> deferred;
+        for (auto& item : tu.m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Module_t>(*item.second)) continue;
+            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(item.second);
+            if (!module->m_loaded_from_mod || !module->m_pdt_state) continue;
+            for (size_t i = 0; i < module->m_pdt_state->n_specializations; i++) {
+                ASR::pdt_specialization_t& spec =
+                    module->m_pdt_state->m_specializations[i];
+                ASR::symbol_t* owner_sym = tu.m_symtab->resolve_symbol(
+                    spec.m_owner_module);
+                LCOMPILERS_ASSERT(owner_sym &&
+                    ASR::is_a<ASR::Module_t>(*owner_sym));
+                ASR::Module_t* owner = ASR::down_cast<ASR::Module_t>(owner_sym);
+                ASR::symbol_t* template_sym = owner->m_symtab->get_symbol(
+                    spec.m_template_name);
+                LCOMPILERS_ASSERT(template_sym &&
+                    ASR::is_a<ASR::Struct_t>(*template_sym));
+                std::vector<int64_t> kinds = pdt_kind_values(
+                    spec.m_kinds, spec.n_kinds);
+                std::string name = pdt_specialization_prefix(template_sym);
+                for (size_t j = 0; j < kinds.size(); j++) {
+                    if (j) name += "_";
+                    name += std::to_string(kinds[j]);
+                }
+                if (!owner->m_symtab->get_symbol(name)) {
+                    deferred.insert({spec.m_owner_module, name});
+                    requests.push_back({ASR::down_cast<ASR::Struct_t>(
+                        template_sym), std::move(kinds), spec.loc});
+                }
+            }
+        }
+        if (requests.empty()) return;
+
+        fix_external_symbols(tu, *tu.m_symtab, deferred);
+        SymbolTable* saved_scope = current_scope;
+        for (const Request& request : requests) {
+            current_scope = ASRUtils::symbol_parent_symtab(
+                &request.templ->base);
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 0);
+            ASR::symbol_t* type_declaration = nullptr;
+            instantiate_pdt_by_values(request.loc, request.templ->m_name,
+                request.kinds, false, false, dims, type_declaration,
+                ASR::abiType::Source, false, &request.templ->base);
+        }
+        current_scope = saved_scope;
+    }
+
     // Core monomorphizer: given explicit kind values, create the concrete struct.
     // Called both from instantiate_pdt (which parses kind args from AST) and
     // recursively for inner PDT members that were deferred during template
@@ -14180,8 +14396,10 @@ public:
         Vec<ASR::dimension_t>& dims,
         ASR::symbol_t *&type_declaration,
         ASR::abiType abi, bool is_argument,
-        ASR::symbol_t* pdt_template = nullptr)
+        ASR::symbol_t* pdt_template = nullptr,
+        ASR::Module_t* request_owner = nullptr)
     {
+        if (!request_owner) request_owner = current_pdt_requester();
         // Look up the PDT as an ASR Struct symbol with kind_params
         ASR::symbol_t* pdt_sym = pdt_template ? pdt_template
             : current_scope->resolve_symbol(pdt_name);
@@ -14219,6 +14437,8 @@ public:
         // the name under which the template happened to be imported.
         if (ASR::symbol_t* pdt_existing = pdt_scope->get_symbol(monomorphized_name)) {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*pdt_existing));
+            record_imported_pdt_specialization(request_owner, pdt_sym_orig,
+                kind_val_vec, loc);
             type_declaration = ASRUtils::import_type_declaration(
                 al, pdt_existing, current_scope);
             ASR::ttype_t *type = ASRUtils::make_StructType_t_util(
@@ -14277,9 +14497,15 @@ public:
             if (kind_values.find(item.first) != kind_values.end()) continue;
             auto key = std::make_pair(pdt_struct->m_symtab, item.first);
             auto pit = m_pdt_pending_members.find(key);
-            if (pit == m_pdt_pending_members.end()) continue;
-            const std::string& inner_name = pit->second.first;
-            const std::vector<int64_t>& sent_args = pit->second.second;
+            std::string inner_name;
+            std::vector<int64_t> sent_args;
+            if (pit != m_pdt_pending_members.end()) {
+                inner_name = pit->second.first;
+                sent_args = pit->second.second;
+            } else if (!loaded_pdt_member_recipe(pdt_struct, item.first,
+                    inner_name, sent_args)) {
+                continue;
+            }
             // Map each arg to its actual value:
             std::vector<int64_t> actual_inner;
             for (int64_t s : sent_args) {
@@ -14301,7 +14527,7 @@ public:
             ASR::ttype_t* inner_type = instantiate_pdt_by_values(
                 loc, inner_name, actual_inner,
                 false, false, empty_dims, inner_sym_decl,
-                ASR::abiType::Source, false);
+                ASR::abiType::Source, false, nullptr, request_owner);
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
             var->m_type = rewrap_pdt_member_type(var->m_type, inner_type, var->base.base.loc);
             var->m_type_declaration = inner_sym_decl;
@@ -14383,7 +14609,8 @@ public:
                     empty_dims.reserve(al, 0);
                     instantiate_pdt_by_values(loc, parent_name, parent_vals,
                         false, false, empty_dims, parent_type_decl,
-                        ASR::abiType::Source, false, parent_orig);
+                        ASR::abiType::Source, false, parent_orig,
+                        request_owner);
                     new_parent = parent_type_decl;
                     parent_orig = nullptr;
                 } else {
@@ -14422,6 +14649,8 @@ public:
         }
 
         pdt_scope->add_symbol(monomorphized_name, struct_sym);
+        record_imported_pdt_specialization(request_owner, pdt_sym_orig,
+            kind_val_vec, loc);
 
         type_declaration = ASRUtils::import_type_declaration(
             al, struct_sym, current_scope);

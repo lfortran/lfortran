@@ -13,7 +13,7 @@ symbol
     -- `host_only_object`: the module's own object file defines its procedures
     -- and was compiled without GPU offloading, so it defines no deferring
     -- twins of them (gpu_launch_sync).
-    | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, bool host_only_object, identifier? global_init, location start_name, location end_name)
+    | Module(symbol_table symtab, identifier name, identifier? parent_module, identifier* dependencies, bool loaded_from_mod, bool intrinsic, bool has_submodules, bool host_only_object, pdt_module_state? pdt_state, identifier? global_init, location start_name, location end_name)
     | Function(symbol_table symtab, identifier name, ttype function_signature, identifier* dependencies, expr* args, stmt* body, expr? return_var, access access, bool deterministic, bool side_effect_free, string? module_file, gpu_kernel_layout? gpu, interface_body? interface_body, location start_name, location end_name)
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
@@ -378,6 +378,14 @@ memory_space = Global | Shared | Constant | Thread
 dimension = (expr? start, expr? length)
 codimension = (expr? start, expr? end, codimension_type end_star)
 codimension_type = CodimensionExpr | CodimensionStar
+-- Concrete kind specializations needed by a module but owned by a dependency
+-- are materialized in that dependency's loaded scope before resolving imports.
+-- A template's deferred inner PDT member arguments must survive a modfile
+-- round trip so the specialization can be recreated from its original recipe.
+pdt_module_state = (pdt_specialization* specializations, pdt_template_recipe* templates)
+pdt_specialization = (identifier owner_module, identifier template_name, expr* kinds)
+pdt_template_recipe = (identifier template_name, pdt_member_recipe* members)
+pdt_member_recipe = (identifier member_name, identifier type_name, expr* kinds)
 -- The first storage unit of `designator`, a designator of `variable`, is the
 -- first storage unit of `anchor`, a designator of a member of the block or
 -- of the variable of an earlier association.
