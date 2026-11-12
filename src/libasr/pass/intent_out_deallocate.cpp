@@ -111,7 +111,11 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         for (ASR::Struct_t* st : collector.structs) {
             if (!seen.insert(st).second ||
                     ASRUtils::is_unlimited_polymorphic_type(&st->base) ||
-                    st->m_abi == ASR::abiType::BindC || st->m_is_sequence) {
+                    st->m_abi == ASR::abiType::BindC || st->m_is_sequence ||
+                    ASRUtils::is_iso_c_ptr_type_symbol(unit.m_symtab,
+                        &st->base) ||
+                    ASRUtils::is_iso_c_funptr_type_symbol(unit.m_symtab,
+                        &st->base)) {
                 continue;
             }
 
