@@ -162,8 +162,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [times
-                                                    plus]
+                                                    [plus
+                                                    times]
                                                     [(Var 8 a)
                                                     (Var 8 x)
                                                     (Var 8 y)]
@@ -797,8 +797,8 @@
                                                         .false.
                                                         Host
                                                     )
-                                                    [~mul_intrinsic
-                                                    ~add_intrinsic]
+                                                    [~add_intrinsic
+                                                    ~mul_intrinsic]
                                                     [(Var 15 a)
                                                     (Var 15 x)
                                                     (Var 15 y)]
@@ -1811,8 +1811,8 @@
                                         .false.
                                         Host
                                     )
-                                    [my_mul
-                                    my_add]
+                                    [my_add
+                                    my_mul]
                                     [(Var 11 a)
                                     (Var 11 x)
                                     (Var 11 y)]
