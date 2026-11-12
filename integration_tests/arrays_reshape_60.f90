@@ -5,14 +5,14 @@ program arrays_reshape_60
         character(len=2) :: c(6)
     end type
     character(len=3) :: src(4), grid(2,2), wide(6), tall(3,2), empty(0,2)
-    character(len=3), allocatable :: asrc(:)
+    character(len=3), allocatable :: asrc(:), agrid(:,:)
     character(len=:), allocatable :: dsrc(:)
     character(len=3), target :: tsrc(4)
     character(len=3), pointer :: psrc(:)
     character(len=2) :: cube_src(24), cube(2,3,4), pairs(3,2)
     character(len=1) :: letters(6), lgrid(2,3)
     type(box) :: b
-    integer :: ord(2), ord3(3), i, j, k
+    integer :: ord(2), ord3(3), i, j, k, n, m
     integer(8) :: ord8(2)
     integer, allocatable :: aord(:)
 
@@ -128,6 +128,36 @@ program arrays_reshape_60
     if (size(empty) /= 0) error stop
     if (any(src /= ["one", "two", "six", "ten"])) error stop
 
+    ! result of a size zero that is only known at run time
+    n = 0
+    if (size(reshape(src, [n, 2], order=[2, 1])) /= 0) error stop
+    if (size(reshape(src, [2, n], order=[2, 1]), 1) /= 2) error stop
+    if (size(reshape(src, [2, n], order=[2, 1]), 2) /= 0) error stop
+    empty = reshape(src, [n, 2], order=[2, 1])
+    if (any(src /= ["one", "two", "six", "ten"])) error stop
+
+    ! shape only known at run time
+    n = 3
+    m = 2
+    tall = reshape(wide, [n, m], order=[2, 1])
+    if (tall(1,1) /= "one" .or. tall(1,2) /= "two") error stop
+    if (tall(2,1) /= "six" .or. tall(2,2) /= "ten") error stop
+    if (tall(3,1) /= "abc" .or. tall(3,2) /= "def") error stop
+    ord = [1, 2]
+    tall = reshape(wide, [n, m], order=ord)
+    if (tall(1,1) /= "one" .or. tall(2,1) /= "two" .or. tall(3,1) /= "six") error stop
+    if (tall(1,2) /= "ten" .or. tall(2,2) /= "abc" .or. tall(3,2) /= "def") error stop
+    if (size(reshape(wide, [m, n], order=[2, 1]), 1) /= 2) error stop
+    if (size(reshape(wide, [m, n], order=[2, 1]), 2) /= 3) error stop
+
+    ! allocatable result
+    allocate(agrid(3,2))
+    agrid = reshape(wide, [n, m], order=[2, 1])
+    if (size(agrid, 1) /= 3 .or. size(agrid, 2) /= 2) error stop
+    if (agrid(1,1) /= "one" .or. agrid(1,2) /= "two") error stop
+    if (agrid(2,1) /= "six" .or. agrid(2,2) /= "ten") error stop
+    if (agrid(3,1) /= "abc" .or. agrid(3,2) /= "def") error stop
+
     ! single characters
     letters = ["a", "b", "c", "d", "e", "f"]
     lgrid = reshape(letters, [2, 3], order=[2, 1])
@@ -148,6 +178,7 @@ program arrays_reshape_60
 
     call explicit_shape(wide, 6, 3)
     call assumed_shape(wide)
+    call integer_source([1, 2, 3, 4, 5, 6], 6, 0)
 
     print *, "OK"
 
@@ -178,6 +209,18 @@ contains
         if (g(1,1) /= "one" .or. g(1,2) /= "two") error stop
         if (g(2,1) /= "six" .or. g(2,2) /= "ten") error stop
         if (g(3,1) /= "abc" .or. g(3,2) /= "def") error stop
+    end subroutine
+
+    ! only the elements of the result are copied, whatever their type
+    subroutine integer_source(a, n, k)
+        integer, intent(in) :: n, k, a(n)
+        integer :: none(0,2), g(2,2)
+        none = reshape(a, [0, 2], order=[2, 1])
+        if (size(reshape(a, [k, 2], order=[2, 1])) /= 0) error stop
+        g = -1
+        g = reshape(a, [2, 2], order=[2, 1])
+        if (g(1,1) /= 1 .or. g(1,2) /= 2) error stop
+        if (g(2,1) /= 3 .or. g(2,2) /= 4) error stop
     end subroutine
 
 end program
