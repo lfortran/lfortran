@@ -5829,8 +5829,12 @@ public:
                     } else if (x.m_pad != nullptr && target_size > source_size) {
                         int64_t pad_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_pad));
                         this->visit_expr(*x.m_pad);
-                        // tmp is already an element pointer (i32*, real*, etc.)
-                        llvm::Value* pad_base = tmp;
+                        // A fixed-size `pad` of another rank is a pointer
+                        // to the whole array, not to its first element:
+                        // address its contiguous elements through an
+                        // element pointer.
+                        llvm::Value* pad_base = builder->CreateBitCast(tmp,
+                            llvm_data_type->getPointerTo());
                         for (int64_t i = source_size; i < target_size; i++) {
                             // `pad` starts from its first element right
                             // after the last element of `source`.
