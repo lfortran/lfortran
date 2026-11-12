@@ -138,15 +138,16 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             if (existing != nullptr) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::StructMethodDeclaration_t>(
                     *existing));
-                ASR::StructMethodDeclaration_t* binding =
-                    ASR::down_cast<ASR::StructMethodDeclaration_t>(existing);
-                ASR::symbol_t* proc = binding->m_proc ?
-                    ASRUtils::symbol_get_past_external(binding->m_proc) :
-                    nullptr;
-                LCOMPILERS_ASSERT(!binding->m_is_nopass &&
-                    !binding->m_is_deferred && proc &&
-                    ASR::is_a<ASR::Function_t>(*proc) &&
-                    ASR::down_cast<ASR::Function_t>(proc)->n_args == 1);
+                LCOMPILERS_ASSERT([&]() {
+                    ASR::StructMethodDeclaration_t* binding =
+                        ASR::down_cast<ASR::StructMethodDeclaration_t>(existing);
+                    ASR::symbol_t* proc = binding->m_proc ?
+                        ASRUtils::symbol_get_past_external(binding->m_proc) :
+                        nullptr;
+                    return !binding->m_is_nopass && !binding->m_is_deferred &&
+                        proc && ASR::is_a<ASR::Function_t>(*proc) &&
+                        ASR::down_cast<ASR::Function_t>(proc)->n_args == 1;
+                }());
                 dynamic_init_bindings[st] = existing;
                 continue;
             }
