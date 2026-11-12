@@ -81,6 +81,9 @@ in the helper names it through the visible outer construct and its nested
 scope path. Module, program and procedure types keep helpers in their own
 defining scopes. No backend-specific traversal of block implementations is
 needed.
+Source Fortran omits these helpers and their imports, identifying them through
+`intent_out_reset` rather than their names. Native `intent(out)` supplies the
+reset semantics, so a helper must not introduce an additional `contains`.
 See [IntentOutReset](../statement_nodes/IntentOutReset.md).
 
 ## Examples

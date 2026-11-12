@@ -31,6 +31,22 @@ public:
     };
     std::vector<Call> calls;
     std::map<ASR::symbol_t*, std::vector<ASR::symbol_t*>> type_decl_vars;
+    std::set<ASR::symbol_t*> reset_helpers;
+
+    void visit_Struct(const ASR::Struct_t &x) {
+        if (x.m_intent_out_reset) {
+            reset_helpers.insert(ASRUtils::symbol_get_past_external(x.m_intent_out_reset));
+        }
+        ASR::BaseWalkVisitor<CollectUnprintedSymbols>::visit_Struct(x);
+    }
+
+    void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+        ASR::symbol_t *definition = ASRUtils::symbol_get_past_external(x.m_external);
+        if (definition && ASR::is_a<ASR::Struct_t>(*definition)) {
+            ASR::symbol_t *helper = ASR::down_cast<ASR::Struct_t>(definition)->m_intent_out_reset;
+            if (helper) reset_helpers.insert(ASRUtils::symbol_get_past_external(helper));
+        }
+    }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         calls.push_back({x.m_name, x.m_original_name, x.m_dt});
@@ -62,7 +78,9 @@ static bool is_procedure_symbol(ASR::symbol_t *sym) {
 static std::set<ASR::symbol_t*> unprinted_call_symbols(const ASR::TranslationUnit_t &tu) {
     CollectUnprintedSymbols collector;
     collector.visit_TranslationUnit(tu);
-    std::set<ASR::symbol_t*> hidden;
+    // Native Fortran supplies INTENT(OUT) entry semantics. Its synthetic
+    // ASR reset procedures must not introduce extra source-level CONTAINS.
+    std::set<ASR::symbol_t*> hidden = collector.reset_helpers;
     for (auto &call : collector.calls) {
         if (call.name == nullptr) continue;
         ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(call.name);
@@ -1281,6 +1299,7 @@ public:
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         // Ensure no stale output leaks when this symbol does not emit a use line.
         src.clear();
+        if (unprinted_symbol(x.m_external)) return;
         // Skip internal  helper symbols that are not valid Fortran identifiers in a USE ONLY list.
         if ((std::string(x.m_name).find('@') != std::string::npos && !is_specific_import(x)) ||
             std::string(x.m_original_name).find('@') != std::string::npos) {

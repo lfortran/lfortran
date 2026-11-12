@@ -11,10 +11,6 @@ subroutine forward(x)
     call reset_array(x)
 end subroutine forward
 
-subroutine lcompilers_intent_out_reset_base(object)
-    type(base), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_base
-
 subroutine reset(x)
     class(base), intent(out) :: x
 end subroutine reset

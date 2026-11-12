@@ -11,10 +11,6 @@ subroutine forward(x)
     call reset_array(x)
 end subroutine forward
 
-subroutine lcompilers_intent_out_reset_base(object)
-    type(base), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_base
-
 subroutine reset(x)
     class(base), intent(out) :: x
 end subroutine reset
@@ -61,22 +57,6 @@ subroutine finish(x)
     type(resource), intent(inout) :: x
     final_calls = final_calls + 1
 end subroutine finish
-
-subroutine lcompilers_intent_out_reset_extension(object)
-    type(extension), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_extension
-
-subroutine lcompilers_intent_out_reset_leaf(object)
-    type(leaf), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_leaf
-
-subroutine lcompilers_intent_out_reset_part(object)
-    type(part), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_part
-
-subroutine lcompilers_intent_out_reset_resource(object)
-    type(resource), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_resource
 
 end module intent_out_dynamic_extension
 

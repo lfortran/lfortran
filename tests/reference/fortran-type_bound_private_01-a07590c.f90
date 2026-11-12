@@ -51,14 +51,6 @@ integer(4) function getf(self)
     getf = self%i
 end function getf
 
-subroutine lcompilers_intent_out_reset_base_t(object)
-    type(base_t), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_base_t
-
-subroutine lcompilers_intent_out_reset_child_t(object)
-    type(child_t), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_child_t
-
 subroutine run(self)
     class(child_t), intent(in) :: self
     call self%bump()

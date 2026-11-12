@@ -8,10 +8,6 @@ end type sgd_t
 
 contains
 
-subroutine lcompilers_intent_out_reset_sgd_t(object)
-    type(sgd_t), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_sgd_t
-
 subroutine shift(self, m)
     real(4), dimension(:), pointer :: __libasr_created__array_section_
     real(4), dimension(:), pointer :: __libasr_created__array_section_pointer_

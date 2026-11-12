@@ -7,10 +7,6 @@ end type layer
 
 contains
 
-subroutine lcompilers_intent_out_reset_layer(object)
-    type(layer), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_layer
-
 subroutine update(self, work, input, n, k)
     integer(4) :: __libasr_created__array_section_subscript_
     integer(4) :: __libasr_created__array_section_subscript_1

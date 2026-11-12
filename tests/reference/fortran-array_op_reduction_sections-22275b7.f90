@@ -52,10 +52,6 @@ subroutine forward(self, input, z)
     end do
 end subroutine forward
 
-subroutine lcompilers_intent_out_reset_conv(object)
-    type(conv), intent(inout) :: object
-end subroutine lcompilers_intent_out_reset_conv
-
 subroutine strided(ia, ib, la, m, s)
     integer(4) :: __libasr_index_0_
     integer(4) :: __libasr_index_0_1
