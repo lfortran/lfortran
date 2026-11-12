@@ -8,13 +8,24 @@ target datalayout = "..."
 
 @_Name_base = private unnamed_addr constant [5 x i8] c"base\00", align 1
 @_Type_Info_xx.base = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @_Name_base, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
-@_VTable_xx.base = linkonce_odr unnamed_addr constant { [8 x i8*] } { [8 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_xx.base to i8*), i8* bitcast (void (i8*, i8*, i1)* @_copy_xx_base to i8*), i8* bitcast (void (i8**)* @_allocate_struct_xx_base to i8*), i8* bitcast (void (i8*)* @finalize_StructType__base_3_of_xx_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__base_3_of_xx_no_final_for_UPoly to i8*), i8* bitcast (void (i8*)* @_default_init_struct_xx_base to i8*), i8* bitcast (void (%xx.base.3_class*)* @__module_xx_show_x to i8*)] }, align 8
+@_VTable_xx.base = linkonce_odr unnamed_addr constant { [8 x i8*] } { [8 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_xx.base to i8*), i8* bitcast (void (i8*, i8*, i1)* @_copy_xx_base to i8*), i8* bitcast (void (i8**)* @_allocate_struct_xx_base to i8*), i8* bitcast (void (i8*)* @finalize_StructType__base_3_of_xx_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__base_3_of_xx_no_final_for_UPoly to i8*), i8* bitcast (void (%xx.base.3_class*)* @__intent_out_init_base to i8*), i8* bitcast (void (%xx.base.3_class*)* @__module_xx_show_x to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define internal void @__intent_out_init_base(%xx.base.3_class* %this) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE___intent_out_init_base
+
+FINALIZE_SYMTABLE___intent_out_init_base:         ; preds = %return
+  ret void
+}
 
 define void @__module_xx_show_x(%xx.base.3_class* %this) {
 .entry:
@@ -147,13 +158,6 @@ entry:
 define internal void @finalize_StructType__base_3_of_xx_no_final_for_UPoly(i8* %0) {
 entry:
   %1 = bitcast i8* %0 to %xx.base.3*
-  ret void
-}
-
-define internal void @_default_init_struct_xx_base(i8* %0) {
-entry:
-  %1 = bitcast i8* %0 to %xx.base.3*
-  %2 = getelementptr %xx.base.3, %xx.base.3* %1, i32 0, i32 0
   ret void
 }
 

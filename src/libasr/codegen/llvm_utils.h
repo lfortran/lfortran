@@ -1135,10 +1135,6 @@ class ASRToLLVMVisitor;
         /// The vtable slot of the function that frees the memory of the object
         /// without calling final subroutines.
         static constexpr int vtable_free_slot = 3;
-        /// The vtable slot of the function that default-initializes, in place,
-        /// an object of the dynamic type of a polymorphic entity.
-        static constexpr int vtable_default_init_slot = 4;
-
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
             std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder, Allocator& al,
             std::map<uint64_t, llvm::Function*> &llvm_symtab_fn)  
@@ -2997,36 +2993,6 @@ class ASRToLLVMVisitor;
         }
 
         /**
-         * Deallocate the allocatable components of the object `ptr` of type
-         * `struct_sym`, those inherited from its ancestors included, and leave
-         * them unallocated.
-         */
-        void deallocate_allocatable_components(llvm::Value* const ptr, ASR::Struct_t* const struct_sym) {
-            const bool is_extended = struct_sym->m_parent != nullptr;
-            for (size_t i = 0; i < struct_sym->n_members; i++) {
-                auto const member_variable = ASR::down_cast<ASR::Variable_t>(
-                    struct_sym->m_symtab->get_symbol(struct_sym->m_members[i]));
-                if (!ASRUtils::is_allocatable(member_variable->m_type)) continue;
-                auto* const member_struct_sym = get_struct_sym(member_variable);
-                if (!is_finalizable_type(member_variable->m_type, member_struct_sym, true)) continue;
-                llvm::Value* const member_ptr = get_ptr_to_struct_variable_member(ptr, struct_sym, i);
-                check_userDefinedFinalizer_then_finalize(member_ptr, member_variable->m_type,
-                    member_struct_sym, true);
-                if (!LLVM::is_llvm_pointer(*member_variable->m_type)) continue;
-                llvm::Value* const slot = llvm_utils_->create_gep2(
-                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module), ptr, i + is_extended);
-                builder_->CreateStore(llvm::Constant::getNullValue(
-                    get_llvm_type(member_variable->m_type, member_struct_sym)), slot);
-            }
-            if (is_extended) {
-                ASR::Struct_t* const parent_struct = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(struct_sym->m_parent));
-                deallocate_allocatable_components(llvm_utils_->create_gep2(
-                    llvm_utils_->getStructType(struct_sym, llvm_utils_->module), ptr, 0), parent_struct);
-            }
-        }
-
-        /**
          * Free the storage owned by `n_elements` consecutive array elements
          * starting at `data` (e.g. the string buffers and allocatable
          * components of structs), without freeing the elements themselves.
@@ -3385,7 +3351,6 @@ class ASRToLLVMVisitor;
             std::map<ASR::symbol_t*, llvm::Type*> newclass2vtabtype;
             std::map<uint64_t, llvm::Function*>& llvm_symtab_fn;
             std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_struct_array_members;
-            std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*)> default_init_struct_in_place;
             LLVMFinalize &finalizer_instnace;
 
             // F2023 10.2.1.3: if struct_t has type-bound assignment(=), call it
@@ -3407,7 +3372,6 @@ class ASRToLLVMVisitor;
             LLVMStruct(llvm::LLVMContext& context_, LLVMUtils* llvm_utils,
                      llvm::IRBuilder<>* builder, std::map<uint64_t, llvm::Function*>& llvm_symtab_fn_,
                       std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_arr_mem_struct,
-                      std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*)> default_init_in_place,
                       LLVMFinalize &finalizer_instance_);
     
             llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym, llvm::Module* module);
@@ -3442,9 +3406,6 @@ class ASRToLLVMVisitor;
 
             llvm::Function* define_allocate_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module);
             void fill_allocate_struct_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module);
-
-            llvm::Function* define_default_init_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module);
-            void fill_default_init_struct_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module);
 
             llvm::Function* define_struct_copy_function(ASR::symbol_t* struct_sym,
                                                         llvm::Module* module);
