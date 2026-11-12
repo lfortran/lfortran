@@ -8848,15 +8848,18 @@ public:
     //
     //     lb_ = lb; ub_ = ub; st_ = st; l_ = l; r_ = r
     //     allocate(character(len=max(0, r_ - l_ + 1)) :: tmp(max(0, (ub_ - lb_ + st_)/st_)))
-    //     tmp = value
+    //     tmp(:) = value
     //     do i = lb_, ub_, st_
     //         a(i)(l_:r_) = tmp((i - lb_)/st_ + 1)
     //     end do
     //     deallocate(tmp)
     //
-    // `tmp = value` is an array assignment: it gives every element the
-    // length of the substring, and it checks the shape of the value. The
-    // temporary of a scalar value is a scalar, and a constant needs none.
+    // `tmp(:) = value` is an array assignment: it gives every element the
+    // length of the substring, and it checks the shape of the value. Its
+    // target is a section, as the temporary itself would be reallocated to
+    // the shape of the value where an allocatable target is, and the value
+    // of another shape would not be reported. The temporary of a scalar
+    // value is a scalar, and a constant needs none.
     // A bound that is a constant or a variable needs no temporary either,
     // nor do the bounds of the section when the value is a scalar: the loop
     // head is their only use, and it evaluates them once. The temporaries
@@ -8987,8 +8990,23 @@ public:
             value_sym = temporary("value",
                 ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, value_type)));
             body.push_back(al, b.Allocate(b.Var(value_sym), dims.p, dims.size(), len));
+            ASR::expr_t *value_target = b.Var(value_sym);
+            if (is_array) {
+                Vec<ASR::array_index_t> all; all.reserve(al, 1);
+                ASR::array_index_t index;
+                index.loc = loc;
+                index.m_left = ASRUtils::get_bound<SemanticAbort>(
+                    value_target, 1, "lbound", al, diag);
+                index.m_right = ASRUtils::get_bound<SemanticAbort>(
+                    value_target, 1, "ubound", al, diag);
+                index.m_step = b.i_t(1, int_type);
+                all.push_back(al, index);
+                value_target = ASRUtils::EXPR(ASR::make_ArraySection_t(al,
+                    idl->base.base.loc, value_target, all.p, all.size(),
+                    value_type, nullptr));
+            }
             body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                al, loc, b.Var(value_sym), value, nullptr, false, false)));
+                al, loc, value_target, value, nullptr, false, false)));
             element_value = b.Var(value_sym);
             if (is_array) {
                 element_value = b.ArrayItem_01(element_value, {b.Add(
