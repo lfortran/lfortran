@@ -14463,6 +14463,18 @@ public:
         return type;
     }
 
+    static bool has_pdt_kind_params(ASR::Struct_t* st) {
+        while (st != nullptr) {
+            if (st->n_kind_params > 0) return true;
+            if (st->m_parent == nullptr) break;
+            ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            LCOMPILERS_ASSERT(parent && ASR::is_a<ASR::Struct_t>(*parent));
+            st = ASR::down_cast<ASR::Struct_t>(parent);
+        }
+        return false;
+    }
+
     // Monomorphize a Parameterized Derived Type (PDT).
     // Parses kind arg values from the ASR pdt struct node, then delegates to
     // instantiate_pdt_by_values for the actual struct creation.
@@ -15026,14 +15038,14 @@ public:
 
             // Check if this is a Parameterized Derived Type instantiation
             // e.g., type(t(4)) :: a, or type(t) :: x where t has default kind values.
-            // We detect PDTs by checking if the ASR Struct has kind_params.
+            // An extension also inherits its parent's kind parameters.
             {
                 ASR::symbol_t* pdt_sym = current_scope->resolve_symbol(derived_type_name);
                 if (pdt_sym) {
                     ASR::symbol_t* pdt_orig = ASRUtils::symbol_get_past_external(pdt_sym);
                     if (ASR::is_a<ASR::Struct_t>(*pdt_orig)) {
                         ASR::Struct_t* pdt_st = ASR::down_cast<ASR::Struct_t>(pdt_orig);
-                        if (pdt_st->n_kind_params > 0) {
+                        if (has_pdt_kind_params(pdt_st)) {
                             // Case: 
                             // type :: a(k1)
                             //    integer, kind :: k1
@@ -15366,7 +15378,7 @@ public:
                 // set the variable's type declaration to the derived type
                 ASR::Struct_t* pdt_struct = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(v));
-                if (pdt_struct->n_kind_params > 0) {
+                if (has_pdt_kind_params(pdt_struct)) {
                     type = instantiate_pdt(loc, derived_type_name, sym_type,
                         is_pointer, is_allocatable, dims, type_declaration,
                         abi, is_argument);
