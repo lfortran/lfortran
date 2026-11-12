@@ -2433,9 +2433,12 @@ public:
                 ASR::symbol_t *anchor = ASRUtils::symbol_get_past_external(
                     current_symtab->resolve_symbol(x.m_module_name));
                 require_id(anchor && (ASR::is_a<ASR::Block_t>(*anchor) ||
-                        ASR::is_a<ASR::AssociateBlock_t>(*anchor)),
+                        ASR::is_a<ASR::AssociateBlock_t>(*anchor) ||
+                        ASR::is_a<ASR::Module_t>(*anchor) ||
+                        ASR::is_a<ASR::Program_t>(*anchor) ||
+                        ASR::is_a<ASR::Function_t>(*anchor)),
                     "asr.verify.external_symbol.block_owner_in_scope",
-                    "a block import must name a visible enclosing construct");
+                    "a block import must name a visible enclosing scope");
                 require_id(ASRUtils::symbol_symtab(anchor)->find_scoped_symbol(
                         x.m_original_name, x.n_scope_names, x.m_scope_names) ==
                         x.m_external,
@@ -2448,6 +2451,7 @@ public:
             ASR::Enum_t* em = nullptr;
             ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
+            ASR::Program_t* pm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
@@ -2464,6 +2468,7 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::Program_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
@@ -2477,6 +2482,9 @@ public:
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     asr_owner_name = fm->m_name;
+                } else if( ASR::is_a<ASR::Program_t>(*asr_owner_sym) ) {
+                    pm = ASR::down_cast<ASR::Program_t>(asr_owner_sym);
+                    asr_owner_name = pm->m_name;
                 }
             } else {
                 asr_owner_name = m->m_name;
@@ -2526,6 +2534,8 @@ public:
                 s = em->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( fm ) {
                 s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            } else if( pm ) {
+                s = pm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( um ) {
                 s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }

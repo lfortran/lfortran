@@ -1205,6 +1205,116 @@ public:
     }
 };
 
+// Reset entries are code pointers, not closures. A saved pointer-default
+// target has one static object, regardless of which invocation declared its
+// type. Move that same symbol to static storage before nested_vars can
+// capture it; do not make a copy of its value in the reset procedure.
+class ResetSavedTargets : public ASR::BaseWalkVisitor<ResetSavedTargets> {
+public:
+    std::set<ASR::Variable_t*> targets;
+    std::vector<ASR::Variable_t*> ordered_targets;
+
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) return;
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(sym);
+        if (v->m_storage == ASR::storage_typeType::Save &&
+                ASRUtils::is_reached_through_host_frame(*v) && owner &&
+                (ASR::is_a<ASR::Function_t>(*owner) ||
+                 ASR::is_a<ASR::Program_t>(*owner) ||
+                 ASR::is_a<ASR::Block_t>(*owner) ||
+                 ASR::is_a<ASR::AssociateBlock_t>(*owner))) {
+            if (targets.insert(v).second) ordered_targets.push_back(v);
+        }
+    }
+};
+
+class ImportSavedTargets : public ASR::ASRPassBaseWalkVisitor<ImportSavedTargets> {
+    Allocator &al;
+    const std::set<ASR::Variable_t*> &targets;
+
+public:
+    ImportSavedTargets(Allocator &al, const std::set<ASR::Variable_t*> &targets):
+        al(al), targets(targets) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+        if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                targets.count(ASR::down_cast<ASR::Variable_t>(sym))) {
+            const_cast<ASR::Var_t&>(x).m_v = ASRUtils::import_symbol(al,
+                sym, current_scope, ASR::accessType::Private, "1_");
+        }
+    }
+
+    void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
+        ASR::symbol_t *sym = x.m_external;
+        if (sym && ASR::is_a<ASR::Variable_t>(*sym) &&
+                targets.count(ASR::down_cast<ASR::Variable_t>(sym))) {
+            ASR::ExternalSymbol_t &ext = const_cast<ASR::ExternalSymbol_t&>(x);
+            ext.m_module_name = ASRUtils::symbol_name(ASRUtils::get_asr_owner(sym));
+            ext.m_original_name = ASRUtils::symbol_name(sym);
+            ext.m_scope_names = nullptr;
+            ext.n_scope_names = 0;
+        }
+    }
+};
+
+void hoist_reset_saved_targets(Allocator &al, ASR::TranslationUnit_t &unit,
+        const std::vector<ASR::Struct_t*> &types) {
+    ResetSavedTargets collect;
+    for (ASR::Struct_t *st : types) {
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(st->m_intent_out_reset));
+        for (size_t i = 0; i < fn->n_body; i++) collect.visit_stmt(*fn->m_body[i]);
+    }
+    std::map<SymbolTable*, SymbolTable*> storage_scopes;
+    for (ASR::Variable_t *v : collect.ordered_targets) {
+        SymbolTable *from = v->m_parent_symtab;
+        ASR::Module_t *module = ASRUtils::get_sym_module(&v->base);
+        SymbolTable *storage;
+        if (module) {
+            storage = module->m_symtab;
+        } else if (storage_scopes.count(from)) {
+            storage = storage_scopes.at(from);
+        } else {
+            // Include the complete defining path, so same-named internal
+            // procedures in separately compiled hosts do not share storage.
+            std::string name = "lcompilers_saved";
+            Vec<char*> path = ASRUtils::get_scope_names(al, from);
+            for (size_t i = path.size(); i > 0; i--) {
+                std::string part = path[i - 1];
+                name += "_" + std::to_string(part.size()) + "_" + part;
+            }
+            name = unit.m_symtab->get_unique_name(name, false);
+            storage = al.make_new<SymbolTable>(unit.m_symtab);
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_Module_t(al, v->base.base.loc, storage, s2c(al, name),
+                    nullptr, nullptr, 0, false, false, false, false, nullptr));
+            unit.m_symtab->add_symbol(name, owner);
+            storage_scopes[from] = storage;
+        }
+        std::string name = storage->get_unique_name(
+            "1_" + std::string(ASRUtils::symbol_name(
+                ASRUtils::get_asr_owner(&v->base))) + "_" + v->m_name, false);
+        from->erase_symbol(v->m_name);
+        v->m_name = s2c(al, name);
+        v->m_parent_symtab = storage;
+        v->m_access = ASR::accessType::Private;
+        storage->add_symbol(name, &v->base);
+        if (v->m_type_declaration) {
+            v->m_type_declaration = ASRUtils::import_symbol(al,
+                v->m_type_declaration, storage, ASR::accessType::Private,
+                "1_", "", true);
+        }
+        if (v->m_value) v->m_symbolic_value = v->m_value;
+    }
+    if (!collect.targets.empty()) {
+        ImportSavedTargets imports(al, collect.targets);
+        imports.visit_TranslationUnit(unit);
+    }
+}
+
 } // namespace
 
 bool is_concrete_reset_type(const ASR::Struct_t &type) {
@@ -1277,6 +1387,7 @@ void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
     CollectResetTypes collect;
     collect.visit_TranslationUnit(unit);
     for (ASR::Struct_t* st : collect.types) iod.build_reset_helper(*st);
+    hoist_reset_saved_targets(al, unit, collect.types);
     iod.visit_TranslationUnit(unit);
 
     PassUtils::UpdateDependenciesVisitor u(al);

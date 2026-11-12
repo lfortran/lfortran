@@ -10518,7 +10518,8 @@ ASR::expr_t* extract_member_from_binop(ASR::expr_t* x, int8_t member) {
 
 ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
         SymbolTable* scope, ASR::accessType access,
-        const std::string &name_prefix, const std::string &name_suffix) {
+        const std::string &name_prefix, const std::string &name_suffix,
+        bool import_local) {
     if (is_named_from(sym, scope)) return sym;
     ASR::symbol_t* definition = symbol_get_past_external(sym);
     if (definition == nullptr || symbol_parent_symtab(definition) == nullptr) {
@@ -10558,6 +10559,15 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
             module_sym = owner;
             owner = get_asr_owner(module_sym);
         }
+        if (import_local) {
+            // Hoisted static storage can no longer see its source construct.
+            // Anchor its dependencies at the enclosing program unit instead.
+            while (owner) {
+                path.push_back(symbol_name(module_sym));
+                module_sym = owner;
+                owner = get_asr_owner(module_sym);
+            }
+        }
         for (auto it = path.rbegin(); it != path.rend(); ++it) {
             scope_names.push_back(al, *it);
         }
@@ -10565,7 +10575,9 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
     if (module_sym == nullptr || (!ASR::is_a<ASR::Module_t>(*module_sym) &&
             !ASR::is_a<ASR::Struct_t>(*module_sym) &&
             !(ASR::is_a<ASR::Function_t>(*module_sym) &&
-              get_FunctionType(module_sym)->m_deftype == ASR::deftypeType::Interface) &&
+              (import_local ||
+               get_FunctionType(module_sym)->m_deftype == ASR::deftypeType::Interface)) &&
+            !(import_local && ASR::is_a<ASR::Program_t>(*module_sym)) &&
             !ASR::is_a<ASR::Block_t>(*module_sym) &&
             !ASR::is_a<ASR::AssociateBlock_t>(*module_sym))) {
         return sym;
