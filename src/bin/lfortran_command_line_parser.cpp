@@ -429,9 +429,24 @@ namespace LCompilers::CommandLineInterface {
             handle_help_category(app, help_arg);
         }
 
+        // CLI11 cannot declare the single-dash multi-character flag
+        // `-pthread`, so it is removed here. It only affects linking.
         if (argv != nullptr) {
-            app.parse(argc, argv);
+            std::vector<const char *> filtered_argv;
+            for (int i = 0; i < argc; ++i) {
+                if (i > 0 && std::string(argv[i]) == "-pthread") {
+                    opts.pthread = true;
+                } else {
+                    filtered_argv.push_back(argv[i]);
+                }
+            }
+            app.parse(static_cast<int>(filtered_argv.size()), filtered_argv.data());
         } else {
+            auto it = std::remove(args.begin(), args.end(), std::string("-pthread"));
+            if (it != args.end()) {
+                opts.pthread = true;
+                args.erase(it, args.end());
+            }
             app.parse(args);
         }
 

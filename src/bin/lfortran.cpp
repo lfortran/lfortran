@@ -1992,7 +1992,7 @@ int link_executable(const std::vector<std::string> &infiles,
     std::string linker, std::string linker_path, bool kokkos,
     bool verbose, const std::vector<std::string> &lib_dirs,
     const std::vector<std::string> &libraries,
-    const std::vector<std::string> &linker_flags,
+    const std::vector<std::string> &linker_flags, bool pthread,
     const std::vector<std::string> &emscripten_settings,
     CompilerOptions &compiler_options)
 {
@@ -2074,6 +2074,9 @@ int link_executable(const std::vector<std::string> &infiles,
         for (auto &s: linker_flags) {
             extra_linker_flags += " -W" + s;
         }
+    }
+    if (pthread) {
+        extra_linker_flags += " -pthread";
     }
     std::string extra_library_flags;
     if (!lib_dirs.empty()) {
@@ -3364,7 +3367,7 @@ int main_app(int argc, char *argv[]) {
         }
         int status_code = err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
                 backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
-                opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags,
+                opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, opts.pthread,
                 opts.emscripten_settings, compiler_options);
         auto end_time = std::chrono::high_resolution_clock::now();
         
