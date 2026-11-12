@@ -4375,7 +4375,7 @@ RUN(NAME class_177 LABELS gfortran llvm)
 RUN(NAME class_178 LABELS gfortran llvm)
 RUN(NAME class_179 LABELS gfortran llvm EXTRAFILES class_179_base.f90 class_179_child.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME class_180 LABELS gfortran llvm)
-# GNU Fortran 16 on Linux emits invalid '@' assembler symbols for these BLOCK-local types.
+# GNU Fortran 15 on Linux emits invalid '@' assembler symbols for these BLOCK-local types.
 RUN(NAME class_181 LABELS llvm)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
