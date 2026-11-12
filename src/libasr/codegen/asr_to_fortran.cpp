@@ -1814,6 +1814,14 @@ public:
         src = r;
     }
 
+    // A comment: compiling the printed procedure applies it again, as it
+    // does to every INTENT(OUT) dummy argument.
+    void visit_IntentOutReset(const ASR::IntentOutReset_t &x) {
+        visit_expr(*x.m_var);
+        src = indent + "! intent(out) reset of the dynamic type of " + src
+            + "\n";
+    }
+
     void visit_Cycle(const ASR::Cycle_t &x) {
         src = indent + "cycle";
         if (x.m_stmt_name) {

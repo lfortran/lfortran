@@ -1070,6 +1070,12 @@ public:
         branch_to(construct_frame(x.m_stmt_name, x.base.base.loc).cycle);
     }
 
+    // This backend has no virtual tables to find the dynamic type of a
+    // polymorphic entity by, so it applies to an INTENT(OUT) dummy argument
+    // only what the intent_out_deallocate pass does for its declared type.
+    void visit_IntentOutReset(const ASR::IntentOutReset_t &) {
+    }
+
     void visit_ErrorStop(const ASR::ErrorStop_t &) {
         error_exit("ERROR STOP\n");
     }

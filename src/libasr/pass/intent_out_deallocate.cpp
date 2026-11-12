@@ -770,6 +770,12 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             loc, logical_type, innermost_body);
         emit_struct_default_init_stmts(arr_ref, struct_type,
             current_scope, loc, innermost_body);
+        // Every element has the dynamic type of the array, whose own
+        // components only it knows about; see the scalar dummy.
+        if (is_polymorphic) {
+            innermost_body.push_back(al, ASRUtils::STMT(
+                ASR::make_IntentOutReset_t(al, loc, arr_ref)));
+        }
 
         emit_array_loops(arr_expr, idx_vars, innermost_body, loc, out_stmts);
     }
@@ -1001,6 +1007,20 @@ public:
                     var_expr, arg_var->m_presence, cleanup[k]);
                 dealloc_stmts.push_back(al, wrapped_stmt);
             }
+
+            // The statements above only know the declared type.  An
+            // extension of it, possibly declared in another compilation
+            // unit, can add allocatable components and default
+            // initialization of its own, which only the dynamic type
+            // decides (F2018 8.5.10).  That is applied last, after the
+            // final subroutines; the components the cleanup above
+            // deallocated are unallocated by then, so none is freed twice.
+            if (is_polymorphic) {
+                ASR::stmt_t* reset = ASRUtils::STMT(
+                    ASR::make_IntentOutReset_t(al, loc, var_expr));
+                dealloc_stmts.push_back(al, wrap_optional_check(loc,
+                    var_expr, arg_var->m_presence, reset));
+            }
         } else if (is_array_of_struct) {
             // An unlimited polymorphic dummy has no declared derived
             // type, so it has neither components to clean up nor
@@ -1019,12 +1039,9 @@ public:
 
             // Fortran 2018 8.5.10: an `intent(out)` dummy of a type with
             // default initialization is default-initialized on entry,
-            // element by element for an array dummy.  A polymorphic
-            // dummy is initialized with the defaults of its declared
-            // type; the components that a dynamic extension type adds
-            // need the dynamic type, which this pass cannot see, and are
-            // left alone -- which is what a scalar polymorphic
-            // `intent(out)` dummy already does.
+            // element by element for an array dummy.  For a polymorphic
+            // dummy this applies the declared type, and an IntentOutReset
+            // of every element then what its dynamic type adds.
             //
             // 7.5.6.3 requires the dummy to be finalized before that, but
             // which final procedures run is decided by the dynamic type,

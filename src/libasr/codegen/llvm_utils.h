@@ -1118,6 +1118,13 @@ class ASRToLLVMVisitor;
          * not finalized (F2018 7.5.6.4), only their memory is freed.
          */
         bool                                                        call_final_subroutines_ = true;
+        /**
+         * Whether the allocatable components that a struct finalizer frees
+         * are also left unallocated, so that the object can be used again.
+         * Used for the entities that an INTENT(OUT) dummy argument
+         * deallocates on entry (F2018 8.5.10), which live on.
+         */
+        bool                                                        reset_freed_members_ = false;
 
     public:
         /// The vtable slot of the function that finalizes an object of the
@@ -1126,6 +1133,11 @@ class ASRToLLVMVisitor;
         /// The vtable slot of the function that frees the memory of the object
         /// without calling final subroutines.
         static constexpr int vtable_free_slot = 3;
+        /// The vtable slot of the function that applies IntentOutReset to
+        /// the object: it deallocates its allocatable components, leaving
+        /// them unallocated, without calling final subroutines, and gives
+        /// the components that have default initialization their defaults.
+        static constexpr int vtable_intent_out_reset_slot = 4;
 
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
             std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder, Allocator& al,
@@ -1831,6 +1843,12 @@ class ASRToLLVMVisitor;
                    !ASR::is_a<ASR::Allocatable_t>(*member_variable->m_type) &&
                    ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_array(member_variable->m_type))) { continue; }
                 if(!is_finalizable_type(member_variable->m_type, struct_sym, true)){continue;} 
+                // The object lives on when its components are reset: what
+                // is not allocatable (a character component of fixed length
+                // owns heap storage here) stays valid, only the allocatable
+                // components of a nonallocatable derived type component go.
+                if(reset_freed_members_ && !ASRUtils::is_allocatable(member_variable->m_type) &&
+                   !ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(member_variable->m_type))) { continue; }
 
 
                 auto const BB_str_label = std::string("Finalize_struct_") + struct_sym->m_name + "'s_"
@@ -1841,6 +1859,10 @@ class ASRToLLVMVisitor;
                 auto const member_asr_type = member_variable->m_type;
                 auto* member_struct_sym = get_struct_sym(member_variable);
                 check_userDefinedFinalizer_then_finalize(member_ptr, member_asr_type, member_struct_sym, true);
+                if (reset_freed_members_ && ASRUtils::is_allocatable(member_asr_type)
+                        && is_finalizable_type(member_asr_type, member_struct_sym, true)) {
+                    mark_member_unallocated(ptr, struct_sym, i);
+                }
             }
 
             // Finalize Parent (F2018 7.5.6.2 step 3): the parent component is
@@ -2396,6 +2418,9 @@ class ASRToLLVMVisitor;
                 if (!call_final_subroutines_) {
                     key += "_no_final";
                 }
+                if (reset_freed_members_) {
+                    key += "_reset";
+                }
             } else {
                 key += ASRUtils::get_type_code(t_past, false, false, false);
             }
@@ -2751,6 +2776,32 @@ class ASRToLLVMVisitor;
             }
             return fetched_member;
         }
+        /**
+         * Leaves the allocatable component `idx` of the struct `ptr` points to
+         * unallocated, after its storage was freed: the pointer to its
+         * storage becomes null, as does the data of a string.
+         */
+        void mark_member_unallocated(llvm::Value* const ptr, ASR::Struct_t* const struct_, const int idx) {
+            auto const member_variable = ASR::down_cast<ASR::Variable_t>(
+                struct_->m_symtab->get_symbol(struct_->m_members[idx]));
+            ASR::ttype_t* const member_type = member_variable->m_type;
+            bool is_extended = struct_->m_parent != nullptr;
+            llvm::Value* const slot = llvm_utils_->create_gep2(
+                llvm_utils_->getStructType(struct_, llvm_utils_->module), ptr, idx + is_extended);
+            if (LLVM::is_llvm_pointer(*member_type)) {
+                llvm::Type* const slot_type = get_llvm_type(member_type, get_struct_sym(member_variable));
+                builder_->CreateStore(llvm::Constant::getNullValue(slot_type), slot);
+            } else {
+                LCOMPILERS_ASSERT(ASRUtils::is_string_only(member_type))
+                builder_->CreateStore(
+                    llvm::ConstantPointerNull::get(llvm_utils_->character_type),
+                    llvm_utils_->create_gep2(llvm_utils_->string_descriptor, slot, 0));
+                builder_->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt64Ty(builder_->getContext()), 0),
+                    llvm_utils_->create_gep2(llvm_utils_->string_descriptor, slot, 1));
+            }
+        }
+
         /**
          * Check if this type is finalizable.
          * It dispatches to other helper functions.
@@ -3181,6 +3232,64 @@ class ASRToLLVMVisitor;
             return fn;
         }
 
+        /**
+         * @brief Get the function that deallocates the allocatable
+         * components of an object of type `struct_sym`, those of its
+         * ancestors included, and leaves them unallocated, without calling
+         * final subroutines. The function of its
+         * `vtable_intent_out_reset_slot` calls it.
+         */
+        llvm::Function* get_UPoly_reset_fn(ASR::Struct_t* const struct_sym){
+            ASR::StructType_t* const struct_t = ASR::down_cast<ASR::StructType_t>(struct_sym->m_struct_signature);
+            llvm::Function* fn = nullptr;
+            const bool saved = reset_freed_members_;
+            reset_freed_members_ = true;
+            with_final_subroutines(false, [&]() {
+                fn = create_UPoly_finalize_fn(&struct_t->base, struct_sym);
+            });
+            reset_freed_members_ = saved;
+            return fn;
+        }
+
+        /**
+         * Lowers IntentOutReset: applies to the polymorphic entity
+         * `class_ptr` (a pointer to its {vptr, data} wrapper, of type `t`)
+         * the function of the `vtable_intent_out_reset_slot` of the vtable
+         * of its dynamic type, which is not known statically. Nothing is
+         * done for an entity that has no vtable or data.
+         */
+        void call_intent_out_reset(llvm::Value* const class_ptr, ASR::ttype_t* const t,
+                ASR::Struct_t* const struct_sym){
+            llvm::LLVMContext &context = builder_->getContext();
+            llvm::StructType* const class_llvm_t = llvm::cast<llvm::StructType>(get_llvm_type(t, struct_sym));
+            llvm::Function* const current_fn = builder_->GetInsertBlock()->getParent();
+            llvm::BasicBlock* const call_bb = llvm::BasicBlock::Create(context, "intent_out_reset", current_fn);
+            llvm::BasicBlock* const done_bb = llvm::BasicBlock::Create(context, "intent_out_reset_done", current_fn);
+            llvm::Value* const vptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->vptr_type, llvm_utils_->create_gep2(class_llvm_t, class_ptr, 0));
+            llvm::Value* const data = builder_->CreateBitCast(
+                llvm_utils_->CreateLoad2(class_llvm_t->getElementType(1),
+                    llvm_utils_->create_gep2(class_llvm_t, class_ptr, 1)),
+                llvm_utils_->i8_ptr);
+            builder_->CreateCondBr(builder_->CreateAnd(
+                builder_->CreateIsNotNull(vptr), builder_->CreateIsNotNull(data)), call_bb, done_bb);
+
+            builder_->SetInsertPoint(call_bb);
+            llvm::FunctionType* const reset_fn_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {llvm_utils_->i8_ptr}, false);
+            llvm::FunctionType const* fnTy = llvm::FunctionType::get(
+                llvm::Type::getInt32Ty(context), {}, true);
+            llvm::Value* const reset_fn_i8ptr = llvm_utils_->CreateLoad2(
+                llvm_utils_->i8_ptr,
+                llvm_utils_->CreateInBoundsGEP2(fnTy->getPointerTo(), vptr,
+                    {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), vtable_intent_out_reset_slot, false)}));
+            llvm::Value* const reset_fn = builder_->CreateBitCast(reset_fn_i8ptr, reset_fn_type->getPointerTo());
+            builder_->CreateCall(reset_fn_type, reset_fn, {data});
+            builder_->CreateBr(done_bb);
+
+            builder_->SetInsertPoint(done_bb);
+        }
+
     private:
         /// get_UPoly_finalize_fn() in the current mode.
         llvm::Function* create_UPoly_finalize_fn(ASR::ttype_t* const type, ASR::Struct_t* const struct_sym){
@@ -3343,6 +3452,9 @@ class ASRToLLVMVisitor;
             std::map<ASR::symbol_t*, llvm::Type*> newclass2vtabtype;
             std::map<uint64_t, llvm::Function*>& llvm_symtab_fn;
             std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_struct_array_members;
+            // Gives the components of the existing object of the type at the
+            // pointer their default initialization, after it was finalized.
+            std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*)> apply_struct_default_init;
             LLVMFinalize &finalizer_instnace;
 
             // F2023 10.2.1.3: if struct_t has type-bound assignment(=), call it
@@ -3364,6 +3476,7 @@ class ASRToLLVMVisitor;
             LLVMStruct(llvm::LLVMContext& context_, LLVMUtils* llvm_utils,
                      llvm::IRBuilder<>* builder, std::map<uint64_t, llvm::Function*>& llvm_symtab_fn_,
                       std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_arr_mem_struct,
+                      std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*)> apply_struct_default_init_,
                       LLVMFinalize &finalizer_instance_);
     
             llvm::Constant* get_pointer_to_method(ASR::symbol_t* struct_sym, llvm::Module* module);
@@ -3398,6 +3511,9 @@ class ASRToLLVMVisitor;
 
             llvm::Function* define_allocate_struct_function(ASR::symbol_t* struct_sym, llvm::Module* module);
             void fill_allocate_struct_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module);
+            llvm::Function* define_intent_out_reset_function(ASR::symbol_t* struct_sym, llvm::Module* module);
+            void fill_intent_out_reset_body(ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module);
+            llvm::Function* get_intrinsic_type_intent_out_reset_function(llvm::Module* module);
 
             llvm::Function* define_struct_copy_function(ASR::symbol_t* struct_sym,
                                                         llvm::Module* module);

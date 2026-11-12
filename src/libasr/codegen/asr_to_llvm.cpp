@@ -1014,6 +1014,12 @@ public:
     struct_api(std::make_unique<LLVMStruct>(context, llvm_utils.get(), builder.get(), llvm_symtab_fn,
                 [this](ASR::Struct_t* s, llvm::Value* v, ASR::ttype_t* t, bool flag) {
                         allocate_array_members_of_struct(s, v, t, flag);
+                },
+                // As for an INTENT(OUT) dummy argument: only the defaults
+                // are stored, the storage the object owns is kept.
+                [this](ASR::Struct_t* s, llvm::Value* v, ASR::ttype_t* t) {
+                        allocate_array_members_of_struct(s, v, t, true, true,
+                            false, nullptr, true);
                 }, llvm_symtab_finalizer)),
     tuple_api(std::make_unique<LLVMTuple>(context, llvm_utils.get(), builder.get())),
     dict_api_lp(std::make_unique<LLVMDictOptimizedLinearProbing>(context, llvm_utils.get(), builder.get())),
@@ -6250,6 +6256,20 @@ public:
             member.m_type_declaration, module.get(), member.m_abi);
     }
 
+    // The dynamic type decides what is reset, so this calls the function
+    // its vtable has for it.
+    void visit_IntentOutReset(const ASR::IntentOutReset_t& x) {
+        ASR::ttype_t* type = ASRUtils::expr_type(x.m_var);
+        ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(x.m_var)));
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_var);
+        ptr_loads = ptr_loads_copy;
+        llvm_symtab_finalizer.call_intent_out_reset(tmp, type, struct_sym);
+    }
+
     // Makes the member store the address of the variable, which it then
     // designates.
     void visit_BindReference(const ASR::BindReference_t& x) {
@@ -9045,7 +9065,7 @@ public:
     void allocate_array_members_of_struct(ASR::Struct_t* struct_sym, llvm::Value* ptr,
             ASR::ttype_t* asr_type, bool is_intent_out = false, bool initialize_val = true,
             bool skip_allocatable_array_descriptor_init = false,
-            ASR::StructConstant_t* init_sc = nullptr) {
+            ASR::StructConstant_t* init_sc = nullptr, bool finalized = false) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*asr_type));
         ASR::Struct_t* struct_type_t = nullptr;
         if (ASR::is_a<ASR::StructType_t>(*asr_type)) {
@@ -9101,8 +9121,11 @@ public:
             }
             LCOMPILERS_ASSERT(i == init_sc->n_args);
         }
+        // The defaults of an INTENT(OUT) dummy argument of a finalizable
+        // type are applied after its finalization, so not here, unless it
+        // is already `finalized`.
         bool apply_init = initialize_val &&
-            (init_sc || !(is_intent_out && struct_has_finalizer));
+            (init_sc || finalized || !(is_intent_out && struct_has_finalizer));
 
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
             llvm::Type* const class_type = llvm_utils->getClassType(struct_sym, false);
@@ -9284,7 +9307,8 @@ public:
                         member_sc = ASR::down_cast<ASR::StructConstant_t>(init_value);
                     }
                     allocate_array_members_of_struct(struct_sym, ptr_member, symbol_type,
-                        is_intent_out, initialize_val, skip_allocatable_array_descriptor_init, member_sc);
+                        is_intent_out, initialize_val, skip_allocatable_array_descriptor_init, member_sc,
+                        finalized);
                 }  else if(ASRUtils::is_string_only(symbol_type) && !is_intent_out) {
                     // Skip string descriptor setup for bind(C)/SEQUENCE struct
                     // non-pointer character members (inline [len x i8]).

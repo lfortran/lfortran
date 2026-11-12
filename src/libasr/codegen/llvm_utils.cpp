@@ -4461,12 +4461,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::IRBuilder<>* builder_, 
         std::map<uint64_t, llvm::Function*>& llvm_symtab_fn_,
         std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*, bool)> allocate_arr_mem_struct,
+        std::function<void(ASR::Struct_t*, llvm::Value*, ASR::ttype_t*)> apply_struct_default_init_,
         LLVMFinalize &finalizer_instnace_):
         context(context_),
         llvm_utils(std::move(llvm_utils_)),
         builder(std::move(builder_)),
         llvm_symtab_fn(llvm_symtab_fn_), 
         allocate_struct_array_members(allocate_arr_mem_struct),
+        apply_struct_default_init(apply_struct_default_init_),
         finalizer_instnace(finalizer_instnace_)
         {}
 
@@ -10385,6 +10387,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
         LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_intent_out_reset_slot)
+        slots.push_back(llvm::ConstantExpr::getBitCast(
+            get_intrinsic_type_intent_out_reset_function(module), llvm_utils->i8_ptr));
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(llvm_utils->i8_ptr, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
@@ -10437,6 +10442,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::Function* allocate_array_members_function = define_allocate_struct_function(struct_sym, module);
         llvm::Function* finalize_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t, true);
         llvm::Function* free_function = finalizer_instnace.get_UPoly_finalize_fn(struct_t, false);
+        llvm::Function* intent_out_reset_function = define_intent_out_reset_function(struct_sym, module);
         struct_vtab_function_offset[struct_sym]["_lfortran_struct_copy"] = slots.size() - 2;
         slots.push_back(llvm::ConstantExpr::getBitCast(copy_function, llvm_utils->i8_ptr));
         struct_vtab_function_offset[struct_sym]["_lfortran_allocate_struct_array_members"] = slots.size() - 2;
@@ -10445,6 +10451,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
         LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_intent_out_reset_slot)
+        slots.push_back(llvm::ConstantExpr::getBitCast(intent_out_reset_function, llvm_utils->i8_ptr));
         collect_vtable_function_impls(struct_sym, slots, module);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());
@@ -10463,6 +10471,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         // populate copy function body after creating vtable
         fill_struct_copy_body(struct_sym, copy_function, module);
         fill_allocate_struct_body(struct_sym, allocate_array_members_function, module);
+        fill_intent_out_reset_body(struct_sym, intent_out_reset_function, module);
     }
 
     void LLVMStruct::create_type_info_for_struct(ASR::symbol_t* struct_sym, llvm::Module* module)
@@ -10614,6 +10623,64 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         if (savedBB) {
             builder->SetInsertPoint(savedBB, savedBB->end());
         }
+    }
+
+    llvm::Function* LLVMStruct::define_intent_out_reset_function(ASR::symbol_t* struct_sym, llvm::Module* module)
+    {
+        llvm::FunctionType *funcType = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false);
+        std::string func_name = "_intent_out_reset_";
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(struct_sym);
+        if (owner) {
+            func_name += ASRUtils::symbol_name(owner) + std::string("_");
+        }
+        func_name += ASRUtils::symbol_name(struct_sym);
+        return llvm::Function::Create(funcType, llvm::Function::InternalLinkage,
+            func_name, module);
+    }
+
+    // The object `func` is given is of type `struct_sym`: what IntentOutReset
+    // does to it is to deallocate its allocatable components, and then to
+    // give its components their default initialization.
+    void LLVMStruct::fill_intent_out_reset_body(
+        ASR::symbol_t* struct_sym, llvm::Function* func, llvm::Module* module)
+    {
+        Allocator al(1024);
+        llvm::BasicBlock *savedBB = builder->GetInsertBlock();
+        llvm::BasicBlock *entry = llvm::BasicBlock::Create(context, "entry", func);
+        builder->SetInsertPoint(entry);
+
+        ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        llvm::Value* data = &*func->arg_begin();
+        builder->CreateCall(finalizer_instnace.get_UPoly_reset_fn(struct_t), {data});
+        llvm::Type *struct_type = llvm_utils->getStructType(struct_t, module);
+        llvm::Value* typed_data = builder->CreateBitCast(data, struct_type->getPointerTo());
+        ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
+            al, struct_sym->base.loc, struct_sym, true);
+        apply_struct_default_init(struct_t, typed_data, struct_signature);
+        builder->CreateRetVoid();
+
+        if (savedBB) {
+            builder->SetInsertPoint(savedBB, savedBB->end());
+        }
+    }
+
+    // An object of intrinsic type has no components, so IntentOutReset has
+    // nothing to do to one.
+    llvm::Function* LLVMStruct::get_intrinsic_type_intent_out_reset_function(llvm::Module* module)
+    {
+        const std::string func_name = "_intent_out_reset_intrinsic_type";
+        if (llvm::Function *existing = module->getFunction(func_name)) {
+            return existing;
+        }
+        llvm::FunctionType *funcType = llvm::FunctionType::get(
+            llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false);
+        llvm::Function *func = llvm::Function::Create(funcType,
+            llvm::Function::LinkOnceODRLinkage, func_name, module);
+        llvm::IRBuilder<> fn_builder(llvm::BasicBlock::Create(context, "entry", func));
+        fn_builder.CreateRetVoid();
+        return func;
     }
 
     llvm::Function* LLVMStruct::define_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module) 

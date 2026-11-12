@@ -91,6 +91,14 @@ stmt
     | Cycle(identifier? stmt_name)
     | ExplicitDeallocate(expr* vars, expr? stat, expr? errmsg)
     | ImplicitDeallocate(expr* vars)
+    -- What F2018 8.5.10 does on entry to a procedure to `var`, a scalar,
+    -- nonpointer, nonallocatable polymorphic INTENT(OUT) dummy argument,
+    -- according to its dynamic type, which may extend the declared type
+    -- with components of its own: the allocatable components of the dynamic
+    -- type, those it inherits included, are deallocated, and the components
+    -- that have default initialization get their default values. No final
+    -- subroutine is called.
+    | IntentOutReset(expr var)
     | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body)
     | OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body, exec_target exec_target)
     | DoLoop(identifier? name, do_loop_head head, stmt* body, stmt* orelse)

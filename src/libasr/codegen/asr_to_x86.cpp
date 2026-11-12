@@ -557,6 +557,12 @@ public:
         }
     }
 
+    // This backend has no virtual tables to find the dynamic type of a
+    // polymorphic entity by, so it applies to an INTENT(OUT) dummy argument
+    // only what the intent_out_deallocate pass does for its declared type.
+    void visit_IntentOutReset(const ASR::IntentOutReset_t & /* x */) {
+    }
+
     void visit_ErrorStop(const ASR::ErrorStop_t &x) {
         std::string id = "err" + std::to_string(get_hash((ASR::asr_t*)&x));
         std::string msg = "ERROR STOP\n";
