@@ -27881,35 +27881,26 @@ public:
                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(x.m_args[i].m_value))));
             }
 
-            // For assumed-rank parameters, bitcast the descriptor pointer
-            // to match the function signature (all descriptor types share
-            // the same layout; the callee reads the rank field to determine
-            // how many dim entries are valid).
+            // A scalar passed to a Fortran pointer/allocatable assumed-rank
+            // dummy has a freshly constructed descriptor, but the dummy ABI
+            // expects the address of a descriptor pointer. Array actuals
+            // already supply that slot; bind(C) instead takes one CFI pointer.
             if (orig_arg &&
-                    ASRUtils::is_assumed_rank_array(orig_arg->m_type)) {
+                    ASRUtils::is_assumed_rank_array(orig_arg->m_type) &&
+                    x_abi != ASR::abiType::BindC) {
                 llvm::Type* expected_desc_type = llvm_utils->get_type_from_ttype_t_util(
                     orig_arg->m_type, orig_arg->m_type_declaration, module.get());
                 if (tmp == scalar_assumed_rank_desc &&
-                        x_abi != ASR::abiType::BindC &&
                         LLVM::is_llvm_pointer(*orig_arg->m_type)) {
-                    // An allocatable or pointer assumed-rank dummy takes a
-                    // pointer to the caller's descriptor pointer (a bind(C)
-                    // one takes the descriptor itself). A scalar
-                    // actual is wrapped in a fresh descriptor, so store its
-                    // address in a slot rather than punning the descriptor
-                    // itself as a pointer to a pointer. Decide this from the
-                    // dummy's type: with opaque pointers both LLVM types are
-                    // the same `ptr`.
                     llvm::Value* desc_slot = llvm_utils->CreateAlloca(
-                        expected_desc_type, nullptr,
-                        "assumed_rank_desc");
+                        expected_desc_type, nullptr, "assumed_rank_desc");
                     builder->CreateStore(
                         builder->CreateBitCast(tmp, expected_desc_type),
                         desc_slot);
                     tmp = desc_slot;
-                } else if (tmp->getType() != expected_desc_type->getPointerTo()) {
-                    tmp = builder->CreateBitCast(tmp, expected_desc_type->getPointerTo());
                 }
+                tmp = builder->CreateBitCast(tmp,
+                    expected_desc_type->getPointerTo());
             }
 
             // For bind(c) character array arguments passed as Var, extract the raw data pointer

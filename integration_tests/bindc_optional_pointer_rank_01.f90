@@ -31,6 +31,7 @@ program bindc_optional_pointer_rank_01
     call forward(0_c_int)
     call forward(1_c_int, p)
     call forward(3_c_int, ps)
+    if (check(3_c_int, ps) /= 0_c_int) error stop 4
     call forward(4_c_int, pm)
     nullify(p)
     call forward(2_c_int, p)
