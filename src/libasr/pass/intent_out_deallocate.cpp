@@ -252,6 +252,12 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         }
     }
 
+    static ASR::symbol_t* declared_component(ASR::Struct_t* st, size_t i) {
+        ASR::symbol_t* member = st->m_symtab->get_symbol(st->m_members[i]);
+        LCOMPILERS_ASSERT(member && ASR::is_a<ASR::Variable_t>(*member));
+        return member;
+    }
+
     void emit_pointer_default(
             ASR::expr_t* target,
             ASR::expr_t* value,
@@ -538,10 +544,10 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             Vec<ASR::stmt_t*>& out_stmts) {
         ASR::Struct_t* st = struct_type;
         while (st != nullptr) {
-            for (auto& m : st->m_symtab->get_scope()) {
-                if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+            for (size_t i = 0; i < st->n_members; i++) {
+                ASR::symbol_t* member = declared_component(st, i);
                 ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
-                    m.second);
+                    member);
                 // Kind parameters are compile-time properties, not components.
                 if (m_var->m_storage == ASR::storage_typeType::Parameter)
                     continue;
@@ -556,8 +562,8 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                             !ASRUtils::is_class_type(m_var->m_type)) {
                         ASR::expr_t* nested_expr = ASRUtils::EXPR(
                             ASRUtils::getStructInstanceMember_t(al, loc,
-                                (ASR::asr_t*)struct_expr, m.second,
-                                m.second, current_scope));
+                                (ASR::asr_t*)struct_expr, member,
+                                member, current_scope));
                         emit_struct_default_init_stmts(nested_expr, m_struct,
                             current_scope, loc, out_stmts);
                         continue;
@@ -569,8 +575,8 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                     if (elem_struct != nullptr) {
                         ASR::expr_t* arr_expr = ASRUtils::EXPR(
                             ASRUtils::getStructInstanceMember_t(al, loc,
-                                (ASR::asr_t*)struct_expr, m.second,
-                                m.second, current_scope));
+                                (ASR::asr_t*)struct_expr, member,
+                                member, current_scope));
                         emit_array_component_default_init_stmts(arr_expr,
                             elem_struct, nullptr, current_scope, loc,
                             out_stmts);
@@ -581,8 +587,8 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
 
                 ASR::expr_t* member_expr = ASRUtils::EXPR(
                     ASRUtils::getStructInstanceMember_t(al, loc,
-                        (ASR::asr_t*)struct_expr, m.second,
-                        m.second, current_scope));
+                        (ASR::asr_t*)struct_expr, member,
+                        member, current_scope));
 
                 if (ASRUtils::is_pointer(m_var->m_type)) {
                     emit_pointer_default(member_expr, m_var->m_symbolic_value,
@@ -641,10 +647,10 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         if (st->n_member_functions > 0) return true;
         ASR::Struct_t* level = st;
         while (level != nullptr) {
-            for (auto& m : level->m_symtab->get_scope()) {
-                if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+            for (size_t i = 0; i < level->n_members; i++) {
+                ASR::symbol_t* member = declared_component(level, i);
                 ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
-                    m.second);
+                    member);
                 if (struct_needs_finalization(
                         finalizable_component_struct_type(m_var), visited)) {
                     return true;
@@ -799,10 +805,10 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             Vec<ASR::stmt_t*>& out_stmts) {
         ASR::Struct_t* st = struct_type;
         while (st != nullptr) {
-            for (auto& m : st->m_symtab->get_scope()) {
-                if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+            for (size_t i = 0; i < st->n_members; i++) {
+                ASR::symbol_t* member = declared_component(st, i);
                 ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
-                    m.second);
+                    member);
                 ASR::Struct_t* m_struct =
                     finalizable_component_struct_type(m_var);
                 if (m_struct == nullptr) continue;
@@ -811,7 +817,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
 
                 ASR::expr_t* member_expr = ASRUtils::EXPR(
                     ASRUtils::getStructInstanceMember_t(al, loc,
-                        (ASR::asr_t*)struct_expr, m.second, m.second,
+                        (ASR::asr_t*)struct_expr, member, member,
                         current_scope));
                 if (ASRUtils::is_array(m_var->m_type)) {
                     emit_array_finalize_stmts(member_expr, m_struct,
@@ -841,16 +847,16 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             Vec<ASR::stmt_t*>& out_stmts) {
         ASR::Struct_t* st = struct_type;
         while (st != nullptr) {
-            for (auto& m : st->m_symtab->get_scope()) {
-                if (!ASR::is_a<ASR::Variable_t>(*m.second)) continue;
+            for (size_t i = 0; i < st->n_members; i++) {
+                ASR::symbol_t* member = declared_component(st, i);
                 ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
-                    m.second);
+                    member);
                 ASR::ttype_t* m_type = m_var->m_type;
 
                 ASR::expr_t* member_expr = ASRUtils::EXPR(
                     ASRUtils::getStructInstanceMember_t(al, loc,
-                        (ASR::asr_t*)struct_expr, m.second,
-                        m.second, current_scope));
+                        (ASR::asr_t*)struct_expr, member,
+                        member, current_scope));
 
                 if (ASRUtils::is_allocatable(m_type)) {
                     Vec<ASR::expr_t*> alloc_args;

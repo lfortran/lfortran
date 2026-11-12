@@ -12683,6 +12683,36 @@ public:
                 visit_Function(*s);
             }
         }
+        visit_block_procedures(x.m_symtab);
+    }
+
+    void visit_block_procedures(SymbolTable *scope) {
+        for (auto &item : scope->get_scope()) {
+            if (is_a<ASR::AssociateBlock_t>(*item.second)) {
+                visit_block_procedures(
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        item.second)->m_symtab);
+                continue;
+            }
+            if (!is_a<ASR::Block_t>(*item.second)) continue;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(item.second);
+            // Emit the binding's body before the host's body: emitting it
+            // during BlockCall would interrupt the host's LLVM builder.
+            std::string outer_prefix = mangle_prefix;
+            mangle_prefix += "__block_" +
+                std::to_string(block->m_symtab->counter) + "_";
+            for (auto &local : block->m_symtab->get_scope()) {
+                if (!is_a<ASR::Function_t>(*local.second)) continue;
+                ASR::Function_t *fn =
+                    ASR::down_cast<ASR::Function_t>(local.second);
+                if (ASRUtils::get_FunctionType(fn)->m_deftype ==
+                        ASR::deftypeType::Implementation) {
+                    visit_Function(*fn);
+                }
+            }
+            visit_block_procedures(block->m_symtab);
+            mangle_prefix = outer_prefix;
+        }
     }
 
     bool is_nested_pointer(llvm::Value* val) {

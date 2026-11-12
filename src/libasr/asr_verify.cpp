@@ -509,14 +509,37 @@ public:
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
-            // The backends only declare the procedures of a BLOCK: the
-            // procedures of its interface blocks and its external procedures.
             if (ASR::is_a<ASR::Function_t>(*a.second)) {
-                require_with_loc(ASRUtils::get_FunctionType(*ASR::down_cast<ASR::Function_t>(
-                        a.second))->m_deftype != ASR::deftypeType::Implementation,
-                    "The procedure '" + a.first + "' in the scope of a Block "
-                    "must not have an implementation",
-                    a.second->base.loc);
+                bool implementation = ASRUtils::get_FunctionType(
+                    *ASR::down_cast<ASR::Function_t>(a.second))->m_deftype ==
+                        ASR::deftypeType::Implementation;
+                if (implementation) {
+                    // A pass can implement a local type's binding in its
+                    // BLOCK scope, which also makes the local type visible.
+                    bool bound_to_local_type = false;
+                    for (auto &local : x.m_symtab->get_scope()) {
+                        if (!ASR::is_a<ASR::Struct_t>(*local.second)) continue;
+                        ASR::Struct_t *type =
+                            ASR::down_cast<ASR::Struct_t>(local.second);
+                        for (auto &member : type->m_symtab->get_scope()) {
+                            if (!ASR::is_a<ASR::StructMethodDeclaration_t>(
+                                    *member.second)) continue;
+                            auto *binding =
+                                ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                                    member.second);
+                            if (binding->m_proc == a.second) {
+                                bound_to_local_type = true;
+                                break;
+                            }
+                        }
+                        if (bound_to_local_type) break;
+                    }
+                    require_with_loc(bound_to_local_type,
+                        "The procedure '" + a.first +
+                        "' in the scope of a Block may have an implementation "
+                        "only when bound to a type declared in that Block",
+                        a.second->base.loc);
+                }
             }
             this->visit_symbol(*a.second);
         }
