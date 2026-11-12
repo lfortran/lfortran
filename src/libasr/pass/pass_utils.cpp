@@ -321,7 +321,7 @@ namespace LCompilers {
                     !ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(
                         ASRUtils::symbol_type(ASR::down_cast<ASR::StructInstanceMember_t>(
                             tmp->m_v)->m_m)));
-                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(tmp->m_v))) &&
+                if(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(tmp->m_v))) &&
                    !inherits_shape_from_base){
                     arr_expr = tmp->m_v;
                     array_ref_container_node = &(tmp->m_v);
@@ -1261,6 +1261,66 @@ namespace LCompilers {
             }
             return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, arr_expr->base.loc, arr_expr, dim_expr,
                         int_type, bound_type, nullptr));
+        }
+
+        // Whether `x` names an object, or is a subscript, that needs no
+        // evaluation: a variable, a component or an element of such an
+        // object, an integer constant, or integer arithmetic on these. It
+        // has no function reference, so writing it out again reads the same
+        // object and has no side effect.
+        static bool needs_no_evaluation(ASR::expr_t* x) {
+            switch( x->type ) {
+                case ASR::exprType::Var:
+                case ASR::exprType::IntegerConstant: {
+                    return true;
+                }
+                case ASR::exprType::StructInstanceMember: {
+                    return needs_no_evaluation(
+                        ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v);
+                }
+                case ASR::exprType::IntegerBinOp: {
+                    ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(x);
+                    return needs_no_evaluation(binop->m_left) &&
+                        needs_no_evaluation(binop->m_right);
+                }
+                case ASR::exprType::ArrayItem: {
+                    ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(x);
+                    if( !needs_no_evaluation(item->m_v) ) {
+                        return false;
+                    }
+                    for( size_t i = 0; i < item->n_args; i++ ) {
+                        ASR::array_index_t& index = item->m_args[i];
+                        if( index.m_left != nullptr || index.m_step != nullptr ||
+                            index.m_right == nullptr ||
+                            !needs_no_evaluation(index.m_right) ) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                default: {
+                    return false;
+                }
+            }
+        }
+
+        ASR::expr_t* get_array_ref_index_bound(ASR::expr_t* value, int64_t dim,
+                std::string bound, Allocator& al) {
+            ASR::expr_t* base = ASRUtils::get_struct_member_chain_array_part(value);
+            // A whole array is a variable, or a component of a scalar: the
+            // walk down the chain stops at a component only when its parent
+            // is not an array.
+            bool is_component_of_whole_array = base != value &&
+                (ASR::is_a<ASR::Var_t>(*base) ||
+                 ASR::is_a<ASR::StructInstanceMember_t>(*base));
+            if( !is_component_of_whole_array || !needs_no_evaluation(base) ) {
+                return get_bound(value, dim, bound, al);
+            }
+            // `create_array_ref` keeps `base` itself in the loop body, so
+            // every bound gets a copy of its own, and no expression is in
+            // two places of the tree.
+            ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+            return get_bound(expr_duplicator.duplicate_expr(base), dim, bound, al);
         }
 
         bool skip_instantiation(PassOptions pass_options, int64_t id) {

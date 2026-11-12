@@ -1323,6 +1323,9 @@ RUN(NAME array_constructor_14 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-
 RUN(NAME array_constructor_15 LABELS gfortran llvm) # implied-do with non-default integer bounds
 RUN(NAME array_constructor_16 LABELS gfortran llvm EXTRA_ARGS --descriptor-index-64)
 RUN(NAME array_constructor_17 FILE array_constructor_15 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
+RUN(NAME array_constructor_19 LABELS gfortran llvm) # component of a pointer array of derived type in an array constructor, [p%x] (#17236)
+RUN(NAME array_constructor_20 LABELS gfortran llvm) # [a%x] with a an allocatable or pointer array whose lower bound is not 1
+RUN(NAME array_constructor_21 LABELS gfortran llvm) # [a(lo:hi)%x], also with a function reference in a subscript of the section
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_nested_dealloc_derived_pointer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
