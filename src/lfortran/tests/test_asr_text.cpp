@@ -4,8 +4,6 @@
 #include <libasr/asr_verify.h>
 #include <libasr/codegen/asr_to_fortran.h>
 #include <algorithm>
-#include <fstream>
-#include <iterator>
 #include <vector>
 #include <lfortran/fortran_evaluator.h>
 #include <lfortran/parser/source_offset.h>
@@ -417,27 +415,43 @@ end program
 }
 
 TEST_CASE("Fortran regeneration omits synthetic intent-out reset procedures") {
-    std::ifstream input(std::string(LFORTRAN_PROJECT_SOURCE_DIR) +
-        "/integration_tests/derived_types_218.f90");
-    REQUIRE(input.good());
-    std::string source((std::istreambuf_iterator<char>(input)),
-        std::istreambuf_iterator<char>());
-    source.insert(0, "module roundtrip_types\n"
-        "type :: module_item\ninteger :: n = 7\nend type\nend module\n");
-    source.insert(source.find("    implicit none"),
-        "use roundtrip_types\n");
-    source.insert(source.find("    call s()"),
-        "block\n"
-        "type(module_item) :: z\n"
-        "if (z%n /= 7) error stop\n"
-        "end block\n");
-    source.insert(source.rfind("end program"),
-        "subroutine lcompilers_intent_out_reset_user()\nend subroutine\n");
+    const std::string source = R"(
+module roundtrip_types
+    implicit none
+    type :: module_item
+        integer :: n = 7
+    end type
+end module
+program reset_roundtrip
+    use roundtrip_types
+    implicit none
+    type :: t
+        integer :: n = 2
+    end type
+    type(t) :: x
+    if (x%n /= 2) error stop
+    block
+        type(module_item) :: z
+        if (z%n /= 7) error stop
+    end block
+    call s()
+contains
+    subroutine s()
+        type :: u
+            integer :: n = 3
+        end type
+        type(u) :: y
+        if (y%n /= 3) error stop
+    end subroutine
+    subroutine lcompilers_intent_out_reset_user()
+    end subroutine
+end program
+)";
     LCompilers::CompilerOptions options;
     FortranEvaluator evaluator(options);
     LocationManager lm;
     LocationManager::FileLocations file;
-    file.in_filename = "derived_types_218.f90";
+    file.in_filename = "reset_roundtrip.f90";
     lm.files.push_back(file);
     lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
     Diagnostics diagnostics;
@@ -451,8 +465,14 @@ TEST_CASE("Fortran regeneration omits synthetic intent-out reset procedures") {
     auto *type = ASR::down_cast<ASR::Struct_t>(
         module->m_symtab->get_symbol("module_item"));
     auto *program = ASR::down_cast<ASR::Program_t>(
-        original.result->m_symtab->get_symbol("derived_types_218"));
+        original.result->m_symtab->get_symbol("reset_roundtrip"));
     REQUIRE(type->m_intent_out_reset != nullptr);
+    REQUIRE(ASR::down_cast<ASR::Struct_t>(
+        program->m_symtab->get_symbol("t"))->m_intent_out_reset != nullptr);
+    auto *subroutine = ASR::down_cast<ASR::Function_t>(
+        program->m_symtab->get_symbol("s"));
+    REQUIRE(ASR::down_cast<ASR::Struct_t>(
+        subroutine->m_symtab->get_symbol("u"))->m_intent_out_reset != nullptr);
     ASR::symbol_t *imported = ASRUtils::import_symbol(evaluator.get_al(),
         type->m_intent_out_reset, program->m_symtab, ASR::accessType::Private, "reset_alias_");
     auto printed = LCompilers::asr_to_fortran(*original.result,
