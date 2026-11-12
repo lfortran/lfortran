@@ -63,6 +63,10 @@ concrete parameters. Work is determined independently for each type, including
 inherited and nested components, so an extension can require a helper even
 when its parent does not.
 
+An interface body, like a BLOCK, cannot own the helper implementation.
+Its helper belongs to the enclosing implementation-owning scope and imports
+the interface-local canonical type through an ordinary external symbol.
+
 The frontend reserves `intent_out_reset` before saving module files; the
 `intent_out_deallocate` pass fills its body using the same cleanup and
 default-initialization emitters as nonpolymorphic entry handling. The

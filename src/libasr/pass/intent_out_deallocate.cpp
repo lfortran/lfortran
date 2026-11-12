@@ -1204,7 +1204,10 @@ SymbolTable *intent_out_reset_scope(const ASR::Struct_t &type) {
     while (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
         ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
         if (!ASR::is_a<ASR::Block_t>(*owner) &&
-                !ASR::is_a<ASR::AssociateBlock_t>(*owner)) break;
+                !ASR::is_a<ASR::AssociateBlock_t>(*owner) &&
+                !(ASR::is_a<ASR::Function_t>(*owner) &&
+                  ASRUtils::get_FunctionType(owner)->m_deftype ==
+                    ASR::deftypeType::Interface)) break;
         scope = scope->parent;
     }
     return scope;
@@ -1216,7 +1219,7 @@ void declare_intent_out_reset_helpers(Allocator &al,
     collect.visit_TranslationUnit(unit);
     for (ASR::Struct_t* st : collect.types) {
         if (st->m_intent_out_reset != nullptr) continue;
-        // BLOCK scopes own declarations, never implementations. Keep the
+        // BLOCK and interface scopes cannot own implementations. Keep the
         // canonical type in place and import it into the hoisted helper.
         SymbolTable* parent = intent_out_reset_scope(*st);
         const Location &loc = st->base.base.loc;

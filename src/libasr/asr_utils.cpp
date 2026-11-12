@@ -10564,6 +10564,7 @@ ASR::symbol_t* import_symbol(Allocator &al, ASR::symbol_t* sym,
     }
     if (module_sym == nullptr || (!ASR::is_a<ASR::Module_t>(*module_sym) &&
             !ASR::is_a<ASR::Struct_t>(*module_sym) &&
+            !ASR::is_a<ASR::Function_t>(*module_sym) &&
             !ASR::is_a<ASR::Block_t>(*module_sym) &&
             !ASR::is_a<ASR::AssociateBlock_t>(*module_sym))) {
         return sym;

@@ -10,7 +10,7 @@ namespace LCompilers {
     // otherwise an elemental FINAL. A nonelemental scalar never handles arrays.
     ASR::Function_t *select_final_procedure(ASR::Struct_t *st, int rank);
 
-    // BLOCK and ASSOCIATE scopes cannot own procedure implementations.
+    // BLOCK, ASSOCIATE and interface scopes cannot own implementations.
     SymbolTable *intent_out_reset_scope(const ASR::Struct_t &type);
 
     bool is_concrete_reset_type(const ASR::Struct_t &type);
