@@ -5795,6 +5795,12 @@ semantic error: assignment to a substring of an array section with more than one
 4912 |     m3(1:2, 1, :)(1:2) = 'xy'  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
      |     ^^^^^^^^^^^^^^^^^^ 
 
+semantic error: assignment to a substring of an array section is not supported in `where` yet
+    --> tests/errors/continue_compilation_1.f90:4922:25
+     |
+4922 |     where (names /= '') names(:)(n + 1:n + 2) = 'xy'  ! {Error} assignment to a substring of an array section is not supported in `where` yet
+     |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |

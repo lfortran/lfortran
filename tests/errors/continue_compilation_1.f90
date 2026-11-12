@@ -4911,3 +4911,13 @@ subroutine cc1_substring_section_assignment_rank_2()
     m(:, :)(1:2) = c  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
     m3(1:2, 1, :)(1:2) = 'xy'  ! {Error} assignment to a substring of an array section with more than one section subscript is not supported yet
 end subroutine
+
+! In a `where` construct, a constant assigned to a substring of a character
+! array section is not supported yet either when a bound of the substring is
+! evaluated into a temporary (#16161).
+subroutine cc1_substring_section_assignment_where()
+    implicit none
+    character(len=4) :: names(3)
+    integer :: n
+    where (names /= '') names(:)(n + 1:n + 2) = 'xy'  ! {Error} assignment to a substring of an array section is not supported in `where` yet
+end subroutine
