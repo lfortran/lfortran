@@ -383,6 +383,7 @@ LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format
 LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *format, int32_t *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_i128(char *str, int64_t len, char *format, void *i, int32_t *iostat, int64_t *offset);
+LFORTRAN_API void _lfortran_string_read_i128_array(char *str, int64_t len, char *format, void *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *format, int64_t *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset);

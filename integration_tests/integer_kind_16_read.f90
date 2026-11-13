@@ -1,6 +1,6 @@
 program integer_kind_16_read
     implicit none
-    integer(16) :: x, y
+    integer(16) :: x, y, a(2)
     integer :: unit
     character(len=80) :: s, line
     s = "170141183460469231731687303715884105727"
@@ -29,5 +29,8 @@ program integer_kind_16_read
     read(unit, '(i40)') y
     if (y /= -huge(0_16)) error stop 7
     close(unit)
+    s = "1 2"
+    read(s, *) a
+    if (a(1) /= 1 .or. a(2) /= 2) error stop 8
     print *, x, y
 end program

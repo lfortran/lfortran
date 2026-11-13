@@ -18872,6 +18872,37 @@ LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *
     if (iostat) *iostat = (count < array_size) ? -1 : 0;
 }
 
+LFORTRAN_API void _lfortran_string_read_i128_array(char *str, int64_t len, char *format,
+        void *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset) {
+    (void)format;
+    int64_t off = string_read_array_start(len, offset);
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    const char *pos = buf;
+    const char *end = buf + (len - off);
+    int64_t count = 0;
+    while (pos < end && count < array_size) {
+        while (pos < end && (isspace((unsigned char)*pos) || *pos == ',')) {
+            pos++;
+        }
+        if (pos >= end) break;
+        const char *tok = pos;
+        if (*pos == '+' || *pos == '-') pos++;
+        const char *digits = pos;
+        while (pos < end && *pos >= '0' && *pos <= '9') pos++;
+        if (pos == digits) break;
+        char saved = *pos;
+        *((char*)pos) = '\0';
+        void *dest = (char*)arr + count * stride * 16;
+        int ok = store_i128_decimal(tok, dest);
+        *((char*)pos) = saved;
+        if (!ok) break;
+        count++;
+    }
+    if (offset) *offset = off + (pos - buf);
+    internal_free(buf);
+    if (iostat) *iostat = (count < array_size) ? -1 : 0;
+}
+
 LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format,
         float *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset) {
     (void)format;
