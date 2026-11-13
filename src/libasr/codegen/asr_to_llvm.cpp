@@ -22350,6 +22350,9 @@ public:
                 } else if (a_kind == 8) {
                     runtime_func_name = "_lfortran_read_int64";
                     type_arg = llvm::Type::getInt64Ty(context);
+                } else if (a_kind == 16) {
+                    runtime_func_name = "_lfortran_read_int128";
+                    type_arg = llvm::Type::getInt128Ty(context);
                 } else {
                     throw CodeGenError("Read Integer function not implemented "
                         "for integer kind: " + std::to_string(a_kind));

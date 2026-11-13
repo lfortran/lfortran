@@ -2132,6 +2132,7 @@ namespace LCompilers {
                     case 2: return 10;
                     case 4: return 2;
                     case 8: return 3;
+                    case 16: return 16;
                     default: break;
                 }
             } else if (ASR::is_a<ASR::String_t>(*val_type)) {

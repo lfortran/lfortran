@@ -12342,6 +12342,42 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *io
     }
 }
 
+/* Store a signed decimal integer(16) as a little-endian i128. */
+static int store_i128_decimal(const char *token, void *dest) {
+#if defined(__SIZEOF_INT128__)
+    const char *s = token;
+    int neg = 0;
+    while (*s == ' ' || *s == '\t') s++;
+    if (*s == '+' || *s == '-') {
+        neg = (*s == '-');
+        s++;
+    }
+    if (*s < '0' || *s > '9') return 0;
+    unsigned __int128 v = 0;
+    int digits = 0;
+    for (; *s >= '0' && *s <= '9'; s++, digits++) {
+        if (digits > 40) return 0;
+        unsigned __int128 nv = v * 10u + (unsigned)(*s - '0');
+        if (nv < v) return 0;
+        v = nv;
+    }
+    if (digits == 0 || *s != '\0') return 0;
+    unsigned __int128 limit = neg ? ((unsigned __int128)1 << 127)
+                                  : (((unsigned __int128)1 << 127) - 1);
+    if (v > limit) return 0;
+    if (neg) v = -v;
+    uint64_t lo = (uint64_t)v;
+    uint64_t hi = (uint64_t)(v >> 64);
+    memcpy(dest, &lo, 8);
+    memcpy((unsigned char*)dest + 8, &hi, 8);
+    return 1;
+#else
+    (void)token;
+    (void)dest;
+    return 0;
+#endif
+}
+
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat)
 {
     char lsep = list_directed_separator(unit_num);
@@ -12451,6 +12487,95 @@ LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *io
         }
 
         *p = (int64_t)temp;
+        if (c != lsep) {
+            skip_trailing_comma(filep, lsep);
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_int128(void *p, int32_t unit_num, int32_t *iostat)
+{
+    char lsep = list_directed_separator(unit_num);
+    if (iostat) *iostat = 0;
+    if (unit_num == -1) {
+        char buffer[64];
+        if (!read_stdin_list_directed_token(stdin, buffer, sizeof(buffer), iostat)) {
+            if (!iostat) {
+                fprintf(stderr, "Error: Failed to read input.\n");
+                exit(1);
+            }
+            return;
+        }
+        if (!store_i128_decimal(buffer, p)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input for integer(16).\n");
+            exit(1);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_mode;
+    bool read_access_flag = true;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, &read_access_flag, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    if (filep && !read_access_flag) {
+        if (iostat) { *iostat = 5007; return; }
+        fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
+        exit(1);
+    }
+    if (!filep) {
+        if (iostat) { *iostat = 1; return; }
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_mode == 0) {
+            int rc = seq_unf_begin_record(unit_num, filep);
+            if (rc != 0) {
+                if (iostat) { *iostat = rc; return; }
+                fprintf(stderr, "Error: Failed to read record marker for integer(16).\n");
+                exit(1);
+            }
+            if (find_unit(unit_num)->seq_unf_pending < 16) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Record too short for integer(16).\n");
+                exit(1);
+            }
+            if (unf_fread(p, 16, 1, filep, unit_num) != 1) {
+                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read integer(16) from sequential binary file.\n");
+                exit(1);
+            }
+            find_unit(unit_num)->seq_unf_pending -= 16;
+            if (seq_unf_finish_record(unit_num, filep) != 0) {
+                if (iostat) { *iostat = 1; return; }
+                fprintf(stderr, "Error: Invalid trailing record marker while reading integer(16).\n");
+                exit(1);
+            }
+        } else {
+            if (unf_fread(p, 16, 1, filep, unit_num) != 1) {
+                if (iostat) { *iostat = input_eof(filep) ? -1 : 1; return; }
+                fprintf(stderr, "Error: Failed to read integer(16) from stream file.\n");
+                exit(1);
+            }
+        }
+    } else {
+        char buf128[64];
+        int c = 0;
+        list_directed_token_status token_status = read_list_directed_token(
+            filep, unit_num, iostat, buf128, sizeof(buf128),
+            "Error: Invalid integer(16) input from file (EOF).",
+            "Error: Input token exceeds 63 characters.",
+            &c, false);
+        if (token_status != LD_TOKEN_OK) {
+            return;
+        }
+        if (!store_i128_decimal(buf128, p)) {
+            if (iostat) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid input for integer(16) from file.\n");
+            exit(1);
+        }
         if (c != lsep) {
             skip_trailing_comma(filep, lsep);
         }
@@ -15328,7 +15453,8 @@ static inline long saturate_to_long(int64_t value) {
 // _lfortran_formatted_read). The code determines the storage size of the item.
 static bool is_formatted_read_integer(int32_t type_code)
 {
-    return type_code == 2 || type_code == 3 || type_code == 9 || type_code == 10;
+    return type_code == 2 || type_code == 3 || type_code == 9 || type_code == 10
+        || type_code == 16;
 }
 
 static bool is_formatted_read_logical(int32_t type_code)
@@ -15367,6 +15493,7 @@ static size_t formatted_read_component_size(int32_t type_code)
         case 10: case 12: return sizeof(int16_t);
         case 1: case 2: return sizeof(int32_t);
         case 3: case 13: return sizeof(int64_t);
+        case 16: return 16;
         case 4: case 6: return sizeof(float);
         case 5: case 7: return sizeof(double);
         case 14: case 15: return sizeof(lf_float128);
@@ -15376,8 +15503,20 @@ static size_t formatted_read_component_size(int32_t type_code)
 
 // Store `value` into the component `ptr` of type `type_code`. An integer or
 // logical item gets the value, a real component (B/O/Z input) its bit pattern.
+static void store_formatted_read_i128(void* ptr, unsigned __int128 value)
+{
+    uint64_t lo = (uint64_t)value;
+    uint64_t hi = (uint64_t)(value >> 64);
+    memcpy(ptr, &lo, 8);
+    memcpy((unsigned char*)ptr + 8, &hi, 8);
+}
+
 static void store_formatted_read_int(void* ptr, int32_t type_code, int64_t value)
 {
+    if (type_code == 16) {
+        store_formatted_read_i128(ptr, (unsigned __int128)(int64_t)value);
+        return;
+    }
     switch (formatted_read_component_size(type_code)) {
         case sizeof(int8_t): *((int8_t*)ptr) = (int8_t)value; break;
         case sizeof(int16_t): *((int16_t*)ptr) = (int16_t)value; break;
@@ -15416,6 +15555,12 @@ static void parse_integer_from_buffer(char* buffer, int field_len,
         return;
     }
     
+    if (type_code == 16) {
+        int ok = store_i128_decimal(processed, int_ptr);
+        internal_free(processed);
+        if (!ok) *error = true;
+        return;
+    }
     store_formatted_read_int(int_ptr, type_code,
         (int64_t)strtoll(processed, NULL, 10));
 
@@ -15453,6 +15598,30 @@ static void parse_boz_from_buffer(char* buffer, int field_len,
         else { internal_free(processed); *error = true; return; }
         if (digit >= base) { internal_free(processed); *error = true; return; }
     }
+    if (type_code == 16) {
+#if defined(__SIZEOF_INT128__)
+        unsigned __int128 v = 0;
+        for (int i = 0; processed[i] != '\0'; i++) {
+            unsigned char c = (unsigned char)processed[i];
+            int digit = (c >= '0' && c <= '9') ? c - '0'
+                : (c >= 'a' && c <= 'f') ? 10 + (c - 'a')
+                : 10 + (c - 'A');
+            if (v > (~(unsigned __int128)0 - (unsigned)digit) / (unsigned)base) {
+                internal_free(processed);
+                *error = true;
+                return;
+            }
+            v = v * (unsigned)base + (unsigned)digit;
+        }
+        store_formatted_read_i128(int_ptr, v);
+#else
+        internal_free(processed);
+        *error = true;
+        return;
+#endif
+        internal_free(processed);
+        return;
+    }
     uint64_t uval = (uint64_t)strtoull(processed, NULL, base);
     store_formatted_read_int(int_ptr, type_code, (int64_t)uval);
     internal_free(processed);
@@ -15468,8 +15637,15 @@ static bool parse_real_from_buffer(char* buffer, int field_len,
         if (temp) {
             memcpy(temp, buffer, field_len);
             temp[field_len] = '\0';
-            store_formatted_read_int(real_ptr, type_code,
-                (int64_t)strtoll(temp, NULL, 10));
+            if (type_code == 16) {
+                if (!store_i128_decimal(temp, real_ptr)) {
+                    internal_free(temp);
+                    return false;
+                }
+            } else {
+                store_formatted_read_int(real_ptr, type_code,
+                    (int64_t)strtoll(temp, NULL, 10));
+            }
             internal_free(temp);
         }
         return true;
@@ -18285,6 +18461,44 @@ LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format
         fprintf(stderr, "Error: Bad integer for item in list input\n");
         exit(1);
     }
+    if (iostat) *iostat = 0;
+}
+
+LFORTRAN_API void _lfortran_string_read_i128(char *str, int64_t len, char *format, void *i, int32_t *iostat, int64_t *offset) {
+    (void)format;
+    int64_t off = offset ? *offset : 0;
+    char *buf = to_c_string((const fchar*)(str + off), len - off);
+    int skip = 0;
+
+    if (offset && _lfortran_skip_comma(buf, &skip, off, offset, iostat)) {
+        internal_free(buf);
+        return;
+    }
+
+    int n = 0;
+    const char *start = buf + skip;
+    while (start[n] == ' ' || start[n] == '\t') n++;
+    int begin = n;
+    if (start[n] == '+' || start[n] == '-') n++;
+    int digits = n;
+    while (start[n] >= '0' && start[n] <= '9') n++;
+    if (n == digits) {
+        internal_free(buf);
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad integer for item in list input\n");
+        exit(1);
+    }
+    char saved = ((char*)start)[n];
+    ((char*)start)[n] = '\0';
+    int ok = store_i128_decimal(start + begin, i);
+    ((char*)start)[n] = saved;
+    internal_free(buf);
+    if (!ok) {
+        if (iostat) { *iostat = 5010; return; }
+        fprintf(stderr, "Error: Bad integer for item in list input\n");
+        exit(1);
+    }
+    if (offset) *offset = off + skip + n;
     if (iostat) *iostat = 0;
 }
 

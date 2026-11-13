@@ -7959,6 +7959,8 @@ RUN(NAME empty_explicit_shape_01 LABELS gfortran llvm
 RUN(NAME c_long_double_complex_01 LABELS gfortran llvm)
 RUN(NAME test_c_long_double_02 LABELS gfortran llvm EXTRAFILES test_c_long_double_02b.f90 test_c_long_double_02c.c)
 
+RUN(NAME integer_kind_16_read LABELS gfortran llvm)
+
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
     list(LENGTH smoke_tests smoke_count)
