@@ -4624,12 +4624,16 @@ public:
             this->visit_expr_wrapper(m_args[i], true);
             llvm::Value *arg = tmp;
             if (val_type->isFloatingPointTy()) {
-                // Use ordered comparison for Fortran-compatible NaN propagation
-                // If either operand is NaN, comparison returns false, preserving result
+                // GFortran returns the numeric argument when the other is
+                // NaN. An ordered compare keeps the running result when the
+                // new argument is NaN; if the running result is NaN, take
+                // the new argument instead.
+                llvm::Value *result_is_nan = builder->CreateFCmpUNO(result, result);
                 llvm::Value *cmp = is_max
                     ? builder->CreateFCmpOGT(arg, result)
                     : builder->CreateFCmpOLT(arg, result);
-                result = builder->CreateSelect(cmp, arg, result);
+                llvm::Value *use_arg = builder->CreateOr(cmp, result_is_nan);
+                result = builder->CreateSelect(use_arg, arg, result);
             } else if (val_type->isIntegerTy()) {
                 llvm::Value *cmp = is_max
                     ? builder->CreateICmpSGT(result, arg)
