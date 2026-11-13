@@ -7975,6 +7975,7 @@ RUN(NAME equivalence_49 LABELS gfortran llvm EXTRAFILES equivalence_49_module.f9
 RUN(NAME equivalence_50 LABELS gfortran llvm) # operands storage associated with the target (#16215)
 RUN(NAME get_environment_variable_01 LABELS gfortran llvm)
 RUN(NAME allocatable_scalar_assign_01 LABELS gfortran llvm)
+RUN(NAME allocatable_scalar_assign_02 LABELS gfortran llvm c)
 RUN(NAME allocatable_function_result_01 LABELS gfortran llvm)
 RUN(NAME allocatable_function_result_02 LABELS gfortran llvm)
 RUN(NAME allocatable_function_result_03 LABELS gfortran llvm)

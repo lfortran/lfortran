@@ -3862,8 +3862,9 @@ void pass_replace_array_op(Allocator &al, ASR::TranslationUnit_t &unit,
 /*
 An intrinsic assignment to an unallocated allocatable variable allocates it
 (F2018 10.2.1.3 p3). This pass makes that allocation explicit for an
-allocatable scalar of derived type or a polymorphic one. For a
-nonpolymorphic variable
+allocatable numeric or logical scalar, or a scalar of derived or
+polymorphic type.
+For a nonpolymorphic variable
 
     type(t), allocatable :: a
     a = b
@@ -3872,6 +3873,10 @@ becomes
 
     if (.not. allocated(a)) allocate(a)
     a = b
+
+The C backend uses this pass for numeric and logical scalars, but still handles
+derived-type scalar assignments without it until it can copy rather than
+alias their values (#15949).
 
 An unallocated allocatable variable is not finalized by the assignment
 (F2018 7.5.6.3 p1), so when `t` is finalizable the assignment goes into both
@@ -3911,7 +3916,12 @@ class AllocateOnAssignmentVisitor :
     public PassUtils::PassVisitor<AllocateOnAssignmentVisitor> {
 public:
 
-    AllocateOnAssignmentVisitor(Allocator &al) : PassVisitor(al, nullptr) {}
+    bool supports_derived_scalar_assignment_allocation;
+
+    AllocateOnAssignmentVisitor(Allocator &al, const PassOptions &options) :
+        PassVisitor(al, nullptr),
+        supports_derived_scalar_assignment_allocation(
+            options.supports_derived_scalar_assignment_allocation) {}
 
     // Whether `x` is an intrinsic assignment to an allocatable scalar.
     static bool is_assignment_to_allocatable_scalar(const ASR::Assignment_t &x) {
@@ -3923,6 +3933,16 @@ public:
         return ASRUtils::is_allocatable(target_type) &&
             !ASRUtils::is_array(target_type) &&
             !ASRUtils::is_array(ASRUtils::expr_type(x.m_value));
+    }
+
+    static bool allocates_intrinsic_target(const ASR::Assignment_t &x) {
+        ASR::ttype_t* type = ASRUtils::extract_type(
+            ASRUtils::expr_type(x.m_target));
+        return ASR::is_a<ASR::Integer_t>(*type) ||
+            ASR::is_a<ASR::UnsignedInteger_t>(*type) ||
+            ASR::is_a<ASR::Real_t>(*type) ||
+            ASR::is_a<ASR::Complex_t>(*type) ||
+            ASR::is_a<ASR::Logical_t>(*type);
     }
 
     // Whether the target of `x` is a nonpolymorphic allocatable scalar of
@@ -4027,7 +4047,11 @@ public:
         if (!is_assignment_to_allocatable_scalar(x)) {
             return;
         }
-        if (allocates_nonpolymorphic_target(x)) {
+        if (allocates_intrinsic_target(x)) {
+            allocate_nonpolymorphic_target(x);
+        } else if (!supports_derived_scalar_assignment_allocation) {
+            return;
+        } else if (allocates_nonpolymorphic_target(x)) {
             allocate_nonpolymorphic_target(x);
         } else if (allocates_polymorphic_target(x)) {
             allocate_polymorphic_target(x);
@@ -4046,7 +4070,10 @@ public:
 
         ASR::stmt_t* assignment = const_cast<ASR::stmt_t*>(&x.base);
         pass_result.reserve(al, 2);
-        if (!ASRUtils::struct_needs_finalization(
+        ASR::ttype_t* target_el_type = ASRUtils::extract_type(
+            ASRUtils::expr_type(target));
+        if (!ASR::is_a<ASR::StructType_t>(*target_el_type) ||
+            !ASRUtils::struct_needs_finalization(
                 ASRUtils::get_struct_sym_from_struct_expr(target))) {
             pass_result.push_back(al, b.If(b.Not(is_allocated), {allocate},
                 {}));
@@ -4153,8 +4180,8 @@ public:
 };
 
 void pass_allocate_on_assignment(Allocator &al, ASR::TranslationUnit_t &unit,
-        const LCompilers::PassOptions &/*pass_options*/) {
-    AllocateOnAssignmentVisitor v(al);
+        const LCompilers::PassOptions &pass_options) {
+    AllocateOnAssignmentVisitor v(al, pass_options);
     v.visit_TranslationUnit(unit);
 }
 

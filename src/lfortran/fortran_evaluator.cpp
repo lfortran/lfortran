@@ -1692,10 +1692,13 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     // Keep this target capability local: the evaluator can also emit LLVM.
     PassOptions pass_options = compiler_options.po;
     pass_options.supports_descriptor_entry_wrappers = false;
+    pass_options.supports_derived_scalar_assignment_allocation = false;
     pass_options.c_module_variable_mangling = true;
     pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
     pass_options.supports_descriptor_entry_wrappers =
         compiler_options.po.supports_descriptor_entry_wrappers;
+    pass_options.supports_derived_scalar_assignment_allocation =
+        compiler_options.po.supports_derived_scalar_assignment_allocation;
     pass_options.c_module_variable_mangling =
         compiler_options.po.c_module_variable_mangling;
     compiler_options.po = std::move(pass_options);
