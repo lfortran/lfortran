@@ -3747,10 +3747,20 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             // of bounds on the source array. Leave the whole-array BitCast for
             // the LLVM backend to lower as a memcpy.
             if (ASRUtils::is_array(src_type) && ASRUtils::is_array(bc->m_type)) {
-                int64_t src_size = ASRUtils::get_type_byte_size(
-                    ASRUtils::extract_type(src_type));
-                int64_t res_size = ASRUtils::get_type_byte_size(
-                    ASRUtils::extract_type(bc->m_type));
+                ASR::ttype_t* src_elem = ASRUtils::extract_type(src_type);
+                ASR::ttype_t* res_elem = ASRUtils::extract_type(bc->m_type);
+                int64_t src_size = ASR::is_a<ASR::StructType_t>(*src_elem)
+                    ? ASRUtils::get_struct_expr_byte_size(bc->m_source)
+                    : -1;
+                if (src_size <= 0) {
+                    src_size = ASRUtils::get_type_byte_size(src_elem);
+                }
+                int64_t res_size = ASR::is_a<ASR::StructType_t>(*res_elem)
+                    ? ASRUtils::get_struct_expr_byte_size(bc->m_mold)
+                    : -1;
+                if (res_size <= 0) {
+                    res_size = ASRUtils::get_type_byte_size(res_elem);
+                }
                 if (src_size != res_size) {
                     pass_result.push_back(al,
                         const_cast<ASR::stmt_t*>(&(x.base)));
