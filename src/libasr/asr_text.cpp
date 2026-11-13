@@ -229,6 +229,10 @@ public:
         output += std::to_string(value);
     }
 
+    void write_integer_digits(const std::string &digits) {
+        output += digits;
+    }
+
     void write_float(double value) {
         if (!std::isfinite(value)) {
             uint64_t bits;

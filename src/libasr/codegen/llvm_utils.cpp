@@ -233,6 +233,16 @@ namespace LCompilers {
             std::vector<llvm::Type*> els_16 = {
                 llvm::Type::getFP128Ty(context),
                 llvm::Type::getFP128Ty(context)};
+            // Kind 10 is the C `long double` of the target, the same type
+            // getFPType(10) returns.
+#if defined(__APPLE__) && defined(__aarch64__)
+            llvm::Type* fp10 = llvm::Type::getFP128Ty(context);
+#elif defined(__APPLE__)
+            llvm::Type* fp10 = llvm::Type::getDoubleTy(context);
+#else
+            llvm::Type* fp10 = llvm::Type::getX86_FP80Ty(context);
+#endif
+            std::vector<llvm::Type*> els_10 = {fp10, fp10};
             std::vector<llvm::Type*> els_4_ptr = {
                 llvm::Type::getFloatTy(context)->getPointerTo(),
                 llvm::Type::getFloatTy(context)->getPointerTo()};
@@ -244,6 +254,8 @@ namespace LCompilers {
                 llvm::Type::getInt64Ty(context)  /*length*/ };
             complex_type_4 = llvm::StructType::create(context, els_4, "complex_4", true);
             complex_type_8 = llvm::StructType::create(context, els_8, "complex_8", true);
+            // Not packed: two C long doubles, with that type's alignment.
+            complex_type_10 = llvm::StructType::create(context, els_10, "complex_10");
             // Not packed: complex(16) has the 16-byte alignment of its fp128
             // parts, as in C, so it is laid out like C in a derived type and
             // its parts can be moved with aligned SSE instructions.
@@ -821,11 +833,14 @@ namespace LCompilers {
             case 8:
                 type = complex_type_8;
                 break;
+            case 10:
+                type = complex_type_10;
+                break;
             case 16:
                 type = complex_type_16;
                 break;
             default:
-                throw CodeGenError("Only 32, 64 and 128 bits complex kinds are supported.");
+                throw CodeGenError("Only 32, 64, 80 and 128 bits complex kinds are supported.");
         }
         if( type != nullptr ) {
             if( get_pointer ) {
@@ -2419,6 +2434,9 @@ namespace LCompilers {
                 case 8:
                     type_ptr = llvm::Type::getInt64Ty(context)->getPointerTo();
                     break;
+                case 16:
+                    type_ptr = llvm::Type::getInt128Ty(context)->getPointerTo();
+                    break;
                 default:
                     LCOMPILERS_ASSERT(false);
             }
@@ -2436,6 +2454,9 @@ namespace LCompilers {
                     break;
                 case 8:
                     type_ptr = llvm::Type::getInt64Ty(context);
+                    break;
+                case 16:
+                    type_ptr = llvm::Type::getInt128Ty(context);
                     break;
                 default:
                     LCOMPILERS_ASSERT(false);

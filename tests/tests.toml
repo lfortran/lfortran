@@ -7954,3 +7954,12 @@ options = "--std=f23"
 [[test]]
 filename = "read_real16_long_token_error_01.f90"
 run = true
+
+[[test]]
+filename = "../integration_tests/cpp_flag_01.f90"
+run = true
+options = "-cpp -DCPP_FLAG_01"
+
+[[test]]
+filename = "../integration_tests/transfer_pointer_01.f90"
+run = true

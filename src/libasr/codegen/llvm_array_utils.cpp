@@ -942,10 +942,16 @@ namespace LCompilers {
                                                             llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
                     llvm::Value* lbound_check = builder->CreateICmpSLT(req_idx, lval);
                     llvm::Value* ubound_check = builder->CreateICmpSGT(req_idx, ubound);
+                    // An empty dimension (2:n with n < 2) has no element.
+                    // GFortran does not trap an index of it, and f2py reads
+                    // one while inverting that bound.
+                    llvm::Value* empty = builder->CreateICmpEQ(length,
+                        llvm::ConstantInt::get(index_type, 0));
+                    llvm::Value* out_of_range = builder->CreateAnd(
+                        builder->CreateOr(lbound_check, ubound_check),
+                        builder->CreateNot(empty));
 
-                    llvm_utils->generate_runtime_error(builder->CreateOr(
-                                                            lbound_check,
-                                                            ubound_check),
+                    llvm_utils->generate_runtime_error(out_of_range,
                                                 "Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.",
                                                 {LLVMUtils::RuntimeLabel("", {loc})},
                                                      infile,
@@ -996,9 +1002,12 @@ namespace LCompilers {
                                 llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));
                         llvm::Value* lbound_check = builder->CreateICmpSLT(req_idx, lval);
                         llvm::Value* ubound_check = builder->CreateICmpSGT(req_idx, ubound);
-                        llvm_utils->generate_runtime_error(builder->CreateOr(
-                                                                lbound_check,
-                                                                ubound_check),
+                        llvm::Value* empty = builder->CreateICmpEQ(dim_size,
+                            llvm::ConstantInt::get(index_type, 0));
+                        llvm::Value* out_of_range = builder->CreateAnd(
+                            builder->CreateOr(lbound_check, ubound_check),
+                            builder->CreateNot(empty));
+                        llvm_utils->generate_runtime_error(out_of_range,
                                                 "Runtime error: Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.",
                                                         {LLVMUtils::RuntimeLabel("", {loc})},
                                                         infile,
@@ -2123,6 +2132,7 @@ namespace LCompilers {
                     case 2: return 10;
                     case 4: return 2;
                     case 8: return 3;
+                    case 16: return 16;
                     default: break;
                 }
             } else if (ASR::is_a<ASR::String_t>(*val_type)) {

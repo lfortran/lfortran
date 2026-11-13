@@ -265,8 +265,11 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             bool global_definition = !ASRUtils::is_declaration_deftype(f_type->m_deftype)
                 && f_type->m_abi == ASR::abiType::Source
                 && ASRUtils::is_tu_scope(x.m_symtab->parent);
-            if (ASRUtils::is_external_procedure_interface(f_type)
-                    || global_definition) {
+            // bind(c) names are the C names. GFortran does not append an
+            // underscore to them, with or without an explicit name=.
+            if ((ASRUtils::is_external_procedure_interface(f_type)
+                    || global_definition)
+                    && f_type->m_abi != ASR::abiType::BindC) {
                 std::string name = x.m_name;
                 bool has_reserved_prefix = (startswith(name, "_lfortran") ||
                                             startswith(name, "_lpython") ||

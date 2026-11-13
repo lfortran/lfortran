@@ -3276,6 +3276,7 @@ int main_app(int argc, char *argv[]) {
     bool found_main = false;
     bool any_fortran_src = false;
     bool any_asr_src = false;
+    bool any_non_fortran = false;
     for (const auto &arg_file : opts.arg_files) {
         int err = 0;
         std::string tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(arg_file)
@@ -3332,6 +3333,7 @@ int main_app(int argc, char *argv[]) {
                 throw LCompilers::LCompilersException("Backend not supported");
             }
         } else if (endswith(arg_file, ".ll")) {
+            any_non_fortran = true;
             // this way we can execute LLVM IR files directly
 #ifdef HAVE_LFORTRAN_LLVM
             err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
@@ -3341,7 +3343,8 @@ int main_app(int argc, char *argv[]) {
             return 1;
 #endif
         } else {
-            // assume it's an object file
+            // An object file or a C translation unit can hold main.
+            any_non_fortran = true;
             tmp_o = arg_file;
         }
         if (err && !compiler_options.continue_compilation) return err;
@@ -3351,7 +3354,8 @@ int main_app(int argc, char *argv[]) {
     if (object_files.size() == 0) {
         return err_;
     } else {
-        if ((any_fortran_src || any_asr_src) && !found_main && err_ == 0
+        if ((any_fortran_src || any_asr_src) && !found_main
+                && !any_non_fortran && err_ == 0
                 && (backend == Backend::llvm || backend == Backend::c
                     || backend == Backend::cpp)) {
             std::cerr << "semantic error: no main program found; "

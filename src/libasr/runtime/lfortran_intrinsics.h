@@ -353,6 +353,7 @@ LFORTRAN_API void _lfortran_read_int8(int8_t *p, int32_t unit_num, int32_t *iost
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat);
+LFORTRAN_API void _lfortran_read_int128(void *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_array_logical(void *p, int array_size, int kind, int32_t stride, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t stride, int32_t unit_num, int32_t *iostat);
@@ -381,6 +382,8 @@ LFORTRAN_API void _lfortran_string_read_i16(char *str, int64_t len, char *format
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *format, int32_t *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i, int32_t *iostat, int64_t *offset);
+LFORTRAN_API void _lfortran_string_read_i128(char *str, int64_t len, char *format, void *i, int32_t *iostat, int64_t *offset);
+LFORTRAN_API void _lfortran_string_read_i128_array(char *str, int64_t len, char *format, void *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *format, int64_t *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f, int32_t *iostat, int64_t *offset);
 LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr, int64_t array_size, int64_t stride, int32_t *iostat, int64_t *offset);
@@ -441,7 +444,8 @@ typedef enum {
     LFORTRAN_NML_LOGICAL8,
     LFORTRAN_NML_COMPLEX4,
     LFORTRAN_NML_COMPLEX8,
-    LFORTRAN_NML_CHAR
+    LFORTRAN_NML_CHAR,
+    LFORTRAN_NML_INT16
 } lfortran_nml_type_t;
 
 // An array of a derived type that encloses a namelist item

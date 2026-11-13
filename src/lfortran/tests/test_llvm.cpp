@@ -3014,7 +3014,7 @@ TEST_CASE("c_long_double is the kind of C long double of the target") {
         r = e.evaluate2("c_long_double_complex");
         CHECK(r.ok);
         CHECK(r.result.type == FortranEvaluator::EvalResult::integer4);
-        CHECK(r.result.i32 == (kind == 8 ? 8 : -1));
+        CHECK(r.result.i32 == kind);
     }
 }
 
