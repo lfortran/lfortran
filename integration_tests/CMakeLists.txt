@@ -7926,6 +7926,7 @@ RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
 
 
 
+
 RUN(NAME cpp_flag_01 LABELS gfortran llvm
         EXTRA_ARGS -cpp -DCPP_FLAG_01
         GFORTRAN_ARGS -cpp -DCPP_FLAG_01)
@@ -7949,6 +7950,8 @@ RUN(NAME external_func_01 LABELS gfortran llvm EXTRAFILES external_func_01_lsame
 RUN(NAME module_parameter_pointer_01 LABELS gfortran llvm
     EXTRAFILES module_parameter_pointer_01.c
     EXTRA_ARGS --implicit-interface --mangle-underscore-external)
+RUN(NAME empty_explicit_shape_01 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-interface)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
