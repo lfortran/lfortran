@@ -1210,6 +1210,7 @@ RUN(NAME assumed_rank_28 LABELS gfortran llvm) # scalar named constant passed to
 RUN(NAME assumed_rank_29 LABELS gfortran llvm)
 RUN(NAME assumed_rank_30 LABELS gfortran llvm)
 RUN(NAME assumed_rank_31 LABELS gfortran llvm)
+RUN(NAME assumed_rank_32 LABELS gfortran llvm)
 RUN(NAME assume_rank_shape_product_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME select_rank_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME select_rank_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
