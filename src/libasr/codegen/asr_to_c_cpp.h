@@ -2596,12 +2596,15 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         self().visit_expr(*value);
         std::string rhs = std::move(src);
         ASR::ttype_t* type = ASRUtils::expr_type(value);
+        ASR::ttype_t* storage_type =
+            ASRUtils::type_get_past_allocatable(type);
         if (ASR::is_a<ASR::PointerNullConstant_t>(*value) ||
                 ASR::is_a<ASR::GetPointer_t>(*value) ||
                 ASRUtils::is_pointer(type) || ASRUtils::is_array(type) ||
                 ASRUtils::is_character(*type) ||
-                (ASR::is_a<ASR::StructType_t>(*type) &&
-                 ASR::is_a<ASR::Var_t>(*value))) {
+                (ASR::is_a<ASR::StructType_t>(*storage_type) &&
+                 (ASR::is_a<ASR::Var_t>(*value) ||
+                  c_scalar_allocatable(type)))) {
             return rhs;
         }
         return "&(" + rhs + ")";
