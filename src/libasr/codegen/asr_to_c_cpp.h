@@ -175,6 +175,15 @@ public:
         return std::move(src);
     }
 
+    bool c_inline_pointer_array_member(ASR::expr_t* expr) const {
+        if (!is_c || !ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            return false;
+        }
+        ASR::ttype_t* type =
+            ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_type;
+        return ASRUtils::is_pointer(type) && ASRUtils::is_array(type);
+    }
+
     bool c_inline_char_storage(const ASR::Variable_t &v) const {
         // A nonallocatable scalar owns its storage inline; a dummy borrows
         // the actual buffer, and BIND(C) keeps its external representation.
@@ -2616,11 +2625,17 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string target = std::move(src);
         std::string indent(indentation_level*indentation_spaces, ' ');
         if (ASRUtils::is_array(target_type)) {
+            bool inline_target = c_inline_pointer_array_member(x.m_target);
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
-                src = indent + "if (" + target + " != NULL) {\n"
-                    + indent + "    " + target + "->data = NULL;\n"
-                    + indent + "    " + target + "->is_allocated = false;\n"
-                    + indent + "}\n";
+                if (inline_target) {
+                    src = indent + target + "->data = NULL;\n"
+                        + indent + target + "->is_allocated = false;\n";
+                } else {
+                    src = indent + "if (" + target + " != NULL) {\n"
+                        + indent + "    " + target + "->data = NULL;\n"
+                        + indent + "    " + target + "->is_allocated = false;\n"
+                        + indent + "}\n";
+                }
                 return;
             }
             ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
@@ -2639,15 +2654,18 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src = indent + "{\n"
                 + indent + "    const void* " + tmp_name +
                     " = (const void*) (" + value + ");\n"
-                + indent + "    if (" + tmp_name + " != NULL) {\n"
-                + indent + "        if (" + target + " == NULL) " + target
-                    + " = (void*) _lfortran_calloc_alloc("
-                    "_lfortran_get_default_allocator(), 1, sizeof(*"
-                    + target + "));\n"
-                + indent + "        memcpy(" + target + ", " + tmp_name +
+                + indent + "    if (" + tmp_name + " != NULL) {\n";
+            if (!inline_target) {
+                src += indent + "        if (" + target + " == NULL) " +
+                    target + " = (void*) _lfortran_calloc_alloc("
+                    "_lfortran_get_default_allocator(), 1, sizeof(*" +
+                    target + "));\n";
+            }
+            src += indent + "        memcpy(" + target + ", " + tmp_name +
                     ", sizeof(*" + target + "));\n"
                 + indent + "        " + target + "->is_allocated = false;\n"
-                + indent + "    } else if (" + target + " != NULL) {\n"
+                + indent + (inline_target ? "    } else {\n" :
+                    "    } else if (" + target + " != NULL) {\n")
                 + indent + "        " + target + "->data = NULL;\n"
                 + indent + "        " + target + "->is_allocated = false;\n"
                 + indent + "    }\n"
@@ -2671,13 +2689,17 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string ptr = std::move(src);
         ASR::ttype_t* type = ASRUtils::expr_type(x.m_ptr);
         if (ASRUtils::is_array(type)) {
-            std::string condition = "(" + ptr + " != NULL && " +
+            std::string condition = "(" +
+                (c_inline_pointer_array_member(x.m_ptr) ? "" :
+                    ptr + " != NULL && ") +
                 ptr + "->data != NULL)";
             if (x.m_tgt) {
                 self().visit_expr(*x.m_tgt);
                 std::string target = std::move(src);
-                condition = "(" + condition + " && " + target +
-                    " != NULL && " + ptr + "->data == " + target +
+                condition = "(" + condition +
+                    (c_inline_pointer_array_member(x.m_tgt) ? "" :
+                        " && " + target + " != NULL") +
+                    " && " + ptr + "->data == " + target +
                     "->data && " + ptr + "->n_dims == " + target +
                     "->n_dims";
                 int rank = ASRUtils::extract_n_dims_from_ttype(type);
@@ -3211,6 +3233,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             // A member of Reference type designates the variable whose
             // address it holds.
             src = "(*" + src + ")";
+            last_expr_precedence = 2;
+        }
+        if (is_c && ASRUtils::is_pointer(x.m_type) &&
+                ASRUtils::is_array(x.m_type)) {
+            src = "(&(" + src + "))";
             last_expr_precedence = 2;
         }
         if (!c_scalar_allocatable_as_storage &&
@@ -3826,7 +3853,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 sym = std::move(src);
             }
             if (ASRUtils::is_array(type)) {
-                if (is_c) {
+                if (is_c && !c_inline_pointer_array_member(tmp_expr)) {
                     out += indent + "if (" + sym + " == NULL) " + sym +
                         " = (void*) _lfortran_calloc_alloc(_lfortran_get_default_allocator(),"
                         " 1, sizeof(*" + sym + "));\n";

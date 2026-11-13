@@ -3448,6 +3448,9 @@ RUN(NAME derived_types_259 LABELS gfortran llvm) # local derived type with an al
 RUN(NAME derived_types_260 LABELS gfortran llvm EXTRAFILES derived_types_260_mod.f90) # runtime index into a parameter array of derived types must not use the component default
 RUN(NAME c_reset_alloc_component_01 LABELS gfortran llvm c)
 RUN(NAME c_reset_pointer_component_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_descriptor_ownership_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_descriptor_ownership_02 LABELS c
+    EXTRAFILES intent_out_inherited_alloc_cleanup_02c.c) # GNU does not use LFortran's allocator
 RUN(NAME c_reset_character_component_01 LABELS gfortran llvm c)
 RUN(NAME c_character_dummy_length_01 LABELS gfortran llvm c)
 RUN(NAME c_character_select_case_01 LABELS gfortran llvm c)
