@@ -175,18 +175,45 @@ public:
         return std::move(src);
     }
 
-    bool c_inline_pointer_array_member(
+    enum class CArrayMemberStorage {
+        Descriptor,
+        InlinePointerDescriptor,
+        InlineData
+    };
+
+    CArrayMemberStorage c_array_member_storage(
             const ASR::StructInstanceMember_t &member) const {
         // A Reference member borrows a descriptor rather than owning one inline.
-        return is_c && !ASRUtils::get_reference_member(member) &&
-            ASRUtils::is_pointer(member.m_type) &&
-            ASRUtils::is_array(member.m_type);
+        if (!is_c || ASRUtils::get_reference_member(member) ||
+                !ASRUtils::is_array(member.m_type)) {
+            return CArrayMemberStorage::Descriptor;
+        }
+        if (ASRUtils::is_pointer(member.m_type)) {
+            return CArrayMemberStorage::InlinePointerDescriptor;
+        }
+        if (!ASRUtils::is_allocatable(member.m_type) &&
+                ASRUtils::is_fixed_size_array(member.m_type)) {
+            return CArrayMemberStorage::InlineData;
+        }
+        return CArrayMemberStorage::Descriptor;
+    }
+
+    CArrayMemberStorage c_array_member_storage(ASR::expr_t* expr) const {
+        return ASR::is_a<ASR::StructInstanceMember_t>(*expr)
+            ? c_array_member_storage(
+                *ASR::down_cast<ASR::StructInstanceMember_t>(expr))
+            : CArrayMemberStorage::Descriptor;
+    }
+
+    bool c_inline_pointer_array_member(
+            const ASR::StructInstanceMember_t &member) const {
+        return c_array_member_storage(member) ==
+            CArrayMemberStorage::InlinePointerDescriptor;
     }
 
     bool c_inline_pointer_array_member(ASR::expr_t* expr) const {
-        return ASR::is_a<ASR::StructInstanceMember_t>(*expr) &&
-            c_inline_pointer_array_member(
-                *ASR::down_cast<ASR::StructInstanceMember_t>(expr));
+        return c_array_member_storage(expr) ==
+            CArrayMemberStorage::InlinePointerDescriptor;
     }
 
     bool c_inline_char_storage(const ASR::Variable_t &v) const {
@@ -2709,21 +2736,45 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             if (x.m_tgt) {
                 self().visit_expr(*x.m_tgt);
                 std::string target = std::move(src);
+                int rank = ASRUtils::extract_n_dims_from_ttype(type);
+                CArrayMemberStorage storage = c_array_member_storage(x.m_tgt);
+                bool inline_data = storage == CArrayMemberStorage::InlineData;
+                std::vector<std::string> lengths(rank), strides(rank);
+                if (inline_data) {
+                    ASR::dimension_t* dims = nullptr;
+                    size_t target_rank = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(x.m_tgt), dims);
+                    LCOMPILERS_ASSERT(target_rank == (size_t)rank);
+                    std::string stride = "1";
+                    for (int i = rank - 1; i >= 0; i--) {
+                        int64_t length = 0;
+                        LCOMPILERS_ASSERT(ASRUtils::extract_value(
+                            ASRUtils::expr_value(dims[i].m_length), length));
+                        lengths[i] = std::to_string(length);
+                        strides[i] = stride;
+                        stride = "(" + stride + "*" + lengths[i] + ")";
+                    }
+                } else {
+                    for (int i = 0; i < rank; i++) {
+                        std::string dim = target + "->dims[" +
+                            std::to_string(i) + "]";
+                        lengths[i] = dim + ".length";
+                        strides[i] = dim + ".stride";
+                    }
+                }
                 condition = "(" + condition +
-                    (c_inline_pointer_array_member(x.m_tgt) ? "" :
+                    (storage != CArrayMemberStorage::Descriptor ? "" :
                         " && " + target + " != NULL") +
                     " && " + ptr + "->data == " + target +
-                    "->data && " + ptr + "->n_dims == " + target +
-                    "->n_dims";
-                int rank = ASRUtils::extract_n_dims_from_ttype(type);
+                    (inline_data ? "" : "->data") +
+                    " && " + ptr + "->n_dims == " +
+                    (inline_data ? std::to_string(rank) : target + "->n_dims");
                 for (int i = 0; i < rank; i++) {
                     std::string dim = std::to_string(i);
-                    condition += " && " + target + "->dims[" + dim +
-                        "].length > 0 && " + ptr + "->dims[" + dim +
-                        "].length == " + target + "->dims[" + dim +
-                        "].length && " + ptr + "->dims[" + dim +
-                        "].stride == " + target + "->dims[" + dim +
-                        "].stride";
+                    condition += " && " + lengths[i] + " > 0 && " +
+                        ptr + "->dims[" + dim + "].length == " + lengths[i] +
+                        " && " + ptr + "->dims[" + dim +
+                        "].stride == " + strides[i];
                 }
                 condition += ")";
             }
