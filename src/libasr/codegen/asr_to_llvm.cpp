@@ -19595,6 +19595,61 @@ public:
                     llvm::Value* x2 = builder->CreateMul(left_val, left_val, "simplified_pow_operation");
                     llvm::Value* x4 = builder->CreateMul(x2, x2, "simplified_pow_operation");
                     tmp = builder->CreateMul(x4, x4, "simplified_pow_operation");
+                } else if (left_val->getType()->isIntegerTy()
+                        && left_val->getType()->getIntegerBitWidth() > 64) {
+                    // integer(16) ** n, including a runtime exponent. The i64
+                    // helper would wrap 2**70. A negative exponent is 0 unless
+                    // the base is ±1, matching gfortran.
+                    llvm::Type* ty = left_val->getType();
+                    auto iconst = [&](int64_t v) {
+                        return llvm::ConstantInt::get(ty, v, true);
+                    };
+                    llvm::Function* fn = builder->GetInsertBlock()->getParent();
+                    llvm::BasicBlock* neg_bb = llvm::BasicBlock::Create(context, "pow128.neg", fn);
+                    llvm::BasicBlock* pos_bb = llvm::BasicBlock::Create(context, "pow128.pos", fn);
+                    llvm::BasicBlock* loop_bb = llvm::BasicBlock::Create(context, "pow128.loop", fn);
+                    llvm::BasicBlock* body_bb = llvm::BasicBlock::Create(context, "pow128.body", fn);
+                    llvm::BasicBlock* exit_bb = llvm::BasicBlock::Create(context, "pow128.exit", fn);
+                    builder->CreateCondBr(builder->CreateICmpSLT(right_val, iconst(0)), neg_bb, pos_bb);
+
+                    builder->SetInsertPoint(neg_bb);
+                    llvm::Value* is_one = builder->CreateICmpEQ(left_val, iconst(1));
+                    llvm::Value* is_m1 = builder->CreateICmpEQ(left_val, iconst(-1));
+                    llvm::Value* odd = builder->CreateICmpEQ(
+                        builder->CreateAnd(right_val, iconst(1)), iconst(1));
+                    llvm::Value* neg_res = builder->CreateSelect(is_m1,
+                        builder->CreateSelect(odd, iconst(-1), iconst(1)), iconst(0));
+                    neg_res = builder->CreateSelect(is_one, iconst(1), neg_res);
+                    builder->CreateBr(exit_bb);
+
+                    builder->SetInsertPoint(pos_bb);
+                    builder->CreateBr(loop_bb);
+                    builder->SetInsertPoint(loop_bb);
+                    llvm::PHINode* res_phi = builder->CreatePHI(ty, 2);
+                    llvm::PHINode* base_phi = builder->CreatePHI(ty, 2);
+                    llvm::PHINode* exp_phi = builder->CreatePHI(ty, 2);
+                    res_phi->addIncoming(iconst(1), pos_bb);
+                    base_phi->addIncoming(left_val, pos_bb);
+                    exp_phi->addIncoming(right_val, pos_bb);
+                    builder->CreateCondBr(builder->CreateICmpEQ(exp_phi, iconst(0)), exit_bb, body_bb);
+
+                    builder->SetInsertPoint(body_bb);
+                    llvm::Value* take = builder->CreateICmpNE(
+                        builder->CreateAnd(exp_phi, iconst(1)), iconst(0));
+                    llvm::Value* res_next = builder->CreateSelect(take,
+                        builder->CreateMul(res_phi, base_phi), res_phi);
+                    llvm::Value* exp_next = builder->CreateLShr(exp_phi, iconst(1));
+                    llvm::Value* base_next = builder->CreateMul(base_phi, base_phi);
+                    res_phi->addIncoming(res_next, body_bb);
+                    base_phi->addIncoming(base_next, body_bb);
+                    exp_phi->addIncoming(exp_next, body_bb);
+                    builder->CreateBr(loop_bb);
+
+                    builder->SetInsertPoint(exit_bb);
+                    llvm::PHINode* out = builder->CreatePHI(ty, 2);
+                    out->addIncoming(neg_res, neg_bb);
+                    out->addIncoming(res_phi, loop_bb);
+                    tmp = out;
                 } else { // Use `pow` function for large or negative exponents
                     llvm::Type* const i64_ty = llvm::Type::getInt64Ty(context);
                     llvm::Value* _right = llvm_utils->convert_kind(right_val, i64_ty);
