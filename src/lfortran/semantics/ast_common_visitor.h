@@ -10911,7 +10911,10 @@ public:
                         // Check if intent is used on a non-argument variable
                         bool is_argument = std::find(current_procedure_args.begin(),
                                 current_procedure_args.end(), sym) !=
-                                current_procedure_args.end();
+                                current_procedure_args.end()
+                            || std::find(current_entry_args.begin(),
+                                current_entry_args.end(), sym) !=
+                                current_entry_args.end();
                         if (!is_argument) {
                             diag.add(Diagnostic(
                                 "Intent attribute can only be applied to procedure arguments",
@@ -11204,8 +11207,19 @@ public:
                 }
                 ASR::intentType s_intent;
                 bool is_argument = false;
+                // A name that occurs only in an ENTRY statement is a dummy of
+                // that entry. It stays a local of the host: a fixed-size
+                // array there is the master's own storage, and turning it
+                // into a dummy makes the host call pass an unallocated
+                // argument. An assumed-size dummy is the exception. Typing
+                // it as a local gives it a descriptor, while a call with an
+                // implicit interface passes the array's data.
+                std::string decl_name = to_lower(s.m_name);
+                bool is_entry_dummy = std::find(current_entry_args.begin(),
+                    current_entry_args.end(), decl_name) !=
+                    current_entry_args.end();
                 if (std::find(current_procedure_args.begin(),
-                        current_procedure_args.end(), to_lower(s.m_name)) !=
+                        current_procedure_args.end(), decl_name) !=
                         current_procedure_args.end()) {
                     s_intent = ASRUtils::intent_unspecified;
                     is_argument = true;
@@ -11698,7 +11712,9 @@ public:
                         current_scope, is_derived_type, hidden_derived_type_components);
                     type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                         is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
-                        (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
+                        (s_intent != ASRUtils::intent_local) || is_argument
+                            || (is_entry_dummy && is_dimension_star),
+                        is_dimension_star, is_assumed_rank);
                 }
                 if (corank > 0
                         && (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(type))
