@@ -7,6 +7,8 @@ target datalayout = "..."
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"R4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@parameter_arg = internal unnamed_addr constant float 0.000000e+00
+@parameter_arg.1 = internal unnamed_addr constant float 2.000000e+00
 
 define void @__module_dflt_intent_foo(float* %c, float* %d) {
 .entry:
@@ -74,12 +76,8 @@ declare void @_lfortran_free_alloc(i8*, i8*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %call_arg_value1 = alloca float, align 4
-  %call_arg_value = alloca float, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  store float 0.000000e+00, float* %call_arg_value, align 4
-  store float 2.000000e+00, float* %call_arg_value1, align 4
-  call void @__module_dflt_intent_foo(float* %call_arg_value, float* %call_arg_value1)
+  call void @__module_dflt_intent_foo(float* @parameter_arg, float* @parameter_arg.1)
   br label %return
 
 return:                                           ; preds = %.entry

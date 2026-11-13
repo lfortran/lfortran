@@ -10,12 +10,12 @@ target datalayout = "..."
 %tt.4 = type { float, %t.3 }
 %t.3 = type { i32 }
 
+@parameter_arg = internal unnamed_addr constant i32 200
+
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %call_arg_value = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  store i32 200, i32* %call_arg_value, align 4
-  call void @finalize_02.ss(i32* %call_arg_value)
+  call void @finalize_02.ss(i32* @parameter_arg)
   br label %return
 
 return:                                           ; preds = %.entry

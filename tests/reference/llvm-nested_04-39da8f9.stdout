@@ -18,10 +18,11 @@ target datalayout = "..."
 @string_const_data = private constant [3 x i8] c"b()"
 @string_const = private global %string_descriptor { i8* getelementptr inbounds ([3 x i8], [3 x i8]* @string_const_data, i32 0, i32 0), i64 3 }
 @7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@parameter_arg = internal unnamed_addr constant i32 6
+@parameter_arg.3 = internal unnamed_addr constant i32 5
 
 define i32 @__module_nested_04_a_b(i32* %x) {
 .entry:
-  %call_arg_value = alloca i32, align 4
   %__lcompilers_frame = alloca %nested_04_a.__lcompilers_frame_b.6, align 8
   %b = alloca i32, align 4
   %y = alloca i32, align 4
@@ -35,8 +36,7 @@ define i32 @__module_nested_04_a_b(i32* %x) {
   store i32 %2, i32* %y, align 4
   %3 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %3, i32 3, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
-  store i32 6, i32* %call_arg_value, align 4
-  %4 = call i32 @b.__module_nested_04_a_c(i32* %call_arg_value, %nested_04_a.__lcompilers_frame_b.6* %__lcompilers_frame)
+  %4 = call i32 @b.__module_nested_04_a_c(i32* @parameter_arg, %nested_04_a.__lcompilers_frame_b.6* %__lcompilers_frame)
   store i32 %4, i32* %b, align 4
   br label %return
 
@@ -144,11 +144,9 @@ declare void @_lfortran_free_alloc(i8*, i8*)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %call_arg_value = alloca i32, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %test = alloca i32, align 4
-  store i32 5, i32* %call_arg_value, align 4
-  %2 = call i32 @__module_nested_04_a_b(i32* %call_arg_value)
+  %2 = call i32 @__module_nested_04_a_b(i32* @parameter_arg.3)
   store i32 %2, i32* %test, align 4
   br label %return
 
