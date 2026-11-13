@@ -584,7 +584,7 @@ public:
                             indent + "if (" + length + " < 0) " +
                             length + " = 0;\n" + indent;
                     }
-                    c_inline_char_lengths[&v] = length;
+                    c_character_lengths[&v] = length;
                     sub += (v.m_storage == ASR::storage_typeType::Parameter
                         ? "const char " : "char ") +
                         std::string(v.m_name) + "[" + length + " + 1]";
@@ -2255,6 +2255,14 @@ R"(    // Initialise Numpy
         return mapping;
     }
     void visit_StringLen(const ASR::StringLen_t &x) {
+        ASR::Variable_t* var = c_character_designator_variable(x.m_arg);
+        if (var) {
+            auto stored_length = c_character_lengths.find(var);
+            if (stored_length != c_character_lengths.end()) {
+                src = stored_length->second;
+                return;
+            }
+        }
         CHECK_FAST_C(compiler_options, x)
         this->visit_expr(*x.m_arg);
         src = "strlen(" + src + ")";

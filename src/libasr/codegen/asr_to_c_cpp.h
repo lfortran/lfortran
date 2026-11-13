@@ -140,9 +140,9 @@ public:
     std::map<const ASR::Struct_t*, std::string> c_struct_cleanup_funcs;
     std::string c_struct_cleanup_bodies;
     size_t c_cleanup_counter = 0;
-    // Automatic CHARACTER lengths are fixed on entry, even if their length
-    // expressions change before a later assignment.
-    std::map<const ASR::Variable_t*, std::string> c_inline_char_lengths;
+    // Both owned automatic CHARACTER storage and borrowed dummy storage
+    // retain their declared lengths when a specification operand changes.
+    std::map<const ASR::Variable_t*, std::string> c_character_lengths;
 
     bool c_inline_char_storage(const ASR::Variable_t &v) const {
         // A nonallocatable scalar owns its storage inline; a dummy borrows
@@ -187,8 +187,8 @@ public:
         }
         ASR::Variable_t* var = c_character_designator_variable(expr);
         if (var) {
-            auto stored_length = c_inline_char_lengths.find(var);
-            if (stored_length != c_inline_char_lengths.end()) {
+            auto stored_length = c_character_lengths.find(var);
+            if (stored_length != c_character_lengths.end()) {
                 return stored_length->second;
             }
         }
@@ -1369,11 +1369,42 @@ R"(#include <stdio.h>
             indentation_level += 1;
             std::string indent(indentation_level*indentation_spaces, ' ');
             std::string decl;
+            std::set<ASR::Variable_t*> character_dummies;
+            if (is_c && f_type->m_deftype == ASR::deftypeType::Implementation) {
+                for (size_t i = 0; i < x.n_args; i++) {
+                    if (ASRUtils::is_string_dummy_with_hidden_length(
+                            x, x.m_args[i])) {
+                        ASR::Variable_t* arg = ASRUtils::EXPR2VAR(x.m_args[i]);
+                        if (!ASRUtils::is_array(arg->m_type)) {
+                            character_dummies.insert(arg);
+                        }
+                    }
+                }
+            }
             std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
             for (auto &item : var_order) {
                 ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
                 if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
+                    if (character_dummies.count(v)) {
+                        ASR::String_t* type = ASR::down_cast<ASR::String_t>(v->m_type);
+                        LCOMPILERS_ASSERT(type->m_len);
+                        int64_t constant_length;
+                        if (ASRUtils::extract_value(ASRUtils::expr_value(
+                                type->m_len), constant_length)) {
+                            c_character_lengths[v] = std::to_string(
+                                std::max<int64_t>(constant_length, 0));
+                        } else {
+                            self().visit_expr(*type->m_len);
+                            std::string length = "_lfortran_char_len_" +
+                                std::to_string(const_vars_count++);
+                            decl += indent + "int64_t " + length + " = " +
+                                src + ";\n";
+                            decl += indent + "if (" + length + " < 0) " +
+                                length + " = 0;\n";
+                            c_character_lengths[v] = length;
+                        }
+                    }
                     // A HostAssociated variable designates a variable of the
                     // host through the frame, see visit_Var.
                     if ((v->m_intent == ASRUtils::intent_local ||
