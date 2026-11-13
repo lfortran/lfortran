@@ -19022,9 +19022,10 @@ public:
             element_of_nonsequence_array(actual) == nullptr;
     }
 
-    // A scalar actual argument requires a scalar dummy argument. The only
-    // exception, an element sequence, needs --legacy-array-sections, so
-    // suggest it only where sequence association applies.
+    // A scalar actual argument requires a scalar dummy argument. An array
+    // element passed to an explicit-shape or assumed-size dummy is the
+    // element sequence that starts there, so that case is accepted.
+    // `--legacy-array-sections` remains the switch for the other extensions.
     static void report_array_element_for_array_dummy(diag::Diagnostics &diag,
             ASR::expr_t *actual, ASR::expr_t *dummy) {
         ASR::ttype_t *dummy_type = ASRUtils::expr_type(dummy);
@@ -19398,6 +19399,53 @@ public:
 
     }
 
+    // Pass the address of an array element to an explicit-shape or
+    // assumed-size dummy. That address is the element sequence that starts
+    // at the element. Returns false when the element types differ; the
+    // caller then leaves the actual argument unchanged.
+    bool associate_element_sequence(ASR::call_arg_t &arg, ASR::expr_t *dummy,
+            bool callee_is_external_symbol, const Location &loc) {
+        ASR::expr_t *arg_expr = arg.m_value;
+        ASR::ArrayItem_t *array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
+        ASR::expr_t *array_expr = array_item->m_v;
+        ASR::ttype_t *dummy_type = ASRUtils::expr_type(dummy);
+        ASR::ttype_t *actual_elem = ASRUtils::extract_type(
+            ASRUtils::expr_type(array_expr));
+        ASR::ttype_t *expected_elem = ASRUtils::extract_type(dummy_type);
+        if (!ASRUtils::types_equal(actual_elem, expected_elem,
+                arg_expr, dummy, true)) {
+            return false;
+        }
+        ASR::array_physical_typeType expected_phys =
+            ASRUtils::extract_physical_type(dummy_type);
+        // An external procedure is called with a raw pointer. An internal
+        // one keeps the dummy's own physical type.
+        if (callee_is_external_symbol) {
+            expected_phys = ASR::array_physical_typeType::PointerArray;
+        }
+        // The dummy's bounds belong to the callee. Drop them so the caller
+        // does not depend on symbols that exist only there.
+        ASR::ttype_t *expected_arg_type = ASRUtils::duplicate_type_with_empty_dims(
+            al, dummy_type, expected_phys, true);
+        ASR::ttype_t *expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(expected_arg_type));
+        LCOMPILERS_ASSERT(array_item->n_args > 0);
+        ASR::Array_t *array_t = ASR::down_cast<ASR::Array_t>(
+            expected_arg_type_past_ptr);
+        ASR::asr_t *expected_array = ASR::make_Array_t(al, loc,
+            ASRUtils::type_get_past_array(expected_arg_type_past_ptr),
+            array_t->m_dims, array_t->n_dims,
+            ASRUtils::extract_physical_type(expected_arg_type_past_ptr),
+            ASR::memory_spaceType::Global);
+        ASR::array_physical_typeType expected_phys_type =
+            ASRUtils::extract_physical_type(expected_arg_type);
+        ASR::ttype_t *cast_target_type = ASRUtils::duplicate_type_with_empty_dims(
+            al, ASRUtils::TYPE(expected_array), expected_phys_type, true);
+        arg.m_value = ASRUtils::EXPR(ASR::make_GetPointer_t(
+            al, array_item->base.base.loc, arg_expr, cast_target_type, nullptr));
+        return true;
+    }
+
     void legacy_array_sections_helper(ASR::symbol_t *v, Vec<ASR::call_arg_t>& args, const Location &loc) {
         bool callee_is_external_symbol = ASR::is_a<ASR::ExternalSymbol_t>(*v);
         ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v));
@@ -19423,9 +19471,6 @@ public:
                     // array element designator, so it is passed unchanged.
                     if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) &&
                             !ASRUtils::is_array(ASRUtils::expr_type(arg_expr))) {
-                        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
-                        ASR::expr_t* array_expr = array_item->m_v;
-
                         // Only explicit-shape and assumed-size dummies are sequence
                         // associated with the elements that start at the actual element,
                         // and only when the elements that follow it in the array follow
@@ -19433,60 +19478,13 @@ public:
                         if (!is_sequence_associable_element(arg_expr, f->m_args[i])) {
                             report_array_element_for_array_dummy(diag, arg_expr, f->m_args[i]);
                         }
-
-                        // When element types differ (e.g., complex actual vs real dummy),
-                        // skip the ArrayItem→ArraySection transformation and let
-                        // implicit_argument_casting in Call_t_body handle both the
-                        // scalar-to-array and type conversion.
-                        ASR::ttype_t* actual_elem = ASRUtils::extract_type(
-                            ASRUtils::expr_type(array_expr));
-                        ASR::ttype_t* expected_elem = ASRUtils::extract_type(
-                            array_arg_idx[i]);
-                        if (!ASRUtils::types_equal(actual_elem, expected_elem,
-                                arg_expr, f->m_args[i], true)) {
+                        // Element types that differ stay as the element so this
+                        // flag can still cast them.
+                        if (!associate_element_sequence(arg, f->m_args[i],
+                                callee_is_external_symbol, loc)) {
                             args_with_array_section.push_back(al, args[i]);
                             continue;
                         }
-
-                        // Legacy sequence association passes the address of the first element.
-                        // For externals (implicit interface), force PointerArray to match the ABI.
-                        // For known/internal procedures (including recursive self-calls), do not
-                        // mutate the callee signature here; only rewrite the actual argument.
-                        if (callee_is_external_symbol) {
-                            expected_phys = ASR::array_physical_typeType::PointerArray;
-                        }
-                        // The actual argument is sequence associated with the dummy, so the
-                        // dummy's bounds are never part of the argument's type. Drop them:
-                        // they belong to the callee and may reference symbols (FunctionParam,
-                        // getters of module variables) that the caller must not depend on.
-                        expected_arg_type = ASRUtils::duplicate_type_with_empty_dims(
-                            al, array_arg_idx[i], expected_phys, true);
-                        ASR::ttype_t* expected_arg_type_past_ptr = ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(expected_arg_type));
-
-                        LCOMPILERS_ASSERT(array_item->n_args > 0);
-
-                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type_past_ptr);
-
-                        ASR::asr_t* expected_array = ASR::make_Array_t(al, loc,
-                                                        ASRUtils::type_get_past_array(expected_arg_type_past_ptr),
-                                                        array_t->m_dims, array_t->n_dims,
-                                                        ASRUtils::extract_physical_type(expected_arg_type_past_ptr), ASR::memory_spaceType::Global);
-                        ASR::array_physical_typeType expected_phys_type = ASRUtils::extract_physical_type(expected_arg_type);
-                        // Sequence association: use empty dims to skip per-dimension
-                        // runtime checks. The elements that start at the actual element
-                        // need not have the dummy's shape; the callee uses its own bounds.
-                        ASR::ttype_t* cast_target_type = ASRUtils::duplicate_type_with_empty_dims(
-                            al, ASRUtils::TYPE(expected_array), expected_phys_type, true);
-
-                        // Pass the address of the element. This is exactly the element
-                        // sequence that starts at the element, whereas an ArraySection
-                        // a(i:, j:) does not describe it (and may be copied in as a
-                        // non-contiguous section). It also avoids materializing a temporary
-                        // ArraySection descriptor, preventing stack growth from
-                        // dimension-descriptor allocas.
-                        arg.m_value = ASRUtils::EXPR(ASR::make_GetPointer_t(
-                            al, array_item->base.base.loc, arg_expr, cast_target_type, nullptr));
                         args_with_array_section.push_back(al, arg);
                     } else if (arg_expr && ASR::is_a<ASR::ArraySection_t>(*arg_expr)) {
                         ASR::call_arg_t arg = args[i];
@@ -19518,13 +19516,6 @@ public:
         } else {
             // Check if a scalar (ArrayItem) is passed to an array argument
             for (size_t i = 0; i < f->n_args && i < args.size(); i++) {
-                if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i])) &&
-                        !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(f->m_args[i])) &&
-                        args[i].m_value &&
-                        ASR::is_a<ASR::ArrayItem_t>(*args[i].m_value) &&
-                        !ASRUtils::is_array(ASRUtils::expr_type(args[i].m_value))) {
-                    report_array_element_for_array_dummy(diag, args[i].m_value, f->m_args[i]);
-                }
                 // `w%u(2)` with `w` an array is one element of the component
                 // taken from every element of the base, so what it denotes is
                 // strided by the size of an element of the base. Passing it
@@ -19544,6 +19535,21 @@ public:
                             diag::Label("", {args[i].m_value->base.loc})
                         }));
                     throw SemanticAbort();
+                }
+                if (ASRUtils::is_array(ASRUtils::expr_type(f->m_args[i])) &&
+                        !ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(f->m_args[i])) &&
+                        args[i].m_value &&
+                        ASR::is_a<ASR::ArrayItem_t>(*args[i].m_value) &&
+                        !ASRUtils::is_array(ASRUtils::expr_type(args[i].m_value))) {
+                    // Explicit-shape and assumed-size dummies are sequence
+                    // associated with the element sequence that starts at the
+                    // actual element. Assumed-shape, allocatable and pointer
+                    // dummies are not.
+                    if (!(is_sequence_associable_element(args[i].m_value, f->m_args[i]) &&
+                            associate_element_sequence(args.p[i], f->m_args[i],
+                                callee_is_external_symbol, loc))) {
+                        report_array_element_for_array_dummy(diag, args[i].m_value, f->m_args[i]);
+                    }
                 }
             }
         }
