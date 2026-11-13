@@ -2320,6 +2320,12 @@ public:
                 }
             }
             if (!allocatable_stmt) continue;
+            // `integer, allocatable :: v` already carries the attribute on
+            // that declaration. Only a separate ALLOCATABLE statement
+            // (`allocatable v`) applies to another declaration of the name.
+            // Recording every allocatable declaration made
+            // `integer, pointer, parameter :: v` look allocatable.
+            if (d->m_vartype != nullptr) continue;
             for (size_t s = 0; s < d->n_syms; s++) {
                 if (d->m_syms[s].m_name) {
                     assgnd_allocatable.insert(to_lower(d->m_syms[s].m_name));
