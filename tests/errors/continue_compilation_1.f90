@@ -3385,7 +3385,7 @@ end function
 module cc1_complex_star
 implicit none
     complex*64 :: cc1_cs_z64  ! {Error} Kind 32 is not supported for Complex
-    complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+    complex*24 :: cc1_cs_z24  ! {Error} Kind 12 is not supported for Complex
     complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
 end module cc1_complex_star

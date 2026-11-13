@@ -2301,6 +2301,38 @@ public:
     std::map<std::string, ASR::presenceType> assgnd_presence;
     std::set<std::string> assgnd_pointer;
     std::set<std::string> assgnd_allocatable;
+
+    // An ALLOCATABLE statement may follow the type declaration. Record every
+    // name it gives so a deferred-shape declaration is allocatable when it is
+    // checked, not only when the statement appears first.
+    void collect_allocatable_statements(AST::decl_stmt_t **items, size_t n_items) {
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
+            AST::Declaration_t *d = AST::down_cast<AST::Declaration_t>(items[i]);
+            bool allocatable_stmt = false;
+            for (size_t a = 0; a < d->n_attributes; a++) {
+                if (!AST::is_a<AST::SimpleAttribute_t>(*d->m_attributes[a])) continue;
+                if (AST::down_cast<AST::SimpleAttribute_t>(
+                        d->m_attributes[a])->m_attr
+                        == AST::simple_attributeType::AttrAllocatable) {
+                    allocatable_stmt = true;
+                    break;
+                }
+            }
+            if (!allocatable_stmt) continue;
+            // `integer, allocatable :: v` already carries the attribute on
+            // that declaration. Only a separate ALLOCATABLE statement
+            // (`allocatable v`) applies to another declaration of the name.
+            // Recording every allocatable declaration made
+            // `integer, pointer, parameter :: v` look allocatable.
+            if (d->m_vartype != nullptr) continue;
+            for (size_t s = 0; s < d->n_syms; s++) {
+                if (d->m_syms[s].m_name) {
+                    assgnd_allocatable.insert(to_lower(d->m_syms[s].m_name));
+                }
+            }
+        }
+    }
     std::set<std::string> assgnd_target;
     std::set<std::string> assgnd_volatile;
     std::set<std::string> assgnd_asynchronous;
@@ -7744,8 +7776,22 @@ public:
         }
     }
 
+    // An EXTERNAL statement is a standard implicit interface. It does not
+    // require --implicit-interface when the name is already a procedure or
+    // a typed variable. A bare `external f` for a name that was never
+    // declared still requires the flag.
     void create_external_function(std::string sym, Location loc, ASR::ttype_t* determined_type = nullptr) {
-        if (compiler_options.implicit_interface) {
+        ASR::symbol_t *already = current_scope->resolve_symbol(sym);
+        if (!compiler_options.implicit_interface && already == nullptr
+                && determined_type == nullptr) {
+            diag.add(Diagnostic(
+                "function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`",
+                Level::Error, Stage::Semantic, {
+                    Label("",{loc})
+                }));
+            throw SemanticAbort();
+        }
+        {
             bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
@@ -7895,13 +7941,6 @@ public:
                 }
             }
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
-        } else {
-            diag.add(Diagnostic(
-                "function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`",
-                Level::Error, Stage::Semantic, {
-                    Label("",{loc})
-                }));
-            throw SemanticAbort();
         }
     }
 
@@ -10879,7 +10918,10 @@ public:
                         // Check if intent is used on a non-argument variable
                         bool is_argument = std::find(current_procedure_args.begin(),
                                 current_procedure_args.end(), sym) !=
-                                current_procedure_args.end();
+                                current_procedure_args.end()
+                            || std::find(current_entry_args.begin(),
+                                current_entry_args.end(), sym) !=
+                                current_entry_args.end();
                         if (!is_argument) {
                             diag.add(Diagnostic(
                                 "Intent attribute can only be applied to procedure arguments",
@@ -11172,8 +11214,19 @@ public:
                 }
                 ASR::intentType s_intent;
                 bool is_argument = false;
+                // A name that occurs only in an ENTRY statement is a dummy of
+                // that entry. It stays a local of the host: a fixed-size
+                // array there is the master's own storage, and turning it
+                // into a dummy makes the host call pass an unallocated
+                // argument. An assumed-size dummy is the exception. Typing
+                // it as a local gives it a descriptor, while a call with an
+                // implicit interface passes the array's data.
+                std::string decl_name = to_lower(s.m_name);
+                bool is_entry_dummy = std::find(current_entry_args.begin(),
+                    current_entry_args.end(), decl_name) !=
+                    current_entry_args.end();
                 if (std::find(current_procedure_args.begin(),
-                        current_procedure_args.end(), to_lower(s.m_name)) !=
+                        current_procedure_args.end(), decl_name) !=
                         current_procedure_args.end()) {
                     s_intent = ASRUtils::intent_unspecified;
                     is_argument = true;
@@ -11189,6 +11242,10 @@ public:
                 // location for dimension(...) if present
                 Location dims_attr_loc;
                 is_allocatable = false;
+                if (assgnd_allocatable.count(sym)) {
+                    // `allocatable a` may appear before or after this declaration.
+                    is_allocatable = true;
+                }
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
                 if (x.n_attributes > 0) {
@@ -11662,7 +11719,9 @@ public:
                         current_scope, is_derived_type, hidden_derived_type_components);
                     type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                         is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
-                        (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
+                        (s_intent != ASRUtils::intent_local) || is_argument
+                            || (is_entry_dummy && is_dimension_star),
+                        is_dimension_star, is_assumed_rank);
                 }
                 if (corank > 0
                         && (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(type))
@@ -14763,7 +14822,8 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
-            if (!is_derived_type && a_kind != 4 && a_kind != 8 && a_kind != 16) {
+            if (!is_derived_type && a_kind != 4 && a_kind != 8
+                    && a_kind != 10 && a_kind != 16) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Complex",
                     Level::Error, Stage::Semantic, {
@@ -26123,14 +26183,13 @@ public:
                 check_implicit_none_external(var_name, v, x.base.base.loc);
             }
         }
-        if (compiler_options.implicit_interface && !is_external_procedure
-                && is_implicit_interface_decl(v)) {
+        if (!is_external_procedure && is_implicit_interface_decl(v)) {
             // `v` was declared `external` with no interface, so its argument
-            // list is unknown. Infer the concrete interface from this call's
-            // arguments, exactly like a locally declared external. A reference
-            // that passes no arguments infers a zero-argument interface; it
-            // must not be left resolving to the declaration itself, which is
-            // not a call target.
+            // list is unknown. Every reference infers a concrete interface
+            // from its actuals. That is standard Fortran and does not need
+            // --implicit-interface. A reference that passes no arguments
+            // infers a zero-argument interface; it must not be left resolving
+            // to the declaration itself, which is not a call target.
             is_external_procedure = true;
         }
         if (x.n_subargs > 0 && x.n_member == 0) {
@@ -26153,12 +26212,13 @@ public:
             if( !is_function ) {
                 return;
             }
-            if (compiler_options.implicit_interface && is_function &&
-                    (!v || ASRUtils::is_bare_implicit_interface(v))) {
-                // A reference to an undeclared name or to an external with an
-                // implicit interface. It goes through an interface built from
-                // this reference's actuals, returning the declared type of
-                // the name, or else its implicit type.
+            if (is_function && ((compiler_options.implicit_interface && !v)
+                    || ASRUtils::is_bare_implicit_interface(v))) {
+                // A reference to an undeclared name (only with
+                // --implicit-interface) or to a procedure declared EXTERNAL.
+                // It goes through an interface built from this reference's
+                // actuals, returning the declared type of the name, or else
+                // its implicit type.
                 ASR::ttype_t* type = nullptr;
                 bool is_subrout = false;
                 if (external_sym) {
@@ -26345,14 +26405,17 @@ public:
                 v = implicit_function_reference_target(x, var_name, canonical, old_type);
             }
         }
-        if (v && !compiler_options.implicit_interface && is_external_procedure) {
+        if (v && !implicit_call_done && !compiler_options.implicit_interface
+                && is_external_procedure && current_scope->parent) {
             /*
                 Case: ./integration_tests/external_01.f90
                 We have `enorm` declared outside current_scope. Check if it is a function
                 and if it is, then we need to remove template function `enorm` from current scope and external procedures.
+                A name that is only declared EXTERNAL has no such definition, and
+                resolve_symbol returns null.
             */
             ASR::symbol_t* v2 = current_scope->parent->resolve_symbol(var_name);
-            if (ASR::is_a<ASR::Function_t>(*v2)) {
+            if (v2 && ASR::is_a<ASR::Function_t>(*v2)) {
                 current_scope->erase_symbol(var_name);
                 erase_from_external_mapping(var_name);
                 ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
@@ -29330,9 +29393,10 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
                 complex_kind));
         ASR::expr_t *value = nullptr;
-        // A ComplexConstant stores its parts as doubles, which cannot hold
-        // a complex(16) value: such a literal is evaluated at run time.
-        if (re_value && im_value && complex_kind != 16) {
+        // A ComplexConstant stores its parts as doubles. That cannot hold a
+        // complex(16) value, and a kind-10 RealConstant keeps its payload in
+        // a side allocation, not in m_r. Those literals stay constructors.
+        if (re_value && im_value && complex_kind != 16 && complex_kind != 10) {
             double re_double;
             if (ASR::is_a<ASR::RealConstant_t>(*re_value)) {
                 re_double = ASR::down_cast<ASR::RealConstant_t>(re_value)->m_r;
@@ -29355,14 +29419,15 @@ public:
             }
             value = ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(al, x.base.base.loc, re_double, im_double, type));
         }
-        if (complex_kind == 16) {
+        if (complex_kind == 16 || complex_kind == 10) {
             // The parts of a ComplexConstant are doubles, which cannot hold a
-            // complex(16) value. A constant such value is instead a
-            // constructor from the two real(16) constants: it is its own
-            // compile-time value.
-            ASR::ttype_t *real16 = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 16));
-            re = CastingUtil::perform_casting(re, real16, al, x.base.base.loc);
-            im = CastingUtil::perform_casting(im, real16, al, x.base.base.loc);
+            // complex(16) value or a kind-10 payload. A constant such value
+            // is instead a constructor from the two real constants: it is
+            // its own compile-time value.
+            ASR::ttype_t *part_type = ASRUtils::TYPE(ASR::make_Real_t(al,
+                x.base.base.loc, complex_kind));
+            re = CastingUtil::perform_casting(re, part_type, al, x.base.base.loc);
+            im = CastingUtil::perform_casting(im, part_type, al, x.base.base.loc);
             if (re_value && im_value) {
                 value = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
                     x.base.base.loc, re, im, type, nullptr));

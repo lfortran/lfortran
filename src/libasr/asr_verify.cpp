@@ -5143,8 +5143,8 @@ public:
     void visit_Complex(const Complex_t &x) {
         if (diagnostics.has_error()) return;
         require_id(
-            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 16 ||
-                x.m_kind >= 1000,
+            x.m_kind == 4 || x.m_kind == 8 || x.m_kind == 10 ||
+                x.m_kind == 16 || x.m_kind >= 1000,
             "asr.verify.type.complex_kind_supported",
             "Complex kind " + std::to_string(x.m_kind) +
                 " is not supported");

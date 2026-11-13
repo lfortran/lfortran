@@ -11,6 +11,7 @@ set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the g
 set(FAST no CACHE BOOL "Run supported tests with --fast")
 set(DETECT_LEAKS no CACHE BOOL "Run tests with --detect-leaks")
 option(LFORTRAN_SMOKE "Build and run the representative CI smoke suite" OFF)
+
 if (LFORTRAN_SMOKE)
     include(${CMAKE_CURRENT_SOURCE_DIR}/smoke_tests.cmake)
 endif()
@@ -2480,7 +2481,6 @@ RUN(NAME bindc6 LABELS gfortran llvm EXTRAFILES bindc6_sum.c)
 RUN(NAME bindc_01 LABELS gfortran llvm EXTRAFILES bindc_01b.f90 bindc_01c.c)
 RUN(NAME test_c_long_double LABELS gfortran llvm EXTRAFILES test_c_long_double_c.c)
 RUN(NAME test_c_long_double_01 LABELS gfortran llvm)
-RUN(NAME test_c_long_double_02 LABELS gfortran llvm EXTRAFILES test_c_long_double_02b.f90 test_c_long_double_02c.c)
 RUN(NAME bindc_02 LABELS gfortran llvm EXTRAFILES bindc_02b.f90 bindc_02c.c)
 RUN(NAME bindc_03 LABELS gfortran llvm EXTRAFILES bindc_03c.c)
 RUN(NAME bindc_04 LABELS gfortran llvm EXTRAFILES bindc_04c.c)
@@ -7911,6 +7911,49 @@ RUN(NAME detect_leaks_01 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)
 # lfortran_display is an LFortran runtime module that GFortran does not have.
 # Its procedures do not link with --separate-compilation yet (#15852).
 RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+RUN(NAME cpp_flag_01 LABELS gfortran llvm
+        EXTRA_ARGS -cpp -DCPP_FLAG_01
+        GFORTRAN_ARGS -cpp -DCPP_FLAG_01)
+RUN(NAME allocatable_statement_01 LABELS gfortran llvm)
+RUN(NAME implicit_do_01 LABELS gfortran llvm)
+RUN(NAME implicit_unallocated_01 LABELS gfortran llvm
+    EXTRAFILES implicit_unallocated_01c.c
+    EXTRA_ARGS --implicit-interface --mangle-underscore-external)
+RUN(NAME minmax_03 LABELS gfortran llvm)
+RUN(NAME integer_pow_negative LABELS gfortran llvm)
+RUN(NAME mangle_underscore_external_04 LABELS gfortran llvm
+    EXTRAFILES mangle_underscore_external_04c.c
+    EXTRA_ARGS --mangle-underscore-external)
+RUN(NAME bindc_module_variable_01 LABELS gfortran llvm
+    EXTRAFILES bindc_module_variable_01_m.f90
+    EXTRA_ARGS --separate-compilation)
+RUN(NAME entry_34 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+RUN(NAME transfer_pointer_01 LABELS gfortran llvm)
+RUN(NAME external_call_01 LABELS gfortran llvm)
+RUN(NAME external_func_01 LABELS gfortran llvm EXTRAFILES external_func_01_lsame.f90)
+RUN(NAME module_parameter_pointer_01 LABELS gfortran llvm
+    EXTRAFILES module_parameter_pointer_01.c
+    EXTRA_ARGS --implicit-interface --mangle-underscore-external)
+RUN(NAME empty_explicit_shape_01 LABELS gfortran llvm
+    EXTRA_ARGS --implicit-interface)
+RUN(NAME c_long_double_complex_01 LABELS gfortran llvm)
+RUN(NAME test_c_long_double_02 LABELS gfortran llvm EXTRAFILES test_c_long_double_02b.f90 test_c_long_double_02c.c)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
