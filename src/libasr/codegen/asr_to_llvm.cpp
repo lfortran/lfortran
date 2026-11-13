@@ -7867,9 +7867,12 @@ public:
                 (x.m_symbolic_value != nullptr || x.m_intent == intent_local)) {
             external = false;
         }
-        // The translation unit that compiles the module defines a bind(c)
-        // module variable. A unit that only loads the module references it.
-        if (x.m_parent_symtab && x.m_parent_symtab->asr_owner
+        // With separate compilation the unit that compiles the module
+        // defines its variables, and a unit that only loads the module
+        // references them. Without it the module file emits an empty
+        // object, so the unit that has the program defines them.
+        if (compiler_options.separate_compilation
+                && x.m_parent_symtab && x.m_parent_symtab->asr_owner
                 && ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)) {
             ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
                 x.m_parent_symtab->asr_owner);
