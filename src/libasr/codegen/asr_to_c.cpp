@@ -751,6 +751,24 @@ public:
             encoded_type, array_types_decls, false);
         std::string name = v.m_name;
         int64_t count = ASRUtils::get_fixed_size_of_array(dims, rank);
+        std::vector<std::string> dimensions(rank);
+        std::vector<int64_t> lengths(rank);
+        int64_t stride = 1;
+        for (size_t i = rank; i-- > 0;) {
+            int64_t lower_bound = 1, length = 0;
+            if ((dims[i].m_start &&
+                    !ASRUtils::extract_value(dims[i].m_start, lower_bound)) ||
+                    !dims[i].m_length ||
+                    !ASRUtils::extract_value(dims[i].m_length, length)) {
+                throw CodeGenError("the module array '" + name +
+                    "' needs constant dimensions in the c backend",
+                    v.base.base.loc);
+            }
+            dimensions[i] = "{" + std::to_string(lower_bound) + ", " +
+                std::to_string(length) + ", " + std::to_string(stride) + "}";
+            lengths[i] = length;
+            stride *= length;
+        }
         std::string init = "{0}";
         ASR::expr_t* value = ASRUtils::expr_value(
             v.m_value ? v.m_value : v.m_symbolic_value);
@@ -769,23 +787,7 @@ public:
                     "' has an unsupported initializer layout in the c "
                     "backend", v.base.base.loc);
             }
-            init = array_constant_initializer(a);
-        }
-        std::vector<std::string> dimensions(rank);
-        int64_t stride = 1;
-        for (size_t i = rank; i-- > 0;) {
-            int64_t lower_bound = 1, length = 0;
-            if ((dims[i].m_start &&
-                    !ASRUtils::extract_value(dims[i].m_start, lower_bound)) ||
-                    !dims[i].m_length ||
-                    !ASRUtils::extract_value(dims[i].m_length, length)) {
-                throw CodeGenError("the module array '" + name +
-                    "' needs constant dimensions in the c backend",
-                    v.base.base.loc);
-            }
-            dimensions[i] = "{" + std::to_string(lower_bound) + ", " +
-                std::to_string(length) + ", " + std::to_string(stride) + "}";
-            stride *= length;
+            init = array_constant_initializer(a, lengths);
         }
         std::string dims_init = "{";
         for (size_t i = 0; i < rank; i++) {

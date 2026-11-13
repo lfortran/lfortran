@@ -471,15 +471,26 @@ public:
         }
     }
 
-    // The elements of the array constant `a`, in array element order, as
-    // a C initializer list.
-    std::string array_constant_initializer(ASR::ArrayConstant_t *a) {
+    // The elements of the array constant `a` as a C initializer list.
+    // Module descriptors use last-subscript-fastest storage, unlike ASR constants.
+    std::string array_constant_initializer(ASR::ArrayConstant_t *a,
+            const std::vector<int64_t> &row_major_shape = {}) {
         Allocator al(1024);
         std::string r = "{";
         int64_t n = ASRUtils::get_fixed_size_of_array(a->m_type);
         for (int64_t i = 0; i < n; i++) {
             if (i > 0) r += ", ";
-            self().visit_expr(*ASRUtils::fetch_ArrayConstant_value(al, a, i));
+            int64_t index = i;
+            if (row_major_shape.size() > 1) {
+                int64_t remaining = i;
+                index = 0;
+                for (size_t dim = row_major_shape.size(); dim-- > 0;) {
+                    index = index * row_major_shape[dim] +
+                        remaining % row_major_shape[dim];
+                    remaining /= row_major_shape[dim];
+                }
+            }
+            self().visit_expr(*ASRUtils::fetch_ArrayConstant_value(al, a, index));
             r += src;
         }
         return r + "}";
