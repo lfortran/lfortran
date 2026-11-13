@@ -2742,7 +2742,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 std::vector<std::string> lengths(rank), strides(rank);
                 if (inline_data) {
                     ASR::dimension_t* dims = nullptr;
-                    size_t target_rank = ASRUtils::extract_dimensions_from_ttype(
+                    [[maybe_unused]] size_t target_rank =
+                        ASRUtils::extract_dimensions_from_ttype(
                         ASRUtils::expr_type(x.m_tgt), dims);
                     LCOMPILERS_ASSERT(target_rank == (size_t)rank);
                     std::string stride = "1";
