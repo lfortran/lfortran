@@ -11,6 +11,8 @@ set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the g
 set(FAST no CACHE BOOL "Run supported tests with --fast")
 set(DETECT_LEAKS no CACHE BOOL "Run tests with --detect-leaks")
 option(LFORTRAN_SMOKE "Build and run the representative CI smoke suite" OFF)
+RUN(NAME cpp_flag_01 LABELS gfortran llvm
+
 if (LFORTRAN_SMOKE)
     include(${CMAKE_CURRENT_SOURCE_DIR}/smoke_tests.cmake)
 endif()
