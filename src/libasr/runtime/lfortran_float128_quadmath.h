@@ -131,6 +131,18 @@ lf_float128 lf_f128_acosh  (lf_float128 a);           /* acoshq  */
 lf_float128 lf_f128_atanh  (lf_float128 a);           /* atanhq  */
 lf_float128 lf_f128_erf    (lf_float128 a);           /* erfq    */
 lf_float128 lf_f128_erfc   (lf_float128 a);           /* erfcq   */
+lf_float128 lf_f128_tgamma (lf_float128 a);           /* tgammaq */
+lf_float128 lf_f128_lgamma (lf_float128 a);           /* lgammaq */
+lf_float128 lf_f128_hypot  (lf_float128 a, lf_float128 b); /* hypotq */
+lf_float128 lf_f128_j0     (lf_float128 a);           /* j0q     */
+lf_float128 lf_f128_j1     (lf_float128 a);           /* j1q     */
+lf_float128 lf_f128_y0     (lf_float128 a);           /* y0q     */
+lf_float128 lf_f128_jn     (int n, lf_float128 a);    /* jnq     */
+/* 1 and *out set when the binary128 value is the Bessel function.
+   0 when the power series is unstable and Miller's recurrence will
+   not run. The caller must leave that expression unfolded. */
+int lf_f128_jn_try(int n, lf_float128 a, lf_float128 *out);
+lf_float128 lf_f128_erfc_scaled(lf_float128 a);
 /* Trigonometric functions in degrees (Fortran 2023 sind, ...) */
 lf_float128 lf_f128_sind   (lf_float128 a);
 lf_float128 lf_f128_cosd   (lf_float128 a);

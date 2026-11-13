@@ -1,0 +1,13 @@
+{
+    "basename": "asr-bessel_j16_large_01-05514ce",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/bessel_j16_large_01.f90",
+    "infile_hash": "3bd4cec749b54144b11a26efce79acd4f238003152590c578cac0e31",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-bessel_j16_large_01-05514ce.stdout",
+    "stdout_hash": "9b74b3697c3ed96637f28110c3a6cc47df73304416a409641df1deeb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -41,6 +41,11 @@ add_test(NAME test_gpu_cuda_api_state_managed
 set_tests_properties(test_gpu_cuda_api_state_managed PROPERTIES
     ENVIRONMENT "LFORTRAN_GPU_MEMORY=managed"
     PASS_REGULAR_EXPRESSION "passed on the CUDA runtime API 13000")
+add_test(NAME test_gpu_cuda_api_state_managed_pool
+    COMMAND test_gpu_cuda_api_state managed-pool)
+set_tests_properties(test_gpu_cuda_api_state_managed_pool PROPERTIES
+    ENVIRONMENT "LFORTRAN_GPU_MEMORY=managed"
+    PASS_REGULAR_EXPRESSION "managed pool capacity passed")
 # The emulation provides the CUDA 13 runtime API by default; the runtime has
 # to compile against, and run on, the CUDA 12 one too.
 add_executable(test_gpu_cuda_api_state_cuda12 test_gpu_cuda_api_state.cpp

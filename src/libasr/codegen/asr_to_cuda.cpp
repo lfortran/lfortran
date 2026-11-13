@@ -166,6 +166,53 @@ struct CudaDialect {
             + ", " + (has_lanes ? "__gpu_lanes_n, __gpu_lane_mask"
                 : "32, 0xffffffffu") + ")";
     }
+    // `targets` are assigned the elements that start at `source` (`a[i]`),
+    // read with __lfortran_wide_load in the prologue of the kernel source.
+    std::string wide_load(const std::string &indent,
+            const std::vector<std::string> &targets,
+            const std::string &source, const std::string &array,
+            const std::string &aligned) const {
+        std::string out = indent + "__lfortran_wide_load((" + aligned
+            + ") && (reinterpret_cast<size_t>(" + array
+            + ") & 15u) == 0, &(" + source + ")";
+        for (const std::string &t : targets) out += ", " + t;
+        return out + ");\n";
+    }
+    std::string wide_load_helper() const {
+        return
+            "// The 16 bytes that start at `p`: read at once when `ok` says `p` is a\n"
+            "// multiple of 16, element by element, put together, when it is not.\n"
+            "// The elements are taken out of the 16 bytes, so that the two ways\n"
+            "// meet before the elements are separated.\n"
+            "template <typename T>\n"
+            "__device__ __forceinline__ uint4 __lfortran_wide_vector(bool ok, const T* p) {\n"
+            "    if (ok) return *reinterpret_cast<const uint4*>(p);\n"
+            "    T t[16 / sizeof(T)];\n"
+            "    #pragma unroll\n"
+            "    for (int i = 0; i < 16 / (int)sizeof(T); i++) t[i] = p[i];\n"
+            "    uint4 v;\n"
+            "    __builtin_memcpy(&v, t, 16);\n"
+            "    return v;\n"
+            "}\n\n"
+            "template <typename T>\n"
+            "__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a, T &b) {\n"
+            "    uint4 v = __lfortran_wide_vector(ok, p);\n"
+            "    const T* e = reinterpret_cast<const T*>(&v);\n"
+            "    a = e[0]; b = e[1];\n"
+            "}\n\n"
+            "template <typename T>\n"
+            "__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a, T &b, T &c, T &d) {\n"
+            "    uint4 v = __lfortran_wide_vector(ok, p);\n"
+            "    const T* e = reinterpret_cast<const T*>(&v);\n"
+            "    a = e[0]; b = e[1]; c = e[2]; d = e[3];\n"
+            "}\n\n"
+            "template <typename T>\n"
+            "__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a0, T &a1, T &a2, T &a3, T &a4, T &a5, T &a6, T &a7) {\n"
+            "    uint4 v = __lfortran_wide_vector(ok, p);\n"
+            "    const T* e = reinterpret_cast<const T*>(&v);\n"
+            "    a0 = e[0]; a1 = e[1]; a2 = e[2]; a3 = e[3]; a4 = e[4]; a5 = e[5]; a6 = e[6]; a7 = e[7];\n"
+            "}\n\n";
+    }
     // The definition lane_reduce names, written once ahead of the kernels.
     std::string lane_reduce_helper() const {
         return
@@ -269,6 +316,15 @@ struct CudaDialect {
     std::string unroll_pragma(bool deep = false) const {
         return emulate_cpu || hip ? std::string()
             : std::string(deep ? "#pragma unroll 64" : "#pragma unroll 16");
+    }
+    // A loop whose iterations read vectors of 16 bytes (gpu_wide_loads.cpp)
+    // has the loads of 16 elements in each already: unrolled by 8, a loop
+    // of a quantized matrix-vector product keeps its loads in flight with
+    // 48 registers, where by 16 it takes 128 and the SM runs a quarter of
+    // the warps.
+    std::string unroll_wide_pragma() const {
+        return emulate_cpu || hip ? std::string()
+            : std::string("#pragma unroll 8");
     }
     // A loop that combines the values of the lanes of an iteration in each
     // of its iterations is unrolled by four: the shuffles of one iteration

@@ -42,17 +42,18 @@ target_include_directories(lfortran SYSTEM PRIVATE "tpl")
 target_link_libraries(lfortran ${LFORTRAN_LINK_LIBRARIES})
 if (HAVE_LFORTRAN_LLD)
     target_include_directories(lfortran PRIVATE ${LLD_INCLUDE_DIRS})
-    # The imported lldELF target links the shared libLLVM. This binary already
-    # links the static component archives, and both register the same cl::opt
-    # options. Link the static LLD archives and every static LLVM archive in
-    # one group so the single-pass linker can resolve LLD's references without
-    # loading libLLVM.so. One -Wl item keeps CMake from dropping the second
-    # copy of an archive. Packages without a CMake config (LLVM 7–9) contribute
-    # the ELF archive and the common archives next to it. liblldDriver.a
-    # defines main, so it stays out.
+    # The imported LLD targets (lldELF, lldMachO) link the shared libLLVM.
+    # This binary already links the static component archives, and both
+    # register the same cl::opt options. Link the static LLD archives and
+    # every static LLVM archive instead, so LLD's references resolve without
+    # loading the shared libLLVM. On Linux they form one group, so the
+    # single-pass linker resolves them; one -Wl item keeps CMake from dropping
+    # the second copy of an archive. Packages without a CMake config (LLVM
+    # 7–9) contribute the ELF archive and the common archives next to it.
+    # liblldDriver.a defines main, so it stays out.
     set(_lld_archives "")
-    if (TARGET lldELF)
-        foreach(_lld_target lldELF lldCommon)
+    if (TARGET ${LFORTRAN_LLD_TARGET})
+        foreach(_lld_target ${LFORTRAN_LLD_TARGET} lldCommon)
             set(_loc "")
             get_target_property(_configs ${_lld_target} IMPORTED_CONFIGURATIONS)
             foreach(_cfg IN LISTS _configs)
@@ -75,14 +76,6 @@ if (HAVE_LFORTRAN_LLD)
             endif()
         endforeach()
     endif()
-    set(_lld_group "")
-    foreach(_loc IN LISTS _lld_archives)
-        if(_lld_group STREQUAL "")
-            set(_lld_group "-Wl,--start-group,${_loc}")
-        else()
-            string(APPEND _lld_group ",${_loc}")
-        endif()
-    endforeach()
     file(GLOB _llvm_static_libs "${LLVM_LIBRARY_DIR}/libLLVM*.a")
     if(NOT _llvm_static_libs)
         message(FATAL_ERROR
@@ -90,15 +83,46 @@ if (HAVE_LFORTRAN_LLD)
             "LFortran links LLVM statically.")
     endif()
     list(SORT _llvm_static_libs)
-    foreach(_llvm_archive IN LISTS _llvm_static_libs)
-        string(APPEND _lld_group ",${_llvm_archive}")
-    endforeach()
-    # LLD and LLVM Support need these. They are not part of libLLVM.
-    foreach(_syslib z zstd pthread dl m rt)
-        string(APPEND _lld_group ",-l${_syslib}")
-    endforeach()
-    string(APPEND _lld_group ",--end-group")
-    target_link_libraries(lfortran "${_lld_group}")
+    if (APPLE)
+        # Apple's linker searches every archive on the command line for each
+        # undefined symbol, so the archives need no group. LLVM Support's
+        # imported target already brings zlib and zstd. LLD 15 and 16 write
+        # bitcode bundles with the system libxar.
+        target_link_libraries(lfortran ${_lld_archives} ${_llvm_static_libs})
+        if (LLVM_HAVE_LIBXAR)
+            target_link_libraries(lfortran xar)
+        endif()
+        # CMake lists the LLVM archives again after libasr, which needs them
+        # too, and Apple's linker (Xcode 15 and newer) warns about each
+        # repeated archive. Older linkers neither warn nor know the flag.
+        include(CheckLinkerFlag OPTIONAL)
+        if (COMMAND check_linker_flag)
+            check_linker_flag(CXX "-Wl,-no_warn_duplicate_libraries"
+                LFORTRAN_LINKER_NO_WARN_DUPLICATE_LIBRARIES)
+            if (LFORTRAN_LINKER_NO_WARN_DUPLICATE_LIBRARIES)
+                target_link_options(lfortran PRIVATE
+                    "-Wl,-no_warn_duplicate_libraries")
+            endif()
+        endif()
+    else()
+        set(_lld_group "")
+        foreach(_loc IN LISTS _lld_archives)
+            if(_lld_group STREQUAL "")
+                set(_lld_group "-Wl,--start-group,${_loc}")
+            else()
+                string(APPEND _lld_group ",${_loc}")
+            endif()
+        endforeach()
+        foreach(_llvm_archive IN LISTS _llvm_static_libs)
+            string(APPEND _lld_group ",${_llvm_archive}")
+        endforeach()
+        # LLD and LLVM Support need these. They are not part of libLLVM.
+        foreach(_syslib z zstd pthread dl m rt)
+            string(APPEND _lld_group ",-l${_syslib}")
+        endforeach()
+        string(APPEND _lld_group ",--end-group")
+        target_link_libraries(lfortran "${_lld_group}")
+    endif()
     if (LFORTRAN_CXX_NO_RTTI_FLAG)
         set_source_files_properties(lld_linker.cpp PROPERTIES
             COMPILE_FLAGS "${LFORTRAN_CXX_NO_RTTI_FLAG}")

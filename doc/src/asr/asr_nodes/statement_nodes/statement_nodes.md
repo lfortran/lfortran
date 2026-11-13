@@ -47,6 +47,7 @@ GpuKernelLaunch
 GpuLaneBarrier
 GpuSync
 GpuWait
+GpuWideLoad
 If
 IfArithmetic
 ImplicitDeallocate

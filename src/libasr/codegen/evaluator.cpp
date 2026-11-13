@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <optional>
@@ -178,8 +179,18 @@ bool is_host_target(const llvm::Triple &target)
 {
     llvm::Triple host(llvm::Triple::normalize(
         llvm::sys::getDefaultTargetTriple()));
-    return target.getArch() == host.getArch()
-        && target.getOS() == host.getOS()
+    if (target.getArch() != host.getArch()) {
+        return false;
+    }
+    if (target.getOS() == host.getOS()
+            && target.getEnvironment() == host.getEnvironment()) {
+        return true;
+    }
+    // Darwin and MacOSX name one Apple platform. MACOSX_DEPLOYMENT_TARGET
+    // rewrites the default darwin triple to macosxMAJOR.MINOR.MICRO, and
+    // that host is still the machine we are compiling on.
+    return target.isMacOSX() && host.isMacOSX()
+        && target.getVendor() == host.getVendor()
         && target.getEnvironment() == host.getEnvironment();
 }
 
@@ -656,6 +667,103 @@ void LLVMTargetConfig::apply_target_attributes(llvm::Module &module) const
     }
 }
 
+namespace {
+
+// "15", "15.7" and "15.7.1" are accepted. Missing components are 0.
+bool parse_macos_version(const char *text, unsigned &major, unsigned &minor,
+        unsigned &micro) {
+    major = 0;
+    minor = 0;
+    micro = 0;
+    if (text == nullptr || *text == '\0') {
+        return false;
+    }
+    char *end = nullptr;
+    unsigned long value = std::strtoul(text, &end, 10);
+    if (end == text) {
+        return false;
+    }
+    major = static_cast<unsigned>(value);
+    if (*end == '\0') {
+        return true;
+    }
+    if (*end != '.') {
+        return false;
+    }
+    text = end + 1;
+    value = std::strtoul(text, &end, 10);
+    if (end == text) {
+        return false;
+    }
+    minor = static_cast<unsigned>(value);
+    if (*end == '\0') {
+        return true;
+    }
+    if (*end != '.') {
+        return false;
+    }
+    text = end + 1;
+    value = std::strtoul(text, &end, 10);
+    if (end == text || *end != '\0') {
+        return false;
+    }
+    micro = static_cast<unsigned>(value);
+    return true;
+}
+
+std::string format_macos_version(unsigned major, unsigned minor, unsigned micro) {
+    return std::to_string(major) + "." + std::to_string(minor) + "."
+        + std::to_string(micro);
+}
+
+bool macos_version_numbers(const llvm::Triple &triple, unsigned &major,
+        unsigned &minor, unsigned &micro) {
+#if LLVM_VERSION_MAJOR >= 15
+    llvm::VersionTuple version;
+    if (!triple.getMacOSXVersion(version)) {
+        return false;
+    }
+    major = version.getMajor();
+    minor = version.getMinor() ? *version.getMinor() : 0;
+    micro = version.getSubminor() ? *version.getSubminor() : 0;
+    return true;
+#else
+    return triple.getMacOSXVersion(major, minor, micro);
+#endif
+}
+
+} // namespace
+
+std::string apply_macos_deployment_target(const std::string &triple) {
+    const char *deployment = std::getenv("MACOSX_DEPLOYMENT_TARGET");
+    unsigned major = 0;
+    unsigned minor = 0;
+    unsigned micro = 0;
+    if (!parse_macos_version(deployment, major, minor, micro)) {
+        return triple;
+    }
+    llvm::Triple rewritten(triple);
+    if (!rewritten.isMacOSX()) {
+        return triple;
+    }
+    rewritten.setOSName("macosx" + format_macos_version(major, minor, micro));
+    return rewritten.str();
+}
+
+std::string macos_platform_version(const std::string &triple) {
+    llvm::Triple parsed(triple);
+    if (!parsed.isMacOSX()) {
+        return "";
+    }
+    unsigned major = 0;
+    unsigned minor = 0;
+    unsigned micro = 0;
+    if (!macos_version_numbers(parsed, major, minor, micro)) {
+        return "";
+    }
+    return format_macos_version(major, minor, micro);
+}
+
 LLVMTargetConfig resolve_llvm_target_config(
     const CompilerOptions &compiler_options)
 {
@@ -666,7 +774,7 @@ LLVMTargetConfig resolve_llvm_target_config(
     config.fast_math = compiler_options.po.fast
         && !compiler_options.po.no_fast_math;
     config.triple = compiler_options.target.empty()
-        ? llvm::sys::getDefaultTargetTriple()
+        ? apply_macos_deployment_target(llvm::sys::getDefaultTargetTriple())
         : llvm::Triple::normalize(compiler_options.target);
     llvm::Triple triple(config.triple);
     config.host_target = is_host_target(triple);
@@ -1070,6 +1178,48 @@ void LLVMEvaluator::create_empty_object_file(const std::string &filename) {
     save_object_file(*module, filename);
 }
 
+#if LLVM_VERSION_MAJOR >= 13
+// Some x86 CPUs with AVX-512, such as AMD Zen 4 and Zen 5, prefer 512-bit
+// vectors. The loop vectorizer gains from them in loops over long arrays. The
+// SLP vectorizer, however, then packs two independent groups of four doubles
+// of straight-line code into one 512-bit vector: values move between the two
+// halves on the dependence chain, and a 512-bit load of two halves that were
+// just stored as 256-bit vectors cannot be forwarded from the stores. While
+// an object of this class exists, the SLP vectorizer uses at most 256-bit
+// vectors on such targets, as it does on the x86 CPUs that prefer 256-bit
+// vectors. LLVM has no per-pass setting for this, only a command line option,
+// which the destructor resets.
+class SLPVectorWidthLimit {
+public:
+    SLPVectorWidthLimit(llvm::Module &m, llvm::TargetMachine &tm) {
+        if (!tm.getTargetTriple().isX86()) return;
+        llvm::Function *definition = nullptr;
+        for (llvm::Function &f : m) {
+            if (!f.isDeclaration()) {
+                definition = &f;
+                break;
+            }
+        }
+        if (!definition) return;
+        llvm::TypeSize width = tm.getTargetTransformInfo(*definition)
+            .getRegisterBitWidth(
+                llvm::TargetTransformInfo::RGK_FixedWidthVector);
+        if (width.getKnownMinValue() <= 256) return;
+        auto &options = llvm::cl::getRegisteredOptions();
+        auto it = options.find("slp-max-reg-size");
+        if (it != options.end() && it->second->getNumOccurrences() == 0) {
+            option = it->second;
+            option->addOccurrence(0, "slp-max-reg-size", "256");
+        }
+    }
+    ~SLPVectorWidthLimit() {
+        if (option) option->reset();
+    }
+private:
+    llvm::cl::Option *option = nullptr;
+};
+#endif
+
 #if LLVM_VERSION_MAJOR < 9
 // IndVarSimplify in LLVM 7 and 8 can mark the increment of a loop counter
 // that starts at -1 (a DO loop starting at 0) as `nuw`. Unrolling an inner
@@ -1091,6 +1241,9 @@ static void disable_upper_bound_unrolling() {
 
 void LLVMEvaluator::opt(llvm::Module &m) {
     configure_module(m);
+#if LLVM_VERSION_MAJOR >= 13
+    SLPVectorWidthLimit slp_vector_width_limit(m, *TM);
+#endif
 
 #if LLVM_VERSION_MAJOR >= 17
     llvm::LoopAnalysisManager LAM;

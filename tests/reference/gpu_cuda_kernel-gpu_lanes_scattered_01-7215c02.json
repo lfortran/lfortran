@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_cuda_kernel-gpu_lanes_scattered_01-7215c02",
+    "cmd": "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
+    "infile": "tests/../integration_tests/gpu_lanes_scattered_01.f90",
+    "infile_hash": "4095f9720e10c982a4218bce0b2b41cdf82fe629ddce34e3a2cefcd0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "gpu_cuda_kernel-gpu_lanes_scattered_01-7215c02.stdout",
+    "stdout_hash": "3e0bd44e679b64d60fba06fdc5cd2c869fa8800afbe8525fcace966e",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

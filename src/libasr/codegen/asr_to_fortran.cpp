@@ -2525,6 +2525,20 @@ public:
         src = r;
     }
 
+    void visit_GpuWideLoad(const ASR::GpuWideLoad_t &x) {
+        std::string r = indent;
+        r += "gpu wide load";
+        for (size_t i = 0; i < x.n_targets; i++) {
+            visit_expr(*x.m_targets[i]);
+            r += " " + src;
+        }
+        visit_expr(*x.m_source);
+        r += " from " + src;
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
     void visit_GpuLaneBarrier(const ASR::GpuLaneBarrier_t &/*x*/) {
         std::string r = indent;
         r += "gpu lane barrier";

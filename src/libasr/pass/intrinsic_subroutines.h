@@ -429,6 +429,8 @@ namespace RandomNumber {
         int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
         if ( kind == 4 ) {
             c_func_name = "_lfortran_sp_rand_num";
+        } else if ( kind == 16 ) {
+            c_func_name = "_lfortran_qp_rand_num";
         } else {
             c_func_name = "_lfortran_dp_rand_num";
         }
@@ -437,10 +439,19 @@ namespace RandomNumber {
         declare_basic_variables(new_name);
         fill_func_arg_sub("r", ASRUtils::duplicate_type_with_empty_dims(al, arg_types[0]), Out);
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
-        ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-           ASRUtils::extract_type(arg_types[0]),
-           ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
+        ASR::expr_t *return_var_1 = nullptr;
+        if (kind == 16) {
+            // real(16) values are returned through a pointer argument to avoid
+            // depending on the platform's fp128 return convention
+            args_1.push_back(al, b.Variable(fn_symtab_1, "r",
+                ASRUtils::extract_type(arg_types[0]), ASR::intentType::Out,
+                nullptr, ASR::abiType::BindC, false));
+        } else {
+            return_var_1 = b.Variable(fn_symtab_1, c_func_name,
+                ASRUtils::extract_type(arg_types[0]),
+                ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
+        }
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
@@ -470,6 +481,11 @@ namespace RandomNumber {
             body.push_back(al, PassUtils::create_do_loop_helper_random_number(al, loc, do_loop_variables, s, args[0],
                     ASRUtils::extract_type(arg_types[0]),
                     b.ArrayItem_01(args[0], do_loop_variables), func_call, 1));
+        } else if (kind == 16) {
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 1);
+            ASR::call_arg_t arg; arg.loc = loc; arg.m_value = args[0];
+            call_args.push_back(al, arg);
+            body.push_back(al, b.SubroutineCall(s, call_args));
         } else {
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
             body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, ASRUtils::extract_type(arg_types[0]))));

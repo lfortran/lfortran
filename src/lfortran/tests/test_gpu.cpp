@@ -2044,7 +2044,8 @@ public:
 // `name` when `module` is empty), or of its deferring twin, after the Metal
 // pipeline up to gpu_launch_sync.
 std::string gpu_sync_trace(const std::string &source,
-        const std::string &module, const std::string &name) {
+        const std::string &module, const std::string &name,
+        bool loaded_from_mod = false) {
     CompilerOptions options;
     options.gpu_backend = "metal";
     options.po.gpu_offload_metal = true;
@@ -2060,6 +2061,16 @@ std::string gpu_sync_trace(const std::string &source,
     INFO(diagnostics.render2());
     REQUIRE(parsed.ok);
     ASR::TranslationUnit_t &unit = *parsed.result;
+    if (loaded_from_mod) {
+        // As if the modules came from their module files, whose procedures
+        // this unit compiles (the default multi-file mode).
+        for (auto &item : unit.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Module_t>(*item.second)) {
+                ASR::down_cast<ASR::Module_t>(item.second)
+                    ->m_loaded_from_mod = true;
+            }
+        }
+    }
     Allocator allocator(32 * 1024 * 1024);
     PassManager passes;
     std::string pass = "gpu_vector_lanes", skip;
@@ -2104,6 +2115,159 @@ std::string gpu_sync_trace(const std::string &source,
     return trace.trace;
 }
 
+}
+
+TEST_CASE("GPU twins of modules loaded from module files leave only their launches pending") {
+    // `project` launches on y and counts the call on the host: a caller that
+    // chains projections does not wait between them, whether the module is
+    // compiled in this unit or came from its module file.
+    const std::string source = R"(
+module sync_loaded
+implicit none
+type :: tally
+    integer :: calls = 0
+end type
+contains
+subroutine step(y)
+    real, intent(inout) :: y(:)
+    integer :: i
+    do concurrent (i = 1:size(y))
+        y(i) = y(i) + 1
+    end do
+end subroutine
+subroutine project(y, t)
+    real, intent(inout) :: y(:)
+    type(tally), intent(inout) :: t
+    call step(y)
+    t%calls = t%calls + 1
+end subroutine
+subroutine chain(a, b, t)
+    real, intent(inout) :: a(:), b(:)
+    type(tally), intent(inout) :: t
+    call project(a, t)
+    call project(b, t)
+end subroutine
+end module
+)";
+    CHECK(gpu_sync_trace(source, "sync_loaded", "chain") == "CC");
+    CHECK(gpu_sync_trace(source, "sync_loaded", "chain", true) == "CC");
+}
+
+TEST_CASE("GPU calls reach the locals a contained procedure names only when it can run elsewhere") {
+    // `show` reads the local w. While it is only called by name nothing but
+    // `by_name` runs it, so the call of the unrelated twin `bump` does not wait
+    // for the launch that writes w; once its name is handed to another
+    // procedure (`by_value`) that may call it, and the call of `bump` waits.
+    const std::string source = R"(
+module sync_frames
+implicit none
+contains
+subroutine bump(y)
+    real, intent(inout) :: y(:)
+    integer :: i
+    do concurrent (i = 1:size(y))
+        y(i) = y(i) + 1
+    end do
+end subroutine
+subroutine run(f)
+    interface
+        subroutine f()
+        end subroutine
+    end interface
+    call f()
+end subroutine
+subroutine by_name(b, r)
+    real, intent(inout) :: b(:)
+    real, intent(out) :: r
+    real :: w(64)
+    integer :: i
+    do concurrent (i = 1:64)
+        w(i) = i
+    end do
+    call bump(b)
+    call show()
+    r = w(2)
+contains
+    subroutine show()
+        if (w(1) /= 1.0) error stop "stale"
+    end subroutine
+end subroutine
+subroutine by_value(b, r)
+    real, intent(inout) :: b(:)
+    real, intent(out) :: r
+    real :: w(64)
+    integer :: i
+    do concurrent (i = 1:64)
+        w(i) = i
+    end do
+    call bump(b)
+    call run(show)
+    r = w(2)
+contains
+    subroutine show()
+        if (w(1) /= 1.0) error stop "stale"
+    end subroutine
+end subroutine
+end module
+)";
+    CHECK(gpu_sync_trace(source, "sync_frames", "by_name") == "[L|]CSC");
+    CHECK(gpu_sync_trace(source, "sync_frames", "by_value").substr(0, 5)
+        == "[L|]S");
+}
+
+TEST_CASE("GPU calls do not access the local targets nothing else names") {
+    // `a` is a target of a local pointer, which makes it aliasable, but the
+    // pointer is local: the call of the unrelated twin `bump` cannot reach
+    // `a`, so it does not wait for the launch that writes `a`. When the
+    // pointer is handed to a procedure that stores it (`publish`), a later
+    // call may access `a`, and the host waits.
+    const std::string source = R"(
+module sync_targets
+implicit none
+real, pointer :: shared(:) => null()
+contains
+subroutine bump(y)
+    real, intent(inout) :: y(:)
+    integer :: i
+    do concurrent (i = 1:size(y))
+        y(i) = y(i) + 1
+    end do
+end subroutine
+subroutine publish(x)
+    real, target, intent(in) :: x(:)
+    shared => x
+end subroutine
+subroutine local_only(b, r)
+    real, intent(inout) :: b(:)
+    real, intent(out) :: r
+    real, target :: a(64)
+    real, pointer :: p(:)
+    integer :: i
+    p => a(1:32)
+    do concurrent (i = 1:64)
+        a(i) = i
+    end do
+    call bump(b)
+    r = p(2)
+end subroutine
+subroutine published(b, r)
+    real, intent(inout) :: b(:)
+    real, intent(out) :: r
+    real, target :: a(64)
+    integer :: i
+    call publish(a)
+    do concurrent (i = 1:64)
+        a(i) = i
+    end do
+    call bump(b)
+    r = a(2)
+end subroutine
+end module
+)";
+    CHECK(gpu_sync_trace(source, "sync_targets", "local_only")
+        == "[L|]CS");
+    CHECK(gpu_sync_trace(source, "sync_targets", "published")
+        == "C[L|]SC");
 }
 
 TEST_CASE("GPU allocatable actuals of contiguous optional dummies are not synced") {

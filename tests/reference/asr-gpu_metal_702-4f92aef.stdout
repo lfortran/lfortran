@@ -4238,6 +4238,13 @@
                             .false.
                             .false.
                         )
+                        (SubroutineCall
+                            1 lfortran_gpu_begin_host_allocations
+                            1 lfortran_gpu_begin_host_allocations
+                            []
+                            ()
+                            .false.
+                        )
                         (Allocate
                             [((Var 2 __gpu_red_s)
                             [((IntegerConstant 1 (Integer 8) Decimal)
@@ -4249,6 +4256,13 @@
                             ()
                             ()
                             ()
+                        )
+                        (SubroutineCall
+                            1 lfortran_gpu_end_host_allocations
+                            1 lfortran_gpu_end_host_allocations
+                            []
+                            ()
+                            .false.
                         )
                         (GpuKernelLaunch
                             1 __lfortran_gpu_kernel_0_13gpu_metal_702
@@ -4346,6 +4360,70 @@
                             ()
                         )
                     )]
+                    ()
+                ),
+            lfortran_gpu_begin_host_allocations:
+                (Function
+                    (SymbolTable
+                        6
+                        {
+                            
+                        })
+                    lfortran_gpu_begin_host_allocations
+                    (FunctionType
+                        []
+                        ()
+                        BindC
+                        Interface
+                        "lfortran_gpu_begin_host_allocations"
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    []
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            lfortran_gpu_end_host_allocations:
+                (Function
+                    (SymbolTable
+                        7
+                        {
+                            
+                        })
+                    lfortran_gpu_end_host_allocations
+                    (FunctionType
+                        []
+                        ()
+                        BindC
+                        Interface
+                        "lfortran_gpu_end_host_allocations"
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                        Host
+                    )
+                    []
+                    []
+                    []
+                    ()
+                    Public
+                    .false.
+                    .false.
                     ()
                 )
         })

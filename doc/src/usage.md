@@ -387,13 +387,22 @@ The C and C++ backends also use this selection when compiling empty C objects
 for module-only source files, retaining `cc` as the default when neither
 variable is set. This does not change the C++ compiler used for generated C++.
 
-The LLVM backend links Linux executables itself, with LLD built into the
-`lfortran` binary. It locates the C runtime (startup objects, dynamic linker,
-libc and libgcc) and does not invoke clang or gcc for that link. `--linker`
-selects a different linker: `lld` is the built-in one, and `clang` or `gcc`
-is an external compiler driver. `--linker-path` and `LFORTRAN_LINKER` /
-`LFORTRAN_LINKER_PATH` apply to an external driver. macOS keeps Apple's
-linker and Windows keeps `link.exe`. A build with MLIR (`-DWITH_MLIR=yes`)
+The LLVM backend links Linux and macOS executables itself, with LLD built
+into the `lfortran` binary. On Linux it locates the C runtime (startup
+objects, dynamic linker, libc and libgcc); on macOS it links against
+`libSystem` from the SDK in `SDKROOT` or the one `xcrun` selects, for the
+release in `MACOSX_DEPLOYMENT_TARGET`. When that variable is unset, the
+minimum is the macOS version implied by the target triple, which is the
+version Apple clang uses by default. Object files record the same release,
+so the link does not mix a newer object with an older executable. It does
+not invoke clang or gcc for that link. `--linker` selects a different
+linker: `lld` is the built-in one, and `clang` or `gcc` is an external
+compiler driver (on macOS, `--linker=clang` uses Apple's clang and linker).
+`--linker-path` and `LFORTRAN_LINKER` / `LFORTRAN_LINKER_PATH` apply to an
+external driver. On macOS the built-in linker needs LLVM 15 or newer (the
+first LLD that reads the dylibs Apple's linker writes); builds with older
+LLVM keep Apple's clang.
+Windows keeps `link.exe`. A build with MLIR (`-DWITH_MLIR=yes`)
 also keeps the external linker: the MLIR libraries load `libLLVM.so`, and a
 second static copy of LLVM in that process corrupts the heap.
 

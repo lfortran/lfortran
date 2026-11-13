@@ -10844,6 +10844,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }
 
         ASR::Function_t* func_t = ASR::down_cast<ASR::Function_t>(matching_func_sym);
+        // A deferred assignment's abstract interface declares no procedure.
+        // Calling it would reference a symbol that is never defined.
+        if (ASRUtils::is_abstract_interface(*func_t)) {
+            return false;
+        }
         llvm::Function* assign_fn = nullptr;
         // Prefer the already-emitted function from the codegen symbol table.
         uint64_t fh = get_hash((ASR::asr_t*)matching_func_sym);

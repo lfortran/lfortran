@@ -27,6 +27,30 @@ namespace LCompilers::LFortran {
 class BodyVisitor : public CommonVisitor<BodyVisitor> {
 private:
 
+    // A normal RETURN leaves the alternate-return specifier at 0. The dummy
+    // is intent(out), so the caller's slot is undefined until the procedure
+    // writes it. Without this store, a caller that takes the normal return
+    // reads an uninitialized value and can take an alternate branch.
+    void zero_alternate_return(Vec<ASR::stmt_t*> &body, const Location &loc) {
+        ASR::symbol_t *alt = current_scope->get_symbol("__lfortran_alt_ret");
+        if (alt == nullptr) {
+            return;
+        }
+        ASR::expr_t *var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, alt));
+        ASR::ttype_t *int_type = ASRUtils::expr_type(var);
+        ASR::expr_t *zero = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, 0, int_type));
+        ASR::stmt_t *assign = ASRUtils::STMT(ASR::make_Assignment_t(
+            al, loc, var, zero, nullptr, false, false, false, false));
+        Vec<ASR::stmt_t*> with_zero;
+        with_zero.reserve(al, body.size() + 1);
+        with_zero.push_back(al, assign);
+        for (size_t i = 0; i < body.size(); i++) {
+            with_zero.push_back(al, body[i]);
+        }
+        body.from_pointer_n_copy(al, with_zero.p, with_zero.n);
+    }
+
     // The Fortran standard allows the stop code to be a default integer,
     // but the runtime ABI expects a 32-bit (kind=4) integer. When
     // -fdefault-integer-8 is active, integer literals become kind=8.
@@ -6404,14 +6428,45 @@ public:
                 case AST::rank_stmtType::RankDefault: {
                     // rank default
                     // TODO: throw error if more than one default case statement is present
-                    SymbolTable* current_scope_copy = current_scope;
-                    current_scope = parent_scope;
                     AST::RankDefault_t* rank_default = AST::down_cast<AST::RankDefault_t>(x.m_body[i]);
                     if (!array_var_name.empty()) {
                         assumed_rank_arrays.erase(array_var_name);
                     }
-                    transform_stmts(select_rank_default, rank_default->n_body, rank_default->m_body);
-                    current_scope = current_scope_copy;
+                    if (!x.m_assoc_name) {
+                        current_scope = parent_scope;
+                        transform_stmts(select_rank_default, rank_default->n_body, rank_default->m_body);
+                        break;
+                    }
+                    // The associate name is an assumed-rank entity that
+                    // aliases the selector (F2018 11.1.10.3).
+                    ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable(selector_type);
+                    if (!ASR::is_a<ASR::Pointer_t>(*target_type)) {
+                        target_type = ASRUtils::make_Pointer_t_util(al, m_selector->base.loc, target_type);
+                    }
+                    ASR::symbol_t* type_decl = nullptr;
+                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(selector_type))) {
+                        type_decl = ASRUtils::get_struct_sym_from_struct_expr(m_selector);
+                    }
+                    char* assoc_name = s2c(al, to_lower(x.m_assoc_name));
+                    ASR::symbol_t* assoc_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, x.base.base.loc,
+                        current_scope, assoc_name, nullptr, 0, ASR::intentType::Local,
+                        nullptr, nullptr, ASR::storage_typeType::Default, target_type, type_decl,
+                        ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
+                    current_scope->add_symbol(assoc_name, assoc_sym);
+                    Vec<ASR::stmt_t*> default_body; default_body.reserve(al, rank_default->n_body + 1);
+                    default_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, x.base.base.loc,
+                        ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, assoc_sym)), m_selector)));
+                    std::string block_name = parent_scope->get_unique_name("~select_rank_block_");
+                    ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(al,
+                        rank_default->base.base.loc, current_scope, s2c(al, block_name),
+                        nullptr, 0));
+                    ASR::Block_t* block_t = ASR::down_cast<ASR::Block_t>(block_sym);
+                    parent_scope->add_symbol(block_name, block_sym);
+                    transform_stmts(default_body, rank_default->n_body, rank_default->m_body);
+                    block_t->m_body = default_body.p;
+                    block_t->n_body = default_body.size();
+                    select_rank_default.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al,
+                        rank_default->base.base.loc, -1, block_sym)));
                     break;
                 }
 
@@ -7923,6 +7978,7 @@ public:
             master_function_body.push_back(al, it);
         }
 
+        zero_alternate_return(master_function_body, loc);
         master_function->m_body = master_function_body.p;
         master_function->n_body = master_function_body.size();
         ElementalChecks::check_body(*master_function, diag, compiler_options);
@@ -8093,6 +8149,7 @@ public:
             func_deps.push_back(al, s2c(al, itr));
         }
         current_function_dependencies = current_function_dependencies_copy;
+        zero_alternate_return(body, x.base.base.loc);
         v->m_body = body.p;
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
@@ -9093,16 +9150,16 @@ public:
                         // ArrayConstant (real(16), complex(16)).
                         value = constructor;
                     } else {
-                    ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(constructor));
-                    value = ASRUtils::EXPR((ASR::asr_t*) ac);
-                    LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
-                    if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(ac->m_type))) ) {
-                        ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
-                            ASRUtils::type_get_past_pointer(
-                                ASRUtils::type_get_past_allocatable(ac->m_type)));
-                        array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
-                    }
+                        ac = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(constructor));
+                        value = ASRUtils::EXPR((ASR::asr_t*) ac);
+                        LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
+                        if( ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(
+                                ASRUtils::type_get_past_allocatable(ac->m_type))) ) {
+                            ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(
+                                ASRUtils::type_get_past_pointer(
+                                    ASRUtils::type_get_past_allocatable(ac->m_type)));
+                            array_t->m_type = ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, 0));
+                        }
                     }
                 } else {
                     if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) &&

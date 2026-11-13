@@ -719,7 +719,8 @@ static ASR::expr_t* intrinsic_array_result_len(Allocator& al,
         case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Eoshift):
         case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack):
         case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread):
-        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose): {
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Unpack): {
             ASRUtils::ASRBuilder b(al, loc);
             return b.StringLen(intrinsic_array_function->m_args[0]);
         }
@@ -1067,9 +1068,22 @@ bool set_allocation_size(
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinVal):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Norm2):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MaxLoc):
-                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinLoc): {
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MinLoc):
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Reduce): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(
                         intrinsic_array_function->m_type);
+                    ASR::expr_t* dim = nullptr;
+                    if( n_dims > 0 ) {
+                        int dim_index = ASRUtils::IntrinsicArrayFunctionRegistry::get_dim_arg_index(
+                            static_cast<ASRUtils::IntrinsicArrayFunctions>(
+                                intrinsic_array_function->m_arr_intrinsic_id));
+                        // Norm2, MaxLoc and MinLoc are not listed there; their `dim` is the second argument
+                        if( dim_index < 0 ) {
+                            dim_index = 1;
+                        }
+                        LCOMPILERS_ASSERT((size_t) dim_index < intrinsic_array_function->n_args);
+                        dim = intrinsic_array_function->m_args[dim_index];
+                    }
                     allocate_dims.reserve(al, n_dims);
                     for( size_t i = 0; i < n_dims; i++ ) {
                         ASR::dimension_t allocate_dim;
@@ -1090,7 +1104,7 @@ bool set_allocation_size(
                         merge_i_args.push_back(al, ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                                 al, loc, i + 1, ASRUtils::expr_type(int32_one))), ASR::cmpopType::Lt,
-                                intrinsic_array_function->m_args[1],
+                                dim,
                                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
                         ASR::expr_t* merge_i = ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(
                             al, loc, static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge),
@@ -1287,6 +1301,25 @@ bool set_allocation_size(
                         allocate_dim2.m_length = b.ArraySize(intrinsic_array_function->m_args[1], b.i32(2), ASRUtils::expr_type(int32_one));
                         allocate_dims.push_back(al, allocate_dim1);
                         allocate_dims.push_back(al, allocate_dim2);
+                    }
+                    break;
+                }
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Unpack): {
+                    // The result has the shape of `mask`
+                    ASR::expr_t* mask = ASRUtils::get_past_array_physical_cast(
+                        intrinsic_array_function->m_args[1]);
+                    size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
+                    allocate_dims.reserve(al, n_dims);
+                    for (size_t i = 0; i < n_dims; i++) {
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        allocate_dim.m_start = int32_one;
+                        allocate_dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                            al, loc, mask,
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                al, loc, i + 1, ASRUtils::expr_type(int32_one))),
+                            ASRUtils::expr_type(int32_one), nullptr));
+                        allocate_dims.push_back(al, allocate_dim);
                     }
                     break;
                 }

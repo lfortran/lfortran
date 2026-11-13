@@ -68,6 +68,11 @@ public:
         needs_lane_reduce = true;
         ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuLaneBroadcast(x);
     }
+    bool needs_wide_load = false;
+    void visit_GpuWideLoad(const ASR::GpuWideLoad_t &x) {
+        needs_wide_load = true;
+        ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuWideLoad(x);
+    }
     void visit_GpuLaneBarrier(const ASR::GpuLaneBarrier_t &x) {
         needs_lane_reduce = true;
         ASR::BaseWalkVisitor<GpuMathHelperScanner>::visit_GpuLaneBarrier(x);
@@ -3208,6 +3213,7 @@ public:
     bool needs_erf_helper = false;
     bool needs_erfc_helper = false;
     bool needs_lane_reduce_helper = false;
+    bool needs_wide_load_helper = false;
     std::map<int64_t, ASR::ttype_t*> integer_power_types;
 
     void scan_for_math_helpers(const ASR::TranslationUnit_t &tu) {
@@ -3229,6 +3235,7 @@ public:
         needs_erf_helper = scanner.needs_erf;
         needs_erfc_helper = scanner.needs_erfc;
         needs_lane_reduce_helper = scanner.needs_lane_reduce;
+        needs_wide_load_helper = scanner.needs_wide_load;
         integer_power_types = scanner.integer_power_types;
     }
 
@@ -3265,6 +3272,7 @@ public:
     void emit_math_helpers() {
         emit_integer_power_helpers();
         if (needs_lane_reduce_helper) src << dialect.lane_reduce_helper();
+        if (needs_wide_load_helper) src << dialect.wide_load_helper();
         if (needs_erf_helper) {
             src << "// Abramowitz & Stegun approximation (7.1.26), max error ~1.5e-7\n";
             src << dialect.device_fn_qualifier()
@@ -4222,6 +4230,44 @@ public:
 
     // Whether the statements combine the values of the lanes of an
     // iteration (GpuLaneReduce).
+    // Whether a loop reads vectors of 16 bytes per iteration
+    // (gpu_wide_loads.cpp): then each iteration holds the loads of 16
+    // elements and their arithmetic already, and the loop is unrolled less.
+    static bool holds_wide_load(ASR::stmt_t **body, size_t n_body) {
+        class Found : public ASR::BaseWalkVisitor<Found> {
+        public:
+            bool found = false;
+            std::set<const ASR::Function_t*> seen;
+            void visit_GpuWideLoad(const ASR::GpuWideLoad_t &) {
+                found = true;
+            }
+            // A function the loop calls holds the loads as well.
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                ASR::symbol_t *callee =
+                    ASRUtils::symbol_get_past_external(x.m_name);
+                if (ASR::is_a<ASR::Function_t>(*callee)) {
+                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(callee);
+                    if (seen.insert(f).second) {
+                        for (size_t i = 0; i < f->n_body && !found; i++) {
+                            this->visit_stmt(*f->m_body[i]);
+                        }
+                    }
+                }
+                ASR::BaseWalkVisitor<Found>::visit_FunctionCall(x);
+            }
+            void visit_BlockCall(const ASR::BlockCall_t &x) {
+                ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(
+                    ASRUtils::symbol_get_past_external(x.m_m));
+                for (size_t i = 0; i < block->n_body; i++) {
+                    this->visit_stmt(*block->m_body[i]);
+                }
+            }
+        };
+        Found f;
+        for (size_t i = 0; i < n_body && !f.found; i++) f.visit_stmt(*body[i]);
+        return f.found;
+    }
+
     static bool holds_lane_reduce(ASR::stmt_t **body, size_t n_body) {
         class Found : public ASR::BaseWalkVisitor<Found> {
         public:
@@ -4369,7 +4415,8 @@ public:
     // on it.
     void emit_counted_for(const ASR::do_loop_head_t &head,
             const std::set<ASR::symbol_t*> &written, const Location &loc,
-            bool unroll = false, bool unroll_few = false) {
+            bool unroll = false, bool unroll_few = false,
+            bool wide = false) {
         if (head.m_v == nullptr) {
             src << get_indent() << "for (;;) {\n";
             return;
@@ -4415,14 +4462,16 @@ public:
             src << get_indent() << "const " << type_name << " " << trips
                 << " = " << end << " >= " << v << " ? (" << end << " - " << v
                 << ") / " << inc << " + 1 : 0;\n";
-            src << get_indent() << dialect.unroll_pragma(deep) << "\n";
+            src << get_indent() << (wide ? dialect.unroll_wide_pragma()
+                : dialect.unroll_pragma(deep)) << "\n";
             src << get_indent() << "for (" << type_name << " " << count
                 << " = 0; " << count << " < " << trips << "; " << count
                 << "++, " << v << " += " << inc << ") {\n";
             return;
         }
         if (pragma) {
-            src << get_indent() << dialect.unroll_pragma(deep) << "\n";
+            src << get_indent() << (wide ? dialect.unroll_wide_pragma()
+                : dialect.unroll_pragma(deep)) << "\n";
         } else if (unroll_few && !dialect.unroll_few_pragma().empty()) {
             src << get_indent() << dialect.unroll_few_pragma() << "\n";
         }
@@ -5119,6 +5168,17 @@ public:
                 throw CodeGenError("gpu offload: a stop statement reached "
                     "the device code generator", stmt->base.loc);
             }
+            case ASR::stmtType::GpuWideLoad: {
+                ASR::GpuWideLoad_t *w = ASR::down_cast<ASR::GpuWideLoad_t>(stmt);
+                std::vector<std::string> targets;
+                for (size_t i = 0; i < w->n_targets; i++) {
+                    targets.push_back(expr_str(w->m_targets[i]));
+                }
+                src << dialect.wide_load(get_indent(), targets,
+                    expr_str(w->m_source), expr_str(w->m_array),
+                    w->m_aligned ? expr_str(w->m_aligned) : "true");
+                break;
+            }
             case ASR::stmtType::GpuLaneBarrier: {
                 LCOMPILERS_ASSERT(current_kernel_layout != nullptr
                     && current_kernel_layout->m_lanes != nullptr);
@@ -5166,7 +5226,8 @@ public:
                 }
                 emit_counted_for(dl->m_head, written, stmt->base.loc,
                     small_innermost_loop(dl->m_body, dl->n_body),
-                    holds_lane_reduce(dl->m_body, dl->n_body));
+                    holds_lane_reduce(dl->m_body, dl->n_body),
+                    holds_wide_load(dl->m_body, dl->n_body));
                 emit_loop_body(frame, dl->m_body, dl->n_body);
                 break;
             }
