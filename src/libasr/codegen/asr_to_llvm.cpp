@@ -29421,6 +29421,12 @@ public:
             if (function == nullptr) {
                 return;
             }
+            // An implicit interface has no dummy to require the actual
+            // argument to be allocated. Callers such as f2py pass the
+            // descriptor of an unallocated allocatable and a separate flag.
+            if (ASRUtils::is_bare_implicit_interface(*function)) {
+                return;
+            }
         } else {
             throw CodeGenError("bounds_check_call: Symbol type not supported");
         }
@@ -29487,10 +29493,15 @@ public:
 
                     // Throw error if descriptor array is not allocated
                     llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(arg, arr_cast->m_arg);
-                    if (is_return_value) {
+                    // A cast wrapper for an implicit-interface call passes the
+                    // descriptor through even when the allocatable is not
+                    // allocated. The callee receives that state itself.
+                    bool implicit_cast = std::string(ASRUtils::symbol_name(m_name)).find(
+                        "~fpcast_ptr") != std::string::npos;
+                    if (!implicit_cast && is_return_value) {
                         generate_unallocated_array_runtime_error(
                             builder->CreateNot(is_allocated), arr_cast->m_arg);
-                    } else {
+                    } else if (!implicit_cast) {
                         llvm_utils->generate_runtime_error(builder->CreateNot(is_allocated),
                                 "Argument %d of subroutine %s is unallocated.",
                                 {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc}, {})},
