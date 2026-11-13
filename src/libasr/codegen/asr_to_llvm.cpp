@@ -910,6 +910,10 @@ public:
     // same type across different calls.
     std::map<llvm::Type*, std::vector<llvm::AllocaInst*>> call_arg_alloca_pool;
     std::map<llvm::Type*, size_t> call_arg_alloca_idx;
+    // A constant passed by reference, such as a module parameter. The
+    // address has to outlive the call: the caller may keep it, and the
+    // next allocation reuses a stack temporary.
+    std::map<llvm::Constant*, llvm::GlobalVariable*> constant_arg_globals;
     int convert_call_args_depth = 0;
 
     // Track list-type call_arg_value allocas that need their data freed
@@ -917,6 +921,19 @@ public:
     std::map<llvm::Value*, std::string> list_call_arg_to_finalize;
     // Get or create an alloca for a call argument of the given type.
     // Reuses allocas from the pool when possible.
+    llvm::Value* stable_constant_arg(llvm::Constant *value) {
+        auto found = constant_arg_globals.find(value);
+        if (found != constant_arg_globals.end()) {
+            return found->second;
+        }
+        llvm::GlobalVariable *global = new llvm::GlobalVariable(
+            *module, value->getType(), true,
+            llvm::GlobalValue::InternalLinkage, value, "parameter_arg");
+        global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        constant_arg_globals[value] = global;
+        return global;
+    }
+
     llvm::AllocaInst* get_call_arg_alloca(llvm::Type* type) {
         size_t& idx = call_arg_alloca_idx[type];
         std::vector<llvm::AllocaInst*>& pool = call_arg_alloca_pool[type];
@@ -27697,6 +27714,7 @@ public:
                             !ASRUtils::is_class_type(arg_type) &&
                             (!ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) || ASRUtils::is_value_constant(x.m_args[i].m_value)) ) {
                             llvm::AllocaInst *target = get_call_arg_alloca(target_type);
+                            bool constant_address = false;
                             if( ASR::is_a<ASR::Tuple_t>(*arg_type) ||
                                 ASR::is_a<ASR::List_t>(*arg_type) ) {
                                     if (ASR::is_a<ASR::List_t>(*arg_type)) {
@@ -27729,9 +27747,24 @@ public:
                                         value->getType() != target_type) {
                                     value = builder->CreateZExtOrTrunc(value, target_type);
                                 }
-                                builder->CreateStore(value, target);
+                                // A module parameter is a constant. Passing
+                                // it by reference through a stack slot makes
+                                // the pointer 0 after the next allocation.
+                                bool may_write = orig_arg &&
+                                    (orig_arg->m_intent == ASR::intentType::Out
+                                     || orig_arg->m_intent == ASR::intentType::InOut);
+                                if (!may_write && llvm::isa<llvm::Constant>(value)) {
+                                    tmp = stable_constant_arg(
+                                        llvm::cast<llvm::Constant>(value));
+                                    constant_address = true;
+                                } else {
+                                    builder->CreateStore(value, target);
+                                    tmp = target;
+                                }
                             }
-                            tmp = target;
+                            if (!constant_address) {
+                                tmp = target;
+                            }
                         } else {
                             tmp = value;
                         }
