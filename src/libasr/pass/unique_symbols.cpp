@@ -51,6 +51,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     bool bindc_mangling = false;
     bool fortran_mangling;
     bool c_mangling;
+    bool c_module_variable_mangling;
     bool mangle_underscore_external;
     bool should_mangle = false;
     std::vector<std::string> parent_function_name;
@@ -60,9 +61,11 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     std::unordered_map<ASR::symbol_t*, std::string> global_symbols;
     SymbolTable* current_scope = nullptr;
 
-    SymbolRenameVisitor(bool imm, bool mm, bool gm, bool im, bool am, bool bcm, bool fm, bool cm, bool mue) :
+    SymbolRenameVisitor(bool imm, bool mm, bool gm, bool im, bool am, bool bcm,
+                        bool fm, bool cm, bool cmvm, bool mue) :
     intrinsic_module_name_mangling(imm), module_name_mangling(mm), global_symbols_mangling(gm), intrinsic_symbols_mangling(im),
-    all_symbols_mangling(am), bindc_mangling(bcm), fortran_mangling(fm), c_mangling(cm), mangle_underscore_external(mue) {}
+    all_symbols_mangling(am), bindc_mangling(bcm), fortran_mangling(fm), c_mangling(cm),
+    c_module_variable_mangling(cmvm), mangle_underscore_external(mue) {}
 
 
     //TODO: Implement other backends mangling when refactoring the pass infrastructure
@@ -343,6 +346,19 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
 
     void visit_Variable(const ASR::Variable_t &x) {
         visit_symbols_1(x);
+        if (c_module_variable_mangling && x.m_abi != ASR::abiType::BindC &&
+                ASRUtils::get_common_block(&x) == nullptr) {
+            ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
+            ASR::symbol_t *owner = ASRUtils::get_asr_owner(sym);
+            if (owner && ASR::is_a<ASR::Module_t>(*owner)) {
+                std::string module_name = ASRUtils::symbol_name(owner);
+                // Stable across translation units; the module-name length
+                // disambiguates underscore-separated module/member pairs.
+                sym_to_renamed[sym] = "_lfortran_c_module_" +
+                    std::to_string(module_name.size()) + "_" +
+                    module_name + "_" + x.m_name;
+            }
+        }
     }
 
     template <typename T>
@@ -801,7 +817,8 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
     }
     // GPU data renaming must not enable otherwise ineligible global mangling:
     // kernel lookup strings have already been lowered before this pass.
-    bool mangle_symbols = pass_options.c_mangling || (any_present &&
+    bool mangle_symbols = pass_options.c_mangling ||
+        pass_options.c_module_variable_mangling || (any_present &&
         (pass_options.mangle_underscore || pass_options.fortran_mangling ||
          pass_options.mangle_underscore_external ||
          !lcompilers_unique_ID_separate_compilation.empty()));
@@ -818,6 +835,7 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
                 pass_options.bindc_mangling,
                 pass_options.fortran_mangling,
                 pass_options.c_mangling,
+                pass_options.c_module_variable_mangling,
                 pass_options.mangle_underscore_external);
         v.visit_TranslationUnit(unit);
         UniqueSymbolVisitor u(al, v.sym_to_renamed);

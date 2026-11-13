@@ -54,6 +54,7 @@
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/pass/unique_symbols.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <lfortran/parser/parser.h>
 #include <lfortran/parser/preprocessor.h>
@@ -1673,6 +1674,9 @@ Result<std::string> FortranEvaluator::get_c2(ASR::TranslationUnit_t &asr,
         diag::Diagnostics &diagnostics, int64_t default_lower_bound)
 {
     // ASR -> C
+    PassOptions pass_options = compiler_options.po;
+    pass_options.c_module_variable_mangling = true;
+    pass_unique_symbols(al, asr, pass_options);
     return asr_to_c(al, asr, diagnostics, compiler_options,
                     default_lower_bound);
 }
@@ -1688,9 +1692,12 @@ Result<std::string> FortranEvaluator::get_c3(ASR::TranslationUnit_t &asr,
     // Keep this target capability local: the evaluator can also emit LLVM.
     PassOptions pass_options = compiler_options.po;
     pass_options.supports_descriptor_entry_wrappers = false;
+    pass_options.c_module_variable_mangling = true;
     pass_manager.apply_passes(al, &asr, pass_options, diagnostics);
     pass_options.supports_descriptor_entry_wrappers =
         compiler_options.po.supports_descriptor_entry_wrappers;
+    pass_options.c_module_variable_mangling =
+        compiler_options.po.c_module_variable_mangling;
     compiler_options.po = std::move(pass_options);
     // ASR pass -> C
     return asr_to_c(al, asr, diagnostics, compiler_options, default_lower_bound);

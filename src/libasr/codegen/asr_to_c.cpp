@@ -15,6 +15,7 @@
 #include <libasr/pass/create_subroutine_from_function.h>
 
 #include <map>
+#include <unordered_set>
 #include <utility>
 
 #define CHECK_FAST_C(compiler_options, x)                         \
@@ -31,6 +32,8 @@ public:
 
     int counter;
     size_t module_array_counter = 0;
+    // The translation-unit key of an intrinsic module need not equal its ASR name.
+    std::unordered_set<const ASR::Module_t*> modules_with_variables;
 
     std::string indent() {
         return std::string(indentation_level * indentation_spaces, ' ');
@@ -950,8 +953,10 @@ R"(
             }
             ASR::symbol_t* sym = x.m_symtab->get_symbol(name);
             LCOMPILERS_ASSERT(sym && ASR::is_a<ASR::Module_t>(*sym));
-            unit_src += declare_module_variables(
-                *ASR::down_cast<ASR::Module_t>(sym));
+            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(sym);
+            if (modules_with_variables.insert(module).second) {
+                unit_src += declare_module_variables(*module);
+            }
         }
 
         // Process global functions
@@ -1022,7 +1027,7 @@ R"(
             return;
         }
 
-        std::string unit_src = startswith(x.m_name, "lfortran_intrinsic")
+        std::string unit_src = modules_with_variables.insert(&x).second
             ? declare_module_variables(x) : "";
         std::map<std::string, std::vector<std::string>> struct_dep_graph;
         for (auto &item : x.m_symtab->get_scope()) {
