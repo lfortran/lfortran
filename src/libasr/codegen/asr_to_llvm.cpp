@@ -7867,6 +7867,17 @@ public:
                 (x.m_symbolic_value != nullptr || x.m_intent == intent_local)) {
             external = false;
         }
+        // The translation unit that compiles the module defines a bind(c)
+        // module variable. A unit that only loads the module references it.
+        if (x.m_parent_symtab && x.m_parent_symtab->asr_owner
+                && ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                x.m_parent_symtab->asr_owner);
+            if (ASR::is_a<ASR::Module_t>(*owner)
+                    && ASR::down_cast<ASR::Module_t>(owner)->m_loaded_from_mod) {
+                external = true;
+            }
+        }
         llvm::Constant* init_value = get_static_pointer_association(x);
         llvm::Constant* alias_target = nullptr;
         bool pointer_null_array_init = has_pointer_null_array_initializer(&x);
