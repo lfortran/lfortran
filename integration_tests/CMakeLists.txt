@@ -5956,9 +5956,7 @@ RUN(NAME goto_gototarget_return_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
 RUN(NAME selected_int_kind_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME selected_int_kind_02 LABELS gfortran llvm)
 
-RUN(NAME integer_kind_16 LABELS gfortran llvm)
 
-RUN(NAME integer_kind_16_literal LABELS gfortran llvm)
 
 RUN(NAME capital_01 LABELS gfortran llvmImplicit)
 
@@ -7931,6 +7929,9 @@ RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
 
 
 
+
+
+
 RUN(NAME cpp_flag_01 LABELS gfortran llvm
         EXTRA_ARGS -cpp -DCPP_FLAG_01
         GFORTRAN_ARGS -cpp -DCPP_FLAG_01)
@@ -7958,10 +7959,11 @@ RUN(NAME empty_explicit_shape_01 LABELS gfortran llvm
     EXTRA_ARGS --implicit-interface)
 RUN(NAME c_long_double_complex_01 LABELS gfortran llvm)
 RUN(NAME test_c_long_double_02 LABELS gfortran llvm EXTRAFILES test_c_long_double_02b.f90 test_c_long_double_02c.c)
-
-RUN(NAME integer_kind_16_read LABELS gfortran llvm)
-
+RUN(NAME integer_kind_16 LABELS gfortran llvm)
 RUN(NAME integer_kind_16_boz_nml LABELS gfortran llvm)
+RUN(NAME integer_kind_16_literal LABELS gfortran llvm)
+RUN(NAME integer_kind_16_pow LABELS gfortran llvm)
+RUN(NAME integer_kind_16_read LABELS gfortran llvm)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
