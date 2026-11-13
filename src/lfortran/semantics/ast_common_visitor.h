@@ -14822,7 +14822,8 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeComplex) {
-            if (!is_derived_type && a_kind != 4 && a_kind != 8 && a_kind != 16) {
+            if (!is_derived_type && a_kind != 4 && a_kind != 8
+                    && a_kind != 10 && a_kind != 16) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Complex",
                     Level::Error, Stage::Semantic, {
@@ -29392,9 +29393,10 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Complex_t(al, x.base.base.loc,
                 complex_kind));
         ASR::expr_t *value = nullptr;
-        // A ComplexConstant stores its parts as doubles, which cannot hold
-        // a complex(16) value: such a literal is evaluated at run time.
-        if (re_value && im_value && complex_kind != 16) {
+        // A ComplexConstant stores its parts as doubles. That cannot hold a
+        // complex(16) value, and a kind-10 RealConstant keeps its payload in
+        // a side allocation, not in m_r. Those literals stay constructors.
+        if (re_value && im_value && complex_kind != 16 && complex_kind != 10) {
             double re_double;
             if (ASR::is_a<ASR::RealConstant_t>(*re_value)) {
                 re_double = ASR::down_cast<ASR::RealConstant_t>(re_value)->m_r;
@@ -29417,14 +29419,15 @@ public:
             }
             value = ASR::down_cast<ASR::expr_t>(ASR::make_ComplexConstant_t(al, x.base.base.loc, re_double, im_double, type));
         }
-        if (complex_kind == 16) {
+        if (complex_kind == 16 || complex_kind == 10) {
             // The parts of a ComplexConstant are doubles, which cannot hold a
-            // complex(16) value. A constant such value is instead a
-            // constructor from the two real(16) constants: it is its own
-            // compile-time value.
-            ASR::ttype_t *real16 = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, 16));
-            re = CastingUtil::perform_casting(re, real16, al, x.base.base.loc);
-            im = CastingUtil::perform_casting(im, real16, al, x.base.base.loc);
+            // complex(16) value or a kind-10 payload. A constant such value
+            // is instead a constructor from the two real constants: it is
+            // its own compile-time value.
+            ASR::ttype_t *part_type = ASRUtils::TYPE(ASR::make_Real_t(al,
+                x.base.base.loc, complex_kind));
+            re = CastingUtil::perform_casting(re, part_type, al, x.base.base.loc);
+            im = CastingUtil::perform_casting(im, part_type, al, x.base.base.loc);
             if (re_value && im_value) {
                 value = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
                     x.base.base.loc, re, im, type, nullptr));

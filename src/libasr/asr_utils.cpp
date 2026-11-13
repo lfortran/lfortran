@@ -2271,9 +2271,10 @@ ASR::Variable_t* get_storage_designator_offset(ASR::expr_t *designator,
 static void set_iso_c_binding_target_kinds(Allocator &al,
         ASR::TranslationUnit_t &tu, int c_long_double_kind, int c_pointer_kind)
 {
-    // Only kinds 4 and 8 of complex are supported; the standard gives an
-    // unsupported kind as a negative value
-    int complex_kind = (c_long_double_kind == 4 || c_long_double_kind == 8)
+    // Kinds 4, 8, 10 and 16 of complex are supported. The standard gives an
+    // unsupported kind as a negative value.
+    int complex_kind = (c_long_double_kind == 4 || c_long_double_kind == 8
+            || c_long_double_kind == 10 || c_long_double_kind == 16)
         ? c_long_double_kind : -1;
     // `long` is as wide as a pointer on the targets with 32-bit pointers
     // (ILP32); the 64-bit ones keep the modfile's 8
@@ -9591,6 +9592,7 @@ std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::symbol_t* stru
             switch (c->m_kind) {
                 case 4: { return "c32"; }
                 case 8: { return "c64"; }
+                case 10: { return "c80"; }
                 case 16: { return "c128"; }
                 default: { throw LCompilersException("Complex kind not supported"); }
             }

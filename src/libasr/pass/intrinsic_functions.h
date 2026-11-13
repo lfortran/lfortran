@@ -1233,6 +1233,15 @@ namespace Aimag {
         std::complex<double> crv;
         if( ASRUtils::extract_value(args[0], crv) ) {
             ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(t);
+            if (dest_kind == 10) {
+                return ASRUtils::make_RealConstant_r10(al, loc,
+                    static_cast<long double>(c->m_im), t);
+            }
+            if (dest_kind == 16) {
+                return ASRUtils::make_RealConstant_r16(al, loc,
+                    lf_f128_from_double(c->m_im), t);
+            }
             return ASRUtils::make_RealConstant_util(al, loc, c->m_im, t);
         } else {
             return nullptr;
@@ -5895,6 +5904,17 @@ namespace Real {
                 ASRUtils::real_constant_get_double(r), t1);
         } else if (ASR::is_a<ASR::ComplexConstant_t>(*args[0])) {
             ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(ASRUtils::expr_value(args[0]));
+            int dest_kind = ASRUtils::extract_kind_from_ttype_t(t1);
+            // Kind 10 and 16 do not store the numeric value in the double
+            // payload of a RealConstant.
+            if (dest_kind == 10) {
+                return ASRUtils::make_RealConstant_r10(al, loc,
+                    static_cast<long double>(c->m_re), t1);
+            }
+            if (dest_kind == 16) {
+                return ASRUtils::make_RealConstant_r16(al, loc,
+                    lf_f128_from_double(c->m_re), t1);
+            }
             return ASRUtils::make_RealConstant_util(al, loc, c->m_re, t1);
         } else {
             append_error(diag, "Invalid argument to `real` intrinsic", loc);
