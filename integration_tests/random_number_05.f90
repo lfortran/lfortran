@@ -3,6 +3,7 @@ program random_number_05
     integer, parameter :: qp = 16
     real(qp) :: x, a(50), m(4, 5), s
     integer :: i, j, nbig
+    integer(8) :: lo
     logical :: low_bits
 
     s = 0
@@ -13,8 +14,12 @@ program random_number_05
         if (x < 0.0_qp .or. x >= 1.0_qp) error stop "scalar out of [0,1)"
         if (x > 0.5_qp) nbig = nbig + 1
         s = s + x
-        ! not representable as a double: uses the extra precision
-        if (x /= real(real(x, 8), qp)) low_bits = .true.
+        ! not representable as a double: uses the extra precision. Such a
+        ! value has nonzero bits among the low 60 of its 112 significand
+        ! bits, the low 8 bytes on a little-endian target. Read them as an
+        ! integer: --fast may fold a round trip through real(8) away.
+        lo = transfer(x, 0_8)
+        if (iand(lo, 2_8**60 - 1) /= 0) low_bits = .true.
     end do
     if (nbig < 50 .or. nbig > 150) error stop "scalar not spread over [0,1)"
     if (s < 60.0_qp .or. s > 140.0_qp) error stop "scalar mean is off"
