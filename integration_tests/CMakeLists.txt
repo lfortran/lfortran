@@ -3146,6 +3146,22 @@ RUN(NAME pdt_modfile_parent_nondefault_02 LABELS gfortran llvm
                    pdt_modfile_parent_nondefault_02_base.f90
                    pdt_modfile_parent_nondefault_02_child.f90
         EXTRA_ARGS --separate-compilation)
+# GFortran 15.3 rejects inherited KIND parameters in TYPE IS and does not
+# initialize defaulted PDT components; retain these checks on LLVM.
+RUN(NAME pdt_modfile_parent_default_02 LABELS llvm
+        EXTRAFILES pdt_modfile_parent_default_01_base.f90
+                   pdt_modfile_parent_default_01_child.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_03 LABELS llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_01_base.f90
+                   pdt_modfile_parent_nondefault_01_first.f90
+                   pdt_modfile_parent_nondefault_01_second.f90
+        EXTRA_ARGS --separate-compilation)
+RUN(NAME pdt_modfile_parent_nondefault_04 LABELS llvm
+        EXTRAFILES pdt_modfile_parent_nondefault_02_leaf.f90
+                   pdt_modfile_parent_nondefault_02_base.f90
+                   pdt_modfile_parent_nondefault_02_child.f90
+        EXTRA_ARGS --separate-compilation)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)
