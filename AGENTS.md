@@ -103,6 +103,7 @@ Available skills:
 | Skill | Purpose |
 | --- | --- |
 | `classify-issue` | Triage issues with evidence-based, additive labels and a frequency-first High/Medium/Low priority for every issue |
+| `classify-pr-risk` | Classify green, non-draft PRs as exactly one of `low-risk` or `needs-review` using a conservative allowlist; recommend by default, apply labels only when requested, never merge |
 | `repro-issue` | Turn a GitHub issue into a faithful Reproducible Example (RE) |
 | `create-mre` | Reduce an RE or third-party failure to a Minimal Reproducible Example (MRE) |
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |

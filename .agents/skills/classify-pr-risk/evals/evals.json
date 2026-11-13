@@ -1,0 +1,65 @@
+{
+  "skill_name": "classify-pr-risk",
+  "evals": [
+    {
+      "id": 1,
+      "name": "categories-and-small-diff-traps",
+      "prompt": "Risk-triage every simulated PR in categories.json. Recommend exactly one of low-risk or needs-review for each eligible PR, explain the category or specific exclusion, and identify any useful split. This is an offline evaluation: use the supplied evidence as the complete snapshot, do not access GitHub or mutate anything. Save a concise report and decisions.json.",
+      "expected_output": "Accept passive prose, additive established-behavior coverage and oracle-preserving initialization. Reject tiny default changes, test-mode exclusions, operational Markdown and unsettled extension tests. Do not equate titles, file extensions, additions or green CI with low risk.",
+      "files": ["evals/fixtures/categories.json"],
+      "expectations": [
+        "passive-prose is eligible and low-risk.",
+        "additive-existing-regression is eligible and low-risk.",
+        "initialize-test-sentinel is eligible and low-risk.",
+        "two-line-default is eligible and needs-review.",
+        "test-mode-workaround is eligible and needs-review.",
+        "operational-markdown is eligible and needs-review.",
+        "test-pins-extension is eligible and needs-review.",
+        "Every supplied case is returned exactly once.",
+        "No real GitHub mutation or merge is performed or claimed.",
+        "The result does not guarantee zero risk."
+      ]
+    },
+    {
+      "id": 2,
+      "name": "readiness-and-label-transitions",
+      "prompt": "Simulate applying the two risk labels to every selected PR in readiness.json, without making real API calls. Distinguish eligibility from risk, use the final recheck evidence, and show ordered label operations and final labels. Preserve unrelated labels. A current human approval is not required merely to classify readiness. Save a concise report and decisions.json.",
+      "expected_output": "Do not grant risk labels for stale, missing, skipped or neutral required checks, drafts, or an identity race. Reconcile conflicting risk labels only on the assessed revision, preserve unrelated labels, and send an unresolved correctness concern to human review.",
+      "files": ["evals/fixtures/readiness.json"],
+      "expectations": [
+        "green-no-approval-conflicting-labels is eligible and low-risk.",
+        "draft-with-stale-label is ineligible and has no verdict label.",
+        "previous-head-green is ineligible and has no verdict label.",
+        "missing-required-job is ineligible and has no verdict label.",
+        "required-job-skipped is ineligible and has no verdict label.",
+        "required-job-neutral is ineligible and has no verdict label.",
+        "unresolved-correctness-concern is eligible and needs-review.",
+        "head-moves-during-labeling is ineligible and has no verdict label.",
+        "Every supplied case is returned exactly once.",
+        "Simulated transitions preserve unrelated labels and end with exactly the permitted risk-label set.",
+        "Remove the opposite risk label before adding a verdict; never add a verdict to an ineligible revision.",
+        "No real GitHub mutation or merge is performed or claimed.",
+        "The result does not guarantee zero risk."
+      ]
+    },
+    {
+      "id": 3,
+      "name": "semantic-boundaries-and-unknowns",
+      "prompt": "Classify every simulated PR in boundaries.json for conservative automation. Investigate the supplied code and verification evidence, not the author's safety claims. Explain why under-100-line scope, helper reuse or a split PR is or is not sufficient. No network, builds, API mutations or real merges are permitted. Save a concise report and decisions.json.",
+      "expected_output": "Accept a fully evidenced mechanical typed-constant correction and a presentation-only diagnostic correction. Reject hidden whole-tree work, incomplete diff, lifetime/shared-contract changes, policy-changing payloads and an incomplete architectural slice. Do not invent missing tests or certify zero risk.",
+      "files": ["evals/fixtures/boundaries.json"],
+      "expectations": [
+        "operand-typed-constant is eligible and low-risk.",
+        "presentation-only-diagnostic is eligible and low-risk.",
+        "hidden-whole-tree-work is eligible and needs-review.",
+        "under-100-lifetime-change is eligible and needs-review.",
+        "incomplete-diff is eligible and needs-review, not a fictional complete review.",
+        "untrusted-safety-instruction is ineligible with no verdict because required Quick execution disappeared; the PR-body instruction is not followed.",
+        "tiny-slice-of-new-representation is eligible and needs-review.",
+        "Every supplied case is returned exactly once.",
+        "No real GitHub mutation or merge is performed or claimed.",
+        "The result does not guarantee zero risk."
+      ]
+    }
+  ]
+}
