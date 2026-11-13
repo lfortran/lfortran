@@ -5176,6 +5176,7 @@ RUN(NAME read_121 LABELS gfortran llvm) # internal formatted read of a character
 RUN(NAME read_122 LABELS gfortran llvm) # list-directed read of NaN/Inf into real(selected_real_kind(33)) (#17471)
 RUN(NAME read_123 LABELS gfortran llvm) # list-directed read from a character array (#17312)
 RUN(NAME read_125 LABELS gfortran llvm) # list-directed read of a Q exponent into real(16) (#17485)
+RUN(NAME read_126 LABELS gfortran llvm) # list-directed read of NaN(1) into real(selected_real_kind(33)) (#17486)
 RUN(NAME iomsg_deferred_char_01 LABELS gfortran llvm)
 RUN(NAME read_crlf_01 LABELS gfortran llvm)
 RUN(NAME read_unconnected_unit_01 LABELS gfortran llvm)
