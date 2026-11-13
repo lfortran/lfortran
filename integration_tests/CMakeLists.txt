@@ -5588,6 +5588,7 @@ RUN(NAME entry_28 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME entry_29 LABELS gfortran llvm)
 RUN(NAME entry_30 LABELS gfortran llvm)
 RUN(NAME entry_31 LABELS llvm flang) # not gfortran: GFortran 16.2 miscompiles the overlap of the result variables of a function and its entries (#16215)
+RUN(NAME allocatable_statement_01 LABELS gfortran llvm) # ALLOCATABLE statement after a deferred-shape declaration
 
 RUN(NAME character_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

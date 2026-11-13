@@ -2301,6 +2301,32 @@ public:
     std::map<std::string, ASR::presenceType> assgnd_presence;
     std::set<std::string> assgnd_pointer;
     std::set<std::string> assgnd_allocatable;
+
+    // An ALLOCATABLE statement may follow the type declaration. Record every
+    // name it gives so a deferred-shape declaration is allocatable when it is
+    // checked, not only when the statement appears first.
+    void collect_allocatable_statements(AST::decl_stmt_t **items, size_t n_items) {
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
+            AST::Declaration_t *d = AST::down_cast<AST::Declaration_t>(items[i]);
+            bool allocatable_stmt = false;
+            for (size_t a = 0; a < d->n_attributes; a++) {
+                if (!AST::is_a<AST::SimpleAttribute_t>(*d->m_attributes[a])) continue;
+                if (AST::down_cast<AST::SimpleAttribute_t>(
+                        d->m_attributes[a])->m_attr
+                        == AST::simple_attributeType::AttrAllocatable) {
+                    allocatable_stmt = true;
+                    break;
+                }
+            }
+            if (!allocatable_stmt) continue;
+            for (size_t s = 0; s < d->n_syms; s++) {
+                if (d->m_syms[s].m_name) {
+                    assgnd_allocatable.insert(to_lower(d->m_syms[s].m_name));
+                }
+            }
+        }
+    }
     std::set<std::string> assgnd_target;
     std::set<std::string> assgnd_volatile;
     std::set<std::string> assgnd_asynchronous;
@@ -11189,6 +11215,10 @@ public:
                 // location for dimension(...) if present
                 Location dims_attr_loc;
                 is_allocatable = false;
+                if (assgnd_allocatable.count(sym)) {
+                    // `allocatable a` may appear before or after this declaration.
+                    is_allocatable = true;
+                }
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
                 if (x.n_attributes > 0) {
