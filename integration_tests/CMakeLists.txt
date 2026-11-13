@@ -7919,6 +7919,7 @@ RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
 
 
 
+
 RUN(NAME cpp_flag_01 LABELS gfortran llvm
         EXTRA_ARGS -cpp -DCPP_FLAG_01
         GFORTRAN_ARGS -cpp -DCPP_FLAG_01)
@@ -7928,6 +7929,7 @@ RUN(NAME implicit_unallocated_01 LABELS gfortran llvm
     EXTRAFILES implicit_unallocated_01c.c
     EXTRA_ARGS --implicit-interface --mangle-underscore-external)
 RUN(NAME minmax_03 LABELS gfortran llvm)
+RUN(NAME integer_pow_negative LABELS gfortran llvm)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
