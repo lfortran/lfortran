@@ -7922,6 +7922,7 @@ RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
 
 
 
+
 RUN(NAME cpp_flag_01 LABELS gfortran llvm
         EXTRA_ARGS -cpp -DCPP_FLAG_01
         GFORTRAN_ARGS -cpp -DCPP_FLAG_01)
@@ -7938,6 +7939,7 @@ RUN(NAME mangle_underscore_external_04 LABELS gfortran llvm
 RUN(NAME bindc_module_variable_01 LABELS gfortran llvm
     EXTRAFILES bindc_module_variable_01_m.f90
     EXTRA_ARGS --separate-compilation)
+RUN(NAME entry_34 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
