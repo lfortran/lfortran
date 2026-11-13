@@ -132,7 +132,16 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
         if ((LFORTRAN_BACKEND STREQUAL "cpp") OR (LFORTRAN_BACKEND STREQUAL "x86")
                 OR (LFORTRAN_BACKEND STREQUAL "c") OR (LFORTRAN_BACKEND STREQUAL "fortran"))
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
+            if (LFORTRAN_BACKEND STREQUAL "c")
+                foreach(arg IN LISTS extra_args)
+                    target_compile_options(${name} PUBLIC
+                        "$<$<COMPILE_LANGUAGE:Fortran>:${arg}>")
+                endforeach()
+                target_compile_options(${name} PUBLIC
+                    "$<$<COMPILE_LANGUAGE:Fortran>:--backend=c>")
+            else()
+                target_compile_options(${name} PUBLIC ${extra_args} --backend=${LFORTRAN_BACKEND})
+            endif()
             target_link_options(${name} PUBLIC --backend=${LFORTRAN_BACKEND})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "wasm")
@@ -6680,6 +6689,9 @@ RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_struct_member_no_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_module_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_nested_allocatable_01 LABELS gfortran llvm)
+RUN(NAME intent_out_inherited_alloc_cleanup_01 LABELS gfortran llvm c)
+RUN(NAME intent_out_inherited_alloc_cleanup_02 LABELS c
+    EXTRAFILES intent_out_inherited_alloc_cleanup_02c.c) # GNU does not use LFortran's allocator
 RUN(NAME intent_out_array_structs_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_of_struct_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_array_default_init_01 LABELS gfortran llvm)

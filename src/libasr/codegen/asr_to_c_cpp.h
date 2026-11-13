@@ -3844,6 +3844,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     "(&(" + field + "));\n";
             }
         }
+        if (st->m_parent) {
+            ASR::symbol_t* parent = ASRUtils::symbol_get_past_external(
+                st->m_parent);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*parent));
+            body += "    " + c_cleanup_struct_name(
+                ASR::down_cast<ASR::Struct_t>(parent)) + "(&(object->" +
+                c_parent_component + "));\n";
+        }
         if (body.empty()) {
             body = "    (void)object;\n";
         }
