@@ -3456,6 +3456,7 @@ RUN(NAME c_pointer_host_reference_01 LABELS gfortran llvm c)
 RUN(NAME c_pointer_allocatable_derived_01 LABELS gfortran llvm c)
 RUN(NAME c_pointer_associated_empty_01 LABELS gfortran c) # LLVM zero-sized TARGET bug: #14340
 RUN(NAME c_associated_fixed_component_01 LABELS gfortran llvm c)
+RUN(NAME c_module_fixed_array_scope_01 LABELS gfortran llvm c)
 RUN(NAME c_reset_character_component_01 LABELS gfortran llvm c)
 RUN(NAME c_character_dummy_length_01 LABELS gfortran llvm c)
 RUN(NAME c_character_select_case_01 LABELS gfortran llvm c)

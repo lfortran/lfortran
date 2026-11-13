@@ -310,7 +310,7 @@ public:
 
     int bracket_open;
 
-    SymbolTable* current_scope;
+    SymbolTable* current_scope = nullptr;
     bool is_string_concat_present;
 
     // The views of a common block in this translation unit, the CommonBlock

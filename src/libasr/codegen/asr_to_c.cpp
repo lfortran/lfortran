@@ -909,6 +909,8 @@ public:
     }
 
     std::string declare_module_variables(const ASR::Module_t &x) {
+        SymbolTable* current_scope_copy = current_scope;
+        current_scope = x.m_symtab;
         std::string declarations;
         for (auto &name : ASRUtils::determine_variable_declaration_order(
                 x.m_symtab)) {
@@ -936,6 +938,7 @@ public:
                 declarations += ";\n";
             }
         }
+        current_scope = current_scope_copy;
         return declarations;
     }
 
@@ -943,6 +946,7 @@ public:
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         is_string_concat_present = false;
         global_scope = x.m_symtab;
+        current_scope = global_scope;
         // All loose statements must be converted to a function, so the items
         // must be empty:
         LCOMPILERS_ASSERT(x.n_items == 0);
