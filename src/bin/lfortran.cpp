@@ -2860,6 +2860,18 @@ int main_app(int argc, char *argv[]) {
     lcli::LFortranCommandLineOpts &opts = parser.opts;
     CompilerOptions &compiler_options = opts.compiler_options;
 
+    // `-Werror=<name>` asks for a warning group. LFortran has no such
+    // groups, so an unknown one has to fail the compile. Other `-W`
+    // text is a linker flag (`-Wl,...`) or a warning name the link
+    // step ignores.
+    for (const std::string &flag : opts.linker_flags) {
+        if (LCompilers::startswith(flag, "error=")) {
+            std::cerr << "error: unrecognized warning option '-W"
+                      << flag << "'" << std::endl;
+            return 1;
+        }
+    }
+
     if (compiler_options.po.no_member_names &&
             (!compiler_options.po.clojure || !opts.show_asr)) {
         std::cerr << "error: --no-member-names requires "
