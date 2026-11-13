@@ -2748,8 +2748,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     std::string stride = "1";
                     for (int i = rank - 1; i >= 0; i--) {
                         int64_t length = 0;
-                        LCOMPILERS_ASSERT(ASRUtils::extract_value(
-                            ASRUtils::expr_value(dims[i].m_length), length));
+                        [[maybe_unused]] bool constant_length =
+                            ASRUtils::extract_value(
+                                ASRUtils::expr_value(dims[i].m_length), length);
+                        LCOMPILERS_ASSERT(constant_length);
                         lengths[i] = std::to_string(length);
                         strides[i] = stride;
                         stride = "(" + stride + "*" + lengths[i] + ")";
