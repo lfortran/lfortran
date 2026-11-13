@@ -1014,6 +1014,7 @@ R"(
     }
 
     void visit_Module(const ASR::Module_t &x) {
+        src.clear();
         if (x.m_intrinsic) {
             intrinsic_module = true;
         } else {
