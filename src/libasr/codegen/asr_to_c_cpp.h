@@ -3022,11 +3022,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 && ASRUtils::is_array(sv->m_type)
                 && ASRUtils::is_pointer(sv->m_type)) {
                 src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
-            } else if ((sv->m_intent == ASRUtils::intent_inout ||
-                    sv->m_intent == ASRUtils::intent_out) &&
-                    ASRUtils::is_array(sv->m_type) &&
-                    ASRUtils::is_allocatable(sv->m_type)) {
-                src = "(*" + std::string(sv->m_name) + ")";
             } else if ((sv->m_intent == ASRUtils::intent_inout
                 || sv->m_intent == ASRUtils::intent_out)
                 && !ASRUtils::is_aggregate_type(sv->m_type) &&
