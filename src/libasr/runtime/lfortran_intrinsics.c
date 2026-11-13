@@ -7207,6 +7207,49 @@ LFORTRAN_API int32_t _lfortran_dis_nan(double x) {
     return isnan(x);
 }
 
+/*
+ * Fortran EXPONENT for an x87 binary80 value (kind 10 where that kind is
+ * x86_fp80). Little-endian memory: 64-bit significand, then a 16-bit word
+ * whose low 15 bits are the biased exponent (bias 16383). The Fortran
+ * exponent of a normal number is that field minus 16382. The low 32 and
+ * 64 bits are the significand, so the binary32 and binary64 formulas do
+ * not apply. A zero returns 0. An all-ones exponent (infinity or NaN)
+ * returns HUGE(0). A subnormal uses the true position of its leading bit,
+ * matching gfortran (tiny/2 is -16382, not emin for every subnormal).
+ */
+LFORTRAN_API int32_t _lfortran_exponent_f80(const void *x)
+{
+    const unsigned char *bytes = (const unsigned char *) x;
+    uint64_t significand;
+    uint32_t exponent_bits;
+    int bit;
+
+    significand = (uint64_t) bytes[0]
+        | ((uint64_t) bytes[1] << 8)
+        | ((uint64_t) bytes[2] << 16)
+        | ((uint64_t) bytes[3] << 24)
+        | ((uint64_t) bytes[4] << 32)
+        | ((uint64_t) bytes[5] << 40)
+        | ((uint64_t) bytes[6] << 48)
+        | ((uint64_t) bytes[7] << 56);
+    exponent_bits = ((uint32_t) bytes[8] | ((uint32_t) bytes[9] << 8)) & 0x7fffu;
+    if (exponent_bits == 0x7fffu) {
+        return 2147483647;
+    }
+    if (exponent_bits != 0) {
+        return (int32_t) exponent_bits - 16382;
+    }
+    if (significand == 0) {
+        return 0;
+    }
+    bit = 0;
+    while ((significand >> 1) != 0) {
+        significand >>= 1;
+        bit++;
+    }
+    return bit - 16444;
+}
+
 LFORTRAN_API float_complex_t _lfortran_clog(float_complex_t x)
 {
     return clogf(x);
