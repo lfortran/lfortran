@@ -20014,6 +20014,12 @@ public:
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(64, val, true));
                 break;
             }
+            case 16 : {
+                // The ASR payload is int64. Sign-extend it into i128.
+                tmp = llvm::ConstantInt::get(context, llvm::APInt(128,
+                    static_cast<uint64_t>(val), true));
+                break;
+            }
             default : {
                 throw CodeGenError("Constant integers of " + std::to_string(a_kind)
                                     + " bytes aren't supported yet.");
@@ -26438,6 +26444,7 @@ public:
         int a_kind = ASRUtils::extract_kind_from_ttype_t(t);
 
         if (ASRUtils::is_integer(*t)) {
+            bool formatted_as_string = false;
             switch( a_kind ) {
                 case 1 : {
                     fmt.push_back("%hhi");
@@ -26455,13 +26462,39 @@ public:
                     fmt.push_back("%lld");
                     break;
                 }
+                case 16 : {
+                    // printf has no i128 conversion. Format the 16 bytes
+                    // into a decimal string and print that.
+                    llvm::Value *buf = llvm_utils->CreateAlloca(
+                        llvm::ArrayType::get(llvm::Type::getInt8Ty(context), 48));
+                    llvm::Value *slot = llvm_utils->CreateAlloca(
+                        llvm::Type::getInt128Ty(context));
+                    builder->CreateStore(tmp, slot);
+                    llvm::Function *i128_fmt = LLVM::get_or_declare_function(
+                        *module, "_lfortran_i128_format",
+                        llvm::Type::getVoidTy(context), {
+                            llvm::Type::getInt8Ty(context)->getPointerTo(),
+                            llvm::Type::getInt8Ty(context)->getPointerTo()
+                        });
+                    llvm::Value *buf8 = builder->CreateBitCast(buf,
+                        llvm::Type::getInt8Ty(context)->getPointerTo());
+                    llvm::Value *slot8 = builder->CreateBitCast(slot,
+                        llvm::Type::getInt8Ty(context)->getPointerTo());
+                    builder->CreateCall(i128_fmt, {buf8, slot8});
+                    fmt.push_back("%s");
+                    args.push_back(buf8);
+                    formatted_as_string = true;
+                    break;
+                }
                 default: {
                     throw CodeGenError(R"""(Printing support is available only
-                                        for 8, 16, 32, and 64 bit integer kinds.)""",
+                                        for 8, 16, 32, 64, and 128 bit integer kinds.)""",
                                         loc);
                 }
             }
-            args.push_back(tmp);
+            if (!formatted_as_string) {
+                args.push_back(tmp);
+            }
         } else if (ASRUtils::is_unsigned_integer(*t)) {
             switch( a_kind ) {
                 case 1 : {

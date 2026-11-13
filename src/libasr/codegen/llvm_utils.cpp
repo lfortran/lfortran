@@ -2434,6 +2434,9 @@ namespace LCompilers {
                 case 8:
                     type_ptr = llvm::Type::getInt64Ty(context)->getPointerTo();
                     break;
+                case 16:
+                    type_ptr = llvm::Type::getInt128Ty(context)->getPointerTo();
+                    break;
                 default:
                     LCOMPILERS_ASSERT(false);
             }
@@ -2451,6 +2454,9 @@ namespace LCompilers {
                     break;
                 case 8:
                     type_ptr = llvm::Type::getInt64Ty(context);
+                    break;
+                case 16:
+                    type_ptr = llvm::Type::getInt128Ty(context);
                     break;
                 default:
                     LCOMPILERS_ASSERT(false);

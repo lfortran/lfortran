@@ -14786,7 +14786,10 @@ public:
                     ASRUtils::type_get_past_allocatable(type)));
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeInteger) {
-            if (!is_derived_type && a_kind != 1 && a_kind != 2 && a_kind != 4 && a_kind != 8) {
+            // Kind 16 is a 128-bit integer (LLVM i128). IntegerConstant still
+            // holds only an int64, so a literal above 2^63-1 is rejected.
+            if (!is_derived_type && a_kind != 1 && a_kind != 2 && a_kind != 4
+                    && a_kind != 8 && a_kind != 16) {
                 diag.add(Diagnostic(
                     "Kind " + std::to_string(a_kind) + " is not supported for Integer",
                     Level::Error, Stage::Semantic, {

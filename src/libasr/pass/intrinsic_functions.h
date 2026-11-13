@@ -1886,6 +1886,8 @@ namespace Range {
                     range_val = 9; break;
                 } case 8: {
                     range_val = 18; break;
+                } case 16: {
+                    range_val = 38; break;
                 } default: {
                     break;
                 }
@@ -6535,6 +6537,8 @@ namespace SelectedIntKind {
             result = 4;
         } else if (val <= 18) {
             result = 8;
+        } else if (val <= 38) {
+            result = 16;
         } else {
             result = -1;
         }
@@ -6561,7 +6565,11 @@ namespace SelectedIntKind {
                     b.If(b.LtE(number, b.i_t(18, arg_types[0])), {
                         b.Assignment(result, b.i32(8))
                     }, {
-                        b.Assignment(result, b.i32(-1))
+                        b.If(b.LtE(number, b.i_t(38, arg_types[0])), {
+                            b.Assignment(result, b.i32(16))
+                        }, {
+                            b.Assignment(result, b.i32(-1))
+                        })
                     })
                 })
             })
@@ -7693,6 +7701,8 @@ namespace Digits {
                 return make_ConstantWithType(make_IntegerConstant_t, 31, int32, loc);
             } else if (kind == 8) {
                 return make_ConstantWithType(make_IntegerConstant_t, 63, int32, loc);
+            } else if (kind == 16) {
+                return make_ConstantWithType(make_IntegerConstant_t, 127, int32, loc);
             } else {
                 append_error(diag, "Kind "+ std::to_string(kind) + " not supported for type Integer", loc);
             }
@@ -9713,6 +9723,13 @@ namespace Huge {
         ASRUtils::ASRBuilder b(al, loc);
         int32_t kind = extract_kind_from_ttype_t(arg_type);
         if (ASR::is_a<ASR::Integer_t>(*arg_type)) {
+            if (kind == 16) {
+                // 2**127-1 does not fit in IntegerConstant's int64 payload, so
+                // the value is the i128 expression (1 << 127) - 1.
+                ASR::expr_t *one = b.i_t(1, arg_type);
+                ASR::expr_t *shifted = b.BitLshift(one, b.i_t(127, arg_type), arg_type);
+                return b.Sub(shifted, b.i_t(1, arg_type));
+            }
             int64_t huge_value = -1;
             switch ( kind ) {
                 case 1: {

@@ -9559,6 +9559,7 @@ std::string type_to_str_python_symbol(const ASR::ttype_t *t, ASR::symbol_t* stru
                 case 2: { res = "i16"; break; }
                 case 4: { res = "i32"; break; }
                 case 8: { res = "i64"; break; }
+                case 16: { res = "i128"; break; }
                 default: { throw LCompilersException("Integer kind not supported"); }
             }
             return res;
@@ -9814,6 +9815,13 @@ ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_
     int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
     switch (asr_type->type) {
         case ASR::ttypeType::Integer: {
+            if (kind == 16) {
+                // -2**127 does not fit in an int64 IntegerConstant.
+                ASRBuilder b(al, asr_type->base.loc);
+                ASR::expr_t *one = b.i_t(1, asr_type);
+                ASR::expr_t *shifted = b.BitLshift(one, b.i_t(127, asr_type), asr_type);
+                return b.i_neg(shifted, asr_type);
+            }
             int64_t val;
             switch (kind) {
                 case 1: val = std::numeric_limits<int8_t>::min(); break;
@@ -9821,7 +9829,6 @@ ASR::expr_t* get_minimum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_
                 case 4: val = std::numeric_limits<int32_t>::min(); break;
                 case 8: val = std::numeric_limits<int64_t>::min(); break;
                 default:
-                    // integer kinds are restricted to 1, 2, 4 and 8 in semantics
                     LCOMPILERS_ASSERT(false);
                     val = 0;
             }
@@ -9859,6 +9866,13 @@ ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_
     int kind = ASRUtils::extract_kind_from_ttype_t(asr_type);
     switch (asr_type->type) {
         case ASR::ttypeType::Integer: {
+            if (kind == 16) {
+                // 2**127-1 does not fit in an int64 IntegerConstant.
+                ASRBuilder b(al, asr_type->base.loc);
+                ASR::expr_t *one = b.i_t(1, asr_type);
+                ASR::expr_t *shifted = b.BitLshift(one, b.i_t(127, asr_type), asr_type);
+                return b.Sub(shifted, b.i_t(1, asr_type));
+            }
             int64_t val;
             switch (kind) {
                 case 1: val = std::numeric_limits<int8_t>::max(); break;
@@ -9866,7 +9880,6 @@ ASR::expr_t* get_maximum_value_with_given_type(Allocator& al, ASR::ttype_t* asr_
                 case 4: val = std::numeric_limits<int32_t>::max(); break;
                 case 8: val = std::numeric_limits<int64_t>::max(); break;
                 default:
-                    // integer kinds are restricted to 1, 2, 4 and 8 in semantics
                     LCOMPILERS_ASSERT(false);
                     val = 0;
             }

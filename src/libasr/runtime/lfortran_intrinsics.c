@@ -1045,6 +1045,125 @@ char* append_to_string_NTI(lfortran_allocator_t* al, char* dest, int64_t dest_le
     return dest;
 }
 
+/* Decimal digits of a little-endian two's-complement 128-bit integer.
+   `dst` receives the magnitude without a sign and is NUL-terminated.
+   The magnitude of the most negative value is 2**127. */
+static int i128_magnitude_digits(const void *src, int *neg, char *dst) {
+    uint64_t lo, hi;
+    memcpy(&lo, src, 8);
+    memcpy(&hi, (const unsigned char*)src + 8, 8);
+    *neg = (hi >> 63) != 0;
+    if (*neg) {
+        uint64_t nlo = ~lo + 1;
+        hi = ~hi + (nlo == 0);
+        lo = nlo;
+    }
+    if (lo == 0 && hi == 0) {
+        dst[0] = '0';
+        dst[1] = '\0';
+        return 1;
+    }
+    char rev[40];
+    int n = 0;
+    while (lo || hi) {
+        uint32_t parts[4] = {
+            (uint32_t)(hi >> 32),
+            (uint32_t)hi,
+            (uint32_t)(lo >> 32),
+            (uint32_t)lo
+        };
+        uint64_t rem = 0;
+        uint32_t q[4];
+        int i;
+        for (i = 0; i < 4; i++) {
+            uint64_t cur = (rem << 32) | parts[i];
+            q[i] = (uint32_t)(cur / 10);
+            rem = cur % 10;
+        }
+        hi = ((uint64_t)q[0] << 32) | q[1];
+        lo = ((uint64_t)q[2] << 32) | q[3];
+        rev[n++] = (char)('0' + (int)rem);
+    }
+    for (int i = 0; i < n; i++) {
+        dst[i] = rev[n - 1 - i];
+    }
+    dst[n] = '\0';
+    return n;
+}
+
+static void i128_format(const void *src, char *dst) {
+    int neg = 0;
+    char digits[48];
+    i128_magnitude_digits(src, &neg, digits);
+    if (neg) {
+        sprintf(dst, "-%s", digits);
+    } else {
+        sprintf(dst, "%s", digits);
+    }
+}
+
+/* printf has no portable i128 conversion. `src` points at 16 bytes. */
+void _lfortran_i128_format(char *buf, const void *src) {
+    i128_format(src, buf);
+}
+
+static void handle_integer_i128(char* format, const void* src, char** result,
+        bool is_signed_plus) {
+    int width = 0, min_width = 0;
+    char* dot_pos = strchr(format, '.');
+    int neg = 0;
+    char digits[48];
+    int len = i128_magnitude_digits(src, &neg, digits);
+    int sign_width = neg ? 1 : 0;
+    bool sign_plus_exist = (is_signed_plus && !neg);
+    if (dot_pos != NULL) {
+        dot_pos++;
+        width = atoi(format + 1);
+        min_width = atoi(dot_pos);
+    } else {
+        width = atoi(format + 1);
+        if (width == 0) {
+            width = len + sign_width + sign_plus_exist;
+        }
+    }
+    if (dot_pos != NULL && min_width == 0 && len == 1 && digits[0] == '0') {
+        for (int i = 0; i < width; i++) {
+            *result = append_to_string(*result, " ");
+        }
+        return;
+    }
+    int effective_len = (dot_pos != NULL && min_width > len) ? min_width : len;
+    if (width >= effective_len + sign_width + sign_plus_exist || width == 0) {
+        if (min_width > len) {
+            for (int i = 0; i < (width - min_width - sign_width - sign_plus_exist); i++) {
+                *result = append_to_string(*result, " ");
+            }
+            if (neg) {
+                *result = append_to_string(*result, "-");
+            } else if (sign_plus_exist) {
+                *result = append_to_string(*result, "+");
+            }
+            for (int i = 0; i < (min_width - len); i++) {
+                *result = append_to_string(*result, "0");
+            }
+        } else {
+            for (int i = 0; i < (width - len - sign_width - sign_plus_exist); i++) {
+                *result = append_to_string(*result, " ");
+            }
+            if (neg) {
+                *result = append_to_string(*result, "-");
+            } else if (sign_plus_exist) {
+                *result = append_to_string(*result, "+");
+            }
+        }
+        *result = append_to_string(*result, digits);
+    } else {
+        for (int i = 0; i < width; i++) {
+            *result = append_to_string(*result, "*");
+        }
+    }
+}
+
 void handle_integer(char* format, int64_t val, char** result, bool is_signed_plus) {
     int width = 0, min_width = 0;
     char* dot_pos = strchr(format, '.');
@@ -3621,6 +3740,8 @@ typedef enum primitive_types{
     FLOAT_80_TYPE = 19,
     // A derived-type item written by a defined output procedure.
     DTIO_TYPE = 20,
+    // integer(16), stored as a little-endian 16-byte two's-complement value.
+    INTEGER_128_TYPE = 21,
 } Primitive_Types;
 
 typedef struct lfortran_string_descriptor {
@@ -3636,6 +3757,7 @@ static inline bool is_logical_type(Primitive_Types t) {
 static inline bool is_integer_type(Primitive_Types t) {
     return t == INTEGER_8_TYPE || t == INTEGER_16_TYPE ||
            t == INTEGER_32_TYPE || t == INTEGER_64_TYPE ||
+           t == INTEGER_128_TYPE ||
            t == UNSIGNED_INTEGER_8_TYPE || t == UNSIGNED_INTEGER_16_TYPE ||
            t == UNSIGNED_INTEGER_32_TYPE || t == UNSIGNED_INTEGER_64_TYPE;
 }
@@ -3688,6 +3810,7 @@ char primitive_enum_to_format_specifier(Primitive_Types primitive_enum){
         case INTEGER_16_TYPE:
         case INTEGER_32_TYPE:
         case INTEGER_64_TYPE:
+        case INTEGER_128_TYPE:
         case UNSIGNED_INTEGER_8_TYPE:
         case UNSIGNED_INTEGER_16_TYPE:
         case UNSIGNED_INTEGER_32_TYPE:
@@ -4203,7 +4326,8 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         sizeof(int64_t)/*LOGICAL_64*/,
         16/*FLOAT_128: 16 bytes = 128 bits*/,
         REAL10_SIZE/*FLOAT_80*/,
-        0/*DTIO: the size is serialized with each element*/ };
+        0/*DTIO: the size is serialized with each element*/,
+        16/*INTEGER_128*/ };
     if( !stack_empty(s_info->array_sizes_stack) && 
         (get_stack_top(s_info->array_sizes_stack) > 0) && 
         (s_info->current_element_type == CHAR_PTR_TYPE ||
@@ -4243,7 +4367,13 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
             *PrimitiveType = INTEGER_16_TYPE;
             break;
         case '1':
-            *PrimitiveType = INTEGER_8_TYPE;
+            /* I1 is kind 1. I16 is integer(16), a 128-bit integer. */
+            if (s_info->serialization_string[s_info->current_stop] == '6') {
+                s_info->current_stop++;
+                *PrimitiveType = INTEGER_128_TYPE;
+            } else {
+                *PrimitiveType = INTEGER_8_TYPE;
+            }
             break;
         default:
             fprintf(stderr, "RunTime - compiler internal error"
@@ -4618,6 +4748,9 @@ int64_t print_into_string(Serialization_Info* s_info,  char* result, int decimal
             break;
         case INTEGER_8_TYPE:
             sprintf(result, "%hhi", *(int8_t*)arg);
+            break;
+        case INTEGER_128_TYPE:
+            i128_format(arg, result);
             break;
         case UNSIGNED_INTEGER_64_TYPE:
             sprintf(result, "%"PRIu64, *(uint64_t*)arg);
@@ -5656,6 +5789,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     case  INTEGER_8_TYPE:
                         integer_val = (int64_t)*(int8_t*)s_info.current_arg_info.current_arg; 
                         break;
+                    case INTEGER_128_TYPE: {
+                        /* Values outside int64 are formatted by the I and G
+                           editors below. Narrow values keep the other editors. */
+                        uint64_t lo, hi;
+                        const void *p = s_info.current_arg_info.current_arg;
+                        memcpy(&lo, p, 8);
+                        memcpy(&hi, (const unsigned char*)p + 8, 8);
+                        if ((hi == 0 && (lo >> 63) == 0) ||
+                                (hi == ~(uint64_t)0 && (lo >> 63) == 1)) {
+                            integer_val = (int64_t)lo;
+                        }
+                        break;
+                    }
                     case  FLOAT_64_TYPE:
                         real_val = *(double*)s_info.current_arg_info.current_arg;
                         break;
@@ -5783,7 +5929,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                 } else if (tolower(value[0]) == 'i') {
                     // Integer Editing ( I[w[.m]] )
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
-                    handle_integer(value, integer_val, &temp_buf, is_SP_specifier);
+                    if (s_info.current_element_type == INTEGER_128_TYPE) {
+                        handle_integer_i128(value, s_info.current_arg_info.current_arg,
+                            &temp_buf, is_SP_specifier);
+                    } else {
+                        handle_integer(value, integer_val, &temp_buf, is_SP_specifier);
+                    }
                     int64_t temp_len = strlen(temp_buf);
                     result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
                     result_len += temp_len;
@@ -6161,8 +6312,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     } else if (s_info.current_element_type == INTEGER_8_TYPE ||
                                s_info.current_element_type == INTEGER_16_TYPE ||
                                s_info.current_element_type == INTEGER_32_TYPE ||
-                               s_info.current_element_type == INTEGER_64_TYPE) {
-                        snprintf(buffer, sizeof(buffer), "%"PRId64, integer_val);
+                               s_info.current_element_type == INTEGER_64_TYPE ||
+                               s_info.current_element_type == INTEGER_128_TYPE) {
+                        if (s_info.current_element_type == INTEGER_128_TYPE) {
+                            i128_format(s_info.current_arg_info.current_arg, buffer);
+                        } else {
+                            snprintf(buffer, sizeof(buffer), "%"PRId64, integer_val);
+                        }
                         int64_t buf_len = strlen(buffer);
                         result = write_to_result_at_pos(al, result, &result_extent, result_len, buffer, buf_len);
                         result_len += buf_len;
