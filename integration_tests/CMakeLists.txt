@@ -11,6 +11,10 @@ set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the g
 set(FAST no CACHE BOOL "Run supported tests with --fast")
 set(DETECT_LEAKS no CACHE BOOL "Run tests with --detect-leaks")
 option(LFORTRAN_SMOKE "Build and run the representative CI smoke suite" OFF)
+<<<<<<< HEAD
+=======
+RUN(NAME integer_kind_16_boz_nml LABELS gfortran llvm)
+>>>>>>> ab8a278cb8 (fix: format integer(16) with B, O, Z and namelist output.)
 
 if (LFORTRAN_SMOKE)
     include(${CMAKE_CURRENT_SOURCE_DIR}/smoke_tests.cmake)

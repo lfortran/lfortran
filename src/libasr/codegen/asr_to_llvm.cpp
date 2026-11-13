@@ -22108,6 +22108,7 @@ public:
                 else if (kind == 2) type_code = 1; // LFORTRAN_NML_INT2
                 else if (kind == 4) type_code = 2; // LFORTRAN_NML_INT4
                 else if (kind == 8) type_code = 3; // LFORTRAN_NML_INT8
+                else if (kind == 16) type_code = 13; // LFORTRAN_NML_INT16
             } else if (ASR::is_a<ASR::Real_t>(*elem_type)) {
                 int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
                 if (kind == 4) type_code = 4; // LFORTRAN_NML_REAL4

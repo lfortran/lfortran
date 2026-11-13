@@ -444,7 +444,8 @@ typedef enum {
     LFORTRAN_NML_LOGICAL8,
     LFORTRAN_NML_COMPLEX4,
     LFORTRAN_NML_COMPLEX8,
-    LFORTRAN_NML_CHAR
+    LFORTRAN_NML_CHAR,
+    LFORTRAN_NML_INT16
 } lfortran_nml_type_t;
 
 // An array of a derived type that encloses a namelist item

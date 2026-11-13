@@ -3905,6 +3905,48 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
             byte_count = 8;
             raw = (uint64_t)(*(int64_t*)arg_ptr);
             break;
+        case INTEGER_128_TYPE:
+        case FLOAT_128_TYPE: {
+            /* 16 raw bytes, most-significant byte first, with leading zeros
+               stripped. integer(16) and real(16) share this spelling. */
+            unsigned char raw_bytes[16];
+            memcpy(raw_bytes, arg_ptr, 16);
+            int total_hex = 32;
+            char *hex_full = (char*)internal_malloc((total_hex + 1) * sizeof(char));
+            for (int _b = 15; _b >= 0; _b--) {
+                snprintf(hex_full + (15 - _b) * 2, 3, "%02X", raw_bytes[_b]);
+            }
+            hex_full[total_hex] = '\0';
+            int _s = 0;
+            while (_s < total_hex - 1 && hex_full[_s] == '0') _s++;
+            int _dlen = total_hex - _s;
+            if (_dlen < 1) _dlen = 1;
+            if (min_digits < 1) min_digits = 1;
+            int _olen = _dlen > min_digits ? _dlen : min_digits;
+            char *_out = (char*)internal_malloc((_olen + (width > 0 ? width : 0) + 2) * sizeof(char));
+            int _lz = _olen - _dlen;
+            for (int _i = 0; _i < _lz; _i++) _out[_i] = '0';
+            memcpy(_out + _lz, hex_full + _s, _dlen);
+            _out[_olen] = '\0';
+            internal_free(hex_full);
+            if (*result) internal_free(*result);
+            if (width > 0 && _olen > width) {
+                char *stars = (char*)internal_malloc((width + 1) * sizeof(char));
+                memset(stars, '*', width);
+                stars[width] = '\0';
+                internal_free(_out);
+                *result = stars;
+            } else if (width > _olen) {
+                char *padded = (char*)internal_malloc((width + 1) * sizeof(char));
+                memset(padded, ' ', width - _olen);
+                memcpy(padded + (width - _olen), _out, _olen + 1);
+                internal_free(_out);
+                *result = padded;
+            } else {
+                *result = _out;
+            }
+            return;
+        }
         case UNSIGNED_INTEGER_8_TYPE:
             byte_count = 1;
             raw = (uint64_t)(*(uint8_t*)arg_ptr);
@@ -3934,47 +3976,6 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
             memcpy(&tmp, arg_ptr, sizeof(double));
             raw = tmp;
             break;
-        }
-        case FLOAT_128_TYPE: {
-            /* fp128 hex: handle separately .
-             * Build the full 32-hex-digit string directly from the 16 raw bytes. */
-            byte_count = 16;
-            unsigned char fp128_bytes[16];
-            memcpy(fp128_bytes, arg_ptr, 16);
-            int total_hex = 32;
-            char *hex_full = (char*)internal_malloc((total_hex + 1) * sizeof(char));
-            for (int _b = 15; _b >= 0; _b--) {
-                snprintf(hex_full + (15 - _b) * 2, 3, "%02X", fp128_bytes[_b]);
-            }
-            hex_full[total_hex] = '\0';
-            /* strip leading zeros, respect min_digits and width */
-            int _s = 0;
-            while (_s < total_hex - 1 && hex_full[_s] == '0') _s++;
-            int _dlen = total_hex - _s;
-            if (_dlen < 1) _dlen = 1;
-            if (min_digits < 1) min_digits = 1;
-            int _olen = _dlen > min_digits ? _dlen : min_digits;
-            char *_out = (char*)internal_malloc((_olen + (width > 0 ? width : 0) + 2) * sizeof(char));
-            int _lz = _olen - _dlen;
-            for (int _i = 0; _i < _lz; _i++) _out[_i] = '0';
-            memcpy(_out + _lz, hex_full + _s, _dlen);
-            _out[_olen] = '\0';
-            internal_free(hex_full);
-            if (width > 0 && _olen > width) {
-                char *stars = (char*)internal_malloc((width + 1) * sizeof(char));
-                memset(stars, '*', width);
-                stars[width] = '\0';
-                *result = stars;
-            } else if (width > _olen) {
-                char *padded = (char*)internal_malloc((width + 1) * sizeof(char));
-                memset(padded, ' ', width - _olen);
-                memcpy(padded + (width - _olen), _out, _olen + 1);
-                internal_free(_out);
-                *result = padded;
-            } else {
-                *result = _out;
-            }
-            return; /* early return: skip the generic uint64 path below */
         }
         default:
             fprintf(stderr, "Unsupported type for Z edit descriptor\n");
@@ -4031,6 +4032,66 @@ void handle_hexadecimal(const char* format, Primitive_Types type,
     internal_free(formatted);
 }
 
+static void i128_digits_base(const void *src, int base, char *dst) {
+#if defined(__SIZEOF_INT128__)
+    uint64_t lo, hi;
+    memcpy(&lo, src, 8);
+    memcpy(&hi, (const unsigned char*)src + 8, 8);
+    unsigned __int128 v = ((unsigned __int128)hi << 64) | lo;
+    if (v == 0) {
+        dst[0] = '0';
+        dst[1] = '\0';
+        return;
+    }
+    char rev[160];
+    int n = 0;
+    while (v != 0) {
+        int d = (int)(v % (unsigned)base);
+        rev[n++] = (char)(d < 10 ? '0' + d : 'A' + (d - 10));
+        v /= (unsigned)base;
+    }
+    for (int i = 0; i < n; i++) dst[i] = rev[n - 1 - i];
+    dst[n] = '\0';
+#else
+    (void)src;
+    (void)base;
+    dst[0] = '0';
+    dst[1] = '\0';
+#endif
+}
+
+static void emit_boz_field(char **result, const char *digits, int width, int min_digits) {
+    int digits_len = (int)strlen(digits);
+    if (digits_len < 1) {
+        digits = "0";
+        digits_len = 1;
+    }
+    if (min_digits < 1) min_digits = 1;
+    int output_len = digits_len > min_digits ? digits_len : min_digits;
+    char *formatted = (char*)internal_malloc((size_t)output_len + 1);
+    int leading_zeros = output_len - digits_len;
+    memset(formatted, '0', (size_t)leading_zeros);
+    memcpy(formatted + leading_zeros, digits, (size_t)digits_len);
+    formatted[output_len] = '\0';
+    if (width > 0 && width < output_len) {
+        for (int i = 0; i < width; i++) {
+            *result = append_to_string(*result, "*");
+        }
+        internal_free(formatted);
+        return;
+    }
+    if (width > output_len) {
+        int padding = width - output_len;
+        char *spaces = (char*)internal_malloc((size_t)padding + 1);
+        memset(spaces, ' ', (size_t)padding);
+        spaces[padding] = '\0';
+        *result = append_to_string(*result, spaces);
+        internal_free(spaces);
+    }
+    *result = append_to_string(*result, formatted);
+    internal_free(formatted);
+}
+
 void handle_octal(const char* format, Primitive_Types type,
         void* arg_ptr, char** result) {
     int width = 0;
@@ -4044,6 +4105,13 @@ void handle_octal(const char* format, Primitive_Types type,
         if (parsed > 0) {
             min_digits = parsed;
         }
+    }
+
+    if (type == INTEGER_128_TYPE) {
+        char digits[64];
+        i128_digits_base(arg_ptr, 8, digits);
+        emit_boz_field(result, digits, width, min_digits);
+        return;
     }
 
     int bit_count = 0;
@@ -5949,6 +6017,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     if (dot != NULL) {
                         min_digit_cnt = atoi(dot + 1); // get digits after '.'
                     }
+                    if (s_info.current_element_type == INTEGER_128_TYPE) {
+                        char digits[160];
+                        char* temp_buf = (char*)internal_malloc(1);
+                        temp_buf[0] = '\0';
+                        i128_digits_base(s_info.current_arg_info.current_arg, 2, digits);
+                        emit_boz_field(&temp_buf, digits, width, min_digit_cnt);
+                        int64_t temp_len = strlen(temp_buf);
+                        result = write_to_result_at_pos(al, result, &result_extent, result_len, temp_buf, temp_len);
+                        result_len += temp_len;
+                        internal_free(temp_buf);
+                    } else {
                     int bit_size = 0;
                     uint64_t uval = 0;
                     char fmt_type = primitive_enum_to_format_specifier(s_info.current_element_type);
@@ -6049,6 +6128,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                         }
                         result = write_to_result_at_pos(al, result, &result_extent, result_len, binary_str, bin_len);
                         result_len += bin_len;
+                    }
                     }
                 } else if (tolower(value[0]) == 'z') {
                     char* temp_buf = (char*)internal_malloc(1); temp_buf[0] = '\0';
@@ -20215,6 +20295,11 @@ static void write_nml_value(nml_writer_t *w, const lfortran_nml_item_t *item, in
             write_str(w, buf);
             break;
 
+        case LFORTRAN_NML_INT16:
+            i128_format(ptr, buf);
+            write_str(w, buf);
+            break;
+
         case LFORTRAN_NML_REAL4:
             snprintf(buf, sizeof(buf), "%.7E", *(float*)ptr);
             write_str(w, buf);
@@ -20312,6 +20397,8 @@ static int64_t get_element_size(const lfortran_nml_item_t *item) {
         case LFORTRAN_NML_LOGICAL8:
         case LFORTRAN_NML_REAL8:
             return 8;
+        case LFORTRAN_NML_INT16:
+            return 16;
         case LFORTRAN_NML_COMPLEX4:
             return sizeof(struct _lfortran_complex_32);
         case LFORTRAN_NML_COMPLEX8:
@@ -20733,6 +20820,11 @@ static void parse_nml_value(const char *value_str, lfortran_nml_item_t *item, in
             break;
         case LFORTRAN_NML_INT8:
             *(int64_t*)ptr = (int64_t)atoll(value_str);
+            break;
+        case LFORTRAN_NML_INT16:
+            if (!store_i128_decimal(value_str, ptr)) {
+                memset(ptr, 0, 16);
+            }
             break;
         case LFORTRAN_NML_REAL4:
             *(float*)ptr = (float)atof(value_str);
