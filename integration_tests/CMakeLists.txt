@@ -4810,9 +4810,6 @@ RUN(NAME mangle_underscore_external_02 LABELS gfortran llvm EXTRAFILES mangle_un
     EXTRA_ARGS --mangle-underscore-external) # global procedures defined in another object file link (#14164)
 RUN(NAME mangle_underscore_external_03 LABELS gfortran llvm EXTRAFILES mangle_underscore_external_03b.f90
     EXTRA_ARGS --mangle-underscore-external) # `f` and `f_` stay distinct global procedures
-RUN(NAME mangle_underscore_external_04 LABELS gfortran llvm
-    EXTRAFILES mangle_underscore_external_04c.c
-    EXTRA_ARGS --mangle-underscore-external) # bind(c) names are not given a trailing underscore
 RUN(NAME external_14 LABELS gfortran llvm EXTRAFILES external_14_module.f90)
 RUN(NAME external_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
 RUN(NAME external_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --implicit-interface)
@@ -7923,6 +7920,7 @@ RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
 
 
 
+
 RUN(NAME cpp_flag_01 LABELS gfortran llvm
         EXTRA_ARGS -cpp -DCPP_FLAG_01
         GFORTRAN_ARGS -cpp -DCPP_FLAG_01)
@@ -7933,6 +7931,9 @@ RUN(NAME implicit_unallocated_01 LABELS gfortran llvm
     EXTRA_ARGS --implicit-interface --mangle-underscore-external)
 RUN(NAME minmax_03 LABELS gfortran llvm)
 RUN(NAME integer_pow_negative LABELS gfortran llvm)
+RUN(NAME mangle_underscore_external_04 LABELS gfortran llvm
+    EXTRAFILES mangle_underscore_external_04c.c
+    EXTRA_ARGS --mangle-underscore-external)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
