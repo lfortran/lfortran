@@ -227,6 +227,13 @@ public:
         return std::move(src);
     }
 
+    std::string c_character_comparison(const std::string &left,
+            const std::string &left_len, const std::string &right,
+            const std::string &right_len) const {
+        return "str_compare(" + left + ", " + left_len + ", " +
+            right + ", " + right_len + ")";
+    }
+
     // Output configuration:
     // Use std::string or char*
     bool gen_stdstring;
@@ -3491,8 +3498,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 x.m_left, x.base.base.loc);
             std::string right_len = c_character_length(
                 x.m_right, x.base.base.loc);
-            src = "str_compare(" + left + ", " + left_len + ", " +
-                right + ", " + right_len + ") " + op_str + " 0";
+            src = c_character_comparison(left, left_len, right, right_len) +
+                " " + op_str + " 0";
             last_expr_precedence = comparison_precedence;
         } else {
             src += op_str;
@@ -4134,7 +4141,26 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string indent(indentation_level * indentation_spaces, ' ');
         this->visit_expr(*x.m_test);
         std::string var = std::move(src);
-        std::string out = indent + "if (";
+        bool character_case = is_c && ASRUtils::is_character(
+            *ASRUtils::expr_type(x.m_test));
+        std::string var_len, out;
+        if (character_case) {
+            std::string length = c_character_length(
+                x.m_test, x.base.base.loc);
+            std::string selected = "_lfortran_select_case_" +
+                std::to_string(const_vars_count++);
+            var_len = selected + "_len";
+            out = indent + "const char* " + selected + " = " + var + ";\n" +
+                indent + "int64_t " + var_len + " = " + length + ";\n";
+            var = selected;
+        }
+        out += indent + "if (";
+        auto compare_character = [&](ASR::expr_t* label,
+                const std::string &value, const char *op) {
+            return c_character_comparison(var, var_len, value,
+                c_character_length(label, x.base.base.loc)) +
+                " " + op + " 0";
+        };
         // Only a named SELECT CASE construct can be left by an EXIT.
         if (x.m_name != nullptr) {
             construct_frames.push_back({x.m_name, false, false, "", ""});
@@ -4151,7 +4177,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     if (j > 0)
                         out += " || ";
                     this->visit_expr(*case_stmt->m_test[j]);
-                    out += var + " == " + src;
+                    if (character_case) {
+                        std::string label = std::move(src);
+                        out += compare_character(case_stmt->m_test[j],
+                            label, "==");
+                    } else {
+                        out += var + " == " + src;
+                    }
                 }
                 out += ") {\n";
                 bracket_open--;
@@ -4179,7 +4211,20 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         "Empty range in select statement", { x.base.base.loc }, "");
                     throw Abort();
                 }
-                if (left.empty()) {
+                if (character_case) {
+                    if (left.empty()) {
+                        out += compare_character(case_stmt_range->m_end,
+                            right, "<=");
+                    } else if (right.empty()) {
+                        out += compare_character(case_stmt_range->m_start,
+                            left, ">=");
+                    } else {
+                        out += compare_character(case_stmt_range->m_start,
+                            left, ">=") + " && " +
+                            compare_character(case_stmt_range->m_end,
+                                right, "<=");
+                    }
+                } else if (left.empty()) {
                     out += var + " <= " + right;
                 } else if (right.empty()) {
                     out += var + " >= " + left;
