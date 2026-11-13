@@ -5025,8 +5025,34 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
                 result, dest_type));
     } else if (ASR::is_a<ASR::IntegerConstant_t>(*left) && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
-        int64_t left_value = ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n;
-        int64_t right_value = ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n;
+        ASR::IntegerConstant_t *lc = ASR::down_cast<ASR::IntegerConstant_t>(left);
+        ASR::IntegerConstant_t *rc = ASR::down_cast<ASR::IntegerConstant_t>(right);
+        if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 16) {
+            Int128 lv = integer_constant_to_i128(lc);
+            Int128 rv = integer_constant_to_i128(rc);
+            if ((op == ASR::Div || op == ASR::Pow) && int128_is_zero(rv) && op == ASR::Div) {
+                division_by_zero = true;
+                return nullptr;
+            }
+            Int128 result;
+            switch (op) {
+                case ASR::Add: result = int128_add(lv, rv); break;
+                case ASR::Sub: result = int128_sub(lv, rv); break;
+                case ASR::Mul: result = int128_mul(lv, rv); break;
+                case ASR::Div: result = int128_div(lv, rv); break;
+                case ASR::Pow: result = int128_pow(lv, rv); break;
+                case ASR::BitAnd: result = int128_and(lv, rv); break;
+                case ASR::BitOr: result = int128_or(lv, rv); break;
+                case ASR::BitXor: result = int128_xor(lv, rv); break;
+                case ASR::BitLShift: result = int128_shl(lv, rv); break;
+                case ASR::BitRShift: result = int128_shr(lv, rv); break;
+                default: return nullptr;
+            }
+            return ASRUtils::EXPR(make_IntegerConstant_i128(al, left->base.loc,
+                result, dest_type));
+        }
+        int64_t left_value = lc->m_n;
+        int64_t right_value = rc->m_n;
 
         if (op == ASR::Div && right_value == 0) {
             division_by_zero = true;
@@ -5090,8 +5116,15 @@ ASR::expr_t* fold_compare_constants(Allocator &al, ASR::expr_t* left,
     bool result;
     if (ASR::is_a<ASR::IntegerConstant_t>(*left)
             && ASR::is_a<ASR::IntegerConstant_t>(*right)) {
-        result = perform_compare(ASR::down_cast<ASR::IntegerConstant_t>(left)->m_n,
-            ASR::down_cast<ASR::IntegerConstant_t>(right)->m_n, op);
+        ASR::IntegerConstant_t *lc = ASR::down_cast<ASR::IntegerConstant_t>(left);
+        ASR::IntegerConstant_t *rc = ASR::down_cast<ASR::IntegerConstant_t>(right);
+        if (extract_kind_from_ttype_t(lc->m_type) == 16
+                || extract_kind_from_ttype_t(rc->m_type) == 16) {
+            result = perform_compare(int128_cmp(integer_constant_to_i128(lc),
+                integer_constant_to_i128(rc)), 0, op);
+        } else {
+            result = perform_compare(lc->m_n, rc->m_n, op);
+        }
     } else if (ASR::is_a<ASR::RealConstant_t>(*left)
             && ASR::is_a<ASR::RealConstant_t>(*right)) {
         ASR::RealConstant_t* lc = ASR::down_cast<ASR::RealConstant_t>(left);
@@ -9189,6 +9222,11 @@ bool is_value_equal(ASR::expr_t* test_expr, ASR::expr_t* desired_expr) {
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* test_int = ASR::down_cast<ASR::IntegerConstant_t>(test_value);
             ASR::IntegerConstant_t* desired_int = ASR::down_cast<ASR::IntegerConstant_t>(desired_value);
+            if (integer_constant_is_wide(test_int) || integer_constant_is_wide(desired_int)) {
+                Int128 a = integer_constant_to_i128(test_int);
+                Int128 b = integer_constant_to_i128(desired_int);
+                return a.lo == b.lo && a.hi == b.hi;
+            }
             return test_int->m_n == desired_int->m_n;
         }
         case ASR::exprType::StringConstant: {
@@ -11355,6 +11393,11 @@ bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* intconst_x = ASR::down_cast<ASR::IntegerConstant_t>(x);
             ASR::IntegerConstant_t* intconst_y = ASR::down_cast<ASR::IntegerConstant_t>(y);
+            if (integer_constant_is_wide(intconst_x) || integer_constant_is_wide(intconst_y)) {
+                Int128 vx = integer_constant_to_i128(intconst_x);
+                Int128 vy = integer_constant_to_i128(intconst_y);
+                return vx.lo == vy.lo && vx.hi == vy.hi;
+            }
             return intconst_x->m_n == intconst_y->m_n;
         }
         case ASR::exprType::RealConstant: {

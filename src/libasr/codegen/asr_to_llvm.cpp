@@ -20015,9 +20015,15 @@ public:
                 break;
             }
             case 16 : {
-                // The ASR payload is int64. Sign-extend it into i128.
+                // A value that does not fit in int64 is a pointer to the
+                // 16-byte payload. Any other kind-16 constant is the int64.
+                Int128 wide = Int128::from_i64(val);
+                if (BigInt::is_int_ptr(val)) {
+                    wide = *(Int128*) BigInt::int_to_ptr(val);
+                }
+                uint64_t words[2] = { wide.lo, wide.hi };
                 tmp = llvm::ConstantInt::get(context, llvm::APInt(128,
-                    static_cast<uint64_t>(val), true));
+                    llvm::ArrayRef<uint64_t>(words, 2)));
                 break;
             }
             default : {

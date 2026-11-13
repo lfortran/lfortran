@@ -1397,10 +1397,18 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
         if (ASRUtils::is_integer(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
                 if (ASR::is_a<ASR::IntegerConstant_t>(*ASRUtils::expr_value(operand))) {
-                    int64_t op_value = ASR::down_cast<ASR::IntegerConstant_t>(
-                                            ASRUtils::expr_value(operand))->m_n;
-                    value = ASR::down_cast<ASR::expr_t>(
-                        ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, result_type));
+                    ASR::IntegerConstant_t *op_const = ASR::down_cast<ASR::IntegerConstant_t>(
+                                            ASRUtils::expr_value(operand));
+                    if (ASRUtils::extract_kind_from_ttype_t(result_type) == 16) {
+                        value = ASRUtils::EXPR(ASRUtils::make_IntegerConstant_i128(
+                            al, x.base.base.loc,
+                            int128_neg(ASRUtils::integer_constant_to_i128(op_const)),
+                            result_type));
+                    } else {
+                        int64_t op_value = op_const->m_n;
+                        value = ASR::down_cast<ASR::expr_t>(
+                            ASR::make_IntegerConstant_t(al, x.base.base.loc, -op_value, result_type));
+                    }
                 } else if (ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(operand))) {
                     ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(operand));
                     int kind = ASRUtils::extract_kind_from_ttype_t(result_type);
@@ -29230,14 +29238,23 @@ public:
                 x.base.base.loc, ikind));
         if (BigInt::is_int_ptr(x.m_n)) {
             std::string str_repr = BigInt::largeint_to_string(x.m_n);
-            if( !BigInt::is_int64(str_repr) ) {
+            if (ikind == 16) {
+                Int128 wide;
+                if (!int128_from_decimal(str_repr, wide)) {
+                    diag.add(Diagnostic("Integer constant too big for integer(16)",
+                                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+                tmp = ASRUtils::make_IntegerConstant_i128(al, x.base.base.loc, wide, type);
+            } else if( !BigInt::is_int64(str_repr) ) {
                 diag.add(Diagnostic("Integer constants larger than 2^64-1 are not implemented yet",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
+            } else {
+                int64_t m_n = std::stoll(str_repr);
+                tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc,
+                                                    m_n, type);
             }
-            int64_t m_n = std::stoll(str_repr);
-            tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc,
-                                                m_n, type);
         } else {
             tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, x.m_n, type);
         }

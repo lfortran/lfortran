@@ -16,6 +16,7 @@
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
+#include <libasr/integer128.h>
 #include <libasr/string_utils.h>
 #include <libasr/utils.h>
 #include <libasr/casting_utils.h>
@@ -575,6 +576,33 @@ static inline ASR::ttype_t* type_get_past_allocatable_pointer(ASR::ttype_t* f) {
 }
 
 int extract_kind_from_ttype_t(const ASR::ttype_t* type);
+
+// A kind-16 constant whose value does not fit in a plain int64 (or whose
+// bit pattern would look like a BigInt pointer) keeps the 16 bytes behind
+// `m_n`. Every other integer constant is the int64 itself.
+inline bool integer_constant_is_wide(const ASR::IntegerConstant_t *x) {
+    return x && extract_kind_from_ttype_t(x->m_type) == 16
+        && BigInt::is_int_ptr(x->m_n);
+}
+
+inline Int128 integer_constant_to_i128(const ASR::IntegerConstant_t *x) {
+    if (integer_constant_is_wide(x)) {
+        Int128 *payload = (Int128*) BigInt::int_to_ptr(x->m_n);
+        return *payload;
+    }
+    return Int128::from_i64(x->m_n);
+}
+
+inline ASR::asr_t* make_IntegerConstant_i128(Allocator &al, const Location &loc,
+        Int128 value, ASR::ttype_t *type,
+        ASR::integerbozType boz = ASR::integerbozType::Decimal) {
+    if (!int128_needs_payload(value)) {
+        return ASR::make_IntegerConstant_t(al, loc, (int64_t)value.lo, type, boz);
+    }
+    Int128 *payload = al.make_new<Int128>();
+    *payload = value;
+    return ASR::make_IntegerConstant_t(al, loc, BigInt::ptr_to_int(payload), type, boz);
+}
 
 // Kind-aware RealConstant constructor from a `double`. For kind 4/8 the value
 // is stored directly; for kind=16 the double is widened to binary128 and the
@@ -1449,6 +1477,11 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) { // Returns
     switch( value_expr->type ) {
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(value_expr);
+            // A wide integer(16) does not fit in T. Callers fall back to the
+            // value expression instead of truncating the pointer tag.
+            if (integer_constant_is_wide(const_int)) {
+                return false;
+            }
             value = (T) const_int->m_n;
             break;
         }
