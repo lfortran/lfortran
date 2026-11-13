@@ -2626,8 +2626,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string indent(indentation_level*indentation_spaces, ' ');
         if (ASRUtils::is_array(target_type)) {
             bool inline_target = c_inline_pointer_array_member(x.m_target);
+            bool borrowed_descriptor = inline_target;
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                borrowed_descriptor = ASRUtils::is_arg_dummy(
+                    ASRUtils::EXPR2VAR(x.m_target)->m_intent);
+            }
             if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
-                if (inline_target) {
+                if (borrowed_descriptor) {
                     src = indent + target + "->data = NULL;\n"
                         + indent + target + "->is_allocated = false;\n";
                 } else {
@@ -2655,7 +2660,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 + indent + "    const void* " + tmp_name +
                     " = (const void*) (" + value + ");\n"
                 + indent + "    if (" + tmp_name + " != NULL) {\n";
-            if (!inline_target) {
+            if (!borrowed_descriptor) {
                 src += indent + "        if (" + target + " == NULL) " +
                     target + " = (void*) _lfortran_calloc_alloc("
                     "_lfortran_get_default_allocator(), 1, sizeof(*" +
@@ -2664,7 +2669,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src += indent + "        memcpy(" + target + ", " + tmp_name +
                     ", sizeof(*" + target + "));\n"
                 + indent + "        " + target + "->is_allocated = false;\n"
-                + indent + (inline_target ? "    } else {\n" :
+                + indent + (borrowed_descriptor ? "    } else {\n" :
                     "    } else if (" + target + " != NULL) {\n")
                 + indent + "        " + target + "->data = NULL;\n"
                 + indent + "        " + target + "->is_allocated = false;\n"
@@ -3150,11 +3155,6 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                         c_scalar_allocatable_value(sv->m_type)) {
                     src = "(*" + src + ")";
                 }
-            } else if ((sv->m_intent == ASRUtils::intent_in
-                || sv->m_intent == ASRUtils::intent_inout)
-                && ASRUtils::is_array(sv->m_type)
-                && ASRUtils::is_pointer(sv->m_type)) {
-                src = "(*" + std::string(ASR::down_cast<ASR::Variable_t>(s)->m_name) + ")";
             } else if ((sv->m_intent == ASRUtils::intent_inout
                 || sv->m_intent == ASRUtils::intent_out)
                 && !ASRUtils::is_aggregate_type(sv->m_type) &&

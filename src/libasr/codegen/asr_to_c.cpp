@@ -344,11 +344,14 @@ public:
             do_not_initialize = false;
         }
         std::string sub;
+        bool is_array = ASRUtils::is_array(v.m_type);
+        // A pointer-array dummy borrows its actual's writable descriptor,
+        // whether that descriptor is local or stored inline in a component.
         bool use_ref = (v.m_intent == ASRUtils::intent_out ||
                         v.m_intent == ASRUtils::intent_inout ||
                         (c_scalar_allocatable(v.m_type) &&
-                         v.m_intent == ASRUtils::intent_unspecified));
-        bool is_array = ASRUtils::is_array(v.m_type);
+                         v.m_intent == ASRUtils::intent_unspecified))
+                    && !(is_array && ASRUtils::is_pointer(v.m_type));
         bool dummy = ASRUtils::is_arg_dummy(v.m_intent);
         bool inline_character = c_inline_char_storage(v);
         ASR::dimension_t* m_dims = nullptr;

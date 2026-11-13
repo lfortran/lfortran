@@ -19,6 +19,12 @@ module c_pointer_descriptor_ownership_02_m
         end function
     end interface
 contains
+    subroutine retarget(p, target)
+        integer, pointer, intent(inout) :: p(:)
+        integer, target, intent(in) :: target(-2:)
+        p => target
+    end subroutine
+
     subroutine exercise()
         type(box), allocatable :: first, second
         integer, target :: values(-2:2), alternate(3)
@@ -27,7 +33,9 @@ contains
         alternate(3) = 23
         allocate(first, second)
         if (associated(first%nested%inherited)) error stop 1
-        first%nested%inherited => values
+        call retarget(first%nested%inherited, values)
+        if (.not. associated(first%nested%inherited, values)) error stop 10
+        if (lbound(first%nested%inherited, 1) /= -2) error stop 11
         second%nested%inherited => values
         first%nested%direct => second%nested%inherited
         if (.not. associated(first%nested%direct, values)) error stop 2
@@ -41,6 +49,7 @@ contains
         deallocate(first)
         if (allocated(first)) error stop 7
         if (values(-2) /= 13) error stop 8
+        if (values(2) /= 19) error stop 12
     end subroutine
 end module
 
