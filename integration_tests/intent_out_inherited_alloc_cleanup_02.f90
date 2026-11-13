@@ -20,7 +20,9 @@ module intent_out_inherited_alloc_cleanup_02_m
     interface
         subroutine begin_count() bind(c)
         end subroutine
-        integer(c_int) function end_count() bind(c)
+        function end_count() result(n) bind(c)
+            import :: c_int
+            integer(c_int) :: n
         end function
     end interface
 contains
