@@ -393,6 +393,10 @@ filename = "../integration_tests/abort_01.f90"
 llvm = true
 
 [[test]]
+filename = "errors/bessel_j16_large_01.f90"
+asr = true
+
+[[test]]
 filename = "errors/array_size_01.f90"
 asr = true
 
