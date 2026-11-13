@@ -23,29 +23,24 @@
 // versions; the calls below follow the headers of each version.
 #include <lld/Common/Driver.h>
 #if LLVM_VERSION_MAJOR >= 17
+#ifdef __APPLE__
+LLD_HAS_DRIVER(macho)
+#else
 LLD_HAS_DRIVER(elf)
+#endif
+#endif
+
+#ifdef __APPLE__
+#include <cstdio>
+#include <llvm/Support/JSON.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <libasr/codegen/evaluator.h>
 #endif
 
 namespace {
 
-bool file_exists(const std::string &path) {
-    return llvm::sys::fs::exists(path);
-}
-
 bool is_dir(const std::string &path) {
     return llvm::sys::fs::is_directory(path);
-}
-
-void push_unique(std::vector<std::string> &paths, const std::string &path) {
-    if (path.empty()) {
-        return;
-    }
-    for (const std::string &existing : paths) {
-        if (existing == path) {
-            return;
-        }
-    }
-    paths.push_back(path);
 }
 
 std::string arch_of(const std::string &triple) {
@@ -64,6 +59,24 @@ std::string arch_of(const std::string &triple) {
         return "ppc64le";
     }
     return "";
+}
+
+#ifndef __APPLE__
+
+bool file_exists(const std::string &path) {
+    return llvm::sys::fs::exists(path);
+}
+
+void push_unique(std::vector<std::string> &paths, const std::string &path) {
+    if (path.empty()) {
+        return;
+    }
+    for (const std::string &existing : paths) {
+        if (existing == path) {
+            return;
+        }
+    }
+    paths.push_back(path);
 }
 
 std::string debian_multiarch(const std::string &arch) {
@@ -349,6 +362,8 @@ ElfToolchain discover_elf_toolchain(const std::string &triple, std::string &erro
     return toolchain;
 }
 
+#endif
+
 struct ArgList {
     std::vector<std::string> store;
 
@@ -395,6 +410,8 @@ void add_forwarded_linker_flags(ArgList &args, const std::vector<std::string> &f
     }
 }
 
+#ifndef __APPLE__
+
 void add_lib_if_present(ArgList &args, const std::vector<std::string> &dirs,
         const std::string &name, bool static_link) {
     bool present = static_link
@@ -429,24 +446,7 @@ int invoke_elf_link(const std::vector<const char *> &arguments) {
 #endif
 }
 
-} // namespace
-
-bool elf_lld_selected(const std::string &triple, const std::string &host_triple,
-        const std::string &requested_linker) {
-    if (!requested_linker.empty() && requested_linker != "lld") {
-        return false;
-    }
-    if (triple.find("linux") == std::string::npos) {
-        return false;
-    }
-    std::string arch = arch_of(triple);
-    if (arch.empty() || arch != arch_of(host_triple)) {
-        return false;
-    }
-    return true;
-}
-
-int link_elf_with_lld(
+int link_elf(
         const std::vector<std::string> &object_files,
         const std::vector<std::string> &extra_objects,
         const std::string &outfile,
@@ -637,6 +637,236 @@ int link_elf_with_lld(
         return 10;
     }
     return 0;
+}
+
+#else
+
+// The first line `command` prints, or "" if it fails.
+std::string first_output_line(const std::string &command) {
+    FILE *pipe = popen(command.c_str(), "r");
+    if (pipe == nullptr) {
+        return "";
+    }
+    char buffer[4096];
+    std::string line;
+    if (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
+        line = buffer;
+    }
+    if (pclose(pipe) != 0) {
+        return "";
+    }
+    while (!line.empty() && (line.back() == '\n' || line.back() == '\r')) {
+        line.pop_back();
+    }
+    return line;
+}
+
+// The SDK that Apple's compiler driver would use: SDKROOT, then the one
+// xcrun selects (which follows xcode-select), then the usual install paths.
+std::string find_macos_sdk() {
+    if (const char *sdkroot = std::getenv("SDKROOT")) {
+        if (is_dir(sdkroot)) {
+            return sdkroot;
+        }
+    }
+    std::string sdk = first_output_line("xcrun --sdk macosx --show-sdk-path 2>/dev/null");
+    if (!sdk.empty() && is_dir(sdk)) {
+        return sdk;
+    }
+    for (const char *path : {
+            "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+            "/Applications/Xcode.app/Contents/Developer/Platforms/"
+                "MacOSX.platform/Developer/SDKs/MacOSX.sdk"}) {
+        if (is_dir(path)) {
+            return path;
+        }
+    }
+    return "";
+}
+
+// The SDK version recorded in the executable, such as "26.2".
+std::string macos_sdk_version(const std::string &sdk) {
+    auto buffer = llvm::MemoryBuffer::getFile(sdk + "/SDKSettings.json");
+    if (!buffer) {
+        return "";
+    }
+    llvm::Expected<llvm::json::Value> value
+        = llvm::json::parse((*buffer)->getBuffer());
+    if (!value) {
+        llvm::consumeError(value.takeError());
+        return "";
+    }
+    if (const llvm::json::Object *object = value->getAsObject()) {
+        if (auto version = object->getString("Version")) {
+            return version->str();
+        }
+    }
+    return "";
+}
+
+int invoke_macho_link(const std::vector<const char *> &arguments) {
+#if LLVM_VERSION_MAJOR >= 17
+    const ::lld::DriverDef drivers[] = {
+        {::lld::Darwin, &::lld::macho::link},
+    };
+    ::lld::Result result = ::lld::lldMain(
+        arguments, llvm::outs(), llvm::errs(), drivers);
+    return result.retCode;
+#else
+    // CMake enables the Mach-O port from LLVM 15 on.
+    bool ok = ::lld::macho::link(arguments, llvm::outs(), llvm::errs(),
+        /*exitEarly=*/false, /*disableOutput=*/false);
+    return ok ? 0 : 1;
+#endif
+}
+
+int link_macho(
+        const std::vector<std::string> &object_files,
+        const std::vector<std::string> &extra_objects,
+        const std::string &outfile,
+        const std::string &runtime_library_dir,
+        const std::string &runtime_lib,
+        bool shared_executable, bool verbose,
+        const std::vector<std::string> &lib_dirs,
+        const std::vector<std::string> &libraries,
+        const std::vector<std::string> &linker_flags,
+        const std::vector<std::string> &extra_libs,
+        const std::string &openmp_lib_dir, bool openmp,
+        const std::string &triple) {
+    std::string sdk = find_macos_sdk();
+    if (sdk.empty()) {
+        std::cerr << "could not find the macOS SDK. Set SDKROOT or install "
+            "the Xcode Command Line Tools" << std::endl;
+        return 10;
+    }
+    // The same release recorded in the object files. An explicit
+    // MACOSX_DEPLOYMENT_TARGET is already part of `triple`; otherwise this
+    // is the version the triple implies, which is Apple clang's default.
+    std::string min_version = LCompilers::macos_platform_version(triple);
+    if (min_version.empty()) {
+        std::cerr << "could not determine the macOS deployment target from '"
+            << triple << "'" << std::endl;
+        return 10;
+    }
+    std::string sdk_version = macos_sdk_version(sdk);
+    if (sdk_version.empty()) {
+        sdk_version = min_version;
+    }
+    std::string arch = arch_of(triple);
+
+    // The arguments Apple's clang passes to ld64. A macOS executable is
+    // always dynamically linked against libSystem, so a static link (which
+    // only selects the static Fortran runtime) is an ordinary link here.
+    ArgList args;
+    args.add("ld64.lld");
+    args.add("-arch");
+    args.add(arch == "aarch64" ? "arm64" : arch);
+    args.add("-platform_version");
+    args.add("macos");
+    args.add(min_version);
+    args.add(sdk_version);
+    args.add("-syslibroot");
+    args.add(sdk);
+    if (shared_executable) {
+        args.add("-dylib");
+    }
+    args.add("-o");
+    args.add(outfile);
+    for (const std::string &object : object_files) {
+        args.add(object);
+    }
+    for (const std::string &object : extra_objects) {
+        args.add(object);
+    }
+    for (const std::string &dir : lib_dirs) {
+        args.add("-L" + dir);
+    }
+    args.add("-L" + runtime_library_dir);
+    if (is_dir("/usr/local/lib")) {
+        args.add("-L/usr/local/lib");
+    }
+    for (const std::string &library : libraries) {
+        args.add("-l" + library);
+    }
+    args.add("-rpath");
+    args.add(runtime_library_dir);
+    add_forwarded_linker_flags(args, linker_flags);
+    args.add("-l" + runtime_lib);
+    args.add("-lm");
+    if (openmp && !openmp_lib_dir.empty()) {
+        args.add("-L" + openmp_lib_dir);
+        args.add("-rpath");
+        args.add(openmp_lib_dir);
+        args.add("-lomp");
+    }
+    for (const std::string &library : extra_libs) {
+        args.add(library);
+    }
+    args.add("-lSystem");
+
+    if (verbose) {
+        std::cout << args.command() << std::endl;
+    }
+    std::vector<const char *> pointers = args.pointers();
+    int status = invoke_macho_link(pointers);
+    if (status != 0) {
+        std::cerr << "The built-in LLD linker failed." << std::endl;
+        return 10;
+    }
+    return 0;
+}
+
+#endif
+
+} // namespace
+
+bool lld_selected(const std::string &triple, const std::string &host_triple,
+        const std::string &requested_linker) {
+    if (!requested_linker.empty() && requested_linker != "lld") {
+        return false;
+    }
+#ifdef __APPLE__
+    if (triple.find("darwin") == std::string::npos
+            && triple.find("macos") == std::string::npos) {
+        return false;
+    }
+#else
+    if (triple.find("linux") == std::string::npos) {
+        return false;
+    }
+#endif
+    std::string arch = arch_of(triple);
+    if (arch.empty() || arch != arch_of(host_triple)) {
+        return false;
+    }
+    return true;
+}
+
+int link_with_lld(
+        const std::vector<std::string> &object_files,
+        const std::vector<std::string> &extra_objects,
+        const std::string &outfile,
+        const std::string &runtime_library_dir,
+        const std::string &runtime_lib,
+        bool static_executable, bool shared_executable, bool verbose,
+        const std::vector<std::string> &lib_dirs,
+        const std::vector<std::string> &libraries,
+        const std::vector<std::string> &linker_flags,
+        const std::vector<std::string> &extra_libs,
+        const std::string &openmp_lib_dir, bool openmp,
+        const std::string &triple) {
+#ifdef __APPLE__
+    (void)static_executable;
+    return link_macho(object_files, extra_objects, outfile,
+        runtime_library_dir, runtime_lib, shared_executable, verbose,
+        lib_dirs, libraries, linker_flags, extra_libs, openmp_lib_dir,
+        openmp, triple);
+#else
+    return link_elf(object_files, extra_objects, outfile,
+        runtime_library_dir, runtime_lib, static_executable,
+        shared_executable, verbose, lib_dirs, libraries, linker_flags,
+        extra_libs, openmp_lib_dir, openmp, triple);
+#endif
 }
 
 #endif

@@ -26,6 +26,7 @@
 #include "llvm/ExecutionEngine/SectionMemoryManager.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/Support/MathExtras.h"
 #if LLVM_VERSION_MAJOR < 8
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/ExecutionEngine/Orc/Legacy.h"
@@ -33,6 +34,7 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/IR/Mangler.h"
 #endif
+#include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
@@ -58,6 +60,63 @@
 
 namespace llvm {
 namespace orc {
+
+#ifdef __EMSCRIPTEN__
+// There is no ORC JIT to run under Emscripten, and its LLVM is built without
+// RTTI, while LFortran keeps RTTI for xeus: a subclass's typeinfo would refer
+// to a SectionMemoryManager typeinfo that does not exist.
+using JITSectionMemoryManager = SectionMemoryManager;
+#else
+// The GNU unwinder indexes an object's entire min/max PC range. Keep its code
+// sections together so another object's code cannot fall inside that range.
+class ContiguousSectionMemoryManager final : public SectionMemoryManager {
+  uint8_t *CodeBase = nullptr;
+  uintptr_t CodeSize = 0;
+  uintptr_t CodeOffset = 0;
+#if LLVM_VERSION_MAJOR >= 16
+  using SectionAlignment = Align;
+#else
+  using SectionAlignment = uint32_t;
+#endif
+
+public:
+  bool needsToReserveAllocationSpace() override { return true; }
+
+  void reserveAllocationSpace(uintptr_t Size, SectionAlignment CodeAlign,
+                              uintptr_t, SectionAlignment,
+                              uintptr_t, SectionAlignment) override {
+    assert(!CodeBase && "one code reservation per object");
+    CodeSize = Size;
+    if (Size == 0)
+      return;
+#if LLVM_VERSION_MAJOR >= 16
+    unsigned Alignment = CodeAlign.value();
+#else
+    unsigned Alignment = CodeAlign;
+#endif
+    CodeBase = SectionMemoryManager::allocateCodeSection(Size, Alignment, 0, "");
+  }
+
+  uint8_t *allocateCodeSection(uintptr_t Size, unsigned Alignment,
+                               unsigned SectionID,
+                               StringRef SectionName) override {
+    if (CodeBase) {
+      uintptr_t Offset = alignTo(CodeOffset, Alignment ? Alignment : 16);
+      if (Offset <= CodeSize && Size <= CodeSize - Offset) {
+        CodeOffset = Offset + Size;
+        return CodeBase + Offset;
+      }
+    }
+    // RuntimeDyld reserves room for every code section, so this is not
+    // expected. Never hand out memory past the reservation; a separate
+    // mapping only loses the contiguity.
+    return SectionMemoryManager::allocateCodeSection(Size, Alignment,
+                                                     SectionID, SectionName);
+  }
+};
+
+using JITSectionMemoryManager = ContiguousSectionMemoryManager;
+#endif
 
 class KaleidoscopeJIT {
 private:
@@ -91,10 +150,10 @@ public:
         ES(std::move(ES)),
 #if LLVM_VERSION_MAJOR >= 21
         ObjectLayer(*this->ES,
-                    [](const llvm::MemoryBuffer &) { return std::make_unique<SectionMemoryManager>(); }),
+                    [](const llvm::MemoryBuffer &) { return std::make_unique<JITSectionMemoryManager>(); }),
 #else
         ObjectLayer(*this->ES,
-                    []() { return std::make_unique<SectionMemoryManager>(); }),
+                    []() { return std::make_unique<JITSectionMemoryManager>(); }),
 #endif
 #if LLVM_VERSION_MAJOR >= 10
         CompileLayer(*this->ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
@@ -158,7 +217,7 @@ public:
         TM(std::move(TM_)), DL(TM->createDataLayout()),
         ObjectLayer(ES, [this](VModuleKey) {
           return RTDyldObjectLinkingLayer::Resources{
-              std::make_shared<SectionMemoryManager>(), Resolver};
+              std::make_shared<JITSectionMemoryManager>(), Resolver};
         }),
         CompileLayer(ObjectLayer, SimpleCompiler(*TM)) {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);

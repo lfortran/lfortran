@@ -102,6 +102,14 @@ struct GpuDeviceCapabilities {
     // meet in shared memory behind a block barrier.
     int lanes_block = 1;
     int64_t lanes_block_iterations_max = 1024;
+    // A kernel whose lanes share out a sum that reads across the columns of
+    // an array, each lane its own column, while one lane per iteration
+    // would read along them with consecutive threads (gpu_vector_lanes.cpp,
+    // give_lanes), gets lanes only for a launch of at most this many
+    // iterations: so few that one thread per iteration leaves the GPU
+    // nearly idle, each waiting on one load after another. Zero gives such
+    // a kernel no lanes.
+    int64_t lanes_scattered_iterations_max = 0;
     // Whether the lanes of an iteration can share a loop that accumulates
     // into private scalars and combine what each lane accumulated
     // (GpuLaneReduce).
@@ -119,6 +127,18 @@ struct GpuDeviceCapabilities {
     // iteration of the outer loop per lane: the lanes then read along the
     // inner loop's consecutive elements, not a group's length apart.
     bool lane_inner_reductions_first = false;
+
+    // Whether adjacent elements an iteration reads together may be read as
+    // one vector (gpu_wide_loads.cpp).
+    bool wide_loads = false;
+
+    // Whether the slots a reduction fills, which the host folds right after
+    // every launch, are allocated between lfortran_gpu_begin_host_allocations
+    // and lfortran_gpu_end_host_allocations, so that the runtime keeps them
+    // out of managed memory (lfortran_gpu_cuda.c): the host reading the slots
+    // a kernel wrote would move each of their pages from the device and the
+    // next launch move it back, one page fault at a time.
+    bool reduction_slots_in_host_memory = false;
 
     int threads_per_block = 256;
 

@@ -1,0 +1,325 @@
+#include <stdint.h>
+
+// The lanes of an iteration are consecutive threads of a warp, or,
+// with more than 32 of them, all the threads of a block.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_combine(T v, T w) {
+    return op == 0 ? v + w : op == 1 ? v * w
+        : op == 2 ? (w < v ? w : v) : (w > v ? w : v);
+}
+
+// The lanes are the warps of a block: each combines its own lanes,
+// and every lane then folds the partial results of the warps in the
+// same order.
+template <int op, typename T>
+__device__ __noinline__ T __lfortran_block_reduce(T v, int lanes) {
+    #pragma unroll
+    for (int offset = 16; offset > 0; offset >>= 1) {
+        v = __lfortran_lane_combine<op>(v,
+            __shfl_xor_sync(0xffffffffu, v, offset, 32));
+    }
+    __shared__ T partial[32];
+    if ((threadIdx.x & 31u) == 0) partial[threadIdx.x >> 5] = v;
+    __syncthreads();
+    T r = partial[0];
+    for (int i = 1; i < (lanes >> 5); i++) {
+        r = __lfortran_lane_combine<op>(r, partial[i]);
+    }
+    __syncthreads();
+    return r;
+}
+
+// The combination of what the `lanes` lanes of an iteration hold,
+// in every lane: 0 adds, 1 multiplies, 2 takes the smallest, 3 the
+// largest. With one lane, the lane's own value.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce(T v, int lanes, unsigned mask) {
+    if (lanes == 32 || lanes == 16) {
+        // The common sizes, with the shuffles unrolled.
+        #pragma unroll
+        for (int offset = 16; offset > 0; offset >>= 1) {
+            if (offset < lanes) {
+                v = __lfortran_lane_combine<op>(v,
+                    __shfl_xor_sync(mask, v, offset, lanes));
+            }
+        }
+        return v;
+    }
+    for (int offset = lanes >> 1; offset > 0; offset >>= 1) {
+        v = __lfortran_lane_combine<op>(v,
+            __shfl_xor_sync(mask, v, offset, lanes));
+    }
+    return v;
+}
+
+// For a kernel whose iterations may have the lanes of a block. Its
+// barriers keep the other kernels from reordering their loads, so
+// the others do not call these.
+template <int op, typename T>
+__device__ inline T __lfortran_lane_reduce_block(T v, int lanes, unsigned mask) {
+    if (lanes > 32) return __lfortran_block_reduce<op>(v, lanes);
+    return __lfortran_lane_reduce<op>(v, lanes, mask);
+}
+
+__device__ __noinline__ void __lfortran_block_barrier() {
+    __syncthreads();
+}
+
+// Waits for the other lanes of the iteration.
+__device__ inline void __lfortran_lane_barrier(int lanes, unsigned mask) {
+    if (lanes > 1) __syncwarp(mask);
+}
+
+__device__ inline void __lfortran_lane_barrier_block(int lanes, unsigned mask) {
+    if (lanes > 32) __lfortran_block_barrier();
+    else if (lanes > 1) __syncwarp(mask);
+}
+
+template <typename T>
+__device__ __noinline__ T __lfortran_block_broadcast(T v, int lanes) {
+    __shared__ T first;
+    if ((threadIdx.x % (unsigned)lanes) == 0) first = v;
+    __syncthreads();
+    T r = first;
+    __syncthreads();
+    return r;
+}
+
+// The value of the first lane of the iteration, in every lane.
+template <typename T>
+__device__ inline T __lfortran_lane_broadcast(T v, int lanes, unsigned mask) {
+    return lanes > 1 ? __shfl_sync(mask, v, 0, lanes) : v;
+}
+
+template <typename T>
+__device__ inline T __lfortran_lane_broadcast_block(T v, int lanes, unsigned mask) {
+    if (lanes > 32) return __lfortran_block_broadcast(v, lanes);
+    return __lfortran_lane_broadcast(v, lanes, mask);
+}
+
+// The 16 bytes that start at `p`: read at once when `ok` says `p` is a
+// multiple of 16, element by element, put together, when it is not.
+// The elements are taken out of the 16 bytes, so that the two ways
+// meet before the elements are separated.
+template <typename T>
+__device__ __forceinline__ uint4 __lfortran_wide_vector(bool ok, const T* p) {
+    if (ok) return *reinterpret_cast<const uint4*>(p);
+    T t[16 / sizeof(T)];
+    #pragma unroll
+    for (int i = 0; i < 16 / (int)sizeof(T); i++) t[i] = p[i];
+    uint4 v;
+    __builtin_memcpy(&v, t, 16);
+    return v;
+}
+
+template <typename T>
+__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a, T &b) {
+    uint4 v = __lfortran_wide_vector(ok, p);
+    const T* e = reinterpret_cast<const T*>(&v);
+    a = e[0]; b = e[1];
+}
+
+template <typename T>
+__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a, T &b, T &c, T &d) {
+    uint4 v = __lfortran_wide_vector(ok, p);
+    const T* e = reinterpret_cast<const T*>(&v);
+    a = e[0]; b = e[1]; c = e[2]; d = e[3];
+}
+
+template <typename T>
+__device__ __forceinline__ void __lfortran_wide_load(bool ok, const T* p, T &a0, T &a1, T &a2, T &a3, T &a4, T &a5, T &a6, T &a7) {
+    uint4 v = __lfortran_wide_vector(ok, p);
+    const T* e = reinterpret_cast<const T*>(&v);
+    a0 = e[0]; a1 = e[1]; a2 = e[2]; a3 = e[3]; a4 = e[4]; a5 = e[5]; a6 = e[6]; a7 = e[7];
+}
+
+__device__ inline int _lcompilers_ibits_i32_gpu_48(int x, int y, int z) {
+    int _lcompilers_ibits_i32{};
+    _lcompilers_ibits_i32 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i32;
+}
+
+__device__ inline int _lcompilers_ibits_i321_gpu_49(int x, int y, int z) {
+    int _lcompilers_ibits_i321{};
+    _lcompilers_ibits_i321 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i321;
+}
+
+__device__ inline int _lcompilers_ibits_i322_gpu_50(int x, int y, int z) {
+    int _lcompilers_ibits_i322{};
+    _lcompilers_ibits_i322 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i322;
+}
+
+__device__ inline int _lcompilers_ibits_i323_gpu_51(int x, int y, int z) {
+    int _lcompilers_ibits_i323{};
+    _lcompilers_ibits_i323 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i323;
+}
+
+__device__ inline int _lcompilers_ibits_i324_gpu_52(int x, int y, int z) {
+    int _lcompilers_ibits_i324{};
+    _lcompilers_ibits_i324 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i324;
+}
+
+__device__ inline int _lcompilers_ibits_i325_gpu_53(int x, int y, int z) {
+    int _lcompilers_ibits_i325{};
+    _lcompilers_ibits_i325 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i325;
+}
+
+__device__ inline int _lcompilers_ibits_i326_gpu_54(int x, int y, int z) {
+    int _lcompilers_ibits_i326{};
+    _lcompilers_ibits_i326 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i326;
+}
+
+__device__ inline int _lcompilers_ibits_i327_gpu_55(int x, int y, int z) {
+    int _lcompilers_ibits_i327{};
+    _lcompilers_ibits_i327 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i327;
+}
+
+__device__ inline int _lcompilers_ibits_i328_gpu_56(int x, int y, int z) {
+    int _lcompilers_ibits_i328{};
+    _lcompilers_ibits_i328 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i328;
+}
+
+__device__ inline int _lcompilers_ibits_i329_gpu_57(int x, int y, int z) {
+    int _lcompilers_ibits_i329{};
+    _lcompilers_ibits_i329 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i329;
+}
+
+__device__ inline int _lcompilers_ibits_i3210_gpu_58(int x, int y, int z) {
+    int _lcompilers_ibits_i3210{};
+    _lcompilers_ibits_i3210 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3210;
+}
+
+__device__ inline int _lcompilers_ibits_i3211_gpu_59(int x, int y, int z) {
+    int _lcompilers_ibits_i3211{};
+    _lcompilers_ibits_i3211 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3211;
+}
+
+__device__ inline int _lcompilers_ibits_i3212_gpu_60(int x, int y, int z) {
+    int _lcompilers_ibits_i3212{};
+    _lcompilers_ibits_i3212 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3212;
+}
+
+__device__ inline int _lcompilers_ibits_i3213_gpu_61(int x, int y, int z) {
+    int _lcompilers_ibits_i3213{};
+    _lcompilers_ibits_i3213 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3213;
+}
+
+__device__ inline int _lcompilers_ibits_i3214_gpu_62(int x, int y, int z) {
+    int _lcompilers_ibits_i3214{};
+    _lcompilers_ibits_i3214 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3214;
+}
+
+__device__ inline int _lcompilers_ibits_i3215_gpu_63(int x, int y, int z) {
+    int _lcompilers_ibits_i3215{};
+    _lcompilers_ibits_i3215 = ((x >> ((int)y)) & ((1 << ((int)z)) - 1));
+    return _lcompilers_ibits_i3215;
+}
+
+__device__ inline float chunk_dot_gpu_14(int* w, int __1w, int __2w, int16_t* x, int __1x, int n, int c) {
+    float r{};
+    int __gpu_wide;
+    int __gpu_wide1;
+    int16_t __gpu_wide10;
+    int16_t __gpu_wide11;
+    int16_t __gpu_wide12;
+    int16_t __gpu_wide13;
+    int16_t __gpu_wide14;
+    int16_t __gpu_wide15;
+    int16_t __gpu_wide16;
+    int16_t __gpu_wide17;
+    int16_t __gpu_wide18;
+    int16_t __gpu_wide19;
+    int __gpu_wide2;
+    int __gpu_wide3;
+    int16_t __gpu_wide4;
+    int16_t __gpu_wide5;
+    int16_t __gpu_wide6;
+    int16_t __gpu_wide7;
+    int16_t __gpu_wide8;
+    int16_t __gpu_wide9;
+    __lfortran_wide_load(((((__1w) & 3) == 0)) && (reinterpret_cast<size_t>(w) & 15u) == 0, &(w[((int)(((4 * c) - 3)) - (1)) + (__1w * ((int)(n) - (1)))]), __gpu_wide, __gpu_wide1, __gpu_wide2, __gpu_wide3);
+    __lfortran_wide_load((true) && (reinterpret_cast<size_t>(x) & 15u) == 0, &(x[((int)(((16 * c) - 15)) - (1))]), __gpu_wide4, __gpu_wide5, __gpu_wide6, __gpu_wide7, __gpu_wide8, __gpu_wide9, __gpu_wide10, __gpu_wide11);
+    __lfortran_wide_load((true) && (reinterpret_cast<size_t>(x) & 15u) == 0, &(x[((int)(((16 * c) - 7)) - (1))]), __gpu_wide12, __gpu_wide13, __gpu_wide14, __gpu_wide15, __gpu_wide16, __gpu_wide17, __gpu_wide18, __gpu_wide19);
+    r = ((((((((((((((((((float)_lcompilers_ibits_i32_gpu_48(__gpu_wide, 0, 8)) * ((float)__gpu_wide4)) + (((float)_lcompilers_ibits_i321_gpu_49(__gpu_wide, 8, 8)) * ((float)__gpu_wide5))) + (((float)_lcompilers_ibits_i322_gpu_50(__gpu_wide, 16, 8)) * ((float)__gpu_wide6))) + (((float)_lcompilers_ibits_i323_gpu_51(__gpu_wide, 24, 8)) * ((float)__gpu_wide7))) + (((float)_lcompilers_ibits_i324_gpu_52(__gpu_wide1, 0, 8)) * ((float)__gpu_wide8))) + (((float)_lcompilers_ibits_i325_gpu_53(__gpu_wide1, 8, 8)) * ((float)__gpu_wide9))) + (((float)_lcompilers_ibits_i326_gpu_54(__gpu_wide1, 16, 8)) * ((float)__gpu_wide10))) + (((float)_lcompilers_ibits_i327_gpu_55(__gpu_wide1, 24, 8)) * ((float)__gpu_wide11))) + (((float)_lcompilers_ibits_i328_gpu_56(__gpu_wide2, 0, 8)) * ((float)__gpu_wide12))) + (((float)_lcompilers_ibits_i329_gpu_57(__gpu_wide2, 8, 8)) * ((float)__gpu_wide13))) + (((float)_lcompilers_ibits_i3210_gpu_58(__gpu_wide2, 16, 8)) * ((float)__gpu_wide14))) + (((float)_lcompilers_ibits_i3211_gpu_59(__gpu_wide2, 24, 8)) * ((float)__gpu_wide15))) + (((float)_lcompilers_ibits_i3212_gpu_60(__gpu_wide3, 0, 8)) * ((float)__gpu_wide16))) + (((float)_lcompilers_ibits_i3213_gpu_61(__gpu_wide3, 8, 8)) * ((float)__gpu_wide17))) + (((float)_lcompilers_ibits_i3214_gpu_62(__gpu_wide3, 16, 8)) * ((float)__gpu_wide18))) + (((float)_lcompilers_ibits_i3215_gpu_63(__gpu_wide3, 24, 8)) * ((float)__gpu_wide19)));
+    return r;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0_19gpu_wide_loads_01_m3qmv {
+    int __dim_w_0;
+    int __lb_w_0;
+    int __dim_w_1;
+    int __lb_w_1;
+    int __dim_x_0;
+    int __lb_x_0;
+    int __dim_y_0;
+    int __lb_y_0;
+    int __loop_end_0;
+    int __gpu_lanes;
+};
+
+extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_0_19gpu_wide_loads_01_m3qmv(
+    int* __restrict__ w,
+    int16_t* __restrict__ x,
+    float* __restrict__ y,
+    __ScalarArgs___lfortran_gpu_kernel_0_19gpu_wide_loads_01_m3qmv __scalar_args)
+{
+    int __dim_w_0 = __scalar_args.__dim_w_0;
+    int __dim_w_1 = __scalar_args.__dim_w_1;
+    int __dim_x_0 = __scalar_args.__dim_x_0;
+    int __lb_y_0 = __scalar_args.__lb_y_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    int __gpu_lanes_n = __gpu_lanes;
+    unsigned __gpu_lane_mask = __gpu_lanes_n >= 32 ? 0xffffffffu : (((1u << __gpu_lanes_n) - 1u) << (threadIdx.x & 31u & ~(unsigned)(__gpu_lanes_n - 1)));
+    int __gpu_lane = (int)(threadIdx.x % (unsigned)__gpu_lanes_n);
+    unsigned __gpu_iteration_thread = threadIdx.x / (unsigned)__gpu_lanes_n;
+    unsigned __gpu_iteration_block = blockDim.x / (unsigned)__gpu_lanes_n;
+    int __flat_idx;
+    int n__dc;
+    if ((((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * __gpu_iteration_block) + __gpu_iteration_thread);
+    n__dc = (__flat_idx + 1);
+    {
+        int c;
+        float total;
+        total = ((float)0);
+        if ((__gpu_lanes > 1)) {
+            if ((__gpu_lane != 0)) {
+                total =   0.00000000000000000e+00f;
+            }
+            c = (1 + (((int)__gpu_lane) * 1));
+            const int __lfortran_trips_0 = ((1 * ((int)__dim_x_0)) / 16) >= c ? (((1 * ((int)__dim_x_0)) / 16) - c) / (1 * ((int)__gpu_lanes)) + 1 : 0;
+            #pragma unroll 8
+            for (int __lfortran_count_0 = 0; __lfortran_count_0 < __lfortran_trips_0; __lfortran_count_0++, c += (1 * ((int)__gpu_lanes))) {
+                total = (total + chunk_dot_gpu_14(w, __dim_w_0, __dim_w_1, x, __dim_x_0, n__dc, c));
+            }
+            total = __lfortran_lane_reduce_block<0>(total, __gpu_lanes_n, __gpu_lane_mask);
+        } else {
+            #pragma unroll 8
+            for (c = 1; c <= ((1 * ((int)__dim_x_0)) / 16); c++) {
+                total = (total + chunk_dot_gpu_14(w, __dim_w_0, __dim_w_1, x, __dim_x_0, n__dc, c));
+            }
+        }
+        if ((__gpu_lane == 0)) {
+            y[((int)(n__dc) - (__lb_y_0))] = total;
+        }
+        __lfortran_lane_barrier_block(__gpu_lanes_n, __gpu_lane_mask);
+    }
+}
+

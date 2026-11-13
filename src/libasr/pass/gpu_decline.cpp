@@ -90,6 +90,7 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // `float` array, and a block of 256 threads covers 8 of them.
             caps.tile_width = 32;
             caps.chunked_launches = true;
+            caps.reduction_slots_in_host_memory = true;
             break;
         case GpuDevice::None:
             break;
@@ -126,7 +127,11 @@ GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options) {
         // while the other 31 wait.
         caps.lane_independent_loops = true;
         caps.lane_inner_reductions_first = true;
+        caps.wide_loads = true;
         caps.lanes_block = caps.threads_per_block;
+        // 1024 iterations are 32 warps, which an H200 (8,448 resident
+        // warps) runs on a few of its 132 multiprocessors.
+        caps.lanes_scattered_iterations_max = 1024;
     }
     if (pass_options.descriptor_index_64
             && caps.offsets_follow_descriptor_index_64()) {

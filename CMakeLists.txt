@@ -363,9 +363,8 @@ if (WITH_LLVM)
         set(WITH_LIBUNWIND_FORCE yes)
     endif()
 
-    # The driver links ELF executables itself with LLD. macOS and Windows keep
-    # their platform linkers: LLD's Mach-O and COFF drivers still need the
-    # platform SDK, which the system linker already knows.
+    # The driver links ELF executables itself with LLD. Windows keeps its
+    # platform linker. macOS is handled below.
     # LLD 7–9 cannot read the SHT_GROUP sections in the current C runtime,
     # so those builds keep the external compiler driver.
     # MLIR's imported targets link the shared libLLVM.so. Statically linking
@@ -406,6 +405,31 @@ if (WITH_LLVM)
         # libLLVM, and the two copies register the same cl::opt options.
         # src/bin links the static LLD archives against the component archives
         # instead of that interface.
+        set(LFORTRAN_LLD_TARGET lldELF)
+    endif()
+
+    # The driver links Mach-O executables itself with LLD's Mach-O port.
+    # LLD 13 is the first to link arm64, but LLD 13 and 14 cannot read the
+    # export trie (LC_DYLD_EXPORTS_TRIE) in dylibs that Apple's current linker
+    # writes, such as the LFortran runtime. Older LLVM keeps Apple's clang
+    # and linker.
+    if (NOT EMSCRIPTEN AND APPLE
+            AND LLVM_VERSION_MAJOR GREATER_EQUAL 15
+            AND NOT WITH_MLIR)
+        find_package(LLD CONFIG
+            HINTS
+                "$ENV{CONDA_PREFIX}/lib/cmake/lld"
+                "${CMAKE_PREFIX_PATH}/lib/cmake/lld"
+        )
+        set(LFORTRAN_LLD_TARGET lldMachO)
+        if (TARGET ${LFORTRAN_LLD_TARGET})
+            set(HAVE_LFORTRAN_LLD yes)
+            message(STATUS "Linking the LFortran driver with LLD ${LLVM_PACKAGE_VERSION}")
+        else()
+            message(FATAL_ERROR
+                "LLD ${LLVM_PACKAGE_VERSION} was not found. Install the "
+                "lld package that matches this LLVM.")
+        endif()
     endif()
 endif()
 

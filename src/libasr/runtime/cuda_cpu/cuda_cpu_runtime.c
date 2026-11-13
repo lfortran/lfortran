@@ -257,6 +257,33 @@ cudaError_t cudaFree(void *ptr) {
     return cudaSuccess;
 }
 
+cudaError_t cudaMallocHost(void **ptr, size_t size) {
+    if (!ptr) return fail(cudaErrorInvalidValue);
+    *ptr = malloc(size ? size : 1);
+    return *ptr ? cudaSuccess : fail(cudaErrorMemoryAllocation);
+}
+
+cudaError_t cudaFreeHost(void *ptr) {
+    free(ptr);
+    return cudaSuccess;
+}
+
+cudaError_t cudaEventCreate(cudaEvent_t *event) {
+    if (!event) return fail(cudaErrorInvalidValue);
+    *event = NULL;
+    return cudaSuccess;
+}
+
+cudaError_t cudaEventRecord(cudaEvent_t event, cudaStream_t stream) {
+    (void)event;
+    return stream != 0 ? fail(cudaErrorInvalidResourceHandle) : cudaSuccess;
+}
+
+cudaError_t cudaEventSynchronize(cudaEvent_t event) {
+    (void)event;
+    return cudaSuccess;
+}
+
 cudaError_t cudaMallocManaged(void **ptr, size_t size, unsigned int flags) {
     if (flags != cudaMemAttachGlobal) return fail(cudaErrorInvalidValue);
     return cudaMalloc(ptr, size);
@@ -297,6 +324,32 @@ cudaError_t cudaMemPrefetchAsync(const void *ptr, size_t count, int device,
     cudaStream_t stream)
 {
     return prefetch(ptr, count, device, stream);
+}
+#endif
+
+#if CUDART_VERSION >= 13000
+cudaError_t cudaMemAdvise(const void *ptr, size_t count,
+    enum cudaMemoryAdvise advice, struct cudaMemLocation location)
+{
+    (void)count; (void)location;
+    if (ptr == NULL || advice < cudaMemAdviseSetReadMostly
+            || advice > cudaMemAdviseUnsetAccessedBy) {
+        return fail(cudaErrorInvalidValue);
+    }
+    stats.memory_advice++;
+    return cudaSuccess;
+}
+#else
+cudaError_t cudaMemAdvise(const void *ptr, size_t count,
+    enum cudaMemoryAdvise advice, int device)
+{
+    (void)count; (void)device;
+    if (ptr == NULL || advice < cudaMemAdviseSetReadMostly
+            || advice > cudaMemAdviseUnsetAccessedBy) {
+        return fail(cudaErrorInvalidValue);
+    }
+    stats.memory_advice++;
+    return cudaSuccess;
 }
 #endif
 

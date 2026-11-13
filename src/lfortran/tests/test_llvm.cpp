@@ -1,6 +1,7 @@
 #include <tests/doctest.h>
 
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -18,6 +19,11 @@
 #ifndef _WIN32
 #include <pthread.h>
 #include <sys/resource.h>
+#endif
+#include <libasr/codegen/KaleidoscopeJIT.h>
+#if defined(__linux__)
+#include <sys/mman.h>
+#include <unistd.h>
 #endif
 #endif
 #include <lfortran/parser/source_offset.h>
@@ -51,6 +57,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/Support/CommandLine.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
@@ -72,6 +79,102 @@ using LCompilers::CompilerOptions;
 // Raw LLVMEvaluator tests use ORC JIT which is not available under Emscripten;
 // FortranEvaluator tests below are WASM-compatible via WasmLFortranExecutor dispatch.
 #ifndef __EMSCRIPTEN__
+
+TEST_CASE("JIT code sections share one reservation") {
+    llvm::orc::ContiguousSectionMemoryManager memory;
+#if LLVM_VERSION_MAJOR >= 16
+    const llvm::Align alignment(64);
+#else
+    const uint32_t alignment = 64;
+#endif
+    memory.reserveAllocationSpace(65536 + 128, alignment,
+        131072, alignment, 0, alignment);
+    uint8_t *first = memory.allocateCodeSection(33, 32, 0, ".text.first");
+    REQUIRE(first != nullptr);
+    REQUIRE(memory.allocateDataSection(131072, 64, 1, ".rodata", true)
+        != nullptr);
+    uint8_t *second = memory.allocateCodeSection(65536, 64, 2, ".text.second");
+    REQUIRE(second != nullptr);
+    uint8_t *third = memory.allocateCodeSection(8, 16, 3, ".text.third");
+    REQUIRE(third != nullptr);
+    CHECK(second == first + 64);
+    CHECK(third == second + 65536);
+    CHECK(reinterpret_cast<uintptr_t>(second) % 64 == 0);
+    std::string error;
+    INFO(error);
+    CHECK_FALSE(memory.finalizeMemory(&error));
+}
+
+TEST_CASE("JIT code that overflows its reservation is mapped separately") {
+    llvm::orc::ContiguousSectionMemoryManager memory;
+#if LLVM_VERSION_MAJOR >= 16
+    const llvm::Align alignment(16);
+#else
+    const uint32_t alignment = 16;
+#endif
+    memory.reserveAllocationSpace(64, alignment, 0, alignment, 0, alignment);
+    uint8_t *first = memory.allocateCodeSection(40, 16, 0, ".text.first");
+    REQUIRE(first != nullptr);
+    // Aligned to 48, 32 more bytes would end 16 bytes past the reservation.
+    uint8_t *second = memory.allocateCodeSection(32, 16, 1, ".text.second");
+    REQUIRE(second != nullptr);
+    CHECK((second + 32 <= first || second >= first + 64));
+    // The reservation keeps its offset, so a section that fits still uses it.
+    uint8_t *third = memory.allocateCodeSection(16, 16, 2, ".text.third");
+    CHECK(third == first + 48);
+    std::string error;
+    INFO(error);
+    CHECK_FALSE(memory.finalizeMemory(&error));
+}
+
+#if defined(__linux__)
+// A COMDAT function gets its own ELF code section, as do the procedures of an
+// intrinsic module. The GNU unwinder registers the whole min/max PC range of
+// an object's .eh_frame, so the object's code sections must stay together:
+// another object's code placed between them corrupts libgcc's frame registry.
+TEST_CASE("JIT object code stays in one reservation") {
+    auto stores = [](int count) {
+        std::string body;
+        for (int i = 0; i < count; i++) {
+            body += "    store volatile i64 " + std::to_string(i)
+                + ", i64* @sink\n";
+        }
+        return body;
+    };
+    // The first code section takes several pages; the second does not fit
+    // in what is left of them.
+    const std::string main_body = stores(4096), side_body = stores(1024);
+    const size_t page = sysconf(_SC_PAGESIZE);
+    const size_t hole = 8 * page, spacer = 1 << 20;
+    for (int i = 0; i < 8; i++) {
+        CAPTURE(i);
+        // Leave a free hole above a 1 MiB spacer. A code section that is
+        // mapped on its own may land in the hole, far from the first one.
+        char *region = static_cast<char *>(mmap(nullptr, spacer + hole + page,
+            PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+        REQUIRE(region != MAP_FAILED);
+        REQUIRE(munmap(region + spacer, hole) == 0);
+        {
+            const std::string n = std::to_string(i);
+            LCompilers::LLVMEvaluator e;
+            e.add_module("@sink = global i64 0\n"
+                "$side" + n + " = comdat any\n"
+                "define void @main" + n + "() {\n" + main_body
+                + "    ret void\n}\n"
+                "define i64 @side" + n + "() comdat {\n" + side_body
+                + "    ret i64 " + n + "\n}\n");
+            const intptr_t main_code = e.get_symbol_address("main" + n);
+            const intptr_t side_code = e.get_symbol_address("side" + n);
+            const intptr_t distance = side_code > main_code
+                ? side_code - main_code : main_code - side_code;
+            CHECK(distance < 256 * 1024);
+            CHECK(e.execfn<int64_t>("side" + n) == i);
+        }
+        munmap(region, spacer);
+        munmap(region + spacer + hole, page);
+    }
+}
+#endif
 
 TEST_CASE("LLVM target configuration") {
     CompilerOptions default_options;
@@ -98,6 +201,27 @@ TEST_CASE("LLVM target configuration") {
     CHECK(fast_config.host_target);
     CHECK(fast_config.emit_cpu_attribute);
     CHECK(!fast_config.cpu.empty());
+
+#ifdef __APPLE__
+    // A deployment-target rewrite changes darwin to macosx. --fast still
+    // targets this machine, so native CPU selection must keep working.
+    const char *saved_deployment = std::getenv("MACOSX_DEPLOYMENT_TARGET");
+    std::string saved_deployment_value = saved_deployment
+        ? saved_deployment : "";
+    setenv("MACOSX_DEPLOYMENT_TARGET", "11.0", 1);
+    CompilerOptions deployed_options;
+    deployed_options.po.fast = true;
+    LCompilers::LLVMTargetConfig deployed_config
+        = LCompilers::resolve_llvm_target_config(deployed_options);
+    CHECK(deployed_config.host_target);
+    CHECK(deployed_config.triple.find("macosx11.0.0") != std::string::npos);
+    CHECK(!deployed_config.cpu.empty());
+    if (saved_deployment) {
+        setenv("MACOSX_DEPLOYMENT_TARGET", saved_deployment_value.c_str(), 1);
+    } else {
+        unsetenv("MACOSX_DEPLOYMENT_TARGET");
+    }
+#endif
 
     CompilerOptions generic_options;
     generic_options.po.fast = true;
@@ -1696,6 +1820,73 @@ end module
             CHECK(scalar_adds == 0);
         }, false, true);
 }
+
+#if defined(HAVE_TARGET_X86) && LLVM_VERSION_MAJOR >= 16
+TEST_CASE("LLVM SLP vectors are at most 256 bits on x86 CPUs that prefer 512") {
+    // Zen 4 prefers 512-bit vectors: the loop vectorizer uses them, the SLP
+    // vectorizer combines the eight adjacent additions in two 256-bit ones.
+    CompilerOptions co;
+    co.po.fast = true;
+    co.target = "x86_64-unknown-linux-gnu";
+    co.mcpu = "znver4";
+    LCompilers::LLVMEvaluator e(co);
+    std::string source = R"""(
+define void @add8(ptr noalias %a, ptr noalias %b, ptr noalias %c) {
+)""";
+    for (int i = 0; i < 8; i++) {
+        std::string n = std::to_string(i);
+        source += "  %pa" + n + " = getelementptr double, ptr %a, i64 " + n + "\n"
+            + "  %pb" + n + " = getelementptr double, ptr %b, i64 " + n + "\n"
+            + "  %pc" + n + " = getelementptr double, ptr %c, i64 " + n + "\n"
+            + "  %a" + n + " = load double, ptr %pa" + n + "\n"
+            + "  %b" + n + " = load double, ptr %pb" + n + "\n"
+            + "  %s" + n + " = fadd fast double %a" + n + ", %b" + n + "\n"
+            + "  store double %s" + n + ", ptr %pc" + n + "\n";
+    }
+    source += R"""(  ret void
+}
+
+define void @axpy(ptr noalias %x, ptr noalias %y, i64 %n) {
+entry:
+  br label %loop
+loop:
+  %i = phi i64 [ 0, %entry ], [ %i1, %loop ]
+  %px = getelementptr double, ptr %x, i64 %i
+  %py = getelementptr double, ptr %y, i64 %i
+  %vx = load double, ptr %px
+  %vy = load double, ptr %py
+  %m = fmul fast double %vx, 2.0
+  %s = fadd fast double %vy, %m
+  store double %s, ptr %py
+  %i1 = add nuw nsw i64 %i, 1
+  %done = icmp eq i64 %i1, %n
+  br i1 %done, label %exit, label %loop
+exit:
+  ret void
+}
+)""";
+    std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(source, "");
+    e.opt(*m->m_m);
+    auto widest_fadd = [&](const std::string &name) {
+        unsigned lanes = 0;
+        for (llvm::BasicBlock &block: *m->m_m->getFunction(name)) {
+            for (llvm::Instruction &inst: block) {
+                if (inst.getOpcode() != llvm::Instruction::FAdd) continue;
+                if (auto *v = llvm::dyn_cast<llvm::FixedVectorType>(
+                        inst.getType())) {
+                    lanes = std::max(lanes, (unsigned)v->getNumElements());
+                }
+            }
+        }
+        return lanes;
+    };
+    CHECK(widest_fadd("add8") == 4);
+    CHECK(widest_fadd("axpy") == 8);
+    // The limit lasts only while the module is optimized.
+    CHECK(llvm::cl::getRegisteredOptions()["slp-max-reg-size"]
+        ->getNumOccurrences() == 0);
+}
+#endif
 
 TEST_CASE("LLVM TBAA metadata under --fast") {
     std::string source = R"(module tbaa_ir_m

@@ -16,6 +16,7 @@
 "stmt.GpuKernelLaunch" = "lowered:device_launch_expand"
 "stmt.GpuDiscard" = "lowered:device_launch_expand"
 "stmt.GpuKeep" = "lowered:device_launch_expand"
+"stmt.GpuWideLoad" = "lowered:gpu_wide_loads"
 "stmt.ForAllSingle" = "lowered:for_all"
 "stmt.ForEach" = "helper:container iteration"
 "stmt.IfArithmetic" = "helper:branch lowering"

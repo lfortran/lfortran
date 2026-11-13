@@ -20,7 +20,10 @@ jobs:
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 100
+    # The macOS LLVM 22 job runs the full integration suite on top of the
+    # third-party and Caffeine checks. Three-way parallelism on that runner
+    # needs a longer budget than the Linux compatibility jobs.
+    timeout-minutes: ${{ contains(matrix.os, 'macos') && 180 || 100 }}
     strategy:
       fail-fast: false
       matrix:
@@ -169,10 +172,17 @@ jobs:
 
       - name: Test LLVM integration tests
         shell: bash -e {0}
-        if: ${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') || (matrix.llvm-version != '11' && matrix.llvm-version != '19' && !contains(matrix.os, 'macos')) }}
+        # Quick runs the core suite on LLVM 11. Exhaustive runs the full
+        # suite for the other Linux versions except LLVM 19, and for the
+        # macOS LLVM 22 compiler, which is the one that links with LLD.
+        if: ${{ (inputs.scope == 'quick' && matrix.llvm-version == '11') || (inputs.scope == 'exhaustive' && contains(matrix.os, 'macos')) || (matrix.llvm-version != '11' && matrix.llvm-version != '19' && !contains(matrix.os, 'macos')) }}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             export LFORTRAN_LLVM_VERSION="${{ matrix.llvm-version }}"
+            if [[ "${{ matrix.os }}" == *macos* ]]; then
+                # macOS ARM runners have 3 cores; higher parallelism overwhelms them.
+                export MACOS=1 NPROC=3
+            fi
             if [[ "$LFORTRAN_CI_SCOPE" == "quick" && "$LFORTRAN_LLVM_VERSION" == "11" ]]; then
                 bash ci/test_llvm_integration.sh --core
             else

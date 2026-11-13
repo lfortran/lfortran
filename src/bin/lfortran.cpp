@@ -2040,7 +2040,9 @@ int link_executable(const std::vector<std::string> &infiles,
     compiler driver does, so the driver locates the startup objects, the
     dynamic linker, libc and libgcc and passes them to LLD. `--linker=clang`
     or `--linker=gcc` (or `LFORTRAN_LINKER`) still selects the external
-    driver. macOS and Windows keep their platform linkers.
+    driver. On macOS (LLVM 15 and newer) LLD's Mach-O port links against
+    the SDK that xcrun selects, like Apple's clang; `--linker=clang` selects
+    Apple's driver and linker. Windows keeps `link.exe`.
     * If we ship our own libc (such as musl), then we know how to find it
       and link it, which mitigates the issue 1.
     * If we link `musl` statically, then issue 2. does not apply.
@@ -2057,7 +2059,10 @@ int link_executable(const std::vector<std::string> &infiles,
 
     auto t1 = std::chrono::high_resolution_clock::now();
 #ifdef HAVE_LFORTRAN_LLVM
-    std::string t = (compiler_options.target == "") ? LCompilers::LLVMEvaluator::get_default_target_triple() : compiler_options.target;
+    std::string t = (compiler_options.target == "")
+        ? LCompilers::apply_macos_deployment_target(
+            LCompilers::LLVMEvaluator::get_default_target_triple())
+        : compiler_options.target;
 #else
     std::string t = (compiler_options.platform == LCompilers::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif
@@ -2160,8 +2165,9 @@ int link_executable(const std::vector<std::string> &infiles,
             } else if (char *env_linker = std::getenv("LFORTRAN_LINKER")) {
                 CC += env_linker;
             } else {
-                // Linux uses the built-in LLD linker. This command is the
-                // external driver, used on macOS and when --linker selects one.
+                // Linux and macOS use the built-in LLD linker. This command
+                // is the external driver, used when --linker selects one or
+                // the build has no LLD.
                 CC += "clang";
             }
 
@@ -2350,6 +2356,11 @@ int link_executable(const std::vector<std::string> &infiles,
                         + (cuda_include.empty() ? ""
                             : " -I\"" + cuda_include + "\"");
                 }
+                // The runtime creates the context of the device before the
+                // program unless it is asked to wait for the first CUDA call.
+                if (compiler_options.gpu_lazy_init) {
+                    cuda_rt_cmd_base += " -DLFORTRAN_GPU_LAZY_INIT";
+                }
                 std::vector<std::string> cuda_runtime_objs;
                 for (size_t i = 0; i < cuda_runtime_srcs.size(); i++) {
                     std::string cuda_runtime_obj = LFORTRAN_TEMP_DIR
@@ -2411,6 +2422,21 @@ int link_executable(const std::vector<std::string> &infiles,
                         compile_cmd += cuda_runtime_obj + " ";
                     }
                     compile_cmd += extra_library_flags;
+                    // The linker options given with -Wl: the HIP driver takes
+                    // them as they are, nvcc as -Xlinker (each a list of
+                    // options separated by commas, as after -Wl,). Without
+                    // them an -rpath the program asked for was lost, and a
+                    // program could load another build of a library than the
+                    // one it was linked against.
+                    for (auto &s : linker_flags) {
+                        if (hip) {
+                            compile_cmd += " -W" + s;
+                        } else if (s.rfind("l,", 0) == 0) {
+                            compile_cmd += " -Xlinker " + s.substr(2);
+                        } else {
+                            compile_cmd += " -Xcompiler -W" + s;
+                        }
+                    }
                     compile_cmd += " -L" + base_path
                         + " -Xlinker -rpath -Xlinker " + base_path
                         + " -l" + runtime_lib + " -lm";
@@ -2453,11 +2479,11 @@ int link_executable(const std::vector<std::string> &infiles,
         bool use_lld = only_linker_inputs
             && !device_driver_links
             && compiler_options.gpu_backend != "metal"
-            && elf_lld_selected(t, host_triple, requested_linker);
+            && lld_selected(t, host_triple, requested_linker);
         int err = 0;
         if (use_lld) {
 #ifdef HAVE_LFORTRAN_LLD
-            err = link_elf_with_lld(infiles, lld_extra_objects, outfile,
+            err = link_with_lld(infiles, lld_extra_objects, outfile,
                 runtime_library_dir, lld_runtime_lib, static_executable,
                 shared_executable, verbose, lib_dirs, libraries, linker_flags,
                 lld_extra_libs, compiler_options.openmp_lib_dir,

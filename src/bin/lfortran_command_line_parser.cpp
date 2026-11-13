@@ -354,7 +354,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--separate-compilation", compiler_options.separate_compilation, "Generate object code into .o files")->group(group_backend_codegen_options);
         app.add_flag("--static", opts.static_link, "Create a static executable")->group(group_backend_codegen_options);
         app.add_flag("--shared", opts.shared_link, "Create a shared executable")->group(group_backend_codegen_options);
-        app.add_flag("--linker", opts.linker, "Linker for the LLVM backend. The default on Linux is the built-in LLD. clang and gcc select an external compiler driver")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_flag("--linker", opts.linker, "Linker for the LLVM backend. The default on Linux and macOS is the built-in LLD. clang and gcc select an external compiler driver")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--linker-path", opts.linker_path, "Use the linker from this path")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--march", compiler_options.march, "Generate code for the selected instruction-set architecture (`native` for the host)")->group(group_backend_codegen_options);
@@ -368,6 +368,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal, cuda, cuda_cpu, hip)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--gpu-arch", compiler_options.gpu_arch, "GPU architecture to compile device code for with --gpu=cuda (e.g. sm_120) or --gpu=hip (e.g. gfx942); defaults to the GPUs of the compiling machine")->group(group_backend_codegen_options);
+        app.add_flag("--gpu-lazy-init", compiler_options.gpu_lazy_init, "With --gpu=cuda, the linked program creates the CUDA context at its first CUDA call instead of when it starts")->group(group_backend_codegen_options);
         app.add_flag("--gpu-offload-omp-loops", compiler_options.po.gpu_offload_omp_loops, "Offload an `!$omp parallel do` loop onto the GPU as well")->group(group_backend_codegen_options);
         app.add_flag("--gpu-allow-cpu-fallback", compiler_options.po.gpu_allow_cpu_fallback, "Run a parallel loop that uses a construct the selected GPU does not support (real(8) on Metal, real(10) or real(16), or input/output) on the CPU with a warning instead of failing compilation")->group(group_backend_codegen_options);
         app.add_option("--gpu-loop-transforms", compiler_options.po.gpu_loop_transforms, "Loop transformations applied to device loops before offloading: all, none, or a comma separated list of fuse, swap, split, jam, skew")->capture_default_str()->group(group_backend_codegen_options);

@@ -184,6 +184,9 @@ struct CompilerOptions {
     // with --gpu=hip, gfx942. Empty means the GPUs of the machine that
     // compiles.
     std::string gpu_arch = "";
+    // The CUDA runtime creates the context of the device at the first CUDA
+    // call instead of before the program (`--gpu-lazy-init`).
+    bool gpu_lazy_init = false;
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;
