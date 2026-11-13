@@ -2880,7 +2880,8 @@ lf_float128 lf_float128_from_str(const char *s) {
 
     /* Exponent */
     int32_t dec_exp = 0;
-    if (*s == 'e' || *s == 'E' || *s == 'd' || *s == 'D') {
+    if (*s == 'e' || *s == 'E' || *s == 'd' || *s == 'D' ||
+            *s == 'q' || *s == 'Q') {
         s++;
         int esign = 1;
         if (*s == '-') { esign = -1; s++; }
