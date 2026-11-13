@@ -102,6 +102,23 @@ public:
 
         visit_ttype(*x.m_type);
     }
+
+    // Wide kind-16 IntegerConstants keep a pointer to an arena Int128 in
+    // `m_n`, so serialize the 16-byte payload instead of the pointer bits.
+    void visit_IntegerConstant(const ASR::IntegerConstant_t &x) {
+        write_int8(x.base.type);
+        write_int64(x.base.base.loc.first);
+        write_int64(x.base.base.loc.last);
+        visit_ttype(*x.m_type);
+        if (ASRUtils::extract_kind_from_ttype_t(x.m_type) == 16) {
+            Int128 w = ASRUtils::integer_constant_to_i128(&x);
+            write_int64(static_cast<int64_t>(w.lo));
+            write_int64(static_cast<int64_t>(w.hi));
+        } else {
+            write_int64(x.m_n);
+        }
+        visit_integerbozType(x.m_intboz_type);
+    }
 };
 
 std::string serialize(const ASR::asr_t &asr) {
@@ -180,6 +197,23 @@ public:
             return ASRUtils::real_constant_pack_r16(bytes);
         }
         return read_float64();
+    }
+
+    ASR::asr_t* deserialize_IntegerConstant() {
+        Location loc;
+        loc.first = read_location_position(offset);
+        loc.last = read_location_position(offset);
+        ASR::ttype_t *m_type = ASR::down_cast<ASR::ttype_t>(deserialize_ttype());
+        if (ASRUtils::extract_kind_from_ttype_t(m_type) == 16) {
+            Int128 w;
+            w.lo = static_cast<uint64_t>(read_int64());
+            w.hi = static_cast<uint64_t>(read_int64());
+            ASR::integerbozType m_intboz_type = deserialize_integerboz();
+            return ASRUtils::make_IntegerConstant_i128(al, loc, w, m_type, m_intboz_type);
+        }
+        int64_t m_n = read_int64();
+        ASR::integerbozType m_intboz_type = deserialize_integerboz();
+        return ASR::make_IntegerConstant_t(al, loc, m_n, m_type, m_intboz_type);
     }
 
     ASR::symbol_t *read_symbol() {

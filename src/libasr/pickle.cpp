@@ -50,7 +50,11 @@ public:
         if (use_colors) {
             s.append(color(fg::cyan));
         }
-        s.append(std::to_string(x.m_n));
+        if (ASRUtils::integer_constant_is_wide(&x)) {
+            s.append(int128_to_decimal(ASRUtils::integer_constant_to_i128(&x)));
+        } else {
+            s.append(std::to_string(x.m_n));
+        }
         if (use_colors) {
             s.append(color(fg::reset));
         }
