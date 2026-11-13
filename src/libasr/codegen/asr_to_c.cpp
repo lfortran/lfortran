@@ -862,10 +862,11 @@ public:
             stride *= length;
         }
         std::string init = "{0}";
-        ASR::expr_t* value = ASRUtils::expr_value(
-            v.m_value ? v.m_value : v.m_symbolic_value);
-        if (value) {
-            if (!ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+        ASR::expr_t* initializer = v.m_value ?
+            v.m_value : v.m_symbolic_value;
+        if (initializer) {
+            ASR::expr_t* value = ASRUtils::expr_value(initializer);
+            if (!value || !ASR::is_a<ASR::ArrayConstant_t>(*value)) {
                 throw CodeGenError("the module array '" + name +
                     "' needs a constant initializer in the c backend",
                     v.base.base.loc);
