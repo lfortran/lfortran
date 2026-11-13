@@ -166,6 +166,36 @@ public:
             ASR::down_cast<ASR::Struct_t>(owner)->m_abi != ASR::abiType::BindC;
     }
 
+    ASR::Variable_t* c_character_designator_variable(ASR::expr_t* expr) {
+        ASR::symbol_t* sym = nullptr;
+        if (ASR::is_a<ASR::Var_t>(*expr)) {
+            sym = ASR::down_cast<ASR::Var_t>(expr)->m_v;
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            sym = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m;
+        }
+        if (!sym) return nullptr;
+        sym = ASRUtils::symbol_get_past_external(sym);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*sym));
+        return ASR::down_cast<ASR::Variable_t>(sym);
+    }
+
+    std::string c_character_length(ASR::expr_t* expr, const Location &loc) {
+        ASR::String_t* type = ASRUtils::get_string_type(expr);
+        if (type->m_kind != 1 || !type->m_len) {
+            throw CodeGenError("character operation requires an explicit "
+                "kind=1 length in the c backend", loc);
+        }
+        ASR::Variable_t* var = c_character_designator_variable(expr);
+        if (var) {
+            auto stored_length = c_inline_char_lengths.find(var);
+            if (stored_length != c_inline_char_lengths.end()) {
+                return stored_length->second;
+            }
+        }
+        self().visit_expr(*type->m_len);
+        return std::move(src);
+    }
+
     // Output configuration:
     // Use std::string or char*
     bool gen_stdstring;
@@ -1981,27 +2011,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     *ASRUtils::type_get_past_allocatable_pointer(
                         m_target_type))) {
             std::string prelude = std::move(src);
-            ASR::String_t* lhs_type = ASRUtils::get_string_type(
-                x.m_target);
-            ASR::String_t* rhs_type = ASRUtils::get_string_type(
-                x.m_value);
-            if (lhs_type->m_kind != 1 || rhs_type->m_kind != 1 ||
-                    !lhs_type->m_len || !rhs_type->m_len) {
-                throw CodeGenError("character assignment requires explicit "
-                    "kind=1 lengths in the c backend", x.base.base.loc);
-            }
-            ASR::Variable_t* target_var = nullptr;
-            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-                target_var = ASR::down_cast<ASR::Variable_t>(
-                    ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(x.m_target)->m_v));
-            } else if (ASR::is_a<ASR::StructInstanceMember_t>(
-                    *x.m_target)) {
-                target_var = ASR::down_cast<ASR::Variable_t>(
-                    ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::StructInstanceMember_t>(
-                            x.m_target)->m_m));
-            }
+            ASR::Variable_t* target_var =
+                c_character_designator_variable(x.m_target);
             if (!target_var || (!c_inline_char_storage(*target_var) &&
                     (!ASRUtils::is_arg_dummy(target_var->m_intent) ||
                      ASRUtils::is_allocatable(target_var->m_type) ||
@@ -2011,16 +2022,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     "or a nonallocatable dummy in the c backend",
                     x.base.base.loc);
             }
-            auto stored_length = c_inline_char_lengths.find(target_var);
-            std::string lhs_len;
-            if (stored_length != c_inline_char_lengths.end()) {
-                lhs_len = stored_length->second;
-            } else {
-                self().visit_expr(*lhs_type->m_len);
-                lhs_len = std::move(src);
-            }
-            self().visit_expr(*rhs_type->m_len);
-            std::string rhs_len = std::move(src);
+            std::string lhs_len = c_character_length(
+                x.m_target, x.base.base.loc);
+            std::string rhs_len = c_character_length(
+                x.m_value, x.base.base.loc);
             std::string prefix = "_lfortran_char_copy_" +
                 std::to_string(const_vars_count++);
             std::string dest = prefix + "_dest";
@@ -3374,7 +3379,14 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         }
         std::string op_str = ASRUtils::cmpop_to_str(x.m_op);
         if( T::class_type == ASR::exprType::StringCompare && is_c ) {
-            src = "strcmp(" + left + ", " + right + ") " + op_str + " 0";
+            int comparison_precedence = last_expr_precedence;
+            std::string left_len = c_character_length(
+                x.m_left, x.base.base.loc);
+            std::string right_len = c_character_length(
+                x.m_right, x.base.base.loc);
+            src = "str_compare(" + left + ", " + left_len + ", " +
+                right + ", " + right_len + ") " + op_str + " 0";
+            last_expr_precedence = comparison_precedence;
         } else {
             src += op_str;
             if (right_precedence <= last_expr_precedence) {

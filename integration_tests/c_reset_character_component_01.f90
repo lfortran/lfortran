@@ -26,6 +26,7 @@ contains
         n = 8
         automatic = 'xy'
         if (automatic /= 'xy  ') error stop 11
+        if (automatic /= 'xy') error stop 16
     end subroutine
 end module
 
@@ -42,6 +43,7 @@ program c_reset_character_component_01
     if (x%value /= 'abcd') error stop 2
     x%value = 'xy'
     if (x%value /= 'xy  ') error stop 3
+    if (x%value /= 'xy') error stop 14
     x%value = x%value
     if (x%value /= 'xy  ') error stop 4
     call overwrite(x%value)
@@ -49,11 +51,13 @@ program c_reset_character_component_01
     local = 'ab'
     local = local
     if (local /= 'ab  ') error stop 6
+    if (local /= 'ab') error stop 15
     call overwrite(local)
     if (local /= 'q   ') error stop 7
     local = result_text()
     if (local /= 'wxyz') error stop 8
     if (shared /= 'ab  ') error stop 9
+    if (shared /= 'ab') error stop 13
     shared = 'xy'
     if (shared /= 'xy  ') error stop 10
     empty = ''
