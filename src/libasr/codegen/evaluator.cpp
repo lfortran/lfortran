@@ -1178,6 +1178,48 @@ void LLVMEvaluator::create_empty_object_file(const std::string &filename) {
     save_object_file(*module, filename);
 }
 
+#if LLVM_VERSION_MAJOR >= 13
+// Some x86 CPUs with AVX-512, such as AMD Zen 4 and Zen 5, prefer 512-bit
+// vectors. The loop vectorizer gains from them in loops over long arrays. The
+// SLP vectorizer, however, then packs two independent groups of four doubles
+// of straight-line code into one 512-bit vector: values move between the two
+// halves on the dependence chain, and a 512-bit load of two halves that were
+// just stored as 256-bit vectors cannot be forwarded from the stores. While
+// an object of this class exists, the SLP vectorizer uses at most 256-bit
+// vectors on such targets, as it does on the x86 CPUs that prefer 256-bit
+// vectors. LLVM has no per-pass setting for this, only a command line option,
+// which the destructor resets.
+class SLPVectorWidthLimit {
+public:
+    SLPVectorWidthLimit(llvm::Module &m, llvm::TargetMachine &tm) {
+        if (!tm.getTargetTriple().isX86()) return;
+        llvm::Function *definition = nullptr;
+        for (llvm::Function &f : m) {
+            if (!f.isDeclaration()) {
+                definition = &f;
+                break;
+            }
+        }
+        if (!definition) return;
+        llvm::TypeSize width = tm.getTargetTransformInfo(*definition)
+            .getRegisterBitWidth(
+                llvm::TargetTransformInfo::RGK_FixedWidthVector);
+        if (width.getKnownMinValue() <= 256) return;
+        auto &options = llvm::cl::getRegisteredOptions();
+        auto it = options.find("slp-max-reg-size");
+        if (it != options.end() && it->second->getNumOccurrences() == 0) {
+            option = it->second;
+            option->addOccurrence(0, "slp-max-reg-size", "256");
+        }
+    }
+    ~SLPVectorWidthLimit() {
+        if (option) option->reset();
+    }
+private:
+    llvm::cl::Option *option = nullptr;
+};
+#endif
+
 #if LLVM_VERSION_MAJOR < 9
 // IndVarSimplify in LLVM 7 and 8 can mark the increment of a loop counter
 // that starts at -1 (a DO loop starting at 0) as `nuw`. Unrolling an inner
@@ -1199,6 +1241,9 @@ static void disable_upper_bound_unrolling() {
 
 void LLVMEvaluator::opt(llvm::Module &m) {
     configure_module(m);
+#if LLVM_VERSION_MAJOR >= 13
+    SLPVectorWidthLimit slp_vector_width_limit(m, *TM);
+#endif
 
 #if LLVM_VERSION_MAJOR >= 17
     llvm::LoopAnalysisManager LAM;

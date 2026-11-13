@@ -57,6 +57,7 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Operator.h>
 #include <llvm/IR/Verifier.h>
+#include <llvm/Support/CommandLine.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Target/TargetOptions.h>
@@ -1819,6 +1820,73 @@ end module
             CHECK(scalar_adds == 0);
         }, false, true);
 }
+
+#if defined(HAVE_TARGET_X86) && LLVM_VERSION_MAJOR >= 16
+TEST_CASE("LLVM SLP vectors are at most 256 bits on x86 CPUs that prefer 512") {
+    // Zen 4 prefers 512-bit vectors: the loop vectorizer uses them, the SLP
+    // vectorizer combines the eight adjacent additions in two 256-bit ones.
+    CompilerOptions co;
+    co.po.fast = true;
+    co.target = "x86_64-unknown-linux-gnu";
+    co.mcpu = "znver4";
+    LCompilers::LLVMEvaluator e(co);
+    std::string source = R"""(
+define void @add8(ptr noalias %a, ptr noalias %b, ptr noalias %c) {
+)""";
+    for (int i = 0; i < 8; i++) {
+        std::string n = std::to_string(i);
+        source += "  %pa" + n + " = getelementptr double, ptr %a, i64 " + n + "\n"
+            + "  %pb" + n + " = getelementptr double, ptr %b, i64 " + n + "\n"
+            + "  %pc" + n + " = getelementptr double, ptr %c, i64 " + n + "\n"
+            + "  %a" + n + " = load double, ptr %pa" + n + "\n"
+            + "  %b" + n + " = load double, ptr %pb" + n + "\n"
+            + "  %s" + n + " = fadd fast double %a" + n + ", %b" + n + "\n"
+            + "  store double %s" + n + ", ptr %pc" + n + "\n";
+    }
+    source += R"""(  ret void
+}
+
+define void @axpy(ptr noalias %x, ptr noalias %y, i64 %n) {
+entry:
+  br label %loop
+loop:
+  %i = phi i64 [ 0, %entry ], [ %i1, %loop ]
+  %px = getelementptr double, ptr %x, i64 %i
+  %py = getelementptr double, ptr %y, i64 %i
+  %vx = load double, ptr %px
+  %vy = load double, ptr %py
+  %m = fmul fast double %vx, 2.0
+  %s = fadd fast double %vy, %m
+  store double %s, ptr %py
+  %i1 = add nuw nsw i64 %i, 1
+  %done = icmp eq i64 %i1, %n
+  br i1 %done, label %exit, label %loop
+exit:
+  ret void
+}
+)""";
+    std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(source, "");
+    e.opt(*m->m_m);
+    auto widest_fadd = [&](const std::string &name) {
+        unsigned lanes = 0;
+        for (llvm::BasicBlock &block: *m->m_m->getFunction(name)) {
+            for (llvm::Instruction &inst: block) {
+                if (inst.getOpcode() != llvm::Instruction::FAdd) continue;
+                if (auto *v = llvm::dyn_cast<llvm::FixedVectorType>(
+                        inst.getType())) {
+                    lanes = std::max(lanes, (unsigned)v->getNumElements());
+                }
+            }
+        }
+        return lanes;
+    };
+    CHECK(widest_fadd("add8") == 4);
+    CHECK(widest_fadd("axpy") == 8);
+    // The limit lasts only while the module is optimized.
+    CHECK(llvm::cl::getRegisteredOptions()["slp-max-reg-size"]
+        ->getNumOccurrences() == 0);
+}
+#endif
 
 TEST_CASE("LLVM TBAA metadata under --fast") {
     std::string source = R"(module tbaa_ir_m
