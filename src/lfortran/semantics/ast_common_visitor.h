@@ -7776,8 +7776,22 @@ public:
         }
     }
 
+    // An EXTERNAL statement is a standard implicit interface. It does not
+    // require --implicit-interface when the name is already a procedure or
+    // a typed variable. A bare `external f` for a name that was never
+    // declared still requires the flag.
     void create_external_function(std::string sym, Location loc, ASR::ttype_t* determined_type = nullptr) {
-        if (compiler_options.implicit_interface) {
+        ASR::symbol_t *already = current_scope->resolve_symbol(sym);
+        if (!compiler_options.implicit_interface && already == nullptr
+                && determined_type == nullptr) {
+            diag.add(Diagnostic(
+                "function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`",
+                Level::Error, Stage::Semantic, {
+                    Label("",{loc})
+                }));
+            throw SemanticAbort();
+        }
+        {
             bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
@@ -7927,13 +7941,6 @@ public:
                 }
             }
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
-        } else {
-            diag.add(Diagnostic(
-                "function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`",
-                Level::Error, Stage::Semantic, {
-                    Label("",{loc})
-                }));
-            throw SemanticAbort();
         }
     }
 
@@ -26175,14 +26182,13 @@ public:
                 check_implicit_none_external(var_name, v, x.base.base.loc);
             }
         }
-        if (compiler_options.implicit_interface && !is_external_procedure
-                && is_implicit_interface_decl(v)) {
+        if (!is_external_procedure && is_implicit_interface_decl(v)) {
             // `v` was declared `external` with no interface, so its argument
-            // list is unknown. Infer the concrete interface from this call's
-            // arguments, exactly like a locally declared external. A reference
-            // that passes no arguments infers a zero-argument interface; it
-            // must not be left resolving to the declaration itself, which is
-            // not a call target.
+            // list is unknown. Every reference infers a concrete interface
+            // from its actuals. That is standard Fortran and does not need
+            // --implicit-interface. A reference that passes no arguments
+            // infers a zero-argument interface; it must not be left resolving
+            // to the declaration itself, which is not a call target.
             is_external_procedure = true;
         }
         if (x.n_subargs > 0 && x.n_member == 0) {
@@ -26205,12 +26211,13 @@ public:
             if( !is_function ) {
                 return;
             }
-            if (compiler_options.implicit_interface && is_function &&
-                    (!v || ASRUtils::is_bare_implicit_interface(v))) {
-                // A reference to an undeclared name or to an external with an
-                // implicit interface. It goes through an interface built from
-                // this reference's actuals, returning the declared type of
-                // the name, or else its implicit type.
+            if (is_function && ((compiler_options.implicit_interface && !v)
+                    || ASRUtils::is_bare_implicit_interface(v))) {
+                // A reference to an undeclared name (only with
+                // --implicit-interface) or to a procedure declared EXTERNAL.
+                // It goes through an interface built from this reference's
+                // actuals, returning the declared type of the name, or else
+                // its implicit type.
                 ASR::ttype_t* type = nullptr;
                 bool is_subrout = false;
                 if (external_sym) {
@@ -26397,14 +26404,17 @@ public:
                 v = implicit_function_reference_target(x, var_name, canonical, old_type);
             }
         }
-        if (v && !compiler_options.implicit_interface && is_external_procedure) {
+        if (v && !implicit_call_done && !compiler_options.implicit_interface
+                && is_external_procedure && current_scope->parent) {
             /*
                 Case: ./integration_tests/external_01.f90
                 We have `enorm` declared outside current_scope. Check if it is a function
                 and if it is, then we need to remove template function `enorm` from current scope and external procedures.
+                A name that is only declared EXTERNAL has no such definition, and
+                resolve_symbol returns null.
             */
             ASR::symbol_t* v2 = current_scope->parent->resolve_symbol(var_name);
-            if (ASR::is_a<ASR::Function_t>(*v2)) {
+            if (v2 && ASR::is_a<ASR::Function_t>(*v2)) {
                 current_scope->erase_symbol(var_name);
                 erase_from_external_mapping(var_name);
                 ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface);
