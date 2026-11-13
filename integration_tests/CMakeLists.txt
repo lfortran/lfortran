@@ -2271,6 +2271,7 @@ RUN(NAME intrinsics_511 LABELS gfortran llvm) # any(isnan()) of a component of a
 RUN(NAME intrinsics_512 LABELS gfortran llvm) # maxloc with mask of a component of an array of derived types (#11639)
 RUN(NAME intrinsics_513 LABELS gfortran llvm) # selected_real_kind(16) is x87 kind 10 where that kind exists (#17414)
 RUN(NAME intrinsics_514 LABELS gfortran llvm) # sqrt of x87 kind 10 (#17475)
+RUN(NAME intrinsics_515 LABELS gfortran llvm) # selected_real_kind returns -1/-2/-3 when precision or range is unavailable (#15147)
 RUN(NAME intrinsics_516 LABELS gfortran llvm) # x87 kind-10 constant folds (#17201)
 RUN(NAME intrinsics_518 LABELS gfortran llvm) # real(16) parameter gamma/log_gamma/hypot/bessel/erfc_scaled (#15730)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
