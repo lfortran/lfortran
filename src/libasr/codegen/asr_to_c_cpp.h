@@ -175,13 +175,18 @@ public:
         return std::move(src);
     }
 
+    bool c_inline_pointer_array_member(
+            const ASR::StructInstanceMember_t &member) const {
+        // A Reference member borrows a descriptor rather than owning one inline.
+        return is_c && !ASRUtils::get_reference_member(member) &&
+            ASRUtils::is_pointer(member.m_type) &&
+            ASRUtils::is_array(member.m_type);
+    }
+
     bool c_inline_pointer_array_member(ASR::expr_t* expr) const {
-        if (!is_c || !ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
-            return false;
-        }
-        ASR::ttype_t* type =
-            ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_type;
-        return ASRUtils::is_pointer(type) && ASRUtils::is_array(type);
+        return ASR::is_a<ASR::StructInstanceMember_t>(*expr) &&
+            c_inline_pointer_array_member(
+                *ASR::down_cast<ASR::StructInstanceMember_t>(expr));
     }
 
     bool c_inline_char_storage(const ASR::Variable_t &v) const {
@@ -3239,8 +3244,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             src = "(*" + src + ")";
             last_expr_precedence = 2;
         }
-        if (is_c && ASRUtils::is_pointer(x.m_type) &&
-                ASRUtils::is_array(x.m_type)) {
+        if (c_inline_pointer_array_member(x)) {
             src = "(&(" + src + "))";
             last_expr_precedence = 2;
         }
