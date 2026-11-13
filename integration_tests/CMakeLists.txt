@@ -2481,8 +2481,6 @@ RUN(NAME bindc6 LABELS gfortran llvm EXTRAFILES bindc6_sum.c)
 RUN(NAME bindc_01 LABELS gfortran llvm EXTRAFILES bindc_01b.f90 bindc_01c.c)
 RUN(NAME test_c_long_double LABELS gfortran llvm EXTRAFILES test_c_long_double_c.c)
 RUN(NAME test_c_long_double_01 LABELS gfortran llvm)
-RUN(NAME test_c_long_double_02 LABELS gfortran llvm EXTRAFILES test_c_long_double_02b.f90 test_c_long_double_02c.c)
-RUN(NAME c_long_double_complex_01 LABELS gfortran llvm)
 RUN(NAME bindc_02 LABELS gfortran llvm EXTRAFILES bindc_02b.f90 bindc_02c.c)
 RUN(NAME bindc_03 LABELS gfortran llvm EXTRAFILES bindc_03c.c)
 RUN(NAME bindc_04 LABELS gfortran llvm EXTRAFILES bindc_04c.c)
@@ -7928,6 +7926,7 @@ RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
 
 
 
+
 RUN(NAME cpp_flag_01 LABELS gfortran llvm
         EXTRA_ARGS -cpp -DCPP_FLAG_01
         GFORTRAN_ARGS -cpp -DCPP_FLAG_01)
@@ -7953,6 +7952,8 @@ RUN(NAME module_parameter_pointer_01 LABELS gfortran llvm
     EXTRA_ARGS --implicit-interface --mangle-underscore-external)
 RUN(NAME empty_explicit_shape_01 LABELS gfortran llvm
     EXTRA_ARGS --implicit-interface)
+RUN(NAME c_long_double_complex_01 LABELS gfortran llvm)
+RUN(NAME test_c_long_double_02 LABELS gfortran llvm EXTRAFILES test_c_long_double_02b.f90 test_c_long_double_02c.c)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
