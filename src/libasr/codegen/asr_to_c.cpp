@@ -244,7 +244,7 @@ public:
         } else {
             bool is_fixed_size = true;
             std::string v_m_name = v.m_name;
-            if (ASRUtils::is_allocatable(v.m_type)) {
+            if (c_scalar_allocatable(v.m_type)) {
                 type_name += "*";
             }
             if( declare_as_constant ) {
@@ -257,8 +257,8 @@ public:
     }
 
     // The C type of a Var of the variable that the frame member `member`
-    // refers to: the descriptor pointer of an array, the pointer to a derived
-    // type object, and otherwise the type of its value.
+    // refers to: the descriptor pointer of an array, the owner pointer of a
+    // scalar allocatable, the pointer to a derived type, or the value type.
     std::string designator_type(const ASR::Variable_t &member) {
         ASR::ttype_t* t = ASR::down_cast<ASR::Reference_t>(member.m_type)->m_type;
         ASR::ttype_t* elem = ASRUtils::type_get_past_array(
@@ -286,6 +286,9 @@ public:
                 array_types_decls);
         }
         if (ASR::is_a<ASR::StructType_t>(*elem)) {
+            return elem_type + "*";
+        }
+        if (c_scalar_allocatable(t)) {
             return elem_type + "*";
         }
         return elem_type;
@@ -335,7 +338,9 @@ public:
         }
         std::string sub;
         bool use_ref = (v.m_intent == ASRUtils::intent_out ||
-                        v.m_intent == ASRUtils::intent_inout);
+                        v.m_intent == ASRUtils::intent_inout ||
+                        (c_scalar_allocatable(v.m_type) &&
+                         v.m_intent == ASRUtils::intent_unspecified));
         bool is_array = ASRUtils::is_array(v.m_type);
         bool dummy = ASRUtils::is_arg_dummy(v.m_intent);
         bool inline_character = c_inline_char_storage(v);
@@ -667,7 +672,8 @@ public:
                     if( v.m_intent == ASRUtils::intent_in ||
                         v.m_intent == ASRUtils::intent_inout ||
                         v.m_intent == ASRUtils::intent_out ) {
-                        use_ref = false;
+                        use_ref = c_scalar_allocatable(v.m_type) &&
+                            v.m_intent != ASRUtils::intent_in;
                         dims = "";
                     }
                     std::string ptr_char = "*";

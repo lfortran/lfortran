@@ -143,6 +143,37 @@ public:
     // Both owned automatic CHARACTER storage and borrowed dummy storage
     // retain their declared lengths when a specification operand changes.
     std::map<const ASR::Variable_t*, std::string> c_character_lengths;
+    // A scalar allocatable's C owner pointer is distinct from its value.
+    bool c_scalar_allocatable_as_storage = false;
+
+    bool c_scalar_allocatable(ASR::ttype_t* type) const {
+        if (!is_c || !ASRUtils::is_allocatable(type) ||
+                ASRUtils::is_array(type)) {
+            return false;
+        }
+        type = ASRUtils::type_get_past_allocatable(type);
+        return ASR::is_a<ASR::Integer_t>(*type) ||
+            ASR::is_a<ASR::UnsignedInteger_t>(*type) ||
+            ASR::is_a<ASR::Real_t>(*type) ||
+            ASR::is_a<ASR::Complex_t>(*type) ||
+            ASR::is_a<ASR::Logical_t>(*type) ||
+            ASR::is_a<ASR::StructType_t>(*type);
+    }
+
+    bool c_scalar_allocatable_value(ASR::ttype_t* type) const {
+        return c_scalar_allocatable(type) &&
+            !ASR::is_a<ASR::StructType_t>(
+                *ASRUtils::type_get_past_allocatable(type));
+    }
+
+    std::string c_scalar_allocatable_storage(ASR::expr_t* expr) {
+        LCOMPILERS_ASSERT(c_scalar_allocatable(ASRUtils::expr_type(expr)));
+        bool saved = c_scalar_allocatable_as_storage;
+        c_scalar_allocatable_as_storage = true;
+        self().visit_expr(*expr);
+        c_scalar_allocatable_as_storage = saved;
+        return std::move(src);
+    }
 
     bool c_inline_char_storage(const ASR::Variable_t &v) const {
         // A nonallocatable scalar owns its storage inline; a dummy borrows
@@ -1677,6 +1708,27 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         for (size_t i=0; i<n_args; i++) {
             ASR::expr_t* call_arg = m_args[i].m_value;
             check_common_array_argument(call_arg, i < f->n_args ? f->m_args[i] : nullptr);
+            if (is_c && ASR::is_a<ASR::Var_t>(*f->m_args[i])) {
+                ASR::symbol_t* formal = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+                if (ASR::is_a<ASR::Variable_t>(*formal)) {
+                    ASR::Variable_t* param =
+                        ASR::down_cast<ASR::Variable_t>(formal);
+                    if (c_scalar_allocatable(param->m_type)) {
+                        LCOMPILERS_ASSERT(c_scalar_allocatable(
+                            ASRUtils::expr_type(call_arg)));
+                        std::string storage =
+                            c_scalar_allocatable_storage(call_arg);
+                        if (param->m_intent == ASRUtils::intent_in) {
+                            args += storage;
+                        } else {
+                            args += "&(" + storage + ")";
+                        }
+                        if (i < n_args-1) args += ", ";
+                        continue;
+                    }
+                }
+            }
             self().visit_expr(*call_arg);
             src = self().convert_procedure_actual(call_arg, f->m_args[i], src);
             ASR::ttype_t* type = ASRUtils::expr_type(call_arg);
@@ -2087,10 +2139,15 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             if (!ASR::is_a<ASR::StructType_t>(*element) &&
                     !ASR::is_a<ASR::String_t>(*element)) {
                 if (ASRUtils::is_pointer(m_value_type) ||
-                        ASRUtils::is_allocatable(m_value_type)) {
+                        (ASRUtils::is_allocatable(m_value_type) &&
+                         !c_scalar_allocatable_value(m_value_type))) {
                     value = "(*(" + value + "))";
                 }
-                src += indent + "(*(" + target + ")) = " + value + ";\n";
+                if (ASRUtils::is_pointer(m_target_type) ||
+                        !c_scalar_allocatable_value(m_target_type)) {
+                    target = "(*(" + target + "))";
+                }
+                src += indent + target + " = " + value + ";\n";
                 return;
             }
         }
@@ -2507,8 +2564,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     // designates (see visit_StructInstanceMember).
     void visit_BindReference(const ASR::BindReference_t &x) {
         std::string indent(indentation_level*indentation_spaces, ' ');
-        self().visit_expr(*x.m_variable);
-        std::string variable = std::move(src);
+        std::string variable;
+        if (c_scalar_allocatable(ASRUtils::expr_type(x.m_variable))) {
+            variable = c_scalar_allocatable_storage(x.m_variable);
+        } else {
+            self().visit_expr(*x.m_variable);
+            variable = std::move(src);
+        }
         std::string reference = reference_member_storage(
             *ASR::down_cast<ASR::StructInstanceMember_t>(x.m_reference));
         src = indent + reference + " = &(" + variable + ");\n";
@@ -3048,7 +3110,18 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             return;
         }
         if (is_c) {
-            if ((sv->m_intent == ASRUtils::intent_in
+            if (c_scalar_allocatable(sv->m_type)) {
+                src = std::string(sv->m_name);
+                if (sv->m_intent == ASRUtils::intent_out ||
+                        sv->m_intent == ASRUtils::intent_inout ||
+                        sv->m_intent == ASRUtils::intent_unspecified) {
+                    src = "(*" + src + ")";
+                }
+                if (!c_scalar_allocatable_as_storage &&
+                        c_scalar_allocatable_value(sv->m_type)) {
+                    src = "(*" + src + ")";
+                }
+            } else if ((sv->m_intent == ASRUtils::intent_in
                 || sv->m_intent == ASRUtils::intent_inout)
                 && ASRUtils::is_array(sv->m_type)
                 && ASRUtils::is_pointer(sv->m_type)) {
@@ -3073,7 +3146,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
     // member itself, which holds the address of a variable.
     std::string reference_member_storage(const ASR::StructInstanceMember_t& x) {
         std::string der_expr, member;
+        bool saved = c_scalar_allocatable_as_storage;
+        c_scalar_allocatable_as_storage = false;
         this->visit_expr(*x.m_v);
+        c_scalar_allocatable_as_storage = saved;
         der_expr = std::move(src);
         ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(x.m_m);
         member = ASRUtils::symbol_name(symbol);
@@ -3127,6 +3203,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         if (ASRUtils::get_reference_member(x)) {
             // A member of Reference type designates the variable whose
             // address it holds.
+            src = "(*" + src + ")";
+            last_expr_precedence = 2;
+        }
+        if (!c_scalar_allocatable_as_storage &&
+                c_scalar_allocatable_value(x.m_type)) {
             src = "(*" + src + ")";
             last_expr_precedence = 2;
         }
@@ -3532,8 +3613,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     ASRUtils::IntrinsicImpureFunctions::Allocated)) {
             LCOMPILERS_ASSERT(x.n_args == 1 &&
                 ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[0])));
-            self().visit_expr(*x.m_args[0]);
-            std::string arg = std::move(src);
+            std::string arg;
+            if (c_scalar_allocatable(ASRUtils::expr_type(x.m_args[0]))) {
+                arg = c_scalar_allocatable_storage(x.m_args[0]);
+            } else {
+                self().visit_expr(*x.m_args[0]);
+                arg = std::move(src);
+            }
             if (ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0]))) {
                 src = "(" + arg + " != NULL && " + arg +
                     "->is_allocated)";
@@ -3725,8 +3811,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                                     tmp_expr->base.loc);
             }
             ASR::ttype_t* type = ASRUtils::expr_type(tmp_expr);
-            self().visit_expr(*tmp_expr);
-            std::string sym = std::move(src);
+            std::string sym;
+            if (c_scalar_allocatable(type)) {
+                sym = c_scalar_allocatable_storage(tmp_expr);
+            } else {
+                self().visit_expr(*tmp_expr);
+                sym = std::move(src);
+            }
             if (ASRUtils::is_array(type)) {
                 if (is_c) {
                     out += indent + "if (" + sym + " == NULL) " + sym +
@@ -3985,8 +4076,13 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 throw CodeGenError("deallocate with stat or errmsg is not "
                     "supported by the c backend yet", x.base.base.loc);
             }
-            self().visit_expr(*operand);
-            std::string value = std::move(src);
+            std::string value;
+            if (c_scalar_allocatable(type)) {
+                value = c_scalar_allocatable_storage(operand);
+            } else {
+                self().visit_expr(*operand);
+                value = std::move(src);
+            }
             ASR::ttype_t* elem = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable_pointer(type));
             ASR::Struct_t* derived = nullptr;
