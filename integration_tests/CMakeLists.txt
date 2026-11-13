@@ -3453,6 +3453,7 @@ RUN(NAME c_pointer_descriptor_ownership_02 LABELS c
     EXTRAFILES intent_out_inherited_alloc_cleanup_02c.c) # GNU does not use LFortran's allocator
 RUN(NAME c_pointer_dummy_abi_01 LABELS gfortran llvm c)
 RUN(NAME c_pointer_allocatable_derived_01 LABELS gfortran llvm c)
+RUN(NAME c_pointer_associated_empty_01 LABELS gfortran c) # LLVM zero-sized TARGET bug: #14340
 RUN(NAME c_reset_character_component_01 LABELS gfortran llvm c)
 RUN(NAME c_character_dummy_length_01 LABELS gfortran llvm c)
 RUN(NAME c_character_select_case_01 LABELS gfortran llvm c)

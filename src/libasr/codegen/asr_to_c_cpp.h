@@ -2713,7 +2713,8 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 int rank = ASRUtils::extract_n_dims_from_ttype(type);
                 for (int i = 0; i < rank; i++) {
                     std::string dim = std::to_string(i);
-                    condition += " && " + ptr + "->dims[" + dim +
+                    condition += " && " + target + "->dims[" + dim +
+                        "].length > 0 && " + ptr + "->dims[" + dim +
                         "].length == " + target + "->dims[" + dim +
                         "].length && " + ptr + "->dims[" + dim +
                         "].stride == " + target + "->dims[" + dim +
