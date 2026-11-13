@@ -11,7 +11,7 @@ program intent_out_dynamic_local
     call reset(x)
     if (allocated(x%data) .or. x%value /= 11) error stop 5
     call check_local()
-    block
+    program_defaults: block
         type :: block_item
             integer :: value = 31
             integer, allocatable :: data(:)
@@ -21,5 +21,5 @@ program intent_out_dynamic_local
         y%value = -1
         call reset(y)
         if (allocated(y%data) .or. y%value /= 31) error stop 6
-    end block
+    end block program_defaults
 end program
