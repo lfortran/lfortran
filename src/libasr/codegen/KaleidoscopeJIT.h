@@ -61,6 +61,12 @@
 namespace llvm {
 namespace orc {
 
+#ifdef __EMSCRIPTEN__
+// There is no ORC JIT to run under Emscripten, and its LLVM is built without
+// RTTI, while LFortran keeps RTTI for xeus: a subclass's typeinfo would refer
+// to a SectionMemoryManager typeinfo that does not exist.
+using JITSectionMemoryManager = SectionMemoryManager;
+#else
 // The GNU unwinder indexes an object's entire min/max PC range. Keep its code
 // sections together so another object's code cannot fall inside that range.
 class ContiguousSectionMemoryManager final : public SectionMemoryManager {
@@ -109,6 +115,9 @@ public:
   }
 };
 
+using JITSectionMemoryManager = ContiguousSectionMemoryManager;
+#endif
+
 class KaleidoscopeJIT {
 private:
 #if LLVM_VERSION_MAJOR >= 8
@@ -141,10 +150,10 @@ public:
         ES(std::move(ES)),
 #if LLVM_VERSION_MAJOR >= 21
         ObjectLayer(*this->ES,
-                    [](const llvm::MemoryBuffer &) { return std::make_unique<ContiguousSectionMemoryManager>(); }),
+                    [](const llvm::MemoryBuffer &) { return std::make_unique<JITSectionMemoryManager>(); }),
 #else
         ObjectLayer(*this->ES,
-                    []() { return std::make_unique<ContiguousSectionMemoryManager>(); }),
+                    []() { return std::make_unique<JITSectionMemoryManager>(); }),
 #endif
 #if LLVM_VERSION_MAJOR >= 10
         CompileLayer(*this->ES, ObjectLayer, std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
@@ -208,7 +217,7 @@ public:
         TM(std::move(TM_)), DL(TM->createDataLayout()),
         ObjectLayer(ES, [this](VModuleKey) {
           return RTDyldObjectLinkingLayer::Resources{
-              std::make_shared<ContiguousSectionMemoryManager>(), Resolver};
+              std::make_shared<JITSectionMemoryManager>(), Resolver};
         }),
         CompileLayer(ObjectLayer, SimpleCompiler(*TM)) {
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
