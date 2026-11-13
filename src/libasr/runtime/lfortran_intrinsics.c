@@ -8594,6 +8594,29 @@ LFORTRAN_API double _lfortran_dp_rand_num() {
     return rand() / ((double) RAND_MAX + 1.0);
 }
 
+// Each rand() draw contributes log2(RAND_MAX + 1) bits (RAND_MAX + 1 is a
+// power of two). Enough draws are combined to fill the 113 significand bits;
+// rounding the last addition can reach 1.0, so map that to the largest
+// real(16) value below 1.0.
+LFORTRAN_API void _lfortran_qp_rand_num(lf_float128 *r) {
+    const double radix = (double) RAND_MAX + 1.0;
+    int bits_per_draw = 0;
+    for (double m = radix; m > 1.0; m /= 2.0) bits_per_draw++;
+    const int draws = (113 + bits_per_draw - 1) / bits_per_draw;
+    const lf_float128 one = lf_f128_from_int64(1);
+    lf_float128 v = lf_f128_from_int64(0);
+    for (int i = 0; i < draws; i++) {
+        v = lf_f128_div(lf_f128_add(v, lf_f128_from_int64(rand())),
+            lf_f128_from_double(radix));
+    }
+    if (lf_f128_cmp(v, one) < 0) {
+        *r = v;
+    } else {
+        *r = lf_f128_sub(one, lf_f128_div(one,
+            lf_f128_from_double(ldexp(1.0, 113))));
+    }
+}
+
 LFORTRAN_API int32_t _lfortran_int32_rand_num() {
     return rand();
 }
