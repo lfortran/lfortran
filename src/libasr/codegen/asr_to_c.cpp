@@ -1159,7 +1159,7 @@ R"(    // Initialise Numpy
 
     template <typename T>
     void visit_AggregateTypeUtil(const T& x, std::string c_type_name,
-        std::string& src_dest) {
+        std::string& src_dest, ASR::symbol_t* parent = nullptr) {
         std::string body = "";
         int indendation_level_copy = indentation_level;
         for( auto itr: x.m_symtab->get_scope() ) {
@@ -1167,10 +1167,10 @@ R"(    // Initialise Numpy
                 visit_AggregateTypeUtil(*ASR::down_cast<ASR::Union_t>(itr.second),
                                         "union", src_dest);
             } else if( ASR::is_a<ASR::Struct_t>(*itr.second) ) {
-                std::string struct_c_type_name = get_StructTypeCTypeName(
-                    *ASR::down_cast<ASR::Struct_t>(itr.second));
-                visit_AggregateTypeUtil(*ASR::down_cast<ASR::Struct_t>(itr.second),
-                                        struct_c_type_name, src_dest);
+                ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(itr.second);
+                std::string struct_c_type_name = get_StructTypeCTypeName(*st);
+                visit_AggregateTypeUtil(*st, struct_c_type_name, src_dest,
+                                        st->m_parent);
             }
         }
         indentation_level = indendation_level_copy;
@@ -1182,6 +1182,13 @@ R"(    // Initialise Numpy
         c_decl_options_.pre_initialise_derived_type = false;
         c_decl_options_.use_ptr_for_derived_type = false;
         c_decl_options_.do_not_initialize = true;
+        if (parent) {
+            ASR::symbol_t* parent_type =
+                ASRUtils::symbol_get_past_external(parent);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*parent_type));
+            body += indent + "struct " + ASRUtils::symbol_name(parent_type) +
+                " " + c_parent_component + ";\n";
+        }
         for( size_t i = 0; i < x.n_members; i++ ) {
             ASR::symbol_t* member = x.m_symtab->get_symbol(x.m_members[i]);
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*member));
@@ -1217,7 +1224,7 @@ R"(    // Initialise Numpy
     void visit_Struct(const ASR::Struct_t& x) {
         src = "";
         std::string c_type_name = get_StructTypeCTypeName(x);
-        visit_AggregateTypeUtil(x, c_type_name, array_types_decls);
+        visit_AggregateTypeUtil(x, c_type_name, array_types_decls, x.m_parent);
         src = "";
     }
 

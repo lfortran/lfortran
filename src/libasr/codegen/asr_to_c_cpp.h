@@ -41,6 +41,7 @@
 
 namespace LCompilers {
 
+inline constexpr const char* c_parent_component = "_lfortran_parent";
 
 // Platform dependent fast unique hash:
 static inline uint64_t get_hash(ASR::asr_t *node)
@@ -2968,7 +2969,31 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
         der_expr = std::move(src);
-        member = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_m));
+        ASR::symbol_t* symbol = ASRUtils::symbol_get_past_external(x.m_m);
+        member = ASRUtils::symbol_name(symbol);
+        if (is_c) {
+            ASR::symbol_t* owner = ASR::is_a<ASR::Struct_t>(*symbol)
+                ? symbol : ASRUtils::get_asr_owner(symbol);
+            LCOMPILERS_ASSERT(owner && ASR::is_a<ASR::Struct_t>(*owner));
+            ASR::symbol_t* base = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(x.m_v));
+            LCOMPILERS_ASSERT(base && ASR::is_a<ASR::Struct_t>(*base));
+            ASR::Struct_t* type = ASR::down_cast<ASR::Struct_t>(base);
+            std::string path;
+            while (&type->base != owner) {
+                LCOMPILERS_ASSERT(type->m_parent);
+                path += std::string(c_parent_component) + ".";
+                type = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(type->m_parent));
+            }
+            if (ASR::is_a<ASR::Struct_t>(*symbol)) {
+                LCOMPILERS_ASSERT(!path.empty());
+                path.pop_back();
+                member = path;
+            } else {
+                member = path + member;
+            }
+        }
         bool designates_value = ASR::is_a<ASR::ArrayItem_t>(*x.m_v) ||
             ASR::is_a<ASR::UnionInstanceMember_t>(*x.m_v) ||
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v);
