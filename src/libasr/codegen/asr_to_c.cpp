@@ -1627,22 +1627,8 @@ R"(    // Initialise Numpy
         return out;
     }
 
-    /*
-        Checks that `unit`, the internal file of a write, is a character
-        variable whose storage this backend owns, and returns its type.
-
-        The C backend keeps a fixed-length character variable as a `char *`
-        that starts out NULL and carries no length, so the write takes the
-        length from the declaration and writes into the variable's own buffer,
-        allocating a NUL-terminated buffer of that length the first time (so
-        once per variable, not once per write). That is only valid for a
-        variable nothing else gives storage to:
-        a dummy argument may be bound to any of the caller's buffers, of a
-        length the callee does not know, a variable with an initial value
-        starts out pointing at a read-only string literal, and a `save`
-        variable of a procedure is declared without `static`, so its buffer
-        does not outlive the call.
-    */
+    // Internal writes currently support owned scalar character variables.
+    // Borrowed dummies and saved procedure locals need separate handling.
     ASR::String_t* check_internal_file(ASR::expr_t* unit) {
         const Location &loc = unit->base.loc;
         if (ASRUtils::is_array(ASRUtils::expr_type(unit))) {
@@ -1784,20 +1770,18 @@ R"(    // Initialise Numpy
         if (is_internal) {
             visit_expr(*x.m_unit);
             std::string target = src;
-            std::string target_len;
-            int64_t const_len;
-            if (ASRUtils::extract_value(internal_type->m_len, const_len)) {
-                target_len = std::to_string(const_len);
-            } else {
-                visit_expr(*internal_type->m_len);
-                target_len = src;
-            }
+            std::string target_len = c_character_length(x.m_unit, loc);
             std::string char_kind = std::to_string(internal_type->m_kind);
             out += inner_indent + "int64_t __lfortran_target_len = " + target_len + ";\n";
-            out += inner_indent + "if (" + target + " == NULL) {\n";
-            out += inner_indent + std::string(indentation_spaces, ' ') + target
-                + " = (char *) calloc(__lfortran_target_len + 1, " + char_kind + ");\n";
-            out += inner_indent + "}\n";
+            if (c_inline_char_storage(*c_character_designator_variable(x.m_unit))) {
+                out += inner_indent + "char *__lfortran_target = " + target + ";\n";
+                target = "__lfortran_target";
+            } else {
+                out += inner_indent + "if (" + target + " == NULL) {\n";
+                out += inner_indent + std::string(indentation_spaces, ' ') + target
+                    + " = (char *) calloc(__lfortran_target_len + 1, " + char_kind + ");\n";
+                out += inner_indent + "}\n";
+            }
             out += inner_indent + "_lfortran_string_write(_lfortran_get_default_allocator(), "
                 "&" + target + ", false, false, false, " + char_kind
                 + ", 1, &__lfortran_target_len, " + iostat + ", \"%s\", 2, (char *) "
