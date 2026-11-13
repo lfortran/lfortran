@@ -21,7 +21,7 @@ int main(int argc, char* argv[])
     const float cp =   1.00000000000000000e+00;
     static float d =   2.00000000000000000e+00;
     const float dp =   2.00000000000000000e+00;
-    const char* grade_fixed = "B";
+    const char grade_fixed[1 + 1] = "B";
     int32_t marks;
     const int32_t marks_fixed = 94;
     if (grade_fixed == "A") {

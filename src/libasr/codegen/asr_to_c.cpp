@@ -168,7 +168,8 @@ public:
             if (ASRUtils::is_allocatable(mem_type) &&
                     !ASRUtils::is_array(mem_type)) {
                 sub += indent + name + "->" + member_name + " = NULL;\n";
-            } else if( ASRUtils::is_character(*mem_type) ) {
+            } else if( ASRUtils::is_character(*mem_type) &&
+                    !c_inline_char_storage(*mem_var)) {
                 sub += indent + name + "->" + member_name + " = NULL;\n";
             } else if( ASRUtils::is_array(mem_type) ) {
                 ASR::dimension_t* m_dims = nullptr;
@@ -337,6 +338,7 @@ public:
                         v.m_intent == ASRUtils::intent_inout);
         bool is_array = ASRUtils::is_array(v.m_type);
         bool dummy = ASRUtils::is_arg_dummy(v.m_intent);
+        bool inline_character = c_inline_char_storage(v);
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v.m_type, m_dims);
         ASR::ttype_t* v_m_type = v.m_type;
@@ -512,7 +514,8 @@ public:
         } else {
             std::string dims;
             use_ref = use_ref && !is_array;
-            if (v.m_storage == ASR::storage_typeType::Parameter) {
+            if (v.m_storage == ASR::storage_typeType::Parameter &&
+                    !inline_character) {
                 convert_variable_decl_util(v, is_array, declare_as_constant, use_ref, dummy,
                     force_declare, force_declare_name, n_dims, m_dims, v_m_type, dims, sub);
                 if (v.m_intent != ASR::intentType::ReturnVar) {
@@ -547,16 +550,67 @@ public:
                         ") is not supported by the C backend, only kind 1 is",
                         v.base.base.loc);
                 }
-                bool is_fixed_size = true;
-                dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);
-                sub = format_type_c(dims, "char *", v.m_name, use_ref, dummy);
-                if(v.m_intent == ASRUtils::intent_local &&
-                    !(ASR::is_a<ASR::symbol_t>(*v.m_parent_symtab->asr_owner) &&
-                      ASR::is_a<ASR::Struct_t>(
-                        *ASR::down_cast<ASR::symbol_t>(v.m_parent_symtab->asr_owner))) &&
-                    !(dims.size() == 0 && v.m_symbolic_value) && !do_not_initialize) {
-                    sub += " = NULL";
-                    return sub;
+                if (inline_character) {
+                    ASR::String_t* string_type =
+                        ASR::down_cast<ASR::String_t>(v_m_type);
+                    if (!string_type->m_len) {
+                        throw CodeGenError("character storage needs an explicit "
+                            "length in the c backend", v.base.base.loc);
+                    }
+                    int64_t constant_length;
+                    std::string length;
+                    bool dynamic_length = false;
+                    if (ASRUtils::extract_value(ASRUtils::expr_value(
+                            string_type->m_len), constant_length)) {
+                        length = std::to_string(std::max<int64_t>(
+                            constant_length, 0));
+                    } else {
+                        ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
+                            v.m_parent_symtab->asr_owner);
+                        if (ASR::is_a<ASR::Struct_t>(*owner) ||
+                                ASR::is_a<ASR::Module_t>(*owner) ||
+                                v.m_storage == ASR::storage_typeType::Parameter) {
+                            throw CodeGenError("character storage needs a "
+                                "constant length outside an automatic variable "
+                                "in the c backend", v.base.base.loc);
+                        }
+                        this->visit_expr(*string_type->m_len);
+                        dynamic_length = true;
+                        length = "_lfortran_char_len_" +
+                            std::to_string(const_vars_count++);
+                        std::string indent(
+                            indentation_level * indentation_spaces, ' ');
+                        sub = "int64_t " + length + " = " + src + ";\n" +
+                            indent + "if (" + length + " < 0) " +
+                            length + " = 0;\n" + indent;
+                    }
+                    c_inline_char_lengths[&v] = length;
+                    sub += (v.m_storage == ASR::storage_typeType::Parameter
+                        ? "const char " : "char ") +
+                        std::string(v.m_name) + "[" + length + " + 1]";
+                    if (!v.m_symbolic_value && !do_not_initialize) {
+                        if (dynamic_length) {
+                            std::string indent(
+                                indentation_level * indentation_spaces, ' ');
+                            sub += ";\n" + indent + std::string(v.m_name) +
+                                "[" + length + "] = '\\0'";
+                        } else {
+                            sub += " = {0}";
+                        }
+                    }
+                } else {
+                    bool is_fixed_size = true;
+                    dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);
+                    sub = format_type_c(dims, "char *", v.m_name,
+                        use_ref && !dummy, dummy);
+                    if (v.m_intent == ASRUtils::intent_local &&
+                        !(ASR::is_a<ASR::symbol_t>(*v.m_parent_symtab->asr_owner) &&
+                          ASR::is_a<ASR::Struct_t>(
+                            *ASR::down_cast<ASR::symbol_t>(v.m_parent_symtab->asr_owner))) &&
+                        !(dims.size() == 0 && v.m_symbolic_value) && !do_not_initialize) {
+                        sub += " = NULL";
+                        return sub;
+                    }
                 }
             } else if (ASR::is_a<ASR::StructType_t>(*v_m_type)) {
                 std::string indent(indentation_level*indentation_spaces, ' ');
@@ -715,6 +769,21 @@ public:
                 if( init_expr ) {
                     if (is_c && ASR::is_a<ASR::StringChr_t>(*init_expr)) {
                         // TODO: Not supported yet
+                    } else if (inline_character) {
+                        int64_t length;
+                        std::string value;
+                        ASR::String_t* string_type =
+                            ASR::down_cast<ASR::String_t>(v_m_type);
+                        if (!ASRUtils::extract_value(ASRUtils::expr_value(
+                                string_type->m_len), length) ||
+                                !ASRUtils::extract_string_value(init_expr,
+                                    value)) {
+                            throw CodeGenError("character declaration needs a "
+                                "constant initializer in the c backend",
+                                v.base.base.loc);
+                        }
+                        value.resize(std::max<int64_t>(0, length), ' ');
+                        sub += " = \"" + str_escape_c(value) + "\"";
                     } else {
                         this->visit_expr(*init_expr);
                         std::string init = src;

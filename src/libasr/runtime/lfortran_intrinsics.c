@@ -7824,7 +7824,8 @@ LFORTRAN_API void _lfortran_copy_str_and_pad(
     if(rhs == NULL) lfortran_error("Run-time Error : Copying from unallocated RHS string.");
 
     int64_t data_amount_to_copy = MIN(lhs_len, rhs_len);
-    memcpy(lhs, rhs, data_amount_to_copy * char_kind);
+    /* Assignment can copy a string onto itself or an overlapping section. */
+    memmove(lhs, rhs, data_amount_to_copy * char_kind);
 
     int64_t pad_amount = lhs_len - data_amount_to_copy;
     if (pad_amount > 0) {
