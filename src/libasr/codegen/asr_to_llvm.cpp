@@ -7992,7 +7992,6 @@ public:
         } else if (x.m_type->type == ASR::ttypeType::Real) {
             int a_kind = checked_integer_cast<int>(down_cast<ASR::Real_t>(x.m_type)->m_kind);
             llvm::Type *type;
-            int init_value_bits = 8*a_kind;
             type = llvm_utils->getFPType(a_kind);
             llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, type);
             if (!external) {
@@ -8000,15 +7999,8 @@ public:
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
                             init_value);
                 } else {
-                    if( init_value_bits == 32 ) {
-                        module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                llvm::ConstantFP::get(context,
-                                    llvm::APFloat((float)0)));
-                    } else if( init_value_bits == 64 ) {
-                        module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                llvm::ConstantFP::get(context,
-                                    llvm::APFloat((double)0)));
-                    }
+                    module->getNamedGlobal(llvm_var_name)->setInitializer(
+                            llvm::Constant::getNullValue(type));
                     set_global_variable_linkage_as_common(ptr, x);
                 }
             }
