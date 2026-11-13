@@ -7128,7 +7128,14 @@ LFORTRAN_API void _lfortran_c128_atanh(struct _lfortran_complex_128 *x,
 int64_t _lfortran_integer_pow_64(int64_t base, int64_t exponent){ // Binary Exponentiation
     int64_t res = 1;
     int64_t temp = base;
-    if( exponent < 0 ) return 0;
+    // A negative integer exponent is 0, except 1**n = 1 and
+    // (-1)**n = ±1. gfortran does the same; returning 0 for (-1)**n
+    // flips the sign of a Wigner 3j symbol.
+    if( exponent < 0 ) {
+        if( base == 1 || (base == -1 && (exponent % 2) == 0) ) return 1;
+        if( base == -1 ) return -1;
+        return 0;
+    }
     while(exponent){
         if(exponent%2){
             exponent--;
