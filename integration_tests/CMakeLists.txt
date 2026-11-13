@@ -702,7 +702,6 @@ RUN(NAME min_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME min_03 LABELS gfortran llvm)
 RUN(NAME minmax_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
 RUN(NAME minmax_02 LABELS gfortran llvm)
-RUN(NAME minmax_03 LABELS gfortran llvm) # MIN/MAX return the numeric argument when the other is NaN
 RUN(NAME arithmetic_if_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran) # arithmetic tests use goto
 RUN(NAME arithmetic_if_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 RUN(NAME arithmetic_if_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
@@ -7919,6 +7918,7 @@ RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
 
 
 
+
 RUN(NAME cpp_flag_01 LABELS gfortran llvm
         EXTRA_ARGS -cpp -DCPP_FLAG_01
         GFORTRAN_ARGS -cpp -DCPP_FLAG_01)
@@ -7927,6 +7927,7 @@ RUN(NAME implicit_do_01 LABELS gfortran llvm)
 RUN(NAME implicit_unallocated_01 LABELS gfortran llvm
     EXTRAFILES implicit_unallocated_01c.c
     EXTRA_ARGS --implicit-interface --mangle-underscore-external)
+RUN(NAME minmax_03 LABELS gfortran llvm)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
