@@ -7299,7 +7299,27 @@ public:
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
         this->import_use_symbols(m, x);
     }
+    struct ImplicitNoneBody {
+        BodyVisitor &visitor;
+        bool saved;
+        ImplicitNoneBody(BodyVisitor &visitor, AST::decl_stmt_t **items,
+                size_t n_items) : visitor(visitor),
+                saved(visitor.implicit_none_in_effect) {
+            if (AST::count_kind(items, n_items, AST::DeclStmtKind::Implicit) == 0) {
+                return;
+            }
+            visitor.implicit_none_in_effect = false;
+            for (size_t i = 0; i < n_items; i++) {
+                if (AST::is_a<AST::ImplicitNone_t>(*items[i])) {
+                    visitor.implicit_none_in_effect = true;
+                }
+            }
+        }
+        ~ImplicitNoneBody() { visitor.implicit_none_in_effect = saved; }
+    };
+
     void visit_Program(const AST::Program_t &x) {
+        ImplicitNoneBody implicit_none_body(*this, x.m_items, x.n_items);
         ImplicitNoneExternalScope implicit_none_external_scope(*this,
             x.m_items, x.n_items, true);
         program_count++;
@@ -8069,6 +8089,7 @@ public:
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {
+        ImplicitNoneBody implicit_none_body(*this, x.m_items, x.n_items);
         ImplicitNoneExternalScope implicit_none_external_scope(*this,
             x.m_items, x.n_items, true);
     // TODO: add SymbolTable::lookup_symbol(), which will automatically return
@@ -8186,6 +8207,7 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        ImplicitNoneBody implicit_none_body(*this, x.m_items, x.n_items);
         ImplicitNoneExternalScope implicit_none_external_scope(*this,
             x.m_items, x.n_items, true);
         starting_m_body = x.m_items;
@@ -11382,7 +11404,29 @@ public:
         var = start = end = nullptr;
         if (x.m_var) {
             const Location &var_loc = x.m_var_loc ? *x.m_var_loc : x.base.base.loc;
-            var = ASRUtils::EXPR(resolve_variable(var_loc, to_lower(x.m_var)));
+            std::string var_name = to_lower(x.m_var);
+            // Without IMPLICIT NONE the DO variable is an integer when it
+            // was not declared. That is the rule a labeled `do 10 i = 1, 2`
+            // relies on.
+            if (!implicit_none_in_effect
+                    && current_scope->resolve_symbol(var_name) == nullptr) {
+                int kind = compiler_options.po.default_integer_kind;
+                ASR::ttype_t *int_type = ASRUtils::TYPE(
+                    ASR::make_Integer_t(al, var_loc, kind));
+                SetChar deps;
+                deps.reserve(al, 1);
+                ASRUtils::collect_variable_dependencies(al, deps, int_type);
+                ASR::asr_t *declared = ASRUtils::make_Variable_t_util(
+                    al, var_loc, current_scope, s2c(al, var_name),
+                    deps.p, deps.size(), ASR::intentType::Local,
+                    nullptr, nullptr, ASR::storage_typeType::Default,
+                    int_type, nullptr, ASR::abiType::Source,
+                    ASR::accessType::Public, ASR::presenceType::Required,
+                    false);
+                current_scope->add_symbol(var_name,
+                    ASR::down_cast<ASR::symbol_t>(declared));
+            }
+            var = ASRUtils::EXPR(resolve_variable(var_loc, var_name));
         }
         // A deferred type of a template has no conversion to or from the
         // integer type of the loop control, so reject it before the loop
