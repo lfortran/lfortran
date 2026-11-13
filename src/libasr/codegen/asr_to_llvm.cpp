@@ -26523,6 +26523,18 @@ public:
         std::vector<llvm::Value*> args;
         args.push_back(nullptr); // reserve space for fmt_str
 
+        // A STOP with no stop-code initiates normal termination. The standard
+        // does not require a message, and gfortran prints nothing. A stop-code,
+        // and every ERROR STOP, is still reported.
+        bool silent = stop_msg == "STOP" && stop_code == nullptr;
+        if (silent) {
+            llvm::Function *fn_finalize = LLVM::get_or_declare_function(*module,
+                "_lfortran_internal_alloc_finalize", llvm_utils->void_type, {});
+            builder->CreateCall(fn_finalize, {});
+            exit(context, *module, *builder, exit_code);
+            return;
+        }
+
         /* STOP MSG ("ERROR STOP") */
         {
             llvm::Value* STOP_MSG {};

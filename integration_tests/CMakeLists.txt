@@ -7911,6 +7911,11 @@ RUN(NAME detect_leaks_01 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)
 # lfortran_display is an LFortran runtime module that GFortran does not have.
 # Its procedures do not link with --separate-compilation yet (#15852).
 RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
+RUN(NAME stop_no_code_01 LABELS gfortran llvm)
+if (TEST stop_no_code_01)
+    set_tests_properties(stop_no_code_01 PROPERTIES
+        ENVIRONMENT "LFORTRAN=${CMAKE_Fortran_COMPILER}")
+endif()
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
