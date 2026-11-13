@@ -7914,6 +7914,9 @@ RUN(NAME detect_leaks_01 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)
 RUN(NAME display_data_01 LABELS llvm NO_LLVM_GOC)
 
 RUN(NAME cpp_flag_01 LABELS gfortran llvm
+        EXTRA_ARGS -cpp -DCPP_FLAG_01
+        GFORTRAN_ARGS -cpp -DCPP_FLAG_01)
+
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)
