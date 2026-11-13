@@ -2165,9 +2165,11 @@ std::pair<int64_t, int64_t> compute_type_size_align(ASR::ttype_t* type);
 // points at; every other component contributes its own layout.
 static inline std::pair<int64_t, int64_t> compute_struct_member_size_align(
         ASR::ttype_t* member_type) {
-    if ((ASR::is_a<ASR::Pointer_t>(*member_type) ||
-         ASR::is_a<ASR::Allocatable_t>(*member_type)) &&
-        !ASR::is_a<ASR::Array_t>(*member_type)) {
+    // A pointer or allocatable component is one pointer in the LLVM
+    // struct: a scalar pointer, or a pointer to an array descriptor.
+    // transfer() copies those bits. It does not deep-copy the target.
+    if (ASR::is_a<ASR::Pointer_t>(*member_type) ||
+            ASR::is_a<ASR::Allocatable_t>(*member_type)) {
         return {8, 8};
     }
     return compute_type_size_align(member_type);
