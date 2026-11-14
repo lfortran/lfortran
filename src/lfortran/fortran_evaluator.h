@@ -93,7 +93,18 @@ public:
         // Flush the frontend's transport before STOP terminates the process.
         // Called on the execute() caller, after the last output.
         std::function<void()> flush_on_exit;
+        // Set, the cell runs on a separate thread and execute() asks this
+        // every few milliseconds on the caller, and after each callback above.
+        // Once it returns true, the cell is interrupted (see
+        // interrupt_supported()) and fails with a KeyboardInterrupt. It must
+        // not block or throw. The `input` callback may return early, with
+        // any status, once this returns true.
+        std::function<bool()> interrupt_requested;
     };
+
+    // Whether execute() can interrupt a running cell: native JIT execution
+    // on Linux and macOS (x86-64, AArch64).
+    static bool interrupt_supported();
 
     struct CellResult {
         bool ok = false;
