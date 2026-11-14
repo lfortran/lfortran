@@ -147,7 +147,7 @@ kernel void __lfortran_gpu_kernel_2_26gpu_derived_component_04_m1t(
     __gpu_private_o_k_gpu = o_gpu.k_gpu;
     __gpu_private_o_a_x_gpu = ((float)i__dc_gpu);
     o_gpu.a_gpu.x_gpu = __gpu_private_o_a_x_gpu;
-    a_gpu[((int)(i__dc_gpu) - (__lb_a_0_gpu))] = ((int)__gpu_private_o_a_x_gpu);
+    a_gpu[((int)(i__dc_gpu) - (__lb_a_0_gpu))] = ((int)round(__gpu_private_o_a_x_gpu));
     if ((i__dc_gpu == 3)) {
         __gpu_private_o_k_gpu = 7;
         o_gpu.k_gpu = __gpu_private_o_k_gpu;

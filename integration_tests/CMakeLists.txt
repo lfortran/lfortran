@@ -7696,6 +7696,7 @@ RUN(NAME gpu_metal_435 LABELS gfortran llvm metal cuda EXTRAFILES gpu_metal_435_
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME inline_function_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
+RUN(NAME gpu_nint_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_decline_01 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_decline_02 LABELS gfortran llvm metal cuda)
 RUN(NAME gpu_decline_03 LABELS gfortran llvm EXTRAFILES gpu_decline_03_ext.f90)

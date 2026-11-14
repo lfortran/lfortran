@@ -143,7 +143,7 @@ extern "C" __global__ void __launch_bounds__(256) __lfortran_gpu_kernel_2_26gpu_
     __gpu_private_o_k = o.k;
     __gpu_private_o_a_x = ((float)i__dc);
     o.a.x = __gpu_private_o_a_x;
-    a[((int)(i__dc) - (__lb_a_0))] = ((int)__gpu_private_o_a_x);
+    a[((int)(i__dc) - (__lb_a_0))] = ((int)round(__gpu_private_o_a_x));
     if ((i__dc == 3)) {
         __gpu_private_o_k = 7;
         o.k = __gpu_private_o_k;
