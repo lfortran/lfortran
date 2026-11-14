@@ -75,6 +75,23 @@ follow [make-release](.agents/skills/make-release/SKILL.md). Invoking it
 authorizes the tag, the downstream PRs, and the fix PRs it describes; only
 the green tip of `main` may be released.
 
+## Auto-merge Label (mergebot)
+
+A maintainer who has reviewed a PR applies the `auto-merge` label. When the
+user asks to run mergebot or to process or babysit auto-merge PRs, load and
+follow [mergebot](.agents/skills/mergebot/SKILL.md). It waits for Quick,
+rebases labeled PRs onto `main` when they conflict or need adapting, and
+merges them itself with `gh pr merge`, as a merge commit when the history is
+clean and as a squash with a newly written message otherwise. It does not use
+GitHub's auto-merge button or a merge queue.
+
+The label approves only the head it was applied to, plus mergebot's own
+rebases. Any other push to the PR removes it, as does a CI failure caused by
+the PR (which also turns the PR back into a draft) or a rebase that changes
+what the PR does; a maintainer re-reviews and applies it again. A comment on
+the PR can ask mergebot to squash-merge instead of merging. Agents other than
+mergebot do not push to labeled PRs, merge them, or apply the label.
+
 ## Project Structure & Module Organization
 - `src/`: core sources
   - `libasr/`: ASR + utilities, passes, verification, backends
@@ -108,6 +125,7 @@ Available skills:
 | `fix-mre` | Fix the compiler bug behind an MRE and add an integration test |
 | `pr-review` | Review LFortran PRs with architecture, correctness, and maintainer guidance |
 | `fix-issue` | Fix one issue or a filtered batch in isolated worktrees and subagents, publish dependency-aware draft PRs from a fork early, review locally while CI runs, and iterate on review and CI |
+| `mergebot` | Babysit `auto-merge`-labeled PRs: keep them rebased, wait for CI, and merge or squash-merge them; remove the label when anyone else pushes or the PR fails |
 | `make-release` | Release the green tip of `main`: tag with generated notes, verify the tarball, update the conda-forge feedstock (patches upstreamed afterwards) and lfortran-conda-testing, and turn regressions into issues and fix PRs |
 
 `classify-issue` distinguishes invalid-code diagnostics from valid-code bugs,

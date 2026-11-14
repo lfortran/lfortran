@@ -2271,5 +2271,142 @@ class CaffeineTests(unittest.TestCase):
         self.assertIn("conservative", result.stderr)
 
 
+class MergebotTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "mergebot", ROOT / ".agents/skills/mergebot/scripts/mergebot.py")
+        cls.bot = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.bot)
+
+    def t(self, minute):
+        return self.bot.parse_time(f"2026-11-13T10:{minute:02d}:00Z")
+
+    def problem(self, head="H", label=30, force_pushes=(), runs=(5,),
+                bot_pushed=(), can_write=True):
+        return self.bot.approval_problem(
+            head, self.t(label), can_write,
+            [(self.t(m), sha) for m, sha in force_pushes],
+            [self.t(m) for m in runs], set(bot_pushed))
+
+    def test_head_pushed_before_the_label_is_approved(self):
+        self.assertIsNone(self.problem())
+        # Pushed away and back before the label: the approved head is still H.
+        self.assertIsNone(self.problem(force_pushes=[(10, "X"), (20, "H")]))
+
+    def test_pushes_after_the_label_are_rejected(self):
+        self.assertIn("pushed after approval", self.problem(runs=(40,)))
+        self.assertIn("force-pushed", self.problem(force_pushes=[(40, "H")]))
+        self.assertIn("no CI run", self.problem(runs=()))
+        self.assertIn("write access", self.problem(can_write=False))
+        self.assertIn("labeled event", self.bot.approval_problem(
+            "H", None, True, [], [self.t(5)], set()))
+
+    def test_an_older_head_cannot_return_after_review(self):
+        # M was pushed, replaced by C before the label, then M was pushed
+        # again (fast-forward) after the label: M's early CI run is not enough.
+        self.assertIn("head at approval time was C",
+                      self.problem(head="M", force_pushes=[(10, "C")]))
+
+    def test_mergebot_rebases_stay_approved(self):
+        self.assertIsNone(self.problem(head="B", runs=(45,), bot_pushed={"B"},
+                                       force_pushes=[(40, "B")]))
+        # Anyone else's push after the rebase is rejected.
+        self.assertIn("force-pushed to X", self.problem(
+            head="X", runs=(50,), bot_pushed={"B"},
+            force_pushes=[(40, "B"), (50, "X")]))
+        self.assertIn("pushed after approval", self.problem(
+            head="Y", runs=(50,), bot_pushed={"B"}, force_pushes=[(40, "B")]))
+
+    def test_markers_come_only_from_mergebot_comments(self):
+        body = "Picked up.\n<!-- mergebot:approved sha=abc method=merge -->"
+        comments = [
+            {"author": "maintainer", "body": body, "createdAt": "2026-11-13T10:40:00Z"},
+            {"author": "someone", "body": body.replace("merge -->", "squash -->"),
+             "createdAt": "2026-11-13T10:41:00Z"},
+        ]
+        found = self.bot.markers(comments, "maintainer")
+        self.assertEqual([(kind, fields) for kind, fields, _ in found],
+                         [("approved", {"sha": "abc", "method": "merge"})])
+        self.assertEqual(self.bot.merge_method(found, self.t(30)), "merge")
+        self.assertIsNone(self.bot.merge_method(found, self.t(50)))
+        found.append(("method", {"method": "squash"}, self.t(45)))
+        self.assertEqual(self.bot.merge_method(found, self.t(30)), "squash")
+        found.append(("method", {"method": "merge"}, self.t(46)))
+        self.assertEqual(self.bot.merge_method(found, self.t(30)), "squash")
+
+    def test_ci_state_uses_the_latest_required_check_runs(self):
+        def run(id, name, status="completed", conclusion="success"):
+            return {"id": id, "name": name, "status": status, "conclusion": conclusion}
+
+        required = {"A", "B"}
+        self.assertEqual(self.bot.ci_state(required, [run(1, "A"), run(2, "B")]),
+                         ("success", []))
+        self.assertEqual(self.bot.ci_state(required, [run(1, "A")]), ("pending", []))
+        self.assertEqual(self.bot.ci_state(required, [
+            run(1, "A", conclusion="failure"), run(2, "B", "in_progress", None)]),
+            ("failure", ["A"]))
+        # A rerun supersedes the failed attempt; optional checks do not matter.
+        self.assertEqual(self.bot.ci_state(required, [
+            run(1, "A", conclusion="failure"), run(3, "A"), run(2, "B"),
+            run(4, "C", conclusion="failure")]), ("success", []))
+
+    def test_vague_subjects(self):
+        for subject in ("fix", "Fix typo", "update", "wip", "fix: tests",
+                        "Address review comments", "Apply suggestions from code review",
+                        "fixup! fix: x", "Update reference tests"):
+            self.assertTrue(self.bot.vague_subject(subject), subject)
+        for subject in ("fix: evaluate real(10) digits and exponent inquiries",
+                        "Fix the lower bound of implied-shape parameters",
+                        "refactor: move BOZ parsing into the tokenizer"):
+            self.assertFalse(self.bot.vague_subject(subject), subject)
+
+    def test_history_facts(self):
+        def commit(sha, subject, parents=("p",), body="", added=None, removed=None):
+            return {"sha": sha, "subject": subject, "parents": list(parents),
+                    "body": body, "added": added or {}, "removed": removed or {}}
+
+        clean = self.bot.history_facts([
+            commit("a" * 40, "fix: handle BOZ constants in data statements",
+                   added={"src/x.cpp": ["int boz = 1;"]}),
+            commit("b" * 40, "test: register the BOZ data statement test",
+                   added={"integration_tests/CMakeLists.txt": ["RUN(NAME boz_01)"]}),
+        ])
+        self.assertEqual((clean["merges"], clean["reverts"], clean["vague_subjects"],
+                          clean["churn"], clean["references_rewritten"]),
+                         ([], [], [], [], []))
+        ref = "tests/reference/asr-boz-1.json"
+        messy = self.bot.history_facts([
+            commit("a" * 40, "fix: handle BOZ constants",
+                   added={"src/x.cpp": ["int boz = 1;", "}"], ref: ["x"]}),
+            commit("b" * 40, "Merge branch main", parents=("p", "q")),
+            commit("c" * 40, 'Revert "fix: handle BOZ constants"',
+                   body="This reverts commit aaaa.",
+                   removed={"src/x.cpp": ["int boz = 1;", "}"]}, added={ref: ["y"]}),
+            commit("d" * 40, "fix", added={"src/y.cpp": ["z"]}),
+        ])
+        self.assertEqual(messy["merges"], ["bbbbbbbbbb"])
+        self.assertEqual(messy["reverts"], ["cccccccccc"])
+        self.assertEqual(messy["vague_subjects"], ["dddddddddd fix"])
+        # Trivial lines such as a lone brace are not counted as churn.
+        self.assertEqual(messy["churn"], [{"added_in": "aaaaaaaaaa",
+                                           "removed_in": "cccccccccc", "lines": 1}])
+        self.assertEqual(messy["references_rewritten"], [ref])
+
+    def test_squash_requests_and_subjects(self):
+        comments = [
+            {"author": "a", "body": "Please squash this one.", "url": "u1",
+             "createdAt": "2026-11-13T10:00:00Z"},
+            {"author": "b", "body": "Switching.\n<!-- mergebot:method method=squash -->",
+             "url": "u2", "createdAt": "2026-11-13T10:01:00Z"},
+            {"author": "c", "body": "Looks good.", "url": "u3",
+             "createdAt": "2026-11-13T10:02:00Z"},
+        ]
+        self.assertEqual([c["url"] for c in self.bot.squash_requests(comments)], ["u1"])
+        self.assertEqual(self.bot.squash_subject("fix: x", 7), "fix: x (#7)")
+        self.assertEqual(self.bot.squash_subject("fix: x (#7)", 7), "fix: x (#7)")
+        self.assertRegex("Co-authored-by: A <a@b.c>", self.bot.TRAILER)
+
+
 if __name__ == "__main__":
     unittest.main()

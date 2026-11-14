@@ -174,6 +174,9 @@ This applies in every PR state, including after review. Rebasing only moves
 the existing commits; address review feedback with new commits and do not
 squash or reword commits reviewers have already seen.
 
+Once a maintainer applies the `auto-merge` label, mergebot owns the PR: stop
+pushing to it and report instead, because any other push removes the label.
+
 ## Inputs
 
 1. **The issue.** Accept any of:
