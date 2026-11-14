@@ -15,6 +15,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Operator.h>
 #include <llvm/Target/TargetMachine.h>
 #if defined(HAVE_TARGET_X86) && LLVM_VERSION_MAJOR >= 10
 #include <llvm/IR/IntrinsicsX86.h>
@@ -22,7 +23,6 @@
 
 #include <libasr/codegen/llvm_reductions.h>
 
-#include <algorithm>
 #include <utility>
 #include <vector>
 
@@ -34,17 +34,26 @@ computed for several vectors at once, is what `vhaddpd` computes, given the
 squares r*r: two horizontal adds and one vertical add give the sums of four
 vectors. SLP vectorizes such sums across the vectors instead, gathering one
 component of each vector into a lane. How it places the vectors in lanes
-depends on the LLVM version and the vector width: a transpose of four
-vectors, two or eight lanes, partial sums of two lanes concatenated, or
-differences taken before or after the gather.
+depends on the LLVM version: a transpose of four vectors, partial sums of
+two lanes concatenated, or differences taken before or after the gather.
 
 So the rewrite does not match the shuffles. A root is a fast addition of
-double vectors where every lane, followed through the additions and the
-shuffles, is a sum of three squares. Each squared element is followed through
-shuffles and fast elementwise operations to the vector elements it is
-computed from. The three squares of a lane must be the same expression, one
-element further on for each component; that expression on whole vectors is
+four double lanes where every lane, followed through the additions and the
+shuffles, is a sum of three squares, and the four sums differ. A sum of two
+or three lanes, or of four lanes of which two repeat a sum, is left alone:
+it needs the same two horizontal adds, which then cost more than the gather
+they replace. Each squared element is followed through shuffles and fast
+elementwise operations to the vector elements it is computed from. The three
+squares of a lane must be the same expression on the same leaf vectors, with
+component k reading lane k of each leaf; that expression on whole vectors is
 r. The rewrite computes r for every lane and sums its squares with `vhaddpd`.
+
+Every vector the expression reads must be a four element double vector
+that already holds components 0, 1 and 2 in lanes 0, 1 and 2, such as a
+point stored as four doubles. The rewrite never builds such a vector from
+other lanes: a vectorized loop over an array of three or four element
+points loads several points into one wide vector, and shuffling each point
+out of it costs more than the gather it replaces.
 
 `vhaddpd` also adds component 3, so that component is replaced by a constant
 zero unless every bit of it is known to be +0.0 or -0.0. The horizontal
@@ -80,7 +89,7 @@ bool in_range(ConstantInt *at, Type *type) {
 using Squares = SmallVector<std::pair<Value *, unsigned>, 3>;
 
 // One node of a component expression, in preorder: a fast elementwise
-// operation (`opcode`, its operands follow), or a leaf that reads element
+// operation (`opcode`, its operands follow) or a leaf that reads element
 // `lane` of the vector `leaf`.
 struct Node {
     unsigned opcode = 0;
@@ -93,10 +102,10 @@ struct Node {
 const size_t max_component_nodes = 15;
 
 // Express element `lane` of `v` as elementwise operations on elements of
-// vectors of at least four doubles, looking through shuffles and element
-// inserts and extracts. SLP places the elements of one component expression
-// in different lanes and vectors, and sometimes subtracts before and
-// sometimes after a shuffle; the expression is the same in every case.
+// four element double vectors, looking through shuffles and element inserts
+// and extracts. SLP places the elements of one component expression in
+// different lanes and vectors, and sometimes subtracts before and sometimes
+// after a shuffle; the expression is the same in every case.
 bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes) {
     if (nodes.size() >= max_component_nodes) {
         return false;
@@ -126,7 +135,8 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes) {
     }
     if (auto *extract = dyn_cast<ExtractElementInst>(v)) {
         auto *at = dyn_cast<ConstantInt>(extract->getOperand(1));
-        return at && in_range(at, extract->getOperand(0)->getType()) && lift(extract->getOperand(0), at->getZExtValue(), nodes);
+        return at && in_range(at, extract->getOperand(0)->getType())
+            && lift(extract->getOperand(0), at->getZExtValue(), nodes);
     }
     auto *i = dyn_cast<Instruction>(v);
     if (i && is_fast(i) && (i->getOpcode() == Instruction::FAdd
@@ -138,9 +148,12 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes) {
         return lift(i->getOperand(0), lane, nodes)
             && lift(i->getOperand(1), lane, nodes);
     }
+    // The rewrite squares whole vectors that hold components 0, 1 and 2 of
+    // a point in lanes 0, 1 and 2. A component read from a wider vector,
+    // such as a vectorized load of several points, is not one.
     auto *vector = dyn_cast<FixedVectorType>(v->getType());
-    if (!vector || vector->getNumElements() < 4
-            || !vector->getElementType()->isDoubleTy()) {
+    if (!vector || vector->getNumElements() != 4
+            || !vector->getElementType()->isDoubleTy() || lane > 2) {
         return false;
     }
     Node node;
@@ -150,96 +163,54 @@ bool lift(Value *v, unsigned lane, SmallVectorImpl<Node> &nodes) {
     return true;
 }
 
-// Given components 0, 1 and 2 of one four element vector, in some order,
-// return the lane of each leaf that holds component 0. Each component is
-// the same expression on the same vectors, one lane further on.
-bool component_bases(const SmallVectorImpl<Node> *components[3],
-        SmallVectorImpl<unsigned> &bases) {
+// Whether `components` are components 0, 1 and 2 of one four element vector
+// expression, in some order: the same operations on the same vectors, with
+// every leaf of component k read from lane k. `lift` ends every expression
+// in leaves, which it only accepts in lanes 0 to 2.
+bool same_expression(const SmallVectorImpl<Node> *components[3]) {
     const SmallVectorImpl<Node> &a = *components[0];
     for (unsigned k = 1; k < 3; k++) {
         if (components[k]->size() != a.size()) {
             return false;
         }
     }
-    // The component of each expression, from the lane of its first leaf.
-    unsigned first = 0;
-    while (first < a.size() && a[first].leaf == nullptr) {
-        first++;
-    }
-    if (first == a.size()) {
-        return false;
-    }
-    unsigned low = a[first].lane;
-    for (unsigned k = 1; k < 3; k++) {
-        low = std::min(low, (*components[k])[first].lane);
-    }
-    unsigned component[3];
     bool seen[3] = {false, false, false};
     for (unsigned k = 0; k < 3; k++) {
-        component[k] = (*components[k])[first].lane - low;
-        if (component[k] > 2 || seen[component[k]]) {
-            return false;
-        }
-        seen[component[k]] = true;
-    }
-    bases.clear();
-    for (size_t j = 0; j < a.size(); j++) {
-        if (a[j].leaf == nullptr) {
-            for (unsigned k = 1; k < 3; k++) {
-                const Node &b = (*components[k])[j];
-                if (b.leaf != nullptr || b.opcode != a[j].opcode) {
-                    return false;
-                }
-            }
-            bases.push_back(0);
-            continue;
-        }
-        if (a[j].lane < component[0]) {
-            return false;
-        }
-        unsigned base = a[j].lane - component[0];
-        for (unsigned k = 1; k < 3; k++) {
-            const Node &b = (*components[k])[j];
-            if (b.leaf != a[j].leaf || b.lane != base + component[k]) {
+        const SmallVectorImpl<Node> &c = *components[k];
+        bool has_leaf = false;
+        unsigned component = 0;
+        for (size_t j = 0; j < a.size(); j++) {
+            if (c[j].opcode != a[j].opcode || c[j].leaf != a[j].leaf) {
                 return false;
             }
+            if (c[j].leaf == nullptr) {
+                continue;
+            }
+            if (has_leaf && c[j].lane != component) {
+                return false;
+            }
+            has_leaf = true;
+            component = c[j].lane;
         }
-        bases.push_back(base);
+        if (!has_leaf || seen[component]) {
+            return false;
+        }
+        seen[component] = true;
     }
     return true;
 }
 
-// The second operand of a shuffle that reads only its first.
-Value *unused(Value *v) {
-#if LLVM_VERSION_MAJOR >= 12
-    return PoisonValue::get(v->getType());
-#else
-    return UndefValue::get(v->getType());
-#endif
-}
-
 // Build the four element vector whose components 0, 1 and 2 are the
-// expression `nodes` (starting at `next`), with leaf `j` read from lanes
-// bases[j] to bases[j] + 3. A lane past the end of a leaf is poison.
+// expression `nodes` (starting at `next`), on the whole leaf vectors.
 Value *emit(IRBuilder<> &builder, const SmallVectorImpl<Node> &nodes,
-        const SmallVectorImpl<unsigned> &bases, size_t &next) {
-    size_t j = next++;
-    const Node &node = nodes[j];
-    if (node.leaf == nullptr) {
-        Value *a = emit(builder, nodes, bases, next);
-        Value *b = emit(builder, nodes, bases, next);
-        return builder.CreateBinOp((Instruction::BinaryOps)node.opcode, a, b);
-    }
-    unsigned n = cast<FixedVectorType>(node.leaf->getType())
-        ->getNumElements();
-    if (n == 4 && bases[j] == 0) {
+        size_t &next) {
+    const Node &node = nodes[next++];
+    if (node.leaf != nullptr) {
         return node.leaf;
     }
-    SmallVector<int, 4> mask;
-    for (unsigned l = 0; l < 4; l++) {
-        mask.push_back(bases[j] + l < n ? (int)(bases[j] + l) : -1);
-    }
-    return builder.CreateShuffleVector(node.leaf, unused(node.leaf), mask);
+    Value *a = emit(builder, nodes, next);
+    Value *b = emit(builder, nodes, next);
+    return builder.CreateBinOp((Instruction::BinaryOps)node.opcode, a, b);
 }
 
 // A sum of three squares has two additions and the shuffles between them.
@@ -295,24 +266,67 @@ bool collect_squares(Value *v, unsigned lane, Squares &squares,
     return squares.size() <= 3;
 }
 
-// A root is a fast addition of double vectors (two to eight lanes) where
-// every lane is a sum of exactly three squares. The shuffles that feed it
-// are part of the sum, so the additions below a root are not roots.
+// A root is a fast addition of four double lanes where every lane is a sum
+// of exactly three squares. The shuffles that feed it are part of the sum,
+// so the additions below a root are not roots.
 bool is_root(Instruction &i, SmallVectorImpl<Squares> &lanes) {
     auto *vector = dyn_cast<FixedVectorType>(i.getType());
     if (i.getOpcode() != Instruction::FAdd || !is_fast(&i) || !vector
             || !vector->getElementType()->isDoubleTy()
-            || vector->getNumElements() < 2 || vector->getNumElements() > 8) {
+            || vector->getNumElements() != 4) {
         return false;
     }
     lanes.clear();
-    for (unsigned lane = 0; lane < vector->getNumElements(); lane++) {
+    for (unsigned lane = 0; lane < 4; lane++) {
         Squares squares;
         DenseSet<std::pair<Value *, unsigned>> seen;
         if (!collect_squares(&i, lane, squares, seen) || squares.size() != 3) {
             return false;
         }
         lanes.push_back(squares);
+    }
+    return true;
+}
+
+// Whether two component expressions compute the same vector: the same
+// operations on the same leaf vectors, whatever component they read.
+bool same_vector(const SmallVectorImpl<Node> &a,
+        const SmallVectorImpl<Node> &b) {
+    if (a.size() != b.size()) {
+        return false;
+    }
+    for (size_t j = 0; j < a.size(); j++) {
+        if (a[j].opcode != b[j].opcode || a[j].leaf != b[j].leaf) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Each lane of a root sums components 0, 1 and 2 of one vector expression.
+// Find that expression for every lane. The four expressions must differ: a
+// lane that repeats the sum of another needs no horizontal add of its own.
+bool expressions_of(const SmallVectorImpl<Squares> &lanes,
+        SmallVectorImpl<SmallVector<Node, 8>> &expressions) {
+    expressions.clear();
+    for (const Squares &squares : lanes) {
+        SmallVector<Node, 8> components[3];
+        const SmallVectorImpl<Node> *pointers[3];
+        for (unsigned k = 0; k < 3; k++) {
+            if (!lift(squares[k].first, squares[k].second, components[k])) {
+                return false;
+            }
+            pointers[k] = &components[k];
+        }
+        if (!same_expression(pointers)) {
+            return false;
+        }
+        for (const SmallVector<Node, 8> &other : expressions) {
+            if (same_vector(other, components[0])) {
+                return false;
+            }
+        }
+        expressions.push_back(components[0]);
     }
     return true;
 }
@@ -581,14 +595,36 @@ bool may_recombine_horizontal_reductions(const llvm::Function &f,
     if (f.isDeclaration() || !has_avx(f, tm)) {
         return false;
     }
-    // Every rewrite starts from a root. The late cleanup only turns the
-    // squared values into vectors the rewrite can read components from
-    // (before it, SLP inserts scalars loaded from a stack slot), so only
-    // the root is looked for here.
+    // A root, whatever its squares are computed from: the late cleanup
+    // may still turn them into components of four element vectors.
     llvm::SmallVector<Squares, 8> lanes;
     for (const llvm::BasicBlock &block : f) {
         for (const llvm::Instruction &i : block) {
             if (is_root(const_cast<llvm::Instruction &>(i), lanes)) {
+                return true;
+            }
+        }
+    }
+    return false;
+#else
+    (void)f;
+    (void)tm;
+    return false;
+#endif
+}
+
+bool can_recombine_horizontal_reductions(const llvm::Function &f,
+        const llvm::TargetMachine &tm) {
+#if LLVM_VERSION_MAJOR >= 11
+    if (f.isDeclaration() || !has_avx(f, tm)) {
+        return false;
+    }
+    llvm::SmallVector<Squares, 8> lanes;
+    llvm::SmallVector<llvm::SmallVector<Node, 8>, 8> expressions;
+    for (const llvm::BasicBlock &block : f) {
+        for (const llvm::Instruction &i : block) {
+            if (is_root(const_cast<llvm::Instruction &>(i), lanes)
+                    && expressions_of(lanes, expressions)) {
                 return true;
             }
         }
@@ -622,26 +658,8 @@ bool recombine_horizontal_reductions(llvm::Function &f,
         if (!is_root(*root, lanes)) {
             continue;
         }
-        // Each lane of the root sums components 0, 1 and 2 of one vector
-        // expression. Find that expression for every lane.
         llvm::SmallVector<llvm::SmallVector<Node, 8>, 8> expressions;
-        llvm::SmallVector<llvm::SmallVector<unsigned, 8>, 8> bases;
-        bool ok = true;
-        for (Squares &squares : lanes) {
-            llvm::SmallVector<Node, 8> components[3];
-            const llvm::SmallVectorImpl<Node> *pointers[3];
-            for (unsigned k = 0; k < 3 && ok; k++) {
-                ok = lift(squares[k].first, squares[k].second, components[k]);
-                pointers[k] = &components[k];
-            }
-            llvm::SmallVector<unsigned, 8> lane_bases;
-            if (!ok || !component_bases(pointers, lane_bases)) {
-                ok = false;
-                break;
-            }
-            expressions.push_back(components[0]);
-            bases.push_back(lane_bases);
-        }
+        bool ok = expressions_of(lanes, expressions);
         llvm::Function *hadd = ok ? hadd_pd(*f.getParent()) : nullptr;
         if (!hadd) {
             continue;
@@ -652,7 +670,7 @@ bool recombine_horizontal_reductions(llvm::Function &f,
         llvm::SmallVector<llvm::Value *, 8> squares;
         for (size_t j = 0; j < expressions.size(); j++) {
             size_t next = 0;
-            llvm::Value *r = emit(builder, expressions[j], bases[j], next);
+            llvm::Value *r = emit(builder, expressions[j], next);
             llvm::Value *square = builder.CreateFMul(r, r);
             if (!zeros.is_zero(r, 3)) {
                 // vhaddpd also adds component 3. A bitwise and does not
@@ -664,31 +682,15 @@ bool recombine_horizontal_reductions(llvm::Function &f,
             }
             squares.push_back(square);
         }
-        // Four lanes at a time: two horizontal adds and one vertical add
-        // give the four sums. A group with fewer lanes repeats its first.
-        llvm::SmallVector<llvm::Value *, 2> groups;
-        for (size_t g = 0; g < squares.size(); g += 4) {
-            llvm::Value *x[4];
-            for (size_t j = 0; j < 4; j++) {
-                x[j] = squares[g + j < squares.size() ? g + j : g];
-            }
-            llvm::Value *t0 = builder.CreateCall(hadd, {x[0], x[1]});
-            llvm::Value *t1 = builder.CreateCall(hadd, {x[2], x[3]});
-            llvm::Value *y0 = builder.CreateShuffleVector(t0, t1,
-                llvm::ArrayRef<int>{2, 3, 4, 5});
-            llvm::Value *y1 = builder.CreateShuffleVector(t0, t1,
-                llvm::ArrayRef<int>{0, 1, 6, 7});
-            groups.push_back(builder.CreateFAdd(y0, y1));
-        }
-        llvm::Value *sum = groups[0];
-        if (squares.size() != 4) {
-            llvm::SmallVector<int, 8> mask;
-            for (size_t j = 0; j < squares.size(); j++) {
-                mask.push_back((int)j);
-            }
-            sum = builder.CreateShuffleVector(groups[0], groups.size() > 1
-                ? groups[1] : unused(groups[0]), mask);
-        }
+        // Two horizontal adds and one vertical add give the sums of the
+        // four lanes.
+        llvm::Value *t0 = builder.CreateCall(hadd, {squares[0], squares[1]});
+        llvm::Value *t1 = builder.CreateCall(hadd, {squares[2], squares[3]});
+        llvm::Value *y0 = builder.CreateShuffleVector(t0, t1,
+            llvm::ArrayRef<int>{2, 3, 4, 5});
+        llvm::Value *y1 = builder.CreateShuffleVector(t0, t1,
+            llvm::ArrayRef<int>{0, 1, 6, 7});
+        llvm::Value *sum = builder.CreateFAdd(y0, y1);
         root->replaceAllUsesWith(sum);
         changed = true;
     }
