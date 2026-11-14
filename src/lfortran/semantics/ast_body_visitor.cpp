@@ -10216,7 +10216,7 @@ public:
         if (x.n_member >= 1) {
             visit_NameUtil(x.m_member, x.n_member - 1,
                 x.m_member[x.n_member - 1].m_name, x.base.base.loc, x.n_member);
-            v_expr = ASRUtils::EXPR(tmp);
+            v_expr = resolve_selector_object(ASRUtils::EXPR(tmp), x.base.base.loc);
             original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
                             to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);

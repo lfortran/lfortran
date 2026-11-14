@@ -4953,3 +4953,34 @@ subroutine cc1_select_rank_logical_after_end_select(x)
     end select
     if (x) print *, "x"  ! {Error} Expected logical expression in if statement
 end subroutine
+
+! An assumed-rank array is not a scalar object outside a `rank (0)` block
+module cc1_select_rank_component_base
+    implicit none
+    type :: cc1_sr_t
+        integer :: v = 0
+    end type
+contains
+    subroutine cc1_sr_after_end_select(x)
+        type(cc1_sr_t), intent(inout) :: x(..)
+        select rank (x)
+        rank (0)
+            x%v = 1
+        end select
+        x%v = 3  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+    end subroutine
+
+    subroutine cc1_sr_no_select_rank(x)
+        type(cc1_sr_t), intent(inout) :: x(..)
+        x%v = 3  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+    end subroutine
+
+    subroutine cc1_sr_rank_default(x)
+        type(cc1_sr_t), intent(inout) :: x(..)
+        integer :: k
+        select rank (x)
+        rank default
+            k = x%v  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+        end select
+    end subroutine
+end module

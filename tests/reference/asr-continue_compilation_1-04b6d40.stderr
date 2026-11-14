@@ -5849,6 +5849,24 @@ semantic error: Expected logical expression in if statement, but recieved logica
 4954 |     if (x) print *, "x"  ! {Error} Expected logical expression in if statement
      |         ^ logical(4) expression, expected logical
 
+semantic error: assumed-rank array 'x' cannot be used as the base of a component or binding reference
+    --> tests/errors/continue_compilation_1.f90:4970:9
+     |
+4970 |         x%v = 3  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+     |         ^^^ 
+
+semantic error: assumed-rank array 'x' cannot be used as the base of a component or binding reference
+    --> tests/errors/continue_compilation_1.f90:4975:9
+     |
+4975 |         x%v = 3  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+     |         ^^^ 
+
+semantic error: assumed-rank array 'x' cannot be used as the base of a component or binding reference
+    --> tests/errors/continue_compilation_1.f90:4983:17
+     |
+4983 |             k = x%v  ! {Error} assumed-rank array 'x' cannot be used as the base of a component or binding reference
+     |                 ^^^ 
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
