@@ -443,6 +443,15 @@ public :
 
     }
 
+    // A cast of a dummy argument converts from the representation the dummy
+    // has. The actual argument that replaces the dummy may have another one
+    // (a fixed-size array for an assumed-shape dummy), so the cast converts
+    // from that.
+    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x){
+        ASR::BaseExprReplacer<AllocateVarBasedOnFuncCall>::replace_ArrayPhysicalCast(x);
+        x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t *x){
         x->m_name = get_resolved_symbol(x->m_name);
         if(x->m_original_name) x->m_original_name = get_resolved_symbol(x->m_original_name);
