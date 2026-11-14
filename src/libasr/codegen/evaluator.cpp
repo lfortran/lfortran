@@ -1018,6 +1018,10 @@ namespace {
 // The call that this thread runs; read by the signal handler on this thread.
 thread_local JITPreemption *active_preemption = nullptr;
 
+// What SIGURG did before; a signal that is not for a preemptible call goes
+// there.
+struct sigaction previous_preempt;
+
 uintptr_t interrupted_pc(void *context) {
     const ucontext_t *uc = static_cast<const ucontext_t *>(context);
 #if defined(__APPLE__) && defined(__x86_64__)
@@ -1031,9 +1035,19 @@ uintptr_t interrupted_pc(void *context) {
 #endif
 }
 
-void preempt(int, siginfo_t *, void *context) {
+void preempt(int signal, siginfo_t *info, void *context) {
     JITPreemption *p = active_preemption;
-    if (!p || !p->evaluator->interrupt_requested()) return;
+    if (!p || !p->evaluator->interrupt_requested()) {
+        if (previous_preempt.sa_flags & SA_SIGINFO) {
+            if (previous_preempt.sa_sigaction) {
+                previous_preempt.sa_sigaction(signal, info, context);
+            }
+        } else if (previous_preempt.sa_handler != SIG_DFL
+                && previous_preempt.sa_handler != SIG_IGN) {
+            previous_preempt.sa_handler(signal);
+        }
+        return;
+    }
     if (!p->evaluator->contains_code(interrupted_pc(context))) return;
     // Restores the signal mask that sigsetjmp() saved.
     siglongjmp(p->env, 1);
@@ -1047,7 +1061,7 @@ void install_preemption() {
         // Interrupted system calls of the runtime and libc resume.
         action.sa_flags = SA_SIGINFO | SA_RESTART;
         sigemptyset(&action.sa_mask);
-        return sigaction(SIGURG, &action, nullptr) == 0;
+        return sigaction(SIGURG, &action, &previous_preempt) == 0;
     }();
     (void)installed;
 }
