@@ -12190,12 +12190,14 @@ public:
                         builder->SetInsertPoint(convert_bb);
                         llvm::Value* internal_desc = arr_descr->cfi_to_internal(
                             desc_type, elem_llvm_type, sym_val, n_dims, elem_size);
+                        // The conversion may end in a later block (assumed rank loops)
+                        llvm::BasicBlock* convert_end_bb = builder->GetInsertBlock();
                         builder->CreateBr(merge_bb);
                         builder->SetInsertPoint(merge_bb);
                         llvm::PHINode* phi = builder->CreatePHI(
                             sym_val->getType(), 2);
                         phi->addIncoming(sym_val, entry_bb);
-                        phi->addIncoming(internal_desc, convert_bb);
+                        phi->addIncoming(internal_desc, convert_end_bb);
                         llvm_symtab[h] = phi;
                     } else {
                         llvm::Value* internal_desc = arr_descr->cfi_to_internal(
