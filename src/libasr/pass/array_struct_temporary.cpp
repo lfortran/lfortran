@@ -4030,17 +4030,18 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         for( size_t i = 0; i < x_n_args; i++ ) {
             ASR::Variable_t* dummy = (orig_args && x_m_args[i].m_value) ?
                 ASRUtils::expr_to_variable_or_null(orig_args[i]) : nullptr;
-            // A component of an array of derived type cannot be handed over as
-            // it is: it is strided, while a dummy argument is reached either
-            // through a contiguous buffer or through a descriptor built from
-            // the component's own (unit stride) type. It is copied in, and
+            // A component of an array of derived type, as in `w%y`, or an
+            // element of an array component of one, as in `w%u(2)`, cannot be
+            // handed over as it is: it is strided, while a dummy argument is
+            // reached either through a contiguous buffer or through a
+            // descriptor built from the component's own (unit stride) type. It is copied in, and
             // copied back out when the callee may define the dummy.
             // Inside a WHERE the per-statement list belongs to the enclosing
             // construct, so a copy-out would land after the whole WHERE
             // instead of after the call.
             bool copy_in_copy_out = is_call && body_after_curr_stmt != nullptr &&
                 !inside_where &&
-                is_array_struct_member_designator(x_m_args[i].m_value) &&
+                is_strided_struct_designator(x_m_args[i].m_value) &&
                 !(dummy && ASRUtils::is_pointer(dummy->m_type));
             if( copy_in_copy_out ) {
                 copy_in_copy_out_argument(x_m_args_vec, x_m_args[i], dummy, name_hint);
