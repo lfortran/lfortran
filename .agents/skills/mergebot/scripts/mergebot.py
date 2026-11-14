@@ -371,7 +371,7 @@ def facts(number, with_conflicts=True):
     quick = max((r for r in runs if r["name"] == QUICK_NAME),
                 key=lambda r: r["id"], default=None)
     result = {
-        "number": number, "title": pr["title"], "author": (pr["author"] or {}).get("login"),
+        "number": number, "title": pr["title"], "open": pr["state"] == "OPEN", "author": (pr["author"] or {}).get("login"),
         "draft": pr["isDraft"], "head": head, "head_repo": head_repo,
         "head_branch": pr["headRefName"], "labeled": is_labeled, "labeler": labeler,
         "approval_problem": problem, "method": merge_method(found, label_time)
@@ -405,6 +405,10 @@ def comment(number, body):
 
 
 def require_approved(info):
+    # A maintainer may merge, close, or unlabel a PR by hand at any time.
+    if not info["open"] or not info["labeled"]:
+        sys.exit(f"mergebot: PR #{info['number']} is no longer open and labeled; "
+                 "skip it")
     if info["approval_problem"]:
         sys.exit(f"mergebot: PR #{info['number']}: {info['approval_problem']}; "
                  "run `reject` instead")
@@ -589,6 +593,10 @@ def cmd_ready(args):
 
 
 def cmd_reject(args):
+    pr = gh_json("pr", "view", str(args.number), "--repo", REPO, "--json", "state,labels")
+    if pr["state"] != "OPEN" or LABEL not in {l["name"] for l in pr["labels"]}:
+        print(f"PR #{args.number} is no longer open and labeled; nothing to do")
+        return
     gh("pr", "edit", str(args.number), "--repo", REPO, "--remove-label", LABEL)
     if args.draft:
         gh("pr", "ready", str(args.number), "--repo", REPO, "--undo")

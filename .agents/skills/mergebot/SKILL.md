@@ -38,6 +38,13 @@ maintainer's identity, with no co-author lines or bot signatures.
 - **Mergebot removes it** when the PR fails CI because of a bug in the PR
   (it also converts the PR to a draft), or when a rebase changes what the PR
   does or how it does it.
+- **Maintainers can still merge any PR by hand,** labeled or not, for
+  example to land an urgent PR or one they expect to pass CI. Mergebot treats
+  this like any other change to `main`: it rebases PRs that now conflict,
+  and if `main` turns red it stops merging until `main` is fixed. A labeled
+  PR that was merged, closed, or unlabeled by hand drops out of the next
+  `status`; when the script reports "no longer open and labeled", skip that
+  PR (and `unlock` it if a rebase held it).
 - **It stays on while `main` is red.** The PRs are still good; a separate bot
   sends and merges a fix for `main`, after which mergebot rebases the PRs
   that failed because of `main`.
