@@ -34,6 +34,7 @@
 #include "llvm/Support/DynamicLibrary.h"
 #include "llvm/IR/Mangler.h"
 #endif
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
@@ -64,9 +65,9 @@ namespace llvm {
 namespace orc {
 
 // The machine code a JIT emitted, as [begin, end) address ranges, one per
-// object. The thread that adds and looks up modules appends to it; a signal
+// object. The thread that adds and looks up modules changes it; a signal
 // handler on that same thread reads it while JIT code runs, which never
-// adds to it.
+// changes it.
 using JITCodeRanges = std::vector<std::pair<uintptr_t, uintptr_t>>;
 
 #ifdef __EMSCRIPTEN__
@@ -88,16 +89,27 @@ class ContiguousSectionMemoryManager final : public SectionMemoryManager {
   using SectionAlignment = uint32_t;
 #endif
 
+  // The ranges of this object, whose memory goes away with it.
+  JITCodeRanges Own;
   void addRange(const uint8_t *Begin, uintptr_t Size) {
     if (Ranges && Begin && Size) {
       uintptr_t B = reinterpret_cast<uintptr_t>(Begin);
       Ranges->emplace_back(B, B + Size);
+      Own.emplace_back(B, B + Size);
     }
   }
 
 public:
   explicit ContiguousSectionMemoryManager(JITCodeRanges *Ranges = nullptr)
       : Ranges(Ranges) {}
+
+  ~ContiguousSectionMemoryManager() override {
+    if (!Ranges) return;
+    for (const auto &Range : Own) {
+      auto It = std::find(Ranges->begin(), Ranges->end(), Range);
+      if (It != Ranges->end()) Ranges->erase(It);
+    }
+  }
 
   bool needsToReserveAllocationSpace() override { return true; }
 

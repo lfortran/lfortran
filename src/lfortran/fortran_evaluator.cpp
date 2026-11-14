@@ -357,8 +357,9 @@ static int read_input(void *context, const char **record, size_t *length) {
         c.record.clear();
         int status = c.io.input(c.record);
 #if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
-        // An interrupt ends the wait for input. The READ has not consumed
-        // anything yet, so stop the cell here rather than fail the READ.
+        // An interrupt ends the wait for input. The READ holds no runtime
+        // state across this wait (items already read stay assigned), so
+        // stop the cell here rather than fail the READ.
         LCompilers::LLVMEvaluator::stop_if_interrupted();
 #endif
         *record = c.record.data();
@@ -376,7 +377,9 @@ namespace LCompilers {
 
 #ifdef HAVE_LFORTRAN_LLVM
 namespace {
-// Thrown on the cell's thread when an interrupt stopped its JIT code.
+// Thrown on the cell's thread when an interrupt stopped its JIT code. It is
+// thrown only after run_preemptible() has returned, so it never unwinds
+// through JIT or runtime frames, and execute_cell() catches it.
 struct CellInterrupted {};
 
 #ifndef __EMSCRIPTEN__

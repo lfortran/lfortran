@@ -1011,7 +1011,6 @@ struct JITPreemption {
     pthread_t thread;
     fenv_t fenv;
     sigjmp_buf env;
-    JITPreemption *previous;
 };
 
 namespace {
@@ -1024,11 +1023,7 @@ uintptr_t interrupted_pc(void *context) {
 #if defined(__APPLE__) && defined(__x86_64__)
     return uc->uc_mcontext->__ss.__rip;
 #elif defined(__APPLE__)
-#ifdef arm_thread_state64_get_pc
-    return arm_thread_state64_get_pc(uc->uc_mcontext->__ss);
-#else
     return uc->uc_mcontext->__ss.__pc;
-#endif
 #elif defined(__x86_64__)
     return uc->uc_mcontext.gregs[REG_RIP];
 #else
@@ -1067,13 +1062,14 @@ bool LLVMEvaluator::run_preemptible(void (*fn)(void *), void *context) {
     JITPreemption p;
     p.evaluator = this;
     p.thread = pthread_self();
-    p.previous = active_preemption;
+    // JIT code never calls back into it.
+    LCOMPILERS_ASSERT(active_preemption == nullptr);
     fegetenv(&p.fenv);
     auto detach = [&]() {
-        active_preemption = p.previous;
+        active_preemption = nullptr;
         std::atomic_signal_fence(std::memory_order_seq_cst);
         std::lock_guard<std::mutex> lock(preempted_mutex);
-        preempted = p.previous;
+        preempted = nullptr;
     };
     if (sigsetjmp(p.env, 1)) {
         // The floating-point modes and flags of the abandoned code.

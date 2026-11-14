@@ -102,7 +102,6 @@ private:
     std::atomic<bool> interrupt{false};
     std::mutex preempted_mutex;
     JITPreemption *preempted = nullptr;
-    friend struct JITPreemption;
     std::unique_ptr<llvm::LLVMContext> context;
     LLVMTargetConfig target_config;
     std::unique_ptr<llvm::TargetMachine> TM;
