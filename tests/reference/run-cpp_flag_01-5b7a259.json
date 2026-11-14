@@ -1,0 +1,13 @@
+{
+    "basename": "run-cpp_flag_01-5b7a259",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/../integration_tests/cpp_flag_01.f90",
+    "infile_hash": "19a7efcb5a248598714193b16845875f17cfbe220feda2078f950f9f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-cpp_flag_01-5b7a259.stdout",
+    "stdout_hash": "66a02dbf2489a482a6bacad0c34674b7f315936ad5824c0bf794aaad",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
