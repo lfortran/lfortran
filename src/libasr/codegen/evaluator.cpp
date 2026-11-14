@@ -1,8 +1,15 @@
 #include <algorithm>
+#include <cfenv>
+#include <csetjmp>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <optional>
+#if !defined(__EMSCRIPTEN__) && !defined(_WIN32)
+#include <pthread.h>
+#include <signal.h>
+#endif
 
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/ADT/STLExtras.h>
@@ -991,6 +998,155 @@ LLVMEvaluator::~LLVMEvaluator()
 {
     jit.reset();
     context.reset();
+}
+
+#if !defined(__EMSCRIPTEN__) && (defined(__linux__) || defined(__APPLE__)) \
+        && (defined(__x86_64__) || defined(__aarch64__))
+// A signal stops JIT code. The thread that requests an interrupt sends SIGURG
+// to the thread that runs the call, as the Go runtime does for asynchronous
+// preemption: its default action is to ignore it, so a stray one is
+// harmless, and programs rarely use it.
+struct JITPreemption {
+    LLVMEvaluator *evaluator;
+    pthread_t thread;
+    fenv_t fenv;
+    sigjmp_buf env;
+};
+
+namespace {
+
+// The call that this thread runs; read by the signal handler on this thread.
+thread_local JITPreemption *active_preemption = nullptr;
+
+// What SIGURG did before; a signal that is not for a preemptible call goes
+// there. That includes the interrupting thread's late signals, which arrive
+// after the call ended: a SIGURG handler must tolerate spurious ones anyway.
+struct sigaction previous_preempt;
+
+uintptr_t interrupted_pc(void *context) {
+    const ucontext_t *uc = static_cast<const ucontext_t *>(context);
+#if defined(__APPLE__) && defined(__x86_64__)
+    return uc->uc_mcontext->__ss.__rip;
+#elif defined(__APPLE__)
+    return uc->uc_mcontext->__ss.__pc;
+#elif defined(__x86_64__)
+    return uc->uc_mcontext.gregs[REG_RIP];
+#else
+    return uc->uc_mcontext.pc;
+#endif
+}
+
+void preempt(int signal, siginfo_t *info, void *context) {
+    JITPreemption *p = active_preemption;
+    if (!p || !p->evaluator->interrupt_requested()) {
+        if (previous_preempt.sa_handler == SIG_DFL
+                || previous_preempt.sa_handler == SIG_IGN) {
+            return;
+        }
+        if (previous_preempt.sa_flags & SA_SIGINFO) {
+            previous_preempt.sa_sigaction(signal, info, context);
+        } else {
+            previous_preempt.sa_handler(signal);
+        }
+        return;
+    }
+    if (!p->evaluator->contains_code(interrupted_pc(context))) return;
+    // Restores the signal mask that sigsetjmp() saved.
+    siglongjmp(p->env, 1);
+}
+
+void install_preemption() {
+    static const bool installed = []() {
+        struct sigaction action;
+        std::memset(&action, 0, sizeof(action));
+        action.sa_sigaction = preempt;
+        // Interrupted system calls of the runtime and libc resume.
+        action.sa_flags = SA_SIGINFO | SA_RESTART;
+        sigemptyset(&action.sa_mask);
+        return sigaction(SIGURG, &action, &previous_preempt) == 0;
+    }();
+    (void)installed;
+}
+
+}
+
+bool LLVMEvaluator::preemption_supported() { return true; }
+
+bool LLVMEvaluator::run_preemptible(void (*fn)(void *), void *context) {
+    install_preemption();
+    if (interrupt_requested()) return false;
+    JITPreemption p;
+    p.evaluator = this;
+    p.thread = pthread_self();
+    // JIT code never calls back into it.
+    LCOMPILERS_ASSERT(active_preemption == nullptr);
+    fegetenv(&p.fenv);
+    auto detach = [&]() {
+        active_preemption = nullptr;
+        std::atomic_signal_fence(std::memory_order_seq_cst);
+        std::lock_guard<std::mutex> lock(preempted_mutex);
+        preempted = nullptr;
+    };
+    if (sigsetjmp(p.env, 1)) {
+        // The floating-point modes and flags of the abandoned code.
+        fesetenv(&p.fenv);
+        detach();
+        return false;
+    }
+    {
+        std::lock_guard<std::mutex> lock(preempted_mutex);
+        preempted = &p;
+    }
+    active_preemption = &p;
+    std::atomic_signal_fence(std::memory_order_seq_cst);
+    fn(context);
+    detach();
+    return true;
+}
+
+void LLVMEvaluator::request_interrupt() {
+    interrupt.store(true, std::memory_order_relaxed);
+    std::lock_guard<std::mutex> lock(preempted_mutex);
+    if (preempted) pthread_kill(preempted->thread, SIGURG);
+}
+
+bool LLVMEvaluator::interrupted_here() {
+    JITPreemption *p = active_preemption;
+    return p && p->evaluator->interrupt_requested();
+}
+
+void LLVMEvaluator::stop_if_interrupted() {
+    JITPreemption *p = active_preemption;
+    if (p && p->evaluator->interrupt_requested()) siglongjmp(p->env, 1);
+}
+#else
+struct JITPreemption {};
+
+bool LLVMEvaluator::preemption_supported() { return false; }
+
+bool LLVMEvaluator::run_preemptible(void (*fn)(void *), void *context) {
+    fn(context);
+    return true;
+}
+
+void LLVMEvaluator::request_interrupt() {
+    interrupt.store(true, std::memory_order_relaxed);
+}
+
+bool LLVMEvaluator::interrupted_here() { return false; }
+
+void LLVMEvaluator::stop_if_interrupted() {}
+#endif
+
+void LLVMEvaluator::clear_interrupt() {
+    interrupt.store(false, std::memory_order_relaxed);
+}
+
+bool LLVMEvaluator::contains_code(uintptr_t pc) const {
+    for (const auto &range : jit->getCodeRanges()) {
+        if (range.first <= pc && pc < range.second) return true;
+    }
+    return false;
 }
 
 void LLVMEvaluator::configure_module(llvm::Module &module) const

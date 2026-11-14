@@ -50,6 +50,10 @@ input. `execute()` installs the hook through the runtime's C API
 (`src/libasr/runtime/lfortran_stdin.h`) for that cell only and always removes
 it, so a later cell can read again after end of file and unread bytes are
 discarded.
+If the cell can be interrupted (`FortranEvaluator::interruptible()`), the
+hook may return early, with any status, once `CellIO::interrupt_requested`
+returns true: the cell then stops without failing the READ. Otherwise it must
+keep waiting for input, as nothing would stop the cell.
 
 The runtime keeps the record's bytes, its cursor and delimiters, so one record
 can satisfy several list items and one READ can consume several records.
@@ -71,3 +75,122 @@ exercise the JIT result ABI on Windows: there complex(4) comes back as two
 float bit patterns in an integer register and complex(8) through an output
 pointer, and `FortranEvaluator` calls those signatures explicitly rather than
 relying on the C++ `std::complex` return convention.
+
+## Interrupting a cell
+
+A frontend that sets `CellIO::interrupt_requested` can interrupt a running
+cell, as Jupyter's Interrupt (`interrupt_request` on the control channel) and
+Ctrl-C at the `lfortran` prompt do. The callback is bounded and nonblocking.
+`execute()` calls it on its caller every few milliseconds, and after each of
+the other `CellIO` callbacks, which all run on the caller, while the cell
+runs on a thread of its own. Once it returns true, the cell fails with a
+`CellResult` named `KeyboardInterrupt` ("cell execution interrupted") and no
+value. Only one cell runs at a time.
+
+The interrupt is asynchronous preemption: the generated code is the same as
+without it, and has no checks of its own. The caller sends the cell's thread a
+signal (SIGURG) every 100 microseconds until the cell ends. If the signal finds
+the thread in machine code that the JIT emitted for the session (any cell's
+procedures), the handler abandons the cell at that instruction and returns to
+`execute()`; anywhere else, in the runtime library, libc or the compiler, it
+returns, and a later signal stops the cell once it is back in Fortran code.
+The runtime's waits stop at once: SLEEP, EXECUTE_COMMAND_LINE, whose command
+runs in a process group of its own that is killed (with its descendants that
+stay in the group) and reaped first, and a READ from stdin that waits for
+input. (In a process that is the foreground job of a terminal, the command
+runs as with `system()`: the terminal's Ctrl-C reaches it, and the cell
+waits for it.) Output statements and formatted READ also stop where their
+runtime call begins, so that a loop that spends its time in the runtime stops
+at its next statement. The signal handler is installed once a cell runs that
+can be interrupted; a SIGURG handler that the process had before still gets
+the signals that are not for a cell, and SIGURG is reserved from then on.
+
+The abandoned frames are not unwound. What the interrupted cell allocated,
+and its local variables, leak; nothing is rolled back. What it did before the
+interrupt stays done, as in IPython: variables it had assigned keep their new
+values, and output it had written is shown. The runtime clears the state
+that an I/O statement keeps across its calls. The session keeps everything
+that earlier cells defined, so later cells can use their variables and
+procedures, with one exception, described at the end of this section.
+A request is not carried into the next cell: an interrupt that arrives while
+no cell runs does nothing. An interrupted cell is a failed cell, so with
+Jupyter's `stop_on_error` (the default) the cells already queued behind it are
+aborted; with `stop_on_error=false` they run. Cells sent afterwards run as
+usual.
+
+A long call into foreign (C) code, or a single long runtime call, stops only
+when it returns to Fortran code; at the prompt, a second Ctrl-C then ends the
+session. If C code calls back into Fortran (a comparison function of `qsort`,
+a library callback), the interrupt can stop the cell in the callback and
+abandon the C frames below it, with whatever they held. Compilation is not
+interrupted either; the cell stops before it runs. Interruption is supported
+on Linux and macOS (x86-64 and AArch64). It is not supported on Windows, in
+WASM (JupyterLite) or with `--openmp`, whose threads and locks an interrupt
+would abandon: there a cell runs to its end, and a READ keeps waiting for its
+input (`lfortran_interruptible` is false in the kernel's `input_request`).
+
+The built-in kernel reads its control channel while a cell runs, through the
+callback, and answers `interrupt_request` at once; it defers other control
+requests until the cell ends. The Xeus kernel uses Xeus's split server
+(`make_xserver_shell_main`), which runs shell requests on the main thread and
+control requests on their own thread, where `interrupt_request` sets the flag
+that the callback reads. Both kernels publish the `KeyboardInterrupt` as an
+`error` message before they reply. A READ waits for its `input_reply` on
+LFortran's `InputChannel`, which an interrupt cancels; replies to an older
+`input_request` are ignored. For that, the Xeus kernel replaces only Xeus's
+stdin transport. With Xeus registration configurations, IPv6 or non-TCP
+transports, a READ uses Xeus's blocking stdin transport, and an interrupt
+takes effect once the READ has its input.
+
+During a cell, Ctrl-C at the prompt only marks the interrupt; the prompt's
+client loop sends the `interrupt_request` and keeps reading the terminal
+without blocking, so that it also notices Ctrl-C while a READ waits for input.
+
+The `test_lfortran` cases `FortranEvaluator interrupt*`, `test_kernel_evaluation`
+(both kernels), `test_session_regressions` (`test_interrupt_prompt`) and
+`test_repl` cover this.
+
+### An interrupted reallocation can leave a variable dangling
+
+The cell can stop between any two instructions of its code, so a variable
+whose storage it was replacing (an allocatable array or a deferred-length
+string) may be left inconsistent: pointing at memory that has already been
+freed, or with a size larger than its storage. For example, in a session
+started with `--realloc-lhs-arrays` (or `--std=f23`), so that an assignment
+reallocates its target, take a session-level allocatable:
+
+```fortran
+integer, allocatable :: v(:)
+integer :: i
+allocate(v(0))
+```
+
+and a cell that grows it in a loop, and is interrupted:
+
+```fortran
+do i = 1, huge(i)
+    v = [v, i]
+end do
+```
+
+Each `v = [v, i]` builds its right side in a temporary, stores the new size in
+`v`'s descriptor, then resizes the storage of `v` with `realloc`, which may
+move it: it frees the old storage and returns a new address, which the
+generated code then stores in the descriptor. If the interrupt lands after
+`realloc` returns and before that store (one or two instructions), `v` still
+points at the freed storage. A later cell such as
+
+```fortran
+print *, v(1)
+deallocate(v)
+```
+
+then reads freed memory, and its `deallocate` frees that memory a second time,
+which can corrupt the heap or abort the session. If the interrupt lands after
+the size is stored and before `realloc`, `v` reports a size one larger than its
+storage, and `print *, v` reads past its end. The windows are a few
+instructions per assignment, so this is rare, but it cannot be excluded
+without changing the generated code. After an interrupt, do not use (not even
+`deallocate` or `move_alloc`) an allocatable or deferred-length variable that
+the interrupted cell was assigning; only restarting the session recovers it.
+Variables that the interrupted cell did not assign are not affected.

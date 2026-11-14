@@ -19,6 +19,7 @@
 #ifndef _WIN32
 #include <pthread.h>
 #include <sys/resource.h>
+#include <unistd.h>
 #endif
 #include <libasr/codegen/KaleidoscopeJIT.h>
 #if defined(__linux__)
@@ -7048,6 +7049,298 @@ end function
     CHECK(output == "100000\n");
 }
 #endif
+
+namespace {
+// Runs `code`, which writes "@" once it is about to wait or loop forever,
+// and interrupts it then. The marker, not a delay, decides when, so the
+// test does not depend on the machine's speed.
+FortranEvaluator::CellResult interrupt_at_marker(FortranEvaluator &e,
+        const std::string &code, std::string &output) {
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    io.interrupt_requested = [&]() {
+        return output.find('@') != std::string::npos;
+    };
+    return e.execute(code, false, io);
+}
+
+std::string cell_value(FortranEvaluator &e, const std::string &code) {
+    auto cell = e.execute(code, false, {});
+    CAPTURE(code);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    return cell.value.text();
+}
+
+std::string cell_output(FortranEvaluator &e, const std::string &code) {
+    std::string output;
+    FortranEvaluator::CellIO io;
+    io.output = [&](int, const std::string &text) { output += text; };
+    auto cell = e.execute(code, false, io);
+    CAPTURE(code);
+    REQUIRE_MESSAGE(cell.ok, cell.error_text());
+    return output;
+}
+
+// Whether this process is the foreground job of a terminal.
+bool foreground_terminal() {
+#ifdef _WIN32
+    return false;
+#else
+    for (int fd = 0; fd <= 2; fd++) {
+        if (isatty(fd) && tcgetpgrp(fd) == getpgrp()) return true;
+    }
+    return false;
+#endif
+}
+
+void check_interrupted(const FortranEvaluator::CellResult &cell) {
+    CHECK(!cell.ok);
+    CHECK(cell.interrupted);
+    CHECK(cell.error_name == "KeyboardInterrupt");
+    CHECK(cell.error_text() == "cell execution interrupted\n");
+}
+}
+
+TEST_CASE("FortranEvaluator interrupt: running cells stop and the session stays usable") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    cu.po.realloc_lhs_arrays = true;
+    FortranEvaluator e(cu);
+    run_cell(e, R"(
+module interrupt_m
+implicit none
+type :: point
+    real(8) :: x, y
+    integer, allocatable :: tags(:)
+end type
+integer :: counter = 0
+real(8), allocatable :: data(:)
+type(point) :: p
+contains
+recursive integer function fib(n) result(r)
+    integer, intent(in) :: n
+    if (n < 2) then
+        r = n
+    else
+        r = fib(n - 1) + fib(n - 2)
+    end if
+end function
+subroutine bump()
+    counter = counter + 1
+end subroutine
+end module
+)");
+    run_cell(e, "use interrupt_m");
+    run_cell(e, "data = [1, 2, 3, 4, 5]; p%x = 1; p%y = 2; p%tags = [7, 8]");
+    run_cell(e, "integer :: i, j, k; integer(8) :: s; real(8) :: x; "
+        "character(len=64) :: buf; character(len=:), allocatable :: str; "
+        "integer, allocatable :: a(:)");
+    const std::vector<std::string> cells = {
+        // Counted, nested
+        "print *, '@'\ns = 0\ndo i = 1, huge(i)\n  do j = 1, huge(j)\n"
+            "    s = s + i*j\n  end do\nend do",
+        "print *, '@'\nk = 0\ndo while (k >= 0)\n  k = mod(k + 1, 1000)\nend do",
+        "print *, '@'\nk = 0\ndo\n  k = mod(k + 7, 13)\n  if (k < 0) exit\nend do",
+        "subroutine spin(k)\ninteger :: k\n10 k = mod(k + 1, 97)\n"
+            "if (k >= 0) goto 10\nend subroutine\nprint *, '@'\nk = 0\ncall spin(k)",
+        "print *, '@'\ndo\n  k = fib(25)\nend do",
+        // Mostly in the runtime
+        "print *, '@'\ndo i = 1, huge(i)\n  write(buf, '(i0,1x,f12.5)') i, real(i, 8) / 3\n"
+            "  read(buf, *) k, x\nend do",
+        "subroutine scribble()\ninteger :: u, i\nopen(newunit=u, status='scratch')\n"
+            "print *, '@'\ndo i = 1, huge(i)\n  write(u, *) i, 'line'\n"
+            "  if (mod(i, 1000) == 0) rewind(u)\nend do\nend subroutine\ncall scribble()",
+        // An interrupt may leave a variable whose storage was being
+        // replaced referring to freed memory, so these work on locals.
+        "subroutine churn()\ninteger, allocatable :: b(:)\nprint *, '@'\ndo\n"
+            "  allocate(b(1000))\n  b = 1\n  deallocate(b)\n  b = [1, 2, 3]\n"
+            "  b = [b, b, b]\n  deallocate(b)\nend do\nend subroutine\ncall churn()",
+        "subroutine strings()\ncharacter(len=:), allocatable :: t\nprint *, '@'\ndo\n"
+            "  t = 'hello'\n  t = trim(adjustl('  ' // t // ' world')) // repeat('x', 10)\n"
+            "end do\nend subroutine\ncall strings()",
+        "print *, '@'\nx = 0.5d0\ndo\n  x = sin(x) + sqrt(abs(x)) + exp(-x) + log(1 + abs(x))\n"
+            "  x = mod(x, 10.0d0)\nend do",
+        "print *, '@'\ndo\n  call bump()\nend do",
+        "subroutine tags()\ntype(point) :: q\nq%tags = [7]\nprint *, '@'\ndo\n"
+            "  q%tags = [q%tags, 1]\n  if (size(q%tags) > 100) q%tags = [7, 8]\nend do\n"
+            "end subroutine\ncall tags()",
+        // Runtime waits stop at once: nothing after them runs.
+        "print *, '@'\ncall sleep(100)\nprint *, 'after'",
+        "print *, '@'\ncall execute_command_line('sleep 100')\nprint *, 'after'",
+    };
+    for (size_t n = 0; n < cells.size(); n++) {
+        CAPTURE(cells[n]);
+        if (cells[n].find("execute_command_line") != std::string::npos
+                && foreground_terminal()) {
+            // The command runs as with system(), which the terminal's
+            // Ctrl-C interrupts, not this test.
+            continue;
+        }
+        std::string output;
+        check_interrupted(interrupt_at_marker(e, cells[n], output));
+        CHECK(output.find("after") == std::string::npos);
+        // Earlier procedures, variables, allocatables and derived types
+        CHECK(cell_value(e, "fib(10)") == "55");
+        CHECK(cell_value(e, "sum(data)") == "15.0");
+        CHECK(cell_value(e, "p%x + p%y") == "3.0");
+        CHECK(cell_value(e, "p%tags(1)") == "7");
+        CHECK(cell_output(e, "print '(i0)', fib(12)") == "144\n");
+        run_cell(e, "a = [1, 2, 3]; str = 'abc' // 'def'");
+        CHECK(cell_value(e, "sum(a) + len(str)") == "12");
+        // New declarations
+        std::string name = "later_" + std::to_string(n);
+        run_cell(e, "integer :: " + name + " = 3");
+        CHECK(cell_value(e, name + " * 2") == "6");
+    }
+}
+
+static std::string dtio_program(const std::string &name, int n) {
+    return "module " + name + R"(_m
+implicit none
+type :: shown
+    integer :: n
+contains
+    procedure :: show
+    generic :: write(formatted) => show
+end type
+contains
+subroutine show(dtv, unit, iotype, v_list, iostat, iomsg)
+    class(shown), intent(in) :: dtv
+    integer, intent(in) :: unit
+    character(*), intent(in) :: iotype
+    integer, intent(in) :: v_list(:)
+    integer, intent(out) :: iostat
+    character(*), intent(inout) :: iomsg
+    integer :: k
+    write(unit, '(a,i0)', iostat=iostat) 'n=', dtv%n
+    if (dtv%n < 0) then
+        write(0, '(a)') '@'
+        k = 0
+        do while (k >= 0)
+            k = mod(k + 1, 1000)
+        end do
+    end if
+end subroutine
+end module
+program )" + name + "\nuse " + name + R"(_m
+implicit none
+print '(dt)', shown()" + std::to_string(n) + R"()
+print '(a)', 'next'
+end program
+)";
+}
+
+// The interrupt abandons the parent PRINT of a defined output procedure,
+// which the runtime keeps state for.
+TEST_CASE("FortranEvaluator interrupt: in a defined output procedure") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    std::string output;
+    check_interrupted(interrupt_at_marker(e, dtio_program("dtio_a", -1), output));
+    CHECK(output.find("next") == std::string::npos);
+    CHECK(cell_output(e, "print '(a)', 'one'\nprint '(a)', 'two'") == "one\ntwo\n");
+    CHECK(cell_output(e, dtio_program("dtio_b", 3)) == "n=3\nnext\n");
+}
+
+TEST_CASE("FortranEvaluator interrupt: a READ waiting for input stops") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    run_cell(e, "integer :: n = 5, m = 6");
+    for (const std::string code : {"read *, n\nprint *, 'after'",
+            "read *, n, m\nprint *, 'after'"}) {
+        CAPTURE(code);
+        std::string output;
+        FortranEvaluator::CellIO io;
+        io.output = [&](int, const std::string &text) { output += text; };
+        int asked = 0;
+        // The first record of `n, m` has only one value, so the second wait
+        // comes after the READ has stored n.
+        io.input = [&](std::string &record) {
+            if (asked++ == 0 && code.find(", m") != std::string::npos) {
+                record = "7";
+                return 0;
+            }
+            return 1;
+        };
+        io.interrupt_requested = [&]() { return asked > 0
+            && (asked > 1 || code.find(", m") == std::string::npos); };
+        check_interrupted(e.execute(code, false, io));
+        CHECK(output.find("after") == std::string::npos);
+    }
+    CHECK(cell_value(e, "m") == "6");
+    InputRecords input{{"42"}};
+    run_cell(e, "read *, n", input.io());
+    CHECK(cell_value(e, "n") == "42");
+}
+
+TEST_CASE("FortranEvaluator interrupt: a request belongs to its cell") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    FortranEvaluator e(cu);
+    run_cell(e, "integer :: n = 1");
+    // Requested before its code runs: the cell does not run it.
+    FortranEvaluator::CellIO io;
+    io.interrupt_requested = []() { return true; };
+    check_interrupted(e.execute("n = 2", false, io));
+    // A cell that only declares or inspects has nothing to stop.
+    CHECK(e.execute("%%showast\nn = 3", false, io).ok);
+    // The next cells run.
+    CHECK(cell_value(e, "n") == "1");
+    io.interrupt_requested = []() { return false; };
+    run_cell(e, "n = 4", io);
+    CHECK(cell_value(e, "n") == "4");
+}
+
+TEST_CASE("FortranEvaluator interrupt: at arbitrary times") {
+    if (!FortranEvaluator::interrupt_supported()) return;
+    CompilerOptions cu = execute_options();
+    cu.po.realloc_lhs_arrays = true;
+    FortranEvaluator e(cu);
+    run_cell(e, R"(
+module interrupt_random
+implicit none
+integer :: total = 0
+contains
+! Its allocatables are local: an interrupt may leave one that it was
+! reassigning referring to freed memory, which a later cell must not use.
+subroutine work(n)
+    integer, intent(in) :: n
+    integer :: i
+    character(len=32) :: b
+    character(len=:), allocatable :: text
+    integer, allocatable :: v(:)
+    allocate(v(0))
+    do i = 1, n
+        v = [v, i]
+        if (size(v) > 50) v = [integer ::]
+        write(b, '(i0)') i
+        text = trim(b) // '-' // trim(b)
+        if (len(text) > 30) text = ''
+        total = total + 1
+    end do
+    if (size(v) > 51 .or. len(text) > 30) error stop
+end subroutine
+end module
+)");
+    run_cell(e, "use interrupt_random");
+    // Whether and where each one stops depends on timing; the session must
+    // survive every outcome.
+    for (int i = 0; i < 30; i++) {
+        auto start = std::chrono::steady_clock::now();
+        auto delay = std::chrono::microseconds(i * 700);
+        FortranEvaluator::CellIO io;
+        io.output = [](int, const std::string &) {};
+        io.interrupt_requested = [&]() {
+            return std::chrono::steady_clock::now() - start > delay;
+        };
+        auto cell = e.execute("call work(200000)", false, io);
+        if (!cell.ok) check_interrupted(cell);
+        run_cell(e, "call work(10)");
+        CHECK(cell_value(e, "total > 0") == "True");
+    }
+}
 
 static void check_input(const std::string &code,
         std::vector<std::string> records, int expected_calls = -1) {

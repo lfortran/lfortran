@@ -334,6 +334,15 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
             std::string after = m.lines[m.cursor_row-1].substr(m.cursor_col-1);
             m.lines[m.cursor_row-1] = before + newchar + after;
             m.cursor_col++;
+        } else if (key == CTRL_KEY('c')) {
+            // Discard the input, keeping it on the screen, and return
+            // Ctrl-C, after which the caller starts a new prompt.
+            if (!pending_output.empty()) {
+                throw std::runtime_error("incomplete terminal output sequence");
+            }
+            std::cout << std::string(m.lines.size() - m.cursor_row + 1, '\n')
+                << std::flush;
+            return std::string(1, CTRL_KEY('c'));
         } else if (key == CTRL_KEY('d')) {
             if (m.lines.size() == 1 && m.lines[m.cursor_row-1].size() == 0) {
                 if (!pending_output.empty()) {

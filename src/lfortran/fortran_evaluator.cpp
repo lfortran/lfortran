@@ -51,6 +51,7 @@
 #include <libasr/exception.h>
 #include <libasr/stacktrace.h>
 #include <libasr/runtime/lfortran_stdin.h>
+#include <libasr/runtime/lfortran_cancellation.h>
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -243,9 +244,9 @@ public:
         std::unique_lock<std::mutex> lock(mutex);
         for (;;) changed.wait(lock);
     }
-    bool service() {
+    bool service(std::chrono::microseconds wait) {
         std::unique_lock<std::mutex> lock(mutex);
-        if (!pending && !done) changed.wait_for(lock, std::chrono::milliseconds(10));
+        if (!pending && !done) changed.wait_for(lock, wait);
         if (pending) {
             lock.unlock();
             std::exception_ptr error;
@@ -355,6 +356,12 @@ static int read_input(void *context, const char **record, size_t *length) {
     try {
         c.record.clear();
         int status = c.io.input(c.record);
+#if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
+        // An interrupt ends the wait for input. The READ holds no runtime
+        // state across this wait (items already read stay assigned), so
+        // stop the cell here rather than fail the READ.
+        LCompilers::LLVMEvaluator::stop_if_interrupted();
+#endif
         *record = c.record.data();
         *length = c.record.size();
         return status;
@@ -367,6 +374,52 @@ static int read_input(void *context, const char **record, size_t *length) {
 }
 
 namespace LCompilers {
+
+#ifdef HAVE_LFORTRAN_LLVM
+namespace {
+// Thrown on the cell's thread when an interrupt stopped its JIT code. It is
+// thrown only after run_preemptible() has returned, so it never unwinds
+// through JIT or runtime frames, and execute_cell() catches it.
+struct CellInterrupted {};
+
+#ifndef __EMSCRIPTEN__
+// The runtime's waits (lfortran_cancellation.h) of an interruptible cell.
+int cancel_requested_hook() { return LLVMEvaluator::interrupted_here(); }
+void cancel_stop_hook() { LLVMEvaluator::stop_if_interrupted(); }
+#endif
+
+// Calls the function `name` of the JIT with `args`, preemptibly.
+#ifdef __EMSCRIPTEN__
+template <typename T, typename... Args>
+T run_cell_code(WasmLFortranExecutor &e, const std::string &name, Args... args) {
+    return e.template execfn<T>(name, args...);
+}
+#else
+template <typename T, typename... Args>
+T run_cell_code(LLVMEvaluator &e, const std::string &name, Args... args) {
+    // Look it up first: that compiles, which an interrupt must not stop.
+    T (*f)(Args...) = reinterpret_cast<T (*)(Args...)>(
+        e.get_symbol_address(name));
+    // An interrupt abandons `call`'s frame, which must not own anything.
+    if constexpr (std::is_void<T>::value) {
+        auto call = [&]() { f(args...); };
+        if (!e.run_preemptible([](void *c) {
+                (*static_cast<decltype(call) *>(c))(); }, &call)) {
+            throw CellInterrupted();
+        }
+    } else {
+        T result{};
+        auto call = [&]() { result = f(args...); };
+        if (!e.run_preemptible([](void *c) {
+                (*static_cast<decltype(call) *>(c))(); }, &call)) {
+            throw CellInterrupted();
+        }
+        return result;
+    }
+}
+#endif
+}
+#endif
 
 class StringDescriptor {
     struct Storage {
@@ -610,32 +663,32 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     e.add_module(std::move(m));
 #endif
     if (has_setup) {
-        e.execfn<void>(setup_fn);
+        run_cell_code<void>(e, setup_fn);
     }
     if (has_program) {
-        e.execfn<void>(program_fn);
+        run_cell_code<void>(e, program_fn);
     }
     if (return_type == "integer4") {
-        int32_t r = e.execfn<int32_t>(run_fn);
+        int32_t r = run_cell_code<int32_t>(e, run_fn);
         result.type = EvalResult::integer4;
         result.i32 = r;
     } else if (return_type == "integer8") {
-        int64_t r = e.execfn<int64_t>(run_fn);
+        int64_t r = run_cell_code<int64_t>(e, run_fn);
         result.type = EvalResult::integer8;
         result.i64 = r;
     } else if (return_type == "real4") {
-        float r = e.execfn<float>(run_fn);
+        float r = run_cell_code<float>(e, run_fn);
         result.type = EvalResult::real4;
         result.f32 = r;
     } else if (return_type == "real8") {
-        double r = e.execfn<double>(run_fn);
+        double r = run_cell_code<double>(e, run_fn);
         result.type = EvalResult::real8;
         result.f64 = r;
     } else if (return_type == "complex4") {
         result.type = EvalResult::complex4;
         if (compiler_options.platform == Platform::Windows) {
             // The JIT returns the two floats in an i64, not a C++ class.
-            uint64_t r = e.execfn<uint64_t>(run_fn);
+            uint64_t r = run_cell_code<uint64_t>(e, run_fn);
             float parts[2];
             static_assert(sizeof(parts) == sizeof(r));
             std::memcpy(parts, &r, sizeof(r));
@@ -648,11 +701,11 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
             // std::complex<float> follows the HFA convention (S0+S1), so the
             // imaginary part came back as garbage. Read the vector lanes.
             typedef float v2f32 __attribute__((vector_size(8)));
-            v2f32 r = e.execfn<v2f32>(run_fn);
+            v2f32 r = run_cell_code<v2f32>(e, run_fn);
             result.c32.re = r[0];
             result.c32.im = r[1];
 #else
-            std::complex<float> r = e.execfn<std::complex<float>>(run_fn);
+            std::complex<float> r = run_cell_code<std::complex<float>>(e, run_fn);
             result.c32.re = r.real();
             result.c32.im = r.imag();
 #endif
@@ -661,21 +714,21 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
         result.type = EvalResult::complex8;
         if (compiler_options.platform == Platform::Windows) {
             double parts[2];
-            e.execfn<void>(run_fn, parts);
+            run_cell_code<void>(e, run_fn, parts);
             result.c64.re = parts[0];
             result.c64.im = parts[1];
         } else {
-            std::complex<double> r = e.execfn<std::complex<double>>(run_fn);
+            std::complex<double> r = run_cell_code<std::complex<double>>(e, run_fn);
             result.c64.re = r.real();
             result.c64.im = r.imag();
         }
     } else if (return_type == "logical") {
-        int32_t r = e.execfn<int32_t>(run_fn);
+        int32_t r = run_cell_code<int32_t>(e, run_fn);
         result.type = EvalResult::boolean;
         result.b = (r != 0);
     } else if (return_type == "character") {
         StringDescriptor descriptor;
-        e.execfn<void>(run_fn, descriptor.pointer());
+        run_cell_code<void>(e, run_fn, descriptor.pointer());
         result.type = EvalResult::character;
         char *data = descriptor.data();
         int64_t length = descriptor.length();
@@ -690,7 +743,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
             e.execfn<void>("_lfortran_free_alloc", allocator, data);
         }
     } else if (return_type == "void") {
-        e.execfn<void>(run_fn);
+        run_cell_code<void>(e, run_fn);
         result.type = EvalResult::statement;
     } else if (return_type == "none") {
         result.type = has_program ? EvalResult::statement : EvalResult::none;
@@ -771,6 +824,18 @@ std::string FortranEvaluator::CellResult::error_text() const {
     return error_value;
 }
 
+bool FortranEvaluator::interrupt_supported() {
+#if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__)
+    return LLVMEvaluator::preemption_supported();
+#else
+    return false;
+#endif
+}
+
+bool FortranEvaluator::interruptible() const {
+    return interrupt_supported() && !compiler_options.openmp;
+}
+
 FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
         bool verbose, const CellIO &io) {
     LCOMPILERS_ASSERT(compiler_options.interactive);
@@ -794,14 +859,39 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     };
 #ifndef __EMSCRIPTEN__
     CellMailbox mailbox;
-    const bool threaded = bool(io.output);
+    // The caller interrupts the cell's thread (LLVMEvaluator::run_preemptible).
+    LLVMEvaluator *preemptible = nullptr;
+#ifdef HAVE_LFORTRAN_LLVM
+    if (io.interrupt_requested && interruptible()) {
+        preemptible = &get_llvm_evaluator();
+        preemptible->clear_interrupt();
+    }
+#endif
+    const bool threaded = bool(io.output) || preemptible;
     const auto owner = std::this_thread::get_id();
     bool process_exiting = false; // Only accessed by the caller.
+    bool interrupting = false;    // Likewise.
+    auto poll_interrupt = [&]() {
+        if (!preemptible) return;
+        if (!interrupting) {
+            try { interrupting = io.interrupt_requested(); }
+            catch (...) { interrupting = true; }
+        }
+#ifdef HAVE_LFORTRAN_LLVM
+        // Until the cell ends: code outside the JIT ignores a signal.
+        if (interrupting) preemptible->request_interrupt();
+#endif
+    };
 #endif
     auto dispatch = [&](const std::function<void()> &action) {
 #ifndef __EMSCRIPTEN__
         if (threaded && std::this_thread::get_id() != owner) {
-            mailbox.call(action);
+            // Before the cell continues, so that it sees an interrupt that
+            // ended the action (an input wait).
+            mailbox.call([&]() {
+                action();
+                poll_interrupt();
+            });
             return;
         }
 #endif
@@ -886,6 +976,18 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
     passes.use_default_passes();
     passes.skip_llvm_backend_passes();
     auto execute_cell = [&]() {
+#ifndef __EMSCRIPTEN__
+        struct CancelHooks {
+            explicit CancelHooks([[maybe_unused]] bool install) {
+#ifdef HAVE_LFORTRAN_LLVM
+                if (install) {
+                    _lfortran_set_cancel_hooks(cancel_requested_hook, cancel_stop_hook);
+                }
+#endif
+            }
+            ~CancelHooks() { _lfortran_set_cancel_hooks(nullptr, nullptr); }
+        } cancel_hooks(preemptible != nullptr);
+#endif
         try {
             const auto newline = code.find('\n');
             auto magic = code.substr(0, newline);
@@ -933,6 +1035,15 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
                 out.error_name = "DisplayError";
                 out.error_value = "display failed: " + display.error;
             }
+#ifdef HAVE_LFORTRAN_LLVM
+        } catch (const CellInterrupted &) {
+            _lfortran_reset_after_interrupt();
+            out.ok = false;
+            out.value = {};
+            out.interrupted = true;
+            out.error_name = "KeyboardInterrupt";
+            out.error_value = "cell execution interrupted";
+#endif
         } catch (const LCompilersException &error) {
             out.ok = false;
             out.internal_error = true;
@@ -963,12 +1074,19 @@ FortranEvaluator::CellResult FortranEvaluator::execute(const std::string &code,
             });
             bool done;
             do {
+                poll_interrupt();
                 try { drain_output(false); }
                 catch (...) {} // Saved above; keep servicing hooks until join.
-                done = mailbox.service();
+                // Signal often: a signal stops only code in the JIT, and a
+                // loop can spend most of its time in the runtime.
+                done = mailbox.service(std::chrono::microseconds(
+                    interrupting ? 100 : 10000));
                 if (process_exiting) mailbox.await_process_exit();
             } while (!done);
             worker.join();
+#ifdef HAVE_LFORTRAN_LLVM
+            if (preemptible) preemptible->clear_interrupt();
+#endif
             drain_output(true);
             if (worker_error) std::rethrow_exception(worker_error);
         } else
