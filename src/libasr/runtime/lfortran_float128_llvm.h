@@ -12,8 +12,10 @@
  * the calling convention LLVM actually uses for fp128:
  * On x86-64, a binary128 value travels in a single SSE register, so the
  * public entry points take a 16-byte vector rather than the struct.
- * On ARM64, naked-function shims bridge the SIMD ABI to the struct ABI.
- * On WASM, sret-style wrappers match the ABI LLVM uses for wasm32.
+ * On ARM64 without a system binary128 (macOS, Windows), naked-function shims
+ * bridge the SIMD ABI to the struct ABI.
+ * Targets whose compiler-rt or libgcc provides these routines (Linux ARM64,
+ * WASM) use the system's versions; the runtime does not define them.
  */
 
 #ifndef LFORTRAN_FLOAT128_LLVM_H

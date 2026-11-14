@@ -614,48 +614,64 @@ lf_float128 __multf3_lf_impl(lf_float128 a, lf_float128 b) {
     }
     if (pa.is_zero || pb.is_zero) return f128_make_zero(rsign);
 
-    /* Full 113×113 -> 226-bit product via 128×128 -> 256-bit */
+    /* Full 113x113 -> 226-bit product via 128x128 -> 256-bit */
     u128 prod_hi, prod_lo;
     u128_mul128(pa.mant, pb.mant, &prod_hi, &prod_lo);
 
-    /* Product has 226 significant bits (bit 224 is the leading 1 for max case).
-     * We need 113 bits. The product's binary point is at position 224
-     * (since each operand has its 1 in bit 112).
-     * Normalise: shift right so leading 1 is at bit 112. */
-    int32_t exp = pa.exp + pb.exp;
+    /* The operands are mant * 2^(exp - 112), so the product is
+     * prod * 2^(pa.exp + pb.exp - 224). Its leading one is in bit `lead` of
+     * the 256-bit product, which makes the product's exponent
+     * pa.exp + pb.exp + lead - 224. */
+    int lead = u128_is_zero(prod_hi) ? 127 - u128_clz(prod_lo)
+                                     : 255 - u128_clz(prod_hi);
+    int32_t rexp = pa.exp + pb.exp + lead - 224;
 
-    /* Leading bit of product is in prod_hi. Find its position. */
-    int lz = u128_clz(prod_hi);
-    /* bit position of leading 1 in 256-bit: (127 - lz) + 128 = 255 - lz */
-    /* We want it at bit 112 of the final 128-bit mant: shift right by (255-lz-112) */
-    int rsh = 255 - lz - 112;  /* how many bits to shift the 256-bit product right */
+    /* Number of low product bits to round off: all those below the 113-bit
+     * significand, plus the bits that fall below the least significant
+     * subnormal bit. Rounding once here avoids rounding twice for subnormal
+     * results. */
+    int32_t drop = lead - 112;
+    if (rexp < -16382) drop += -16382 - rexp;
 
-    u128 result_mant;
-    if (rsh >= 128) {
-        /* result fits entirely in prod_hi */
-        int rsh2 = rsh - 128;
-        result_mant = u128_shr(prod_hi, rsh2);
-        /* rounding bit is (prod_hi >> (rsh2-1)) & 1 if rsh2>0, else prod_lo's top */
-        int round_bit = rsh2 > 0 ? u128_bit(prod_hi, rsh2 - 1) : u128_bit(prod_lo, 127);
-        u128 sticky    = rsh2 > 1
-                       ? u128_and(prod_hi, u128_sub(u128_shl(u128_one(), rsh2 - 1), u128_one()))
-                       : u128_zero();
-        sticky = u128_or(sticky, prod_lo);
-        if (round_bit && (!u128_is_zero(sticky) || !u128_is_zero(u128_and(result_mant, u128_one())))) {
-            result_mant = u128_inc(result_mant);
-        }
+    /* q = floor(prod / 2^drop), then round to nearest, ties to even. */
+    u128 q, rest_hi, rest_lo;
+    int round_bit, sticky;
+    if (drop <= 0) {
+        /* A subnormal operand left the product with at most 128 bits: it is
+         * exact, and only needs to be aligned to the significand. */
+        q = u128_shl(prod_lo, -drop);
+        round_bit = 0;
+        rest_hi = u128_zero();
+        rest_lo = u128_zero();
+    } else if (drop > 256) {
+        return f128_make_zero(rsign);
+    } else if (drop >= 128) {
+        int m = drop - 128;
+        q = u128_shr(prod_hi, m);
+        round_bit = m > 0 ? u128_bit(prod_hi, m - 1) : u128_bit(prod_lo, 127);
+        rest_hi = m > 1 ? u128_and(prod_hi, u128_sub(u128_shl(u128_one(), m - 1), u128_one()))
+                        : u128_zero();
+        rest_lo = m > 0 ? prod_lo
+                        : u128_and(prod_lo, u128_sub(u128_shl(u128_one(), 127), u128_one()));
     } else {
-        /* straddling prod_hi and prod_lo */
-        result_mant = u128_or(u128_shl(prod_hi, 128 - rsh), u128_shr(prod_lo, rsh));
-        int round_bit = u128_bit(prod_lo, rsh - 1);
-        u128 sticky    = u128_and(prod_lo, u128_sub(u128_shl(u128_one(), rsh - 1), u128_one()));
-        if (round_bit && (!u128_is_zero(sticky) || !u128_is_zero(u128_and(result_mant, u128_one())))) {
-            result_mant = u128_inc(result_mant);
-        }
+        q = u128_or(u128_shl(prod_hi, 128 - drop), u128_shr(prod_lo, drop));
+        round_bit = u128_bit(prod_lo, drop - 1);
+        rest_hi = u128_zero();
+        rest_lo = u128_and(prod_lo, u128_sub(u128_shl(u128_one(), drop - 1), u128_one()));
     }
-    exp += rsh - 112;  /* correct for the shift */
+    sticky = !u128_is_zero(rest_hi) || !u128_is_zero(rest_lo);
+    if (round_bit && (sticky || (u128_lo(q) & 1))) q = u128_inc(q);
 
-    return f128_pack_parts(rsign, exp, result_mant);
+    if (rexp < -16382) {
+        /* Subnormal result: q holds the stored significand bits. If
+         * rounding carried into bit 112, that bit becomes biased exponent 1,
+         * the smallest normal number. */
+        return f128_const(rsign, (int32_t)(u128_hi(q) >> 48),
+                          u128_hi(q), u128_lo(q));
+    }
+    /* Normal result (q is in [2^112, 2^113]); f128_pack_parts handles a
+     * rounding carry to 2^113 and overflow to infinity. */
+    return f128_pack_parts(rsign, rexp, q);
 }
 
 /* ========================================================================
@@ -774,7 +790,7 @@ lf_float128 __extenddftf2_lf_impl(double d) {
     } else {
         /* subnormal double */
         mant = u128_shl(u128_from_u64(dmant), 112 - 52);
-        exp  = -1022 - 52;  /* will be corrected by pack_parts normalisation */
+        exp  = -1022;  /* pack_parts normalises the significand */
     }
     return f128_pack_parts(sign, exp, mant);
 }
@@ -799,9 +815,37 @@ lf_float128 __extendsftf2_lf_impl(float f) {
         exp  = fexp - 127;
     } else {
         mant = u128_shl(u128_from_u64(fmant), 112 - 23);
-        exp  = -126 - 23;
+        exp  = -126;  /* pack_parts normalises the significand */
     }
     return f128_pack_parts(sign, exp, mant);
+}
+
+/* Round the finite nonzero magnitude of p to a binary format with `mbits`
+ * stored significand bits and exponent bias `bias`, rounding to nearest and
+ * ties to even once, also for subnormal results. Returns the bits of the
+ * magnitude: the biased exponent and stored significand, without the sign. */
+static uint64_t f128_round_to_narrow(f128_parts p, int mbits, int bias) {
+    const int emin = 1 - bias;
+    const uint64_t inf_bits = (uint64_t)(2 * bias + 1) << mbits;
+    if (p.exp > bias) return inf_bits;
+    int32_t drop = 112 - mbits;
+    if (p.exp < emin) drop += emin - p.exp;
+    /* Dropping 114 or more bits leaves less than half the smallest
+     * subnormal. */
+    if (drop > 113) return 0;
+    u128 q = u128_shr(p.mant, drop);
+    u128 rest = u128_and(p.mant, u128_sub(u128_shl(u128_one(), drop), u128_one()));
+    u128 half = u128_shl(u128_one(), drop - 1);
+    if (u128_gt(rest, half) || (u128_eq(rest, half) && (u128_lo(q) & 1)))
+        q = u128_inc(q);
+    uint64_t bits = u128_lo(q);
+    /* A subnormal result stores its significand directly, and a carry into
+     * bit `mbits` is the smallest normal number. A normal result has its
+     * implicit bit in bit `mbits`, which adds one to the exponent field, and
+     * a carry out of the significand increments the exponent likewise. */
+    if (p.exp >= emin) bits += (uint64_t)(p.exp + bias - 1) << mbits;
+    if (bits > inf_bits) bits = inf_bits;
+    return bits;
 }
 
 double __trunctfdf2_lf_impl(lf_float128 a) {
@@ -809,33 +853,17 @@ double __trunctfdf2_lf_impl(lf_float128 a) {
     if (p.is_nan) return NAN;
     if (p.is_inf) return p.sign ? -INFINITY : INFINITY;
     if (p.is_zero) return p.sign ? -0.0 : 0.0;
-
-    /* Shift mant right to get 52 bits + rounding */
-    int32_t dexp = p.exp + 1023;
-    if (dexp >= 0x7FF) return p.sign ? -INFINITY : INFINITY;  /* overflow */
-    if (dexp <= 0) {
-        /* subnormal double: shift further */
-        int extra_shift = 1 - dexp;
-        int rsh = (112 - 52) + extra_shift;
-        if (rsh >= 128) return p.sign ? -0.0 : 0.0;
-        uint64_t dmant = u128_lo(u128_shr(p.mant, rsh));
-        uint64_t bits  = ((uint64_t)p.sign << 63) | dmant;
-        double r; memcpy(&r, &bits, 8); return r;
-    }
-    int rsh = 112 - 52;
-    uint64_t dmant = u128_lo(u128_shr(p.mant, rsh)) & 0x000FFFFFFFFFFFFFull;
-    /* rounding */
-    int round_bit = u128_bit(p.mant, rsh - 1);
-    u128 sticky    = u128_and(p.mant, u128_sub(u128_shl(u128_one(), rsh - 1), u128_one()));
-    if (round_bit && (!u128_is_zero(sticky) || (dmant & 1))) dmant++;
-    /* A carry out of the 52 stored bits gives the next power of two. */
-    if (dmant >> 52) { dmant = 0; dexp++; }
-    uint64_t bits = ((uint64_t)p.sign << 63) | ((uint64_t)dexp << 52) | dmant;
+    uint64_t bits = ((uint64_t)p.sign << 63) | f128_round_to_narrow(p, 52, 1023);
     double r; memcpy(&r, &bits, 8); return r;
 }
 
 float __trunctfsf2_lf_impl(lf_float128 a) {
-    return (float)__trunctfdf2_lf_impl(a);  /* double handles the precision */
+    f128_parts p = f128_unpack(a);
+    if (p.is_nan) return NAN;
+    if (p.is_inf) return p.sign ? -INFINITY : INFINITY;
+    if (p.is_zero) return p.sign ? -0.0f : 0.0f;
+    uint32_t bits = ((uint32_t)p.sign << 31) | (uint32_t)f128_round_to_narrow(p, 23, 127);
+    float r; memcpy(&r, &bits, 4); return r;
 }
 
 lf_float128 __floatsitf_lf_impl(int32_t x) {
@@ -3078,7 +3106,7 @@ lf_float128 lf_float128_from_str(const char *s) {
  * PowerPC with -mfloat128). Clang passes both as plain fp128 values, the
  * same way LLVM-emitted code passes them, so only the math entry points
  * (lf_sqrtq, lf_expq, ...) are defined there; the compiler-rt routines come
- * from the system's compiler-rt/libgcc (or section P2 on WASI). s390x is
+ * from the system's compiler-rt/libgcc. s390x is
  * left out because it passes `long double` indirectly. ARM64 uses the shims
  * of section Q. On targets without a binary128 C type, the math entry points
  * are not provided.
@@ -3179,147 +3207,6 @@ lf_f128_abi lf_atandq(lf_f128_abi a)                { return lf_f128_to_abi(lf_f
 #endif
 
 /* ========================================================================
- * P2. WASM32 fp128 ABI wrappers
- *
- * LLVM lowers fp128 soft-float calls on wasm32 as low/high i64 words, not as
- * byval C structs. Keep the portable implementation struct-based internally,
- * but export the compiler-rt symbols with the ABI LLVM expects.
- * ======================================================================== */
-#if defined(__wasm32__) && !defined(__EMSCRIPTEN__)
-
-#define LF_WASM_TF2_ATTR __attribute__((weak))
-
-static lf_float128 f128_from_words(uint64_t lo, uint64_t hi) {
-    lf_float128 r;
-    memcpy(r.bytes, &lo, 8);
-    memcpy(r.bytes + 8, &hi, 8);
-    return r;
-}
-
-static void f128_store_words(lf_float128 *out, lf_float128 v) {
-    memcpy(out->bytes, v.bytes, 16);
-}
-
-LF_WASM_TF2_ATTR void __addtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
-        uint64_t b_lo, uint64_t b_hi) {
-    f128_store_words(out, __addtf3_lf_impl(
-        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
-}
-
-LF_WASM_TF2_ATTR void __subtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
-        uint64_t b_lo, uint64_t b_hi) {
-    f128_store_words(out, __subtf3_lf_impl(
-        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
-}
-
-LF_WASM_TF2_ATTR void __multf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
-        uint64_t b_lo, uint64_t b_hi) {
-    f128_store_words(out, __multf3_lf_impl(
-        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
-}
-
-LF_WASM_TF2_ATTR void __divtf3(lf_float128 *out, uint64_t a_lo, uint64_t a_hi,
-        uint64_t b_lo, uint64_t b_hi) {
-    f128_store_words(out, __divtf3_lf_impl(
-        f128_from_words(a_lo, a_hi), f128_from_words(b_lo, b_hi)));
-}
-
-LF_WASM_TF2_ATTR void __negtf2(lf_float128 *out, uint64_t a_lo, uint64_t a_hi) {
-    f128_store_words(out, __negtf2_lf_impl(f128_from_words(a_lo, a_hi)));
-}
-
-LF_WASM_TF2_ATTR void __extenddftf2(lf_float128 *out, double a) {
-    f128_store_words(out, __extenddftf2_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR void __extendsftf2(lf_float128 *out, float a) {
-    f128_store_words(out, __extendsftf2_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR double __trunctfdf2(uint64_t a_lo, uint64_t a_hi) {
-    return __trunctfdf2_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR float __trunctfsf2(uint64_t a_lo, uint64_t a_hi) {
-    return __trunctfsf2_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR void __floatsitf(lf_float128 *out, int32_t a) {
-    f128_store_words(out, __floatsitf_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR void __floatditf(lf_float128 *out, int64_t a) {
-    f128_store_words(out, __floatditf_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR void __floatunsitf(lf_float128 *out, uint32_t a) {
-    f128_store_words(out, __floatunsitf_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR void __floatunditf(lf_float128 *out, uint64_t a) {
-    f128_store_words(out, __floatunditf_lf_impl(a));
-}
-
-LF_WASM_TF2_ATTR int32_t __fixtfsi(uint64_t a_lo, uint64_t a_hi) {
-    return __fixtfsi_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR int64_t __fixtfdi(uint64_t a_lo, uint64_t a_hi) {
-    return __fixtfdi_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR uint32_t __fixunstfsi(uint64_t a_lo, uint64_t a_hi) {
-    return __fixunstfsi_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR uint64_t __fixunstfdi(uint64_t a_lo, uint64_t a_hi) {
-    return __fixunstfdi_lf_impl(f128_from_words(a_lo, a_hi));
-}
-
-LF_WASM_TF2_ATTR int __eqtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    return f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi)) == 0 ? 0 : 1;
-}
-
-LF_WASM_TF2_ATTR int __netf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    return f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi)) != 0 ? 1 : 0;
-}
-
-LF_WASM_TF2_ATTR int __lttf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi));
-    return c >= 2 ? 1 : c;
-}
-
-LF_WASM_TF2_ATTR int __letf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi));
-    return c >= 2 ? 1 : c;
-}
-
-LF_WASM_TF2_ATTR int __gttf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi));
-    return c >= 2 ? 1 : c;
-}
-
-LF_WASM_TF2_ATTR int __getf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    int c = f128_cmp_internal(f128_from_words(a_lo, a_hi),
-        f128_from_words(b_lo, b_hi));
-    return c >= 2 ? 1 : c;
-}
-
-LF_WASM_TF2_ATTR int __unordtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uint64_t b_hi) {
-    return (f128_is_nan(f128_from_words(a_lo, a_hi)) ||
-        f128_is_nan(f128_from_words(b_lo, b_hi))) ? 1 : 0;
-}
-
-#undef LF_WASM_TF2_ATTR
-
-#endif
-
-/* ========================================================================
  * Q. ARM64 calling-convention shims
  *
  * On macOS ARM64, LLVM lowers fp128 ops to runtime calls using the Apple
@@ -3335,7 +3222,10 @@ LF_WASM_TF2_ATTR int __unordtf2(uint64_t a_lo, uint64_t a_hi, uint64_t b_lo, uin
  *   fp128->int:    arg in x0/x1;    result in x0/w0.
  *
  * Each shim marshals registers in both directions so the two ABIs meet.
- * All shims are strong symbols (no `weak`) to override system versions.
+ * The compiler-rt entry points (__addtf3, ...) are provided only where the
+ * system has none (macOS, Windows). Elsewhere, such as Linux where `long
+ * double` is binary128, libgcc or compiler-rt supply them, and defining
+ * them here would override the system's versions.
  *
  * macOS asm symbol mangling: leading underscore required.
  * Linux/ELF: no leading underscore.
@@ -3461,10 +3351,12 @@ void pub(void) {                                             \
     );                                                       \
 }
 
+#if defined(__APPLE__) || defined(_WIN32)
 _LF_SHIM2(__addtf3,          __addtf3_lf_impl)
 _LF_SHIM2(__subtf3,          __subtf3_lf_impl)
 _LF_SHIM2(__multf3,          __multf3_lf_impl)
 _LF_SHIM2(__divtf3,          __divtf3_lf_impl)
+#endif
 /* SIMD-ABI public entry points for the math functions called by LLVM-emitted
  * code such as `call fp128 @lf_sqrtq(fp128)`, `lf_powq(fp128, fp128)` or
  * `lf_sinq(fp128)`. They bridge to the struct-ABI implementations lf_f128_*. */
@@ -3496,6 +3388,7 @@ _LF_SHIM1(lf_tandq,         lf_f128_tand)
 _LF_SHIM1(lf_asindq,        lf_f128_asind)
 _LF_SHIM1(lf_acosdq,        lf_f128_acosd)
 _LF_SHIM1(lf_atandq,        lf_f128_atand)
+#if defined(__APPLE__) || defined(_WIN32)
 _LF_SHIM1(__negtf2,          __negtf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extenddftf2,   __extenddftf2_lf_impl)
 _LF_SHIM_FROM_SCALAR(__extendsftf2,   __extendsftf2_lf_impl)
@@ -3516,6 +3409,7 @@ _LF_SHIM2_TO_INT(__letf2,             __letf2_lf_impl)
 _LF_SHIM2_TO_INT(__gttf2,             __gttf2_lf_impl)
 _LF_SHIM2_TO_INT(__getf2,             __getf2_lf_impl)
 _LF_SHIM2_TO_INT(__unordtf2,          __unordtf2_lf_impl)
+#endif
 
 #undef _LF_SHIM2
 #undef _LF_SHIM1
